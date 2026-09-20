@@ -1,5 +1,7 @@
+use crate::drivers::vmm::network::gateway_types::{
+    GatewayForwardRequest, GatewayProtocol, VmGatewayEndpoint,
+};
 use crate::drivers::vmm::prelude::*;
-use crate::drivers::vmm::network::gateway_types::{VmGatewayEndpoint, GatewayProtocol, GatewayForwardRequest};
 
 pub(crate) fn forward_http_to_vm(
     endpoint: &VmGatewayEndpoint,

@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://aseman.example/contracts/capsule/kinds/core-registry.schema.json",
+  "title": "Aseman core capsule-kind registry",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "kinds"],
+  "properties": {
+    "schema_version": {"const": 1},
+    "kinds": {
+      "type": "array",
+      "minItems": 20,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["kind", "table", "storage_class", "consistency", "owner_scope", "required_capabilities"],
+        "properties": {
+          "kind": {"type": "string", "pattern": "^[a-z][a-z0-9_.-]+$"},
+          "table": {"type": "string", "pattern": "^[a-z][a-z0-9_]+$"},
+          "storage_class": {"enum": ["core", "finance"]},
+          "consistency": {"enum": ["serializable", "snapshot"]},
+          "owner_scope": {"enum": ["global", "node", "creature"]},
+          "required_capabilities": {"type": "array", "uniqueItems": true, "items": {"type": "string"}}
+        }
+      }
+    }
+  }
+}

@@ -9,5 +9,6 @@ name = "caspar_vm_fire"
 path = "src/lib.rs"
 
 [dependencies]
+aseman-config = { path = "../../crates/aseman-config" }
 caspar-vm-sdk = { path = "../../vm-sdk" }
 serde_json = "1"

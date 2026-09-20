@@ -97,13 +97,7 @@ fn aot_compile_gate() -> &'static Mutex<()> {
 
 /// AOT is on unless `CASPAR_WASM_AOT` is explicitly a falsey value.
 fn aot_enabled() -> bool {
-    match std::env::var("CASPAR_WASM_AOT") {
-        Ok(v) => {
-            let v = v.trim().to_ascii_lowercase();
-            !(v == "0" || v == "false" || v == "off" || v == "no")
-        }
-        Err(_) => true,
-    }
+    aseman_config::runtime_config().wasm_aot
 }
 
 fn file_mtime(path: &str) -> Option<std::time::SystemTime> {
@@ -191,8 +185,7 @@ fn compile_aot(src: &str, dst: &str) -> Result<(), String> {
         // and regenerated on any source/mtime change, so non-portability is fine.
         let mut config = Config::create().map_err(|e| format!("aot config: {}", e))?;
         config.set_aot_compiler_output_format(wasmedge_types::CompilerOutputFormat::Native);
-        let compiler =
-            Compiler::create(Some(&config)).map_err(|e| format!("aot create: {}", e))?;
+        let compiler = Compiler::create(Some(&config)).map_err(|e| format!("aot create: {}", e))?;
         compiler
             .compile_from_file(&src_owned, &tmp_for_compile)
             .map_err(|e| format!("aot compile: {}", e))?;
@@ -278,13 +271,7 @@ const WASM_PAGE: usize = 65536;
 /// forces the legacy build-and-teardown-per-run path (used to isolate the
 /// cache in testing / as an escape hatch).
 fn vm_cache_enabled() -> bool {
-    match std::env::var("CASPAR_WASM_VM_CACHE") {
-        Ok(v) => {
-            let v = v.trim().to_ascii_lowercase();
-            !(v == "0" || v == "false" || v == "off" || v == "no")
-        }
-        Err(_) => true,
-    }
+    aseman_config::runtime_config().wasm_vm_cache
 }
 
 /// Retire a warm VM after this many runs (bounds any per-instance drift the
@@ -339,7 +326,11 @@ fn pool_key(mod_path: &str, ram_limit_mb: u64) -> String {
 
 /// Take a warm VM for this module+limit whose source file is unchanged, or
 /// `None` if the pool has none (cold, or all entries were stale/mtime-changed).
-fn checkout_vm(mod_path: &str, ram_limit_mb: u64, cur_mtime: Option<SystemTime>) -> Option<VmStack> {
+fn checkout_vm(
+    mod_path: &str,
+    ram_limit_mb: u64,
+    cur_mtime: Option<SystemTime>,
+) -> Option<VmStack> {
     let key = pool_key(mod_path, ram_limit_mb);
     let mut pool = vm_pool().lock().unwrap();
     let bucket = pool.get_mut(&key)?;
@@ -536,8 +527,7 @@ impl WasmMac {
         // faithful to the old behaviour, which never consumed the cost anyway.
         // Boxed so `host_data.exec` stays valid when the VmStack moves.
         let mut executor = Box::new(
-            Executor::create(Some(&config), None)
-                .map_err(|e| format!("wasm executor: {}", e))?,
+            Executor::create(Some(&config), None).map_err(|e| format!("wasm executor: {}", e))?,
         );
         host_data.exec = &mut *executor as *mut Executor;
 
@@ -749,5 +739,3 @@ mod execution_tests {
         std::env::remove_var("CASPAR_WASM_VM_CACHE");
     }
 }
-
-

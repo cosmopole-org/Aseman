@@ -157,9 +157,7 @@ impl PeerSet {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::drivers::network::chain::crypto::keys::{
-        generate_ecdsa_key, public_key_hex,
-    };
+    use crate::drivers::network::chain::crypto::keys::{generate_ecdsa_key, public_key_hex};
 
     fn make_peer(addr: &str, moniker: &str) -> Peer {
         let key = generate_ecdsa_key().unwrap();
@@ -167,7 +165,9 @@ mod tests {
     }
 
     fn make_peers(n: usize) -> Vec<Peer> {
-        (0..n).map(|i| make_peer(&format!("a{}", i), &format!("m{}", i))).collect()
+        (0..n)
+            .map(|i| make_peer(&format!("a{}", i), &format!("m{}", i)))
+            .collect()
     }
 
     #[test]

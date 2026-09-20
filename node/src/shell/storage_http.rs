@@ -28,15 +28,12 @@ use std::thread;
 use uuid::Uuid;
 
 use crate::models::core::ICore;
+use aseman_contracts::legacy_storage_http::{escape_json, is_safe_id, sanitize_content_type};
 
 /// Where public blobs live, relative to the node storage root.
 const PUBLIC_DIR: &str = "public-files";
-/// Default cap on a single upload (10 MiB) — avatars are small; this only
-/// guards against a client streaming an unbounded body.
-const DEFAULT_MAX_BYTES: usize = 10 * 1024 * 1024;
-
 /// Spawn the storage HTTP server on `port` (no-op when `port <= 0`).
-pub fn start(app: Arc<dyn ICore>, port: i64) {
+pub fn start(app: Arc<dyn ICore>, port: i64, max_bytes: usize) {
     if port <= 0 {
         return;
     }
@@ -47,10 +44,6 @@ pub fn start(app: Arc<dyn ICore>, port: i64) {
             return;
         }
     };
-    let max_bytes = std::env::var("CASPAR_STORAGE_MAX_BYTES")
-        .ok()
-        .and_then(|v| v.parse::<usize>().ok())
-        .unwrap_or(DEFAULT_MAX_BYTES);
     let server = Arc::new(StorageHttp { app, max_bytes });
     eprintln!("[startup] storage http listening on :{}", port);
     thread::spawn(move || {
@@ -126,7 +119,12 @@ impl StorageHttp {
                 let id = &p["/storage/file/".len()..];
                 self.handle_download(&mut stream, id, method == "HEAD");
             }
-            _ => write_response(&mut stream, 404, "application/json", b"{\"error\":\"not found\"}"),
+            _ => write_response(
+                &mut stream,
+                404,
+                "application/json",
+                b"{\"error\":\"not found\"}",
+            ),
         }
     }
 
@@ -138,16 +136,31 @@ impl StorageHttp {
         content_type: &str,
     ) {
         if content_length == 0 {
-            write_response(stream, 400, "application/json", b"{\"error\":\"empty body\"}");
+            write_response(
+                stream,
+                400,
+                "application/json",
+                b"{\"error\":\"empty body\"}",
+            );
             return;
         }
         if content_length > self.max_bytes {
-            write_response(stream, 413, "application/json", b"{\"error\":\"file too large\"}");
+            write_response(
+                stream,
+                413,
+                "application/json",
+                b"{\"error\":\"file too large\"}",
+            );
             return;
         }
         let mut data = vec![0u8; content_length];
         if reader.read_exact(&mut data).is_err() {
-            write_response(stream, 400, "application/json", b"{\"error\":\"truncated body\"}");
+            write_response(
+                stream,
+                400,
+                "application/json",
+                b"{\"error\":\"truncated body\"}",
+            );
             return;
         }
 
@@ -165,7 +178,12 @@ impl StorageHttp {
             return;
         }
         // Sidecar holding the content type so downloads round-trip it.
-        let _ = file.save_data_to_global_storage(&root, ctype.as_bytes(), &format!("{}.type", id), true);
+        let _ = file.save_data_to_global_storage(
+            &root,
+            ctype.as_bytes(),
+            &format!("{}.type", id),
+            true,
+        );
 
         write_response(
             stream,
@@ -177,7 +195,12 @@ impl StorageHttp {
 
     fn handle_download(self: &Arc<Self>, stream: &mut TcpStream, id: &str, head_only: bool) {
         if !is_safe_id(id) {
-            write_response(stream, 400, "application/json", b"{\"error\":\"invalid id\"}");
+            write_response(
+                stream,
+                400,
+                "application/json",
+                b"{\"error\":\"invalid id\"}",
+            );
             return;
         }
         let root = self.public_root();
@@ -185,7 +208,12 @@ impl StorageHttp {
         let bytes = match file.read_file_by_path(&format!("{}/{}", root, id)) {
             Ok(b) => b,
             Err(_) => {
-                write_response(stream, 404, "application/json", b"{\"error\":\"not found\"}");
+                write_response(
+                    stream,
+                    404,
+                    "application/json",
+                    b"{\"error\":\"not found\"}",
+                );
                 return;
             }
         };
@@ -209,35 +237,6 @@ impl StorageHttp {
     }
 }
 
-/// Ids are UUIDs; accept only characters that can appear in one (plus a guard
-/// against `.`/`/` so no sidecar or parent path can be reached).
-fn is_safe_id(id: &str) -> bool {
-    !id.is_empty()
-        && id.len() <= 128
-        && id
-            .bytes()
-            .all(|b| b.is_ascii_alphanumeric() || b == b'-' || b == b'_')
-}
-
-/// Keep the content type to a safe `token/token; params` shape on one line.
-fn sanitize_content_type(raw: &str) -> String {
-    let cleaned: String = raw
-        .chars()
-        .filter(|c| *c != '\r' && *c != '\n')
-        .take(128)
-        .collect();
-    let cleaned = cleaned.trim();
-    if cleaned.is_empty() {
-        "application/octet-stream".to_string()
-    } else {
-        cleaned.to_string()
-    }
-}
-
-fn escape_json(s: &str) -> String {
-    s.replace('\\', "\\\\").replace('"', "\\\"")
-}
-
 fn write_response(stream: &mut TcpStream, status: u16, content_type: &str, body: &[u8]) {
     let reason = match status {
         200 => "OK",
@@ -256,4 +255,43 @@ fn write_response(stream: &mut TcpStream, status: u16, content_type: &str, body:
     );
     let _ = stream.write_all(header.as_bytes());
     let _ = stream.write_all(body);
+}
+
+#[cfg(test)]
+mod characterization_tests {
+    use super::*;
+    use std::net::Shutdown;
+
+    #[test]
+    fn response_writer_preserves_the_current_http_wire_shape() {
+        let listener = TcpListener::bind("127.0.0.1:0").expect("bind test listener");
+        let address = listener.local_addr().expect("listener address");
+        let writer = thread::spawn(move || {
+            let (mut stream, _) = listener.accept().expect("accept test connection");
+            write_response(
+                &mut stream,
+                413,
+                "application/json",
+                br#"{"error":"too large"}"#,
+            );
+            stream.shutdown(Shutdown::Write).expect("finish response");
+        });
+
+        let mut client = TcpStream::connect(address).expect("connect test client");
+        let mut response = String::new();
+        client.read_to_string(&mut response).expect("read response");
+        writer.join().expect("writer thread");
+
+        assert_eq!(
+            response,
+            concat!(
+                "HTTP/1.1 413 Payload Too Large\r\n",
+                "Content-Type: application/json\r\n",
+                "Content-Length: 21\r\n",
+                "Connection: close\r\n",
+                "\r\n",
+                "{\"error\":\"too large\"}"
+            )
+        );
+    }
 }

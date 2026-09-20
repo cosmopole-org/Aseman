@@ -403,8 +403,14 @@ mod tests {
             });
         // Keep the sender alive past the deadline (simulating a hung run).
         handle.join().unwrap();
-        assert!(stop.load(Ordering::Relaxed), "stop flag must trip on timeout");
-        assert!(fired.load(Ordering::Relaxed), "on_timeout must fire on timeout");
+        assert!(
+            stop.load(Ordering::Relaxed),
+            "stop flag must trip on timeout"
+        );
+        assert!(
+            fired.load(Ordering::Relaxed),
+            "on_timeout must fire on timeout"
+        );
         drop(done_tx);
     }
 }

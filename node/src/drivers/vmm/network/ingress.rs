@@ -103,8 +103,14 @@ impl VmHttpIngress {
         let req = match parse_request(&mut stream) {
             Ok(r) => r,
             Err(e) => {
-                write_response(&mut stream, 400, "Bad Request", "application/json", None,
-                    json!({"ok": false, "error": e}).to_string().into_bytes());
+                write_response(
+                    &mut stream,
+                    400,
+                    "Bad Request",
+                    "application/json",
+                    None,
+                    json!({"ok": false, "error": e}).to_string().into_bytes(),
+                );
                 return;
             }
         };
@@ -205,7 +211,13 @@ impl VmHttpIngress {
         let status = value["status"].as_u64().unwrap_or(200) as u16;
         let (content_type, extra_headers) = extract_headers(&value);
         let body = decode_body(&value);
-        (status, status_reason(status), content_type, extra_headers, body)
+        (
+            status,
+            status_reason(status),
+            content_type,
+            extra_headers,
+            body,
+        )
     }
 
     /// Resolve a request path to the VM identity it targets. A deployer-defined
@@ -218,12 +230,7 @@ impl VmHttpIngress {
     /// leading segment is a creature *id*, which is never a username.
     fn resolve_identity(&self, path: &str) -> Option<IdentitySegments> {
         if let Some((first, rest)) = split_first_segment(path) {
-            if let Some(route) = self
-                .app
-                .tools()
-                .vmm()
-                .resolve_http_route(first, rest)
-            {
+            if let Some(route) = self.app.tools().vmm().resolve_http_route(first, rest) {
                 let program_id = route["programId"].as_str().unwrap_or("").to_string();
                 let entity_id = route["entityId"].as_str().unwrap_or("").to_string();
                 if !program_id.is_empty() && !entity_id.is_empty() {

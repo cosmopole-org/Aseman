@@ -11,8 +11,7 @@ use std::collections::HashSet;
 // own global state — they use `with_global_app` to obtain `&ICore` and then
 // traverse the service graph as needed.
 
-pub(crate) static GLOBAL_APP: Lazy<Mutex<Option<Arc<dyn ICore>>>> =
-    Lazy::new(|| Mutex::new(None));
+pub(crate) static GLOBAL_APP: Lazy<Mutex<Option<Arc<dyn ICore>>>> = Lazy::new(|| Mutex::new(None));
 
 pub(crate) fn set_global_app(app: Arc<dyn ICore>) {
     *GLOBAL_APP.lock().unwrap() = Some(app);
@@ -59,7 +58,9 @@ pub(crate) struct ResourceLockRegistry {
 
 impl ResourceLockRegistry {
     pub(crate) fn new() -> Self {
-        Self { locks: DashMap::new() }
+        Self {
+            locks: DashMap::new(),
+        }
     }
 
     /// Number of live lock entries — used by tests (and available for metrics)
@@ -128,7 +129,10 @@ impl ResourceLockRegistry {
         {
             let mut state = lock.state.lock().unwrap();
             if state.owner.as_deref() != Some(owner_id) {
-                return Err(format!("lock '{}' not owned by '{}'", resource_id, owner_id));
+                return Err(format!(
+                    "lock '{}' not owned by '{}'",
+                    resource_id, owner_id
+                ));
             }
             if let Some(next) = state.queue.pop_front() {
                 state.owner = Some(next);
@@ -235,7 +239,11 @@ mod resource_lock_tests {
         for h in handles {
             h.join().unwrap();
         }
-        assert_eq!(max_seen.load(Ordering::SeqCst), 1, "lock allowed two holders at once");
+        assert_eq!(
+            max_seen.load(Ordering::SeqCst),
+            1,
+            "lock allowed two holders at once"
+        );
         assert_eq!(reg.len(), 0, "lock must be reaped once fully quiescent");
     }
 }

@@ -322,7 +322,10 @@ mod tests {
     #[test]
     fn store_actions_are_guarded_by_identity_and_membership() {
         let g = store_guard();
-        assert!(g.is_user, "an anonymous caller must never reach a store action");
+        assert!(
+            g.is_user,
+            "an anonymous caller must never reach a store action"
+        );
         assert!(g.is_in_store, "membership is checked before the body runs");
     }
 
@@ -336,7 +339,11 @@ mod tests {
             ..Default::default()
         };
         assert_eq!(signal.get_store_id(), "7@peer");
-        assert_eq!(signal.origin(), "peer", "a foreign origin routes the action to that node");
+        assert_eq!(
+            signal.origin(),
+            "peer",
+            "a foreign origin routes the action to that node"
+        );
 
         let history = HistoryInput {
             store_id: "7@peer".into(),
@@ -351,7 +358,11 @@ mod tests {
     #[test]
     fn history_defaults_to_one_page() {
         let input = HistoryInput::default();
-        let count = if input.count > 0 { input.count } else { DEFAULT_HISTORY_COUNT };
+        let count = if input.count > 0 {
+            input.count
+        } else {
+            DEFAULT_HISTORY_COUNT
+        };
         assert_eq!(count, DEFAULT_HISTORY_COUNT);
     }
 }

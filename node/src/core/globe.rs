@@ -14,12 +14,10 @@ use sha2::{Digest, Sha256};
 
 use crate::models::chain::{
     ChainBaseRequest, ChainCallback, ChainElectionPacket, ChainMessage, ChainPayPacket,
-    ChainResponse, ChainStakePacket, Effects, ElectionRound, MessageCallback,
-    StakingNodeState, ValidatorSetRecord,
+    ChainResponse, ChainStakePacket, Effects, ElectionRound, MessageCallback, StakingNodeState,
+    ValidatorSetRecord,
 };
-use crate::models::globe::{
-    BaseResponseCallback, IGlobe, TypedMessageCallback,
-};
+use crate::models::globe::{BaseResponseCallback, IGlobe, TypedMessageCallback};
 use crate::models::update::Update;
 use crate::shell::utils::crypto::secure_unique_string;
 use crate::util::AnyVal;
@@ -190,7 +188,11 @@ impl IGlobe for Globe {
                 },
             );
         }
-        let chain_id = if chain_id.is_empty() { "main" } else { chain_id };
+        let chain_id = if chain_id.is_empty() {
+            "main"
+        } else {
+            chain_id
+        };
         let msg = ChainMessage {
             key: key.to_string(),
             message_type: message_type.to_string(),
@@ -333,10 +335,7 @@ impl IGlobe for Globe {
                 ChainPacketOp::Election(ChainElectionPacket {
                     typ: "election".to_string(),
                     key: "choose-validator".to_string(),
-                    meta: election_meta(&[
-                        ("phase", "finalize"),
-                        ("roundId", &round_for_thread),
-                    ]),
+                    meta: election_meta(&[("phase", "finalize"), ("roundId", &round_for_thread)]),
                     payload: b"{}".to_vec(),
                 }),
             );
@@ -403,9 +402,7 @@ impl Globe {
         let owner = state.owner_id.clone();
         let bonded;
         match action.as_str() {
-            "bond" => {
-                Self::apply_bond(state, pkt.amount, pkt.lock_seconds, now, &mut 0)
-            }
+            "bond" => Self::apply_bond(state, pkt.amount, pkt.lock_seconds, now, &mut 0),
             "unbond" => Self::apply_unbond(state, pkt.amount, now, &mut 0),
             "slash" => Self::apply_slash(state, pkt.amount, now, &mut 0),
             _ => return true,
@@ -518,7 +515,11 @@ impl Globe {
         });
         let mut target = (candidates.len() / 3).max(1).min(self.max_validator_count);
         target = target.min(candidates.len());
-        candidates.into_iter().take(target).map(|(id, _, _)| id).collect()
+        candidates
+            .into_iter()
+            .take(target)
+            .map(|(id, _, _)| id)
+            .collect()
     }
 
     fn handle_election_packet(&self, packet: ChainElectionPacket) {
@@ -535,8 +536,16 @@ impl Globe {
 
         match phase.as_str() {
             "start-round" => {
-                let round_id = packet.meta.get("roundId").and_then(Value::as_str).unwrap_or("");
-                let commit_seed = packet.meta.get("commitSeed").and_then(Value::as_str).unwrap_or("");
+                let round_id = packet
+                    .meta
+                    .get("roundId")
+                    .and_then(Value::as_str)
+                    .unwrap_or("");
+                let commit_seed = packet
+                    .meta
+                    .get("commitSeed")
+                    .and_then(Value::as_str)
+                    .unwrap_or("");
                 if round_id.is_empty() {
                     return;
                 }
@@ -575,13 +584,27 @@ impl Globe {
                     Some(r) => r,
                     None => return,
                 };
-                let round_id = packet.meta.get("roundId").and_then(Value::as_str).unwrap_or("");
-                let node_id = packet.meta.get("nodeId").and_then(Value::as_str).unwrap_or("");
-                let commit = packet.meta.get("commit").and_then(Value::as_str).unwrap_or("");
+                let round_id = packet
+                    .meta
+                    .get("roundId")
+                    .and_then(Value::as_str)
+                    .unwrap_or("");
+                let node_id = packet
+                    .meta
+                    .get("nodeId")
+                    .and_then(Value::as_str)
+                    .unwrap_or("");
+                let commit = packet
+                    .meta
+                    .get("commit")
+                    .and_then(Value::as_str)
+                    .unwrap_or("");
                 if round_id != round.id || node_id.is_empty() || commit.is_empty() {
                     return;
                 }
-                round.commits.insert(node_id.to_string(), commit.to_string());
+                round
+                    .commits
+                    .insert(node_id.to_string(), commit.to_string());
                 round.commit_participants.insert(node_id.to_string(), true);
             }
             "start-reveal" => {
@@ -590,12 +613,23 @@ impl Globe {
                         Some(r) => r,
                         None => return,
                     };
-                    let round_id = packet.meta.get("roundId").and_then(Value::as_str).unwrap_or("");
+                    let round_id = packet
+                        .meta
+                        .get("roundId")
+                        .and_then(Value::as_str)
+                        .unwrap_or("");
                     if round_id != round.id {
                         return;
                     }
                     round.phase = "reveal".to_string();
-                    (round.id.clone(), round.reveals.get(&self.node_id).cloned().unwrap_or_default())
+                    (
+                        round.id.clone(),
+                        round
+                            .reveals
+                            .get(&self.node_id)
+                            .cloned()
+                            .unwrap_or_default(),
+                    )
                 };
                 drop(inner);
                 if !my_seed.is_empty() {
@@ -615,9 +649,21 @@ impl Globe {
                     Some(r) => r,
                     None => return,
                 };
-                let round_id = packet.meta.get("roundId").and_then(Value::as_str).unwrap_or("");
-                let node_id = packet.meta.get("nodeId").and_then(Value::as_str).unwrap_or("");
-                let seed = packet.meta.get("seed").and_then(Value::as_str).unwrap_or("");
+                let round_id = packet
+                    .meta
+                    .get("roundId")
+                    .and_then(Value::as_str)
+                    .unwrap_or("");
+                let node_id = packet
+                    .meta
+                    .get("nodeId")
+                    .and_then(Value::as_str)
+                    .unwrap_or("");
+                let seed = packet
+                    .meta
+                    .get("seed")
+                    .and_then(Value::as_str)
+                    .unwrap_or("");
                 if round_id != round.id || node_id.is_empty() || seed.is_empty() {
                     return;
                 }
@@ -642,7 +688,11 @@ impl Globe {
                         Some(r) => r,
                         None => return,
                     };
-                    let round_id = packet.meta.get("roundId").and_then(Value::as_str).unwrap_or("");
+                    let round_id = packet
+                        .meta
+                        .get("roundId")
+                        .and_then(Value::as_str)
+                        .unwrap_or("");
                     if round_id != round.id {
                         return;
                     }
@@ -684,8 +734,7 @@ fn election_meta(kvs: &[(&str, &str)]) -> HashMap<String, Value> {
 
 // Suppress unused-import warnings on `AnyVal`/`TimeZone` for future use.
 const _: fn() -> Option<AnyVal> = || None;
-const _: fn() -> Option<chrono::DateTime<Utc>> =
-    || Some(Utc.timestamp_opt(0, 0).single()?);
+const _: fn() -> Option<chrono::DateTime<Utc>> = || Some(Utc.timestamp_opt(0, 0).single()?);
 
 #[cfg(test)]
 mod leak_repro {
@@ -713,9 +762,7 @@ mod leak_repro {
 
     /// Build a `Globe` whose `set_message_cb_fn` records into `sink` — exactly
     /// what the orchestrator's real closure does into `message_callbacks`.
-    fn globe_with_sink(
-        sink: Arc<Mutex<HashMap<String, MessageCallback>>>,
-    ) -> Arc<Globe> {
+    fn globe_with_sink(sink: Arc<Mutex<HashMap<String, MessageCallback>>>) -> Arc<Globe> {
         let peers_fn: PeersFn = Arc::new(Vec::new);
         let sign_fn: SignPacketFn = Arc::new(|_| String::new());
         let submit_fn: SubmitChainPacketFn = Arc::new(|_, _| {});

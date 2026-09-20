@@ -8,11 +8,11 @@
 //! once with `casparctl cluster apply -f cluster.json`.
 
 use std::collections::BTreeMap;
-use std::env;
 use std::fs;
 use std::path::{Path, PathBuf};
 
 use anyhow::{anyhow, Result};
+use aseman_config::ClusterBootstrapConfig;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
@@ -122,11 +122,9 @@ impl Default for ClusterConfig {
 impl ClusterConfig {
     /// Resolve the config path: `CLUSTER_CONFIG_PATH` env override or
     /// `<storage_root>/cluster/cluster.json`.
-    pub fn default_path(storage_root: &str) -> PathBuf {
-        if let Ok(p) = env::var("CLUSTER_CONFIG_PATH") {
-            if !p.trim().is_empty() {
-                return PathBuf::from(p);
-            }
+    pub fn default_path(storage_root: &str, source: &ClusterBootstrapConfig) -> PathBuf {
+        if let Some(path) = &source.config_path {
+            return PathBuf::from(path);
         }
         Path::new(storage_root).join("cluster").join("cluster.json")
     }
@@ -144,36 +142,32 @@ impl ClusterConfig {
         Ok(())
     }
 
-    /// Load from disk (if present) and fold environment overrides on top.
-    /// Env vars: `CLUSTER_ENABLED`, `CLUSTER_NODE_ID`, `CLUSTER_NODE_NAME`,
-    /// `CLUSTER_REGION`, `CLUSTER_LISTEN_ADDR`, `CLUSTER_ADVERTISE_ADDR`,
-    /// `CLUSTER_AUTH_TOKEN`.
-    pub fn bootstrap(storage_root: &str) -> (ClusterConfig, PathBuf) {
-        let path = Self::default_path(storage_root);
+    /// Load from disk (if present) and fold typed composition overrides on top.
+    pub fn bootstrap(
+        storage_root: &str,
+        source: &ClusterBootstrapConfig,
+    ) -> (ClusterConfig, PathBuf) {
+        let path = Self::default_path(storage_root, source);
         let mut cfg = Self::load(&path).unwrap_or_default();
-        if let Ok(v) = env::var("CLUSTER_ENABLED") {
-            cfg.enabled = matches!(v.trim(), "1" | "true" | "yes" | "on");
+        if let Some(value) = source.enabled {
+            cfg.enabled = value;
         }
-        if let Ok(v) = env::var("CLUSTER_BOOTSTRAP") {
-            cfg.bootstrap = matches!(v.trim(), "1" | "true" | "yes" | "on");
+        if let Some(value) = source.bootstrap {
+            cfg.bootstrap = value;
         }
-        if let Ok(v) = env::var("CLUSTER_NODE_ID") {
-            if let Ok(n) = v.trim().parse() {
-                cfg.node_id = n;
-            }
+        if let Some(value) = source.node_id {
+            cfg.node_id = value;
         }
-        let env_override = |key: &str, slot: &mut String| {
-            if let Ok(v) = env::var(key) {
-                if !v.trim().is_empty() {
-                    *slot = v.trim().to_string();
-                }
+        let apply = |value: &Option<String>, slot: &mut String| {
+            if let Some(value) = value {
+                *slot = value.clone();
             }
         };
-        env_override("CLUSTER_NODE_NAME", &mut cfg.node_name);
-        env_override("CLUSTER_REGION", &mut cfg.region);
-        env_override("CLUSTER_LISTEN_ADDR", &mut cfg.listen_addr);
-        env_override("CLUSTER_ADVERTISE_ADDR", &mut cfg.advertise_addr);
-        env_override("CLUSTER_AUTH_TOKEN", &mut cfg.auth_token);
+        apply(&source.node_name, &mut cfg.node_name);
+        apply(&source.region, &mut cfg.region);
+        apply(&source.listen_addr, &mut cfg.listen_addr);
+        apply(&source.advertise_addr, &mut cfg.advertise_addr);
+        apply(&source.auth_token, &mut cfg.auth_token);
         if cfg.node_name.is_empty() {
             cfg.node_name = format!("caspar-node-{}", cfg.node_id);
         }
@@ -224,9 +218,7 @@ impl ClusterConfig {
             election_timeout_min: self.election_timeout_min_ms,
             election_timeout_max: self.election_timeout_max_ms,
             max_payload_entries: self.max_payload_entries,
-            snapshot_policy: openraft::SnapshotPolicy::LogsSinceLast(
-                self.snapshot_logs_since_last,
-            ),
+            snapshot_policy: openraft::SnapshotPolicy::LogsSinceLast(self.snapshot_logs_since_last),
             max_in_snapshot_log_to_keep: self.max_in_snapshot_log_to_keep,
             ..Default::default()
         }
@@ -259,14 +251,18 @@ mod tests {
                 ..Default::default()
             },
         );
-        let updated = cfg.set_key("peers.2.addr", "caspar-us.example.com:7440").unwrap();
+        let updated = cfg
+            .set_key("peers.2.addr", "caspar-us.example.com:7440")
+            .unwrap();
         assert_eq!(updated.peers[&2].addr, "caspar-us.example.com:7440");
     }
 
     #[test]
     fn set_free_form_extra_key() {
         let cfg = ClusterConfig::default();
-        let updated = cfg.set_key("extra.maintenanceWindow", "\"02:00-04:00Z\"").unwrap();
+        let updated = cfg
+            .set_key("extra.maintenanceWindow", "\"02:00-04:00Z\"")
+            .unwrap();
         assert_eq!(
             updated.extra.get("maintenanceWindow"),
             Some(&serde_json::json!("02:00-04:00Z"))

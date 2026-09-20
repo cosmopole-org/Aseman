@@ -1,0 +1,16 @@
+[package]
+name = "aseman-storage-conformance"
+description = "Reusable capsule storage provider conformance kit."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+aseman-contracts = { path = "../../../crates/aseman-contracts" }
+hex.workspace = true
+serde_json.workspace = true
+
+[lints]
+workspace = true

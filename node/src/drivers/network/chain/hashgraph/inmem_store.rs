@@ -46,9 +46,8 @@ struct InmemStoreInner {
 const DEFAULT_MAX_FRAME_CACHE: usize = 25;
 
 fn max_frame_cache() -> usize {
-    std::env::var("CASPAR_BABBLE_FRAME_CACHE")
-        .ok()
-        .and_then(|v| v.trim().parse::<usize>().ok())
+    aseman_config::legacy_adapter_snapshot()
+        .map(|config| config.babble_frame_cache)
         .filter(|&n| n > 0)
         .unwrap_or(DEFAULT_MAX_FRAME_CACHE)
 }
@@ -155,12 +154,9 @@ impl InmemStoreInner {
     fn get_block(&mut self, index: i64) -> Result<Block> {
         match self.block_cache.get(&index) {
             Some(b) => Ok(b),
-            None => Err(new_store_err(
-                "BlockCache",
-                StoreErrType::KeyNotFound,
-                &index.to_string(),
-            )
-            .into()),
+            None => Err(
+                new_store_err("BlockCache", StoreErrType::KeyNotFound, &index.to_string()).into(),
+            ),
         }
     }
 
@@ -181,12 +177,9 @@ impl InmemStoreInner {
     fn get_frame(&mut self, index: i64) -> Result<Frame> {
         match self.frame_cache.get(&index) {
             Some(fr) => Ok(fr),
-            None => Err(new_store_err(
-                "FrameCache",
-                StoreErrType::KeyNotFound,
-                &index.to_string(),
-            )
-            .into()),
+            None => Err(
+                new_store_err("FrameCache", StoreErrType::KeyNotFound, &index.to_string()).into(),
+            ),
         }
     }
 
@@ -361,9 +354,7 @@ impl Store for InmemStore {
     fn get_root(&self, participant: &str) -> Result<Arc<Mutex<Root>>> {
         match self.inner.borrow().roots.get(participant) {
             Some(r) => Ok(r.clone()),
-            None => {
-                Err(new_store_err("RootCache", StoreErrType::KeyNotFound, participant).into())
-            }
+            None => Err(new_store_err("RootCache", StoreErrType::KeyNotFound, participant).into()),
         }
     }
 
@@ -626,12 +617,18 @@ mod tests {
             .signatures
             .get(&participants[0].hex)
             .expect("Validator1 signature not stored");
-        assert_eq!(*val1_sig, sig1.signature, "Validator1 block signatures differ");
+        assert_eq!(
+            *val1_sig, sig1.signature,
+            "Validator1 block signatures differ"
+        );
 
         let val2_sig = stored_block
             .signatures
             .get(&participants[1].hex)
             .expect("Validator2 signature not stored");
-        assert_eq!(*val2_sig, sig2.signature, "Validator2 block signatures differ");
+        assert_eq!(
+            *val2_sig, sig2.signature,
+            "Validator2 block signatures differ"
+        );
     }
 }

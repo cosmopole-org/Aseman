@@ -28,28 +28,19 @@ use crate::proto;
 /// docker runtime's `CASPAR_VM_HTTP_PORT` so a creature written for one
 /// runtime serves on the same port under the other.
 fn vm_http_port() -> u32 {
-    std::env::var("CASPAR_VM_HTTP_PORT")
-        .ok()
-        .and_then(|p| p.trim().parse::<u32>().ok())
-        .unwrap_or(8080)
+    u32::from(aseman_config::runtime_config().vm_http_port)
 }
 
 /// Timeout (seconds) for a forwarded HTTP request to the sandbox.
 fn vm_http_timeout_secs() -> u64 {
-    std::env::var("CASPAR_VM_HTTP_TIMEOUT_SECS")
-        .ok()
-        .and_then(|p| p.trim().parse::<u64>().ok())
+    Some(aseman_config::runtime_config().vm_http_timeout_seconds)
         .filter(|s| *s > 0)
         .unwrap_or(30)
 }
 
 /// Base image used when a packet names none.
 fn default_image_tag() -> String {
-    std::env::var("MODAL_DEFAULT_IMAGE")
-        .ok()
-        .map(|s| s.trim().to_string())
-        .filter(|s| !s.is_empty())
-        .unwrap_or_else(|| "ubuntu:24.04".to_string())
+    aseman_config::runtime_config().modal_default_image
 }
 
 /// Path on the Modal Volume (the `/data` mount), for list/read while the
@@ -72,11 +63,7 @@ fn volume_rel_path(path: &str) -> String {
 const VOLUME_READ_CAP: u64 = 200_000;
 
 fn volume_mount_path() -> String {
-    std::env::var("MODAL_VOLUME_MOUNT_PATH")
-        .ok()
-        .map(|s| s.trim().to_string())
-        .filter(|s| !s.is_empty())
-        .unwrap_or_else(|| "/data".to_string())
+    aseman_config::runtime_config().modal_volume_mount_path
 }
 
 #[derive(Clone)]
@@ -193,7 +180,10 @@ const MAX_EPHEMERAL_DISK_MB: u32 = 8_192_728;
 ///
 /// A packet that sizes nothing gets the platform default machine: 4 cores and
 /// 8 GiB of RAM.
-fn sandbox_resources(packet: &JsonValue, limits: &caspar_vm_sdk::VmResourceLimits) -> proto::Resources {
+fn sandbox_resources(
+    packet: &JsonValue,
+    limits: &caspar_vm_sdk::VmResourceLimits,
+) -> proto::Resources {
     let memory_mb = match limits.ram_mb as u32 {
         // The parser floors an absent/zero value to 1, which Modal rejects.
         // Treat anything under Modal's own minimum as "not specified".
@@ -369,7 +359,7 @@ impl ModalVmPlugin {
             image: Some(image),
             app_id: app_id.to_string(),
             force_build: packet["forceBuild"].as_bool().unwrap_or(false),
-            builder_version: std::env::var("MODAL_BUILDER_VERSION").unwrap_or_default(),
+            builder_version: aseman_config::runtime_config().modal_builder_version,
             ..Default::default()
         };
         let response = block_on(conn.stub.image_get_or_create(request))?
@@ -406,10 +396,7 @@ impl ModalVmPlugin {
         // build reports a result or the overall budget is spent.
         let deadline = std::time::Instant::now()
             + std::time::Duration::from_secs(
-                std::env::var("MODAL_IMAGE_BUILD_TIMEOUT_SECS")
-                    .ok()
-                    .and_then(|v| v.trim().parse::<u64>().ok())
-                    .unwrap_or(900),
+                aseman_config::runtime_config().modal_image_build_timeout_seconds,
             );
         loop {
             if std::time::Instant::now() > deadline {
@@ -503,10 +490,7 @@ impl ModalVmPlugin {
         if state_get(&volume_link_key(vm_id)).is_empty() {
             return;
         }
-        let millis = std::env::var("MODAL_VOLUME_SETTLE_MS")
-            .ok()
-            .and_then(|v| v.trim().parse::<u64>().ok())
-            .unwrap_or(3_000);
+        let millis = aseman_config::runtime_config().modal_volume_settle_ms;
         if millis == 0 {
             return;
         }
@@ -532,12 +516,7 @@ impl ModalVmPlugin {
     fn task_id(&self, conn: &mut ModalConn, sandbox_id: &str) -> Result<String, String> {
         let request = proto::SandboxGetTaskIdRequest {
             sandbox_id: sandbox_id.to_string(),
-            timeout: Some(
-                std::env::var("MODAL_TASK_READY_TIMEOUT_SECS")
-                    .ok()
-                    .and_then(|v| v.trim().parse::<f32>().ok())
-                    .unwrap_or(60.0),
-            ),
+            timeout: Some(aseman_config::runtime_config().modal_task_ready_timeout_seconds),
             wait_until_ready: true,
         };
         let response = block_on(conn.stub.sandbox_get_task_id(request))?
@@ -1033,7 +1012,8 @@ impl ModalVmPlugin {
                     provisioning_key(&identity.vm_id),
                     provisioning_error_key(&identity.vm_id),
                 ]);
-                let image_id = state_get(&image_link_key(&identity.machine_id, &identity.entity_id));
+                let image_id =
+                    state_get(&image_link_key(&identity.machine_id, &identity.entity_id));
                 return Ok(json!({
                     "ok": true,
                     "runtime": "modal",
@@ -1092,10 +1072,7 @@ impl ModalVmPlugin {
         }
         let mut conn = self.conn()?;
         let running = self.is_running(&mut conn, &sandbox_id)?;
-        let image_id = state_get(&image_link_key(
-            &identity.machine_id,
-            &identity.entity_id,
-        ));
+        let image_id = state_get(&image_link_key(&identity.machine_id, &identity.entity_id));
         Ok(json!({
             "ok": true,
             "runtime": "modal",
@@ -1152,10 +1129,13 @@ impl ModalVmPlugin {
             timeout_secs,
         )?;
 
-        let wait = block_on(conn.stub.container_exec_wait(proto::ContainerExecWaitRequest {
-            exec_id: exec.exec_id.clone(),
-            timeout: timeout_secs as f32,
-        }))?
+        let wait = block_on(
+            conn.stub
+                .container_exec_wait(proto::ContainerExecWaitRequest {
+                    exec_id: exec.exec_id.clone(),
+                    timeout: timeout_secs as f32,
+                }),
+        )?
         .map_err(|e| rpc_error("ContainerExecWait", e))?
         .into_inner();
 
@@ -1496,17 +1476,18 @@ impl ModalVmPlugin {
     fn forward_http_inner(&self, packet: &JsonValue) -> Result<JsonValue, String> {
         let identity = ModalIdentity::from_packet(packet);
         let sandbox_id = match state_get(&sandbox_link_key(&identity.vm_id)) {
-            id if id.is_empty() => {
-                return caspar_vm_sdk::plugin::forward_http_via_signal(packet)
-            }
+            id if id.is_empty() => return caspar_vm_sdk::plugin::forward_http_via_signal(packet),
             id => id,
         };
 
         let mut conn = self.conn()?;
-        let tunnels = block_on(conn.stub.sandbox_get_tunnels(proto::SandboxGetTunnelsRequest {
-            sandbox_id: sandbox_id.clone(),
-            timeout: 30.0,
-        }))?
+        let tunnels = block_on(
+            conn.stub
+                .sandbox_get_tunnels(proto::SandboxGetTunnelsRequest {
+                    sandbox_id: sandbox_id.clone(),
+                    timeout: 30.0,
+                }),
+        )?
         .map_err(|e| rpc_error("SandboxGetTunnels", e))?
         .into_inner();
 
@@ -1590,9 +1571,7 @@ fn sandbox_timeout_secs(packet: &JsonValue, max_exec_time_secs: u64) -> u32 {
     if let Some(explicit) = packet["timeoutSecs"].as_u64() {
         return explicit as u32;
     }
-    let configured = std::env::var("MODAL_SANDBOX_TIMEOUT_SECS")
-        .ok()
-        .and_then(|v| v.trim().parse::<u32>().ok());
+    let configured = aseman_config::runtime_config().modal_sandbox_timeout_seconds;
     if let Some(configured) = configured {
         return configured;
     }
@@ -1679,10 +1658,13 @@ impl VmPlugin for ModalVmPlugin {
             return Ok(json!({"ok": true, "runtime": "modal", "endpoints": []}));
         }
         let mut conn = self.conn()?;
-        let tunnels = block_on(conn.stub.sandbox_get_tunnels(proto::SandboxGetTunnelsRequest {
-            sandbox_id: sandbox_id.clone(),
-            timeout: packet["timeout"].as_f64().unwrap_or(30.0) as f32,
-        }))?
+        let tunnels = block_on(
+            conn.stub
+                .sandbox_get_tunnels(proto::SandboxGetTunnelsRequest {
+                    sandbox_id: sandbox_id.clone(),
+                    timeout: packet["timeout"].as_f64().unwrap_or(30.0) as f32,
+                }),
+        )?
         .map_err(|e| rpc_error("SandboxGetTunnels", e))?
         .into_inner();
 
@@ -1846,7 +1828,10 @@ mod tests {
             .chars()
             .all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == '-'));
         assert_eq!(a, crate::models::modal_app_name());
-        assert_eq!(crate::models::shared_app_link_key(), format!("ModalApp::{}", a));
+        assert_eq!(
+            crate::models::shared_app_link_key(),
+            format!("ModalApp::{}", a)
+        );
     }
 
     #[test]
@@ -1872,14 +1857,21 @@ mod tests {
         let res = sandbox_resources(&packet, &parse_vm_resource_limits(&packet));
         assert_eq!(res.memory_mb, 2048);
         assert_eq!(res.milli_cpu, 2000);
-        assert_eq!(res.ephemeral_disk_mb, 0, "diskGb must not become a scratch disk");
+        assert_eq!(
+            res.ephemeral_disk_mb, 0,
+            "diskGb must not become a scratch disk"
+        );
 
         // What an unseeded deployment sends: a resource block of zeroes. It
         // gets the default machine, not whatever zero floors to.
         let empty = json!({ "resources": { "ramMb": 0, "cpuCores": 0, "diskGb": 0 } });
         let res = sandbox_resources(&empty, &parse_vm_resource_limits(&empty));
         assert_eq!(res.memory_mb, DEFAULT_MEMORY_MB);
-        assert!(res.memory_mb >= MIN_MEMORY_MB, "memory must be usable: {}", res.memory_mb);
+        assert!(
+            res.memory_mb >= MIN_MEMORY_MB,
+            "memory must be usable: {}",
+            res.memory_mb
+        );
         assert_eq!(res.milli_cpu, DEFAULT_CPU_CORES * MILLI_CPU_PER_CORE);
         assert_eq!(res.ephemeral_disk_mb, 0);
 
@@ -1911,7 +1903,10 @@ mod tests {
     #[test]
     fn volume_paths_strip_the_data_mount() {
         assert_eq!(volume_rel_path("/data"), "/");
-        assert_eq!(volume_rel_path("/data/website/index.html"), "/website/index.html");
+        assert_eq!(
+            volume_rel_path("/data/website/index.html"),
+            "/website/index.html"
+        );
         assert_eq!(volume_rel_path("website"), "/website");
         assert_eq!(volume_rel_path("."), "/");
     }

@@ -1,0 +1,727 @@
+{
+  "schema_version": 1,
+  "schemas": [
+    "aseman_telemetry",
+    "aseman_audit",
+    "aseman_finance",
+    "aseman_outbox",
+    "aseman_realtime"
+  ],
+  "tables": [
+    {
+      "consistency": "eventual",
+      "field_columns": {
+        "labels": "labels",
+        "metric": "metric",
+        "observed_at_micros": "observed_at_micros",
+        "quantity": "quantity"
+      },
+      "fields": {
+        "labels": "bytes",
+        "metric": "text",
+        "observed_at_micros": "timestamp_micros",
+        "quantity": "float"
+      },
+      "kind": "telemetry.workload_sample",
+      "mutation_policy": "eventual_observation",
+      "range_indexes": [
+        [
+          "observed_at_micros"
+        ],
+        [
+          "metric",
+          "observed_at_micros"
+        ]
+      ],
+      "relationships": {
+        "workload": {
+          "on_delete": "restrict",
+          "required": true,
+          "target_kind": "core.workload",
+          "target_schema": "aseman_core",
+          "target_table": "workloads"
+        }
+      },
+      "required_capabilities": [
+        "queries.range",
+        "consistency.eventual"
+      ],
+      "required_fields": [
+        "metric",
+        "quantity",
+        "observed_at_micros"
+      ],
+      "retention": "telemetry_bounded",
+      "schema": "aseman_telemetry",
+      "storage_class": "telemetry",
+      "table": "workload_samples",
+      "unique_indexes": []
+    },
+    {
+      "consistency": "eventual",
+      "field_columns": {
+        "cpu_millis": "cpu_millis",
+        "details": "details",
+        "memory_bytes": "memory_bytes",
+        "observed_at_micros": "observed_at_micros",
+        "status": "status"
+      },
+      "fields": {
+        "cpu_millis": "integer",
+        "details": "bytes",
+        "memory_bytes": "integer",
+        "observed_at_micros": "timestamp_micros",
+        "status": "text"
+      },
+      "kind": "telemetry.node_health",
+      "mutation_policy": "eventual_observation",
+      "range_indexes": [
+        [
+          "observed_at_micros"
+        ]
+      ],
+      "relationships": {
+        "node": {
+          "on_delete": "restrict",
+          "required": true,
+          "target_kind": "core.node",
+          "target_schema": "aseman_core",
+          "target_table": "nodes"
+        }
+      },
+      "required_capabilities": [
+        "queries.range",
+        "consistency.eventual"
+      ],
+      "required_fields": [
+        "status",
+        "cpu_millis",
+        "memory_bytes",
+        "observed_at_micros"
+      ],
+      "retention": "telemetry_bounded",
+      "schema": "aseman_telemetry",
+      "storage_class": "telemetry",
+      "table": "node_health_samples",
+      "unique_indexes": []
+    },
+    {
+      "consistency": "eventual",
+      "field_columns": {
+        "build_id": "build_id",
+        "legacy_id": "legacy_id",
+        "log_type": "log_type",
+        "machine_id": "machine_id",
+        "message": "message",
+        "observed_at_micros": "observed_at_micros",
+        "workload_id": "workload_id"
+      },
+      "fields": {
+        "build_id": "text",
+        "legacy_id": "text",
+        "log_type": "text",
+        "machine_id": "text",
+        "message": "text",
+        "observed_at_micros": "timestamp_micros",
+        "workload_id": "text"
+      },
+      "kind": "telemetry.build_log",
+      "mutation_policy": "eventual_observation",
+      "range_indexes": [
+        [
+          "build_id",
+          "observed_at_micros"
+        ],
+        [
+          "workload_id",
+          "observed_at_micros"
+        ],
+        [
+          "observed_at_micros"
+        ]
+      ],
+      "relationships": {},
+      "required_capabilities": [
+        "queries.range",
+        "consistency.eventual"
+      ],
+      "required_fields": [
+        "legacy_id",
+        "build_id",
+        "machine_id",
+        "workload_id",
+        "log_type",
+        "message",
+        "observed_at_micros"
+      ],
+      "retention": "telemetry_bounded",
+      "schema": "aseman_telemetry",
+      "storage_class": "telemetry",
+      "table": "build_logs",
+      "unique_indexes": []
+    },
+    {
+      "consistency": "append_linearizable",
+      "field_columns": {
+        "action": "action",
+        "actor": "actor",
+        "decision": "decision",
+        "details": "details",
+        "occurred_at_micros": "occurred_at_micros",
+        "policy_version": "policy_version",
+        "previous_event_integrity": "previous_event_integrity",
+        "sequence": "sequence",
+        "stream_id": "stream_id",
+        "target": "target",
+        "trace_id": "trace_id"
+      },
+      "fields": {
+        "action": "text",
+        "actor": "text",
+        "decision": "text",
+        "details": "bytes",
+        "occurred_at_micros": "timestamp_micros",
+        "policy_version": "integer",
+        "previous_event_integrity": "bytes",
+        "sequence": "integer",
+        "stream_id": "text",
+        "target": "text",
+        "trace_id": "text"
+      },
+      "kind": "audit.event",
+      "mutation_policy": "append_only",
+      "range_indexes": [
+        [
+          "occurred_at_micros"
+        ],
+        [
+          "trace_id",
+          "occurred_at_micros"
+        ]
+      ],
+      "relationships": {},
+      "required_capabilities": [
+        "append_only.verifiable",
+        "indexes.unique"
+      ],
+      "required_fields": [
+        "stream_id",
+        "sequence",
+        "actor",
+        "action",
+        "target",
+        "decision",
+        "policy_version",
+        "trace_id",
+        "occurred_at_micros"
+      ],
+      "retention": "audit_permanent",
+      "schema": "aseman_audit",
+      "storage_class": "audit",
+      "table": "audit_events",
+      "unique_indexes": [
+        [
+          "stream_id",
+          "sequence"
+        ]
+      ]
+    },
+    {
+      "consistency": "serializable",
+      "field_columns": {
+        "balance_minor": "balance_minor",
+        "currency": "currency",
+        "scale": "scale",
+        "state": "state"
+      },
+      "fields": {
+        "balance_minor": "integer",
+        "currency": "text",
+        "scale": "integer",
+        "state": "text"
+      },
+      "kind": "finance.wallet",
+      "mutation_policy": "mutable_cas",
+      "range_indexes": [],
+      "relationships": {
+        "creature": {
+          "on_delete": "restrict",
+          "required": true,
+          "target_kind": "core.creature",
+          "target_schema": "aseman_core",
+          "target_table": "creatures"
+        }
+      },
+      "required_capabilities": [
+        "transactions.multi_capsule",
+        "indexes.unique"
+      ],
+      "required_fields": [
+        "currency",
+        "balance_minor",
+        "scale",
+        "state"
+      ],
+      "retention": "financial_permanent",
+      "schema": "aseman_finance",
+      "storage_class": "finance",
+      "table": "wallets",
+      "unique_indexes": [
+        [
+          "creature",
+          "currency"
+        ]
+      ]
+    },
+    {
+      "consistency": "serializable",
+      "field_columns": {
+        "amount_minor": "amount_minor",
+        "currency": "currency",
+        "direction": "direction",
+        "entry_group_id": "entry_group_id",
+        "idempotency_key": "idempotency_key",
+        "occurred_at_micros": "occurred_at_micros",
+        "scale": "scale",
+        "sequence": "sequence"
+      },
+      "fields": {
+        "amount_minor": "integer",
+        "currency": "text",
+        "direction": "text",
+        "entry_group_id": "capsule_id",
+        "idempotency_key": "text",
+        "occurred_at_micros": "timestamp_micros",
+        "scale": "integer",
+        "sequence": "integer"
+      },
+      "kind": "finance.ledger_entry",
+      "mutation_policy": "append_only",
+      "range_indexes": [
+        [
+          "occurred_at_micros"
+        ]
+      ],
+      "relationships": {
+        "wallet": {
+          "on_delete": "restrict",
+          "required": true,
+          "target_kind": "finance.wallet",
+          "target_schema": "aseman_finance",
+          "target_table": "wallets"
+        }
+      },
+      "required_capabilities": [
+        "transactions.multi_capsule",
+        "indexes.unique",
+        "append_only.verifiable"
+      ],
+      "required_fields": [
+        "entry_group_id",
+        "sequence",
+        "amount_minor",
+        "currency",
+        "scale",
+        "direction",
+        "idempotency_key",
+        "occurred_at_micros"
+      ],
+      "retention": "financial_permanent",
+      "schema": "aseman_finance",
+      "storage_class": "finance",
+      "table": "ledger_entries",
+      "unique_indexes": [
+        [
+          "idempotency_key"
+        ],
+        [
+          "entry_group_id",
+          "sequence"
+        ]
+      ]
+    },
+    {
+      "consistency": "serializable",
+      "field_columns": {
+        "currency": "currency",
+        "effective_at_micros": "effective_at_micros",
+        "rules": "rules",
+        "scale": "scale",
+        "version": "version"
+      },
+      "fields": {
+        "currency": "text",
+        "effective_at_micros": "timestamp_micros",
+        "rules": "bytes",
+        "scale": "integer",
+        "version": "integer"
+      },
+      "kind": "finance.pricing_policy",
+      "mutation_policy": "append_only",
+      "range_indexes": [
+        [
+          "effective_at_micros"
+        ]
+      ],
+      "relationships": {},
+      "required_capabilities": [
+        "indexes.unique",
+        "append_only.verifiable"
+      ],
+      "required_fields": [
+        "version",
+        "currency",
+        "scale",
+        "rules",
+        "effective_at_micros"
+      ],
+      "retention": "financial_permanent",
+      "schema": "aseman_finance",
+      "storage_class": "finance",
+      "table": "pricing_policies",
+      "unique_indexes": [
+        [
+          "version"
+        ]
+      ]
+    },
+    {
+      "consistency": "serializable",
+      "field_columns": {
+        "idempotency_key": "idempotency_key",
+        "interval_end_micros": "interval_end_micros",
+        "interval_start_micros": "interval_start_micros",
+        "metric": "metric",
+        "quantity": "quantity"
+      },
+      "fields": {
+        "idempotency_key": "text",
+        "interval_end_micros": "timestamp_micros",
+        "interval_start_micros": "timestamp_micros",
+        "metric": "text",
+        "quantity": "integer"
+      },
+      "kind": "finance.usage_record",
+      "mutation_policy": "append_only",
+      "range_indexes": [
+        [
+          "interval_start_micros",
+          "interval_end_micros"
+        ]
+      ],
+      "relationships": {
+        "workload": {
+          "on_delete": "restrict",
+          "required": true,
+          "target_kind": "core.workload",
+          "target_schema": "aseman_core",
+          "target_table": "workloads"
+        }
+      },
+      "required_capabilities": [
+        "transactions.multi_capsule",
+        "indexes.unique",
+        "append_only.verifiable"
+      ],
+      "required_fields": [
+        "metric",
+        "quantity",
+        "interval_start_micros",
+        "interval_end_micros",
+        "idempotency_key"
+      ],
+      "retention": "financial_permanent",
+      "schema": "aseman_finance",
+      "storage_class": "finance",
+      "table": "usage_records",
+      "unique_indexes": [
+        [
+          "idempotency_key"
+        ]
+      ]
+    },
+    {
+      "consistency": "serializable",
+      "field_columns": {
+        "aggregate_id": "aggregate_id",
+        "aggregate_kind": "aggregate_kind",
+        "attempts": "attempts",
+        "available_at_micros": "available_at_micros",
+        "event_type": "event_type",
+        "idempotency_key": "idempotency_key",
+        "lease_owner": "lease_owner",
+        "lease_until_micros": "lease_until_micros",
+        "payload": "payload",
+        "state": "state",
+        "topic": "topic"
+      },
+      "fields": {
+        "aggregate_id": "capsule_id",
+        "aggregate_kind": "text",
+        "attempts": "integer",
+        "available_at_micros": "timestamp_micros",
+        "event_type": "text",
+        "idempotency_key": "text",
+        "lease_owner": "text",
+        "lease_until_micros": "timestamp_micros",
+        "payload": "bytes",
+        "state": "text",
+        "topic": "text"
+      },
+      "kind": "outbox.message",
+      "mutation_policy": "mutable_cas",
+      "range_indexes": [
+        [
+          "state",
+          "available_at_micros"
+        ],
+        [
+          "lease_until_micros"
+        ]
+      ],
+      "relationships": {},
+      "required_capabilities": [
+        "transactions.multi_capsule",
+        "indexes.unique"
+      ],
+      "required_fields": [
+        "topic",
+        "aggregate_kind",
+        "aggregate_id",
+        "event_type",
+        "payload",
+        "idempotency_key",
+        "state",
+        "available_at_micros",
+        "attempts"
+      ],
+      "retention": "outbox_until_delivered",
+      "schema": "aseman_outbox",
+      "storage_class": "outbox",
+      "table": "messages",
+      "unique_indexes": [
+        [
+          "idempotency_key"
+        ]
+      ]
+    },
+    {
+      "consistency": "append_linearizable",
+      "field_columns": {
+        "authorization_scope": "authorization_scope",
+        "correlation_id": "correlation_id",
+        "event_type": "event_type",
+        "idempotency_key": "idempotency_key",
+        "occurred_at_micros": "occurred_at_micros",
+        "payload": "payload",
+        "payload_digest": "payload_digest",
+        "producer": "producer",
+        "retention_class": "retention_class",
+        "sequence": "sequence",
+        "stream_id": "stream_id",
+        "trace_id": "trace_id"
+      },
+      "fields": {
+        "authorization_scope": "bytes",
+        "correlation_id": "text",
+        "event_type": "text",
+        "idempotency_key": "text",
+        "occurred_at_micros": "timestamp_micros",
+        "payload": "bytes",
+        "payload_digest": "bytes",
+        "producer": "text",
+        "retention_class": "text",
+        "sequence": "integer",
+        "stream_id": "text",
+        "trace_id": "text"
+      },
+      "kind": "realtime.event",
+      "mutation_policy": "append_only",
+      "range_indexes": [
+        [
+          "stream_id",
+          "sequence"
+        ],
+        [
+          "occurred_at_micros"
+        ]
+      ],
+      "relationships": {},
+      "required_capabilities": [
+        "append_only.verifiable",
+        "indexes.unique",
+        "events.change_stream"
+      ],
+      "required_fields": [
+        "stream_id",
+        "sequence",
+        "event_type",
+        "authorization_scope",
+        "producer",
+        "trace_id",
+        "payload",
+        "payload_digest",
+        "retention_class",
+        "occurred_at_micros"
+      ],
+      "retention": "realtime_by_class",
+      "schema": "aseman_realtime",
+      "storage_class": "realtime",
+      "table": "events",
+      "unique_indexes": [
+        [
+          "stream_id",
+          "sequence"
+        ],
+        [
+          "idempotency_key"
+        ]
+      ]
+    },
+    {
+      "consistency": "serializable",
+      "field_columns": {
+        "authorization_scope": "authorization_scope",
+        "created_at_micros": "body_created_at_micros",
+        "state": "state",
+        "stream_pattern": "stream_pattern",
+        "subscriber_id": "subscriber_id"
+      },
+      "fields": {
+        "authorization_scope": "bytes",
+        "created_at_micros": "timestamp_micros",
+        "state": "text",
+        "stream_pattern": "text",
+        "subscriber_id": "text"
+      },
+      "kind": "realtime.subscription",
+      "mutation_policy": "mutable_cas",
+      "range_indexes": [
+        [
+          "created_at_micros"
+        ]
+      ],
+      "relationships": {},
+      "required_capabilities": [
+        "indexes.unique"
+      ],
+      "required_fields": [
+        "subscriber_id",
+        "stream_pattern",
+        "authorization_scope",
+        "state",
+        "created_at_micros"
+      ],
+      "retention": "realtime_subscription",
+      "schema": "aseman_realtime",
+      "storage_class": "realtime",
+      "table": "subscriptions",
+      "unique_indexes": [
+        [
+          "subscriber_id",
+          "stream_pattern"
+        ]
+      ]
+    },
+    {
+      "consistency": "serializable",
+      "field_columns": {
+        "checkpoint_digest": "checkpoint_digest",
+        "checkpointed_at_micros": "checkpointed_at_micros",
+        "consumer_id": "consumer_id",
+        "last_sequence": "last_sequence",
+        "stream_id": "stream_id"
+      },
+      "fields": {
+        "checkpoint_digest": "bytes",
+        "checkpointed_at_micros": "timestamp_micros",
+        "consumer_id": "text",
+        "last_sequence": "integer",
+        "stream_id": "text"
+      },
+      "kind": "realtime.consumer_offset",
+      "mutation_policy": "mutable_cas",
+      "range_indexes": [
+        [
+          "checkpointed_at_micros"
+        ]
+      ],
+      "relationships": {},
+      "required_capabilities": [
+        "indexes.unique"
+      ],
+      "required_fields": [
+        "consumer_id",
+        "stream_id",
+        "last_sequence",
+        "checkpoint_digest",
+        "checkpointed_at_micros"
+      ],
+      "retention": "realtime_subscription",
+      "schema": "aseman_realtime",
+      "storage_class": "realtime",
+      "table": "consumer_offsets",
+      "unique_indexes": [
+        [
+          "consumer_id",
+          "stream_id"
+        ]
+      ]
+    },
+    {
+      "consistency": "serializable",
+      "field_columns": {
+        "attempts": "attempts",
+        "consumer_id": "consumer_id",
+        "failed_at_micros": "failed_at_micros",
+        "payload_digest": "payload_digest",
+        "reason": "reason",
+        "resolution": "resolution"
+      },
+      "fields": {
+        "attempts": "integer",
+        "consumer_id": "text",
+        "failed_at_micros": "timestamp_micros",
+        "payload_digest": "bytes",
+        "reason": "text",
+        "resolution": "text"
+      },
+      "kind": "realtime.dead_letter",
+      "mutation_policy": "mutable_cas",
+      "range_indexes": [
+        [
+          "failed_at_micros"
+        ]
+      ],
+      "relationships": {
+        "event": {
+          "on_delete": "restrict",
+          "required": true,
+          "target_kind": "realtime.event",
+          "target_schema": "aseman_realtime",
+          "target_table": "events"
+        }
+      },
+      "required_capabilities": [
+        "indexes.unique"
+      ],
+      "required_fields": [
+        "consumer_id",
+        "attempts",
+        "reason",
+        "payload_digest",
+        "failed_at_micros"
+      ],
+      "retention": "realtime_by_class",
+      "schema": "aseman_realtime",
+      "storage_class": "realtime",
+      "table": "dead_letters",
+      "unique_indexes": [
+        [
+          "event",
+          "consumer_id"
+        ]
+      ]
+    }
+  ]
+}

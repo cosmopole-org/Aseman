@@ -1,0 +1,44 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://aseman.example/contracts/module/bootstrap/bootstrap.schema.json",
+  "title": "Signed local module bootstrap snapshot payload",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "node_id", "routing_generation", "generated_at_unix_millis", "expires_at_unix_millis", "providers", "trust_roots"],
+  "properties": {
+    "schema_version": {"const": 1},
+    "node_id": {"type": "string", "minLength": 1},
+    "routing_generation": {"type": "integer", "minimum": 0},
+    "generated_at_unix_millis": {"type": "integer"},
+    "expires_at_unix_millis": {"type": "integer"},
+    "providers": {"type": "array", "items": {"$ref": "#/$defs/provider"}},
+    "trust_roots": {"type": "array", "items": {"$ref": "#/$defs/trust_root"}}
+  },
+  "$defs": {
+    "provider": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "kind", "version", "artifact_digest", "endpoint", "config_digest", "secret_refs"],
+      "properties": {
+        "name": {"type": "string", "minLength": 1},
+        "kind": {"type": "string", "minLength": 1},
+        "version": {"type": "string", "minLength": 1},
+        "artifact_digest": {"type": "string", "pattern": "^sha256:[0-9a-fA-F]{64}$"},
+        "endpoint": {"type": "string", "pattern": "^(unix:|https:)"},
+        "config_digest": {"type": "string", "pattern": "^sha256:[0-9a-fA-F]{64}$"},
+        "secret_refs": {"type": "array", "uniqueItems": true, "items": {"type": "string", "minLength": 1}}
+      }
+    },
+    "trust_root": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["key_id", "algorithm", "public_key_hex", "fingerprint"],
+      "properties": {
+        "key_id": {"type": "string", "minLength": 1, "maxLength": 128},
+        "algorithm": {"const": "ed25519"},
+        "public_key_hex": {"type": "string", "pattern": "^[0-9a-fA-F]{64}$"},
+        "fingerprint": {"type": "string", "pattern": "^sha256:[0-9a-fA-F]{64}$"}
+      }
+    }
+  }
+}

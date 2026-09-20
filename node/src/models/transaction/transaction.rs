@@ -36,13 +36,7 @@ pub trait ITrx: Send + Sync {
         from_column_val: &str,
         to_column_val: Vec<u8>,
     );
-    fn del_index(
-        &self,
-        typ: &str,
-        from_column: &str,
-        to_column: &str,
-        from_column_val: &str,
-    );
+    fn del_index(&self, typ: &str, from_column: &str, to_column: &str, from_column_val: &str);
     fn has_index(
         &self,
         typ: &str,

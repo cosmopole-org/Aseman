@@ -1,0 +1,65 @@
+[workspace]
+resolver = "2"
+members = [
+  "cmd/casparctl",
+  "crates/*",
+  "node",
+  "node/crates/*",
+  "modules/*",
+  "tests/contracts/module",
+  "tests/contracts/storage",
+  "vm-sdk",
+  "vms/docker",
+  "vms/elpian",
+  "vms/elpian/crates/elpian-vm",
+  "vms/elpify",
+  "vms/elpify/crates/elpify-lang",
+  "vms/fire",
+  "vms/javascript",
+  "vms/modal",
+  "vms/wasm",
+  "xtask",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.98"
+license = "MIT"
+repository = "https://github.com/cosmopole-org/caspar"
+
+[workspace.dependencies]
+anyhow = "1.0.102"
+base64 = "0.22.1"
+hex = "0.4.3"
+prost = "0.13.5"
+postgres = "0.19.13"
+r2d2 = "0.8.10"
+r2d2_postgres = "0.18.2"
+rocksdb = "0.24.0"
+ring = "0.17.14"
+rsa = { version = "0.9.10", features = ["sha2"] }
+semver = "1.0.28"
+serde = { version = "1.0.228", features = ["derive"] }
+serde_json = "1.0.149"
+sha2 = "0.10.9"
+thiserror = "2.0.18"
+tokio = { version = "1.50.0", features = ["macros", "rt-multi-thread", "net", "signal", "time"] }
+tonic = { version = "0.12.3", features = ["transport"] }
+toml = "1.1.6"
+uuid = { version = "1.23.1", features = ["serde", "v7"] }
+
+[workspace.lints.rust]
+unsafe_code = "deny"
+unused_must_use = "deny"
+
+[workspace.lints.clippy]
+dbg_macro = "deny"
+todo = "deny"
+unimplemented = "deny"
+
+[profile.release]
+opt-level = 3
+lto = "thin"
+codegen-units = 1
+strip = "symbols"

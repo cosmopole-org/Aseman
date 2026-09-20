@@ -6,7 +6,10 @@ fn main() {
     }
     let inputs: Vec<u64> = args.iter().skip(2).filter_map(|s| s.parse().ok()).collect();
     match elpify_lang::execute_masm_file_with_proof(&args[1], &inputs) {
-        Ok(a) => println!("OK outputs={:?}", &a.stack_outputs[..8.min(a.stack_outputs.len())]),
+        Ok(a) => println!(
+            "OK outputs={:?}",
+            &a.stack_outputs[..8.min(a.stack_outputs.len())]
+        ),
         Err(e) => println!("ERR: {}", e),
     }
 }

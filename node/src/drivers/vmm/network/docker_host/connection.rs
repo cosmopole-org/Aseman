@@ -223,7 +223,12 @@ impl GatewayRegistry {
     /// Push a signal to every live container of `machine_id`, regardless of which
     /// entity each serves. Used only for packets that name no entity (e.g. a bare
     /// reply routed to a program). Returns the number of containers reached.
-    pub(crate) fn push_signal_to_machine(&self, machine_id: &str, key: &str, data: &JsonValue) -> usize {
+    pub(crate) fn push_signal_to_machine(
+        &self,
+        machine_id: &str,
+        key: &str,
+        data: &JsonValue,
+    ) -> usize {
         let conns = self.by_machine(machine_id);
         for conn in &conns {
             conn.push_signal(key, data);
@@ -237,7 +242,9 @@ impl GatewayRegistry {
             .iter()
             .filter(|e| {
                 let id = &e.value().identity;
-                id.machine_id == machine_id && id.entity_id == entity_id && !e.value().is_disconnected()
+                id.machine_id == machine_id
+                    && id.entity_id == entity_id
+                    && !e.value().is_disconnected()
             })
             .map(|e| e.value().clone())
             .collect()
@@ -246,7 +253,13 @@ impl GatewayRegistry {
     /// Push a signal to the container(s) serving `entity_id` on `machine_id`.
     /// Returns the number reached (`0` ⇒ that entity has no live container, so the
     /// caller cold-spawns/queues it).
-    pub(crate) fn push_signal_to_entity(&self, machine_id: &str, entity_id: &str, key: &str, data: &JsonValue) -> usize {
+    pub(crate) fn push_signal_to_entity(
+        &self,
+        machine_id: &str,
+        entity_id: &str,
+        key: &str,
+        data: &JsonValue,
+    ) -> usize {
         let conns = self.by_entity(machine_id, entity_id);
         for conn in &conns {
             conn.push_signal(key, data);
@@ -269,7 +282,13 @@ impl GatewayRegistry {
     /// (oldest dropped) and pruned of anything past `PENDING_TTL`. If a connection
     /// has appeared since the caller last checked, the queue is flushed at once so
     /// the packet is never stranded by that race.
-    pub(crate) fn queue_pending_signal(&self, machine_id: &str, entity_id: &str, key: &str, data: &JsonValue) {
+    pub(crate) fn queue_pending_signal(
+        &self,
+        machine_id: &str,
+        entity_id: &str,
+        key: &str,
+        data: &JsonValue,
+    ) {
         let slot = slot_key(machine_id, entity_id);
         {
             let mut q = self.pending.entry(slot).or_default();
@@ -382,12 +401,21 @@ mod tests {
         // No live connection for this entity, so the signal is retained.
         reg.queue_pending_signal("M", "A", "creatures/signal", &json!({"n": 1}));
         reg.queue_pending_signal("M", "A", "creatures/signal", &json!({"n": 2}));
-        assert_eq!(reg.pending.get(&slot_key("M", "A")).map(|q| q.len()), Some(2));
+        assert_eq!(
+            reg.pending.get(&slot_key("M", "A")).map(|q| q.len()),
+            Some(2)
+        );
         // A sibling entity keeps its own queue, never mixed with A's.
         reg.queue_pending_signal("M", "B", "creatures/signal", &json!({"n": 3}));
-        assert_eq!(reg.pending.get(&slot_key("M", "B")).map(|q| q.len()), Some(1));
+        assert_eq!(
+            reg.pending.get(&slot_key("M", "B")).map(|q| q.len()),
+            Some(1)
+        );
         // A sweep with nothing expired keeps them (fresh); nothing is lost.
         reg.sweep_expired();
-        assert_eq!(reg.pending.get(&slot_key("M", "A")).map(|q| q.len()), Some(2));
+        assert_eq!(
+            reg.pending.get(&slot_key("M", "A")).map(|q| q.len()),
+            Some(2)
+        );
     }
 }

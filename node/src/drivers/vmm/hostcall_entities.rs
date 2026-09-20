@@ -9,11 +9,11 @@ use std::sync::{Arc, Mutex};
 use base64::Engine;
 use serde_json::{json, Map, Value};
 
-use crate::models::core::{StateClosure, ICore};
-use crate::models::info::IInfo;
-use crate::models::transaction::ITrx;
-use crate::models::state::IState;
 use crate::core::actor::model::base::info::Info as BaseInfo;
+use crate::models::core::{ICore, StateClosure};
+use crate::models::info::IInfo;
+use crate::models::state::IState;
+use crate::models::transaction::ITrx;
 use crate::shell::api::model::{Creature, Entity, Program, Store, StorePermissions};
 
 use super::driver::{check_bool, check_i64, check_str, normalize_runtime, Vmm};
@@ -27,7 +27,12 @@ fn bool_from_input(input: &Value, key: &str, def: bool) -> bool {
 }
 
 impl Vmm {
-    pub(crate) fn handle_creature_crud(&self, op: &str, input: &Value, req_id: i64) -> (String, i64) {
+    pub(crate) fn handle_creature_crud(
+        &self,
+        op: &str,
+        input: &Value,
+        req_id: i64,
+    ) -> (String, i64) {
         match op {
             "create" => {
                 let mut id = check_str(input, "id", "");
@@ -228,7 +233,10 @@ impl Vmm {
                 let out = json!({"ok": true, "creatures": creatures});
                 (serde_json::to_string(&out).unwrap_or_default(), req_id)
             }
-            _ => (r#"{"ok":false,"error":"unsupported creature op"}"#.into(), req_id),
+            _ => (
+                r#"{"ok":false,"error":"unsupported creature op"}"#.into(),
+                req_id,
+            ),
         }
     }
 
@@ -237,7 +245,12 @@ impl Vmm {
     /// stored under `ProgMeta::{id}` (e.g. an MCP manifest); `listByMachine`
     /// enumerates the programs of a machine creature via the
     /// `machinePrograms::{machineId}::{programId}` links.
-    pub(crate) fn handle_program_crud(&self, op: &str, input: &Value, req_id: i64) -> (String, i64) {
+    pub(crate) fn handle_program_crud(
+        &self,
+        op: &str,
+        input: &Value,
+        req_id: i64,
+    ) -> (String, i64) {
         match op {
             "create" => {
                 let mut machine_id = check_str(input, "machineId", "");
@@ -245,7 +258,10 @@ impl Vmm {
                     machine_id = check_str(input, "appId", "");
                 }
                 if machine_id.is_empty() {
-                    return (r#"{"ok":false,"error":"machineId is required"}"#.into(), req_id);
+                    return (
+                        r#"{"ok":false,"error":"machineId is required"}"#.into(),
+                        req_id,
+                    );
                 }
                 let mut id = check_str(input, "programId", "");
                 if id.is_empty() {
@@ -322,7 +338,10 @@ impl Vmm {
                     id = check_str(input, "id", "");
                 }
                 if id.is_empty() {
-                    return (r#"{"ok":false,"error":"programId is required"}"#.into(), req_id);
+                    return (
+                        r#"{"ok":false,"error":"programId is required"}"#.into(),
+                        req_id,
+                    );
                 }
                 let id_owned = id.clone();
                 self.app.modify_state(
@@ -358,7 +377,10 @@ impl Vmm {
                     id = check_str(input, "id", "");
                 }
                 if id.is_empty() {
-                    return (r#"{"ok":false,"error":"programId is required"}"#.into(), req_id);
+                    return (
+                        r#"{"ok":false,"error":"programId is required"}"#.into(),
+                        req_id,
+                    );
                 }
                 let prog_slot = Arc::new(Mutex::new(Program::default()));
                 let meta_slot: Arc<Mutex<Map<String, Value>>> = Arc::new(Mutex::new(Map::new()));
@@ -368,7 +390,11 @@ impl Vmm {
                 self.app.modify_state(
                     true,
                     Box::new(move |t: &dyn ITrx| {
-                        let p = Program { id: id_owned.clone(), ..Default::default() }.pull(t);
+                        let p = Program {
+                            id: id_owned.clone(),
+                            ..Default::default()
+                        }
+                        .pull(t);
                         *ps.lock().unwrap() = p;
                         if let Ok(m) = t.get_json(&format!("ProgMeta::{}", id_owned), "metadata") {
                             *ms.lock().unwrap() = m;
@@ -399,7 +425,11 @@ impl Vmm {
                     }),
                 );
                 let programs = slot.lock().unwrap().clone();
-                (serde_json::to_string(&json!({"ok": true, "programs": programs})).unwrap_or_default(), req_id)
+                (
+                    serde_json::to_string(&json!({"ok": true, "programs": programs}))
+                        .unwrap_or_default(),
+                    req_id,
+                )
             }
             "listByMachine" => {
                 let mut machine_id = check_str(input, "machineId", "");
@@ -407,7 +437,10 @@ impl Vmm {
                     machine_id = check_str(input, "appId", "");
                 }
                 if machine_id.is_empty() {
-                    return (r#"{"ok":false,"error":"machineId is required"}"#.into(), req_id);
+                    return (
+                        r#"{"ok":false,"error":"machineId is required"}"#.into(),
+                        req_id,
+                    );
                 }
                 let slot: Arc<Mutex<Vec<Program>>> = Arc::new(Mutex::new(Vec::new()));
                 let sc = slot.clone();
@@ -423,7 +456,11 @@ impl Vmm {
                     }),
                 );
                 let programs = slot.lock().unwrap().clone();
-                (serde_json::to_string(&json!({"ok": true, "programs": programs})).unwrap_or_default(), req_id)
+                (
+                    serde_json::to_string(&json!({"ok": true, "programs": programs}))
+                        .unwrap_or_default(),
+                    req_id,
+                )
             }
             "update" => {
                 let mut id = check_str(input, "programId", "");
@@ -431,14 +468,21 @@ impl Vmm {
                     id = check_str(input, "id", "");
                 }
                 if id.is_empty() {
-                    return (r#"{"ok":false,"error":"programId is required"}"#.into(), req_id);
+                    return (
+                        r#"{"ok":false,"error":"programId is required"}"#.into(),
+                        req_id,
+                    );
                 }
                 let input_owned = input.clone();
                 let id_owned = id.clone();
                 self.app.modify_state(
                     false,
                     Box::new(move |t: &dyn ITrx| {
-                        let mut p = Program { id: id_owned.clone(), ..Default::default() }.pull(t);
+                        let mut p = Program {
+                            id: id_owned.clone(),
+                            ..Default::default()
+                        }
+                        .pull(t);
                         if p.id.is_empty() {
                             p.id = id_owned.clone();
                         }
@@ -453,14 +497,22 @@ impl Vmm {
                         }
                         p.push(t);
                         if let Some(md) = input_owned.get("metadata") {
-                            let _ = t.put_json(&format!("ProgMeta::{}", id_owned), "metadata", md, true);
+                            let _ = t.put_json(
+                                &format!("ProgMeta::{}", id_owned),
+                                "metadata",
+                                md,
+                                true,
+                            );
                         }
                         Ok(())
                     }),
                 );
                 (format!("{{\"ok\":true,\"id\":\"{}\"}}", id), req_id)
             }
-            _ => (r#"{"ok":false,"error":"unsupported program op"}"#.into(), req_id),
+            _ => (
+                r#"{"ok":false,"error":"unsupported program op"}"#.into(),
+                req_id,
+            ),
         }
     }
 
@@ -479,11 +531,17 @@ impl Vmm {
             program_id = check_str(input, "machineId", "");
         }
         if program_id.is_empty() {
-            return (r#"{"ok":false,"error":"programId is required"}"#.into(), req_id);
+            return (
+                r#"{"ok":false,"error":"programId is required"}"#.into(),
+                req_id,
+            );
         }
         let entity_id = check_str(input, "entityId", "");
         if entity_id.is_empty() {
-            return (r#"{"ok":false,"error":"entityId is required"}"#.into(), req_id);
+            return (
+                r#"{"ok":false,"error":"entityId is required"}"#.into(),
+                req_id,
+            );
         }
         let entity_type = normalize_runtime(&check_str(input, "entityType", "wasm"));
         let payload_b64 = check_str(input, "payload", "");
@@ -491,7 +549,10 @@ impl Vmm {
             Ok(d) => d,
             Err(e) => {
                 return (
-                    format!("{{\"ok\":false,\"error\":\"invalid payload base64: {}\"}}", e),
+                    format!(
+                        "{{\"ok\":false,\"error\":\"invalid payload base64: {}\"}}",
+                        e
+                    ),
                     req_id,
                 )
             }
@@ -522,7 +583,10 @@ impl Vmm {
                     .save_data_to_global_storage(&build_folder_path, &data, "proxy.data", true)
             {
                 return (
-                    format!("{{\"ok\":false,\"error\":\"{}\"}}", e.to_string().replace('"', "\\\"")),
+                    format!(
+                        "{{\"ok\":false,\"error\":\"{}\"}}",
+                        e.to_string().replace('"', "\\\"")
+                    ),
                     req_id,
                 );
             }
@@ -592,7 +656,10 @@ impl Vmm {
             true,
         ) {
             return (
-                format!("{{\"ok\":false,\"error\":\"{}\"}}", e.to_string().replace('"', "\\\"")),
+                format!(
+                    "{{\"ok\":false,\"error\":\"{}\"}}",
+                    e.to_string().replace('"', "\\\"")
+                ),
                 req_id,
             );
         }
@@ -605,8 +672,7 @@ impl Vmm {
                             req_id,
                         );
                     };
-                    let bytes = match base64::engine::general_purpose::STANDARD
-                        .decode(content_b64)
+                    let bytes = match base64::engine::general_purpose::STANDARD.decode(content_b64)
                     {
                         Ok(b) => b,
                         Err(e) => {
@@ -691,10 +757,12 @@ impl Vmm {
         );
         self.app.tools().vmm().assign(&program_id);
         if build_on_deploy {
-            self.app
-                .tools()
-                .vmm()
-                .build_vm_image(&program_id, &entity_id, &build_folder_path, &entity_type);
+            self.app.tools().vmm().build_vm_image(
+                &program_id,
+                &entity_id,
+                &build_folder_path,
+                &entity_type,
+            );
         }
         let out = json!({
             "ok": true,
@@ -748,12 +816,18 @@ impl Vmm {
                         Ok(())
                     }),
                 );
-                (format!("{{\"ok\":true,\"storeId\":\"{}\"}}", store_id), req_id)
+                (
+                    format!("{{\"ok\":true,\"storeId\":\"{}\"}}", store_id),
+                    req_id,
+                )
             }
             "delete" => {
                 let store_id = check_str(input, "storeId", "");
                 if store_id.is_empty() {
-                    return (r#"{"ok":false,"error":"storeId is required"}"#.into(), req_id);
+                    return (
+                        r#"{"ok":false,"error":"storeId is required"}"#.into(),
+                        req_id,
+                    );
                 }
                 let machine_id = check_str(input, "machineId", "");
                 let store_id_owned = store_id.clone();
@@ -761,7 +835,10 @@ impl Vmm {
                 self.app.modify_state(
                     false,
                     Box::new(move |t: &dyn ITrx| {
-                        t.del_key(&format!("Json::VmResourceStore::{}::metadata", store_id_owned));
+                        t.del_key(&format!(
+                            "Json::VmResourceStore::{}::metadata",
+                            store_id_owned
+                        ));
                         t.del_key(&format!("Json::VmResourceStore::{}::core", store_id_owned));
                         if !machine_id_owned.is_empty() {
                             t.del_key(&format!(
@@ -772,12 +849,18 @@ impl Vmm {
                         Ok(())
                     }),
                 );
-                (format!("{{\"ok\":true,\"storeId\":\"{}\"}}", store_id), req_id)
+                (
+                    format!("{{\"ok\":true,\"storeId\":\"{}\"}}", store_id),
+                    req_id,
+                )
             }
             "get" => {
                 let store_id = check_str(input, "storeId", "");
                 if store_id.is_empty() {
-                    return (r#"{"ok":false,"error":"storeId is required"}"#.into(), req_id);
+                    return (
+                        r#"{"ok":false,"error":"storeId is required"}"#.into(),
+                        req_id,
+                    );
                 }
                 let core_slot: Arc<Mutex<Map<String, Value>>> = Arc::new(Mutex::new(Map::new()));
                 let meta_slot: Arc<Mutex<Map<String, Value>>> = Arc::new(Mutex::new(Map::new()));
@@ -821,7 +904,10 @@ impl Vmm {
                 let out = json!({"ok": true, "stores": stores});
                 (serde_json::to_string(&out).unwrap_or_default(), req_id)
             }
-            _ => (r#"{"ok":false,"error":"unsupported store op"}"#.into(), req_id),
+            _ => (
+                r#"{"ok":false,"error":"unsupported store op"}"#.into(),
+                req_id,
+            ),
         }
     }
 
@@ -832,7 +918,10 @@ impl Vmm {
     ) -> (String, i64) {
         let store_id = check_str(input, "storeId", "");
         if store_id.is_empty() {
-            return (r#"{"ok":false,"error":"storeId is required"}"#.into(), req_id);
+            return (
+                r#"{"ok":false,"error":"storeId is required"}"#.into(),
+                req_id,
+            );
         }
         let entity_type = check_str(input, "entityType", "default");
         let mut entity_id = check_str(input, "entityId", "");
@@ -872,7 +961,10 @@ impl Vmm {
             }),
         );
         (
-            format!("{{\"ok\":true,\"entityId\":\"{}\",\"path\":\"{}\"}}", entity_id, path_str),
+            format!(
+                "{{\"ok\":true,\"entityId\":\"{}\",\"path\":\"{}\"}}",
+                entity_id, path_str
+            ),
             req_id,
         )
     }
@@ -884,12 +976,18 @@ impl Vmm {
     ) -> (String, i64) {
         let store_id = check_str(input, "storeId", "");
         if store_id.is_empty() {
-            return (r#"{"ok":false,"error":"storeId is required"}"#.into(), req_id);
+            return (
+                r#"{"ok":false,"error":"storeId is required"}"#.into(),
+                req_id,
+            );
         }
         let entity_type = check_str(input, "entityType", "default");
         let entity_id = check_str(input, "entityId", "");
         if entity_id.is_empty() {
-            return (r#"{"ok":false,"error":"entityId is required"}"#.into(), req_id);
+            return (
+                r#"{"ok":false,"error":"entityId is required"}"#.into(),
+                req_id,
+            );
         }
         let path = PathBuf::from(&self.storage_root)
             .join("vm_stores")
@@ -933,8 +1031,7 @@ impl Vmm {
                     .network()
                     .chain()
                     .create_work_chain(&store_id);
-                let payload =
-                    json!({"op": op, "chainId": chain_id, "storeId": store_id});
+                let payload = json!({"op": op, "chainId": chain_id, "storeId": store_id});
                 let payload_bytes = serde_json::to_vec(&payload).unwrap_or_default();
                 let owner_id = self.app.owner_id();
                 self.app.globe().send_typed_message_on_chain(
@@ -950,7 +1047,10 @@ impl Vmm {
                     None,
                     None,
                 );
-                (format!("{{\"ok\":true,\"chainId\":\"{}\"}}", chain_id), req_id)
+                (
+                    format!("{{\"ok\":true,\"chainId\":\"{}\"}}", chain_id),
+                    req_id,
+                )
             }
             "createSubchain" => {
                 let work_chain_id = check_str(input, "workChainId", "");
@@ -1015,7 +1115,10 @@ impl Vmm {
                 );
                 (r#"{"ok":true,"notified":true}"#.into(), req_id)
             }
-            _ => (r#"{"ok":false,"error":"unsupported chain op"}"#.into(), req_id),
+            _ => (
+                r#"{"ok":false,"error":"unsupported chain op"}"#.into(),
+                req_id,
+            ),
         }
     }
 
@@ -1079,10 +1182,15 @@ impl Vmm {
         let payload_bytes = serde_json::to_vec(&payload_raw).unwrap_or_default();
         let parsed = match secure.parse_input("tcp", payload_raw) {
             Ok(p) => p,
-            Err(e) => return (
-                format!("{{\"ok\":false,\"error\":\"{}\"}}", e.to_string().replace('"', "\\\"")),
-                req_id,
-            ),
+            Err(e) => {
+                return (
+                    format!(
+                        "{{\"ok\":false,\"error\":\"{}\"}}",
+                        e.to_string().replace('"', "\\\"")
+                    ),
+                    req_id,
+                )
+            }
         };
         let result_slot: Arc<Mutex<(i64, Value, Option<String>)>> =
             Arc::new(Mutex::new((0, Value::Null, None)));
@@ -1118,7 +1226,11 @@ impl Vmm {
         };
         match err {
             Some(e) => (
-                format!("{{\"ok\":false,\"statusCode\":{},\"error\":\"{}\"}}", status, e.replace('"', "\\\"")),
+                format!(
+                    "{{\"ok\":false,\"statusCode\":{},\"error\":\"{}\"}}",
+                    status,
+                    e.replace('"', "\\\"")
+                ),
                 req_id,
             ),
             None => {
@@ -1156,7 +1268,10 @@ impl Vmm {
                     }),
                 );
                 let v = val_slot.lock().unwrap().clone();
-                (format!("{{\"ok\":true,\"value\":\"{}\"}}", v.replace('"', "\\\"")), req_id)
+                (
+                    format!("{{\"ok\":true,\"value\":\"{}\"}}", v.replace('"', "\\\"")),
+                    req_id,
+                )
             }
             "delKey" => {
                 let key = check_str(input, "key", "");
@@ -1165,7 +1280,8 @@ impl Vmm {
                 }
                 if key.starts_with("link::") {
                     return (
-                        r#"{"ok":false,"error":"link modifications are not allowed via delKey"}"#.into(),
+                        r#"{"ok":false,"error":"link modifications are not allowed via delKey"}"#
+                            .into(),
                         req_id,
                     );
                 }
@@ -1182,11 +1298,17 @@ impl Vmm {
             "createAccess" | "updateAccess" => {
                 let user_id = check_str(input, "userId", "");
                 if user_id.is_empty() {
-                    return (r#"{"ok":false,"error":"userId is required"}"#.into(), req_id);
+                    return (
+                        r#"{"ok":false,"error":"userId is required"}"#.into(),
+                        req_id,
+                    );
                 }
                 let store_id = check_str(input, "storeId", "");
                 if store_id.is_empty() {
-                    return (r#"{"ok":false,"error":"storeId is required"}"#.into(), req_id);
+                    return (
+                        r#"{"ok":false,"error":"storeId is required"}"#.into(),
+                        req_id,
+                    );
                 }
                 // A grant states what the member may do. It is required, not
                 // defaulted: a caller that forgets it would otherwise mint a
@@ -1221,8 +1343,14 @@ impl Vmm {
                 self.app.modify_state(
                     false,
                     Box::new(move |t: &dyn ITrx| {
-                        t.put_link(&format!("onaccess::{}::{}", store_id_owned, user_id_owned), &encoded);
-                        t.put_link(&format!("hasaccess::{}::{}", user_id_owned, store_id_owned), "true");
+                        t.put_link(
+                            &format!("onaccess::{}::{}", store_id_owned, user_id_owned),
+                            &encoded,
+                        );
+                        t.put_link(
+                            &format!("hasaccess::{}::{}", user_id_owned, store_id_owned),
+                            "true",
+                        );
                         Ok(())
                     }),
                 );
@@ -1232,19 +1360,31 @@ impl Vmm {
             "deleteAccess" => {
                 let user_id = check_str(input, "userId", "");
                 if user_id.is_empty() {
-                    return (r#"{"ok":false,"error":"userId is required"}"#.into(), req_id);
+                    return (
+                        r#"{"ok":false,"error":"userId is required"}"#.into(),
+                        req_id,
+                    );
                 }
                 let store_id = check_str(input, "storeId", "");
                 if store_id.is_empty() {
-                    return (r#"{"ok":false,"error":"storeId is required"}"#.into(), req_id);
+                    return (
+                        r#"{"ok":false,"error":"storeId is required"}"#.into(),
+                        req_id,
+                    );
                 }
                 let user_id_owned = user_id.clone();
                 let store_id_owned = store_id.clone();
                 self.app.modify_state(
                     false,
                     Box::new(move |t: &dyn ITrx| {
-                        t.del_key(&format!("link::onaccess::{}::{}", store_id_owned, user_id_owned));
-                        t.del_key(&format!("link::hasaccess::{}::{}", user_id_owned, store_id_owned));
+                        t.del_key(&format!(
+                            "link::onaccess::{}::{}",
+                            store_id_owned, user_id_owned
+                        ));
+                        t.del_key(&format!(
+                            "link::hasaccess::{}::{}",
+                            user_id_owned, store_id_owned
+                        ));
                         Ok(())
                     }),
                 );
@@ -1306,9 +1446,7 @@ impl Vmm {
                         let keys = t.get_by_prefix(&json_prefix);
                         *slot_clone.lock().unwrap() = keys
                             .into_iter()
-                            .map(|k| {
-                                k.strip_prefix("json::").unwrap_or(&k).to_string()
-                            })
+                            .map(|k| k.strip_prefix("json::").unwrap_or(&k).to_string())
                             .collect();
                         Ok(())
                     }),
@@ -1324,7 +1462,10 @@ impl Vmm {
                 // the rows the client sees, with no second transcript anywhere.
                 let store_id = check_str(input, "storeId", "");
                 if store_id.is_empty() {
-                    return (r#"{"ok":false,"error":"storeId is required"}"#.into(), req_id);
+                    return (
+                        r#"{"ok":false,"error":"storeId is required"}"#.into(),
+                        req_id,
+                    );
                 }
                 let str_list = |key: &str| -> Vec<String> {
                     input
@@ -1351,7 +1492,12 @@ impl Vmm {
                         return (serde_json::to_string(&out).unwrap_or_default(), req_id);
                     }
                 };
-                let packets = match self.app.tools().storage().read_store_logs(&store_id, &query) {
+                let packets = match self
+                    .app
+                    .tools()
+                    .storage()
+                    .read_store_logs(&store_id, &query)
+                {
                     Ok(p) => p,
                     Err(e) => {
                         // A creature must be able to tell "no history" from "the
@@ -1367,11 +1513,17 @@ impl Vmm {
             "hasAccessToStore" => {
                 let machine_id = check_str(input, "machineId", "");
                 if machine_id.is_empty() {
-                    return (r#"{"ok":false,"error":"machineId is required"}"#.into(), req_id);
+                    return (
+                        r#"{"ok":false,"error":"machineId is required"}"#.into(),
+                        req_id,
+                    );
                 }
                 let store_id = check_str(input, "storeId", "");
                 if store_id.is_empty() {
-                    return (r#"{"ok":false,"error":"storeId is required"}"#.into(), req_id);
+                    return (
+                        r#"{"ok":false,"error":"storeId is required"}"#.into(),
+                        req_id,
+                    );
                 }
                 let allowed = self
                     .app
@@ -1401,7 +1553,11 @@ impl Vmm {
                 let except: Vec<String> = input
                     .get("except")
                     .and_then(Value::as_array)
-                    .map(|arr| arr.iter().filter_map(|v| v.as_str().map(str::to_string)).collect())
+                    .map(|arr| {
+                        arr.iter()
+                            .filter_map(|v| v.as_str().map(str::to_string))
+                            .collect()
+                    })
                     .unwrap_or_default();
                 let value = serde_json::from_str::<Value>(&packet).unwrap_or(Value::Null);
                 self.app
@@ -1416,7 +1572,10 @@ impl Vmm {
                 self.app.tools().signaler().join_group(&group_id, &user_id);
                 (r#"{"ok":true}"#.into(), req_id)
             }
-            _ => (r#"{"ok":false,"error":"unsupported micro op"}"#.into(), req_id),
+            _ => (
+                r#"{"ok":false,"error":"unsupported micro op"}"#.into(),
+                req_id,
+            ),
         }
     }
 
@@ -1459,8 +1618,14 @@ impl Vmm {
                             true,
                         );
                         if !creator_id_owned.is_empty() {
-                            t.put_link(&format!("hasaccess::{}::{}", creator_id_owned, store_id_owned), "true");
-                            t.put_link(&format!("creatorof::{}::{}", creator_id_owned, store_id_owned), "true");
+                            t.put_link(
+                                &format!("hasaccess::{}::{}", creator_id_owned, store_id_owned),
+                                "true",
+                            );
+                            t.put_link(
+                                &format!("creatorof::{}::{}", creator_id_owned, store_id_owned),
+                                "true",
+                            );
                             // The creator administers the store they just made.
                             t.put_link(
                                 &format!("onaccess::{}::{}", store_id_owned, creator_id_owned),
@@ -1476,7 +1641,10 @@ impl Vmm {
             "update" => {
                 let store_id = check_str(input, "storeId", "");
                 if store_id.is_empty() {
-                    return (r#"{"ok":false,"error":"storeId is required"}"#.into(), req_id);
+                    return (
+                        r#"{"ok":false,"error":"storeId is required"}"#.into(),
+                        req_id,
+                    );
                 }
                 let input_owned = input.clone();
                 let store_id_owned = store_id.clone();
@@ -1502,17 +1670,28 @@ impl Vmm {
                         }
                         store.push(t);
                         if let Some(md) = input_owned.get("metadata") {
-                            let _ = t.put_json(&format!("StoreMeta::{}", store_id_owned), "metadata", md, true);
+                            let _ = t.put_json(
+                                &format!("StoreMeta::{}", store_id_owned),
+                                "metadata",
+                                md,
+                                true,
+                            );
                         }
                         Ok(())
                     }),
                 );
-                (format!("{{\"ok\":true,\"storeId\":\"{}\"}}", store_id), req_id)
+                (
+                    format!("{{\"ok\":true,\"storeId\":\"{}\"}}", store_id),
+                    req_id,
+                )
             }
             "delete" => {
                 let store_id = check_str(input, "storeId", "");
                 if store_id.is_empty() {
-                    return (r#"{"ok":false,"error":"storeId is required"}"#.into(), req_id);
+                    return (
+                        r#"{"ok":false,"error":"storeId is required"}"#.into(),
+                        req_id,
+                    );
                 }
                 let store_id_owned = store_id.clone();
                 self.app.modify_state(
@@ -1538,19 +1717,34 @@ impl Vmm {
                             if member_id.is_empty() {
                                 continue;
                             }
-                            t.del_key(&format!("link::onaccess::{}::{}", store_id_owned, member_id));
-                            t.del_key(&format!("link::hasaccess::{}::{}", member_id, store_id_owned));
-                            t.del_key(&format!("link::creatorof::{}::{}", member_id, store_id_owned));
+                            t.del_key(&format!(
+                                "link::onaccess::{}::{}",
+                                store_id_owned, member_id
+                            ));
+                            t.del_key(&format!(
+                                "link::hasaccess::{}::{}",
+                                member_id, store_id_owned
+                            ));
+                            t.del_key(&format!(
+                                "link::creatorof::{}::{}",
+                                member_id, store_id_owned
+                            ));
                         }
                         Ok(())
                     }),
                 );
-                (format!("{{\"ok\":true,\"storeId\":\"{}\"}}", store_id), req_id)
+                (
+                    format!("{{\"ok\":true,\"storeId\":\"{}\"}}", store_id),
+                    req_id,
+                )
             }
             "get" => {
                 let store_id = check_str(input, "storeId", "");
                 if store_id.is_empty() {
-                    return (r#"{"ok":false,"error":"storeId is required"}"#.into(), req_id);
+                    return (
+                        r#"{"ok":false,"error":"storeId is required"}"#.into(),
+                        req_id,
+                    );
                 }
                 let store_slot = Arc::new(Mutex::new(Store::default()));
                 let meta_slot: Arc<Mutex<Map<String, Value>>> = Arc::new(Mutex::new(Map::new()));
@@ -1566,7 +1760,9 @@ impl Vmm {
                         }
                         .pull(t);
                         *store_clone.lock().unwrap() = s;
-                        if let Ok(m) = t.get_json(&format!("StoreMeta::{}", store_id_owned), "metadata") {
+                        if let Ok(m) =
+                            t.get_json(&format!("StoreMeta::{}", store_id_owned), "metadata")
+                        {
                             *meta_clone.lock().unwrap() = m;
                         }
                         Ok(())
@@ -1589,7 +1785,9 @@ impl Vmm {
                 self.app.modify_state(
                     true,
                     Box::new(move |t: &dyn ITrx| {
-                        if let Ok(list) = Store::list(t, &prefix, false, &HashMap::new(), &HashMap::new(), 0, 50) {
+                        if let Ok(list) =
+                            Store::list(t, &prefix, false, &HashMap::new(), &HashMap::new(), 0, 50)
+                        {
                             *slot_clone.lock().unwrap() = list;
                         }
                         Ok(())
@@ -1605,7 +1803,10 @@ impl Vmm {
             "listAccess" | "listMembers" | "readMembers" => {
                 let store_id = check_str(input, "storeId", "");
                 if store_id.is_empty() {
-                    return (r#"{"ok":false,"error":"storeId is required"}"#.into(), req_id);
+                    return (
+                        r#"{"ok":false,"error":"storeId is required"}"#.into(),
+                        req_id,
+                    );
                 }
                 let want_type = check_str(input, "type", "");
                 let slot: Arc<Mutex<Vec<Creature>>> = Arc::new(Mutex::new(Vec::new()));
@@ -1623,7 +1824,11 @@ impl Vmm {
                             if member_id.is_empty() {
                                 continue;
                             }
-                            let c = Creature { id: member_id, ..Default::default() }.pull(t);
+                            let c = Creature {
+                                id: member_id,
+                                ..Default::default()
+                            }
+                            .pull(t);
                             if c.id.is_empty() {
                                 continue;
                             }
@@ -1637,10 +1842,14 @@ impl Vmm {
                     }),
                 );
                 let members = slot.lock().unwrap().clone();
-                let out = json!({"ok": true, "storeId": store_id, "type": want_type, "members": members});
+                let out =
+                    json!({"ok": true, "storeId": store_id, "type": want_type, "members": members});
                 (serde_json::to_string(&out).unwrap_or_default(), req_id)
             }
-            _ => (r#"{"ok":false,"error":"unsupported store op"}"#.into(), req_id),
+            _ => (
+                r#"{"ok":false,"error":"unsupported store op"}"#.into(),
+                req_id,
+            ),
         }
     }
 
@@ -1744,10 +1953,19 @@ impl Vmm {
                 app.modify_state(
                     false,
                     Box::new(move |t: &dyn ITrx| {
-                        t.put_link(&format!("vmAlarmStoreId::{}", machine_id_inner), &store_id_inner);
+                        t.put_link(
+                            &format!("vmAlarmStoreId::{}", machine_id_inner),
+                            &store_id_inner,
+                        );
                         t.put_link(&format!("vmAlarmData::{}", machine_id_inner), &data_inner);
-                        t.put_link(&format!("vmAlarmEntity::{}", machine_id_inner), &entity_id_inner);
-                        t.put_link(&format!("vmAlarmTime::{}", machine_id_inner), &format!("{}", alarm_time));
+                        t.put_link(
+                            &format!("vmAlarmEntity::{}", machine_id_inner),
+                            &entity_id_inner,
+                        );
+                        t.put_link(
+                            &format!("vmAlarmTime::{}", machine_id_inner),
+                            &format!("{}", alarm_time),
+                        );
                         Ok(())
                     }),
                 );
@@ -1816,7 +2034,10 @@ impl Vmm {
         }
         let store_id = check_str(input, "storeId", "");
         if store_id.is_empty() {
-            return (r#"{"ok":false,"error":"storeId is required"}"#.into(), req_id);
+            return (
+                r#"{"ok":false,"error":"storeId is required"}"#.into(),
+                req_id,
+            );
         }
         // The signaller is the calling VM, which the node already knows. Anything
         // the caller puts in `userId` is carried on the packet as authorship
@@ -1853,15 +2074,17 @@ impl Vmm {
         // `{}` regardless of what happened is how a creature whose signals are
         // ALL being refused — no `signal` permission on the store, a log that
         // cannot be written — goes on believing every turn it posted landed.
-        let outcome: Arc<Mutex<Result<Value, String>>> =
-            Arc::new(Mutex::new(Err("/stores/signal is not registered".to_string())));
+        let outcome: Arc<Mutex<Result<Value, String>>> = Arc::new(Mutex::new(Err(
+            "/stores/signal is not registered".to_string(),
+        )));
         let outcome_clone = outcome.clone();
         let closure: StateClosure = Box::new(move |state: Arc<dyn IState>| {
             if let Some(action) = app_for_closure.actor().fetch_action("/stores/signal") {
-                *outcome_clone.lock().unwrap() = match action.act(state, Arc::new(signal_input.clone())) {
-                    Ok((_code, v)) => Ok(v),
-                    Err(e) => Err(format!("{}", e)),
-                };
+                *outcome_clone.lock().unwrap() =
+                    match action.act(state, Arc::new(signal_input.clone())) {
+                        Ok((_code, v)) => Ok(v),
+                        Err(e) => Err(format!("{}", e)),
+                    };
             }
             Ok(())
         });
@@ -1890,11 +2113,7 @@ impl Vmm {
         }
     }
 
-    pub(crate) fn handle_send_message_on_chain(
-        &self,
-        input: &Value,
-        req_id: i64,
-    ) -> (String, i64) {
+    pub(crate) fn handle_send_message_on_chain(&self, input: &Value, req_id: i64) -> (String, i64) {
         let chain_id = check_str(input, "chainId", "main");
         let mut key = check_str(input, "msgKey", "");
         if key.is_empty() {
@@ -1969,34 +2188,63 @@ fn parse_chain_receivers(input: &Value) -> HashMap<String, HashMap<String, bool>
     receivers
 }
 
-fn parse_chain_pay_packet(
-    input: &Value,
-) -> Option<crate::models::chain::ChainPayPacket> {
+fn parse_chain_pay_packet(input: &Value) -> Option<crate::models::chain::ChainPayPacket> {
     let Some(pay_obj) = input.get("pay").and_then(Value::as_object) else {
         return None;
     };
     use crate::models::chain::ChainPayPacket;
     let mut pay = ChainPayPacket::default();
     let s = |k: &str| pay_obj.get(k).and_then(Value::as_str).map(str::to_string);
-    let i = |k: &str| pay_obj.get(k).and_then(Value::as_i64).or_else(|| pay_obj.get(k).and_then(Value::as_f64).map(|v| v as i64));
-    if let Some(v) = s("type") { pay.typ = v; }
-    if let Some(v) = s("sessionId") { pay.session_id = v; }
-    if let Some(v) = s("userId") { pay.user_id = v; }
-    if let Some(v) = s("lockId") { pay.lock_id = v; }
-    if let Some(v) = s("lockSignature") { pay.lock_signature = v; }
-    if let Some(v) = s("storeId") { pay.store_id = v; }
-    if let Some(v) = s("vmPayload") { pay.vm_payload = v; }
-    if let Some(v) = s("error") { pay.error = v; }
-    if let Some(v) = i("amount") { pay.amount = v; }
-    if let Some(v) = i("requestedSeconds") { pay.requested_seconds = v; }
-    if let Some(v) = i("acceptedSeconds") { pay.accepted_seconds = v; }
-    if let Some(v) = i("costPerSecond") { pay.cost_per_second = v; }
+    let i = |k: &str| {
+        pay_obj
+            .get(k)
+            .and_then(Value::as_i64)
+            .or_else(|| pay_obj.get(k).and_then(Value::as_f64).map(|v| v as i64))
+    };
+    if let Some(v) = s("type") {
+        pay.typ = v;
+    }
+    if let Some(v) = s("sessionId") {
+        pay.session_id = v;
+    }
+    if let Some(v) = s("userId") {
+        pay.user_id = v;
+    }
+    if let Some(v) = s("lockId") {
+        pay.lock_id = v;
+    }
+    if let Some(v) = s("lockSignature") {
+        pay.lock_signature = v;
+    }
+    if let Some(v) = s("storeId") {
+        pay.store_id = v;
+    }
+    if let Some(v) = s("vmPayload") {
+        pay.vm_payload = v;
+    }
+    if let Some(v) = s("error") {
+        pay.error = v;
+    }
+    if let Some(v) = i("amount") {
+        pay.amount = v;
+    }
+    if let Some(v) = i("requestedSeconds") {
+        pay.requested_seconds = v;
+    }
+    if let Some(v) = i("acceptedSeconds") {
+        pay.accepted_seconds = v;
+    }
+    if let Some(v) = i("costPerSecond") {
+        pay.cost_per_second = v;
+    }
     if let Some(arr) = pay_obj.get("machineIds").and_then(Value::as_array) {
-        pay.machine_ids = arr.iter().filter_map(|v| v.as_str().map(str::to_string)).collect();
+        pay.machine_ids = arr
+            .iter()
+            .filter_map(|v| v.as_str().map(str::to_string))
+            .collect();
     }
     Some(pay)
 }
-
 
 #[cfg(test)]
 mod exec_shell_action_tests {
@@ -2007,8 +2255,15 @@ mod exec_shell_action_tests {
     /// naming a `userId` alongside it cannot redirect who it acts as, and an
     /// unresolvable caller is refused rather than falling back to the node owner
     /// (which would hand a container the platform's own authority).
-    fn acting_identity(caller: &str, input: &serde_json::Value, owner: &str) -> Option<(String, String)> {
-        let as_self = input.get("asSelf").and_then(serde_json::Value::as_bool).unwrap_or(false);
+    fn acting_identity(
+        caller: &str,
+        input: &serde_json::Value,
+        owner: &str,
+    ) -> Option<(String, String)> {
+        let as_self = input
+            .get("asSelf")
+            .and_then(serde_json::Value::as_bool)
+            .unwrap_or(false);
         if as_self {
             let caller = caller.trim();
             if caller.is_empty() {
@@ -2034,7 +2289,10 @@ mod exec_shell_action_tests {
         let input = json!({"asSelf": true, "userId": "1@global", "signature": "forged"});
         let (user, sig) = acting_identity("42@global", &input, "1@global").unwrap();
         assert_eq!(user, "42@global", "the guest-named userId is ignored");
-        assert_eq!(sig, "#appletsign", "a creature authenticates through the applet path");
+        assert_eq!(
+            sig, "#appletsign",
+            "a creature authenticates through the applet path"
+        );
     }
 
     #[test]
@@ -2060,7 +2318,10 @@ mod exec_shell_action_tests {
     fn an_omitted_user_still_defaults_to_the_owner() {
         let input = json!({"path": "/creatures/login"});
         let (user, _) = acting_identity("42@global", &input, "1@global").unwrap();
-        assert_eq!(user, "1@global", "unchanged for callers that name no identity");
+        assert_eq!(
+            user, "1@global",
+            "unchanged for callers that name no identity"
+        );
     }
 }
 
@@ -2076,7 +2337,10 @@ mod signal_store_tests {
     /// agent backbone posted — every step, every tool call, every answer — was
     /// refused before it reached the action.
     fn signaller(input: &serde_json::Value) -> Option<String> {
-        let machine_id = input.get("machineId").and_then(|v| v.as_str()).unwrap_or("");
+        let machine_id = input
+            .get("machineId")
+            .and_then(|v| v.as_str())
+            .unwrap_or("");
         if machine_id.is_empty() {
             return None;
         }

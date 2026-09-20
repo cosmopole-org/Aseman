@@ -43,8 +43,7 @@ mod tests {
 
     #[test]
     fn update_val_defaults_to_empty_when_absent() {
-        let parsed: Update =
-            serde_json::from_str(r#"{"type":"del","key":"k"}"#).unwrap();
+        let parsed: Update = serde_json::from_str(r#"{"type":"del","key":"k"}"#).unwrap();
         assert!(parsed.val.is_empty());
     }
 }

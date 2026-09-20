@@ -1,0 +1,57 @@
+syntax = "proto3";
+
+package aseman.capsule.provider.v1;
+
+import "module/control/v1/control.proto";
+
+message DescribeRequest {
+  aseman.module.control.v1.RequestMetadata meta = 1;
+}
+
+message DescribeResponse {
+  string provider_id = 1;
+  repeated string capabilities = 2;
+  uint32 max_query_limit = 3;
+  uint32 max_transaction_capsules = 4;
+  aseman.module.control.v1.ModuleError error = 5;
+}
+
+message PutCapsuleRequest {
+  aseman.module.control.v1.RequestMetadata meta = 1;
+  bytes capsule_cbor = 2;
+  optional uint64 expected_revision = 3;
+}
+
+message PutCapsuleResponse {
+  uint64 revision = 1;
+  aseman.module.control.v1.ModuleError error = 2;
+}
+
+message GetCapsuleRequest {
+  aseman.module.control.v1.RequestMetadata meta = 1;
+  string kind = 2;
+  bytes id = 3;
+}
+
+message GetCapsuleResponse {
+  bool found = 1;
+  bytes capsule_cbor = 2;
+  aseman.module.control.v1.ModuleError error = 3;
+}
+
+message QueryCapsulesRequest {
+  aseman.module.control.v1.RequestMetadata meta = 1;
+  bytes query_json = 2;
+}
+
+message QueryCapsulesResponse {
+  repeated bytes capsule_cbor = 1;
+  aseman.module.control.v1.ModuleError error = 2;
+}
+
+service CapsuleStorage {
+  rpc Describe(DescribeRequest) returns (DescribeResponse);
+  rpc PutCapsule(PutCapsuleRequest) returns (PutCapsuleResponse);
+  rpc GetCapsule(GetCapsuleRequest) returns (GetCapsuleResponse);
+  rpc QueryCapsules(QueryCapsulesRequest) returns (QueryCapsulesResponse);
+}

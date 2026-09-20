@@ -7,5 +7,7 @@ pub struct Error {
 }
 
 pub fn build_error_json(message: &str) -> Error {
-    Error { message: message.to_string() }
+    Error {
+        message: message.to_string(),
+    }
 }

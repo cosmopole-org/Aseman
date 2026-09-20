@@ -1,0 +1,9 @@
+[
+  {"name": "non-shortest integer", "hex": "1801"},
+  {"name": "indefinite array", "hex": "9fff"},
+  {"name": "trailing bytes", "hex": "0101"},
+  {"name": "positive infinity", "hex": "f97c00"},
+  {"name": "duplicate map key", "hex": "a2616101616102"},
+  {"name": "unordered map keys", "hex": "a2616201616102"},
+  {"name": "invalid utf8 text", "hex": "61ff"}
+]

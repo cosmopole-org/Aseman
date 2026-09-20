@@ -17,7 +17,6 @@ mod telemetry;
 mod util;
 
 use std::collections::HashMap;
-use std::env;
 use std::sync::{Arc, Mutex};
 use std::thread;
 use std::time::Duration;
@@ -26,52 +25,65 @@ use crate::models::action::ExtendedField;
 use crate::models::core::ICore;
 use crate::models::transaction::ITrx;
 use crate::shell::api::main_api::plug_all;
-use crate::shell::kasper::new_app;
+use crate::shell::kasper::new_configured_app;
+use aseman_config::{AllocatorConfig, AsemanConfig};
 
-fn main() {
+/// Run the legacy node composition while use cases move behind Aseman ports.
+///
+/// New binaries call this compatibility entry point; it expires after the node
+/// composition has moved to `apps/aseman-node` and its removal gate passes.
+pub fn run() {
+    // Compatibility only: legacy adapters still consume process variables. The parser
+    // is owned by aseman-config; this process mutation expires as those adapters accept
+    // typed configuration directly.
+    let _ = install_dotenv_compat(".env");
+    let config = match AsemanConfig::from_process_with_dotenv(".env") {
+        Ok(config) => Arc::new(config),
+        Err(error) => {
+            eprintln!("invalid Aseman configuration: {error}");
+            return;
+        }
+    };
+    if let Err(error) = aseman_config::install_legacy_adapter_snapshot(&config) {
+        eprintln!("could not install Aseman configuration snapshot: {error}");
+        return;
+    }
+
     // Cap glibc's per-thread arena pool and keep freed pages returning to the
     // OS. Must run before any worker thread is spawned (pprof/telemetry below
     // both spawn), so glibc never grows past the cap. See
     // `configure_allocator` for the leak this addresses.
-    configure_allocator();
-
-    // .env loading: simple manual parser (skip dotenvy to avoid the extra
-    // dependency — the file lives next to the binary in production).
-    let _ = load_dotenv(".env");
+    configure_allocator(&config.allocator);
 
     // Runtime profiling HTTP server (was Go `net/http/pprof` on :9999;
     // now Rust-native via the `pprof` crate). Queried by `casparctl pprof`.
-    telemetry::pprof::start_from_env();
+    telemetry::pprof::start(config.telemetry.pprof_port);
 
-    if let Err(e) = telemetry::start_from_env() {
+    if let Err(e) = telemetry::start(&config) {
         eprintln!("telemetry server start failed: {}", e);
     }
 
-    let owner_id = env::var("OWNER_ID").unwrap_or_default();
-    let owner_pem = env::var("OWNER_PRIVATE_KEY").unwrap_or_default();
-    let owner_priv = match parse_owner_key(&owner_pem) {
+    let owner_priv = match parse_owner_key(&config.node.private_key_secret) {
         Some(k) => k,
         None => {
-            eprintln!("OWNER_PRIVATE_KEY missing or unparseable");
+            eprintln!("ASEMAN_NODE_PRIVATE_KEY_SECRET missing or unparseable");
             return;
         }
     };
-    let origin = env::var("ORIGIN").unwrap_or_default();
-    let app = new_app(&origin, &owner_id, owner_priv);
-
-    let storage_root = env::var("STORAGE_ROOT_PATH").unwrap_or_default();
-    let base_db_path = env::var("BASE_DB_PATH").unwrap_or_default();
-    let applet_db_path = env::var("APPLET_DB_PATH").unwrap_or_default();
-    let store_logs_db = env::var("STORE_LOGS_DB").unwrap_or_default();
-    let searcher_db = env::var("SEARCH_INDEX_PATH").unwrap_or_default();
+    let app = new_configured_app(
+        &config.node.origin,
+        &config.node.id,
+        owner_priv,
+        config.clone(),
+    );
 
     if let Err(e) = app.load_inner(
         vec!["keyhan".to_string()],
-        &storage_root,
-        &base_db_path,
-        &applet_db_path,
-        &store_logs_db,
-        &searcher_db,
+        &config.storage.root_path,
+        &config.storage.base_db_path,
+        &config.storage.applet_db_path,
+        &config.storage.store_logs_db,
+        &config.storage.search_index_path,
     ) {
         eprintln!("app.load failed: {}", e);
         return;
@@ -109,11 +121,21 @@ fn main() {
     );
     user_extender.insert(
         "bio".to_string(),
-        make_field("bio", serde_json::json!("I'm a DecillionAI User"), false, false),
+        make_field(
+            "bio",
+            serde_json::json!("I'm a DecillionAI User"),
+            false,
+            false,
+        ),
     );
     user_extender.insert(
         "location".to_string(),
-        make_field("location", serde_json::json!("DecillionAI Land"), false, false),
+        make_field(
+            "location",
+            serde_json::json!("DecillionAI Land"),
+            false,
+            false,
+        ),
     );
     let mut store_extender: HashMap<String, ExtendedField> = HashMap::new();
     store_extender.insert(
@@ -150,9 +172,7 @@ fn main() {
         let mut seen: HashSet<String> = HashSet::new();
         for key in keys_slot.lock().unwrap().iter() {
             // key = "link::vmEntityType::MACHINE_ID::ENTITY_ID"
-            let rest = key
-                .strip_prefix("link::vmEntityType::")
-                .unwrap_or("");
+            let rest = key.strip_prefix("link::vmEntityType::").unwrap_or("");
             if let Some(machine_id) = rest.split("::").next() {
                 if !machine_id.is_empty() && seen.insert(machine_id.to_string()) {
                     app.tools().vmm().assign(machine_id);
@@ -178,7 +198,7 @@ fn main() {
     // orchestration API. Standalone nodes skip this entirely.
     {
         let app_for_cluster: Arc<dyn crate::models::core::ICore> = app.clone();
-        drivers::cluster::init_from_env(app_for_cluster);
+        drivers::cluster::init(app_for_cluster, &config.cluster);
     }
 
     // ── Docker-host bridge gateway ────────────────────────────────────────────
@@ -186,11 +206,9 @@ fn main() {
     // It is their only channel to the outside world: every host interaction
     // (DB/storage ops, outbound HTTP, signalling) and every inbound signal flows
     // over it. Disabled when the port is unset/zero.
-    let docker_gateway_port: i64 = env::var("DOCKER_HOST_GATEWAY_PORT")
-        .ok()
-        .and_then(|p| p.parse().ok())
-        .unwrap_or(8079);
-    app.tools().vmm().start_docker_gateway(docker_gateway_port);
+    app.tools()
+        .vmm()
+        .start_docker_gateway(i64::from(config.network.docker_gateway_port));
 
     // ── VMM HTTP ingress ──────────────────────────────────────────────────────
     // Inbound HTTP server that accepts requests shaped as
@@ -198,52 +216,40 @@ fn main() {
     // the HTTP server of the named VM instance: the docker runtime proxies to
     // the container's HTTP server, every other runtime falls back to signalling
     // the VM. Disabled when the port is unset/zero.
-    let vm_http_ingress_port: i64 = env::var("VM_HTTP_INGRESS_PORT")
-        .ok()
-        .and_then(|p| p.parse().ok())
-        .unwrap_or(8090);
-    app.tools().vmm().start_http_ingress(vm_http_ingress_port);
+    app.tools()
+        .vmm()
+        .start_http_ingress(i64::from(config.network.vm_http_ingress_port));
 
     // ── Public file storage HTTP server ───────────────────────────────────────
     // Serves public binary blobs (avatars/images) over plain HTTP so the Nest
     // backend can proxy authenticated uploads and re-serve downloads to clients
     // without pushing binaries through the signed action/consensus path.
     // Internal port (like the docker gateway); disabled when unset/zero.
-    let storage_http_port: i64 = env::var("CASPAR_STORAGE_PORT")
-        .ok()
-        .and_then(|p| p.parse().ok())
-        .unwrap_or(8091);
     {
         let app_for_storage: Arc<dyn crate::models::core::ICore> = app.clone();
-        crate::shell::storage_http::start(app_for_storage, storage_http_port);
+        crate::shell::storage_http::start(
+            app_for_storage,
+            i64::from(config.network.public_storage_port),
+            config.legacy_adapters.public_storage_max_bytes,
+        );
     }
 
-    let port_tcp: i64 = env::var("CLIENT_TCP_API_PORT")
-        .ok()
-        .and_then(|p| p.parse().ok())
-        .unwrap_or(0);
-    let port_ws: i64 = env::var("CLIENT_WS_API_PORT")
-        .ok()
-        .and_then(|p| p.parse().ok())
-        .unwrap_or(0);
-    let port_fed: i64 = env::var("FEDERATION_API_PORT")
-        .ok()
-        .and_then(|p| p.parse().ok())
-        .unwrap_or(0);
-    let port_chain: i64 = env::var("BLOCKCHAIN_API_PORT")
-        .ok()
-        .and_then(|p| p.parse().ok())
-        .unwrap_or(0);
     let mut ports: HashMap<String, i64> = HashMap::new();
-    ports.insert("tcp".to_string(), port_tcp);
-    ports.insert("ws".to_string(), port_ws);
-    ports.insert("fed".to_string(), port_fed);
-    ports.insert("chain".to_string(), port_chain);
+    ports.insert("tcp".to_string(), i64::from(config.network.legacy_tcp_port));
+    ports.insert("ws".to_string(), i64::from(config.network.legacy_ws_port));
+    ports.insert(
+        "fed".to_string(),
+        i64::from(config.network.legacy_federation_port),
+    );
+    ports.insert(
+        "chain".to_string(),
+        i64::from(config.network.legacy_consensus_port),
+    );
     app.tools().network().run(ports);
 
     // Periodically hand freed heap pages back to the OS (see
     // `configure_allocator`). Cheap once arenas are capped.
-    spawn_malloc_trimmer();
+    spawn_malloc_trimmer(&config.allocator);
 
     // Block forever — background threads run the gossip / chain dispatch.
     loop {
@@ -275,17 +281,14 @@ fn main() {
 /// operator can widen or disable the cap without a rebuild. glibc-only; a no-op
 /// on other libcs.
 #[cfg(all(target_os = "linux", target_env = "gnu"))]
-fn configure_allocator() {
+fn configure_allocator(config: &AllocatorConfig) {
     // glibc mallopt parameter numbers (not exported by the libc crate on all
     // versions, so spell them out — they are stable ABI).
     const M_TRIM_THRESHOLD: libc::c_int = -1;
     const M_ARENA_TEST: libc::c_int = -7;
     const M_ARENA_MAX: libc::c_int = -8;
 
-    let arena_max: libc::c_int = env::var("CASPAR_MALLOC_ARENA_MAX")
-        .ok()
-        .and_then(|v| v.trim().parse().ok())
-        .unwrap_or(2);
+    let arena_max: libc::c_int = config.arena_max;
 
     unsafe {
         if arena_max > 0 {
@@ -306,17 +309,14 @@ fn configure_allocator() {
 }
 
 #[cfg(not(all(target_os = "linux", target_env = "gnu")))]
-fn configure_allocator() {}
+fn configure_allocator(_config: &AllocatorConfig) {}
 
 /// Background thread that calls `malloc_trim(0)` on an interval, returning the
 /// freed tops of every (now capped) arena to the OS via `madvise`. Interval is
 /// `CASPAR_MALLOC_TRIM_SECS` (default 30); 0 disables it. glibc-only.
 #[cfg(all(target_os = "linux", target_env = "gnu"))]
-fn spawn_malloc_trimmer() {
-    let secs: u64 = env::var("CASPAR_MALLOC_TRIM_SECS")
-        .ok()
-        .and_then(|v| v.trim().parse().ok())
-        .unwrap_or(30);
+fn spawn_malloc_trimmer(config: &AllocatorConfig) {
+    let secs = config.trim_interval_seconds;
     if secs == 0 {
         return;
     }
@@ -330,55 +330,20 @@ fn spawn_malloc_trimmer() {
 }
 
 #[cfg(not(all(target_os = "linux", target_env = "gnu")))]
-fn spawn_malloc_trimmer() {}
+fn spawn_malloc_trimmer(_config: &AllocatorConfig) {}
 
 fn parse_owner_key(pem: &str) -> Option<rsa::RsaPrivateKey> {
     use rsa::pkcs8::DecodePrivateKey;
     rsa::RsaPrivateKey::from_pkcs8_pem(pem).ok()
 }
 
-fn load_dotenv(path: &str) -> std::io::Result<()> {
-    let content = std::fs::read_to_string(path)?;
-    let mut lines = content.lines().peekable();
-    while let Some(line) = lines.next() {
-        let line = line.trim();
-        if line.is_empty() || line.starts_with('#') {
-            continue;
-        }
-        if let Some((k, v)) = line.split_once('=') {
-            let k = k.trim();
-            let v = v.trim();
-            // Handle multi-line double-quoted values (e.g. PEM keys).
-            let final_val: String = if v.starts_with('"') && !v[1..].contains('"') {
-                // Opening quote but no closing quote on this line — accumulate
-                // continuation lines until we find one that ends with '"'.
-                let mut val = v[1..].to_string();
-                loop {
-                    match lines.next() {
-                        Some(next) => {
-                            val.push('\n');
-                            val.push_str(next);
-                            if next.ends_with('"') {
-                                val.truncate(val.len() - 1);
-                                break;
-                            }
-                        }
-                        None => break,
-                    }
-                }
-                val
-            } else {
-                v.trim_start_matches('"')
-                    .trim_end_matches('"')
-                    .trim_start_matches('\'')
-                    .trim_end_matches('\'')
-                    .to_string()
-            };
-            // SAFETY: setenv is unsafe in multi-threaded contexts but this
-            // runs before any other thread is spawned.
-            unsafe {
-                env::set_var(k, &final_val);
-            }
+fn install_dotenv_compat(path: &str) -> Result<(), aseman_config::ConfigError> {
+    let content = std::fs::read_to_string(path)
+        .map_err(|error| aseman_config::ConfigError::DotenvIo(error.to_string()))?;
+    for (key, value) in aseman_config::parse_dotenv(&content)? {
+        // SAFETY: this runs at the composition root before any thread is spawned.
+        unsafe {
+            std::env::set_var(key, value);
         }
     }
     Ok(())

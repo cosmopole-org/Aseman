@@ -131,7 +131,7 @@ fn resolve_vms_dir(args: &[String]) -> Result<PathBuf> {
         }
         bail!("--vms-dir does not exist: {}", p.display());
     }
-    if let Ok(dir) = std::env::var("CASPAR_VMS_DIR") {
+    if let Some(dir) = aseman_config::cli_config().and_then(|config| config.vms_dir.as_ref()) {
         let p = PathBuf::from(dir.trim());
         if p.is_dir() {
             return fs::canonicalize(&p).map_err(|e| anyhow!("{}: {}", p.display(), e));
@@ -156,9 +156,7 @@ fn resolve_vms_dir(args: &[String]) -> Result<PathBuf> {
             return fs::canonicalize(&c).map_err(|e| anyhow!("{}: {}", c.display(), e));
         }
     }
-    bail!(
-        "could not locate the vms folder; pass --vms-dir or set CASPAR_VMS_DIR"
-    )
+    bail!("could not locate the vms folder; pass --vms-dir or set CASPAR_VMS_DIR")
 }
 
 fn read_disabled(vms_dir: &Path) -> BTreeSet<String> {
@@ -254,8 +252,7 @@ fn discover(vms_dir: &Path) -> Result<Vec<VmProject>> {
                 continue;
             }
         };
-        let lib_name =
-            manifest_name(&manifest, "lib").unwrap_or_else(|| package.replace('-', "_"));
+        let lib_name = manifest_name(&manifest, "lib").unwrap_or_else(|| package.replace('-', "_"));
         projects.push(VmProject {
             enabled: !disabled.contains(&key),
             key,
@@ -362,10 +359,7 @@ fn resolve_node_dir(args: &[String], vms_dir: &Path) -> Result<PathBuf> {
         }
         bail!("--node-dir does not exist: {}", p.display());
     }
-    let candidate = vms_dir
-        .parent()
-        .map(|p| p.join("node"))
-        .unwrap_or_default();
+    let candidate = vms_dir.parent().map(|p| p.join("node")).unwrap_or_default();
     if candidate.join("Cargo.toml").exists() {
         return fs::canonicalize(&candidate).map_err(|e| anyhow!("{}: {}", candidate.display(), e));
     }

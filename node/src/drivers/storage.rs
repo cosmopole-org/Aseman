@@ -18,10 +18,10 @@ use r2d2_postgres::PostgresConnectionManager;
 use rocksdb::{TransactionDB, TransactionDBOptions};
 use uuid::Uuid;
 
-use crate::models::ports::storage::{IStorage, KvDb, TsDb};
 use crate::models::core::ICore;
 use crate::models::packet::signal_tags::{decode_tags, encode_tags};
 use crate::models::packet::{BuildPacket, LogPacket, LogQuery};
+use crate::models::ports::storage::{IStorage, KvDb, TsDb};
 use crate::models::transaction::ITrx;
 
 /// Hard cap on rows one `read_store_logs` call may return. A store's log is
@@ -48,9 +48,9 @@ impl Storage {
         base_db_path: &str,
         _logs_db_path: &str,
         _searcher_db_path: &str,
+        questdb_port: u16,
     ) -> Result<Arc<Storage>> {
-        fs::create_dir_all(base_db_path)
-            .map_err(|e| anyhow!("mkdir {}: {}", base_db_path, e))?;
+        fs::create_dir_all(base_db_path).map_err(|e| anyhow!("mkdir {}: {}", base_db_path, e))?;
         // Bounded-memory options instead of `open_default`: this DB takes a
         // write per signal and is never fully pruned, so the default unlimited
         // `max_open_files` grew resident memory without bound as SST files
@@ -62,7 +62,6 @@ impl Storage {
                 .map_err(|e| anyhow!("open kvdb {}: {}", base_db_path, e))?,
         );
 
-        let questdb_port = std::env::var("QUESTDB_PORT").unwrap_or_else(|_| "8812".to_string());
         let conn_str = format!(
             "host=localhost port={} user=admin password=quest dbname=qdb sslmode=disable",
             questdb_port
@@ -122,7 +121,10 @@ impl Storage {
             // QuestDB can report CREATE IF NOT EXISTS as success (or "already
             // exists") for a ghost table that SELECT then cannot see. ALTER
             // cannot fix that. Drop and create for real, then require SELECT.
-            if client.query("select tags from storage limit 1", &[]).is_err() {
+            if client
+                .query("select tags from storage limit 1", &[])
+                .is_err()
+            {
                 let _ = client.execute("drop table if exists storage;", &[]);
                 client
                     .execute(
@@ -399,7 +401,11 @@ impl IStorage for Storage {
         // would stall creature/program creation for other callers (the tsdb pool
         // is thread-safe and QuestDB handles concurrent inserts).
         let id = Uuid::new_v4().to_string();
-        let log_type = if log_type.is_empty() { "runtime" } else { log_type };
+        let log_type = if log_type.is_empty() {
+            "runtime"
+        } else {
+            log_type
+        };
         let time_val = if time_val == 0 {
             chrono::Utc::now().timestamp_millis()
         } else {

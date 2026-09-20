@@ -11,8 +11,7 @@ use crate::models::state::IState;
 
 /// Concrete callback signature the base [`Action`] dispatches into:
 /// `func(state.IState, input.IInput) (any, error)`.
-pub type ActionFn =
-    Arc<dyn Fn(Arc<dyn IState>, Arc<dyn IInput>) -> Result<Value> + Send + Sync>;
+pub type ActionFn = Arc<dyn Fn(Arc<dyn IState>, Arc<dyn IInput>) -> Result<Value> + Send + Sync>;
 
 /// Shared variant of [`StateModifierFn`]. Stored on [`Action`] so the
 /// trait-returning `state_modifier` can hand out fresh `Box`es without
@@ -50,11 +49,7 @@ impl IAction for Action {
         self.key.clone()
     }
 
-    fn act(
-        &self,
-        state: Arc<dyn IState>,
-        input: Arc<dyn IInput>,
-    ) -> Result<(i64, Value)> {
+    fn act(&self, state: Arc<dyn IState>, input: Arc<dyn IInput>) -> Result<(i64, Value)> {
         let result = (self.func)(state, input)?;
         Ok((0, result))
     }

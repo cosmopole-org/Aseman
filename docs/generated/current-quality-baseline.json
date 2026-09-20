@@ -1,0 +1,358 @@
+{
+  "_meta": {
+    "artifact": "A009",
+    "generator": "scripts/generate_quality_baseline.py",
+    "last_verified_commit": "800df24076c794f9b33c29a9f301dd9d674f47d6",
+    "source_of_truth": "repository source files outside generated/build directories",
+    "status": "CURRENT"
+  },
+  "limitations": [
+    "Lexical counts include tests/comments and are ratchets, not defect counts.",
+    "Runtime performance and recovery measurements are recorded in docs/migration/baseline.md.",
+    "Duplicate-code and cyclomatic-complexity tooling is introduced by Phase 1 xtask/CI."
+  ],
+  "ratchet_counts": {
+    "environment_reads": {
+      "count": 3,
+      "sample_locations": [
+        "crates/aseman-config/src/lib.rs:300",
+        "crates/aseman-config/src/lib.rs:358",
+        "crates/aseman-config/src/lib.rs:362"
+      ]
+    },
+    "rust_allow_attributes": {
+      "count": 34,
+      "sample_locations": [
+        "crates/aseman-contracts/src/lib.rs:15",
+        "node/src/core/actor/model/trx.rs:1201",
+        "node/src/core/core_orchestrator.rs:1215",
+        "node/src/core/core_orchestrator.rs:1221",
+        "node/src/core/globe.rs:87",
+        "node/src/core/globe.rs:160",
+        "node/src/core/globe.rs:212",
+        "node/src/drivers/cluster/tests.rs:545",
+        "node/src/drivers/network/chain/crypto/hash.rs:6",
+        "node/src/drivers/network/chain/hashgraph/hashgraph.rs:1444",
+        "node/src/drivers/network/chain/net/transport_tests.rs:472",
+        "node/src/drivers/network/chain/node/core.rs:101",
+        "node/src/drivers/network/chain/node/node.rs:76",
+        "node/src/drivers/network/client/ws.rs:566",
+        "node/src/drivers/network/federation/fednet.rs:525",
+        "node/src/drivers/network/federation/netserver.rs:465",
+        "node/src/drivers/network/net.rs:91",
+        "node/src/drivers/signaler.rs:449",
+        "node/src/drivers/vmm/driver.rs:1187",
+        "node/src/drivers/vmm/network/docker_host/protocol.rs:107",
+        "node/src/lib.rs:3",
+        "node/src/lib.rs:4",
+        "node/src/lib.rs:5",
+        "node/src/lib.rs:6",
+        "node/src/models/action/action.rs:39"
+      ]
+    },
+    "rust_expect_calls": {
+      "count": 325,
+      "sample_locations": [
+        "cmd/casparctl/src/main.rs:1850",
+        "cmd/casparctl/src/main.rs:1860",
+        "cmd/casparctl/src/main.rs:1861",
+        "cmd/casparctl/src/main.rs:1885",
+        "cmd/casparctl/src/main.rs:1886",
+        "cmd/casparctl/src/vms.rs:585",
+        "crates/aseman-application/src/lib.rs:137",
+        "crates/aseman-application/src/lib.rs:140",
+        "crates/aseman-application/src/lib.rs:168",
+        "crates/aseman-config/src/lib.rs:264",
+        "crates/aseman-contracts/examples/capsule_vector.rs:39",
+        "crates/aseman-contracts/examples/capsule_vector.rs:43",
+        "crates/aseman-contracts/src/capsule.rs:1168",
+        "crates/aseman-contracts/src/legacy_gateway.rs:96",
+        "crates/aseman-contracts/src/legacy_gateway.rs:100",
+        "crates/aseman-module-runtime/src/lib.rs:972",
+        "modules/sample-provider/src/lib.rs:300",
+        "modules/storage-legacy/src/lib.rs:247",
+        "modules/storage-postgres/tests/live_postgres.rs:112",
+        "node/src/bin/scan_vmdb.rs:6",
+        "node/src/compat/multipart.rs:38",
+        "node/src/core/actor/model/state.rs:50",
+        "node/src/core/actor/model/state.rs:59",
+        "node/src/core/actor/model/trx.rs:886",
+        "node/src/core/core_orchestrator.rs:556"
+      ]
+    },
+    "rust_json_value_mentions": {
+      "count": 1105,
+      "sample_locations": [
+        "cmd/casparctl/src/cluster.rs:18",
+        "cmd/casparctl/src/cluster.rs:131",
+        "cmd/casparctl/src/cluster.rs:160",
+        "cmd/casparctl/src/cluster.rs:168",
+        "cmd/casparctl/src/cluster.rs:314",
+        "cmd/casparctl/src/main.rs:46",
+        "cmd/casparctl/src/main.rs:105",
+        "cmd/casparctl/src/main.rs:107",
+        "cmd/casparctl/src/main.rs:109",
+        "cmd/casparctl/src/main.rs:111",
+        "cmd/casparctl/src/main.rs:113",
+        "cmd/casparctl/src/main.rs:115",
+        "cmd/casparctl/src/main.rs:117",
+        "cmd/casparctl/src/main.rs:119",
+        "cmd/casparctl/src/main.rs:121",
+        "cmd/casparctl/src/main.rs:123",
+        "cmd/casparctl/src/main.rs:125",
+        "cmd/casparctl/src/main.rs:127",
+        "cmd/casparctl/src/main.rs:129",
+        "cmd/casparctl/src/main.rs:131",
+        "cmd/casparctl/src/main.rs:133",
+        "cmd/casparctl/src/main.rs:135",
+        "cmd/casparctl/src/main.rs:688",
+        "cmd/casparctl/src/main.rs:1085",
+        "cmd/casparctl/src/main.rs:1087"
+      ]
+    },
+    "rust_panic_macros": {
+      "count": 300,
+      "sample_locations": [
+        "node/src/compat/golog.rs:46",
+        "node/src/compat/logrus.rs:161",
+        "node/src/core/actor/model/trx.rs:800",
+        "node/src/core/actor/model/trx.rs:807",
+        "node/src/core/actor/model/trx.rs:860",
+        "node/src/core/actor/model/trx.rs:863",
+        "node/src/core/core_orchestrator.rs:728",
+        "node/src/core/core_orchestrator.rs:1186",
+        "node/src/drivers/cluster/tests.rs:135",
+        "node/src/drivers/cluster/tests.rs:138",
+        "node/src/drivers/cluster/tests.rs:147",
+        "node/src/drivers/cluster/tests.rs:150",
+        "node/src/drivers/cluster/tests.rs:156",
+        "node/src/drivers/cluster/tests.rs:165",
+        "node/src/drivers/cluster/tests.rs:181",
+        "node/src/drivers/cluster/tests.rs:329",
+        "node/src/drivers/cluster/tests.rs:332",
+        "node/src/drivers/cluster/tests.rs:338",
+        "node/src/drivers/cluster/tests.rs:473",
+        "node/src/drivers/cluster/tests.rs:530",
+        "node/src/drivers/cluster/tests.rs:533",
+        "node/src/drivers/cluster/tests.rs:626",
+        "node/src/drivers/network/chain/hashgraph/hashgraph.rs:1572",
+        "node/src/drivers/network/chain/hashgraph/hashgraph.rs:1754",
+        "node/src/drivers/network/chain/hashgraph/hashgraph.rs:2033"
+      ]
+    },
+    "rust_sleep_calls": {
+      "count": 58,
+      "sample_locations": [
+        "cmd/casparctl/src/main.rs:661",
+        "cmd/casparctl/src/run.rs:122",
+        "cmd/casparctl/src/run.rs:566",
+        "cmd/casparctl/src/run.rs:570",
+        "modules/sample-provider/src/lib.rs:297",
+        "modules/sample-provider/tests/supervisor_lifecycle.rs:222",
+        "modules/storage-postgres/tests/live_postgres.rs:109",
+        "node/src/core/core_orchestrator.rs:1046",
+        "node/src/core/globe.rs:319",
+        "node/src/core/globe.rs:332",
+        "node/src/drivers/cluster/mod.rs:306",
+        "node/src/drivers/cluster/mod.rs:357",
+        "node/src/drivers/cluster/tests.rs:624",
+        "node/src/drivers/module_admin.rs:485",
+        "node/src/drivers/module_admin.rs:507",
+        "node/src/drivers/network/chain/net/net_transport.rs:408",
+        "node/src/drivers/network/chain/net/net_transport.rs:420",
+        "node/src/drivers/network/chain/net/net_transport.rs:433",
+        "node/src/drivers/network/chain/net/net_transport.rs:444",
+        "node/src/drivers/network/chain/net/transport_tests.rs:150",
+        "node/src/drivers/network/chain/net/transport_tests.rs:181",
+        "node/src/drivers/network/chain/net/transport_tests.rs:268",
+        "node/src/drivers/network/chain/net/transport_tests.rs:309",
+        "node/src/drivers/network/chain/net/transport_tests.rs:390",
+        "node/src/drivers/network/chain/net/transport_tests.rs:432"
+      ]
+    },
+    "rust_spawn_calls": {
+      "count": 72,
+      "sample_locations": [
+        "modules/sample-provider/src/lib.rs:282",
+        "modules/storage-postgres/tests/live_postgres.rs:82",
+        "node/src/core/core_orchestrator.rs:268",
+        "node/src/core/core_orchestrator.rs:281",
+        "node/src/core/core_orchestrator.rs:385",
+        "node/src/core/core_orchestrator.rs:423",
+        "node/src/core/core_orchestrator.rs:993",
+        "node/src/core/core_orchestrator.rs:1045",
+        "node/src/core/globe.rs:318",
+        "node/src/drivers/cluster/mod.rs:505",
+        "node/src/drivers/cluster/server.rs:52",
+        "node/src/drivers/cluster/server.rs:77",
+        "node/src/drivers/network/chain/blockchain.rs:313",
+        "node/src/drivers/network/chain/dummy/tests.rs:26",
+        "node/src/drivers/network/chain/net/net_transport.rs:127",
+        "node/src/drivers/network/chain/net/net_transport.rs:211",
+        "node/src/drivers/network/chain/net/net_transport.rs:370",
+        "node/src/drivers/network/chain/net/transport_tests.rs:82",
+        "node/src/drivers/network/chain/node/node.rs:149",
+        "node/src/drivers/network/chain/node/node.rs:181",
+        "node/src/drivers/network/chain/node/node.rs:184",
+        "node/src/drivers/network/chain/node/node.rs:208",
+        "node/src/drivers/network/chain/node/state.rs:103",
+        "node/src/drivers/network/client/tcp.rs:439",
+        "node/src/drivers/network/client/tcp.rs:544"
+      ]
+    },
+    "rust_unsafe_tokens": {
+      "count": 40,
+      "sample_locations": [
+        "cmd/casparctl/src/modules.rs:222",
+        "crates/aseman-contracts/src/legacy_storage_http.rs:41",
+        "crates/aseman-module-runtime/src/lib.rs:472",
+        "crates/aseman-module-runtime/src/lib.rs:487",
+        "modules/storage-postgres/src/guest.rs:924",
+        "modules/storage-postgres/src/lib.rs:111",
+        "node/src/drivers/signaler.rs:168",
+        "node/src/lib.rs:293",
+        "node/src/lib.rs:325",
+        "node/src/lib.rs:345",
+        "node/src/lib.rs:358",
+        "node/src/telemetry/resources.rs:144",
+        "node/src/telemetry/resources.rs:210",
+        "node/src/telemetry/resources.rs:211",
+        "vms/elpian/crates/elpian-vm/src/sdk/data.rs:170",
+        "vms/elpian/crates/elpian-vm/src/sdk/vm.rs:21",
+        "vms/elpian/crates/elpian-vm/src/sdk/vm.rs:22",
+        "vms/wasm/src/host_calls.rs:83",
+        "vms/wasm/src/host_calls.rs:84",
+        "vms/wasm/src/host_calls.rs:290",
+        "vms/wasm/src/host_calls.rs:303",
+        "vms/wasm/src/host_calls.rs:315",
+        "vms/wasm/src/host_calls.rs:341",
+        "vms/wasm/src/host_calls.rs:342",
+        "vms/wasm/src/host_calls.rs:369"
+      ]
+    },
+    "rust_unwrap_calls": {
+      "count": 1752,
+      "sample_locations": [
+        "cmd/casparctl/src/main.rs:58",
+        "cmd/casparctl/src/main.rs:295",
+        "cmd/casparctl/src/main.rs:303",
+        "cmd/casparctl/src/main.rs:308",
+        "cmd/casparctl/src/main.rs:748",
+        "cmd/casparctl/src/main.rs:1664",
+        "cmd/casparctl/src/main.rs:1670",
+        "cmd/casparctl/src/main.rs:1676",
+        "cmd/casparctl/src/main.rs:1682",
+        "cmd/casparctl/src/main.rs:1683",
+        "cmd/casparctl/src/main.rs:1688",
+        "cmd/casparctl/src/main.rs:1786",
+        "cmd/casparctl/src/main.rs:1787",
+        "cmd/casparctl/src/main.rs:1788",
+        "cmd/casparctl/src/main.rs:1789",
+        "cmd/casparctl/src/main.rs:1833",
+        "cmd/casparctl/src/main.rs:1841",
+        "cmd/casparctl/src/main.rs:1843",
+        "cmd/casparctl/src/main.rs:1851",
+        "cmd/casparctl/src/modules.rs:229",
+        "cmd/casparctl/src/owner.rs:268",
+        "cmd/casparctl/src/owner.rs:271",
+        "cmd/casparctl/src/owner.rs:272",
+        "cmd/casparctl/src/owner.rs:274",
+        "cmd/casparctl/src/owner.rs:283"
+      ]
+    }
+  },
+  "source": {
+    "file_count": 398,
+    "files_by_suffix": {
+      ".js": 4,
+      ".py": 21,
+      ".rs": 366,
+      ".sh": 6,
+      ".ts": 1
+    },
+    "largest_files": [
+      {
+        "lines": 6490,
+        "path": "vms/elpian/crates/elpian-vm/src/sdk/executor.rs"
+      },
+      {
+        "lines": 4119,
+        "path": "node/src/shell/api/actions/creature/finance.rs"
+      },
+      {
+        "lines": 2761,
+        "path": "node/src/drivers/network/chain/hashgraph/hashgraph.rs"
+      },
+      {
+        "lines": 2369,
+        "path": "node/src/drivers/vmm/hostcall_entities.rs"
+      },
+      {
+        "lines": 2096,
+        "path": "vms/elpian/crates/elpian-vm/src/sdk/stdlib/mod.rs"
+      },
+      {
+        "lines": 1918,
+        "path": "vms/modal/src/controller.rs"
+      },
+      {
+        "lines": 1890,
+        "path": "cmd/casparctl/src/main.rs"
+      },
+      {
+        "lines": 1860,
+        "path": "node/src/drivers/vmm/host/vm_host_functions.rs"
+      },
+      {
+        "lines": 1857,
+        "path": "node/src/shell/api/actions/program.rs"
+      },
+      {
+        "lines": 1796,
+        "path": "client-cli/index.ts"
+      },
+      {
+        "lines": 1760,
+        "path": "vms/elpian/crates/elpian-vm/src/sdk/compiler.rs"
+      },
+      {
+        "lines": 1673,
+        "path": "crates/aseman-contracts/src/capsule.rs"
+      },
+      {
+        "lines": 1599,
+        "path": "node/src/shell/api/actions/creature.rs"
+      },
+      {
+        "lines": 1594,
+        "path": "run-nodes.sh"
+      },
+      {
+        "lines": 1581,
+        "path": "crates/aseman-module-runtime/src/lib.rs"
+      },
+      {
+        "lines": 1324,
+        "path": "vms/elpify/crates/elpify-lang/src/compiler.rs"
+      },
+      {
+        "lines": 1260,
+        "path": "vms/docker/src/controller.rs"
+      },
+      {
+        "lines": 1222,
+        "path": "node/src/core/core_orchestrator.rs"
+      },
+      {
+        "lines": 1210,
+        "path": "node/src/core/actor/model/trx.rs"
+      },
+      {
+        "lines": 1190,
+        "path": "node/src/drivers/vmm/driver.rs"
+      }
+    ],
+    "nonblank_lines": 102264,
+    "physical_lines": 110200
+  }
+}

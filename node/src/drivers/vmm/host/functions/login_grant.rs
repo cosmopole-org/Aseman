@@ -22,8 +22,8 @@ fn grant_key(nonce: &str) -> String {
 
 /// Whether `/creatures/login` requires a grant on this node.
 pub(crate) fn grant_mode() -> bool {
-    std::env::var("CASPAR_LOGIN_MODE")
-        .map(|v| v.trim().eq_ignore_ascii_case("grant"))
+    aseman_config::legacy_adapter_snapshot()
+        .map(|config| config.login_grant_required)
         .unwrap_or(false)
 }
 
@@ -39,13 +39,21 @@ pub(crate) fn host_fn_grant_login(caller_program_id: &str, input: &JsonValue) ->
     let Some(app) = with_global_app(|app| app.clone()) else {
         return json!({"ok": false, "error": "vmm not initialised"}).to_string();
     };
-    let owner = crate::drivers::vmm::host::functions::vm_ownership::program_owner_user(caller_program_id);
+    let owner =
+        crate::drivers::vmm::host::functions::vm_ownership::program_owner_user(caller_program_id);
     if owner.is_empty() || owner != app.owner_id() {
         return json!({"ok": false, "error": "only a program owned by the node owner may grant a login"}).to_string();
     }
-    let ttl = input["ttlSecs"].as_i64().unwrap_or(120).clamp(10, MAX_TTL_SECS);
+    let ttl = input["ttlSecs"]
+        .as_i64()
+        .unwrap_or(120)
+        .clamp(10, MAX_TTL_SECS);
     let expires_at = chrono::Utc::now().timestamp_millis() + ttl * 1000;
-    let nonce = format!("{}{}", uuid::Uuid::new_v4().simple(), uuid::Uuid::new_v4().simple());
+    let nonce = format!(
+        "{}{}",
+        uuid::Uuid::new_v4().simple(),
+        uuid::Uuid::new_v4().simple()
+    );
     let key = grant_key(&nonce);
     let value = format!("{}|{}", expires_at, email);
     app.modify_state(
@@ -62,22 +70,28 @@ pub(crate) fn host_fn_grant_login(caller_program_id: &str, input: &JsonValue) ->
 pub(crate) fn consume(trx: &dyn ITrx, nonce: &str, email: &str) -> anyhow::Result<()> {
     let nonce = nonce.trim();
     if nonce.is_empty() {
-        return Err(anyhow::anyhow!("this node requires a login grant; sign in through the platform"));
+        return Err(anyhow::anyhow!(
+            "this node requires a login grant; sign in through the platform"
+        ));
     }
     let key = grant_key(nonce);
     let stored = trx.get_link(&key);
     if stored.is_empty() {
-        return Err(anyhow::anyhow!("that login grant is invalid or already used"));
+        return Err(anyhow::anyhow!(
+            "that login grant is invalid or already used"
+        ));
     }
     // Spent before anything else is checked, so a grant is never usable twice.
     trx.del_key(&format!("link::{}", key));
-    let (expires_at, granted_email) = parse(&stored)
-        .ok_or_else(|| anyhow::anyhow!("that login grant is malformed"))?;
+    let (expires_at, granted_email) =
+        parse(&stored).ok_or_else(|| anyhow::anyhow!("that login grant is malformed"))?;
     if chrono::Utc::now().timestamp_millis() > expires_at {
         return Err(anyhow::anyhow!("that login grant has expired"));
     }
     if granted_email != email {
-        return Err(anyhow::anyhow!("that login grant is for a different account"));
+        return Err(anyhow::anyhow!(
+            "that login grant is for a different account"
+        ));
     }
     Ok(())
 }
@@ -93,7 +107,10 @@ mod tests {
 
     #[test]
     fn a_stored_grant_reads_back_its_expiry_and_email() {
-        assert_eq!(parse("1700000000000|a@b.co"), Some((1700000000000, "a@b.co".to_string())));
+        assert_eq!(
+            parse("1700000000000|a@b.co"),
+            Some((1700000000000, "a@b.co".to_string()))
+        );
     }
 
     #[test]

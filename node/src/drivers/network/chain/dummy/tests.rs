@@ -6,14 +6,12 @@
 use std::thread;
 use std::time::Duration;
 
+use crate::compat::logrus::Entry;
 use crate::drivers::network::chain::crypto;
-use crate::drivers::network::chain::hashgraph::{
-    Block, InternalTransaction, TransactionType,
-};
+use crate::drivers::network::chain::hashgraph::{Block, InternalTransaction, TransactionType};
 use crate::drivers::network::chain::node::state::State as NodeState;
 use crate::drivers::network::chain::peers::Peer;
 use crate::drivers::network::chain::proxy::AppProxy;
-use crate::compat::logrus::Entry;
 
 use super::InmemDummyClient;
 
@@ -73,8 +71,7 @@ fn inmem_dummy_server_side() {
     let mut expected_state_hash: Vec<u8> = Vec::new();
     for tx in blocks[0].transactions() {
         let tx_hash = crypto::sha256(tx);
-        expected_state_hash =
-            crypto::simple_hash_from_two_hashes(&expected_state_hash, &tx_hash);
+        expected_state_hash = crypto::simple_hash_from_two_hashes(&expected_state_hash, &tx_hash);
     }
     assert_eq!(resp.state_hash, expected_state_hash);
 
@@ -115,9 +112,7 @@ fn inmem_dummy_server_side() {
 // resulting state hash is deterministic and reproducible.
 #[test]
 fn dummy_chain_signed_internal_transactions_round_trip_state_hash() {
-    use crate::drivers::network::chain::crypto::keys::{
-        generate_ecdsa_key, public_key_hex,
-    };
+    use crate::drivers::network::chain::crypto::keys::{generate_ecdsa_key, public_key_hex};
 
     let dummy = InmemDummyClient::new(Entry::standalone());
 
@@ -157,21 +152,27 @@ fn dummy_chain_signed_internal_transactions_round_trip_state_hash() {
     );
     let itx_block = Block::new(1, 2, Vec::new(), Vec::new(), Vec::new(), itxs.clone(), 0);
 
-    let resp_app = dummy.proxy.commit_block(app_block.clone()).expect("commit app");
-    let resp_itx = dummy.proxy.commit_block(itx_block.clone()).expect("commit itx");
+    let resp_app = dummy
+        .proxy
+        .commit_block(app_block.clone())
+        .expect("commit app");
+    let resp_itx = dummy
+        .proxy
+        .commit_block(itx_block.clone())
+        .expect("commit itx");
 
     // The internal-transaction block produces a receipt for every itx, all
     // accepted by the dummy state.
     assert_eq!(resp_itx.internal_transaction_receipts.len(), itxs.len());
-    assert!(resp_itx.internal_transaction_receipts.iter().all(|r| r.accepted));
+    assert!(resp_itx
+        .internal_transaction_receipts
+        .iter()
+        .all(|r| r.accepted));
 
     // The committed-transactions buffer holds the application transactions in
     // commit order, untouched by the internal-transaction block.
     let committed = dummy.get_committed_transactions();
-    assert_eq!(
-        committed,
-        vec![b"app-tx-1".to_vec(), b"app-tx-2".to_vec()]
-    );
+    assert_eq!(committed, vec![b"app-tx-1".to_vec(), b"app-tx-2".to_vec()]);
 
     // Replaying the same blocks against a fresh dummy must yield identical
     // state hashes — proof that commit is deterministic.

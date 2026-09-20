@@ -107,9 +107,7 @@ mod tests {
     use crate::drivers::network::chain::hashgraph::{InternalTransaction, TransactionType};
 
     fn fresh_peer() -> Peer {
-        use crate::drivers::network::chain::crypto::keys::{
-            generate_ecdsa_key, public_key_hex,
-        };
+        use crate::drivers::network::chain::crypto::keys::{generate_ecdsa_key, public_key_hex};
         let key = generate_ecdsa_key().unwrap();
         Peer::new(&public_key_hex(key.verifying_key()), "addr", "m")
     }
@@ -128,7 +126,11 @@ mod tests {
 
         let bytes = serde_json::to_vec(&req).unwrap();
         let raw = std::str::from_utf8(&bytes).unwrap();
-        assert!(raw.contains(r#""FromID":17"#), "expected FromID, got {}", raw);
+        assert!(
+            raw.contains(r#""FromID":17"#),
+            "expected FromID, got {}",
+            raw
+        );
         assert!(raw.contains(r#""WorkChainId""#));
 
         let parsed: SyncRequest = serde_json::from_slice(&bytes).unwrap();
@@ -200,7 +202,11 @@ mod tests {
         let bytes = serde_json::to_vec(&resp).unwrap();
         let raw = std::str::from_utf8(&bytes).unwrap();
         // The snapshot field is base64-encoded (`AAECA/8=`).
-        assert!(raw.contains(r#""Snapshot":"AAECA/8=""#), "snapshot encoding: {}", raw);
+        assert!(
+            raw.contains(r#""Snapshot":"AAECA/8=""#),
+            "snapshot encoding: {}",
+            raw
+        );
 
         let parsed: FastForwardResponse = serde_json::from_slice(&bytes).unwrap();
         assert_eq!(parsed.snapshot, snapshot);

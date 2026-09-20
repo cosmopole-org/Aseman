@@ -10,10 +10,10 @@ use std::sync::Arc;
 use anyhow::Result;
 use crossbeam_channel::{unbounded, Receiver, Sender};
 
+use crate::compat::logrus::Entry;
 use crate::drivers::network::chain::hashgraph::Block;
 use crate::drivers::network::chain::node::state::State;
 use crate::drivers::network::chain::proxy::{AppProxy, CommitResponse, ProxyHandler};
-use crate::compat::logrus::Entry;
 
 /// In-memory `AppProxy` implementation that forwards every callback to a
 /// user-supplied [`ProxyHandler`].
@@ -56,9 +56,7 @@ impl AppProxy for InmemProxy {
     fn commit_block(&self, block: Block) -> Result<CommitResponse> {
         let res = self.handler.commit_handler(block);
         if let Err(e) = &res {
-            self.logger
-                .with_error(e)
-                .debug("InmemProxy.CommitBlock");
+            self.logger.with_error(e).debug("InmemProxy.CommitBlock");
         }
         res
     }

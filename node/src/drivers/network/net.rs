@@ -9,16 +9,16 @@ use std::sync::Arc;
 
 use anyhow::Result;
 
+use crate::drivers::network::client::{Tcp as TcpDriver, Ws as WsDriver};
+use crate::models::core::ICore;
 use crate::models::ports::network::chain::IChain;
 use crate::models::ports::network::federation::IFederation;
-use crate::models::ports::network::{INetwork, TlsConfig};
 use crate::models::ports::network::tcp::ITcp;
 use crate::models::ports::network::ws::IWs;
+use crate::models::ports::network::{INetwork, TlsConfig};
 use crate::models::ports::security::ISecurity;
 use crate::models::ports::signaler::ISignaler;
 use crate::models::ports::storage::IStorage;
-use crate::models::core::ICore;
-use crate::drivers::network::client::{Tcp as TcpDriver, Ws as WsDriver};
 
 /// Concrete [`INetwork`] implementation.
 pub struct Network {

@@ -61,17 +61,32 @@ mod tests {
 
     #[test]
     fn test_packet_json_shapes() {
-        let p = Packet { origin: "fed-a".to_string(), data: "payload".to_string() };
+        let p = Packet {
+            origin: "fed-a".to_string(),
+            data: "payload".to_string(),
+        };
         let raw = serde_json::to_string(&p).expect("marshal packet");
-        assert_eq!(raw, r#"{"origin":"fed-a","data":"payload"}"#, "unexpected packet json");
+        assert_eq!(
+            raw, r#"{"origin":"fed-a","data":"payload"}"#,
+            "unexpected packet json"
+        );
 
-        let cmd = Command { value: "ping".to_string(), data: "x".to_string() };
-        assert!(cmd.value == "ping" && cmd.data == "x", "command fields mismatch");
+        let cmd = Command {
+            value: "ping".to_string(),
+            data: "x".to_string(),
+        };
+        assert!(
+            cmd.value == "ping" && cmd.data == "x",
+            "command fields mismatch"
+        );
     }
 
     #[test]
     fn packet_round_trips_through_json() {
-        let p = Packet { origin: "fed".to_string(), data: "d".to_string() };
+        let p = Packet {
+            origin: "fed".to_string(),
+            data: "d".to_string(),
+        };
         let raw = serde_json::to_vec(&p).unwrap();
         let parsed: Packet = serde_json::from_slice(&raw).unwrap();
         assert_eq!(parsed.origin, p.origin);
@@ -115,8 +130,16 @@ mod tests {
             data: "x".to_string(),
         };
         let s = serde_json::to_string(&p).unwrap();
-        assert!(!s.contains("vmId"), "vmId should be skipped when empty: {}", s);
-        assert!(!s.contains("logType"), "logType should be skipped when empty: {}", s);
+        assert!(
+            !s.contains("vmId"),
+            "vmId should be skipped when empty: {}",
+            s
+        );
+        assert!(
+            !s.contains("logType"),
+            "logType should be skipped when empty: {}",
+            s
+        );
         assert!(s.contains(r#""buildId":"b""#));
         assert!(s.contains(r#""creatureId":"c""#));
     }

@@ -1,0 +1,5 @@
+{
+  "kind": "core.program",
+  "raw_sql": "SELECT * FROM programs",
+  "limit": 0
+}

@@ -1,0 +1,1647 @@
+{
+  "_meta": {
+    "artifact": "A003",
+    "generator": "scripts/generate_current_surface_inventories.py",
+    "last_verified_commit": "800df24076c794f9b33c29a9f301dd9d674f47d6",
+    "lifecycle_status": "GENERATED",
+    "source_of_truth": "literal environment reads, sample.env, deployment env generation, and Docker build args",
+    "status": "CURRENT",
+    "verification": "python3 scripts/generate_current_surface_inventories.py --check"
+  },
+  "keys": [
+    {
+      "category": "runtime-or-storage",
+      "key": "APPLET_DB_PATH",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:15"
+        },
+        {
+          "kind": "sample-declaration",
+          "source": "node/sample.env:5"
+        },
+        {
+          "kind": "deployment-write",
+          "source": "run-nodes.sh:1282"
+        }
+      ],
+      "sample_value": ""
+    },
+    {
+      "category": "network",
+      "key": "ASEMAN_TEST_POSTGRES_URL",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:36"
+        },
+        {
+          "kind": "read",
+          "source": "crates/aseman-config/src/lib.rs:300"
+        }
+      ],
+      "sample_value": null
+    },
+    {
+      "category": "runtime-or-storage",
+      "key": "BABBLE_DATA_DIR",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:53"
+        },
+        {
+          "kind": "deployment-write",
+          "source": "run-nodes.sh:1304"
+        }
+      ],
+      "sample_value": null
+    },
+    {
+      "category": "runtime-or-storage",
+      "key": "BABBLE_DIR",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:70"
+        },
+        {
+          "kind": "deployment-write",
+          "source": "run-nodes.sh:1303"
+        }
+      ],
+      "sample_value": null
+    },
+    {
+      "category": "runtime-or-storage",
+      "key": "BASE_DB_PATH",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:87"
+        },
+        {
+          "kind": "sample-declaration",
+          "source": "node/sample.env:4"
+        },
+        {
+          "kind": "deployment-write",
+          "source": "run-nodes.sh:1281"
+        }
+      ],
+      "sample_value": ""
+    },
+    {
+      "category": "network",
+      "key": "BLOCKCHAIN_API_PORT",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:108"
+        },
+        {
+          "kind": "sample-declaration",
+          "source": "node/sample.env:11"
+        },
+        {
+          "kind": "deployment-write",
+          "source": "run-nodes.sh:1288"
+        }
+      ],
+      "sample_value": ""
+    },
+    {
+      "category": "network",
+      "key": "CASPARCTL_CLUSTER_ENDPOINT",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:129"
+        }
+      ],
+      "sample_value": null
+    },
+    {
+      "category": "runtime-or-storage",
+      "key": "CASPARCTL_PPROF",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:142"
+        }
+      ],
+      "sample_value": null
+    },
+    {
+      "category": "runtime-or-storage",
+      "key": "CASPARCTL_TELEMETRY",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:155"
+        }
+      ],
+      "sample_value": null
+    },
+    {
+      "category": "application",
+      "key": "CASPAR_BABBLE_FRAME_CACHE",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:168"
+        }
+      ],
+      "sample_value": null
+    },
+    {
+      "category": "application",
+      "key": "CASPAR_BABBLE_FRAME_RETENTION",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:181"
+        }
+      ],
+      "sample_value": null
+    },
+    {
+      "category": "secret-or-sensitive",
+      "key": "CASPAR_CLUSTER_TOKEN",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:194"
+        }
+      ],
+      "sample_value": null
+    },
+    {
+      "category": "application",
+      "key": "CASPAR_DOCKER_DISK_QUOTA",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:207"
+        }
+      ],
+      "sample_value": null
+    },
+    {
+      "category": "application",
+      "key": "CASPAR_DOCKER_RUNTIME",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:220"
+        }
+      ],
+      "sample_value": null
+    },
+    {
+      "category": "application",
+      "key": "CASPAR_GATEWAY_NETWORK",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:233"
+        }
+      ],
+      "sample_value": null
+    },
+    {
+      "category": "network",
+      "key": "CASPAR_HOST",
+      "occurrences": [
+        {
+          "kind": "typescript-read",
+          "source": "client-cli/index.ts:1200"
+        },
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:246"
+        }
+      ],
+      "sample_value": null
+    },
+    {
+      "category": "application",
+      "key": "CASPAR_INSECURE",
+      "occurrences": [
+        {
+          "kind": "typescript-read",
+          "source": "client-cli/index.ts:78"
+        },
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:263"
+        }
+      ],
+      "sample_value": null
+    },
+    {
+      "category": "application",
+      "key": "CASPAR_LOGIN_MODE",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:280"
+        }
+      ],
+      "sample_value": null
+    },
+    {
+      "category": "application",
+      "key": "CASPAR_MALLOC_ARENA_MAX",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:293"
+        }
+      ],
+      "sample_value": null
+    },
+    {
+      "category": "application",
+      "key": "CASPAR_MALLOC_TRIM_SECS",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:306"
+        }
+      ],
+      "sample_value": null
+    },
+    {
+      "category": "application",
+      "key": "CASPAR_OWNER_EMAIL",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:319"
+        }
+      ],
+      "sample_value": null
+    },
+    {
+      "category": "application",
+      "key": "CASPAR_OWNER_USERNAME",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:332"
+        }
+      ],
+      "sample_value": null
+    },
+    {
+      "category": "network",
+      "key": "CASPAR_PORT",
+      "occurrences": [
+        {
+          "kind": "typescript-read",
+          "source": "client-cli/index.ts:1202"
+        },
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:345"
+        }
+      ],
+      "sample_value": null
+    },
+    {
+      "category": "application",
+      "key": "CASPAR_PROTO",
+      "occurrences": [
+        {
+          "kind": "typescript-read",
+          "source": "client-cli/index.ts:1201"
+        },
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:362"
+        }
+      ],
+      "sample_value": null
+    },
+    {
+      "category": "application",
+      "key": "CASPAR_ROCKSDB_BLOCK_CACHE_MB",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:379"
+        }
+      ],
+      "sample_value": null
+    },
+    {
+      "category": "application",
+      "key": "CASPAR_ROCKSDB_MAX_OPEN_FILES",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:392"
+        }
+      ],
+      "sample_value": null
+    },
+    {
+      "category": "application",
+      "key": "CASPAR_ROCKSDB_WRITE_BUFFER_MB",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:405"
+        }
+      ],
+      "sample_value": null
+    },
+    {
+      "category": "application",
+      "key": "CASPAR_SIGNAL_TIMEOUT_MS",
+      "occurrences": [
+        {
+          "kind": "typescript-read",
+          "source": "client-cli/index.ts:572"
+        },
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:418"
+        }
+      ],
+      "sample_value": null
+    },
+    {
+      "category": "application",
+      "key": "CASPAR_STORAGE_MAX_BYTES",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:435"
+        }
+      ],
+      "sample_value": null
+    },
+    {
+      "category": "network",
+      "key": "CASPAR_STORAGE_PORT",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:448"
+        }
+      ],
+      "sample_value": null
+    },
+    {
+      "category": "application",
+      "key": "CASPAR_TLS",
+      "occurrences": [
+        {
+          "kind": "typescript-read",
+          "source": "client-cli/index.ts:51"
+        },
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:461"
+        }
+      ],
+      "sample_value": null
+    },
+    {
+      "category": "application",
+      "key": "CASPAR_VMS_DIR",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:478"
+        }
+      ],
+      "sample_value": null
+    },
+    {
+      "category": "network",
+      "key": "CASPAR_VM_HTTP_PORT",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:491"
+        }
+      ],
+      "sample_value": null
+    },
+    {
+      "category": "application",
+      "key": "CASPAR_VM_HTTP_TIMEOUT_SECS",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:504"
+        }
+      ],
+      "sample_value": null
+    },
+    {
+      "category": "application",
+      "key": "CASPAR_WASM_AOT",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:517"
+        }
+      ],
+      "sample_value": null
+    },
+    {
+      "category": "application",
+      "key": "CASPAR_WASM_VM_CACHE",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:530"
+        }
+      ],
+      "sample_value": null
+    },
+    {
+      "category": "network",
+      "key": "CLIENT_TCP_API_PORT",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:543"
+        },
+        {
+          "kind": "sample-declaration",
+          "source": "node/sample.env:9"
+        },
+        {
+          "kind": "deployment-write",
+          "source": "run-nodes.sh:1286"
+        }
+      ],
+      "sample_value": ""
+    },
+    {
+      "category": "network",
+      "key": "CLIENT_WS_API_PORT",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:564"
+        },
+        {
+          "kind": "sample-declaration",
+          "source": "node/sample.env:8"
+        },
+        {
+          "kind": "deployment-write",
+          "source": "run-nodes.sh:1285"
+        }
+      ],
+      "sample_value": ""
+    },
+    {
+      "category": "network",
+      "key": "CLUSTER_ADVERTISE_ADDR",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:585"
+        }
+      ],
+      "sample_value": null
+    },
+    {
+      "category": "secret-or-sensitive",
+      "key": "CLUSTER_AUTH_TOKEN",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:598"
+        }
+      ],
+      "sample_value": null
+    },
+    {
+      "category": "application",
+      "key": "CLUSTER_BOOTSTRAP",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:611"
+        }
+      ],
+      "sample_value": null
+    },
+    {
+      "category": "application",
+      "key": "CLUSTER_CONFIG_PATH",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:624"
+        }
+      ],
+      "sample_value": null
+    },
+    {
+      "category": "application",
+      "key": "CLUSTER_ENABLED",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:637"
+        }
+      ],
+      "sample_value": null
+    },
+    {
+      "category": "network",
+      "key": "CLUSTER_LISTEN_ADDR",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:650"
+        }
+      ],
+      "sample_value": null
+    },
+    {
+      "category": "application",
+      "key": "CLUSTER_NODE_ID",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:663"
+        }
+      ],
+      "sample_value": null
+    },
+    {
+      "category": "application",
+      "key": "CLUSTER_NODE_NAME",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:676"
+        }
+      ],
+      "sample_value": null
+    },
+    {
+      "category": "application",
+      "key": "CLUSTER_REGION",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:689"
+        }
+      ],
+      "sample_value": null
+    },
+    {
+      "category": "runtime-or-storage",
+      "key": "DEBIAN_FRONTEND",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:702"
+        },
+        {
+          "kind": "docker-env",
+          "source": "node/Dockerfile:24"
+        }
+      ],
+      "sample_value": null
+    },
+    {
+      "category": "network",
+      "key": "DOCKER_HOST_GATEWAY_ADVERTISE_HOST",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:719"
+        }
+      ],
+      "sample_value": null
+    },
+    {
+      "category": "network",
+      "key": "DOCKER_HOST_GATEWAY_PORT",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:732"
+        }
+      ],
+      "sample_value": null
+    },
+    {
+      "category": "network",
+      "key": "ENTITY_API_PORT",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:745"
+        },
+        {
+          "kind": "sample-declaration",
+          "source": "node/sample.env:12"
+        },
+        {
+          "kind": "deployment-write",
+          "source": "run-nodes.sh:1289"
+        }
+      ],
+      "sample_value": ""
+    },
+    {
+      "category": "runtime-or-storage",
+      "key": "FC_VERSION",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:766"
+        },
+        {
+          "kind": "docker-arg",
+          "source": "node/Dockerfile:78"
+        }
+      ],
+      "sample_value": null
+    },
+    {
+      "category": "network",
+      "key": "FEDERATION_API_PORT",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:783"
+        },
+        {
+          "kind": "sample-declaration",
+          "source": "node/sample.env:10"
+        },
+        {
+          "kind": "deployment-write",
+          "source": "run-nodes.sh:1287"
+        }
+      ],
+      "sample_value": ""
+    },
+    {
+      "category": "runtime-or-storage",
+      "key": "FIRECRACKER_BIN",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:804"
+        }
+      ],
+      "sample_value": null
+    },
+    {
+      "category": "runtime-or-storage",
+      "key": "FIRECRACKER_BOOT_ARGS",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:817"
+        }
+      ],
+      "sample_value": null
+    },
+    {
+      "category": "runtime-or-storage",
+      "key": "FIRECRACKER_KERNEL_IMAGE",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:830"
+        }
+      ],
+      "sample_value": null
+    },
+    {
+      "category": "runtime-or-storage",
+      "key": "FIRECRACKER_ROOTFS_IMAGE",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:843"
+        }
+      ],
+      "sample_value": null
+    },
+    {
+      "category": "process-environment",
+      "key": "HOME",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:856"
+        },
+        {
+          "kind": "read",
+          "source": "crates/aseman-config/src/lib.rs:358"
+        }
+      ],
+      "sample_value": null
+    },
+    {
+      "category": "runtime-or-storage",
+      "key": "INSTALL_FIRECRACKER",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:873"
+        },
+        {
+          "kind": "docker-arg",
+          "source": "node/Dockerfile:77"
+        }
+      ],
+      "sample_value": null
+    },
+    {
+      "category": "network",
+      "key": "IPADDR",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:890"
+        },
+        {
+          "kind": "sample-declaration",
+          "source": "node/sample.env:15"
+        },
+        {
+          "kind": "deployment-write",
+          "source": "run-nodes.sh:1293"
+        }
+      ],
+      "sample_value": ""
+    },
+    {
+      "category": "runtime-or-storage",
+      "key": "IS_HEAD",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:911"
+        },
+        {
+          "kind": "sample-declaration",
+          "source": "node/sample.env:17"
+        },
+        {
+          "kind": "deployment-write",
+          "source": "run-nodes.sh:1295"
+        }
+      ],
+      "sample_value": ""
+    },
+    {
+      "category": "process-environment",
+      "key": "LD_LIBRARY_PATH",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:932"
+        },
+        {
+          "kind": "docker-env",
+          "source": "node/Dockerfile:50"
+        }
+      ],
+      "sample_value": null
+    },
+    {
+      "category": "network",
+      "key": "MAIN_PORT",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:949"
+        }
+      ],
+      "sample_value": null
+    },
+    {
+      "category": "secret-or-sensitive",
+      "key": "MODAL_API_KEY",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:962"
+        },
+        {
+          "kind": "sample-declaration",
+          "source": "node/sample.env:46"
+        }
+      ],
+      "sample_value": ""
+    },
+    {
+      "category": "application",
+      "key": "MODAL_APP_NAME",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:979"
+        },
+        {
+          "kind": "sample-declaration",
+          "source": "node/sample.env:55"
+        }
+      ],
+      "sample_value": ""
+    },
+    {
+      "category": "application",
+      "key": "MODAL_APP_PREFIX",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:996"
+        },
+        {
+          "kind": "sample-declaration",
+          "source": "node/sample.env:58"
+        }
+      ],
+      "sample_value": "caspar"
+    },
+    {
+      "category": "application",
+      "key": "MODAL_BUILDER_VERSION",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:1013"
+        }
+      ],
+      "sample_value": null
+    },
+    {
+      "category": "application",
+      "key": "MODAL_CLIENT_VERSION",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:1026"
+        }
+      ],
+      "sample_value": null
+    },
+    {
+      "category": "application",
+      "key": "MODAL_DEFAULT_IMAGE",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:1039"
+        },
+        {
+          "kind": "sample-declaration",
+          "source": "node/sample.env:60"
+        }
+      ],
+      "sample_value": "ubuntu:24.04"
+    },
+    {
+      "category": "application",
+      "key": "MODAL_ENVIRONMENT",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:1056"
+        },
+        {
+          "kind": "sample-declaration",
+          "source": "node/sample.env:50"
+        }
+      ],
+      "sample_value": ""
+    },
+    {
+      "category": "application",
+      "key": "MODAL_IMAGE_BUILD_TIMEOUT_SECS",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:1073"
+        },
+        {
+          "kind": "sample-declaration",
+          "source": "node/sample.env:66"
+        }
+      ],
+      "sample_value": "900"
+    },
+    {
+      "category": "application",
+      "key": "MODAL_SANDBOX_TIMEOUT_SECS",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:1090"
+        },
+        {
+          "kind": "sample-declaration",
+          "source": "node/sample.env:64"
+        }
+      ],
+      "sample_value": "3600"
+    },
+    {
+      "category": "network",
+      "key": "MODAL_SERVER_URL",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:1107"
+        },
+        {
+          "kind": "sample-declaration",
+          "source": "node/sample.env:52"
+        }
+      ],
+      "sample_value": "https://api.modal.com:443"
+    },
+    {
+      "category": "application",
+      "key": "MODAL_TASK_READY_TIMEOUT_SECS",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:1124"
+        }
+      ],
+      "sample_value": null
+    },
+    {
+      "category": "secret-or-sensitive",
+      "key": "MODAL_TOKEN_ID",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:1137"
+        },
+        {
+          "kind": "sample-declaration",
+          "source": "node/sample.env:47"
+        }
+      ],
+      "sample_value": ""
+    },
+    {
+      "category": "secret-or-sensitive",
+      "key": "MODAL_TOKEN_SECRET",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:1154"
+        },
+        {
+          "kind": "sample-declaration",
+          "source": "node/sample.env:48"
+        }
+      ],
+      "sample_value": ""
+    },
+    {
+      "category": "application",
+      "key": "MODAL_VOLUME_MOUNT_PATH",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:1171"
+        },
+        {
+          "kind": "sample-declaration",
+          "source": "node/sample.env:62"
+        }
+      ],
+      "sample_value": "/data"
+    },
+    {
+      "category": "application",
+      "key": "MODAL_VOLUME_SETTLE_MS",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:1188"
+        }
+      ],
+      "sample_value": null
+    },
+    {
+      "category": "network",
+      "key": "ORIGIN",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:1201"
+        },
+        {
+          "kind": "sample-declaration",
+          "source": "node/sample.env:14"
+        },
+        {
+          "kind": "deployment-write",
+          "source": "run-nodes.sh:1292"
+        }
+      ],
+      "sample_value": ""
+    },
+    {
+      "category": "runtime-or-storage",
+      "key": "OWNER_ID",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:1222"
+        },
+        {
+          "kind": "sample-declaration",
+          "source": "node/sample.env:1"
+        },
+        {
+          "kind": "deployment-write",
+          "source": "run-nodes.sh:1278"
+        }
+      ],
+      "sample_value": ""
+    },
+    {
+      "category": "secret-or-sensitive",
+      "key": "OWNER_PRIVATE_KEY",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:1243"
+        },
+        {
+          "kind": "sample-declaration",
+          "source": "node/sample.env:2"
+        },
+        {
+          "kind": "deployment-write",
+          "source": "run-nodes.sh:1279"
+        }
+      ],
+      "sample_value": ""
+    },
+    {
+      "category": "process-environment",
+      "key": "PATH",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:1264"
+        },
+        {
+          "kind": "read",
+          "source": "crates/aseman-config/src/lib.rs:326"
+        }
+      ],
+      "sample_value": null
+    },
+    {
+      "category": "network",
+      "key": "PPROF_PORT",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:1281"
+        },
+        {
+          "kind": "deployment-write",
+          "source": "run-nodes.sh:1291"
+        }
+      ],
+      "sample_value": null
+    },
+    {
+      "category": "runtime-or-storage",
+      "key": "PROBE_CMD",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:1298"
+        }
+      ],
+      "sample_value": null
+    },
+    {
+      "category": "runtime-or-storage",
+      "key": "PROBE_MACHINE_ID",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:1311"
+        }
+      ],
+      "sample_value": null
+    },
+    {
+      "category": "runtime-or-storage",
+      "key": "PROBE_VM_ID",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:1324"
+        }
+      ],
+      "sample_value": null
+    },
+    {
+      "category": "runtime-or-storage",
+      "key": "QUESTDB_DATA_DIR",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:1337"
+        },
+        {
+          "kind": "deployment-write",
+          "source": "run-nodes.sh:1309"
+        }
+      ],
+      "sample_value": null
+    },
+    {
+      "category": "network",
+      "key": "QUESTDB_HTTP_MIN_PORT",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:1354"
+        },
+        {
+          "kind": "deployment-write",
+          "source": "run-nodes.sh:1307"
+        }
+      ],
+      "sample_value": null
+    },
+    {
+      "category": "network",
+      "key": "QUESTDB_HTTP_PORT",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:1371"
+        },
+        {
+          "kind": "deployment-write",
+          "source": "run-nodes.sh:1306"
+        }
+      ],
+      "sample_value": null
+    },
+    {
+      "category": "network",
+      "key": "QUESTDB_ILP_PORT",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:1388"
+        },
+        {
+          "kind": "deployment-write",
+          "source": "run-nodes.sh:1308"
+        }
+      ],
+      "sample_value": null
+    },
+    {
+      "category": "network",
+      "key": "QUESTDB_PORT",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:1405"
+        },
+        {
+          "kind": "deployment-write",
+          "source": "run-nodes.sh:1305"
+        }
+      ],
+      "sample_value": null
+    },
+    {
+      "category": "application",
+      "key": "RATE_LIMIT_ANON_BURST",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:1422"
+        },
+        {
+          "kind": "sample-declaration",
+          "source": "node/sample.env:33"
+        }
+      ],
+      "sample_value": "20"
+    },
+    {
+      "category": "application",
+      "key": "RATE_LIMIT_ANON_RPS",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:1439"
+        },
+        {
+          "kind": "sample-declaration",
+          "source": "node/sample.env:32"
+        }
+      ],
+      "sample_value": "10"
+    },
+    {
+      "category": "application",
+      "key": "RATE_LIMIT_AUTH_BURST",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:1456"
+        },
+        {
+          "kind": "sample-declaration",
+          "source": "node/sample.env:31"
+        }
+      ],
+      "sample_value": "100"
+    },
+    {
+      "category": "application",
+      "key": "RATE_LIMIT_AUTH_RPS",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:1473"
+        },
+        {
+          "kind": "sample-declaration",
+          "source": "node/sample.env:30"
+        }
+      ],
+      "sample_value": "50"
+    },
+    {
+      "category": "application",
+      "key": "RATE_LIMIT_ENABLED",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:1490"
+        },
+        {
+          "kind": "sample-declaration",
+          "source": "node/sample.env:29"
+        }
+      ],
+      "sample_value": "true"
+    },
+    {
+      "category": "application",
+      "key": "RATE_LIMIT_GLOBAL_BURST",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:1507"
+        },
+        {
+          "kind": "sample-declaration",
+          "source": "node/sample.env:35"
+        }
+      ],
+      "sample_value": "10000"
+    },
+    {
+      "category": "application",
+      "key": "RATE_LIMIT_GLOBAL_RPS",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:1524"
+        },
+        {
+          "kind": "sample-declaration",
+          "source": "node/sample.env:34"
+        }
+      ],
+      "sample_value": "5000"
+    },
+    {
+      "category": "application",
+      "key": "RATE_LIMIT_IDLE_EVICT_SECS",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:1541"
+        },
+        {
+          "kind": "sample-declaration",
+          "source": "node/sample.env:36"
+        }
+      ],
+      "sample_value": "300"
+    },
+    {
+      "category": "runtime-or-storage",
+      "key": "ROOT_NODE",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:1558"
+        },
+        {
+          "kind": "sample-declaration",
+          "source": "node/sample.env:16"
+        },
+        {
+          "kind": "deployment-write",
+          "source": "run-nodes.sh:1294"
+        }
+      ],
+      "sample_value": ""
+    },
+    {
+      "category": "runtime-or-storage",
+      "key": "SEARCH_INDEX_PATH",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:1579"
+        },
+        {
+          "kind": "sample-declaration",
+          "source": "node/sample.env:6"
+        },
+        {
+          "kind": "deployment-write",
+          "source": "run-nodes.sh:1283"
+        }
+      ],
+      "sample_value": ""
+    },
+    {
+      "category": "runtime-or-storage",
+      "key": "SHARDCHAIN_SCRIPT",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:1600"
+        }
+      ],
+      "sample_value": null
+    },
+    {
+      "category": "runtime-or-storage",
+      "key": "STORAGE_ROOT_PATH",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:1613"
+        },
+        {
+          "kind": "sample-declaration",
+          "source": "node/sample.env:3"
+        },
+        {
+          "kind": "deployment-write",
+          "source": "run-nodes.sh:1280"
+        }
+      ],
+      "sample_value": ""
+    },
+    {
+      "category": "runtime-or-storage",
+      "key": "STORE_LOGS_DB",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:1634"
+        },
+        {
+          "kind": "sample-declaration",
+          "source": "node/sample.env:7"
+        },
+        {
+          "kind": "deployment-write",
+          "source": "run-nodes.sh:1284"
+        }
+      ],
+      "sample_value": ""
+    },
+    {
+      "category": "network",
+      "key": "TELEMETRY_API_PORT",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:1655"
+        },
+        {
+          "kind": "sample-declaration",
+          "source": "node/sample.env:38"
+        },
+        {
+          "kind": "deployment-write",
+          "source": "run-nodes.sh:1301"
+        }
+      ],
+      "sample_value": "9099"
+    },
+    {
+      "category": "runtime-or-storage",
+      "key": "TELEMETRY_DB_PATH",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:1676"
+        },
+        {
+          "kind": "sample-declaration",
+          "source": "node/sample.env:39"
+        },
+        {
+          "kind": "deployment-write",
+          "source": "run-nodes.sh:1302"
+        }
+      ],
+      "sample_value": ""
+    },
+    {
+      "category": "runtime-or-storage",
+      "key": "TLS_CERT_PATH",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:1697"
+        }
+      ],
+      "sample_value": null
+    },
+    {
+      "category": "secret-or-sensitive",
+      "key": "TLS_KEY_PATH",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:1710"
+        }
+      ],
+      "sample_value": null
+    },
+    {
+      "category": "process-environment",
+      "key": "USERPROFILE",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:1723"
+        },
+        {
+          "kind": "read",
+          "source": "crates/aseman-config/src/lib.rs:362"
+        }
+      ],
+      "sample_value": null
+    },
+    {
+      "category": "network",
+      "key": "VM_API_PORT",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:1740"
+        },
+        {
+          "kind": "sample-declaration",
+          "source": "node/sample.env:13"
+        },
+        {
+          "kind": "deployment-write",
+          "source": "run-nodes.sh:1290"
+        }
+      ],
+      "sample_value": ""
+    },
+    {
+      "category": "application",
+      "key": "VM_CPU_CORE_COST_PER_MINUTE",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:1761"
+        },
+        {
+          "kind": "sample-declaration",
+          "source": "node/sample.env:21"
+        },
+        {
+          "kind": "deployment-write",
+          "source": "run-nodes.sh:1299"
+        }
+      ],
+      "sample_value": ""
+    },
+    {
+      "category": "application",
+      "key": "VM_DISK_COST_PER_GB_PER_MINUTE",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:1782"
+        },
+        {
+          "kind": "sample-declaration",
+          "source": "node/sample.env:22"
+        },
+        {
+          "kind": "deployment-write",
+          "source": "run-nodes.sh:1300"
+        }
+      ],
+      "sample_value": ""
+    },
+    {
+      "category": "application",
+      "key": "VM_EXEC_COST_PER_SECOND",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:1803"
+        },
+        {
+          "kind": "sample-declaration",
+          "source": "node/sample.env:19"
+        },
+        {
+          "kind": "deployment-write",
+          "source": "run-nodes.sh:1297"
+        }
+      ],
+      "sample_value": ""
+    },
+    {
+      "category": "network",
+      "key": "VM_HTTP_INGRESS_PORT",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:1824"
+        }
+      ],
+      "sample_value": null
+    },
+    {
+      "category": "application",
+      "key": "VM_RAM_COST_PER_MB_PER_MINUTE",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:1837"
+        },
+        {
+          "kind": "sample-declaration",
+          "source": "node/sample.env:20"
+        },
+        {
+          "kind": "deployment-write",
+          "source": "run-nodes.sh:1298"
+        }
+      ],
+      "sample_value": ""
+    },
+    {
+      "category": "runtime-or-storage",
+      "key": "WASMEDGE_LIB_DIR",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:1858"
+        },
+        {
+          "kind": "docker-env",
+          "source": "node/Dockerfile:51"
+        }
+      ],
+      "sample_value": null
+    }
+  ],
+  "summary": {
+    "keys": 116,
+    "limitation": "computed/dynamic keys and effective defaults still require semantic review",
+    "network": 27,
+    "secret_or_sensitive": 7
+  }
+}

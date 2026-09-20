@@ -38,11 +38,12 @@ impl ModalCredentials {
     /// own tooling exports) is accepted too, so a host that already has a
     /// Modal profile configured needs no new variable.
     pub(crate) fn from_env() -> Result<Self, String> {
-        let mut token_id = env_trimmed("MODAL_TOKEN_ID");
-        let mut token_secret = env_trimmed("MODAL_TOKEN_SECRET");
+        let config = aseman_config::runtime_config();
+        let mut token_id = config.modal_token_id;
+        let mut token_secret = config.modal_token_secret;
 
         if token_id.is_empty() || token_secret.is_empty() {
-            let api_key = env_trimmed("MODAL_API_KEY");
+            let api_key = config.modal_api_key;
             if !api_key.is_empty() {
                 match api_key.split_once(':') {
                     Some((id, secret)) => {
@@ -50,9 +51,7 @@ impl ModalCredentials {
                         token_secret = secret.trim().to_string();
                     }
                     None => {
-                        return Err(
-                            "MODAL_API_KEY must be '<token-id>:<token-secret>'".to_string()
-                        )
+                        return Err("MODAL_API_KEY must be '<token-id>:<token-secret>'".to_string())
                     }
                 }
             }
@@ -65,26 +64,13 @@ impl ModalCredentials {
             );
         }
 
-        let server_url = {
-            let raw = env_trimmed("MODAL_SERVER_URL");
-            if raw.is_empty() {
-                "https://api.modal.com:443".to_string()
-            } else {
-                raw
-            }
-        };
-
         Ok(Self {
             token_id,
             token_secret,
-            environment: env_trimmed("MODAL_ENVIRONMENT"),
-            server_url,
+            environment: config.modal_environment,
+            server_url: config.modal_server_url,
         })
     }
-}
-
-fn env_trimmed(key: &str) -> String {
-    std::env::var(key).unwrap_or_default().trim().to_string()
 }
 
 /// Client type Modal's server expects in `x-modal-client-type`
@@ -104,7 +90,7 @@ const CLIENT_TYPE_CLIENT: &str = "1";
 const DEFAULT_CLIENT_VERSION: &str = "1.0.0";
 
 pub(crate) fn client_version() -> String {
-    let configured = env_trimmed("MODAL_CLIENT_VERSION");
+    let configured = aseman_config::runtime_config().modal_client_version;
     if configured.is_empty() {
         DEFAULT_CLIENT_VERSION.to_string()
     } else {
@@ -113,9 +99,7 @@ pub(crate) fn client_version() -> String {
 }
 
 /// The authenticated stub type produced by [`connect`].
-pub(crate) type ModalStub = ModalClientClient<
-    InterceptedService<Channel, AuthInterceptor>,
->;
+pub(crate) type ModalStub = ModalClientClient<InterceptedService<Channel, AuthInterceptor>>;
 
 #[derive(Clone)]
 pub(crate) struct AuthInterceptor {

@@ -1,0 +1,44 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://aseman.example/contracts/capsule/query/query.schema.json",
+  "title": "Bounded typed Aseman capsule query",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["kind", "predicate", "projection", "sort", "aggregates", "traversals", "limit", "cursor"],
+  "properties": {
+    "kind": {"type": "string"},
+    "predicate": {"type": ["object", "null"]},
+    "projection": {"type": "array", "uniqueItems": true, "items": {"type": "string"}},
+    "sort": {
+      "type": "array",
+      "maxItems": 16,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["field", "direction"],
+        "properties": {
+          "field": {"type": "string"},
+          "direction": {"enum": ["ascending", "descending"]}
+        }
+      }
+    },
+    "aggregates": {"type": "array", "maxItems": 16, "items": {"type": "object"}},
+    "traversals": {
+      "type": "array",
+      "maxItems": 16,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["relationship", "target_kind", "projection", "limit"],
+        "properties": {
+          "relationship": {"type": "string"},
+          "target_kind": {"type": "string"},
+          "projection": {"type": "array", "items": {"type": "string"}},
+          "limit": {"type": "integer", "minimum": 1, "maximum": 10000}
+        }
+      }
+    },
+    "limit": {"type": "integer", "minimum": 1, "maximum": 10000},
+    "cursor": {"type": ["object", "null"]}
+  }
+}

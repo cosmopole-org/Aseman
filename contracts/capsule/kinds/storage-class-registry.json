@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "kinds": [
+    {"kind":"telemetry.workload_sample","table":"workload_samples","storage_class":"telemetry","consistency":"eventual","owner_scope":"creature","required_capabilities":["queries.range","consistency.eventual"]},
+    {"kind":"telemetry.node_health","table":"node_health_samples","storage_class":"telemetry","consistency":"eventual","owner_scope":"node","required_capabilities":["queries.range","consistency.eventual"]},
+    {"kind":"telemetry.build_log","table":"build_logs","storage_class":"telemetry","consistency":"eventual","owner_scope":"creature","required_capabilities":["queries.range","consistency.eventual"]},
+    {"kind":"audit.event","table":"audit_events","storage_class":"audit","consistency":"append_linearizable","owner_scope":"global","required_capabilities":["append_only.verifiable","indexes.unique"]},
+    {"kind":"finance.wallet","table":"wallets","storage_class":"finance","consistency":"serializable","owner_scope":"creature","required_capabilities":["transactions.multi_capsule","indexes.unique"]},
+    {"kind":"finance.ledger_entry","table":"ledger_entries","storage_class":"finance","consistency":"serializable","owner_scope":"creature","required_capabilities":["transactions.multi_capsule","indexes.unique","append_only.verifiable"]},
+    {"kind":"finance.pricing_policy","table":"pricing_policies","storage_class":"finance","consistency":"serializable","owner_scope":"global","required_capabilities":["indexes.unique","append_only.verifiable"]},
+    {"kind":"finance.usage_record","table":"usage_records","storage_class":"finance","consistency":"serializable","owner_scope":"creature","required_capabilities":["transactions.multi_capsule","indexes.unique","append_only.verifiable"]},
+    {"kind":"outbox.message","table":"messages","storage_class":"outbox","consistency":"serializable","owner_scope":"global","required_capabilities":["transactions.multi_capsule","indexes.unique"]},
+    {"kind":"realtime.event","table":"events","storage_class":"realtime","consistency":"append_linearizable","owner_scope":"global","required_capabilities":["append_only.verifiable","indexes.unique","events.change_stream"]},
+    {"kind":"realtime.subscription","table":"subscriptions","storage_class":"realtime","consistency":"serializable","owner_scope":"creature","required_capabilities":["indexes.unique"]},
+    {"kind":"realtime.consumer_offset","table":"consumer_offsets","storage_class":"realtime","consistency":"serializable","owner_scope":"creature","required_capabilities":["indexes.unique"]},
+    {"kind":"realtime.dead_letter","table":"dead_letters","storage_class":"realtime","consistency":"serializable","owner_scope":"creature","required_capabilities":["indexes.unique"]}
+  ]
+}

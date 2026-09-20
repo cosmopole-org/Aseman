@@ -1,0 +1,15 @@
+[package]
+name = "aseman-ports"
+description = "Narrow behavioral ports required by Aseman application use cases."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+aseman-domain = { path = "../aseman-domain" }
+thiserror.workspace = true
+
+[lints]
+workspace = true

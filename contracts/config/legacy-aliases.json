@@ -1,0 +1,1878 @@
+{
+  "_meta": {
+    "artifact": "A103",
+    "generator": "scripts/generate_phase1_contracts.py",
+    "last_verified_commit": "800df24076c794f9b33c29a9f301dd9d674f47d6",
+    "legacy_key_count": 116,
+    "status": "ACCEPTED"
+  },
+  "aliases": [
+    {
+      "canonical": "ASEMAN_LEGACY_APPLET_DB_PATH",
+      "category": "runtime-or-storage",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "APPLET_DB_PATH",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:15"
+        },
+        {
+          "kind": "sample-declaration",
+          "source": "node/sample.env:5"
+        },
+        {
+          "kind": "deployment-write",
+          "source": "run-nodes.sh:1282"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_TEST_POSTGRES_URL",
+      "category": "network",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "ASEMAN_TEST_POSTGRES_URL",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:36"
+        },
+        {
+          "kind": "read",
+          "source": "crates/aseman-config/src/lib.rs:300"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_LEGACY_BABBLE_DATA_DIR",
+      "category": "runtime-or-storage",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "BABBLE_DATA_DIR",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:53"
+        },
+        {
+          "kind": "deployment-write",
+          "source": "run-nodes.sh:1304"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_LEGACY_BABBLE_DIR",
+      "category": "runtime-or-storage",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "BABBLE_DIR",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:70"
+        },
+        {
+          "kind": "deployment-write",
+          "source": "run-nodes.sh:1303"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_LEGACY_BASE_DB_PATH",
+      "category": "runtime-or-storage",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "BASE_DB_PATH",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:87"
+        },
+        {
+          "kind": "sample-declaration",
+          "source": "node/sample.env:4"
+        },
+        {
+          "kind": "deployment-write",
+          "source": "run-nodes.sh:1281"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_LEGACY_CONSENSUS_PORT",
+      "category": "network",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "BLOCKCHAIN_API_PORT",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:108"
+        },
+        {
+          "kind": "sample-declaration",
+          "source": "node/sample.env:11"
+        },
+        {
+          "kind": "deployment-write",
+          "source": "run-nodes.sh:1288"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_LEGACY_CASPARCTL_CLUSTER_ENDPOINT",
+      "category": "network",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "CASPARCTL_CLUSTER_ENDPOINT",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:129"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_LEGACY_CASPARCTL_PPROF",
+      "category": "runtime-or-storage",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "CASPARCTL_PPROF",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:142"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_LEGACY_CASPARCTL_TELEMETRY",
+      "category": "runtime-or-storage",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "CASPARCTL_TELEMETRY",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:155"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_BABBLE_FRAME_CACHE",
+      "category": "application",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "CASPAR_BABBLE_FRAME_CACHE",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:168"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_BABBLE_FRAME_RETENTION",
+      "category": "application",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "CASPAR_BABBLE_FRAME_RETENTION",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:181"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_CLUSTER_TOKEN",
+      "category": "secret-or-sensitive",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "CASPAR_CLUSTER_TOKEN",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:194"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_DOCKER_DISK_QUOTA",
+      "category": "application",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "CASPAR_DOCKER_DISK_QUOTA",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:207"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_DOCKER_RUNTIME",
+      "category": "application",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "CASPAR_DOCKER_RUNTIME",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:220"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_GATEWAY_NETWORK",
+      "category": "application",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "CASPAR_GATEWAY_NETWORK",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:233"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_HOST",
+      "category": "network",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "CASPAR_HOST",
+      "occurrences": [
+        {
+          "kind": "typescript-read",
+          "source": "client-cli/index.ts:1200"
+        },
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:246"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_INSECURE",
+      "category": "application",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "CASPAR_INSECURE",
+      "occurrences": [
+        {
+          "kind": "typescript-read",
+          "source": "client-cli/index.ts:78"
+        },
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:263"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_LOGIN_MODE",
+      "category": "application",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "CASPAR_LOGIN_MODE",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:280"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_MALLOC_ARENA_MAX",
+      "category": "application",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "CASPAR_MALLOC_ARENA_MAX",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:293"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_MALLOC_TRIM_SECS",
+      "category": "application",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "CASPAR_MALLOC_TRIM_SECS",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:306"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_OWNER_EMAIL",
+      "category": "application",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "CASPAR_OWNER_EMAIL",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:319"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_OWNER_USERNAME",
+      "category": "application",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "CASPAR_OWNER_USERNAME",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:332"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_PORT",
+      "category": "network",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "CASPAR_PORT",
+      "occurrences": [
+        {
+          "kind": "typescript-read",
+          "source": "client-cli/index.ts:1202"
+        },
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:345"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_PROTO",
+      "category": "application",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "CASPAR_PROTO",
+      "occurrences": [
+        {
+          "kind": "typescript-read",
+          "source": "client-cli/index.ts:1201"
+        },
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:362"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_ROCKSDB_BLOCK_CACHE_MB",
+      "category": "application",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "CASPAR_ROCKSDB_BLOCK_CACHE_MB",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:379"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_ROCKSDB_MAX_OPEN_FILES",
+      "category": "application",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "CASPAR_ROCKSDB_MAX_OPEN_FILES",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:392"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_ROCKSDB_WRITE_BUFFER_MB",
+      "category": "application",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "CASPAR_ROCKSDB_WRITE_BUFFER_MB",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:405"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_SIGNAL_TIMEOUT_MS",
+      "category": "application",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "CASPAR_SIGNAL_TIMEOUT_MS",
+      "occurrences": [
+        {
+          "kind": "typescript-read",
+          "source": "client-cli/index.ts:572"
+        },
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:418"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_STORAGE_MAX_BYTES",
+      "category": "application",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "CASPAR_STORAGE_MAX_BYTES",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:435"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_PUBLIC_STORAGE_PORT",
+      "category": "network",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "CASPAR_STORAGE_PORT",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:448"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_TLS",
+      "category": "application",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "CASPAR_TLS",
+      "occurrences": [
+        {
+          "kind": "typescript-read",
+          "source": "client-cli/index.ts:51"
+        },
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:461"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_VMS_DIR",
+      "category": "application",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "CASPAR_VMS_DIR",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:478"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_VM_HTTP_PORT",
+      "category": "network",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "CASPAR_VM_HTTP_PORT",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:491"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_VM_HTTP_TIMEOUT_SECS",
+      "category": "application",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "CASPAR_VM_HTTP_TIMEOUT_SECS",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:504"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_WASM_AOT",
+      "category": "application",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "CASPAR_WASM_AOT",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:517"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_WASM_VM_CACHE",
+      "category": "application",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "CASPAR_WASM_VM_CACHE",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:530"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_LEGACY_TCP_PORT",
+      "category": "network",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "CLIENT_TCP_API_PORT",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:543"
+        },
+        {
+          "kind": "sample-declaration",
+          "source": "node/sample.env:9"
+        },
+        {
+          "kind": "deployment-write",
+          "source": "run-nodes.sh:1286"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_LEGACY_WS_PORT",
+      "category": "network",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "CLIENT_WS_API_PORT",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:564"
+        },
+        {
+          "kind": "sample-declaration",
+          "source": "node/sample.env:8"
+        },
+        {
+          "kind": "deployment-write",
+          "source": "run-nodes.sh:1285"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_LEGACY_CLUSTER_ADVERTISE_ADDR",
+      "category": "network",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "CLUSTER_ADVERTISE_ADDR",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:585"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_LEGACY_CLUSTER_AUTH_TOKEN",
+      "category": "secret-or-sensitive",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "CLUSTER_AUTH_TOKEN",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:598"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_LEGACY_CLUSTER_BOOTSTRAP",
+      "category": "application",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "CLUSTER_BOOTSTRAP",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:611"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_LEGACY_CLUSTER_CONFIG_PATH",
+      "category": "application",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "CLUSTER_CONFIG_PATH",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:624"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_LEGACY_CLUSTER_ENABLED",
+      "category": "application",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "CLUSTER_ENABLED",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:637"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_LEGACY_CLUSTER_LISTEN_ADDR",
+      "category": "network",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "CLUSTER_LISTEN_ADDR",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:650"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_LEGACY_CLUSTER_NODE_ID",
+      "category": "application",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "CLUSTER_NODE_ID",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:663"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_LEGACY_CLUSTER_NODE_NAME",
+      "category": "application",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "CLUSTER_NODE_NAME",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:676"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_LEGACY_CLUSTER_REGION",
+      "category": "application",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "CLUSTER_REGION",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:689"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_LEGACY_DEBIAN_FRONTEND",
+      "category": "runtime-or-storage",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "DEBIAN_FRONTEND",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:702"
+        },
+        {
+          "kind": "docker-env",
+          "source": "node/Dockerfile:24"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_LEGACY_DOCKER_HOST_GATEWAY_ADVERTISE_HOST",
+      "category": "network",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "DOCKER_HOST_GATEWAY_ADVERTISE_HOST",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:719"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_LEGACY_DOCKER_HOST_GATEWAY_PORT",
+      "category": "network",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "DOCKER_HOST_GATEWAY_PORT",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:732"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_LEGACY_ENTITY_API_PORT",
+      "category": "network",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "ENTITY_API_PORT",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:745"
+        },
+        {
+          "kind": "sample-declaration",
+          "source": "node/sample.env:12"
+        },
+        {
+          "kind": "deployment-write",
+          "source": "run-nodes.sh:1289"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_LEGACY_FC_VERSION",
+      "category": "runtime-or-storage",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "FC_VERSION",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:766"
+        },
+        {
+          "kind": "docker-arg",
+          "source": "node/Dockerfile:78"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_LEGACY_FEDERATION_PORT",
+      "category": "network",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "FEDERATION_API_PORT",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:783"
+        },
+        {
+          "kind": "sample-declaration",
+          "source": "node/sample.env:10"
+        },
+        {
+          "kind": "deployment-write",
+          "source": "run-nodes.sh:1287"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_LEGACY_FIRECRACKER_BIN",
+      "category": "runtime-or-storage",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "FIRECRACKER_BIN",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:804"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_LEGACY_FIRECRACKER_BOOT_ARGS",
+      "category": "runtime-or-storage",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "FIRECRACKER_BOOT_ARGS",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:817"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_LEGACY_FIRECRACKER_KERNEL_IMAGE",
+      "category": "runtime-or-storage",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "FIRECRACKER_KERNEL_IMAGE",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:830"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_LEGACY_FIRECRACKER_ROOTFS_IMAGE",
+      "category": "runtime-or-storage",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "FIRECRACKER_ROOTFS_IMAGE",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:843"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_LEGACY_HOME",
+      "category": "process-environment",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "HOME",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:856"
+        },
+        {
+          "kind": "read",
+          "source": "crates/aseman-config/src/lib.rs:358"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_LEGACY_INSTALL_FIRECRACKER",
+      "category": "runtime-or-storage",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "INSTALL_FIRECRACKER",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:873"
+        },
+        {
+          "kind": "docker-arg",
+          "source": "node/Dockerfile:77"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_LEGACY_IPADDR",
+      "category": "network",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "IPADDR",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:890"
+        },
+        {
+          "kind": "sample-declaration",
+          "source": "node/sample.env:15"
+        },
+        {
+          "kind": "deployment-write",
+          "source": "run-nodes.sh:1293"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_LEGACY_IS_HEAD",
+      "category": "runtime-or-storage",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "IS_HEAD",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:911"
+        },
+        {
+          "kind": "sample-declaration",
+          "source": "node/sample.env:17"
+        },
+        {
+          "kind": "deployment-write",
+          "source": "run-nodes.sh:1295"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_LEGACY_LD_LIBRARY_PATH",
+      "category": "process-environment",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "LD_LIBRARY_PATH",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:932"
+        },
+        {
+          "kind": "docker-env",
+          "source": "node/Dockerfile:50"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_LEGACY_MAIN_PORT",
+      "category": "network",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "MAIN_PORT",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:949"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_LEGACY_MODAL_API_KEY",
+      "category": "secret-or-sensitive",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "MODAL_API_KEY",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:962"
+        },
+        {
+          "kind": "sample-declaration",
+          "source": "node/sample.env:46"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_LEGACY_MODAL_APP_NAME",
+      "category": "application",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "MODAL_APP_NAME",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:979"
+        },
+        {
+          "kind": "sample-declaration",
+          "source": "node/sample.env:55"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_LEGACY_MODAL_APP_PREFIX",
+      "category": "application",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "MODAL_APP_PREFIX",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:996"
+        },
+        {
+          "kind": "sample-declaration",
+          "source": "node/sample.env:58"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_LEGACY_MODAL_BUILDER_VERSION",
+      "category": "application",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "MODAL_BUILDER_VERSION",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:1013"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_LEGACY_MODAL_CLIENT_VERSION",
+      "category": "application",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "MODAL_CLIENT_VERSION",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:1026"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_LEGACY_MODAL_DEFAULT_IMAGE",
+      "category": "application",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "MODAL_DEFAULT_IMAGE",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:1039"
+        },
+        {
+          "kind": "sample-declaration",
+          "source": "node/sample.env:60"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_LEGACY_MODAL_ENVIRONMENT",
+      "category": "application",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "MODAL_ENVIRONMENT",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:1056"
+        },
+        {
+          "kind": "sample-declaration",
+          "source": "node/sample.env:50"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_LEGACY_MODAL_IMAGE_BUILD_TIMEOUT_SECS",
+      "category": "application",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "MODAL_IMAGE_BUILD_TIMEOUT_SECS",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:1073"
+        },
+        {
+          "kind": "sample-declaration",
+          "source": "node/sample.env:66"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_LEGACY_MODAL_SANDBOX_TIMEOUT_SECS",
+      "category": "application",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "MODAL_SANDBOX_TIMEOUT_SECS",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:1090"
+        },
+        {
+          "kind": "sample-declaration",
+          "source": "node/sample.env:64"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_LEGACY_MODAL_SERVER_URL",
+      "category": "network",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "MODAL_SERVER_URL",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:1107"
+        },
+        {
+          "kind": "sample-declaration",
+          "source": "node/sample.env:52"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_LEGACY_MODAL_TASK_READY_TIMEOUT_SECS",
+      "category": "application",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "MODAL_TASK_READY_TIMEOUT_SECS",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:1124"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_LEGACY_MODAL_TOKEN_ID",
+      "category": "secret-or-sensitive",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "MODAL_TOKEN_ID",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:1137"
+        },
+        {
+          "kind": "sample-declaration",
+          "source": "node/sample.env:47"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_LEGACY_MODAL_TOKEN_SECRET",
+      "category": "secret-or-sensitive",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "MODAL_TOKEN_SECRET",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:1154"
+        },
+        {
+          "kind": "sample-declaration",
+          "source": "node/sample.env:48"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_LEGACY_MODAL_VOLUME_MOUNT_PATH",
+      "category": "application",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "MODAL_VOLUME_MOUNT_PATH",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:1171"
+        },
+        {
+          "kind": "sample-declaration",
+          "source": "node/sample.env:62"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_LEGACY_MODAL_VOLUME_SETTLE_MS",
+      "category": "application",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "MODAL_VOLUME_SETTLE_MS",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:1188"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_LEGACY_ORIGIN",
+      "category": "network",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "ORIGIN",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:1201"
+        },
+        {
+          "kind": "sample-declaration",
+          "source": "node/sample.env:14"
+        },
+        {
+          "kind": "deployment-write",
+          "source": "run-nodes.sh:1292"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_NODE_ID",
+      "category": "runtime-or-storage",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "OWNER_ID",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:1222"
+        },
+        {
+          "kind": "sample-declaration",
+          "source": "node/sample.env:1"
+        },
+        {
+          "kind": "deployment-write",
+          "source": "run-nodes.sh:1278"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_NODE_PRIVATE_KEY_SECRET",
+      "category": "secret-or-sensitive",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "OWNER_PRIVATE_KEY",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:1243"
+        },
+        {
+          "kind": "sample-declaration",
+          "source": "node/sample.env:2"
+        },
+        {
+          "kind": "deployment-write",
+          "source": "run-nodes.sh:1279"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_LEGACY_PATH",
+      "category": "process-environment",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "PATH",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:1264"
+        },
+        {
+          "kind": "read",
+          "source": "crates/aseman-config/src/lib.rs:326"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_LEGACY_PPROF_PORT",
+      "category": "network",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "PPROF_PORT",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:1281"
+        },
+        {
+          "kind": "deployment-write",
+          "source": "run-nodes.sh:1291"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_LEGACY_PROBE_CMD",
+      "category": "runtime-or-storage",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "PROBE_CMD",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:1298"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_LEGACY_PROBE_MACHINE_ID",
+      "category": "runtime-or-storage",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "PROBE_MACHINE_ID",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:1311"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_LEGACY_PROBE_VM_ID",
+      "category": "runtime-or-storage",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "PROBE_VM_ID",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:1324"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_LEGACY_QUESTDB_DATA_DIR",
+      "category": "runtime-or-storage",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "QUESTDB_DATA_DIR",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:1337"
+        },
+        {
+          "kind": "deployment-write",
+          "source": "run-nodes.sh:1309"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_LEGACY_QUESTDB_HTTP_MIN_PORT",
+      "category": "network",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "QUESTDB_HTTP_MIN_PORT",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:1354"
+        },
+        {
+          "kind": "deployment-write",
+          "source": "run-nodes.sh:1307"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_LEGACY_QUESTDB_HTTP_PORT",
+      "category": "network",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "QUESTDB_HTTP_PORT",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:1371"
+        },
+        {
+          "kind": "deployment-write",
+          "source": "run-nodes.sh:1306"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_LEGACY_QUESTDB_ILP_PORT",
+      "category": "network",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "QUESTDB_ILP_PORT",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:1388"
+        },
+        {
+          "kind": "deployment-write",
+          "source": "run-nodes.sh:1308"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_LEGACY_QUESTDB_PORT",
+      "category": "network",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "QUESTDB_PORT",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:1405"
+        },
+        {
+          "kind": "deployment-write",
+          "source": "run-nodes.sh:1305"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_LEGACY_RATE_LIMIT_ANON_BURST",
+      "category": "application",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "RATE_LIMIT_ANON_BURST",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:1422"
+        },
+        {
+          "kind": "sample-declaration",
+          "source": "node/sample.env:33"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_LEGACY_RATE_LIMIT_ANON_RPS",
+      "category": "application",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "RATE_LIMIT_ANON_RPS",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:1439"
+        },
+        {
+          "kind": "sample-declaration",
+          "source": "node/sample.env:32"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_LEGACY_RATE_LIMIT_AUTH_BURST",
+      "category": "application",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "RATE_LIMIT_AUTH_BURST",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:1456"
+        },
+        {
+          "kind": "sample-declaration",
+          "source": "node/sample.env:31"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_LEGACY_RATE_LIMIT_AUTH_RPS",
+      "category": "application",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "RATE_LIMIT_AUTH_RPS",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:1473"
+        },
+        {
+          "kind": "sample-declaration",
+          "source": "node/sample.env:30"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_LEGACY_RATE_LIMIT_ENABLED",
+      "category": "application",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "RATE_LIMIT_ENABLED",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:1490"
+        },
+        {
+          "kind": "sample-declaration",
+          "source": "node/sample.env:29"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_LEGACY_RATE_LIMIT_GLOBAL_BURST",
+      "category": "application",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "RATE_LIMIT_GLOBAL_BURST",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:1507"
+        },
+        {
+          "kind": "sample-declaration",
+          "source": "node/sample.env:35"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_LEGACY_RATE_LIMIT_GLOBAL_RPS",
+      "category": "application",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "RATE_LIMIT_GLOBAL_RPS",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:1524"
+        },
+        {
+          "kind": "sample-declaration",
+          "source": "node/sample.env:34"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_LEGACY_RATE_LIMIT_IDLE_EVICT_SECS",
+      "category": "application",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "RATE_LIMIT_IDLE_EVICT_SECS",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:1541"
+        },
+        {
+          "kind": "sample-declaration",
+          "source": "node/sample.env:36"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_LEGACY_ROOT_NODE",
+      "category": "runtime-or-storage",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "ROOT_NODE",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:1558"
+        },
+        {
+          "kind": "sample-declaration",
+          "source": "node/sample.env:16"
+        },
+        {
+          "kind": "deployment-write",
+          "source": "run-nodes.sh:1294"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_LEGACY_SEARCH_INDEX_PATH",
+      "category": "runtime-or-storage",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "SEARCH_INDEX_PATH",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:1579"
+        },
+        {
+          "kind": "sample-declaration",
+          "source": "node/sample.env:6"
+        },
+        {
+          "kind": "deployment-write",
+          "source": "run-nodes.sh:1283"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_LEGACY_SHARDCHAIN_SCRIPT",
+      "category": "runtime-or-storage",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "SHARDCHAIN_SCRIPT",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:1600"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_LEGACY_STORAGE_ROOT_PATH",
+      "category": "runtime-or-storage",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "STORAGE_ROOT_PATH",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:1613"
+        },
+        {
+          "kind": "sample-declaration",
+          "source": "node/sample.env:3"
+        },
+        {
+          "kind": "deployment-write",
+          "source": "run-nodes.sh:1280"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_LEGACY_STORE_LOGS_DB",
+      "category": "runtime-or-storage",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "STORE_LOGS_DB",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:1634"
+        },
+        {
+          "kind": "sample-declaration",
+          "source": "node/sample.env:7"
+        },
+        {
+          "kind": "deployment-write",
+          "source": "run-nodes.sh:1284"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_LEGACY_TELEMETRY_API_PORT",
+      "category": "network",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "TELEMETRY_API_PORT",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:1655"
+        },
+        {
+          "kind": "sample-declaration",
+          "source": "node/sample.env:38"
+        },
+        {
+          "kind": "deployment-write",
+          "source": "run-nodes.sh:1301"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_LEGACY_TELEMETRY_DB_PATH",
+      "category": "runtime-or-storage",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "TELEMETRY_DB_PATH",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:1676"
+        },
+        {
+          "kind": "sample-declaration",
+          "source": "node/sample.env:39"
+        },
+        {
+          "kind": "deployment-write",
+          "source": "run-nodes.sh:1302"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_LEGACY_TLS_CERT_PATH",
+      "category": "runtime-or-storage",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "TLS_CERT_PATH",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:1697"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_LEGACY_TLS_KEY_PATH",
+      "category": "secret-or-sensitive",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "TLS_KEY_PATH",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:1710"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_LEGACY_USERPROFILE",
+      "category": "process-environment",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "USERPROFILE",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:1723"
+        },
+        {
+          "kind": "read",
+          "source": "crates/aseman-config/src/lib.rs:362"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_LEGACY_VM_API_PORT",
+      "category": "network",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "VM_API_PORT",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:1740"
+        },
+        {
+          "kind": "sample-declaration",
+          "source": "node/sample.env:13"
+        },
+        {
+          "kind": "deployment-write",
+          "source": "run-nodes.sh:1290"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_LEGACY_VM_CPU_CORE_COST_PER_MINUTE",
+      "category": "application",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "VM_CPU_CORE_COST_PER_MINUTE",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:1761"
+        },
+        {
+          "kind": "sample-declaration",
+          "source": "node/sample.env:21"
+        },
+        {
+          "kind": "deployment-write",
+          "source": "run-nodes.sh:1299"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_LEGACY_VM_DISK_COST_PER_GB_PER_MINUTE",
+      "category": "application",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "VM_DISK_COST_PER_GB_PER_MINUTE",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:1782"
+        },
+        {
+          "kind": "sample-declaration",
+          "source": "node/sample.env:22"
+        },
+        {
+          "kind": "deployment-write",
+          "source": "run-nodes.sh:1300"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_LEGACY_VM_EXEC_COST_PER_SECOND",
+      "category": "application",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "VM_EXEC_COST_PER_SECOND",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:1803"
+        },
+        {
+          "kind": "sample-declaration",
+          "source": "node/sample.env:19"
+        },
+        {
+          "kind": "deployment-write",
+          "source": "run-nodes.sh:1297"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_LEGACY_VM_HTTP_INGRESS_PORT",
+      "category": "network",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "VM_HTTP_INGRESS_PORT",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:1824"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_LEGACY_VM_RAM_COST_PER_MB_PER_MINUTE",
+      "category": "application",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "VM_RAM_COST_PER_MB_PER_MINUTE",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:1837"
+        },
+        {
+          "kind": "sample-declaration",
+          "source": "node/sample.env:20"
+        },
+        {
+          "kind": "deployment-write",
+          "source": "run-nodes.sh:1298"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_LEGACY_WASMEDGE_LIB_DIR",
+      "category": "runtime-or-storage",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "WASMEDGE_LIB_DIR",
+      "occurrences": [
+        {
+          "kind": "compatibility-alias",
+          "source": "contracts/config/legacy-aliases.json:1858"
+        },
+        {
+          "kind": "docker-env",
+          "source": "node/Dockerfile:51"
+        }
+      ]
+    }
+  ],
+  "canonical_collisions": {},
+  "rules": [
+    "Canonical and legacy values supplied together fail closed, even when textually equal.",
+    "Legacy usage emits a redaction-safe warning and counter.",
+    "Aliases are removed only under ADR 0004 and their removal-ledger row.",
+    "Unknown keys fail schema validation."
+  ]
+}

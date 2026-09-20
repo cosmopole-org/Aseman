@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://aseman.example/contracts/capsule/kinds/core-logical-schemas.schema.json",
+  "title": "Complete core logical capsule schemas",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "definitions"],
+  "properties": {
+    "schema_version": {"const": 1},
+    "definitions": {
+      "type": "array",
+      "minItems": 20,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["kind", "fields", "required", "unique_indexes", "relationships", "retention"],
+        "properties": {
+          "kind": {"type": "string"},
+          "fields": {"type": "object", "minProperties": 1, "additionalProperties": {"enum": ["bool", "integer", "bytes", "text", "timestamp_micros", "capsule_id"]}},
+          "required": {"type": "array", "uniqueItems": true, "items": {"type": "string"}},
+          "unique_indexes": {"type": "array", "items": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string"}}},
+          "relationships": {"type": "object", "additionalProperties": {"type": "string"}},
+          "retention": {"enum": ["authority", "revocation", "operational", "financial_permanent"]}
+        }
+      }
+    }
+  }
+}

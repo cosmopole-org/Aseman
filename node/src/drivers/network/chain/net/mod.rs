@@ -31,9 +31,7 @@ pub use commands::{
     JoinResponse, SyncRequest, SyncResponse,
 };
 pub use inmem_transport::InmemTransport;
-pub use net_transport::{
-    NetworkTransport, RPC_EAGER_SYNC, RPC_FAST_FORWARD, RPC_JOIN, RPC_SYNC,
-};
+pub use net_transport::{NetworkTransport, RPC_EAGER_SYNC, RPC_FAST_FORWARD, RPC_JOIN, RPC_SYNC};
 pub use rpc::{Rpc, RpcCommand, RpcResponse, RpcResponseKind};
 pub use stream_layer::{Conn, StreamLayer};
 pub use tcp_stream_layer::{TcpConn, TcpStreamLayer};

@@ -13,13 +13,13 @@ use anyhow::{anyhow, Result};
 use serde::de::DeserializeOwned;
 use serde_json::Value;
 
+use crate::core::actor::model::base::action::{Action, ActionFn, StateModifierShared};
+use crate::core::actor::model::secured::action::{Parse, SecureAction};
+use crate::core::actor::model::secured::guard::Guard;
 use crate::models::action::{IAction, ISecureAction};
 use crate::models::core::ICore;
 use crate::models::input::IInput;
 use crate::models::state::IState;
-use crate::core::actor::model::base::action::{Action, ActionFn, StateModifierShared};
-use crate::core::actor::model::secured::action::{Parse, SecureAction};
-use crate::core::actor::model::secured::guard::Guard;
 
 /// Build a [`SecureAction`] from a typed closure + a [`Guard`].
 ///
@@ -51,8 +51,7 @@ where
             .ok_or_else(|| anyhow!("action input type mismatch"))?;
         func_for_action(state, typed)
     });
-    let inner_action: Arc<dyn IAction> =
-        Arc::new(Action::new(modifier, key, action_fn));
+    let inner_action: Arc<dyn IAction> = Arc::new(Action::new(modifier, key, action_fn));
     let mut parsers: std::collections::HashMap<String, Parse> = std::collections::HashMap::new();
     let parse: Parse = Arc::new(|raw: Value| {
         let parsed: I = serde_json::from_value(raw).unwrap_or_default();

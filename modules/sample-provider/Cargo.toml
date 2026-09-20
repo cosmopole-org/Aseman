@@ -1,0 +1,25 @@
+[package]
+name = "aseman-sample-provider"
+description = "Harmless reference provider for the Aseman module conformance suite."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+aseman-contracts = { path = "../../crates/aseman-contracts" }
+tokio.workspace = true
+tonic.workspace = true
+
+[dev-dependencies]
+aseman-module-conformance = { path = "../../tests/contracts/module" }
+aseman-module-runtime = { path = "../../crates/aseman-module-runtime" }
+base64.workspace = true
+hex.workspace = true
+ring.workspace = true
+serde_json.workspace = true
+toml.workspace = true
+
+[lints]
+workspace = true

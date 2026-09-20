@@ -9,9 +9,9 @@
 
 use crate::drivers::vmm::dispatch_packet;
 use crate::drivers::vmm::globals::{ResourceLockRegistry, VmDbBuffer};
-use std::collections::VecDeque;
 use dashmap::DashMap;
 use std::collections::HashMap;
+use std::collections::VecDeque;
 use std::fs;
 use std::sync::{Arc, Mutex};
 use std::thread;
@@ -20,11 +20,11 @@ use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use anyhow::Result;
 use serde_json::{json, Value};
 
+use crate::models::core::ICore;
 use crate::models::ports::file::IFile;
 use crate::models::ports::signaler::Listener;
 use crate::models::ports::storage::IStorage;
 use crate::models::ports::vmm::IVmm;
-use crate::models::core::ICore;
 use crate::models::transaction::ITrx;
 use crate::models::worker::Trx as WorkerTrx;
 use crate::shell::api::model::{Creature, Entity, Program, Store};
@@ -92,7 +92,8 @@ impl Vmm {
         // Publish the SDK host bridge and register every VM runtime plugin
         // compiled into this binary (the generated caspar-vm-plugins crate).
         crate::drivers::vmm::host_bridge::init_vm_plugins();
-        let gateway = crate::drivers::vmm::network::docker_host::DockerHostGateway::new(app.clone());
+        let gateway =
+            crate::drivers::vmm::network::docker_host::DockerHostGateway::new(app.clone());
         let http_ingress = crate::drivers::vmm::network::ingress::VmHttpIngress::new(app.clone());
         let vmm = Arc::new(Vmm {
             app,
@@ -262,8 +263,7 @@ impl Vmm {
                     trx.get_link(&format!("vmDistributed::{}", vm_id_owned)) == "true";
                 if !distributed {
                     if let Some(m) = &machine_id {
-                        distributed =
-                            trx.get_link(&format!("vmDistribution::{}", m)) == "cluster";
+                        distributed = trx.get_link(&format!("vmDistribution::{}", m)) == "cluster";
                     }
                 }
                 *slot_clone.lock().unwrap() = distributed;
@@ -483,7 +483,10 @@ impl IVmm for Vmm {
         self.vm_containers.remove(container_name);
     }
 
-    fn identify_container_by_ip(&self, ip: &str) -> Option<(String, String, String, String, String)> {
+    fn identify_container_by_ip(
+        &self,
+        ip: &str,
+    ) -> Option<(String, String, String, String, String)> {
         // Ask each registered VM runtime whether it owns a live instance on
         // this source IP (container-style runtimes resolve it through their
         // supervisor), then map the instance name to the identity we recorded
@@ -507,12 +510,20 @@ impl IVmm for Vmm {
         self.gateway.push_signal_to_machine(machine_id, key, data)
     }
 
-    fn push_signal_to_entity(&self, machine_id: &str, entity_id: &str, key: &str, data: &Value) -> usize {
-        self.gateway.push_signal_to_entity(machine_id, entity_id, key, data)
+    fn push_signal_to_entity(
+        &self,
+        machine_id: &str,
+        entity_id: &str,
+        key: &str,
+        data: &Value,
+    ) -> usize {
+        self.gateway
+            .push_signal_to_entity(machine_id, entity_id, key, data)
     }
 
     fn queue_pending_signal(&self, machine_id: &str, entity_id: &str, key: &str, data: &Value) {
-        self.gateway.queue_pending_signal(machine_id, entity_id, key, data);
+        self.gateway
+            .queue_pending_signal(machine_id, entity_id, key, data);
     }
 
     fn begin_cold_spawn(&self, machine_id: &str, entity_id: &str) -> bool {
@@ -541,10 +552,8 @@ impl IVmm for Vmm {
     // ── Per-VM lifecycle transaction ──────────────────────────────────────────
 
     fn begin_vm_trx(&self, vm_id: &str) {
-        self.vm_trx.insert(
-            vm_id.to_string(),
-            Arc::new(Mutex::new(VmDbBuffer::new())),
-        );
+        self.vm_trx
+            .insert(vm_id.to_string(), Arc::new(Mutex::new(VmDbBuffer::new())));
     }
 
     fn commit_vm_trx(&self, vm_id: &str) {
@@ -576,7 +585,9 @@ impl IVmm for Vmm {
         match op {
             "put" => {
                 if let Some(buf) = buf_arc {
-                    buf.lock().unwrap().put(namespaced_key.to_string(), val.to_string());
+                    buf.lock()
+                        .unwrap()
+                        .put(namespaced_key.to_string(), val.to_string());
                 } else {
                     let k = namespaced_key.to_string();
                     let v = val.to_string();
@@ -599,8 +610,8 @@ impl IVmm for Vmm {
                     let guard = buf.lock().unwrap();
                     match guard.get_local(namespaced_key) {
                         Some(Some(v)) => return Ok(serde_json::json!({"data": v}).to_string()),
-                        Some(None)    => return Ok(serde_json::json!({"data": ""}).to_string()),
-                        None          => {}
+                        Some(None) => return Ok(serde_json::json!({"data": ""}).to_string()),
+                        None => {}
                     }
                     if let Some(cached) = guard.read_cache.get(namespaced_key) {
                         return Ok(serde_json::json!({"data": cached}).to_string());
@@ -619,7 +630,10 @@ impl IVmm for Vmm {
                 );
                 let val_str = { slot.lock().unwrap().clone() };
                 if let Some(buf) = buf_arc {
-                    buf.lock().unwrap().read_cache.insert(namespaced_key.to_string(), val_str.clone());
+                    buf.lock()
+                        .unwrap()
+                        .read_cache
+                        .insert(namespaced_key.to_string(), val_str.clone());
                 }
                 Ok(serde_json::json!({"data": val_str}).to_string())
             }
@@ -699,15 +713,28 @@ impl IVmm for Vmm {
         self.handle_exec_shell_action(caller, input, 0).0
     }
 
-    fn host_action_resource_store(&self, op: &str, input: &serde_json::Value, req_id: i64) -> (String, i64) {
+    fn host_action_resource_store(
+        &self,
+        op: &str,
+        input: &serde_json::Value,
+        req_id: i64,
+    ) -> (String, i64) {
         self.handle_resource_store_crud(op, input, req_id)
     }
 
-    fn host_action_resource_entity_create(&self, input: &serde_json::Value, req_id: i64) -> (String, i64) {
+    fn host_action_resource_entity_create(
+        &self,
+        input: &serde_json::Value,
+        req_id: i64,
+    ) -> (String, i64) {
         self.handle_resource_entity_create(input, req_id)
     }
 
-    fn host_action_resource_entity_delete(&self, input: &serde_json::Value, req_id: i64) -> (String, i64) {
+    fn host_action_resource_entity_delete(
+        &self,
+        input: &serde_json::Value,
+        req_id: i64,
+    ) -> (String, i64) {
         self.handle_resource_entity_delete(input, req_id)
     }
 
@@ -715,11 +742,21 @@ impl IVmm for Vmm {
         self.handle_store_crud(op, input, req_id)
     }
 
-    fn host_action_creature(&self, op: &str, input: &serde_json::Value, req_id: i64) -> (String, i64) {
+    fn host_action_creature(
+        &self,
+        op: &str,
+        input: &serde_json::Value,
+        req_id: i64,
+    ) -> (String, i64) {
         self.handle_creature_crud(op, input, req_id)
     }
 
-    fn host_action_program(&self, op: &str, input: &serde_json::Value, req_id: i64) -> (String, i64) {
+    fn host_action_program(
+        &self,
+        op: &str,
+        input: &serde_json::Value,
+        req_id: i64,
+    ) -> (String, i64) {
         self.handle_program_crud(op, input, req_id)
     }
 
@@ -771,8 +808,7 @@ impl IVmm for Vmm {
             obj.insert("delete".to_string(), Value::Bool(true));
         }
         let raw = dispatch_packet(&packet);
-        serde_json::from_str::<Value>(&raw)
-            .unwrap_or_else(|_| json!({"ok": false, "error": raw}))
+        serde_json::from_str::<Value>(&raw).unwrap_or_else(|_| json!({"ok": false, "error": raw}))
     }
 
     fn forward_http(&self, request: &Value) -> Value {
@@ -853,15 +889,13 @@ impl IVmm for Vmm {
                 // itself as the creature id. Routes are stored keyed by creature
                 // id, so both address forms converge on the same lookup.
                 let mut candidates: Vec<String> = Vec::new();
-                let via_username =
-                    trx.get_index("Creature", "username", "id", &username_owned);
+                let via_username = trx.get_index("Creature", "username", "id", &username_owned);
                 if !via_username.is_empty() {
                     candidates.push(via_username);
                 }
                 // Bare username local part (e.g. `m-tool-github`) → creature id,
                 // via the alias link written when the route was registered.
-                let via_alias =
-                    trx.get_link(&http_route::route_alias_link_key(&username_owned));
+                let via_alias = trx.get_link(&http_route::route_alias_link_key(&username_owned));
                 if !via_alias.is_empty() && !candidates.iter().any(|c| c == &via_alias) {
                     candidates.push(via_alias);
                 }
@@ -918,7 +952,13 @@ impl VmmShim {
     /// `vmEntityPath::<machine>::<entity>` link) instead of the program's
     /// default module path. Used by the `plantTrigger` alarm wake so a wasm
     /// creature deployed under a named entity ("main") is actually re-loaded.
-    fn run_vm_entity(self: &Arc<Self>, machine_id: &str, store_id: &str, data: &str, entity_id: &str) {
+    fn run_vm_entity(
+        self: &Arc<Self>,
+        machine_id: &str,
+        store_id: &str,
+        data: &str,
+        entity_id: &str,
+    ) {
         // Inline of Vmm::run_vm_entity_inner against the shim's handles.
         let store_id_owned = store_id.to_string();
         let machine_id_owned = machine_id.to_string();

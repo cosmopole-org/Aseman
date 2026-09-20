@@ -37,11 +37,27 @@ use std::sync::OnceLock;
 
 use rocksdb::{BlockBasedOptions, Cache, Options};
 
-fn env_i64(key: &str, default: i64) -> i64 {
-    std::env::var(key)
-        .ok()
-        .and_then(|v| v.trim().parse().ok())
-        .unwrap_or(default)
+fn config() -> aseman_config::LegacyAdapterConfig {
+    aseman_config::legacy_adapter_snapshot().cloned().unwrap_or(
+        aseman_config::LegacyAdapterConfig {
+            main_port: String::new(),
+            login_grant_required: false,
+            public_storage_max_bytes: 10 * 1024 * 1024,
+            questdb_port: 8812,
+            rocksdb_max_open_files: 512,
+            rocksdb_block_cache_mb: 128,
+            rocksdb_write_buffer_mb: 32,
+            babble_data_dir: None,
+            babble_frame_cache: 25,
+            babble_frame_retention: 25,
+            is_head: false,
+            shardchain_script: "/app/scripts/shardchain.sh".to_owned(),
+            blockchain_api_port: 1337,
+            ip_address: String::new(),
+            home_dir: None,
+            user_profile_dir: None,
+        },
+    )
 }
 
 /// One LRU block cache shared by every RocksDB instance in the process, so the
@@ -49,7 +65,7 @@ fn env_i64(key: &str, default: i64) -> i64 {
 fn shared_block_cache() -> &'static Cache {
     static CELL: OnceLock<Cache> = OnceLock::new();
     CELL.get_or_init(|| {
-        let mb = env_i64("CASPAR_ROCKSDB_BLOCK_CACHE_MB", 128).max(8) as usize;
+        let mb = config().rocksdb_block_cache_mb.max(8);
         Cache::new_lru_cache(mb * 1024 * 1024)
     })
 }
@@ -61,8 +77,7 @@ pub fn tuned_options() -> Options {
 
     // Cap the open-table-reader set. -1 (or any negative value) keeps RocksDB's
     // unbounded default for operators who explicitly want it.
-    let max_open = env_i64("CASPAR_ROCKSDB_MAX_OPEN_FILES", 512);
-    opts.set_max_open_files(max_open as i32);
+    opts.set_max_open_files(config().rocksdb_max_open_files);
 
     // Route index & filter blocks through the shared, bounded LRU cache and
     // make them evictable instead of pinned per open file.
@@ -76,7 +91,7 @@ pub fn tuned_options() -> Options {
 
     // Bound memtable memory too (definite size × count instead of the growing
     // default), so the write side has a fixed ceiling as well.
-    let wbuf_mb = env_i64("CASPAR_ROCKSDB_WRITE_BUFFER_MB", 32).max(4) as usize;
+    let wbuf_mb = config().rocksdb_write_buffer_mb.max(4);
     opts.set_write_buffer_size(wbuf_mb * 1024 * 1024);
     opts.set_max_write_buffer_number(2);
 

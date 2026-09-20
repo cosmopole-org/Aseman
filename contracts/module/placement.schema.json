@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://aseman.example/contracts/module/placement.schema.json",
+  "title": "Cluster module placement",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["module_key", "artifact_digest", "required_hosts", "quorum", "routing_generation"],
+  "properties": {
+    "module_key": {"type": "string", "minLength": 3},
+    "artifact_digest": {"type": "string", "pattern": "^sha256:[0-9a-fA-F]{64}$"},
+    "required_hosts": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+    "quorum": {"type": "integer", "minimum": 1},
+    "routing_generation": {"type": "integer", "minimum": 1}
+  }
+}

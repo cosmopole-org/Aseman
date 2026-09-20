@@ -1,0 +1,16 @@
+[package]
+name = "aseman-application"
+description = "Transport- and driver-independent Aseman use cases."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+aseman-domain = { path = "../aseman-domain" }
+aseman-ports = { path = "../aseman-ports" }
+thiserror.workspace = true
+
+[lints]
+workspace = true

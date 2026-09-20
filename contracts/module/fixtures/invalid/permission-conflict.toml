@@ -1,0 +1,16 @@
+schema_version = 1
+name = "conflicting-sample"
+kind = "sample"
+version = "1.0.0"
+contract = ">=1.0, <2.0"
+artifact_digest = "sha256:6b68a15f5f1e80d446b18fc9481153ea187a0f114eb9164146df75d5bfb1dd6e"
+command = ["/usr/bin/aseman-sample-provider"]
+health_endpoint = "/health/ready"
+config_schema = "config.schema.json"
+platforms = [{ os = "linux", architecture = "x86_64" }]
+sbom = "sbom.spdx.json"
+license_manifest = "licenses.json"
+
+[permissions]
+read_only_mounts = ["/data"]
+read_write_mounts = ["/data"]

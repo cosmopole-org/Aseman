@@ -50,8 +50,7 @@ impl InmemTransport {
 
     fn make_rpc(&self, target: &str, command: RpcCommand) -> Result<RpcResponse> {
         let peer_tx = self.peers.lock().unwrap().get(target).cloned();
-        let peer_tx =
-            peer_tx.ok_or_else(|| anyhow!("failed to connect to peer: {}", target))?;
+        let peer_tx = peer_tx.ok_or_else(|| anyhow!("failed to connect to peer: {}", target))?;
 
         let (resp_tx, resp_rx) = bounded(1);
         peer_tx
@@ -115,11 +114,7 @@ impl Transport for InmemTransport {
         }
     }
 
-    fn eager_sync(
-        &self,
-        target: &str,
-        args: &EagerSyncRequest,
-    ) -> Result<EagerSyncResponse> {
+    fn eager_sync(&self, target: &str, args: &EagerSyncRequest) -> Result<EagerSyncResponse> {
         let resp = self.make_rpc(target, RpcCommand::EagerSync(args.clone()))?;
         match resp.response {
             Some(RpcResponseKind::EagerSync(r)) => Ok(r),
@@ -127,11 +122,7 @@ impl Transport for InmemTransport {
         }
     }
 
-    fn fast_forward(
-        &self,
-        target: &str,
-        args: &FastForwardRequest,
-    ) -> Result<FastForwardResponse> {
+    fn fast_forward(&self, target: &str, args: &FastForwardRequest) -> Result<FastForwardResponse> {
         let resp = self.make_rpc(target, RpcCommand::FastForward(args.clone()))?;
         match resp.response {
             Some(RpcResponseKind::FastForward(r)) => Ok(r),

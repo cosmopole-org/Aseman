@@ -1,0 +1,28 @@
+[package]
+name = "aseman-storage-postgres"
+description = "Native PostgreSQL capsule storage provider for Aseman core state."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+aseman-config = { path = "../../crates/aseman-config" }
+aseman-contracts = { path = "../../crates/aseman-contracts" }
+postgres = { workspace = true, features = ["with-uuid-1"] }
+r2d2.workspace = true
+r2d2_postgres.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+sha2.workspace = true
+thiserror.workspace = true
+tokio.workspace = true
+tonic.workspace = true
+uuid.workspace = true
+
+[dev-dependencies]
+aseman-storage-conformance = { path = "../../tests/contracts/storage" }
+
+[lints]
+workspace = true

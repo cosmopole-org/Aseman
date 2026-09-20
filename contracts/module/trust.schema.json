@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://aseman.example/contracts/module/trust.schema.json",
+  "title": "Module publisher trust root",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["key_id", "algorithm", "public_key_hex", "fingerprint", "revoked"],
+  "properties": {
+    "key_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"},
+    "algorithm": {"const": "ed25519"},
+    "public_key_hex": {"type": "string", "pattern": "^[0-9a-fA-F]{64}$"},
+    "fingerprint": {"type": "string", "pattern": "^sha256:[0-9a-fA-F]{64}$"},
+    "revoked": {"type": "boolean"},
+    "revoked_at_unix_millis": {"type": ["integer", "null"]}
+  }
+}

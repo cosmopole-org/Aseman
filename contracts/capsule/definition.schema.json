@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://aseman.example/contracts/capsule/definition.schema.json",
+  "title": "Aseman capsule definition",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["kind", "schema_version", "storage_class", "consistency", "required_fields", "fields", "indexes", "relationships"],
+  "properties": {
+    "kind": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"},
+    "schema_version": {"type": "integer", "minimum": 1},
+    "storage_class": {"enum": ["core", "guest_data", "telemetry", "audit", "finance", "outbox", "realtime", "module"]},
+    "consistency": {"enum": ["serializable", "snapshot", "append_linearizable", "read_committed", "eventual"]},
+    "required_fields": {"type": "array", "uniqueItems": true, "items": {"type": "string"}},
+    "fields": {"type": "object", "additionalProperties": {"$ref": "#/$defs/field"}, "minProperties": 1},
+    "indexes": {"type": "array", "items": {"$ref": "#/$defs/index"}},
+    "relationships": {"type": "object", "additionalProperties": {"$ref": "#/$defs/relationship"}}
+  },
+  "$defs": {
+    "field": {"type": "object", "additionalProperties": false, "required": ["field_type", "searchable", "sortable", "nullable"], "properties": {"field_type": {"enum": ["bool", "integer", "float", "bytes", "text", "timestamp_micros", "capsule_id"]}, "searchable": {"type": "boolean"}, "sortable": {"type": "boolean"}, "nullable": {"type": "boolean"}}},
+    "index": {"type": "object", "additionalProperties": false, "required": ["name", "fields", "unique"], "properties": {"name": {"type": "string"}, "fields": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string"}}, "unique": {"type": "boolean"}}},
+    "relationship": {"type": "object", "additionalProperties": false, "required": ["target_kind", "required"], "properties": {"target_kind": {"type": "string"}, "required": {"type": "boolean"}}}
+  }
+}

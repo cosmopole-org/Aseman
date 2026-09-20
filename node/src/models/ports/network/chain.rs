@@ -2,9 +2,8 @@ use crate::models::ports::network::TlsConfig;
 
 /// Pipeline callback. Receives a batch of payloads and a per-payload
 /// emit callback; returns the keys of the messages that were forwarded.
-pub type PipelineFn = Box<
-    dyn Fn(Vec<Vec<u8>>, Box<dyn Fn(Vec<u8>) + Send + Sync>) -> Vec<String> + Send + Sync,
->;
+pub type PipelineFn =
+    Box<dyn Fn(Vec<Vec<u8>>, Box<dyn Fn(Vec<u8>) + Send + Sync>) -> Vec<String> + Send + Sync>;
 
 /// The blockchain network driver interface.
 pub trait IChain: Send + Sync {

@@ -132,7 +132,14 @@ pub(crate) fn run_connection(gateway: Arc<DockerHostGateway>, stream: TcpStream)
                         body_filled = 0;
                         match assembler.push_frame(&body) {
                             Ok(Some(msg)) => {
-                                if !handle_message(&gateway, &peer, &peer_ip, &tx, &mut session, msg) {
+                                if !handle_message(
+                                    &gateway,
+                                    &peer,
+                                    &peer_ip,
+                                    &tx,
+                                    &mut session,
+                                    msg,
+                                ) {
                                     break 'io;
                                 }
                             }
@@ -232,7 +239,9 @@ fn handle_message(
             // slot and hand it every signal that queued while it was cold, in FIFO
             // order, over this fresh connection. Delivering after WELCOME keeps the
             // queued packets ahead of any signal that arrives live from here on.
-            gateway.registry.clear_cold_spawn(&flush_machine, &flush_entity);
+            gateway
+                .registry
+                .clear_cold_spawn(&flush_machine, &flush_entity);
             let flushed = gateway
                 .registry
                 .flush_pending_signals(&flush_machine, &flush_entity);

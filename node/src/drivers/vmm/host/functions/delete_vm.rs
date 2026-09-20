@@ -33,8 +33,7 @@ pub(crate) fn host_fn_delete_vm(caller_program_id: &str, input: &JsonValue) -> S
     }
     let caller = caller_program_id.trim().to_string();
     if caller.is_empty() {
-        return json!({"ok": false, "error": "deleteVm requires an identified caller"})
-            .to_string();
+        return json!({"ok": false, "error": "deleteVm requires an identified caller"}).to_string();
     }
 
     let owner = vm_owner_program(&vm_id);
@@ -67,7 +66,10 @@ pub(crate) fn host_fn_delete_vm(caller_program_id: &str, input: &JsonValue) -> S
         None => {
             let mut p = input.clone();
             if let Some(obj) = p.as_object_mut() {
-                obj.insert("type".to_string(), JsonValue::String("deleteVm".to_string()));
+                obj.insert(
+                    "type".to_string(),
+                    JsonValue::String("deleteVm".to_string()),
+                );
                 obj.insert("purge".to_string(), JsonValue::Bool(true));
                 obj.insert("delete".to_string(), JsonValue::Bool(true));
             }

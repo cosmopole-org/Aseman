@@ -4,8 +4,8 @@ use anyhow::Result;
 use serde_json::{Map, Value};
 
 use crate::models::input::IInput;
-use crate::models::transaction::ITrx;
 use crate::models::state::IState;
+use crate::models::transaction::ITrx;
 use crate::util::AnyVal;
 
 /// Closure handed to a state modifier — operates on an [`ITrx`].

@@ -1,0 +1,2632 @@
+{
+  "_meta": {
+    "artifact": "A008",
+    "generator": "scripts/generate_support_manifest.py",
+    "last_verified_commit": "800df24076c794f9b33c29a9f301dd9d674f47d6",
+    "policy": "Observed public behavior remains compatibility-supported unless an explicit intentional-removal row supersedes it.",
+    "status": "ACCEPTED"
+  },
+  "cli_and_scripts": [
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "casparctl",
+      "disposition": "rewrite-and-delete-openraft-command",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "casparctl cluster status",
+      "support": "supported-compatibility",
+      "target_owner": "asemanctl node/worker/coordination commands"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "casparctl",
+      "disposition": "rewrite-and-delete-openraft-command",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "casparctl cluster init",
+      "support": "supported-compatibility",
+      "target_owner": "asemanctl node/worker/coordination commands"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "casparctl",
+      "disposition": "rewrite-and-delete-openraft-command",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "casparctl cluster peers",
+      "support": "supported-compatibility",
+      "target_owner": "asemanctl node/worker/coordination commands"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "casparctl",
+      "disposition": "rewrite-and-delete-openraft-command",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "casparctl cluster nearest",
+      "support": "supported-compatibility",
+      "target_owner": "asemanctl node/worker/coordination commands"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "casparctl",
+      "disposition": "rewrite-and-delete-openraft-command",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "casparctl cluster add-peer",
+      "support": "supported-compatibility",
+      "target_owner": "asemanctl node/worker/coordination commands"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "casparctl",
+      "disposition": "rewrite-and-delete-openraft-command",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "casparctl cluster remove-peer",
+      "support": "supported-compatibility",
+      "target_owner": "asemanctl node/worker/coordination commands"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "casparctl",
+      "disposition": "rewrite-and-delete-openraft-command",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "casparctl cluster promote",
+      "support": "supported-compatibility",
+      "target_owner": "asemanctl node/worker/coordination commands"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "casparctl",
+      "disposition": "rewrite-and-delete-openraft-command",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "casparctl cluster config",
+      "support": "supported-compatibility",
+      "target_owner": "asemanctl node/worker/coordination commands"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "casparctl",
+      "disposition": "rewrite-and-delete-openraft-command",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "casparctl cluster apply",
+      "support": "supported-compatibility",
+      "target_owner": "asemanctl node/worker/coordination commands"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "casparctl",
+      "disposition": "deprecate-alias",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "casparctl cluster_config list",
+      "support": "supported-compatibility",
+      "target_owner": "asemanctl"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "casparctl",
+      "disposition": "deprecate-alias",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "casparctl cluster_config get",
+      "support": "supported-compatibility",
+      "target_owner": "asemanctl"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "casparctl",
+      "disposition": "deprecate-alias",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "casparctl cluster_config set",
+      "support": "supported-compatibility",
+      "target_owner": "asemanctl"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "casparctl",
+      "disposition": "deprecate-alias",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "casparctl pprof runtime",
+      "support": "supported-compatibility",
+      "target_owner": "asemanctl"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "casparctl",
+      "disposition": "deprecate-alias",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "casparctl pprof heap",
+      "support": "supported-compatibility",
+      "target_owner": "asemanctl"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "casparctl",
+      "disposition": "deprecate-alias",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "casparctl pprof threads",
+      "support": "supported-compatibility",
+      "target_owner": "asemanctl"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "casparctl",
+      "disposition": "deprecate-alias",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "casparctl pprof flamegraph",
+      "support": "supported-compatibility",
+      "target_owner": "asemanctl"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "casparctl",
+      "disposition": "deprecate-alias",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "casparctl pprof profile",
+      "support": "supported-compatibility",
+      "target_owner": "asemanctl"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "casparctl",
+      "disposition": "deprecate-alias",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "casparctl top_level install",
+      "support": "supported-compatibility",
+      "target_owner": "asemanctl"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "casparctl",
+      "disposition": "deprecate-alias",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "casparctl top_level uninstall",
+      "support": "supported-compatibility",
+      "target_owner": "asemanctl"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "casparctl",
+      "disposition": "deprecate-alias",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "casparctl top_level purge",
+      "support": "supported-compatibility",
+      "target_owner": "asemanctl"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "casparctl",
+      "disposition": "deprecate-alias",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "casparctl top_level start",
+      "support": "supported-compatibility",
+      "target_owner": "asemanctl"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "casparctl",
+      "disposition": "deprecate-alias",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "casparctl top_level pause",
+      "support": "supported-compatibility",
+      "target_owner": "asemanctl"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "casparctl",
+      "disposition": "deprecate-alias",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "casparctl top_level resume",
+      "support": "supported-compatibility",
+      "target_owner": "asemanctl"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "casparctl",
+      "disposition": "deprecate-alias",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "casparctl top_level stop",
+      "support": "supported-compatibility",
+      "target_owner": "asemanctl"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "casparctl",
+      "disposition": "deprecate-alias",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "casparctl top_level stats",
+      "support": "supported-compatibility",
+      "target_owner": "asemanctl"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "casparctl",
+      "disposition": "deprecate-alias",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "casparctl top_level run",
+      "support": "supported-compatibility",
+      "target_owner": "asemanctl"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "casparctl",
+      "disposition": "deprecate-alias",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "casparctl top_level status",
+      "support": "supported-compatibility",
+      "target_owner": "asemanctl"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "casparctl",
+      "disposition": "deprecate-alias",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "casparctl top_level pprof",
+      "support": "supported-compatibility",
+      "target_owner": "asemanctl"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "casparctl",
+      "disposition": "deprecate-alias",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "casparctl top_level vms",
+      "support": "supported-compatibility",
+      "target_owner": "asemanctl"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "casparctl",
+      "disposition": "deprecate-alias",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "casparctl top_level cluster",
+      "support": "supported-compatibility",
+      "target_owner": "asemanctl"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "casparctl",
+      "disposition": "deprecate-alias",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "casparctl top_level module",
+      "support": "supported-compatibility",
+      "target_owner": "asemanctl"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "casparctl",
+      "disposition": "deprecate-alias",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "casparctl top_level modules",
+      "support": "supported-compatibility",
+      "target_owner": "asemanctl"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "casparctl",
+      "disposition": "deprecate-alias",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "casparctl vms list",
+      "support": "supported-compatibility",
+      "target_owner": "asemanctl"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "casparctl",
+      "disposition": "deprecate-alias",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "casparctl vms enable",
+      "support": "supported-compatibility",
+      "target_owner": "asemanctl"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "casparctl",
+      "disposition": "deprecate-alias",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "casparctl vms disable",
+      "support": "supported-compatibility",
+      "target_owner": "asemanctl"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "casparctl",
+      "disposition": "deprecate-alias",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "casparctl vms sync",
+      "support": "supported-compatibility",
+      "target_owner": "asemanctl"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "casparctl",
+      "disposition": "deprecate-alias",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "casparctl vms new",
+      "support": "supported-compatibility",
+      "target_owner": "asemanctl"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "client-cli",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "caspar-client login",
+      "support": "supported-compatibility",
+      "target_owner": "generated Aseman client/asemanctl"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "client-cli",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "caspar-client logout",
+      "support": "supported-compatibility",
+      "target_owner": "generated Aseman client/asemanctl"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "client-cli",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "caspar-client printPrivateKey",
+      "support": "supported-compatibility",
+      "target_owner": "generated Aseman client/asemanctl"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "client-cli",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "caspar-client creatures.me",
+      "support": "supported-compatibility",
+      "target_owner": "generated Aseman client/asemanctl"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "client-cli",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "caspar-client creatures.get",
+      "support": "supported-compatibility",
+      "target_owner": "generated Aseman client/asemanctl"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "client-cli",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "caspar-client creatures.lockToken",
+      "support": "supported-compatibility",
+      "target_owner": "generated Aseman client/asemanctl"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "client-cli",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "caspar-client creatures.consumeLock",
+      "support": "supported-compatibility",
+      "target_owner": "generated Aseman client/asemanctl"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "client-cli",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "caspar-client creatures.list",
+      "support": "supported-compatibility",
+      "target_owner": "generated Aseman client/asemanctl"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "client-cli",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "caspar-client creatures.signal",
+      "support": "supported-compatibility",
+      "target_owner": "generated Aseman client/asemanctl"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "client-cli",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "caspar-client creatures.createMachine",
+      "support": "supported-compatibility",
+      "target_owner": "generated Aseman client/asemanctl"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "client-cli",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "caspar-client creatures.listMachines",
+      "support": "supported-compatibility",
+      "target_owner": "generated Aseman client/asemanctl"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "client-cli",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "caspar-client programs.create",
+      "support": "supported-compatibility",
+      "target_owner": "generated Aseman client/asemanctl"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "client-cli",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "caspar-client programs.delete",
+      "support": "supported-compatibility",
+      "target_owner": "generated Aseman client/asemanctl"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "client-cli",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "caspar-client programs.update",
+      "support": "supported-compatibility",
+      "target_owner": "generated Aseman client/asemanctl"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "client-cli",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "caspar-client programs.deployRaw",
+      "support": "supported-compatibility",
+      "target_owner": "generated Aseman client/asemanctl"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "client-cli",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "caspar-client programs.deploy",
+      "support": "supported-compatibility",
+      "target_owner": "generated Aseman client/asemanctl"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "client-cli",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "caspar-client programs.run",
+      "support": "supported-compatibility",
+      "target_owner": "generated Aseman client/asemanctl"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "client-cli",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "caspar-client programs.stop",
+      "support": "supported-compatibility",
+      "target_owner": "generated Aseman client/asemanctl"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "client-cli",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "caspar-client programs.list",
+      "support": "supported-compatibility",
+      "target_owner": "generated Aseman client/asemanctl"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "client-cli",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "caspar-client programs.readBuildLogs",
+      "support": "supported-compatibility",
+      "target_owner": "generated Aseman client/asemanctl"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "client-cli",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "caspar-client vm.types",
+      "support": "supported-compatibility",
+      "target_owner": "generated Aseman client/asemanctl"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "client-cli",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "caspar-client vm.init",
+      "support": "supported-compatibility",
+      "target_owner": "generated Aseman client/asemanctl"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "root script",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "bench-all.sh",
+      "support": "supported-compatibility",
+      "target_owner": "xtask/bootstrap/deploy workflow"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "root script",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "build-dist.sh",
+      "support": "supported-compatibility",
+      "target_owner": "xtask/bootstrap/deploy workflow"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "root script",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "run-nodes.sh",
+      "support": "supported-compatibility",
+      "target_owner": "xtask/bootstrap/deploy workflow"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "root script",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "stop-nodes.sh",
+      "support": "supported-compatibility",
+      "target_owner": "xtask/bootstrap/deploy workflow"
+    }
+  ],
+  "evidence": [
+    "tests/characterization/test_surface_golden.py",
+    "crates/aseman-contracts/src/legacy_gateway.rs::tests",
+    "crates/aseman-contracts/src/legacy_storage_http.rs::tests",
+    "node/src/shell/storage_http.rs::characterization_tests",
+    "cargo test -p caspar-node --lib (401 tests at Phase 0 baseline; migrated pure cases move to clean crates)",
+    "cargo test -p casparctl (33 tests at baseline)"
+  ],
+  "guest_operations": [
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "unified-host-call",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "buildDockerImage",
+      "support": "supported-compatibility",
+      "target_owner": "authenticated guest gateway and typed application/VMM ports"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "unified-host-call",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "buildVmImage",
+      "support": "supported-compatibility",
+      "target_owner": "authenticated guest gateway and typed application/VMM ports"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "unified-host-call",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "callProtocolApi",
+      "support": "supported-compatibility",
+      "target_owner": "authenticated guest gateway and typed application/VMM ports"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "unified-host-call",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "commitTrx",
+      "support": "supported-compatibility",
+      "target_owner": "authenticated guest gateway and typed application/VMM ports"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "unified-host-call",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "consoleLog",
+      "support": "supported-compatibility",
+      "target_owner": "authenticated guest gateway and typed application/VMM ports"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "unified-host-call",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "consumeLock",
+      "support": "supported-compatibility",
+      "target_owner": "authenticated guest gateway and typed application/VMM ports"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "unified-host-call",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "copyFromVm",
+      "support": "supported-compatibility",
+      "target_owner": "authenticated guest gateway and typed application/VMM ports"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "unified-host-call",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "copyToDocker",
+      "support": "supported-compatibility",
+      "target_owner": "authenticated guest gateway and typed application/VMM ports"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "unified-host-call",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "copyToVm",
+      "support": "supported-compatibility",
+      "target_owner": "authenticated guest gateway and typed application/VMM ports"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "unified-host-call",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "createAccess",
+      "support": "supported-compatibility",
+      "target_owner": "authenticated guest gateway and typed application/VMM ports"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "unified-host-call",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "createCreature",
+      "support": "supported-compatibility",
+      "target_owner": "authenticated guest gateway and typed application/VMM ports"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "unified-host-call",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "createOwnedAccess",
+      "support": "supported-compatibility",
+      "target_owner": "authenticated guest gateway and typed application/VMM ports"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "unified-host-call",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "createOwnedCreature",
+      "support": "supported-compatibility",
+      "target_owner": "authenticated guest gateway and typed application/VMM ports"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "unified-host-call",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "createOwnedStore",
+      "support": "supported-compatibility",
+      "target_owner": "authenticated guest gateway and typed application/VMM ports"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "unified-host-call",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "createProgram",
+      "support": "supported-compatibility",
+      "target_owner": "authenticated guest gateway and typed application/VMM ports"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "unified-host-call",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "createResourceEntity",
+      "support": "supported-compatibility",
+      "target_owner": "authenticated guest gateway and typed application/VMM ports"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "unified-host-call",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "createResourceStore",
+      "support": "supported-compatibility",
+      "target_owner": "authenticated guest gateway and typed application/VMM ports"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "unified-host-call",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "createStore",
+      "support": "supported-compatibility",
+      "target_owner": "authenticated guest gateway and typed application/VMM ports"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "unified-host-call",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "createVmOwnedStore",
+      "support": "supported-compatibility",
+      "target_owner": "authenticated guest gateway and typed application/VMM ports"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "unified-host-call",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "dbOp",
+      "support": "supported-compatibility",
+      "target_owner": "authenticated guest gateway and typed application/VMM ports"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "unified-host-call",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "debitPool",
+      "support": "supported-compatibility",
+      "target_owner": "authenticated guest gateway and typed application/VMM ports"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "unified-host-call",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "delKey",
+      "support": "supported-compatibility",
+      "target_owner": "authenticated guest gateway and typed application/VMM ports"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "unified-host-call",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "deleteAccess",
+      "support": "supported-compatibility",
+      "target_owner": "authenticated guest gateway and typed application/VMM ports"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "unified-host-call",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "deleteCreature",
+      "support": "supported-compatibility",
+      "target_owner": "authenticated guest gateway and typed application/VMM ports"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "unified-host-call",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "deleteOwnedAccess",
+      "support": "supported-compatibility",
+      "target_owner": "authenticated guest gateway and typed application/VMM ports"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "unified-host-call",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "deleteOwnedCreature",
+      "support": "supported-compatibility",
+      "target_owner": "authenticated guest gateway and typed application/VMM ports"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "unified-host-call",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "deleteOwnedProgram",
+      "support": "supported-compatibility",
+      "target_owner": "authenticated guest gateway and typed application/VMM ports"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "unified-host-call",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "deleteOwnedStore",
+      "support": "supported-compatibility",
+      "target_owner": "authenticated guest gateway and typed application/VMM ports"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "unified-host-call",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "deleteProgram",
+      "support": "supported-compatibility",
+      "target_owner": "authenticated guest gateway and typed application/VMM ports"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "unified-host-call",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "deleteResourceEntity",
+      "support": "supported-compatibility",
+      "target_owner": "authenticated guest gateway and typed application/VMM ports"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "unified-host-call",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "deleteResourceStore",
+      "support": "supported-compatibility",
+      "target_owner": "authenticated guest gateway and typed application/VMM ports"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "unified-host-call",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "deleteStore",
+      "support": "supported-compatibility",
+      "target_owner": "authenticated guest gateway and typed application/VMM ports"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "unified-host-call",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "deleteVm",
+      "support": "supported-compatibility",
+      "target_owner": "authenticated guest gateway and typed application/VMM ports"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "unified-host-call",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "deleteVmOwnedStore",
+      "support": "supported-compatibility",
+      "target_owner": "authenticated guest gateway and typed application/VMM ports"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "unified-host-call",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "deploy entity",
+      "support": "supported-compatibility",
+      "target_owner": "authenticated guest gateway and typed application/VMM ports"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "unified-host-call",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "deployEntity",
+      "support": "supported-compatibility",
+      "target_owner": "authenticated guest gateway and typed application/VMM ports"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "unified-host-call",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "destroyVm",
+      "support": "supported-compatibility",
+      "target_owner": "authenticated guest gateway and typed application/VMM ports"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "unified-host-call",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "elpifyProof",
+      "support": "supported-compatibility",
+      "target_owner": "authenticated guest gateway and typed application/VMM ports"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "unified-host-call",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "execDocker",
+      "support": "supported-compatibility",
+      "target_owner": "authenticated guest gateway and typed application/VMM ports"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "unified-host-call",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "execShellAction",
+      "support": "supported-compatibility",
+      "target_owner": "authenticated guest gateway and typed application/VMM ports"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "unified-host-call",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "execVm",
+      "support": "supported-compatibility",
+      "target_owner": "authenticated guest gateway and typed application/VMM ports"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "unified-host-call",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "genId",
+      "support": "supported-compatibility",
+      "target_owner": "authenticated guest gateway and typed application/VMM ports"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "unified-host-call",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "getByPrefix",
+      "support": "supported-compatibility",
+      "target_owner": "authenticated guest gateway and typed application/VMM ports"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "unified-host-call",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "getCreature",
+      "support": "supported-compatibility",
+      "target_owner": "authenticated guest gateway and typed application/VMM ports"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "unified-host-call",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "getJson",
+      "support": "supported-compatibility",
+      "target_owner": "authenticated guest gateway and typed application/VMM ports"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "unified-host-call",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "getLink",
+      "support": "supported-compatibility",
+      "target_owner": "authenticated guest gateway and typed application/VMM ports"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "unified-host-call",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "getProgram",
+      "support": "supported-compatibility",
+      "target_owner": "authenticated guest gateway and typed application/VMM ports"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "unified-host-call",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "getResourceStore",
+      "support": "supported-compatibility",
+      "target_owner": "authenticated guest gateway and typed application/VMM ports"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "unified-host-call",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "getStore",
+      "support": "supported-compatibility",
+      "target_owner": "authenticated guest gateway and typed application/VMM ports"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "unified-host-call",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "getVmOwnedStore",
+      "support": "supported-compatibility",
+      "target_owner": "authenticated guest gateway and typed application/VMM ports"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "unified-host-call",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "grantLogin",
+      "support": "supported-compatibility",
+      "target_owner": "authenticated guest gateway and typed application/VMM ports"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "unified-host-call",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "hasAccessToStore",
+      "support": "supported-compatibility",
+      "target_owner": "authenticated guest gateway and typed application/VMM ports"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "unified-host-call",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "httpPost",
+      "support": "supported-compatibility",
+      "target_owner": "authenticated guest gateway and typed application/VMM ports"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "unified-host-call",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "httpRequest",
+      "support": "supported-compatibility",
+      "target_owner": "authenticated guest gateway and typed application/VMM ports"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "unified-host-call",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "joinGroup",
+      "support": "supported-compatibility",
+      "target_owner": "authenticated guest gateway and typed application/VMM ports"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "unified-host-call",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "listCreatures",
+      "support": "supported-compatibility",
+      "target_owner": "authenticated guest gateway and typed application/VMM ports"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "unified-host-call",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "listProgramMachines",
+      "support": "supported-compatibility",
+      "target_owner": "authenticated guest gateway and typed application/VMM ports"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "unified-host-call",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "listPrograms",
+      "support": "supported-compatibility",
+      "target_owner": "authenticated guest gateway and typed application/VMM ports"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "unified-host-call",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "listResourceStores",
+      "support": "supported-compatibility",
+      "target_owner": "authenticated guest gateway and typed application/VMM ports"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "unified-host-call",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "listStoreAccess",
+      "support": "supported-compatibility",
+      "target_owner": "authenticated guest gateway and typed application/VMM ports"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "unified-host-call",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "listStoreMembers",
+      "support": "supported-compatibility",
+      "target_owner": "authenticated guest gateway and typed application/VMM ports"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "unified-host-call",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "listStores",
+      "support": "supported-compatibility",
+      "target_owner": "authenticated guest gateway and typed application/VMM ports"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "unified-host-call",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "listVmOwnedStores",
+      "support": "supported-compatibility",
+      "target_owner": "authenticated guest gateway and typed application/VMM ports"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "unified-host-call",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "lockResource",
+      "support": "supported-compatibility",
+      "target_owner": "authenticated guest gateway and typed application/VMM ports"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "unified-host-call",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "lockToken",
+      "support": "supported-compatibility",
+      "target_owner": "authenticated guest gateway and typed application/VMM ports"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "unified-host-call",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "nodeIdentity",
+      "support": "supported-compatibility",
+      "target_owner": "authenticated guest gateway and typed application/VMM ports"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "unified-host-call",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "plantTrigger",
+      "support": "supported-compatibility",
+      "target_owner": "authenticated guest gateway and typed application/VMM ports"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "unified-host-call",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "protocolApi",
+      "support": "supported-compatibility",
+      "target_owner": "authenticated guest gateway and typed application/VMM ports"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "unified-host-call",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "publishFinanceCatalog",
+      "support": "supported-compatibility",
+      "target_owner": "authenticated guest gateway and typed application/VMM ports"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "unified-host-call",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "publishFinanceQuote",
+      "support": "supported-compatibility",
+      "target_owner": "authenticated guest gateway and typed application/VMM ports"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "unified-host-call",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "publishUpdate",
+      "support": "supported-compatibility",
+      "target_owner": "authenticated guest gateway and typed application/VMM ports"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "unified-host-call",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "putJson",
+      "support": "supported-compatibility",
+      "target_owner": "authenticated guest gateway and typed application/VMM ports"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "unified-host-call",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "readMembers",
+      "support": "supported-compatibility",
+      "target_owner": "authenticated guest gateway and typed application/VMM ports"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "unified-host-call",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "registerBridgeToken",
+      "support": "supported-compatibility",
+      "target_owner": "authenticated guest gateway and typed application/VMM ports"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "unified-host-call",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "registerFinanceNode",
+      "support": "supported-compatibility",
+      "target_owner": "authenticated guest gateway and typed application/VMM ports"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "unified-host-call",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "registerFinanceResource",
+      "support": "supported-compatibility",
+      "target_owner": "authenticated guest gateway and typed application/VMM ports"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "unified-host-call",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "releaseHold",
+      "support": "supported-compatibility",
+      "target_owner": "authenticated guest gateway and typed application/VMM ports"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "unified-host-call",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "releasePool",
+      "support": "supported-compatibility",
+      "target_owner": "authenticated guest gateway and typed application/VMM ports"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "unified-host-call",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "removeAccess",
+      "support": "supported-compatibility",
+      "target_owner": "authenticated guest gateway and typed application/VMM ports"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "unified-host-call",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "removeCreature",
+      "support": "supported-compatibility",
+      "target_owner": "authenticated guest gateway and typed application/VMM ports"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "unified-host-call",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "removeOwnedAccess",
+      "support": "supported-compatibility",
+      "target_owner": "authenticated guest gateway and typed application/VMM ports"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "unified-host-call",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "removeOwnedCreature",
+      "support": "supported-compatibility",
+      "target_owner": "authenticated guest gateway and typed application/VMM ports"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "unified-host-call",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "removeOwnedStore",
+      "support": "supported-compatibility",
+      "target_owner": "authenticated guest gateway and typed application/VMM ports"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "unified-host-call",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "removeStore",
+      "support": "supported-compatibility",
+      "target_owner": "authenticated guest gateway and typed application/VMM ports"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "unified-host-call",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "reservePool",
+      "support": "supported-compatibility",
+      "target_owner": "authenticated guest gateway and typed application/VMM ports"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "unified-host-call",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "retireFinanceNode",
+      "support": "supported-compatibility",
+      "target_owner": "authenticated guest gateway and typed application/VMM ports"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "unified-host-call",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "retireFinanceResource",
+      "support": "supported-compatibility",
+      "target_owner": "authenticated guest gateway and typed application/VMM ports"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "unified-host-call",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "reviewFinanceResource",
+      "support": "supported-compatibility",
+      "target_owner": "authenticated guest gateway and typed application/VMM ports"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "unified-host-call",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "revokeBridgeToken",
+      "support": "supported-compatibility",
+      "target_owner": "authenticated guest gateway and typed application/VMM ports"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "unified-host-call",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "runVm",
+      "support": "supported-compatibility",
+      "target_owner": "authenticated guest gateway and typed application/VMM ports"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "unified-host-call",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "secretGet",
+      "support": "supported-compatibility",
+      "target_owner": "authenticated guest gateway and typed application/VMM ports"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "unified-host-call",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "secretListGranted",
+      "support": "supported-compatibility",
+      "target_owner": "authenticated guest gateway and typed application/VMM ports"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "unified-host-call",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "settleHold",
+      "support": "supported-compatibility",
+      "target_owner": "authenticated guest gateway and typed application/VMM ports"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "unified-host-call",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "settlePool",
+      "support": "supported-compatibility",
+      "target_owner": "authenticated guest gateway and typed application/VMM ports"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "unified-host-call",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "signal",
+      "support": "supported-compatibility",
+      "target_owner": "authenticated guest gateway and typed application/VMM ports"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "unified-host-call",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "signalGroup",
+      "support": "supported-compatibility",
+      "target_owner": "authenticated guest gateway and typed application/VMM ports"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "unified-host-call",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "signalUser",
+      "support": "supported-compatibility",
+      "target_owner": "authenticated guest gateway and typed application/VMM ports"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "unified-host-call",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "startHold",
+      "support": "supported-compatibility",
+      "target_owner": "authenticated guest gateway and typed application/VMM ports"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "unified-host-call",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "statusVm",
+      "support": "supported-compatibility",
+      "target_owner": "authenticated guest gateway and typed application/VMM ports"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "unified-host-call",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "terminateVm",
+      "support": "supported-compatibility",
+      "target_owner": "authenticated guest gateway and typed application/VMM ports"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "unified-host-call",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "transfer",
+      "support": "supported-compatibility",
+      "target_owner": "authenticated guest gateway and typed application/VMM ports"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "unified-host-call",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "unlockResource",
+      "support": "supported-compatibility",
+      "target_owner": "authenticated guest gateway and typed application/VMM ports"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "unified-host-call",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "updateCreature",
+      "support": "supported-compatibility",
+      "target_owner": "authenticated guest gateway and typed application/VMM ports"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "unified-host-call",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "updateProgram",
+      "support": "supported-compatibility",
+      "target_owner": "authenticated guest gateway and typed application/VMM ports"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "unified-host-call",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "updateResourceStore",
+      "support": "supported-compatibility",
+      "target_owner": "authenticated guest gateway and typed application/VMM ports"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "unified-host-call",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "updateStore",
+      "support": "supported-compatibility",
+      "target_owner": "authenticated guest gateway and typed application/VMM ports"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "unified-host-call",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "updateVmOwnedStore",
+      "support": "supported-compatibility",
+      "target_owner": "authenticated guest gateway and typed application/VMM ports"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "unified-host-call",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "validateSign",
+      "support": "supported-compatibility",
+      "target_owner": "authenticated guest gateway and typed application/VMM ports"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "unified-host-call",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "verifyProgramExecution",
+      "support": "supported-compatibility",
+      "target_owner": "authenticated guest gateway and typed application/VMM ports"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "unified-host-call",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "vmEndpoints",
+      "support": "supported-compatibility",
+      "target_owner": "authenticated guest gateway and typed application/VMM ports"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "unified-host-call",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "vmLog",
+      "support": "supported-compatibility",
+      "target_owner": "authenticated guest gateway and typed application/VMM ports"
+    }
+  ],
+  "http_routes": [
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "cluster-admin-and-raft",
+      "disposition": "delete-after-replacement",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "POST /cluster/add-peer",
+      "support": "supported-compatibility",
+      "target_owner": "coordination/worker administration API"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "cluster-admin-and-raft",
+      "disposition": "delete-after-replacement",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "GET /cluster/config",
+      "support": "supported-compatibility",
+      "target_owner": "coordination/worker administration API"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "cluster-admin-and-raft",
+      "disposition": "delete-after-replacement",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "POST /cluster/config",
+      "support": "supported-compatibility",
+      "target_owner": "coordination/worker administration API"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "cluster-admin-and-raft",
+      "disposition": "delete-after-replacement",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "POST /cluster/config/apply",
+      "support": "supported-compatibility",
+      "target_owner": "coordination/worker administration API"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "cluster-admin-and-raft",
+      "disposition": "delete-after-replacement",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "POST /cluster/init",
+      "support": "supported-compatibility",
+      "target_owner": "coordination/worker administration API"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "cluster-admin-and-raft",
+      "disposition": "delete-after-replacement",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "GET /cluster/nearest",
+      "support": "supported-compatibility",
+      "target_owner": "coordination/worker administration API"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "cluster-admin-and-raft",
+      "disposition": "delete-after-replacement",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "GET /cluster/peers",
+      "support": "supported-compatibility",
+      "target_owner": "coordination/worker administration API"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "cluster-admin-and-raft",
+      "disposition": "delete-after-replacement",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "GET /cluster/ping",
+      "support": "supported-compatibility",
+      "target_owner": "coordination/worker administration API"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "cluster-admin-and-raft",
+      "disposition": "delete-after-replacement",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "POST /cluster/promote",
+      "support": "supported-compatibility",
+      "target_owner": "coordination/worker administration API"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "cluster-admin-and-raft",
+      "disposition": "delete-after-replacement",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "POST /cluster/propose",
+      "support": "supported-compatibility",
+      "target_owner": "coordination/worker administration API"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "cluster-admin-and-raft",
+      "disposition": "delete-after-replacement",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "POST /cluster/remove-peer",
+      "support": "supported-compatibility",
+      "target_owner": "coordination/worker administration API"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "cluster-admin-and-raft",
+      "disposition": "delete-after-replacement",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "GET /cluster/status",
+      "support": "supported-compatibility",
+      "target_owner": "coordination/worker administration API"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "cluster-admin-and-raft",
+      "disposition": "delete-after-replacement",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "POST /raft/append",
+      "support": "supported-compatibility",
+      "target_owner": "coordination/worker administration API"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "cluster-admin-and-raft",
+      "disposition": "delete-after-replacement",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "POST /raft/snapshot",
+      "support": "supported-compatibility",
+      "target_owner": "coordination/worker administration API"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "cluster-admin-and-raft",
+      "disposition": "delete-after-replacement",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "POST /raft/vote",
+      "support": "supported-compatibility",
+      "target_owner": "coordination/worker administration API"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "profiling-http",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "GET /debug/pprof",
+      "support": "supported-compatibility",
+      "target_owner": "canonical HTTP gateway"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "profiling-http",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "GET /debug/pprof/",
+      "support": "supported-compatibility",
+      "target_owner": "canonical HTTP gateway"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "profiling-http",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "GET /debug/pprof/flamegraph",
+      "support": "supported-compatibility",
+      "target_owner": "canonical HTTP gateway"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "profiling-http",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "GET /debug/pprof/heap",
+      "support": "supported-compatibility",
+      "target_owner": "canonical HTTP gateway"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "profiling-http",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "GET /debug/pprof/profile",
+      "support": "supported-compatibility",
+      "target_owner": "canonical HTTP gateway"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "profiling-http",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "GET /debug/pprof/runtime",
+      "support": "supported-compatibility",
+      "target_owner": "canonical HTTP gateway"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "profiling-http",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "GET /debug/pprof/threads",
+      "support": "supported-compatibility",
+      "target_owner": "canonical HTTP gateway"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "public-storage-http",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "GET /storage/file/{id}",
+      "support": "supported-compatibility",
+      "target_owner": "authenticated public file API"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "public-storage-http",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "HEAD /storage/file/{id}",
+      "support": "supported-compatibility",
+      "target_owner": "authenticated public file API"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "public-storage-http",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "GET /storage/health",
+      "support": "supported-compatibility",
+      "target_owner": "authenticated public file API"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "public-storage-http",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "POST /storage/upload",
+      "support": "supported-compatibility",
+      "target_owner": "authenticated public file API"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "public-storage-http",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "PUT /storage/upload",
+      "support": "supported-compatibility",
+      "target_owner": "authenticated public file API"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "telemetry-http",
+      "disposition": "move",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "GET /telemetry/health",
+      "support": "supported-compatibility",
+      "target_owner": "observability administration API"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "telemetry-http",
+      "disposition": "move",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "GET /telemetry/snapshot",
+      "support": "supported-compatibility",
+      "target_owner": "observability administration API"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "vm-http-ingress",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "ANY /{creatureId}/{programId}/{entityId}/{vmId}/{path...}",
+      "support": "supported-compatibility",
+      "target_owner": "canonical HTTP gateway"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "vm-http-ingress",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "ANY /{creatureUsername}/{customPath...}",
+      "support": "supported-compatibility",
+      "target_owner": "canonical HTTP gateway"
+    }
+  ],
+  "limitations": [
+    "The golden proves names, dispatch ownership, declared capabilities, and persistence shapes; phase contracts add deeper semantic and adversarial cases before each replacement.",
+    "Supported-compatibility does not approve current security semantics; target authorization gates remain mandatory."
+  ],
+  "runtimes": [
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "compile-time caspar-vm-plugins aggregator",
+      "disposition": "move-and-deprecate-aggregator",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "docker",
+      "support": "supported-compatibility",
+      "target_owner": "runtime/docker module behind VMM contract"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "compile-time caspar-vm-plugins aggregator",
+      "disposition": "move-and-deprecate-aggregator",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "elpian",
+      "support": "supported-compatibility",
+      "target_owner": "runtime/elpian module behind VMM contract"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "compile-time caspar-vm-plugins aggregator",
+      "disposition": "move-and-deprecate-aggregator",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "elpify",
+      "support": "supported-compatibility",
+      "target_owner": "runtime/elpify module behind VMM contract"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "compile-time caspar-vm-plugins aggregator",
+      "disposition": "move-and-deprecate-aggregator",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "fire",
+      "support": "supported-compatibility",
+      "target_owner": "runtime/fire module behind VMM contract"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "compile-time caspar-vm-plugins aggregator",
+      "disposition": "move-and-deprecate-aggregator",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "javascript",
+      "support": "supported-compatibility",
+      "target_owner": "runtime/javascript module behind VMM contract"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "compile-time caspar-vm-plugins aggregator",
+      "disposition": "move-and-deprecate-aggregator",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "modal",
+      "support": "supported-compatibility",
+      "target_owner": "runtime/modal module behind VMM contract"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "compile-time caspar-vm-plugins aggregator",
+      "disposition": "move-and-deprecate-aggregator",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "wasm",
+      "support": "supported-compatibility",
+      "target_owner": "runtime/wasm module behind VMM contract"
+    }
+  ],
+  "signed_shell_actions": [
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "signed-shell-action",
+      "disposition": "deprecate",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "/api/hello",
+      "support": "supported-compatibility",
+      "target_owner": "HTTP health/diagnostic API"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "signed-shell-action",
+      "disposition": "deprecate",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "/api/ping",
+      "support": "supported-compatibility",
+      "target_owner": "HTTP health/diagnostic API"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "signed-shell-action",
+      "disposition": "deprecate",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "/api/time",
+      "support": "supported-compatibility",
+      "target_owner": "HTTP health/diagnostic API"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "signed-shell-action",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "/auths/getServerPublicKey",
+      "support": "supported-compatibility",
+      "target_owner": "identity/security use cases"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "signed-shell-action",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "/auths/getServersMap",
+      "support": "supported-compatibility",
+      "target_owner": "identity/security use cases"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "signed-shell-action",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "/creatures/authenticate",
+      "support": "supported-compatibility",
+      "target_owner": "creature application use cases"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "signed-shell-action",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "/creatures/checkSign",
+      "support": "supported-compatibility",
+      "target_owner": "creature application use cases"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "signed-shell-action",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "/creatures/closePool",
+      "support": "supported-compatibility",
+      "target_owner": "finance application use cases"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "signed-shell-action",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "/creatures/consumeLock",
+      "support": "supported-compatibility",
+      "target_owner": "creature application use cases"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "signed-shell-action",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "/creatures/create",
+      "support": "supported-compatibility",
+      "target_owner": "creature application use cases"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "signed-shell-action",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "/creatures/createHold",
+      "support": "supported-compatibility",
+      "target_owner": "finance application use cases"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "signed-shell-action",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "/creatures/debitPool",
+      "support": "supported-compatibility",
+      "target_owner": "finance application use cases"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "signed-shell-action",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "/creatures/delete",
+      "support": "supported-compatibility",
+      "target_owner": "creature application use cases"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "signed-shell-action",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "/creatures/find",
+      "support": "supported-compatibility",
+      "target_owner": "creature application use cases"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "signed-shell-action",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "/creatures/get",
+      "support": "supported-compatibility",
+      "target_owner": "creature application use cases"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "signed-shell-action",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "/creatures/getByUsername",
+      "support": "supported-compatibility",
+      "target_owner": "creature application use cases"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "signed-shell-action",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "/creatures/getFinancialAccount",
+      "support": "supported-compatibility",
+      "target_owner": "creature application use cases"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "signed-shell-action",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "/creatures/getHold",
+      "support": "supported-compatibility",
+      "target_owner": "finance application use cases"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "signed-shell-action",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "/creatures/list",
+      "support": "supported-compatibility",
+      "target_owner": "creature application use cases"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "signed-shell-action",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "/creatures/listPayouts",
+      "support": "supported-compatibility",
+      "target_owner": "finance application use cases"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "signed-shell-action",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "/creatures/lockToken",
+      "support": "supported-compatibility",
+      "target_owner": "creature application use cases"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "signed-shell-action",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "/creatures/login",
+      "support": "supported-compatibility",
+      "target_owner": "creature application use cases"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "signed-shell-action",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "/creatures/meta",
+      "support": "supported-compatibility",
+      "target_owner": "creature application use cases"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "signed-shell-action",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "/creatures/mint",
+      "support": "supported-compatibility",
+      "target_owner": "finance application use cases"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "signed-shell-action",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "/creatures/openPool",
+      "support": "supported-compatibility",
+      "target_owner": "finance application use cases"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "signed-shell-action",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "/creatures/paymentAdjustment",
+      "support": "supported-compatibility",
+      "target_owner": "finance application use cases"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "signed-shell-action",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "/creatures/publishFinanceCatalog",
+      "support": "supported-compatibility",
+      "target_owner": "finance application use cases"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "signed-shell-action",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "/creatures/publishFinanceQuote",
+      "support": "supported-compatibility",
+      "target_owner": "finance application use cases"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "signed-shell-action",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "/creatures/reconcileFinancialSystem",
+      "support": "supported-compatibility",
+      "target_owner": "creature application use cases"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "signed-shell-action",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "/creatures/refreshPool",
+      "support": "supported-compatibility",
+      "target_owner": "finance application use cases"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "signed-shell-action",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "/creatures/registerFinanceNode",
+      "support": "supported-compatibility",
+      "target_owner": "finance application use cases"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "signed-shell-action",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "/creatures/registerFinanceResource",
+      "support": "supported-compatibility",
+      "target_owner": "finance application use cases"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "signed-shell-action",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "/creatures/releaseHold",
+      "support": "supported-compatibility",
+      "target_owner": "finance application use cases"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "signed-shell-action",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "/creatures/releasePool",
+      "support": "supported-compatibility",
+      "target_owner": "finance application use cases"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "signed-shell-action",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "/creatures/requestPayout",
+      "support": "supported-compatibility",
+      "target_owner": "finance application use cases"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "signed-shell-action",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "/creatures/reservePool",
+      "support": "supported-compatibility",
+      "target_owner": "finance application use cases"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "signed-shell-action",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "/creatures/resolvePayout",
+      "support": "supported-compatibility",
+      "target_owner": "finance application use cases"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "signed-shell-action",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "/creatures/retireFinanceNode",
+      "support": "supported-compatibility",
+      "target_owner": "finance application use cases"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "signed-shell-action",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "/creatures/retireFinanceResource",
+      "support": "supported-compatibility",
+      "target_owner": "finance application use cases"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "signed-shell-action",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "/creatures/reviewFinanceResource",
+      "support": "supported-compatibility",
+      "target_owner": "finance application use cases"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "signed-shell-action",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "/creatures/secretGet",
+      "support": "supported-compatibility",
+      "target_owner": "secret/capability use cases"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "signed-shell-action",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "/creatures/secretGrant",
+      "support": "supported-compatibility",
+      "target_owner": "secret/capability use cases"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "signed-shell-action",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "/creatures/secretList",
+      "support": "supported-compatibility",
+      "target_owner": "secret/capability use cases"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "signed-shell-action",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "/creatures/secretListGranted",
+      "support": "supported-compatibility",
+      "target_owner": "secret/capability use cases"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "signed-shell-action",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "/creatures/secretPut",
+      "support": "supported-compatibility",
+      "target_owner": "secret/capability use cases"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "signed-shell-action",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "/creatures/secretRevoke",
+      "support": "supported-compatibility",
+      "target_owner": "secret/capability use cases"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "signed-shell-action",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "/creatures/settleHold",
+      "support": "supported-compatibility",
+      "target_owner": "finance application use cases"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "signed-shell-action",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "/creatures/settlePool",
+      "support": "supported-compatibility",
+      "target_owner": "finance application use cases"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "signed-shell-action",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "/creatures/signal",
+      "support": "supported-compatibility",
+      "target_owner": "realtime application port"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "signed-shell-action",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "/creatures/startHold",
+      "support": "supported-compatibility",
+      "target_owner": "finance application use cases"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "signed-shell-action",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "/creatures/transfer",
+      "support": "supported-compatibility",
+      "target_owner": "finance application use cases"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "signed-shell-action",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "/creatures/types",
+      "support": "supported-compatibility",
+      "target_owner": "creature application use cases"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "signed-shell-action",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "/creatures/update",
+      "support": "supported-compatibility",
+      "target_owner": "creature application use cases"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "signed-shell-action",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "/gateway/signal",
+      "support": "supported-compatibility",
+      "target_owner": "realtime application port"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "signed-shell-action",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "/gateway/subscribe",
+      "support": "supported-compatibility",
+      "target_owner": "realtime application port"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "signed-shell-action",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "/gateway/unsubscribe",
+      "support": "supported-compatibility",
+      "target_owner": "realtime application port"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "signed-shell-action",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "/machines/closeVmTerminal",
+      "support": "supported-compatibility",
+      "target_owner": "program/workload use cases and VMM port"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "signed-shell-action",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "/machines/list",
+      "support": "supported-compatibility",
+      "target_owner": "program/workload use cases and VMM port"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "signed-shell-action",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "/machines/listEntityVms",
+      "support": "supported-compatibility",
+      "target_owner": "program/workload use cases and VMM port"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "signed-shell-action",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "/machines/listProgramMachines",
+      "support": "supported-compatibility",
+      "target_owner": "program/workload use cases and VMM port"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "signed-shell-action",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "/machines/openVmTerminal",
+      "support": "supported-compatibility",
+      "target_owner": "program/workload use cases and VMM port"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "signed-shell-action",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "/machines/readMachineBuilds",
+      "support": "supported-compatibility",
+      "target_owner": "program/workload use cases and VMM port"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "signed-shell-action",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "/machines/readVmLogs",
+      "support": "supported-compatibility",
+      "target_owner": "program/workload use cases and VMM port"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "signed-shell-action",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "/programs/create",
+      "support": "supported-compatibility",
+      "target_owner": "program/workload use cases and VMM port"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "signed-shell-action",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "/programs/delete",
+      "support": "supported-compatibility",
+      "target_owner": "program/workload use cases and VMM port"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "signed-shell-action",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "/programs/deleteEntity",
+      "support": "supported-compatibility",
+      "target_owner": "program/workload use cases and VMM port"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "signed-shell-action",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "/programs/deploy",
+      "support": "supported-compatibility",
+      "target_owner": "program/workload use cases and VMM port"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "signed-shell-action",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "/programs/downloadEntity",
+      "support": "supported-compatibility",
+      "target_owner": "program/workload use cases and VMM port"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "signed-shell-action",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "/programs/list",
+      "support": "supported-compatibility",
+      "target_owner": "program/workload use cases and VMM port"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "signed-shell-action",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "/programs/runEntity",
+      "support": "supported-compatibility",
+      "target_owner": "program/workload use cases and VMM port"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "signed-shell-action",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "/programs/stopEntity",
+      "support": "supported-compatibility",
+      "target_owner": "program/workload use cases and VMM port"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "signed-shell-action",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "/programs/update",
+      "support": "supported-compatibility",
+      "target_owner": "program/workload use cases and VMM port"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "signed-shell-action",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "/storage/upload",
+      "support": "supported-compatibility",
+      "target_owner": "file/capsule use case"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "signed-shell-action",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "/stores/getAccess",
+      "support": "supported-compatibility",
+      "target_owner": "store/capsule use cases"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "signed-shell-action",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "/stores/history",
+      "support": "supported-compatibility",
+      "target_owner": "store/capsule use cases"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "signed-shell-action",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "/stores/setAccess",
+      "support": "supported-compatibility",
+      "target_owner": "store/capsule use cases"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "signed-shell-action",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "/stores/signal",
+      "support": "supported-compatibility",
+      "target_owner": "realtime application port"
+    }
+  ]
+}

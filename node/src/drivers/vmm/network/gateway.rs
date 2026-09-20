@@ -1,22 +1,25 @@
-use crate::drivers::vmm::prelude::*;
-use crate::drivers::vmm::network::gateway_types::{VmGatewayEndpoint, GatewayProtocol, GatewayForwardRequest};
-use crate::drivers::vmm::network::gateway_registry::VmGatewayRegistry;
 use crate::drivers::vmm::network::gateway_http::forward_http_to_vm;
-use crate::drivers::vmm::network::gateway_socket::{forward_websocket_to_vm, forward_raw_socket_to_vm};
+use crate::drivers::vmm::network::gateway_registry::VmGatewayRegistry;
+use crate::drivers::vmm::network::gateway_socket::{
+    forward_raw_socket_to_vm, forward_websocket_to_vm,
+};
+use crate::drivers::vmm::network::gateway_types::{
+    GatewayForwardRequest, GatewayProtocol, VmGatewayEndpoint,
+};
+use crate::drivers::vmm::prelude::*;
 
 pub(crate) struct VmGatewayService;
 
 impl VmGatewayService {
     pub(crate) fn register_endpoint(packet: &JsonValue) -> Result<JsonValue, String> {
-        let runtime = caspar_vm_sdk::registry::resolve_key(
-            packet["runtime"].as_str().unwrap_or(""),
-        )
-        .ok_or_else(|| {
-            format!(
-                "runtime is required and must be one of the registered VM types: {}",
-                caspar_vm_sdk::registry::keys().join("/")
-            )
-        })?;
+        let runtime =
+            caspar_vm_sdk::registry::resolve_key(packet["runtime"].as_str().unwrap_or(""))
+                .ok_or_else(|| {
+                    format!(
+                        "runtime is required and must be one of the registered VM types: {}",
+                        caspar_vm_sdk::registry::keys().join("/")
+                    )
+                })?;
         let machine_id = packet["machineId"]
             .as_str()
             .unwrap_or("")

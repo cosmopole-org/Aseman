@@ -63,8 +63,7 @@ impl BotAgent {
         };
         let packet_binary = serde_json::to_vec(&packet).unwrap_or_default();
         if let Some(secure) = core.actor().fetch_secure_action("/stores/signal") {
-            let packet_arc: Arc<dyn crate::models::input::IInput> =
-                Arc::new(packet.clone());
+            let packet_arc: Arc<dyn crate::models::input::IInput> = Arc::new(packet.clone());
             let _ = secure.securely_act(
                 &bot_user_id,
                 &secure_unique_string(),

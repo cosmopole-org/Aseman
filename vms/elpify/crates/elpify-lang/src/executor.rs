@@ -1,12 +1,12 @@
 use std::fmt::{Display, Formatter};
 use std::fs;
 use std::sync::atomic::{AtomicU64, Ordering};
-use std::sync::{mpsc, Arc, Mutex};
+use std::sync::{Arc, Mutex, mpsc};
 use std::thread;
 
 use miden_vm::{
-    prove, verify, AdviceInputs, Assembler, DefaultHost, ExecutionProof, Program, ProgramInfo,
-    ProvingOptions, StackInputs, StackOutputs, VerificationError,
+    AdviceInputs, Assembler, DefaultHost, ExecutionProof, Program, ProgramInfo, ProvingOptions,
+    StackInputs, StackOutputs, VerificationError, prove, verify,
 };
 
 #[derive(Debug, Clone)]

@@ -44,7 +44,9 @@ pub struct Logger {
 impl Logger {
     /// Equivalent of `logrus.New()`.
     pub fn new() -> Arc<Logger> {
-        Arc::new(Logger { level: RwLock::new(Level::Info) })
+        Arc::new(Logger {
+            level: RwLock::new(Level::Info),
+        })
     }
 
     pub fn set_level(&self, level: Level) {
@@ -58,7 +60,9 @@ impl Logger {
 
 impl Default for Logger {
     fn default() -> Self {
-        Logger { level: RwLock::new(Level::Info) }
+        Logger {
+            level: RwLock::new(Level::Info),
+        }
     }
 }
 
@@ -74,7 +78,10 @@ pub struct Entry {
 impl Entry {
     /// Equivalent of `logrus.NewEntry(logger)`.
     pub fn new(logger: Arc<Logger>) -> Entry {
-        Entry { logger, fields: Vec::new() }
+        Entry {
+            logger,
+            fields: Vec::new(),
+        }
     }
 
     /// Convenience constructor producing a brand new logger + entry.
@@ -90,7 +97,10 @@ impl Entry {
     pub fn with_field(&self, key: &str, value: impl Display) -> Entry {
         let mut fields = self.fields.clone();
         fields.push((key.to_string(), value.to_string()));
-        Entry { logger: self.logger.clone(), fields }
+        Entry {
+            logger: self.logger.clone(),
+            fields,
+        }
     }
 
     /// `WithFields(logrus.Fields{...})`.
@@ -99,7 +109,10 @@ impl Entry {
         for (k, v) in kvs {
             fields.push((k.to_string(), v.clone()));
         }
-        Entry { logger: self.logger.clone(), fields }
+        Entry {
+            logger: self.logger.clone(),
+            fields,
+        }
     }
 
     /// `WithError(err)`.
@@ -199,8 +212,7 @@ mod tests {
 
     #[test]
     fn with_fields_appends_all_pairs() {
-        let e = Entry::standalone()
-            .with_fields(&[("a", "1".to_string()), ("b", "2".to_string())]);
+        let e = Entry::standalone().with_fields(&[("a", "1".to_string()), ("b", "2".to_string())]);
         assert!(format!("{:?}", e).contains("2 fields"));
     }
 

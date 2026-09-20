@@ -24,7 +24,8 @@ impl Vmm {
             // under "input" with the op in "key"; translate to a typed packet
             // (fields hoisted to top level, key->type) and dispatch it so docker
             // and firecracker creatures actually start/exec/copy.
-            "runVm" | "execVm" | "execDocker" | "statusVm" | "copyToVm" | "copyToDocker" | "copyFromVm" => {
+            "runVm" | "execVm" | "execDocker" | "statusVm" | "copyToVm" | "copyToDocker"
+            | "copyFromVm" => {
                 let typed = match key.as_str() {
                     "execDocker" => "execVm",
                     "copyToDocker" => "copyToVm",
@@ -36,7 +37,10 @@ impl Vmm {
                     let res = crate::drivers::vmm::dispatch_packet(&packet);
                     (res, req_id)
                 } else {
-                    ("{\"ok\":false,\"error\":\"vm op input must be an object\"}".into(), req_id)
+                    (
+                        "{\"ok\":false,\"error\":\"vm op input must be an object\"}".into(),
+                        req_id,
+                    )
                 }
             }
             "checkTokenValidity" => self.handle_check_token_validity(&input, req_id),

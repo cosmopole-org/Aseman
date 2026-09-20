@@ -1,0 +1,16 @@
+[package]
+name = "xtask"
+description = "Deterministic Aseman repository checks and generated-artifact orchestration."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+publish = false
+
+[dependencies]
+anyhow.workspace = true
+serde_json.workspace = true
+
+[lints]
+workspace = true

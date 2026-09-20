@@ -129,8 +129,7 @@ impl FireVmController {
         self.terminate_by_key(&process_key);
         let _ = std::fs::remove_file(&socket_path);
 
-        let firecracker_bin = std::env::var("FIRECRACKER_BIN")
-            .unwrap_or_else(|_| "/usr/local/bin/firecracker".to_string());
+        let firecracker_bin = aseman_config::runtime_config().firecracker_binary;
         let child = Command::new(&firecracker_bin)
             .arg("--api-sock")
             .arg(&socket_path)
@@ -658,11 +657,8 @@ fn emit_fire_output_signal(
 /// (`STORAGE_ROOT_PATH`). Falls back to the in-container default and finally to
 /// a local dev path.
 fn fire_storage_root() -> PathBuf {
-    if let Ok(p) = std::env::var("STORAGE_ROOT_PATH") {
-        let trimmed = p.trim();
-        if !trimmed.is_empty() {
-            return PathBuf::from(trimmed);
-        }
+    if let Some(path) = aseman_config::runtime_config().storage_root {
+        return PathBuf::from(path);
     }
     let in_container = PathBuf::from("/app/data/storage");
     if in_container.exists() {
@@ -754,15 +750,20 @@ fn ensure_persistent_disk(path: &Path, disk_gb: u64) -> Result<(), String> {
     drop(file);
     // Best-effort filesystem so the guest can mount the data disk. If mkfs is
     // unavailable the raw backing file is still provisioned and persisted.
-    let _ = Command::new("mkfs.ext4").arg("-F").arg("-q").arg(path).status();
+    let _ = Command::new("mkfs.ext4")
+        .arg("-F")
+        .arg("-q")
+        .arg(path)
+        .status();
     Ok(())
 }
 
 /// Configured base boot images, if both a kernel and a base rootfs exist on
 /// disk. When absent, the controller runs in scaffold mode.
 fn fire_boot_images() -> Option<(PathBuf, PathBuf)> {
-    let kernel = PathBuf::from(std::env::var("FIRECRACKER_KERNEL_IMAGE").ok()?);
-    let rootfs = PathBuf::from(std::env::var("FIRECRACKER_ROOTFS_IMAGE").ok()?);
+    let config = aseman_config::runtime_config();
+    let kernel = PathBuf::from(config.firecracker_kernel_image?);
+    let rootfs = PathBuf::from(config.firecracker_rootfs_image?);
     if kernel.exists() && rootfs.exists() {
         Some((kernel, rootfs))
     } else {
@@ -830,8 +831,7 @@ fn provision_and_boot_guest(
             .map_err(|e| format!("failed to materialise session rootfs: {}", e))?;
     }
 
-    let boot_args = std::env::var("FIRECRACKER_BOOT_ARGS")
-        .unwrap_or_else(|_| "console=ttyS0 reboot=k panic=1 pci=off root=/dev/vda rw".to_string());
+    let boot_args = aseman_config::runtime_config().firecracker_boot_args;
     let boot_body = json!({
         "kernel_image_path": kernel.display().to_string(),
         "boot_args": boot_args,

@@ -72,7 +72,8 @@ mod tests {
             .duration_since(std::time::UNIX_EPOCH)
             .unwrap()
             .as_nanos();
-        let dir = std::env::temp_dir().join(format!("babble-keys-{}-{}", std::process::id(), nanos));
+        let dir =
+            std::env::temp_dir().join(format!("babble-keys-{}-{}", std::process::id(), nanos));
         fs::create_dir_all(&dir).unwrap();
         dir
     }
@@ -84,7 +85,10 @@ mod tests {
         let simple_keyfile = SimpleKeyfile::new(dir.join("priv_key").to_str().unwrap());
 
         // Try a read, should get an error (no file yet).
-        assert!(simple_keyfile.read_key().is_err(), "ReadKey should generate an error");
+        assert!(
+            simple_keyfile.read_key().is_err(),
+            "ReadKey should generate an error"
+        );
 
         // Initialize a key and try a write.
         let key = generate_ecdsa_key().unwrap();

@@ -2,6 +2,7 @@
 //! WebSocket transports the Caspar shell uses to ferry requests between
 //! clients (mobile / desktop / CLI) and the node.
 
+mod session;
 pub mod tcp;
 pub mod ws;
 

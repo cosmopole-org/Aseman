@@ -611,7 +611,10 @@ pub(crate) fn handle_unified_host_call(packet: &JsonValue) -> String {
         "statusVm" => {
             let mut packet = input.clone();
             if let JsonValue::Object(map) = &mut packet {
-                map.insert("type".to_string(), JsonValue::String("statusVm".to_string()));
+                map.insert(
+                    "type".to_string(),
+                    JsonValue::String("statusVm".to_string()),
+                );
             }
             crate::drivers::vmm::dispatch_packet(&packet)
         }
@@ -634,7 +637,10 @@ pub(crate) fn handle_unified_host_call(packet: &JsonValue) -> String {
         // make a remote program appear locally hosted.
         "nodeIdentity" => host_fn_node_identity(&ctx.program_id, &input),
         // Issues a single-use login grant; node-owner programs only.
-        "grantLogin" => crate::drivers::vmm::host::functions::login_grant::host_fn_grant_login(&ctx.program_id, &input),
+        "grantLogin" => crate::drivers::vmm::host::functions::login_grant::host_fn_grant_login(
+            &ctx.program_id,
+            &input,
+        ),
         // Federated finance writes are deliberately not ordinary `putJson`
         // calls. Only a node-owned control program may ask the host to sign
         // them, and the resulting packet is committed on the global chain.
@@ -645,9 +651,7 @@ pub(crate) fn handle_unified_host_call(packet: &JsonValue) -> String {
         ),
         "registerFinanceNode" => host_fn_register_finance_node(&ctx.program_id, &input),
         "retireFinanceNode" => host_fn_retire_finance_node(&ctx.program_id),
-        "registerFinanceResource" => {
-            host_fn_register_finance_resource(&ctx.program_id, &input)
-        }
+        "registerFinanceResource" => host_fn_register_finance_resource(&ctx.program_id, &input),
         "reviewFinanceResource" => host_fn_submit_node_finance(
             &ctx.program_id,
             "/creatures/reviewFinanceResource",
@@ -715,18 +719,30 @@ pub(crate) fn handle_unified_host_call(packet: &JsonValue) -> String {
         "startHold" => host_fn_start_hold(&ctx.program_id, &input),
         "settleHold" => host_fn_settle_hold(&ctx.program_id, &input),
         "releaseHold" => host_fn_release_hold(&ctx.program_id, &input),
-        "reservePool" => {
-            host_fn_pool_authority_call(&ctx.program_id, &input, "/creatures/reservePool", "pool reservation")
-        }
-        "settlePool" => {
-            host_fn_pool_authority_call(&ctx.program_id, &input, "/creatures/settlePool", "pool settlement")
-        }
-        "releasePool" => {
-            host_fn_pool_authority_call(&ctx.program_id, &input, "/creatures/releasePool", "pool release")
-        }
-        "debitPool" => {
-            host_fn_pool_authority_call(&ctx.program_id, &input, "/creatures/debitPool", "pool debit")
-        }
+        "reservePool" => host_fn_pool_authority_call(
+            &ctx.program_id,
+            &input,
+            "/creatures/reservePool",
+            "pool reservation",
+        ),
+        "settlePool" => host_fn_pool_authority_call(
+            &ctx.program_id,
+            &input,
+            "/creatures/settlePool",
+            "pool settlement",
+        ),
+        "releasePool" => host_fn_pool_authority_call(
+            &ctx.program_id,
+            &input,
+            "/creatures/releasePool",
+            "pool release",
+        ),
+        "debitPool" => host_fn_pool_authority_call(
+            &ctx.program_id,
+            &input,
+            "/creatures/debitPool",
+            "pool debit",
+        ),
         "createProgram" => host_fn_create_program(&input),
         "deleteProgram" | "deleteOwnedProgram" => host_fn_delete_program(&input),
         // Program CRUD reads — exposed so store/miniapp creatures can fetch a
@@ -1071,7 +1087,8 @@ pub(crate) fn host_fn_node_identity(caller_program_id: &str, input: &JsonValue) 
     let listeners = app.tools().signaler().listeners();
     let caller_program_id = caller_program_id.trim();
     let caller_hosted = !caller_program_id.is_empty() && listeners.contains_key(caller_program_id);
-    let resource_hosted = target_program_id.is_empty() || listeners.contains_key(&target_program_id);
+    let resource_hosted =
+        target_program_id.is_empty() || listeners.contains_key(&target_program_id);
     json!({
         "ok": true,
         "nodeOwnerAccountId": app.owner_id(),
@@ -1087,10 +1104,7 @@ pub(crate) fn host_fn_node_identity(caller_program_id: &str, input: &JsonValue) 
 // Resolve the account that owns a program through Program -> Machine ->
 // Creature. Both the finance-control check and resource ownership stamping use
 // persisted host state; no owner value supplied by a guest is trusted.
-fn finance_program_binding(
-    app: &Arc<dyn ICore>,
-    program_id: &str,
-) -> Option<(String, String)> {
+fn finance_program_binding(app: &Arc<dyn ICore>, program_id: &str) -> Option<(String, String)> {
     use crate::models::transaction::ITrx;
     use crate::shell::api::model::{Creature, Program};
     use std::sync::Mutex;
@@ -1201,14 +1215,8 @@ pub(crate) fn host_fn_submit_node_finance(
         Box::new(move |data, status, error| {
             let _ = tx.send((data, status, error.map(|value| value.to_string())));
         });
-    app.globe().send_base_request_on_chain(
-        action,
-        payload,
-        &signature,
-        &owner_id,
-        "",
-        callback,
-    );
+    app.globe()
+        .send_base_request_on_chain(action, payload, &signature, &owner_id, "", callback);
     match rx.recv_timeout(Duration::from_secs(30)) {
         Ok((data, status, None)) => {
             let result = serde_json::from_slice::<JsonValue>(&data).unwrap_or(JsonValue::Null);
@@ -1221,10 +1229,7 @@ pub(crate) fn host_fn_submit_node_finance(
     }
 }
 
-pub(crate) fn host_fn_register_finance_node(
-    caller_program_id: &str,
-    input: &JsonValue,
-) -> String {
+pub(crate) fn host_fn_register_finance_node(caller_program_id: &str, input: &JsonValue) -> String {
     let Some(app) = with_global_app(|app| app.clone()) else {
         return json!({"ok": false, "error": "vmm not initialised"}).to_string();
     };
@@ -1256,15 +1261,17 @@ pub(crate) fn host_fn_register_finance_node(
     }
     let owner_id = app.owner_id();
     let Some((meter_creature_id, meter_owner_id)) = finance_program_binding(&app, meter) else {
-        return json!({"ok": false, "error": "billing meter program binding unavailable"}).to_string();
+        return json!({"ok": false, "error": "billing meter program binding unavailable"})
+            .to_string();
     };
-    let Some((talent_creature_id, talent_owner_id)) =
-        finance_program_binding(&app, talent_meter)
+    let Some((talent_creature_id, talent_owner_id)) = finance_program_binding(&app, talent_meter)
     else {
-        return json!({"ok": false, "error": "talent meter program binding unavailable"}).to_string();
+        return json!({"ok": false, "error": "talent meter program binding unavailable"})
+            .to_string();
     };
     if meter_owner_id != owner_id || talent_owner_id != owner_id {
-        return json!({"ok": false, "error": "finance meters must be owned by the node owner"}).to_string();
+        return json!({"ok": false, "error": "finance meters must be owned by the node owner"})
+            .to_string();
     }
     node.insert("nodeOwnerAccountId".into(), json!(owner_id));
     node.insert("meterCreatureId".into(), json!(meter_creature_id));
@@ -1317,13 +1324,7 @@ pub(crate) fn host_fn_register_finance_resource(
         .unwrap_or("")
         .trim()
         .to_string();
-    if program_id.is_empty()
-        || !app
-            .tools()
-            .signaler()
-            .listeners()
-            .contains_key(&program_id)
-    {
+    if program_id.is_empty() || !app.tools().signaler().listeners().contains_key(&program_id) {
         return json!({"ok": false, "error": "resource program is not hosted by this node"})
             .to_string();
     }
@@ -1344,15 +1345,21 @@ pub(crate) fn host_fn_register_finance_resource(
     resource.insert("hostOriginId".into(), json!(app.id()));
     resource.insert(
         "billingMeterProgramId".into(),
-        node.get("meterProgramId").cloned().unwrap_or(JsonValue::Null),
+        node.get("meterProgramId")
+            .cloned()
+            .unwrap_or(JsonValue::Null),
     );
     resource.insert(
         "billingMeterCreatureId".into(),
-        node.get("meterCreatureId").cloned().unwrap_or(JsonValue::Null),
+        node.get("meterCreatureId")
+            .cloned()
+            .unwrap_or(JsonValue::Null),
     );
     resource.insert(
         "billingMeterEntityId".into(),
-        node.get("meterEntityId").cloned().unwrap_or(JsonValue::Null),
+        node.get("meterEntityId")
+            .cloned()
+            .unwrap_or(JsonValue::Null),
     );
     resource.insert(
         "nodeRegistrationRevision".into(),
@@ -1371,10 +1378,7 @@ pub(crate) fn host_fn_register_finance_resource(
     )
 }
 
-pub(crate) fn host_fn_publish_finance_quote(
-    caller_program_id: &str,
-    input: &JsonValue,
-) -> String {
+pub(crate) fn host_fn_publish_finance_quote(caller_program_id: &str, input: &JsonValue) -> String {
     let Some(app) = with_global_app(|app| app.clone()) else {
         return json!({"ok": false, "error": "vmm not initialised"}).to_string();
     };
@@ -1384,9 +1388,7 @@ pub(crate) fn host_fn_publish_finance_quote(
     let Some(quote) = input.get("quote").and_then(JsonValue::as_object).cloned() else {
         return json!({"ok": false, "error": "finance quote object required"}).to_string();
     };
-    let execution = quote
-        .get("executionPlan")
-        .and_then(JsonValue::as_object);
+    let execution = quote.get("executionPlan").and_then(JsonValue::as_object);
     let authority = execution
         .and_then(|plan| plan.get("settlementAuthority"))
         .and_then(JsonValue::as_str)
@@ -1420,8 +1422,7 @@ pub(crate) fn host_fn_publish_finance_quote(
             != Some("active")
         || registered_meter.and_then(JsonValue::as_str) != Some(meter)
         || (quote_kind == "talent"
-            && (authority != owner_id
-                || !app.tools().signaler().listeners().contains_key(meter)))
+            && (authority != owner_id || !app.tools().signaler().listeners().contains_key(meter)))
     {
         return json!({
             "ok": false,
@@ -1774,7 +1775,8 @@ pub(crate) fn host_fn_pool_authority_call(
         Box::new(move |data, status, err| {
             let _ = tx.send((data, status, err.map(|value| value.to_string())));
         });
-    app.globe().send_base_request_on_chain(route, payload, &signature, &owner_id, "", callback);
+    app.globe()
+        .send_base_request_on_chain(route, payload, &signature, &owner_id, "", callback);
     match rx.recv_timeout(Duration::from_secs(30)) {
         Ok((data, status, None)) => {
             let result = serde_json::from_slice::<JsonValue>(&data).unwrap_or(JsonValue::Null);

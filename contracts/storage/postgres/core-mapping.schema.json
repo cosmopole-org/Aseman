@@ -1,0 +1,48 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://aseman.example/contracts/storage/postgres/core-mapping.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "schema", "tables"],
+  "properties": {
+    "schema_version": {"const": 1},
+    "schema": {"const": "aseman_core"},
+    "tables": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["kind", "table", "fields", "field_columns", "required_fields", "relationships", "unique_indexes"],
+        "properties": {
+          "kind": {"type": "string"},
+          "table": {"type": "string"},
+          "fields": {"type": "object", "additionalProperties": {"type": "string"}},
+          "field_columns": {"type": "object", "additionalProperties": {"type": "string"}},
+          "required_fields": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": {"type": "string"}
+          },
+          "relationships": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["target_kind", "target_table", "required", "on_delete"],
+              "properties": {
+                "target_kind": {"type": "string"},
+                "target_table": {"type": "string"},
+                "required": {"type": "boolean"},
+                "on_delete": {"enum": ["restrict", "cascade"]}
+              }
+            }
+          },
+          "unique_indexes": {
+            "type": "array",
+            "items": {"type": "array", "minItems": 1, "items": {"type": "string"}}
+          }
+        }
+      }
+    }
+  }
+}

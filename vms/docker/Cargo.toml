@@ -9,6 +9,7 @@ name = "caspar_vm_docker"
 path = "src/lib.rs"
 
 [dependencies]
+aseman-config = { path = "../../crates/aseman-config" }
 caspar-vm-sdk = { path = "../../vm-sdk" }
 base64 = "0.22"
 bollard = "0.17"

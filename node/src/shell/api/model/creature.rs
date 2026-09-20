@@ -15,7 +15,11 @@ pub struct Creature {
     pub type_name: String,
     #[serde(default, skip_serializing_if = "String::is_empty")]
     pub username: String,
-    #[serde(rename = "publicKey", default, skip_serializing_if = "String::is_empty")]
+    #[serde(
+        rename = "publicKey",
+        default,
+        skip_serializing_if = "String::is_empty"
+    )]
     pub public_key: String,
     #[serde(rename = "chainId", default)]
     pub chain_id: String,
@@ -23,11 +27,7 @@ pub struct Creature {
     pub subchain_id: String,
     #[serde(rename = "ownerId", default, skip_serializing_if = "String::is_empty")]
     pub owner_id: String,
-    #[serde(
-        rename = "machinesCount",
-        default,
-        skip_serializing_if = "i64_is_zero"
-    )]
+    #[serde(rename = "machinesCount", default, skip_serializing_if = "i64_is_zero")]
     pub machines_count: i64,
     #[serde(default, skip_serializing_if = "String::is_empty")]
     pub title: String,

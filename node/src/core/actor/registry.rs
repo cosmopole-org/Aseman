@@ -4,8 +4,8 @@ use std::sync::{Arc, Mutex};
 
 use dashmap::DashMap;
 
-use crate::models::action::{IAction, ISecureAction};
 use crate::models::action::actor::IActor;
+use crate::models::action::{IAction, ISecureAction};
 use crate::util::AnyVal;
 
 /// Concrete [`IActor`] registry — stores actions by `key()` and lets callers

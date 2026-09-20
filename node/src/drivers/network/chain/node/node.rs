@@ -18,12 +18,12 @@ use super::control_timer::ControlTimer;
 use super::core::Core;
 use super::state::{Manager, State};
 use super::validator::Validator;
+use crate::compat::logrus::Entry;
 use crate::drivers::network::chain::config::Config;
 use crate::drivers::network::chain::hashgraph::{self as hg, Block, Store, WireEvent};
 use crate::drivers::network::chain::net::{Rpc, RpcCommand, Transport};
 use crate::drivers::network::chain::peers::{Peer, PeerSet};
 use crate::drivers::network::chain::proxy::AppProxy;
-use crate::compat::logrus::Entry;
 
 /// A Babble node, implemented as a state machine.
 pub struct Node {
@@ -156,7 +156,8 @@ impl Node {
                 self.logger.debug("Node belongs to PeerSet");
                 self.set_babbling_or_catching_up_state();
             } else {
-                self.logger.debug("Node does not belong to PeerSet => Joining");
+                self.logger
+                    .debug("Node does not belong to PeerSet => Joining");
                 self.transition(State::Joining);
             }
         } else {
@@ -164,7 +165,8 @@ impl Node {
         }
 
         let undet = self.core.lock().unwrap().get_undetermined_events().len() as i64;
-        self.initial_undetermined_events.store(undet, Ordering::SeqCst);
+        self.initial_undetermined_events
+            .store(undet, Ordering::SeqCst);
         Ok(())
     }
 
@@ -264,7 +266,10 @@ impl Node {
         let mut s = HashMap::new();
         let lcr = core.get_last_consensus_round_index().unwrap_or(-1);
         s.insert("last_consensus_round".into(), lcr.to_string());
-        s.insert("last_block_index".into(), core.get_last_block_index().to_string());
+        s.insert(
+            "last_block_index".into(),
+            core.get_last_block_index().to_string(),
+        );
         s.insert(
             "consensus_events".into(),
             core.get_consensus_events_count().to_string(),
@@ -404,8 +409,7 @@ impl Node {
             let core = self.core.lock().unwrap();
             let new_undetermined = core.get_undetermined_events().len() as i64
                 - self.initial_undetermined_events.load(Ordering::SeqCst);
-            let too_many = new_undetermined
-                > self.conf.suspend_limit * core.validators.len();
+            let too_many = new_undetermined > self.conf.suspend_limit * core.validators.len();
             let evicted = core.hg.last_consensus_round.is_some()
                 && core.removed_round > 0
                 && core.removed_round > core.accepted_round
@@ -435,8 +439,7 @@ impl Node {
         match peer {
             Some(peer) => {
                 let n = self.clone();
-                self.manager
-                    .go_func(Box::new(move || n.gossip(peer)));
+                self.manager.go_func(Box::new(move || n.gossip(peer)));
             }
             None => {
                 let _ = self.monologue();
@@ -478,7 +481,9 @@ impl Node {
         let mut core = self.core.lock().unwrap();
         if core.busy() {
             if let Err(e) = core.add_self_event("") {
-                self.logger.with_error(&e).error("monologue, AddSelfEvent()");
+                self.logger
+                    .with_error(&e)
+                    .error("monologue, AddSelfEvent()");
                 return Err(e);
             }
             if let Err(e) = core.process_sig_pool() {
@@ -616,14 +621,18 @@ impl Node {
         };
 
         if let Err(e) = self.proxy.restore(&resp.snapshot) {
-            self.logger.with_error(&e).error("Restoring App from Snapshot");
+            self.logger
+                .with_error(&e)
+                .error("Restoring App from Snapshot");
             return Err(e);
         }
 
         {
             let mut core = self.core.lock().unwrap();
             if let Err(e) = core.fast_forward(&resp.block, &resp.frame) {
-                self.logger.with_error(&e).error("Fast Forwarding Hashgraph");
+                self.logger
+                    .with_error(&e)
+                    .error("Fast Forwarding Hashgraph");
                 return Err(e);
             }
             if let Err(e) = core.process_accepted_internal_transactions(

@@ -16,13 +16,13 @@ use std::time::Duration;
 use anyhow::{anyhow, Result};
 use chrono::{DateTime, Utc};
 
+use crate::compat::logrus::Entry;
 use crate::drivers::network::chain::config::Config;
 use crate::drivers::network::chain::crypto::keys::{KeyReaderWriter, SimpleKeyfile};
 use crate::drivers::network::chain::hashgraph::{InmemStore, RocksDbStore, Store};
 use crate::drivers::network::chain::net::{new_tcp_transport, Transport};
 use crate::drivers::network::chain::node::{Node, Validator};
 use crate::drivers::network::chain::peers::{JSONPeerSet, PeerSet};
-use crate::compat::logrus::Entry;
 
 /// Encapsulates the components that make up a Babble node.
 pub struct Babble {
@@ -69,13 +69,12 @@ impl Babble {
         }
 
         self.logger.debug("initKey");
-        self.init_key()
-            .map_err(|e| {
-                self.logger
-                    .with_error(&e)
-                    .error("babble.rs:init() init_key");
-                e
-            })?;
+        self.init_key().map_err(|e| {
+            self.logger
+                .with_error(&e)
+                .error("babble.rs:init() init_key");
+            e
+        })?;
 
         self.logger.debug("initPeers");
         self.init_peers().map_err(|e| {
@@ -142,9 +141,7 @@ impl Babble {
         // with store. We can't mutate the shared `Arc<Config>` here, so we
         // surface this as a hard error if the combination is wrong.
         if self.config.maintenance_mode && !self.config.bootstrap {
-            return Err(anyhow!(
-                "maintenance-mode requires bootstrap to be enabled"
-            ));
+            return Err(anyhow!("maintenance-mode requires bootstrap to be enabled"));
         }
         if self.config.bootstrap && !self.config.store {
             return Err(anyhow!("bootstrap requires store to be enabled"));
@@ -335,16 +332,16 @@ pub fn load_key_for_config(config: &mut Config) -> Result<()> {
         // Auto-generate on first boot so the node can start without manual key pre-provisioning.
         let new_key = crate::drivers::network::chain::crypto::keys::generate_ecdsa_key()
             .map_err(|e| anyhow!("generate key: {}", e))?;
-        keyfile.write_key(&new_key)
+        keyfile
+            .write_key(&new_key)
             .map_err(|e| anyhow!("write generated key to {}: {}", keyfile_path, e))?;
 
         // Also write key.pub next to the shard's priv_key. Without it,
         // anything that reads the shard directory to rebuild a peer set
         // (other follower nodes, `casparctl peers`, etc.) has no way to
         // know which PubKeyHex this validator owns.
-        let derived_pub = crate::drivers::network::chain::crypto::keys::public_key_hex(
-            new_key.verifying_key(),
-        );
+        let derived_pub =
+            crate::drivers::network::chain::crypto::keys::public_key_hex(new_key.verifying_key());
         if let Some(parent) = std::path::Path::new(&keyfile_path).parent() {
             let _ = fs::write(parent.join("key.pub"), derived_pub.as_bytes());
         }
@@ -356,18 +353,13 @@ pub fn load_key_for_config(config: &mut Config) -> Result<()> {
         // every node downstream then sees a validator id that doesn't match
         // its own peer entry, gets stuck in JOINING forever, and never
         // opens its TCP API listener.
-        if let Ok(babble_dir) = std::env::var("BABBLE_DATA_DIR") {
-            if !babble_dir.is_empty() {
-                let _ = fs::create_dir_all(&babble_dir);
-                let mirror_priv = SimpleKeyfile::new(
-                    &format!("{}/priv_key", babble_dir),
-                );
-                let _ = mirror_priv.write_key(&new_key);
-                let _ = fs::write(
-                    format!("{}/key.pub", babble_dir),
-                    derived_pub.as_bytes(),
-                );
-            }
+        if let Some(babble_dir) = aseman_config::legacy_adapter_snapshot()
+            .and_then(|config| config.babble_data_dir.as_ref())
+        {
+            let _ = fs::create_dir_all(&babble_dir);
+            let mirror_priv = SimpleKeyfile::new(&format!("{}/priv_key", babble_dir));
+            let _ = mirror_priv.write_key(&new_key);
+            let _ = fs::write(format!("{}/key.pub", babble_dir), derived_pub.as_bytes());
         }
 
         config.key = Some(new_key);
@@ -420,8 +412,8 @@ mod tests {
             .duration_since(std::time::UNIX_EPOCH)
             .unwrap()
             .as_nanos();
-        let dir = std::env::temp_dir()
-            .join(format!("babble-{}-{}-{}", label, std::process::id(), nanos));
+        let dir =
+            std::env::temp_dir().join(format!("babble-{}-{}-{}", label, std::process::id(), nanos));
         std::fs::create_dir_all(&dir).unwrap();
         dir
     }

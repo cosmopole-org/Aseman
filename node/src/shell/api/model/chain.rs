@@ -90,10 +90,7 @@ impl ChainShard {
     pub fn push(&self, trx: &dyn ITrx) {
         let mut cols: HashMap<String, Vec<u8>> = HashMap::new();
         cols.insert("id".into(), self.id.as_bytes().to_vec());
-        cols.insert(
-            "workChainId".into(),
-            self.work_chain_id.as_bytes().to_vec(),
-        );
+        cols.insert("workChainId".into(), self.work_chain_id.as_bytes().to_vec());
         trx.put_obj(Self::type_(), &self.id, cols);
     }
 

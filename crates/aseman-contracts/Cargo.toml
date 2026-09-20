@@ -1,0 +1,23 @@
+[package]
+name = "aseman-contracts"
+description = "Stable Aseman wire DTOs and compatibility primitives."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+prost.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+sha2.workspace = true
+thiserror.workspace = true
+tonic.workspace = true
+
+[build-dependencies]
+protox = "0.7.2"
+tonic-build = "0.12.3"
+
+[lints]
+workspace = true

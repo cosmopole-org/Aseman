@@ -12,19 +12,18 @@ use std::sync::{Arc, Mutex};
 use anyhow::{anyhow, Result};
 use serde_json::{Map, Value};
 
-use crate::models::ports::network::federation::FedRequestCallback;
 use crate::models::action::{IAction, ISecureAction};
 use crate::models::core::{ICore, StateClosure};
 use crate::models::globe::BaseResponseCallback;
 use crate::models::input::IInput;
+use crate::models::ports::network::federation::FedRequestCallback;
 use crate::models::state::IState;
 use crate::util::GoError;
 
 use super::guard::Guard;
 
 /// Input parser keyed by protocol name (`"tcp"`, `"ws"`, `"chain"`, `"*"`).
-pub type Parse =
-    Arc<dyn Fn(Value) -> Result<Arc<dyn IInput>> + Send + Sync>;
+pub type Parse = Arc<dyn Fn(Value) -> Result<Arc<dyn IInput>> + Send + Sync>;
 
 /// Concrete [`ISecureAction`] implementation. Owns the inner [`IAction`], a
 /// [`Guard`], a back-reference to [`ICore`] (so it can dispatch to federation
@@ -172,22 +171,13 @@ impl ISecureAction for SecureAction {
 
         // origin is a different node → identity-check and forward via
         // federation.
-        let ok = self.guard.check_identity(
-            self.core.clone(),
-            packet_binary,
-            packet_signature,
-            user_id,
-        );
+        let ok =
+            self.guard
+                .check_identity(self.core.clone(), packet_binary, packet_signature, user_id);
         if !ok {
             return Err(anyhow!("authorization failed"));
         }
-        self.dispatch_via_federation(
-            &origin,
-            packet_id,
-            user_id,
-            packet_binary,
-            packet_signature,
-        )
+        self.dispatch_via_federation(&origin, packet_id, user_id, packet_binary, packet_signature)
     }
 
     fn securely_act_fed(
@@ -286,15 +276,19 @@ impl SecureAction {
             }
             let _ = tx.send((res_code, value, err));
         });
-        self.core.tools().network().federation().send_fed_request_by_callback(
-            origin,
-            packet_id,
-            user_id,
-            &self.key(),
-            packet_binary.to_vec(),
-            packet_signature,
-            cb,
-        );
+        self.core
+            .tools()
+            .network()
+            .federation()
+            .send_fed_request_by_callback(
+                origin,
+                packet_id,
+                user_id,
+                &self.key(),
+                packet_binary.to_vec(),
+                packet_signature,
+                cb,
+            );
         let (sc, v, err) = rx
             .recv()
             .map_err(|e| anyhow!("federation response channel closed: {}", e))?;
@@ -304,4 +298,3 @@ impl SecureAction {
         }
     }
 }
-

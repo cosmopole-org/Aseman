@@ -62,7 +62,10 @@ mod tests {
         let mut m = serde_json::Map::new();
         // `count` is i64 in Sample, supply a string instead.
         m.insert("name".to_string(), Value::String("x".to_string()));
-        m.insert("count".to_string(), Value::String("not a number".to_string()));
+        m.insert(
+            "count".to_string(),
+            Value::String("not a number".to_string()),
+        );
         m.insert("flags".to_string(), Value::Array(vec![]));
         let err = map_to_object::<Sample>(&m).expect_err("type mismatch");
         let msg = format!("{}", err);

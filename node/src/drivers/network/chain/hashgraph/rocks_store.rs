@@ -74,9 +74,8 @@ fn frame_key(index: i64) -> String {
 const DEFAULT_FRAME_RETENTION_ROUNDS: i64 = 25;
 
 fn frame_retention_rounds() -> i64 {
-    std::env::var("CASPAR_BABBLE_FRAME_RETENTION")
-        .ok()
-        .and_then(|v| v.trim().parse::<i64>().ok())
+    aseman_config::legacy_adapter_snapshot()
+        .map(|config| config.babble_frame_retention)
         .filter(|&n| n > 0)
         .unwrap_or(DEFAULT_FRAME_RETENTION_ROUNDS)
 }
@@ -178,9 +177,7 @@ impl RocksDbStore {
         let key = peer_set_key(round);
         match self.db.get(key.as_bytes())? {
             Some(bytes) => PeerSet::unmarshal(&bytes),
-            None => {
-                Err(new_store_err("PeerSet", StoreErrType::KeyNotFound, &key).into())
-            }
+            None => Err(new_store_err("PeerSet", StoreErrType::KeyNotFound, &key).into()),
         }
     }
 
@@ -585,8 +582,8 @@ mod tests {
             .duration_since(std::time::UNIX_EPOCH)
             .unwrap()
             .as_nanos();
-        let dir = std::env::temp_dir()
-            .join(format!("babble-rocks-{}-{}", std::process::id(), nanos));
+        let dir =
+            std::env::temp_dir().join(format!("babble-rocks-{}-{}", std::process::id(), nanos));
         let store = RocksDbStore::new(cache_size, dir.to_str().unwrap(), false).unwrap();
         (store, dir)
     }
@@ -628,7 +625,10 @@ mod tests {
 
         store.db_set_peer_set(0, &peer_set).unwrap();
         let peer_set0 = store.db_get_peer_set(0).unwrap();
-        assert_eq!(peer_set0.peers, peer_set.peers, "Retrieved PeerSet mismatch");
+        assert_eq!(
+            peer_set0.peers, peer_set.peers,
+            "Retrieved PeerSet mismatch"
+        );
 
         remove_store(store, &dir);
     }
@@ -702,7 +702,10 @@ mod tests {
             let te = &topological_events[i];
             assert_eq!(dte.hex(), te.hex(), "topological hex mismatch");
             assert_eq!(te.body, dte.body, "topological body mismatch");
-            assert_eq!(te.signature, dte.signature, "topological signature mismatch");
+            assert_eq!(
+                te.signature, dte.signature,
+                "topological signature mismatch"
+            );
             assert!(dte.verify().unwrap_or(false), "failed to verify signature");
         }
 
@@ -744,7 +747,10 @@ mod tests {
             b"tx5".to_vec(),
         ];
         let internal_transactions = vec![
-            InternalTransaction::new(TransactionType::PeerAdd, Peer::new("peer1", "paris", "peer1")),
+            InternalTransaction::new(
+                TransactionType::PeerAdd,
+                Peer::new("peer1", "paris", "peer1"),
+            ),
             InternalTransaction::new(
                 TransactionType::PeerRemove,
                 Peer::new("peer2", "london", "peer2"),
@@ -846,7 +852,10 @@ mod tests {
         store.set_peer_set(0, peer_set.clone()).unwrap();
 
         let i_peer_set = store.get_peer_set(0).unwrap();
-        assert_eq!(i_peer_set.peers, peer_set.peers, "InmemStore PeerSet mismatch");
+        assert_eq!(
+            i_peer_set.peers, peer_set.peers,
+            "InmemStore PeerSet mismatch"
+        );
 
         let repertoire = store.db_get_repertoire().unwrap();
         for (pub_, peer) in &peer_set.by_pub_key {

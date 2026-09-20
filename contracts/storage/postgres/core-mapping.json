@@ -1,0 +1,729 @@
+{
+  "schema": "aseman_core",
+  "schema_version": 1,
+  "tables": [
+    {
+      "field_columns": {
+        "email": "email",
+        "public_key": "public_key",
+        "status": "status",
+        "username": "username"
+      },
+      "fields": {
+        "email": "text",
+        "public_key": "bytes",
+        "status": "text",
+        "username": "text"
+      },
+      "kind": "core.user",
+      "relationships": {},
+      "required_fields": [
+        "username",
+        "public_key",
+        "status"
+      ],
+      "table": "users",
+      "unique_indexes": [
+        [
+          "username"
+        ],
+        [
+          "email"
+        ],
+        [
+          "public_key"
+        ]
+      ]
+    },
+    {
+      "field_columns": {
+        "chain_id": "chain_id",
+        "creature_type": "creature_type",
+        "public_key": "public_key",
+        "status": "status",
+        "subchain_id": "subchain_id",
+        "username": "username"
+      },
+      "fields": {
+        "chain_id": "text",
+        "creature_type": "text",
+        "public_key": "bytes",
+        "status": "text",
+        "subchain_id": "text",
+        "username": "text"
+      },
+      "kind": "core.creature",
+      "relationships": {
+        "owner": {
+          "on_delete": "restrict",
+          "required": true,
+          "target_kind": "core.user",
+          "target_table": "users"
+        }
+      },
+      "required_fields": [
+        "username",
+        "creature_type",
+        "public_key",
+        "status"
+      ],
+      "table": "creatures",
+      "unique_indexes": [
+        [
+          "username"
+        ],
+        [
+          "public_key"
+        ]
+      ]
+    },
+    {
+      "field_columns": {
+        "comment": "comment",
+        "machine_id": "machine_id",
+        "path": "path",
+        "runtime": "runtime"
+      },
+      "fields": {
+        "comment": "text",
+        "machine_id": "text",
+        "path": "text",
+        "runtime": "text"
+      },
+      "kind": "core.program",
+      "relationships": {
+        "creature": {
+          "on_delete": "restrict",
+          "required": true,
+          "target_kind": "core.creature",
+          "target_table": "creatures"
+        }
+      },
+      "required_fields": [
+        "machine_id",
+        "runtime",
+        "path"
+      ],
+      "table": "programs",
+      "unique_indexes": [
+        [
+          "machine_id"
+        ]
+      ]
+    },
+    {
+      "field_columns": {
+        "is_public": "is_public",
+        "member_count": "member_count",
+        "persistent_history": "persistent_history",
+        "signal_count": "signal_count",
+        "tag": "tag"
+      },
+      "fields": {
+        "is_public": "bool",
+        "member_count": "integer",
+        "persistent_history": "bool",
+        "signal_count": "integer",
+        "tag": "text"
+      },
+      "kind": "core.store",
+      "relationships": {
+        "creature": {
+          "on_delete": "restrict",
+          "required": true,
+          "target_kind": "core.creature",
+          "target_table": "creatures"
+        },
+        "parent": {
+          "on_delete": "restrict",
+          "required": false,
+          "target_kind": "core.store",
+          "target_table": "stores"
+        }
+      },
+      "required_fields": [
+        "is_public",
+        "member_count",
+        "persistent_history",
+        "signal_count"
+      ],
+      "table": "stores",
+      "unique_indexes": []
+    },
+    {
+      "field_columns": {
+        "joined_at_micros": "joined_at_micros",
+        "role": "role"
+      },
+      "fields": {
+        "joined_at_micros": "timestamp_micros",
+        "role": "text"
+      },
+      "kind": "core.store_membership",
+      "relationships": {
+        "store": {
+          "on_delete": "cascade",
+          "required": true,
+          "target_kind": "core.store",
+          "target_table": "stores"
+        },
+        "user": {
+          "on_delete": "cascade",
+          "required": true,
+          "target_kind": "core.user",
+          "target_table": "users"
+        }
+      },
+      "required_fields": [
+        "role",
+        "joined_at_micros"
+      ],
+      "table": "store_memberships",
+      "unique_indexes": [
+        [
+          "store",
+          "user"
+        ]
+      ]
+    },
+    {
+      "field_columns": {
+        "level": "level",
+        "permissions": "permissions"
+      },
+      "fields": {
+        "level": "text",
+        "permissions": "bytes"
+      },
+      "kind": "core.access_level",
+      "relationships": {
+        "store": {
+          "on_delete": "cascade",
+          "required": true,
+          "target_kind": "core.store",
+          "target_table": "stores"
+        }
+      },
+      "required_fields": [
+        "level",
+        "permissions"
+      ],
+      "table": "access_levels",
+      "unique_indexes": [
+        [
+          "store",
+          "level"
+        ]
+      ]
+    },
+    {
+      "field_columns": {
+        "action": "action",
+        "expires_at_micros": "expires_at_micros",
+        "issued_at_micros": "issued_at_micros",
+        "resource": "resource",
+        "revoked_at_micros": "revoked_at_micros"
+      },
+      "fields": {
+        "action": "text",
+        "expires_at_micros": "timestamp_micros",
+        "issued_at_micros": "timestamp_micros",
+        "resource": "text",
+        "revoked_at_micros": "timestamp_micros"
+      },
+      "kind": "core.capability_grant",
+      "relationships": {
+        "issuer": {
+          "on_delete": "restrict",
+          "required": true,
+          "target_kind": "core.user",
+          "target_table": "users"
+        },
+        "subject": {
+          "on_delete": "restrict",
+          "required": true,
+          "target_kind": "core.user",
+          "target_table": "users"
+        }
+      },
+      "required_fields": [
+        "action",
+        "resource",
+        "issued_at_micros"
+      ],
+      "table": "capability_grants",
+      "unique_indexes": []
+    },
+    {
+      "field_columns": {
+        "expires_at_micros": "expires_at_micros",
+        "issued_at_micros": "issued_at_micros",
+        "revoked_at_micros": "revoked_at_micros",
+        "token_digest": "token_digest"
+      },
+      "fields": {
+        "expires_at_micros": "timestamp_micros",
+        "issued_at_micros": "timestamp_micros",
+        "revoked_at_micros": "timestamp_micros",
+        "token_digest": "bytes"
+      },
+      "kind": "core.session",
+      "relationships": {
+        "user": {
+          "on_delete": "cascade",
+          "required": true,
+          "target_kind": "core.user",
+          "target_table": "users"
+        }
+      },
+      "required_fields": [
+        "token_digest",
+        "issued_at_micros",
+        "expires_at_micros"
+      ],
+      "table": "sessions",
+      "unique_indexes": [
+        [
+          "token_digest"
+        ]
+      ]
+    },
+    {
+      "field_columns": {
+        "content_digest": "content_digest",
+        "media_type": "media_type",
+        "size_bytes": "size_bytes",
+        "store_key": "store_key"
+      },
+      "fields": {
+        "content_digest": "bytes",
+        "media_type": "text",
+        "size_bytes": "integer",
+        "store_key": "text"
+      },
+      "kind": "core.file",
+      "relationships": {
+        "owner": {
+          "on_delete": "restrict",
+          "required": true,
+          "target_kind": "core.user",
+          "target_table": "users"
+        },
+        "store": {
+          "on_delete": "restrict",
+          "required": false,
+          "target_kind": "core.store",
+          "target_table": "stores"
+        }
+      },
+      "required_fields": [
+        "store_key",
+        "content_digest",
+        "size_bytes"
+      ],
+      "table": "files",
+      "unique_indexes": [
+        [
+          "store_key"
+        ]
+      ]
+    },
+    {
+      "field_columns": {
+        "desired_generation": "desired_generation",
+        "desired_state": "desired_state",
+        "observed_generation": "observed_generation",
+        "observed_state": "observed_state",
+        "runtime": "runtime",
+        "workload_name": "workload_name"
+      },
+      "fields": {
+        "desired_generation": "integer",
+        "desired_state": "text",
+        "observed_generation": "integer",
+        "observed_state": "text",
+        "runtime": "text",
+        "workload_name": "text"
+      },
+      "kind": "core.workload",
+      "relationships": {
+        "creature": {
+          "on_delete": "restrict",
+          "required": true,
+          "target_kind": "core.creature",
+          "target_table": "creatures"
+        },
+        "program": {
+          "on_delete": "restrict",
+          "required": true,
+          "target_kind": "core.program",
+          "target_table": "programs"
+        }
+      },
+      "required_fields": [
+        "workload_name",
+        "runtime",
+        "desired_state",
+        "desired_generation"
+      ],
+      "table": "workloads",
+      "unique_indexes": [
+        [
+          "program",
+          "workload_name"
+        ]
+      ]
+    },
+    {
+      "field_columns": {
+        "completed_at_micros": "completed_at_micros",
+        "idempotency_key": "idempotency_key",
+        "operation": "operation",
+        "requested_at_micros": "requested_at_micros",
+        "state": "state"
+      },
+      "fields": {
+        "completed_at_micros": "timestamp_micros",
+        "idempotency_key": "text",
+        "operation": "text",
+        "requested_at_micros": "timestamp_micros",
+        "state": "text"
+      },
+      "kind": "core.workload_operation",
+      "relationships": {
+        "workload": {
+          "on_delete": "cascade",
+          "required": true,
+          "target_kind": "core.workload",
+          "target_table": "workloads"
+        }
+      },
+      "required_fields": [
+        "operation",
+        "idempotency_key",
+        "state",
+        "requested_at_micros"
+      ],
+      "table": "workload_operations",
+      "unique_indexes": [
+        [
+          "idempotency_key"
+        ]
+      ]
+    },
+    {
+      "field_columns": {
+        "descriptor_digest": "descriptor_digest",
+        "name": "name",
+        "region": "region",
+        "status": "status"
+      },
+      "fields": {
+        "descriptor_digest": "bytes",
+        "name": "text",
+        "region": "text",
+        "status": "text"
+      },
+      "kind": "core.node",
+      "relationships": {},
+      "required_fields": [
+        "name",
+        "status",
+        "descriptor_digest"
+      ],
+      "table": "nodes",
+      "unique_indexes": [
+        [
+          "name"
+        ]
+      ]
+    },
+    {
+      "field_columns": {
+        "descriptor_digest": "descriptor_digest",
+        "endpoint": "endpoint",
+        "origin": "origin",
+        "trust_state": "trust_state"
+      },
+      "fields": {
+        "descriptor_digest": "bytes",
+        "endpoint": "text",
+        "origin": "text",
+        "trust_state": "text"
+      },
+      "kind": "core.federation_peer",
+      "relationships": {},
+      "required_fields": [
+        "origin",
+        "endpoint",
+        "trust_state",
+        "descriptor_digest"
+      ],
+      "table": "federation_peers",
+      "unique_indexes": [
+        [
+          "origin"
+        ]
+      ]
+    },
+    {
+      "field_columns": {
+        "epoch": "epoch",
+        "expires_at_micros": "expires_at_micros",
+        "not_before_micros": "not_before_micros",
+        "public_key": "public_key",
+        "purpose": "purpose",
+        "revoked_at_micros": "revoked_at_micros"
+      },
+      "fields": {
+        "epoch": "integer",
+        "expires_at_micros": "timestamp_micros",
+        "not_before_micros": "timestamp_micros",
+        "public_key": "bytes",
+        "purpose": "text",
+        "revoked_at_micros": "timestamp_micros"
+      },
+      "kind": "core.node_key",
+      "relationships": {
+        "node": {
+          "on_delete": "cascade",
+          "required": true,
+          "target_kind": "core.node",
+          "target_table": "nodes"
+        }
+      },
+      "required_fields": [
+        "purpose",
+        "epoch",
+        "public_key",
+        "not_before_micros"
+      ],
+      "table": "node_keys",
+      "unique_indexes": [
+        [
+          "node",
+          "purpose",
+          "epoch"
+        ]
+      ]
+    },
+    {
+      "field_columns": {
+        "artifact_digest": "artifact_digest",
+        "module_kind": "module_kind",
+        "module_name": "module_name",
+        "routing_generation": "routing_generation",
+        "state": "state",
+        "version": "version"
+      },
+      "fields": {
+        "artifact_digest": "bytes",
+        "module_kind": "text",
+        "module_name": "text",
+        "routing_generation": "integer",
+        "state": "text",
+        "version": "text"
+      },
+      "kind": "core.module_installation",
+      "relationships": {},
+      "required_fields": [
+        "module_name",
+        "module_kind",
+        "version",
+        "artifact_digest",
+        "state",
+        "routing_generation"
+      ],
+      "table": "module_installations",
+      "unique_indexes": [
+        [
+          "module_name",
+          "version"
+        ]
+      ]
+    },
+    {
+      "field_columns": {
+        "database_name": "database_name",
+        "generation": "generation",
+        "provider_id": "provider_id",
+        "role_name": "role_name",
+        "schema_catalog_revision": "schema_catalog_revision",
+        "status": "status"
+      },
+      "fields": {
+        "database_name": "text",
+        "generation": "integer",
+        "provider_id": "text",
+        "role_name": "text",
+        "schema_catalog_revision": "integer",
+        "status": "text"
+      },
+      "kind": "core.guest_database_binding",
+      "relationships": {
+        "creature": {
+          "on_delete": "restrict",
+          "required": true,
+          "target_kind": "core.creature",
+          "target_table": "creatures"
+        }
+      },
+      "required_fields": [
+        "provider_id",
+        "database_name",
+        "role_name",
+        "generation",
+        "schema_catalog_revision",
+        "status"
+      ],
+      "table": "guest_database_bindings",
+      "unique_indexes": [
+        [
+          "creature"
+        ],
+        [
+          "provider_id",
+          "database_name"
+        ],
+        [
+          "provider_id",
+          "role_name"
+        ]
+      ]
+    },
+    {
+      "field_columns": {
+        "definition": "definition",
+        "schema_name": "schema_name",
+        "schema_version": "body_schema_version",
+        "status": "status"
+      },
+      "fields": {
+        "definition": "bytes",
+        "schema_name": "text",
+        "schema_version": "integer",
+        "status": "text"
+      },
+      "kind": "core.guest_schema_definition",
+      "relationships": {
+        "binding": {
+          "on_delete": "cascade",
+          "required": true,
+          "target_kind": "core.guest_database_binding",
+          "target_table": "guest_database_bindings"
+        },
+        "creature": {
+          "on_delete": "cascade",
+          "required": true,
+          "target_kind": "core.creature",
+          "target_table": "creatures"
+        }
+      },
+      "required_fields": [
+        "schema_name",
+        "schema_version",
+        "definition",
+        "status"
+      ],
+      "table": "guest_schema_definitions",
+      "unique_indexes": [
+        [
+          "creature",
+          "schema_name",
+          "schema_version"
+        ]
+      ]
+    },
+    {
+      "field_columns": {
+        "status": "status",
+        "store_id": "store_id"
+      },
+      "fields": {
+        "status": "text",
+        "store_id": "text"
+      },
+      "kind": "core.chain",
+      "relationships": {
+        "store": {
+          "on_delete": "restrict",
+          "required": true,
+          "target_kind": "core.store",
+          "target_table": "stores"
+        }
+      },
+      "required_fields": [
+        "store_id",
+        "status"
+      ],
+      "table": "chains",
+      "unique_indexes": [
+        [
+          "store_id"
+        ]
+      ]
+    },
+    {
+      "field_columns": {
+        "shard_name": "shard_name",
+        "work_chain_id": "work_chain_id"
+      },
+      "fields": {
+        "shard_name": "text",
+        "work_chain_id": "text"
+      },
+      "kind": "core.chain_shard",
+      "relationships": {
+        "chain": {
+          "on_delete": "cascade",
+          "required": true,
+          "target_kind": "core.chain",
+          "target_table": "chains"
+        }
+      },
+      "required_fields": [
+        "work_chain_id",
+        "shard_name"
+      ],
+      "table": "chain_shards",
+      "unique_indexes": [
+        [
+          "work_chain_id",
+          "shard_name"
+        ]
+      ]
+    },
+    {
+      "field_columns": {
+        "entity_name": "entity_name",
+        "entity_type": "entity_type",
+        "image_name": "image_name"
+      },
+      "fields": {
+        "entity_name": "text",
+        "entity_type": "text",
+        "image_name": "text"
+      },
+      "kind": "core.entity",
+      "relationships": {
+        "program": {
+          "on_delete": "cascade",
+          "required": true,
+          "target_kind": "core.program",
+          "target_table": "programs"
+        }
+      },
+      "required_fields": [
+        "entity_name",
+        "entity_type"
+      ],
+      "table": "entities",
+      "unique_indexes": [
+        [
+          "program",
+          "entity_name"
+        ]
+      ]
+    }
+  ]
+}

@@ -1,0 +1,3336 @@
+{
+  "_meta": {
+    "artifact": "A008",
+    "generator": "scripts/generate_characterization_fixtures.py",
+    "inputs": [
+      "docs/generated/current-routes.json",
+      "docs/generated/current-runtime-matrix.json",
+      "docs/generated/current-cli-ops.json",
+      "docs/generated/current-storage-access.json",
+      "docs/generated/current-call-graph.json"
+    ],
+    "last_verified_commit": "800df24076c794f9b33c29a9f301dd9d674f47d6",
+    "lifecycle_status": "VERIFIED",
+    "scope": "observed interface, dispatch, runtime, CLI, and persistence shapes",
+    "status": "ACCEPTED",
+    "support_acceptance": "tests/characterization/support-manifest.json",
+    "verification": "python3 -m unittest discover -s tests/characterization -p 'test_*.py'"
+  },
+  "action_call_paths": [
+    {
+      "guard_expression": "Guard::default()",
+      "handler": "node/src/shell/api/actions/dummy.rs::hello",
+      "models": [],
+      "path": "/api/hello",
+      "request_type": "HelloInput",
+      "routes_via_chain": false,
+      "services": [],
+      "spawns_background_work": false,
+      "transaction_operations": [],
+      "vmm_operations": []
+    },
+    {
+      "guard_expression": "Guard::default()",
+      "handler": "node/src/shell/api/actions/dummy.rs::ping",
+      "models": [],
+      "path": "/api/ping",
+      "request_type": "HelloInput",
+      "routes_via_chain": false,
+      "services": [],
+      "spawns_background_work": true,
+      "transaction_operations": [],
+      "vmm_operations": []
+    },
+    {
+      "guard_expression": "Guard::default()",
+      "handler": "node/src/shell/api/actions/dummy.rs::time",
+      "models": [],
+      "path": "/api/time",
+      "request_type": "HelloInput",
+      "routes_via_chain": false,
+      "services": [],
+      "spawns_background_work": false,
+      "transaction_operations": [],
+      "vmm_operations": []
+    },
+    {
+      "guard_expression": "Guard::default()",
+      "handler": "node/src/shell/api/actions/auth.rs::get_server_public_key",
+      "models": [],
+      "path": "/auths/getServerPublicKey",
+      "request_type": "GetServerKeyInput",
+      "routes_via_chain": false,
+      "services": [],
+      "spawns_background_work": false,
+      "transaction_operations": [],
+      "vmm_operations": []
+    },
+    {
+      "guard_expression": "Guard::default()",
+      "handler": "node/src/shell/api/actions/auth.rs::get_servers_map",
+      "models": [],
+      "path": "/auths/getServersMap",
+      "request_type": "GetServersMapInput",
+      "routes_via_chain": false,
+      "services": [],
+      "spawns_background_work": false,
+      "transaction_operations": [],
+      "vmm_operations": []
+    },
+    {
+      "guard_expression": "user_guard()",
+      "handler": "node/src/shell/api/actions/creature.rs::authenticate",
+      "models": [],
+      "path": "/creatures/authenticate",
+      "request_type": "AuthenticateInput",
+      "routes_via_chain": false,
+      "services": [],
+      "spawns_background_work": false,
+      "transaction_operations": [],
+      "vmm_operations": []
+    },
+    {
+      "guard_expression": "user_guard()",
+      "handler": "node/src/shell/api/actions/creature.rs::check_sign",
+      "models": [],
+      "path": "/creatures/checkSign",
+      "request_type": "CheckSignInput",
+      "routes_via_chain": false,
+      "services": [
+        "security"
+      ],
+      "spawns_background_work": false,
+      "transaction_operations": [
+        "get_link"
+      ],
+      "vmm_operations": []
+    },
+    {
+      "guard_expression": "finance_guard()",
+      "handler": "node/src/shell/api/actions/creature/finance.rs::close_pool",
+      "models": [
+        "Creature"
+      ],
+      "path": "/creatures/closePool",
+      "request_type": "ClosePoolInput",
+      "routes_via_chain": false,
+      "services": [],
+      "spawns_background_work": false,
+      "transaction_operations": [
+        "get_link",
+        "put_link"
+      ],
+      "vmm_operations": []
+    },
+    {
+      "guard_expression": "user_guard()",
+      "handler": "node/src/shell/api/actions/creature.rs::consume_lock",
+      "models": [
+        "Creature"
+      ],
+      "path": "/creatures/consumeLock",
+      "request_type": "ConsumeLockInput",
+      "routes_via_chain": false,
+      "services": [
+        "security"
+      ],
+      "spawns_background_work": false,
+      "transaction_operations": [
+        "del_json",
+        "get_json",
+        "has_obj",
+        "put_json"
+      ],
+      "vmm_operations": []
+    },
+    {
+      "guard_expression": "anon_guard()",
+      "handler": "node/src/shell/api/actions/creature.rs::create",
+      "models": [
+        "Creature",
+        "Session"
+      ],
+      "path": "/creatures/create",
+      "request_type": "CreatureCreateInput",
+      "routes_via_chain": false,
+      "services": [],
+      "spawns_background_work": false,
+      "transaction_operations": [
+        "has_index",
+        "put_json",
+        "put_link"
+      ],
+      "vmm_operations": []
+    },
+    {
+      "guard_expression": "finance_guard()",
+      "handler": "node/src/shell/api/actions/creature/finance.rs::create_hold",
+      "models": [
+        "Creature"
+      ],
+      "path": "/creatures/createHold",
+      "request_type": "CreateHoldInput",
+      "routes_via_chain": false,
+      "services": [],
+      "spawns_background_work": false,
+      "transaction_operations": [
+        "get_json",
+        "get_link",
+        "has_obj",
+        "put_link"
+      ],
+      "vmm_operations": []
+    },
+    {
+      "guard_expression": "finance_guard()",
+      "handler": "node/src/shell/api/actions/creature/finance.rs::debit_pool",
+      "models": [
+        "Creature"
+      ],
+      "path": "/creatures/debitPool",
+      "request_type": "DebitPoolInput",
+      "routes_via_chain": false,
+      "services": [],
+      "spawns_background_work": false,
+      "transaction_operations": [
+        "get_json",
+        "get_link",
+        "put_json",
+        "put_link"
+      ],
+      "vmm_operations": []
+    },
+    {
+      "guard_expression": "user_guard()",
+      "handler": "node/src/shell/api/actions/creature.rs::delete",
+      "models": [
+        "Creature",
+        "Store"
+      ],
+      "path": "/creatures/delete",
+      "request_type": "DeleteInput",
+      "routes_via_chain": false,
+      "services": [],
+      "spawns_background_work": false,
+      "transaction_operations": [
+        "del_json",
+        "del_key",
+        "get_link",
+        "get_links_list"
+      ],
+      "vmm_operations": []
+    },
+    {
+      "guard_expression": "user_guard()",
+      "handler": "node/src/shell/api/actions/creature.rs::find",
+      "models": [
+        "Creature"
+      ],
+      "path": "/creatures/find",
+      "request_type": "FindInput",
+      "routes_via_chain": false,
+      "services": [],
+      "spawns_background_work": false,
+      "transaction_operations": [],
+      "vmm_operations": []
+    },
+    {
+      "guard_expression": "user_guard()",
+      "handler": "node/src/shell/api/actions/creature.rs::get",
+      "models": [
+        "Creature"
+      ],
+      "path": "/creatures/get",
+      "request_type": "GetInput",
+      "routes_via_chain": false,
+      "services": [],
+      "spawns_background_work": false,
+      "transaction_operations": [
+        "has_obj"
+      ],
+      "vmm_operations": []
+    },
+    {
+      "guard_expression": "user_guard()",
+      "handler": "node/src/shell/api/actions/creature.rs::get_by_username",
+      "models": [
+        "Creature"
+      ],
+      "path": "/creatures/getByUsername",
+      "request_type": "GetByUsernameInput",
+      "routes_via_chain": false,
+      "services": [],
+      "spawns_background_work": false,
+      "transaction_operations": [
+        "get_index"
+      ],
+      "vmm_operations": []
+    },
+    {
+      "guard_expression": "finance_guard()",
+      "handler": "node/src/shell/api/actions/creature/finance.rs::get_financial_account",
+      "models": [],
+      "path": "/creatures/getFinancialAccount",
+      "request_type": "GetFinancialAccountInput",
+      "routes_via_chain": false,
+      "services": [],
+      "spawns_background_work": false,
+      "transaction_operations": [],
+      "vmm_operations": []
+    },
+    {
+      "guard_expression": "finance_guard()",
+      "handler": "node/src/shell/api/actions/creature/finance.rs::get_hold",
+      "models": [],
+      "path": "/creatures/getHold",
+      "request_type": "GetHoldInput",
+      "routes_via_chain": false,
+      "services": [],
+      "spawns_background_work": false,
+      "transaction_operations": [],
+      "vmm_operations": []
+    },
+    {
+      "guard_expression": "user_guard()",
+      "handler": "node/src/shell/api/actions/creature.rs::list",
+      "models": [
+        "Creature"
+      ],
+      "path": "/creatures/list",
+      "request_type": "ListInput",
+      "routes_via_chain": false,
+      "services": [],
+      "spawns_background_work": false,
+      "transaction_operations": [],
+      "vmm_operations": []
+    },
+    {
+      "guard_expression": "finance_guard()",
+      "handler": "node/src/shell/api/actions/creature/finance.rs::list_payouts",
+      "models": [],
+      "path": "/creatures/listPayouts",
+      "request_type": "ListPayoutsInput",
+      "routes_via_chain": false,
+      "services": [],
+      "spawns_background_work": false,
+      "transaction_operations": [
+        "get_by_prefix"
+      ],
+      "vmm_operations": []
+    },
+    {
+      "guard_expression": "user_guard()",
+      "handler": "node/src/shell/api/actions/creature.rs::lock_token",
+      "models": [
+        "Creature"
+      ],
+      "path": "/creatures/lockToken",
+      "request_type": "LockTokenInput",
+      "routes_via_chain": false,
+      "services": [],
+      "spawns_background_work": false,
+      "transaction_operations": [
+        "has_obj",
+        "put_json"
+      ],
+      "vmm_operations": []
+    },
+    {
+      "guard_expression": "anon_guard()",
+      "handler": "node/src/shell/api/actions/creature.rs::login",
+      "models": [
+        "Creature",
+        "Session"
+      ],
+      "path": "/creatures/login",
+      "request_type": "LoginInput",
+      "routes_via_chain": false,
+      "services": [],
+      "spawns_background_work": false,
+      "transaction_operations": [
+        "del_key",
+        "get_index",
+        "get_link",
+        "has_index",
+        "put_link"
+      ],
+      "vmm_operations": []
+    },
+    {
+      "guard_expression": "user_guard()",
+      "handler": "node/src/shell/api/actions/creature.rs::meta",
+      "models": [
+        "Creature"
+      ],
+      "path": "/creatures/meta",
+      "request_type": "MetaInput",
+      "routes_via_chain": false,
+      "services": [],
+      "spawns_background_work": false,
+      "transaction_operations": [
+        "get_json"
+      ],
+      "vmm_operations": []
+    },
+    {
+      "guard_expression": "user_guard()",
+      "handler": "node/src/shell/api/actions/creature.rs::mint",
+      "models": [
+        "Creature"
+      ],
+      "path": "/creatures/mint",
+      "request_type": "MintInput",
+      "routes_via_chain": false,
+      "services": [],
+      "spawns_background_work": false,
+      "transaction_operations": [
+        "get_link",
+        "put_link"
+      ],
+      "vmm_operations": []
+    },
+    {
+      "guard_expression": "finance_guard()",
+      "handler": "node/src/shell/api/actions/creature/finance.rs::open_pool",
+      "models": [
+        "Creature"
+      ],
+      "path": "/creatures/openPool",
+      "request_type": "OpenPoolInput",
+      "routes_via_chain": false,
+      "services": [],
+      "spawns_background_work": false,
+      "transaction_operations": [
+        "get_link",
+        "put_link"
+      ],
+      "vmm_operations": []
+    },
+    {
+      "guard_expression": "finance_guard()",
+      "handler": "node/src/shell/api/actions/creature/finance.rs::payment_adjustment",
+      "models": [
+        "Creature"
+      ],
+      "path": "/creatures/paymentAdjustment",
+      "request_type": "PaymentAdjustmentInput",
+      "routes_via_chain": false,
+      "services": [],
+      "spawns_background_work": false,
+      "transaction_operations": [
+        "get_link",
+        "put_link"
+      ],
+      "vmm_operations": []
+    },
+    {
+      "guard_expression": "finance_guard()",
+      "handler": "node/src/shell/api/actions/creature/finance.rs::publish_finance_catalog",
+      "models": [],
+      "path": "/creatures/publishFinanceCatalog",
+      "request_type": "PublishFinanceCatalogInput",
+      "routes_via_chain": false,
+      "services": [],
+      "spawns_background_work": false,
+      "transaction_operations": [
+        "get_json",
+        "has_obj",
+        "put_json"
+      ],
+      "vmm_operations": []
+    },
+    {
+      "guard_expression": "finance_guard()",
+      "handler": "node/src/shell/api/actions/creature/finance.rs::publish_finance_quote",
+      "models": [],
+      "path": "/creatures/publishFinanceQuote",
+      "request_type": "PublishFinanceQuoteInput",
+      "routes_via_chain": false,
+      "services": [],
+      "spawns_background_work": false,
+      "transaction_operations": [
+        "get_json",
+        "has_obj",
+        "put_json"
+      ],
+      "vmm_operations": []
+    },
+    {
+      "guard_expression": "finance_guard()",
+      "handler": "node/src/shell/api/actions/creature/finance.rs::reconcile_financial_system",
+      "models": [
+        "Creature"
+      ],
+      "path": "/creatures/reconcileFinancialSystem",
+      "request_type": "ReconcileFinancialSystemInput",
+      "routes_via_chain": false,
+      "services": [],
+      "spawns_background_work": false,
+      "transaction_operations": [
+        "get_by_prefix",
+        "get_json",
+        "get_link",
+        "get_links_list"
+      ],
+      "vmm_operations": []
+    },
+    {
+      "guard_expression": "finance_guard()",
+      "handler": "node/src/shell/api/actions/creature/finance.rs::refresh_pool",
+      "models": [
+        "Creature"
+      ],
+      "path": "/creatures/refreshPool",
+      "request_type": "RefreshPoolInput",
+      "routes_via_chain": false,
+      "services": [],
+      "spawns_background_work": false,
+      "transaction_operations": [
+        "get_link",
+        "put_link"
+      ],
+      "vmm_operations": []
+    },
+    {
+      "guard_expression": "finance_guard()",
+      "handler": "node/src/shell/api/actions/creature/finance.rs::register_finance_node",
+      "models": [],
+      "path": "/creatures/registerFinanceNode",
+      "request_type": "RegisterFinanceNodeInput",
+      "routes_via_chain": false,
+      "services": [],
+      "spawns_background_work": false,
+      "transaction_operations": [
+        "has_obj",
+        "put_json"
+      ],
+      "vmm_operations": []
+    },
+    {
+      "guard_expression": "finance_guard()",
+      "handler": "node/src/shell/api/actions/creature/finance.rs::register_finance_resource",
+      "models": [],
+      "path": "/creatures/registerFinanceResource",
+      "request_type": "RegisterFinanceResourceInput",
+      "routes_via_chain": false,
+      "services": [],
+      "spawns_background_work": false,
+      "transaction_operations": [
+        "get_json",
+        "has_obj",
+        "put_json"
+      ],
+      "vmm_operations": []
+    },
+    {
+      "guard_expression": "finance_guard()",
+      "handler": "node/src/shell/api/actions/creature/finance.rs::release_hold",
+      "models": [
+        "Creature"
+      ],
+      "path": "/creatures/releaseHold",
+      "request_type": "ReleaseHoldInput",
+      "routes_via_chain": false,
+      "services": [],
+      "spawns_background_work": false,
+      "transaction_operations": [
+        "get_link",
+        "put_link"
+      ],
+      "vmm_operations": []
+    },
+    {
+      "guard_expression": "finance_guard()",
+      "handler": "node/src/shell/api/actions/creature/finance.rs::release_pool",
+      "models": [],
+      "path": "/creatures/releasePool",
+      "request_type": "ReleasePoolInput",
+      "routes_via_chain": false,
+      "services": [],
+      "spawns_background_work": false,
+      "transaction_operations": [
+        "get_json",
+        "put_json"
+      ],
+      "vmm_operations": []
+    },
+    {
+      "guard_expression": "finance_guard()",
+      "handler": "node/src/shell/api/actions/creature/finance.rs::request_payout",
+      "models": [
+        "Creature"
+      ],
+      "path": "/creatures/requestPayout",
+      "request_type": "RequestPayoutInput",
+      "routes_via_chain": false,
+      "services": [],
+      "spawns_background_work": false,
+      "transaction_operations": [
+        "get_link",
+        "put_json",
+        "put_link"
+      ],
+      "vmm_operations": []
+    },
+    {
+      "guard_expression": "finance_guard()",
+      "handler": "node/src/shell/api/actions/creature/finance.rs::reserve_pool",
+      "models": [],
+      "path": "/creatures/reservePool",
+      "request_type": "ReservePoolInput",
+      "routes_via_chain": false,
+      "services": [],
+      "spawns_background_work": false,
+      "transaction_operations": [
+        "get_json",
+        "put_json"
+      ],
+      "vmm_operations": []
+    },
+    {
+      "guard_expression": "finance_guard()",
+      "handler": "node/src/shell/api/actions/creature/finance.rs::resolve_payout",
+      "models": [
+        "Creature"
+      ],
+      "path": "/creatures/resolvePayout",
+      "request_type": "ResolvePayoutInput",
+      "routes_via_chain": false,
+      "services": [],
+      "spawns_background_work": false,
+      "transaction_operations": [
+        "get_link",
+        "put_json",
+        "put_link"
+      ],
+      "vmm_operations": []
+    },
+    {
+      "guard_expression": "finance_guard()",
+      "handler": "node/src/shell/api/actions/creature/finance.rs::retire_finance_node",
+      "models": [],
+      "path": "/creatures/retireFinanceNode",
+      "request_type": "RetireFinanceNodeInput",
+      "routes_via_chain": false,
+      "services": [],
+      "spawns_background_work": false,
+      "transaction_operations": [
+        "get_json",
+        "put_json"
+      ],
+      "vmm_operations": []
+    },
+    {
+      "guard_expression": "finance_guard()",
+      "handler": "node/src/shell/api/actions/creature/finance.rs::retire_finance_resource",
+      "models": [],
+      "path": "/creatures/retireFinanceResource",
+      "request_type": "RetireFinanceResourceInput",
+      "routes_via_chain": false,
+      "services": [],
+      "spawns_background_work": false,
+      "transaction_operations": [
+        "get_json",
+        "put_json"
+      ],
+      "vmm_operations": []
+    },
+    {
+      "guard_expression": "finance_guard()",
+      "handler": "node/src/shell/api/actions/creature/finance.rs::review_finance_resource",
+      "models": [],
+      "path": "/creatures/reviewFinanceResource",
+      "request_type": "ReviewFinanceResourceInput",
+      "routes_via_chain": false,
+      "services": [],
+      "spawns_background_work": false,
+      "transaction_operations": [
+        "get_json",
+        "put_json"
+      ],
+      "vmm_operations": []
+    },
+    {
+      "guard_expression": "user_guard()",
+      "handler": "node/src/shell/api/actions/creature.rs::secret_get",
+      "models": [],
+      "path": "/creatures/secretGet",
+      "request_type": "SecretGetInput",
+      "routes_via_chain": false,
+      "services": [
+        "storage"
+      ],
+      "spawns_background_work": false,
+      "transaction_operations": [
+        "get_link"
+      ],
+      "vmm_operations": []
+    },
+    {
+      "guard_expression": "user_guard()",
+      "handler": "node/src/shell/api/actions/creature.rs::secret_grant",
+      "models": [],
+      "path": "/creatures/secretGrant",
+      "request_type": "SecretGrantInput",
+      "routes_via_chain": false,
+      "services": [],
+      "spawns_background_work": false,
+      "transaction_operations": [
+        "get_link",
+        "put_link"
+      ],
+      "vmm_operations": []
+    },
+    {
+      "guard_expression": "user_guard()",
+      "handler": "node/src/shell/api/actions/creature.rs::secret_list",
+      "models": [],
+      "path": "/creatures/secretList",
+      "request_type": "SecretListInput",
+      "routes_via_chain": false,
+      "services": [],
+      "spawns_background_work": false,
+      "transaction_operations": [
+        "get_by_prefix"
+      ],
+      "vmm_operations": []
+    },
+    {
+      "guard_expression": "user_guard()",
+      "handler": "node/src/shell/api/actions/creature.rs::secret_list_granted",
+      "models": [],
+      "path": "/creatures/secretListGranted",
+      "request_type": "SecretListGrantedInput",
+      "routes_via_chain": false,
+      "services": [],
+      "spawns_background_work": false,
+      "transaction_operations": [],
+      "vmm_operations": []
+    },
+    {
+      "guard_expression": "user_guard()",
+      "handler": "node/src/shell/api/actions/creature.rs::secret_put",
+      "models": [],
+      "path": "/creatures/secretPut",
+      "request_type": "SecretPutInput",
+      "routes_via_chain": false,
+      "services": [
+        "storage"
+      ],
+      "spawns_background_work": false,
+      "transaction_operations": [
+        "put_link"
+      ],
+      "vmm_operations": []
+    },
+    {
+      "guard_expression": "user_guard()",
+      "handler": "node/src/shell/api/actions/creature.rs::secret_revoke",
+      "models": [],
+      "path": "/creatures/secretRevoke",
+      "request_type": "SecretRevokeInput",
+      "routes_via_chain": false,
+      "services": [],
+      "spawns_background_work": false,
+      "transaction_operations": [
+        "del_key"
+      ],
+      "vmm_operations": []
+    },
+    {
+      "guard_expression": "finance_guard()",
+      "handler": "node/src/shell/api/actions/creature/finance.rs::settle_hold",
+      "models": [
+        "Creature"
+      ],
+      "path": "/creatures/settleHold",
+      "request_type": "SettleHoldInput",
+      "routes_via_chain": false,
+      "services": [],
+      "spawns_background_work": false,
+      "transaction_operations": [
+        "get_link",
+        "put_link"
+      ],
+      "vmm_operations": []
+    },
+    {
+      "guard_expression": "finance_guard()",
+      "handler": "node/src/shell/api/actions/creature/finance.rs::settle_pool",
+      "models": [
+        "Creature"
+      ],
+      "path": "/creatures/settlePool",
+      "request_type": "SettlePoolInput",
+      "routes_via_chain": false,
+      "services": [],
+      "spawns_background_work": false,
+      "transaction_operations": [
+        "get_json",
+        "get_link",
+        "put_json",
+        "put_link"
+      ],
+      "vmm_operations": []
+    },
+    {
+      "guard_expression": "user_guard()",
+      "handler": "node/src/shell/api/actions/creature.rs::signal",
+      "models": [
+        "Creature",
+        "Store"
+      ],
+      "path": "/creatures/signal",
+      "request_type": "CreatureSignalInput",
+      "routes_via_chain": false,
+      "services": [
+        "signaler"
+      ],
+      "spawns_background_work": true,
+      "transaction_operations": [],
+      "vmm_operations": []
+    },
+    {
+      "guard_expression": "finance_guard()",
+      "handler": "node/src/shell/api/actions/creature/finance.rs::start_hold",
+      "models": [],
+      "path": "/creatures/startHold",
+      "request_type": "StartHoldInput",
+      "routes_via_chain": false,
+      "services": [],
+      "spawns_background_work": false,
+      "transaction_operations": [
+        "get_link",
+        "put_link"
+      ],
+      "vmm_operations": []
+    },
+    {
+      "guard_expression": "finance_guard()",
+      "handler": "node/src/shell/api/actions/creature.rs::transfer",
+      "models": [
+        "Creature"
+      ],
+      "path": "/creatures/transfer",
+      "request_type": "TransferInput",
+      "routes_via_chain": false,
+      "services": [],
+      "spawns_background_work": false,
+      "transaction_operations": [
+        "get_index"
+      ],
+      "vmm_operations": []
+    },
+    {
+      "guard_expression": "user_guard()",
+      "handler": "node/src/shell/api/actions/creature.rs::types",
+      "models": [],
+      "path": "/creatures/types",
+      "request_type": "ListInput",
+      "routes_via_chain": false,
+      "services": [],
+      "spawns_background_work": false,
+      "transaction_operations": [
+        "get_links_list"
+      ],
+      "vmm_operations": []
+    },
+    {
+      "guard_expression": "user_guard()",
+      "handler": "node/src/shell/api/actions/creature.rs::update",
+      "models": [
+        "Creature"
+      ],
+      "path": "/creatures/update",
+      "request_type": "UpdateInput",
+      "routes_via_chain": false,
+      "services": [],
+      "spawns_background_work": false,
+      "transaction_operations": [
+        "del_index",
+        "has_index"
+      ],
+      "vmm_operations": []
+    },
+    {
+      "guard_expression": "Guard::default()",
+      "handler": "node/src/shell/api/actions/gateway.rs::signal",
+      "models": [],
+      "path": "/gateway/signal",
+      "request_type": "GatewaySignalInput",
+      "routes_via_chain": false,
+      "services": [],
+      "spawns_background_work": true,
+      "transaction_operations": [],
+      "vmm_operations": []
+    },
+    {
+      "guard_expression": "Guard::default()",
+      "handler": "node/src/shell/api/actions/gateway.rs::subscribe",
+      "models": [],
+      "path": "/gateway/subscribe",
+      "request_type": "GatewaySubscribeInput",
+      "routes_via_chain": false,
+      "services": [],
+      "spawns_background_work": false,
+      "transaction_operations": [],
+      "vmm_operations": []
+    },
+    {
+      "guard_expression": "Guard::default()",
+      "handler": "node/src/shell/api/actions/gateway.rs::unsubscribe",
+      "models": [],
+      "path": "/gateway/unsubscribe",
+      "request_type": "GatewayUnsubscribeInput",
+      "routes_via_chain": false,
+      "services": [],
+      "spawns_background_work": false,
+      "transaction_operations": [],
+      "vmm_operations": []
+    },
+    {
+      "guard_expression": "user_guard()",
+      "handler": "node/src/shell/api/actions/program.rs::close_vm_terminal",
+      "models": [
+        "Program"
+      ],
+      "path": "/machines/closeVmTerminal",
+      "request_type": "VmTerminalInput",
+      "routes_via_chain": false,
+      "services": [],
+      "spawns_background_work": false,
+      "transaction_operations": [
+        "del_key",
+        "has_obj"
+      ],
+      "vmm_operations": []
+    },
+    {
+      "guard_expression": "user_guard()",
+      "handler": "node/src/shell/api/actions/program.rs::list_machines",
+      "models": [
+        "Creature"
+      ],
+      "path": "/machines/list",
+      "request_type": "ListInput",
+      "routes_via_chain": false,
+      "services": [],
+      "spawns_background_work": false,
+      "transaction_operations": [
+        "get_json"
+      ],
+      "vmm_operations": []
+    },
+    {
+      "guard_expression": "user_guard()",
+      "handler": "node/src/shell/api/actions/program.rs::list_entity_vms",
+      "models": [
+        "Entity",
+        "Program"
+      ],
+      "path": "/machines/listEntityVms",
+      "request_type": "RunProgramEntityInput",
+      "routes_via_chain": false,
+      "services": [],
+      "spawns_background_work": false,
+      "transaction_operations": [
+        "get_link",
+        "get_links_list",
+        "has_obj"
+      ],
+      "vmm_operations": []
+    },
+    {
+      "guard_expression": "user_guard()",
+      "handler": "node/src/shell/api/actions/program.rs::list_program_machines",
+      "models": [
+        "Creature",
+        "Program"
+      ],
+      "path": "/machines/listProgramMachines",
+      "request_type": "ListAppMachsInput",
+      "routes_via_chain": false,
+      "services": [],
+      "spawns_background_work": false,
+      "transaction_operations": [],
+      "vmm_operations": []
+    },
+    {
+      "guard_expression": "user_guard()",
+      "handler": "node/src/shell/api/actions/program.rs::open_vm_terminal",
+      "models": [
+        "Program"
+      ],
+      "path": "/machines/openVmTerminal",
+      "request_type": "VmTerminalInput",
+      "routes_via_chain": false,
+      "services": [],
+      "spawns_background_work": false,
+      "transaction_operations": [
+        "has_obj",
+        "put_link"
+      ],
+      "vmm_operations": []
+    },
+    {
+      "guard_expression": "user_guard()",
+      "handler": "node/src/shell/api/actions/program.rs::read_machine_builds",
+      "models": [],
+      "path": "/machines/readMachineBuilds",
+      "request_type": "MachineBuildsInput",
+      "routes_via_chain": false,
+      "services": [],
+      "spawns_background_work": false,
+      "transaction_operations": [
+        "get_links_list"
+      ],
+      "vmm_operations": []
+    },
+    {
+      "guard_expression": "user_guard()",
+      "handler": "node/src/shell/api/actions/program.rs::read_vm_logs",
+      "models": [
+        "Program"
+      ],
+      "path": "/machines/readVmLogs",
+      "request_type": "ReadVmLogsInput",
+      "routes_via_chain": false,
+      "services": [
+        "storage"
+      ],
+      "spawns_background_work": false,
+      "transaction_operations": [
+        "get_links_list"
+      ],
+      "vmm_operations": [
+        "read_vm_logs"
+      ]
+    },
+    {
+      "guard_expression": "user_guard()",
+      "handler": "node/src/shell/api/actions/program.rs::create_program",
+      "models": [
+        "Creature",
+        "Program"
+      ],
+      "path": "/programs/create",
+      "request_type": "CreateMachineInput",
+      "routes_via_chain": false,
+      "services": [],
+      "spawns_background_work": false,
+      "transaction_operations": [
+        "has_obj",
+        "put_json",
+        "put_link"
+      ],
+      "vmm_operations": []
+    },
+    {
+      "guard_expression": "user_guard()",
+      "handler": "node/src/shell/api/actions/program.rs::delete_program",
+      "models": [
+        "Creature"
+      ],
+      "path": "/programs/delete",
+      "request_type": "DeleteProgramInput",
+      "routes_via_chain": false,
+      "services": [],
+      "spawns_background_work": false,
+      "transaction_operations": [
+        "del_index",
+        "del_key",
+        "get_index",
+        "has_obj"
+      ],
+      "vmm_operations": []
+    },
+    {
+      "guard_expression": "user_guard()",
+      "handler": "node/src/shell/api/actions/program.rs::delete_program_entity",
+      "models": [
+        "Entity",
+        "Program"
+      ],
+      "path": "/programs/deleteEntity",
+      "request_type": "RunProgramEntityInput",
+      "routes_via_chain": false,
+      "services": [],
+      "spawns_background_work": false,
+      "transaction_operations": [
+        "del_json",
+        "del_key",
+        "get_link",
+        "has_obj"
+      ],
+      "vmm_operations": [
+        "delete_vm_instance"
+      ]
+    },
+    {
+      "guard_expression": "user_guard()",
+      "handler": "node/src/shell/api/actions/program.rs::deploy",
+      "models": [
+        "Entity",
+        "Program"
+      ],
+      "path": "/programs/deploy",
+      "request_type": "DeployInput",
+      "routes_via_chain": false,
+      "services": [
+        "file",
+        "storage",
+        "vmm"
+      ],
+      "spawns_background_work": true,
+      "transaction_operations": [
+        "has_obj",
+        "put_link"
+      ],
+      "vmm_operations": [
+        "build_vm_image"
+      ]
+    },
+    {
+      "guard_expression": "user_guard()",
+      "handler": "node/src/shell/api/actions/program.rs::download_entity",
+      "models": [
+        "Entity"
+      ],
+      "path": "/programs/downloadEntity",
+      "request_type": "DownloadEntityInput",
+      "routes_via_chain": false,
+      "services": [],
+      "spawns_background_work": false,
+      "transaction_operations": [
+        "get_link"
+      ],
+      "vmm_operations": []
+    },
+    {
+      "guard_expression": "user_guard()",
+      "handler": "node/src/shell/api/actions/program.rs::list_programs",
+      "models": [
+        "Program"
+      ],
+      "path": "/programs/list",
+      "request_type": "ListInput",
+      "routes_via_chain": false,
+      "services": [],
+      "spawns_background_work": false,
+      "transaction_operations": [],
+      "vmm_operations": []
+    },
+    {
+      "guard_expression": "user_guard()",
+      "handler": "node/src/shell/api/actions/program.rs::run_program_entity",
+      "models": [
+        "Entity",
+        "Program"
+      ],
+      "path": "/programs/runEntity",
+      "request_type": "RunProgramEntityInput",
+      "routes_via_chain": false,
+      "services": [
+        "vmm"
+      ],
+      "spawns_background_work": true,
+      "transaction_operations": [
+        "get_link",
+        "has_obj",
+        "put_json",
+        "put_link"
+      ],
+      "vmm_operations": []
+    },
+    {
+      "guard_expression": "user_guard()",
+      "handler": "node/src/shell/api/actions/program.rs::stop_program_entity",
+      "models": [
+        "Entity",
+        "Program"
+      ],
+      "path": "/programs/stopEntity",
+      "request_type": "RunProgramEntityInput",
+      "routes_via_chain": false,
+      "services": [
+        "vmm"
+      ],
+      "spawns_background_work": false,
+      "transaction_operations": [
+        "del_json",
+        "del_key",
+        "has_obj"
+      ],
+      "vmm_operations": []
+    },
+    {
+      "guard_expression": "user_guard()",
+      "handler": "node/src/shell/api/actions/program.rs::update_program",
+      "models": [
+        "Program"
+      ],
+      "path": "/programs/update",
+      "request_type": "UpdateProgramInput",
+      "routes_via_chain": false,
+      "services": [],
+      "spawns_background_work": false,
+      "transaction_operations": [
+        "has_obj",
+        "put_json"
+      ],
+      "vmm_operations": []
+    },
+    {
+      "guard_expression": "user_guard()",
+      "handler": "node/src/shell/api/actions/creature.rs::storage_upload",
+      "models": [],
+      "path": "/storage/upload",
+      "request_type": "StorageUploadInput",
+      "routes_via_chain": false,
+      "services": [
+        "file",
+        "storage"
+      ],
+      "spawns_background_work": false,
+      "transaction_operations": [],
+      "vmm_operations": []
+    },
+    {
+      "guard_expression": "store_guard()",
+      "handler": "node/src/shell/api/actions/store.rs::get_access",
+      "models": [],
+      "path": "/stores/getAccess",
+      "request_type": "GetAccessInput",
+      "routes_via_chain": false,
+      "services": [],
+      "spawns_background_work": false,
+      "transaction_operations": [],
+      "vmm_operations": []
+    },
+    {
+      "guard_expression": "store_guard()",
+      "handler": "node/src/shell/api/actions/store.rs::history",
+      "models": [],
+      "path": "/stores/history",
+      "request_type": "HistoryInput",
+      "routes_via_chain": false,
+      "services": [],
+      "spawns_background_work": false,
+      "transaction_operations": [],
+      "vmm_operations": []
+    },
+    {
+      "guard_expression": "store_guard()",
+      "handler": "node/src/shell/api/actions/store.rs::set_access",
+      "models": [],
+      "path": "/stores/setAccess",
+      "request_type": "SetAccessInput",
+      "routes_via_chain": false,
+      "services": [],
+      "spawns_background_work": false,
+      "transaction_operations": [
+        "put_link"
+      ],
+      "vmm_operations": []
+    },
+    {
+      "guard_expression": "store_guard()",
+      "handler": "node/src/shell/api/actions/store.rs::signal",
+      "models": [
+        "Creature",
+        "Store"
+      ],
+      "path": "/stores/signal",
+      "request_type": "SignalInput",
+      "routes_via_chain": false,
+      "services": [
+        "storage"
+      ],
+      "spawns_background_work": false,
+      "transaction_operations": [
+        "get_obj"
+      ],
+      "vmm_operations": []
+    }
+  ],
+  "cli": {
+    "casparctl": {
+      "cluster": [
+        {
+          "command": "status",
+          "handler": "cmd_status(&args[1..])"
+        },
+        {
+          "command": "init",
+          "handler": "cmd_init(&args[1..])"
+        },
+        {
+          "command": "peers",
+          "handler": "cmd_peers(&args[1..])"
+        },
+        {
+          "command": "nearest",
+          "handler": "cmd_nearest(&args[1..])"
+        },
+        {
+          "command": "add-peer",
+          "handler": "cmd_add_peer(&args[1..])"
+        },
+        {
+          "command": "remove-peer",
+          "handler": "cmd_remove_peer(&args[1..])"
+        },
+        {
+          "command": "promote",
+          "handler": "cmd_promote(&args[1..])"
+        },
+        {
+          "command": "config",
+          "handler": "cmd_config(&args[1..])"
+        },
+        {
+          "command": "apply",
+          "handler": "cmd_apply(&args[1..])"
+        }
+      ],
+      "cluster_config": [
+        {
+          "command": "list"
+        },
+        {
+          "command": "get"
+        },
+        {
+          "command": "set"
+        }
+      ],
+      "pprof": [
+        {
+          "command": "runtime"
+        },
+        {
+          "command": "heap"
+        },
+        {
+          "command": "threads"
+        },
+        {
+          "command": "flamegraph"
+        },
+        {
+          "command": "profile"
+        }
+      ],
+      "top_level": [
+        {
+          "command": "install",
+          "handler": ""
+        },
+        {
+          "command": "uninstall",
+          "handler": "run_uninstall(&args[2..])"
+        },
+        {
+          "command": "purge",
+          "handler": "run_purge(&args[2..])"
+        },
+        {
+          "command": "start",
+          "handler": "run_start(&args[2..])"
+        },
+        {
+          "command": "pause",
+          "handler": "run_pause(&args[2..])"
+        },
+        {
+          "command": "resume",
+          "handler": "run_resume(&args[2..])"
+        },
+        {
+          "command": "stop",
+          "handler": "run_stop(&args[2..])"
+        },
+        {
+          "command": "stats",
+          "handler": "run_stats(&args[2..])"
+        },
+        {
+          "command": "run",
+          "handler": "run::run_run(&args[2..])"
+        },
+        {
+          "command": "status",
+          "handler": "run::run_status(&args[2..])"
+        },
+        {
+          "command": "pprof",
+          "handler": "run_pprof(&args[2..])"
+        },
+        {
+          "command": "vms",
+          "handler": "vms::run_vms(&args[2..])"
+        },
+        {
+          "command": "cluster",
+          "handler": "cluster::run_cluster(&args[2..])"
+        },
+        {
+          "command": "module",
+          "handler": "modules::run_modules(&args[2..])"
+        },
+        {
+          "command": "modules",
+          "handler": "modules::run_modules(&args[2..])"
+        }
+      ],
+      "vms": [
+        {
+          "command": "list",
+          "handler": "cmd_list(&args[1..])"
+        },
+        {
+          "command": "enable",
+          "handler": "cmd_set_enabled(&args[1..]"
+        },
+        {
+          "command": "disable",
+          "handler": "cmd_set_enabled(&args[1..]"
+        },
+        {
+          "command": "sync",
+          "handler": "cmd_sync(&args[1..])"
+        },
+        {
+          "command": "new",
+          "handler": "cmd_new(&args[1..])"
+        }
+      ]
+    },
+    "client_cli": [
+      {
+        "command": "login"
+      },
+      {
+        "command": "logout"
+      },
+      {
+        "command": "printPrivateKey"
+      },
+      {
+        "command": "creatures.me"
+      },
+      {
+        "command": "creatures.get"
+      },
+      {
+        "command": "creatures.lockToken"
+      },
+      {
+        "command": "creatures.consumeLock"
+      },
+      {
+        "command": "creatures.list"
+      },
+      {
+        "command": "creatures.signal"
+      },
+      {
+        "command": "creatures.createMachine"
+      },
+      {
+        "command": "creatures.listMachines"
+      },
+      {
+        "command": "programs.create"
+      },
+      {
+        "command": "programs.delete"
+      },
+      {
+        "command": "programs.update"
+      },
+      {
+        "command": "programs.deployRaw"
+      },
+      {
+        "command": "programs.deploy"
+      },
+      {
+        "command": "programs.run"
+      },
+      {
+        "command": "programs.stop"
+      },
+      {
+        "command": "programs.list"
+      },
+      {
+        "command": "programs.readBuildLogs"
+      },
+      {
+        "command": "vm.types"
+      },
+      {
+        "command": "vm.init"
+      }
+    ],
+    "root_scripts": [
+      {
+        "flags": [
+          {
+            "flag": "--skip-deploy"
+          },
+          {
+            "flag": "--redeploy"
+          },
+          {
+            "flag": "--help"
+          }
+        ],
+        "script": "bench-all.sh"
+      },
+      {
+        "flags": [
+          {
+            "flag": "--skip-node"
+          },
+          {
+            "flag": "--skip-ctl"
+          },
+          {
+            "flag": "--wasmedge-ver"
+          },
+          {
+            "flag": "--disable-vm"
+          },
+          {
+            "flag": "--enable-vm"
+          },
+          {
+            "flag": "--help"
+          }
+        ],
+        "script": "build-dist.sh"
+      },
+      {
+        "flags": [
+          {
+            "flag": "--no-docker"
+          },
+          {
+            "flag": "--no-questdb"
+          },
+          {
+            "flag": "--fresh"
+          },
+          {
+            "flag": "--no-gvisor"
+          },
+          {
+            "flag": "--no-firecracker"
+          },
+          {
+            "flag": "--no-rebuild"
+          },
+          {
+            "flag": "--foreground"
+          },
+          {
+            "flag": "--skip-deploy"
+          },
+          {
+            "flag": "--help"
+          }
+        ],
+        "script": "run-nodes.sh"
+      },
+      {
+        "flags": [
+          {
+            "flag": "--clean"
+          },
+          {
+            "flag": "--purge"
+          },
+          {
+            "flag": "--keep-questdb"
+          },
+          {
+            "flag": "--help"
+          }
+        ],
+        "script": "stop-nodes.sh"
+      }
+    ]
+  },
+  "interfaces": {
+    "guest_operations": [
+      {
+        "gateway": "unified-host-call",
+        "operation": "buildDockerImage"
+      },
+      {
+        "gateway": "unified-host-call",
+        "operation": "buildVmImage"
+      },
+      {
+        "gateway": "unified-host-call",
+        "operation": "callProtocolApi"
+      },
+      {
+        "gateway": "unified-host-call",
+        "operation": "commitTrx"
+      },
+      {
+        "gateway": "unified-host-call",
+        "operation": "consoleLog"
+      },
+      {
+        "gateway": "unified-host-call",
+        "operation": "consumeLock"
+      },
+      {
+        "gateway": "unified-host-call",
+        "operation": "copyFromVm"
+      },
+      {
+        "gateway": "unified-host-call",
+        "operation": "copyToDocker"
+      },
+      {
+        "gateway": "unified-host-call",
+        "operation": "copyToVm"
+      },
+      {
+        "gateway": "unified-host-call",
+        "operation": "createAccess"
+      },
+      {
+        "gateway": "unified-host-call",
+        "operation": "createCreature"
+      },
+      {
+        "gateway": "unified-host-call",
+        "operation": "createOwnedAccess"
+      },
+      {
+        "gateway": "unified-host-call",
+        "operation": "createOwnedCreature"
+      },
+      {
+        "gateway": "unified-host-call",
+        "operation": "createOwnedStore"
+      },
+      {
+        "gateway": "unified-host-call",
+        "operation": "createProgram"
+      },
+      {
+        "gateway": "unified-host-call",
+        "operation": "createResourceEntity"
+      },
+      {
+        "gateway": "unified-host-call",
+        "operation": "createResourceStore"
+      },
+      {
+        "gateway": "unified-host-call",
+        "operation": "createStore"
+      },
+      {
+        "gateway": "unified-host-call",
+        "operation": "createVmOwnedStore"
+      },
+      {
+        "gateway": "unified-host-call",
+        "operation": "dbOp"
+      },
+      {
+        "gateway": "unified-host-call",
+        "operation": "debitPool"
+      },
+      {
+        "gateway": "unified-host-call",
+        "operation": "delKey"
+      },
+      {
+        "gateway": "unified-host-call",
+        "operation": "deleteAccess"
+      },
+      {
+        "gateway": "unified-host-call",
+        "operation": "deleteCreature"
+      },
+      {
+        "gateway": "unified-host-call",
+        "operation": "deleteOwnedAccess"
+      },
+      {
+        "gateway": "unified-host-call",
+        "operation": "deleteOwnedCreature"
+      },
+      {
+        "gateway": "unified-host-call",
+        "operation": "deleteOwnedProgram"
+      },
+      {
+        "gateway": "unified-host-call",
+        "operation": "deleteOwnedStore"
+      },
+      {
+        "gateway": "unified-host-call",
+        "operation": "deleteProgram"
+      },
+      {
+        "gateway": "unified-host-call",
+        "operation": "deleteResourceEntity"
+      },
+      {
+        "gateway": "unified-host-call",
+        "operation": "deleteResourceStore"
+      },
+      {
+        "gateway": "unified-host-call",
+        "operation": "deleteStore"
+      },
+      {
+        "gateway": "unified-host-call",
+        "operation": "deleteVm"
+      },
+      {
+        "gateway": "unified-host-call",
+        "operation": "deleteVmOwnedStore"
+      },
+      {
+        "gateway": "unified-host-call",
+        "operation": "deploy entity"
+      },
+      {
+        "gateway": "unified-host-call",
+        "operation": "deployEntity"
+      },
+      {
+        "gateway": "unified-host-call",
+        "operation": "destroyVm"
+      },
+      {
+        "gateway": "unified-host-call",
+        "operation": "elpifyProof"
+      },
+      {
+        "gateway": "unified-host-call",
+        "operation": "execDocker"
+      },
+      {
+        "gateway": "unified-host-call",
+        "operation": "execShellAction"
+      },
+      {
+        "gateway": "unified-host-call",
+        "operation": "execVm"
+      },
+      {
+        "gateway": "unified-host-call",
+        "operation": "genId"
+      },
+      {
+        "gateway": "unified-host-call",
+        "operation": "getByPrefix"
+      },
+      {
+        "gateway": "unified-host-call",
+        "operation": "getCreature"
+      },
+      {
+        "gateway": "unified-host-call",
+        "operation": "getJson"
+      },
+      {
+        "gateway": "unified-host-call",
+        "operation": "getLink"
+      },
+      {
+        "gateway": "unified-host-call",
+        "operation": "getProgram"
+      },
+      {
+        "gateway": "unified-host-call",
+        "operation": "getResourceStore"
+      },
+      {
+        "gateway": "unified-host-call",
+        "operation": "getStore"
+      },
+      {
+        "gateway": "unified-host-call",
+        "operation": "getVmOwnedStore"
+      },
+      {
+        "gateway": "unified-host-call",
+        "operation": "grantLogin"
+      },
+      {
+        "gateway": "unified-host-call",
+        "operation": "hasAccessToStore"
+      },
+      {
+        "gateway": "unified-host-call",
+        "operation": "httpPost"
+      },
+      {
+        "gateway": "unified-host-call",
+        "operation": "httpRequest"
+      },
+      {
+        "gateway": "unified-host-call",
+        "operation": "joinGroup"
+      },
+      {
+        "gateway": "unified-host-call",
+        "operation": "listCreatures"
+      },
+      {
+        "gateway": "unified-host-call",
+        "operation": "listProgramMachines"
+      },
+      {
+        "gateway": "unified-host-call",
+        "operation": "listPrograms"
+      },
+      {
+        "gateway": "unified-host-call",
+        "operation": "listResourceStores"
+      },
+      {
+        "gateway": "unified-host-call",
+        "operation": "listStoreAccess"
+      },
+      {
+        "gateway": "unified-host-call",
+        "operation": "listStoreMembers"
+      },
+      {
+        "gateway": "unified-host-call",
+        "operation": "listStores"
+      },
+      {
+        "gateway": "unified-host-call",
+        "operation": "listVmOwnedStores"
+      },
+      {
+        "gateway": "unified-host-call",
+        "operation": "lockResource"
+      },
+      {
+        "gateway": "unified-host-call",
+        "operation": "lockToken"
+      },
+      {
+        "gateway": "unified-host-call",
+        "operation": "nodeIdentity"
+      },
+      {
+        "gateway": "unified-host-call",
+        "operation": "plantTrigger"
+      },
+      {
+        "gateway": "unified-host-call",
+        "operation": "protocolApi"
+      },
+      {
+        "gateway": "unified-host-call",
+        "operation": "publishFinanceCatalog"
+      },
+      {
+        "gateway": "unified-host-call",
+        "operation": "publishFinanceQuote"
+      },
+      {
+        "gateway": "unified-host-call",
+        "operation": "publishUpdate"
+      },
+      {
+        "gateway": "unified-host-call",
+        "operation": "putJson"
+      },
+      {
+        "gateway": "unified-host-call",
+        "operation": "readMembers"
+      },
+      {
+        "gateway": "unified-host-call",
+        "operation": "registerBridgeToken"
+      },
+      {
+        "gateway": "unified-host-call",
+        "operation": "registerFinanceNode"
+      },
+      {
+        "gateway": "unified-host-call",
+        "operation": "registerFinanceResource"
+      },
+      {
+        "gateway": "unified-host-call",
+        "operation": "releaseHold"
+      },
+      {
+        "gateway": "unified-host-call",
+        "operation": "releasePool"
+      },
+      {
+        "gateway": "unified-host-call",
+        "operation": "removeAccess"
+      },
+      {
+        "gateway": "unified-host-call",
+        "operation": "removeCreature"
+      },
+      {
+        "gateway": "unified-host-call",
+        "operation": "removeOwnedAccess"
+      },
+      {
+        "gateway": "unified-host-call",
+        "operation": "removeOwnedCreature"
+      },
+      {
+        "gateway": "unified-host-call",
+        "operation": "removeOwnedStore"
+      },
+      {
+        "gateway": "unified-host-call",
+        "operation": "removeStore"
+      },
+      {
+        "gateway": "unified-host-call",
+        "operation": "reservePool"
+      },
+      {
+        "gateway": "unified-host-call",
+        "operation": "retireFinanceNode"
+      },
+      {
+        "gateway": "unified-host-call",
+        "operation": "retireFinanceResource"
+      },
+      {
+        "gateway": "unified-host-call",
+        "operation": "reviewFinanceResource"
+      },
+      {
+        "gateway": "unified-host-call",
+        "operation": "revokeBridgeToken"
+      },
+      {
+        "gateway": "unified-host-call",
+        "operation": "runVm"
+      },
+      {
+        "gateway": "unified-host-call",
+        "operation": "secretGet"
+      },
+      {
+        "gateway": "unified-host-call",
+        "operation": "secretListGranted"
+      },
+      {
+        "gateway": "unified-host-call",
+        "operation": "settleHold"
+      },
+      {
+        "gateway": "unified-host-call",
+        "operation": "settlePool"
+      },
+      {
+        "gateway": "unified-host-call",
+        "operation": "signal"
+      },
+      {
+        "gateway": "unified-host-call",
+        "operation": "signalGroup"
+      },
+      {
+        "gateway": "unified-host-call",
+        "operation": "signalUser"
+      },
+      {
+        "gateway": "unified-host-call",
+        "operation": "startHold"
+      },
+      {
+        "gateway": "unified-host-call",
+        "operation": "statusVm"
+      },
+      {
+        "gateway": "unified-host-call",
+        "operation": "terminateVm"
+      },
+      {
+        "gateway": "unified-host-call",
+        "operation": "transfer"
+      },
+      {
+        "gateway": "unified-host-call",
+        "operation": "unlockResource"
+      },
+      {
+        "gateway": "unified-host-call",
+        "operation": "updateCreature"
+      },
+      {
+        "gateway": "unified-host-call",
+        "operation": "updateProgram"
+      },
+      {
+        "gateway": "unified-host-call",
+        "operation": "updateResourceStore"
+      },
+      {
+        "gateway": "unified-host-call",
+        "operation": "updateStore"
+      },
+      {
+        "gateway": "unified-host-call",
+        "operation": "updateVmOwnedStore"
+      },
+      {
+        "gateway": "unified-host-call",
+        "operation": "validateSign"
+      },
+      {
+        "gateway": "unified-host-call",
+        "operation": "verifyProgramExecution"
+      },
+      {
+        "gateway": "unified-host-call",
+        "operation": "vmEndpoints"
+      },
+      {
+        "gateway": "unified-host-call",
+        "operation": "vmLog"
+      }
+    ],
+    "http_routes": [
+      {
+        "method": "POST",
+        "path": "/cluster/add-peer",
+        "surface": "cluster-admin-and-raft"
+      },
+      {
+        "method": "GET",
+        "path": "/cluster/config",
+        "surface": "cluster-admin-and-raft"
+      },
+      {
+        "method": "POST",
+        "path": "/cluster/config",
+        "surface": "cluster-admin-and-raft"
+      },
+      {
+        "method": "POST",
+        "path": "/cluster/config/apply",
+        "surface": "cluster-admin-and-raft"
+      },
+      {
+        "method": "POST",
+        "path": "/cluster/init",
+        "surface": "cluster-admin-and-raft"
+      },
+      {
+        "method": "GET",
+        "path": "/cluster/nearest",
+        "surface": "cluster-admin-and-raft"
+      },
+      {
+        "method": "GET",
+        "path": "/cluster/peers",
+        "surface": "cluster-admin-and-raft"
+      },
+      {
+        "method": "GET",
+        "path": "/cluster/ping",
+        "surface": "cluster-admin-and-raft"
+      },
+      {
+        "method": "POST",
+        "path": "/cluster/promote",
+        "surface": "cluster-admin-and-raft"
+      },
+      {
+        "method": "POST",
+        "path": "/cluster/propose",
+        "surface": "cluster-admin-and-raft"
+      },
+      {
+        "method": "POST",
+        "path": "/cluster/remove-peer",
+        "surface": "cluster-admin-and-raft"
+      },
+      {
+        "method": "GET",
+        "path": "/cluster/status",
+        "surface": "cluster-admin-and-raft"
+      },
+      {
+        "method": "POST",
+        "path": "/raft/append",
+        "surface": "cluster-admin-and-raft"
+      },
+      {
+        "method": "POST",
+        "path": "/raft/snapshot",
+        "surface": "cluster-admin-and-raft"
+      },
+      {
+        "method": "POST",
+        "path": "/raft/vote",
+        "surface": "cluster-admin-and-raft"
+      },
+      {
+        "method": "GET",
+        "path": "/debug/pprof",
+        "surface": "profiling-http"
+      },
+      {
+        "method": "GET",
+        "path": "/debug/pprof/",
+        "surface": "profiling-http"
+      },
+      {
+        "method": "GET",
+        "path": "/debug/pprof/flamegraph",
+        "surface": "profiling-http"
+      },
+      {
+        "method": "GET",
+        "path": "/debug/pprof/heap",
+        "surface": "profiling-http"
+      },
+      {
+        "method": "GET",
+        "path": "/debug/pprof/profile",
+        "surface": "profiling-http"
+      },
+      {
+        "method": "GET",
+        "path": "/debug/pprof/runtime",
+        "surface": "profiling-http"
+      },
+      {
+        "method": "GET",
+        "path": "/debug/pprof/threads",
+        "surface": "profiling-http"
+      },
+      {
+        "method": "GET",
+        "path": "/storage/file/{id}",
+        "surface": "public-storage-http"
+      },
+      {
+        "method": "HEAD",
+        "path": "/storage/file/{id}",
+        "surface": "public-storage-http"
+      },
+      {
+        "method": "GET",
+        "path": "/storage/health",
+        "surface": "public-storage-http"
+      },
+      {
+        "method": "POST",
+        "path": "/storage/upload",
+        "surface": "public-storage-http"
+      },
+      {
+        "method": "PUT",
+        "path": "/storage/upload",
+        "surface": "public-storage-http"
+      },
+      {
+        "method": "GET",
+        "path": "/telemetry/health",
+        "surface": "telemetry-http"
+      },
+      {
+        "method": "GET",
+        "path": "/telemetry/snapshot",
+        "surface": "telemetry-http"
+      },
+      {
+        "method": "ANY",
+        "path": "/{creatureId}/{programId}/{entityId}/{vmId}/{path...}",
+        "surface": "vm-http-ingress"
+      },
+      {
+        "method": "ANY",
+        "path": "/{creatureUsername}/{customPath...}",
+        "surface": "vm-http-ingress"
+      }
+    ],
+    "signed_shell_actions": [
+      {
+        "path": "/api/hello",
+        "request_type": "HelloInput",
+        "surface": "signed-shell-action",
+        "transport": "TCP/WebSocket/federation adapters"
+      },
+      {
+        "path": "/api/ping",
+        "request_type": "HelloInput",
+        "surface": "signed-shell-action",
+        "transport": "TCP/WebSocket/federation adapters"
+      },
+      {
+        "path": "/api/time",
+        "request_type": "HelloInput",
+        "surface": "signed-shell-action",
+        "transport": "TCP/WebSocket/federation adapters"
+      },
+      {
+        "path": "/auths/getServerPublicKey",
+        "request_type": "GetServerKeyInput",
+        "surface": "signed-shell-action",
+        "transport": "TCP/WebSocket/federation adapters"
+      },
+      {
+        "path": "/auths/getServersMap",
+        "request_type": "GetServersMapInput",
+        "surface": "signed-shell-action",
+        "transport": "TCP/WebSocket/federation adapters"
+      },
+      {
+        "path": "/creatures/authenticate",
+        "request_type": "AuthenticateInput",
+        "surface": "signed-shell-action",
+        "transport": "TCP/WebSocket/federation adapters"
+      },
+      {
+        "path": "/creatures/checkSign",
+        "request_type": "CheckSignInput",
+        "surface": "signed-shell-action",
+        "transport": "TCP/WebSocket/federation adapters"
+      },
+      {
+        "path": "/creatures/closePool",
+        "request_type": "ClosePoolInput",
+        "surface": "signed-shell-action",
+        "transport": "TCP/WebSocket/federation adapters"
+      },
+      {
+        "path": "/creatures/consumeLock",
+        "request_type": "ConsumeLockInput",
+        "surface": "signed-shell-action",
+        "transport": "TCP/WebSocket/federation adapters"
+      },
+      {
+        "path": "/creatures/create",
+        "request_type": "CreatureCreateInput",
+        "surface": "signed-shell-action",
+        "transport": "TCP/WebSocket/federation adapters"
+      },
+      {
+        "path": "/creatures/createHold",
+        "request_type": "CreateHoldInput",
+        "surface": "signed-shell-action",
+        "transport": "TCP/WebSocket/federation adapters"
+      },
+      {
+        "path": "/creatures/debitPool",
+        "request_type": "DebitPoolInput",
+        "surface": "signed-shell-action",
+        "transport": "TCP/WebSocket/federation adapters"
+      },
+      {
+        "path": "/creatures/delete",
+        "request_type": "DeleteInput",
+        "surface": "signed-shell-action",
+        "transport": "TCP/WebSocket/federation adapters"
+      },
+      {
+        "path": "/creatures/find",
+        "request_type": "FindInput",
+        "surface": "signed-shell-action",
+        "transport": "TCP/WebSocket/federation adapters"
+      },
+      {
+        "path": "/creatures/get",
+        "request_type": "GetInput",
+        "surface": "signed-shell-action",
+        "transport": "TCP/WebSocket/federation adapters"
+      },
+      {
+        "path": "/creatures/getByUsername",
+        "request_type": "GetByUsernameInput",
+        "surface": "signed-shell-action",
+        "transport": "TCP/WebSocket/federation adapters"
+      },
+      {
+        "path": "/creatures/getFinancialAccount",
+        "request_type": "GetFinancialAccountInput",
+        "surface": "signed-shell-action",
+        "transport": "TCP/WebSocket/federation adapters"
+      },
+      {
+        "path": "/creatures/getHold",
+        "request_type": "GetHoldInput",
+        "surface": "signed-shell-action",
+        "transport": "TCP/WebSocket/federation adapters"
+      },
+      {
+        "path": "/creatures/list",
+        "request_type": "ListInput",
+        "surface": "signed-shell-action",
+        "transport": "TCP/WebSocket/federation adapters"
+      },
+      {
+        "path": "/creatures/listPayouts",
+        "request_type": "ListPayoutsInput",
+        "surface": "signed-shell-action",
+        "transport": "TCP/WebSocket/federation adapters"
+      },
+      {
+        "path": "/creatures/lockToken",
+        "request_type": "LockTokenInput",
+        "surface": "signed-shell-action",
+        "transport": "TCP/WebSocket/federation adapters"
+      },
+      {
+        "path": "/creatures/login",
+        "request_type": "LoginInput",
+        "surface": "signed-shell-action",
+        "transport": "TCP/WebSocket/federation adapters"
+      },
+      {
+        "path": "/creatures/meta",
+        "request_type": "MetaInput",
+        "surface": "signed-shell-action",
+        "transport": "TCP/WebSocket/federation adapters"
+      },
+      {
+        "path": "/creatures/mint",
+        "request_type": "MintInput",
+        "surface": "signed-shell-action",
+        "transport": "TCP/WebSocket/federation adapters"
+      },
+      {
+        "path": "/creatures/openPool",
+        "request_type": "OpenPoolInput",
+        "surface": "signed-shell-action",
+        "transport": "TCP/WebSocket/federation adapters"
+      },
+      {
+        "path": "/creatures/paymentAdjustment",
+        "request_type": "PaymentAdjustmentInput",
+        "surface": "signed-shell-action",
+        "transport": "TCP/WebSocket/federation adapters"
+      },
+      {
+        "path": "/creatures/publishFinanceCatalog",
+        "request_type": "PublishFinanceCatalogInput",
+        "surface": "signed-shell-action",
+        "transport": "TCP/WebSocket/federation adapters"
+      },
+      {
+        "path": "/creatures/publishFinanceQuote",
+        "request_type": "PublishFinanceQuoteInput",
+        "surface": "signed-shell-action",
+        "transport": "TCP/WebSocket/federation adapters"
+      },
+      {
+        "path": "/creatures/reconcileFinancialSystem",
+        "request_type": "ReconcileFinancialSystemInput",
+        "surface": "signed-shell-action",
+        "transport": "TCP/WebSocket/federation adapters"
+      },
+      {
+        "path": "/creatures/refreshPool",
+        "request_type": "RefreshPoolInput",
+        "surface": "signed-shell-action",
+        "transport": "TCP/WebSocket/federation adapters"
+      },
+      {
+        "path": "/creatures/registerFinanceNode",
+        "request_type": "RegisterFinanceNodeInput",
+        "surface": "signed-shell-action",
+        "transport": "TCP/WebSocket/federation adapters"
+      },
+      {
+        "path": "/creatures/registerFinanceResource",
+        "request_type": "RegisterFinanceResourceInput",
+        "surface": "signed-shell-action",
+        "transport": "TCP/WebSocket/federation adapters"
+      },
+      {
+        "path": "/creatures/releaseHold",
+        "request_type": "ReleaseHoldInput",
+        "surface": "signed-shell-action",
+        "transport": "TCP/WebSocket/federation adapters"
+      },
+      {
+        "path": "/creatures/releasePool",
+        "request_type": "ReleasePoolInput",
+        "surface": "signed-shell-action",
+        "transport": "TCP/WebSocket/federation adapters"
+      },
+      {
+        "path": "/creatures/requestPayout",
+        "request_type": "RequestPayoutInput",
+        "surface": "signed-shell-action",
+        "transport": "TCP/WebSocket/federation adapters"
+      },
+      {
+        "path": "/creatures/reservePool",
+        "request_type": "ReservePoolInput",
+        "surface": "signed-shell-action",
+        "transport": "TCP/WebSocket/federation adapters"
+      },
+      {
+        "path": "/creatures/resolvePayout",
+        "request_type": "ResolvePayoutInput",
+        "surface": "signed-shell-action",
+        "transport": "TCP/WebSocket/federation adapters"
+      },
+      {
+        "path": "/creatures/retireFinanceNode",
+        "request_type": "RetireFinanceNodeInput",
+        "surface": "signed-shell-action",
+        "transport": "TCP/WebSocket/federation adapters"
+      },
+      {
+        "path": "/creatures/retireFinanceResource",
+        "request_type": "RetireFinanceResourceInput",
+        "surface": "signed-shell-action",
+        "transport": "TCP/WebSocket/federation adapters"
+      },
+      {
+        "path": "/creatures/reviewFinanceResource",
+        "request_type": "ReviewFinanceResourceInput",
+        "surface": "signed-shell-action",
+        "transport": "TCP/WebSocket/federation adapters"
+      },
+      {
+        "path": "/creatures/secretGet",
+        "request_type": "SecretGetInput",
+        "surface": "signed-shell-action",
+        "transport": "TCP/WebSocket/federation adapters"
+      },
+      {
+        "path": "/creatures/secretGrant",
+        "request_type": "SecretGrantInput",
+        "surface": "signed-shell-action",
+        "transport": "TCP/WebSocket/federation adapters"
+      },
+      {
+        "path": "/creatures/secretList",
+        "request_type": "SecretListInput",
+        "surface": "signed-shell-action",
+        "transport": "TCP/WebSocket/federation adapters"
+      },
+      {
+        "path": "/creatures/secretListGranted",
+        "request_type": "SecretListGrantedInput",
+        "surface": "signed-shell-action",
+        "transport": "TCP/WebSocket/federation adapters"
+      },
+      {
+        "path": "/creatures/secretPut",
+        "request_type": "SecretPutInput",
+        "surface": "signed-shell-action",
+        "transport": "TCP/WebSocket/federation adapters"
+      },
+      {
+        "path": "/creatures/secretRevoke",
+        "request_type": "SecretRevokeInput",
+        "surface": "signed-shell-action",
+        "transport": "TCP/WebSocket/federation adapters"
+      },
+      {
+        "path": "/creatures/settleHold",
+        "request_type": "SettleHoldInput",
+        "surface": "signed-shell-action",
+        "transport": "TCP/WebSocket/federation adapters"
+      },
+      {
+        "path": "/creatures/settlePool",
+        "request_type": "SettlePoolInput",
+        "surface": "signed-shell-action",
+        "transport": "TCP/WebSocket/federation adapters"
+      },
+      {
+        "path": "/creatures/signal",
+        "request_type": "CreatureSignalInput",
+        "surface": "signed-shell-action",
+        "transport": "TCP/WebSocket/federation adapters"
+      },
+      {
+        "path": "/creatures/startHold",
+        "request_type": "StartHoldInput",
+        "surface": "signed-shell-action",
+        "transport": "TCP/WebSocket/federation adapters"
+      },
+      {
+        "path": "/creatures/transfer",
+        "request_type": "TransferInput",
+        "surface": "signed-shell-action",
+        "transport": "TCP/WebSocket/federation adapters"
+      },
+      {
+        "path": "/creatures/types",
+        "request_type": "ListInput",
+        "surface": "signed-shell-action",
+        "transport": "TCP/WebSocket/federation adapters"
+      },
+      {
+        "path": "/creatures/update",
+        "request_type": "UpdateInput",
+        "surface": "signed-shell-action",
+        "transport": "TCP/WebSocket/federation adapters"
+      },
+      {
+        "path": "/gateway/signal",
+        "request_type": "GatewaySignalInput",
+        "surface": "signed-shell-action",
+        "transport": "TCP/WebSocket/federation adapters"
+      },
+      {
+        "path": "/gateway/subscribe",
+        "request_type": "GatewaySubscribeInput",
+        "surface": "signed-shell-action",
+        "transport": "TCP/WebSocket/federation adapters"
+      },
+      {
+        "path": "/gateway/unsubscribe",
+        "request_type": "GatewayUnsubscribeInput",
+        "surface": "signed-shell-action",
+        "transport": "TCP/WebSocket/federation adapters"
+      },
+      {
+        "path": "/machines/closeVmTerminal",
+        "request_type": "VmTerminalInput",
+        "surface": "signed-shell-action",
+        "transport": "TCP/WebSocket/federation adapters"
+      },
+      {
+        "path": "/machines/list",
+        "request_type": "ListInput",
+        "surface": "signed-shell-action",
+        "transport": "TCP/WebSocket/federation adapters"
+      },
+      {
+        "path": "/machines/listEntityVms",
+        "request_type": "RunProgramEntityInput",
+        "surface": "signed-shell-action",
+        "transport": "TCP/WebSocket/federation adapters"
+      },
+      {
+        "path": "/machines/listProgramMachines",
+        "request_type": "ListAppMachsInput",
+        "surface": "signed-shell-action",
+        "transport": "TCP/WebSocket/federation adapters"
+      },
+      {
+        "path": "/machines/openVmTerminal",
+        "request_type": "VmTerminalInput",
+        "surface": "signed-shell-action",
+        "transport": "TCP/WebSocket/federation adapters"
+      },
+      {
+        "path": "/machines/readMachineBuilds",
+        "request_type": "MachineBuildsInput",
+        "surface": "signed-shell-action",
+        "transport": "TCP/WebSocket/federation adapters"
+      },
+      {
+        "path": "/machines/readVmLogs",
+        "request_type": "ReadVmLogsInput",
+        "surface": "signed-shell-action",
+        "transport": "TCP/WebSocket/federation adapters"
+      },
+      {
+        "path": "/programs/create",
+        "request_type": "CreateMachineInput",
+        "surface": "signed-shell-action",
+        "transport": "TCP/WebSocket/federation adapters"
+      },
+      {
+        "path": "/programs/delete",
+        "request_type": "DeleteProgramInput",
+        "surface": "signed-shell-action",
+        "transport": "TCP/WebSocket/federation adapters"
+      },
+      {
+        "path": "/programs/deleteEntity",
+        "request_type": "RunProgramEntityInput",
+        "surface": "signed-shell-action",
+        "transport": "TCP/WebSocket/federation adapters"
+      },
+      {
+        "path": "/programs/deploy",
+        "request_type": "DeployInput",
+        "surface": "signed-shell-action",
+        "transport": "TCP/WebSocket/federation adapters"
+      },
+      {
+        "path": "/programs/downloadEntity",
+        "request_type": "DownloadEntityInput",
+        "surface": "signed-shell-action",
+        "transport": "TCP/WebSocket/federation adapters"
+      },
+      {
+        "path": "/programs/list",
+        "request_type": "ListInput",
+        "surface": "signed-shell-action",
+        "transport": "TCP/WebSocket/federation adapters"
+      },
+      {
+        "path": "/programs/runEntity",
+        "request_type": "RunProgramEntityInput",
+        "surface": "signed-shell-action",
+        "transport": "TCP/WebSocket/federation adapters"
+      },
+      {
+        "path": "/programs/stopEntity",
+        "request_type": "RunProgramEntityInput",
+        "surface": "signed-shell-action",
+        "transport": "TCP/WebSocket/federation adapters"
+      },
+      {
+        "path": "/programs/update",
+        "request_type": "UpdateProgramInput",
+        "surface": "signed-shell-action",
+        "transport": "TCP/WebSocket/federation adapters"
+      },
+      {
+        "path": "/storage/upload",
+        "request_type": "StorageUploadInput",
+        "surface": "signed-shell-action",
+        "transport": "TCP/WebSocket/federation adapters"
+      },
+      {
+        "path": "/stores/getAccess",
+        "request_type": "GetAccessInput",
+        "surface": "signed-shell-action",
+        "transport": "TCP/WebSocket/federation adapters"
+      },
+      {
+        "path": "/stores/history",
+        "request_type": "HistoryInput",
+        "surface": "signed-shell-action",
+        "transport": "TCP/WebSocket/federation adapters"
+      },
+      {
+        "path": "/stores/setAccess",
+        "request_type": "SetAccessInput",
+        "surface": "signed-shell-action",
+        "transport": "TCP/WebSocket/federation adapters"
+      },
+      {
+        "path": "/stores/signal",
+        "request_type": "SignalInput",
+        "surface": "signed-shell-action",
+        "transport": "TCP/WebSocket/federation adapters"
+      }
+    ]
+  },
+  "persistence": {
+    "cluster_rocksdb": {
+      "column_families": [
+        "meta",
+        "logs",
+        "sm"
+      ],
+      "database": "OpenRaft RocksDB",
+      "log_key": "big-endian u64 log index in logs column family",
+      "metadata_keys": [
+        "committed",
+        "last_purged",
+        "vote"
+      ],
+      "path": "<storage_root>/cluster/raft-db",
+      "serialization": "JSON values; binary log keys"
+    },
+    "core_objects": [
+      {
+        "columns": [
+          "id",
+          "storeId"
+        ],
+        "object_type": "Chain",
+        "physical_pattern": "obj::Chain::{id}::{column}",
+        "rust_type": "Chain"
+      },
+      {
+        "columns": [
+          "id",
+          "workChainId"
+        ],
+        "object_type": "ChainShard",
+        "physical_pattern": "obj::ChainShard::{id}::{column}",
+        "rust_type": "ChainShard"
+      },
+      {
+        "columns": [
+          "balance",
+          "chainId",
+          "ownerId",
+          "publicKey",
+          "subchainId",
+          "type",
+          "username"
+        ],
+        "object_type": "Creature",
+        "physical_pattern": "obj::Creature::{id}::{column}",
+        "rust_type": "Creature"
+      },
+      {
+        "columns": [
+          "entityId",
+          "entityType",
+          "imageName",
+          "programId"
+        ],
+        "object_type": "Entity",
+        "physical_pattern": "obj::Entity::{id}::{column}",
+        "rust_type": "Entity"
+      },
+      {
+        "columns": [
+          "ownerId",
+          "storeId"
+        ],
+        "object_type": "File",
+        "physical_pattern": "obj::File::{id}::{column}",
+        "rust_type": "File"
+      },
+      {
+        "columns": [
+          "comment",
+          "id",
+          "machineId",
+          "path",
+          "runtime"
+        ],
+        "object_type": "Program",
+        "physical_pattern": "obj::Program::{id}::{column}",
+        "rust_type": "Program"
+      },
+      {
+        "columns": [
+          "userId"
+        ],
+        "object_type": "Session",
+        "physical_pattern": "obj::Session::{id}::{column}",
+        "rust_type": "Session"
+      },
+      {
+        "columns": [
+          "isPublic",
+          "memberCount",
+          "parentId",
+          "persHist",
+          "signalCount",
+          "tag"
+        ],
+        "object_type": "Store",
+        "physical_pattern": "obj::Store::{id}::{column}",
+        "rust_type": "Store"
+      }
+    ],
+    "hashgraph_rocksdb": [
+      {
+        "database": "separate Hashgraph RocksDB",
+        "family": "repertoire",
+        "physical_pattern": "rep_{public_key}",
+        "value_shape": "Peer marshal bytes"
+      },
+      {
+        "database": "separate Hashgraph RocksDB",
+        "family": "peer-set",
+        "physical_pattern": "peerset_{round:09}",
+        "value_shape": "PeerSet marshal bytes"
+      },
+      {
+        "database": "separate Hashgraph RocksDB",
+        "family": "topological-event",
+        "physical_pattern": "topo_{index:09}",
+        "value_shape": "Event marshal bytes"
+      },
+      {
+        "database": "separate Hashgraph RocksDB",
+        "family": "participant-event",
+        "physical_pattern": "{participant}__event_{index:09}",
+        "value_shape": "Event marshal bytes"
+      },
+      {
+        "database": "separate Hashgraph RocksDB",
+        "family": "participant-root",
+        "physical_pattern": "{participant}_root",
+        "value_shape": "Root marshal bytes"
+      },
+      {
+        "database": "separate Hashgraph RocksDB",
+        "family": "round",
+        "physical_pattern": "round_{index:09}",
+        "value_shape": "RoundInfo marshal bytes"
+      },
+      {
+        "database": "separate Hashgraph RocksDB",
+        "family": "block",
+        "physical_pattern": "block_{index:09}",
+        "value_shape": "Block marshal bytes"
+      },
+      {
+        "database": "separate Hashgraph RocksDB",
+        "family": "frame",
+        "physical_pattern": "frame_{index:09}",
+        "value_shape": "Frame marshal bytes; retention applies"
+      }
+    ],
+    "physical_layouts": [
+      {
+        "family": "object-column",
+        "pattern": "obj::{type}::{object_id}::{column}"
+      },
+      {
+        "family": "secondary-index",
+        "pattern": "index::{type}::{from_column}::{to_column}::{from_value}"
+      },
+      {
+        "family": "link",
+        "pattern": "link::{logical_key}"
+      },
+      {
+        "family": "json-document-and-leaves",
+        "pattern": "json::{logical_key}::{path}[.{descendant_path}]"
+      },
+      {
+        "family": "raw",
+        "pattern": "caller-defined byte/string key"
+      }
+    ],
+    "questdb_tables": [
+      {
+        "columns": [
+          {
+            "name": "id",
+            "type": "text"
+          },
+          {
+            "name": "build_id",
+            "type": "text"
+          },
+          {
+            "name": "machine_id",
+            "type": "text"
+          },
+          {
+            "name": "vm_id",
+            "type": "text"
+          },
+          {
+            "name": "log_type",
+            "type": "text"
+          },
+          {
+            "name": "data",
+            "type": "text"
+          },
+          {
+            "name": "time",
+            "type": "bigint"
+          }
+        ],
+        "name": "buildlogs",
+        "operations": [
+          {
+            "kind": "INSERT"
+          },
+          {
+            "kind": "SELECT"
+          },
+          {
+            "kind": "SELECT"
+          }
+        ]
+      },
+      {
+        "columns": [
+          {
+            "name": "id",
+            "type": "text"
+          },
+          {
+            "name": "store_id",
+            "type": "text"
+          },
+          {
+            "name": "user_id",
+            "type": "text"
+          },
+          {
+            "name": "data",
+            "type": "text"
+          },
+          {
+            "name": "tags",
+            "type": "text"
+          },
+          {
+            "name": "time",
+            "type": "bigint"
+          },
+          {
+            "name": "edited",
+            "type": "boolean"
+          }
+        ],
+        "name": "storage",
+        "operations": [
+          {
+            "kind": "SELECT"
+          },
+          {
+            "kind": "SELECT"
+          },
+          {
+            "kind": "INSERT"
+          },
+          {
+            "kind": "UPDATE"
+          },
+          {
+            "kind": "SELECT"
+          },
+          {
+            "kind": "SELECT"
+          }
+        ]
+      }
+    ]
+  },
+  "runtimes": {
+    "providers": [
+      {
+        "aliases": [],
+        "artifact_extensions": [],
+        "default_runtime": false,
+        "enabled_in_generated_aggregator": true,
+        "in_process": false,
+        "key": "docker",
+        "name": "Docker Containers",
+        "operations": {
+          "build_delete_request": "override",
+          "build_image": "override",
+          "build_terminate_request": "override",
+          "copy_from_vm": "inherited-default",
+          "copy_to_vm": "override",
+          "create": "inherited-default",
+          "delete_vm": "override",
+          "destroy": "inherited-default",
+          "detect": "inherited-default",
+          "exec_vm": "override",
+          "forward_http": "override",
+          "identify_instance_by_ip": "override",
+          "init": "inherited-default",
+          "meta": "override",
+          "pause": "inherited-default",
+          "plan_delete_entity": "inherited-default",
+          "plan_run_entity": "override",
+          "plan_stop_entity": "override",
+          "restore": "inherited-default",
+          "resume": "inherited-default",
+          "run_vm": "override",
+          "start": "inherited-default",
+          "status_vm": "override",
+          "stop": "inherited-default",
+          "terminate_vm": "override",
+          "verify_program_execution": "inherited-default",
+          "vm_endpoints": "inherited-default"
+        },
+        "overrides": [
+          "build_delete_request",
+          "build_image",
+          "build_terminate_request",
+          "copy_to_vm",
+          "delete_vm",
+          "exec_vm",
+          "forward_http",
+          "identify_instance_by_ip",
+          "meta",
+          "plan_run_entity",
+          "plan_stop_entity",
+          "run_vm",
+          "status_vm",
+          "terminate_vm"
+        ],
+        "provides_program_verification": false,
+        "restorable": true,
+        "supports_chain_transactions": false,
+        "version": "0.1.0"
+      },
+      {
+        "aliases": [
+          "elpian_vm"
+        ],
+        "artifact_extensions": [
+          ".elpian.json"
+        ],
+        "default_runtime": false,
+        "enabled_in_generated_aggregator": true,
+        "in_process": true,
+        "key": "elpian",
+        "name": "Elpian AST VM",
+        "operations": {
+          "build_delete_request": "inherited-default",
+          "build_image": "inherited-default",
+          "build_terminate_request": "inherited-default",
+          "copy_from_vm": "inherited-default",
+          "copy_to_vm": "inherited-default",
+          "create": "inherited-default",
+          "delete_vm": "override",
+          "destroy": "inherited-default",
+          "detect": "inherited-default",
+          "exec_vm": "override",
+          "forward_http": "inherited-default",
+          "identify_instance_by_ip": "inherited-default",
+          "init": "inherited-default",
+          "meta": "override",
+          "pause": "inherited-default",
+          "plan_delete_entity": "inherited-default",
+          "plan_run_entity": "inherited-default",
+          "plan_stop_entity": "inherited-default",
+          "restore": "inherited-default",
+          "resume": "inherited-default",
+          "run_vm": "override",
+          "start": "inherited-default",
+          "status_vm": "inherited-default",
+          "stop": "inherited-default",
+          "terminate_vm": "override",
+          "verify_program_execution": "inherited-default",
+          "vm_endpoints": "inherited-default"
+        },
+        "overrides": [
+          "delete_vm",
+          "exec_vm",
+          "meta",
+          "run_vm",
+          "terminate_vm"
+        ],
+        "provides_program_verification": false,
+        "restorable": false,
+        "supports_chain_transactions": false,
+        "version": "0.1.0"
+      },
+      {
+        "aliases": [
+          "masm"
+        ],
+        "artifact_extensions": [
+          ".masm"
+        ],
+        "default_runtime": false,
+        "enabled_in_generated_aggregator": true,
+        "in_process": true,
+        "key": "elpify",
+        "name": "Elpify Provable VM",
+        "operations": {
+          "build_delete_request": "inherited-default",
+          "build_image": "override",
+          "build_terminate_request": "inherited-default",
+          "copy_from_vm": "inherited-default",
+          "copy_to_vm": "inherited-default",
+          "create": "inherited-default",
+          "delete_vm": "override",
+          "destroy": "inherited-default",
+          "detect": "inherited-default",
+          "exec_vm": "override",
+          "forward_http": "inherited-default",
+          "identify_instance_by_ip": "inherited-default",
+          "init": "inherited-default",
+          "meta": "override",
+          "pause": "inherited-default",
+          "plan_delete_entity": "inherited-default",
+          "plan_run_entity": "inherited-default",
+          "plan_stop_entity": "inherited-default",
+          "restore": "inherited-default",
+          "resume": "inherited-default",
+          "run_vm": "override",
+          "start": "inherited-default",
+          "status_vm": "inherited-default",
+          "stop": "inherited-default",
+          "terminate_vm": "override",
+          "verify_program_execution": "override",
+          "vm_endpoints": "inherited-default"
+        },
+        "overrides": [
+          "build_image",
+          "delete_vm",
+          "exec_vm",
+          "meta",
+          "run_vm",
+          "terminate_vm",
+          "verify_program_execution"
+        ],
+        "provides_program_verification": true,
+        "restorable": false,
+        "supports_chain_transactions": false,
+        "version": "0.1.0"
+      },
+      {
+        "aliases": [
+          "firecracker"
+        ],
+        "artifact_extensions": [],
+        "default_runtime": false,
+        "enabled_in_generated_aggregator": true,
+        "in_process": true,
+        "key": "fire",
+        "name": "Firecracker microVM",
+        "operations": {
+          "build_delete_request": "inherited-default",
+          "build_image": "override",
+          "build_terminate_request": "inherited-default",
+          "copy_from_vm": "inherited-default",
+          "copy_to_vm": "override",
+          "create": "inherited-default",
+          "delete_vm": "override",
+          "destroy": "inherited-default",
+          "detect": "inherited-default",
+          "exec_vm": "override",
+          "forward_http": "inherited-default",
+          "identify_instance_by_ip": "inherited-default",
+          "init": "inherited-default",
+          "meta": "override",
+          "pause": "inherited-default",
+          "plan_delete_entity": "inherited-default",
+          "plan_run_entity": "inherited-default",
+          "plan_stop_entity": "inherited-default",
+          "restore": "inherited-default",
+          "resume": "inherited-default",
+          "run_vm": "override",
+          "start": "inherited-default",
+          "status_vm": "inherited-default",
+          "stop": "inherited-default",
+          "terminate_vm": "override",
+          "verify_program_execution": "inherited-default",
+          "vm_endpoints": "inherited-default"
+        },
+        "overrides": [
+          "build_image",
+          "copy_to_vm",
+          "delete_vm",
+          "exec_vm",
+          "meta",
+          "run_vm",
+          "terminate_vm"
+        ],
+        "provides_program_verification": false,
+        "restorable": true,
+        "supports_chain_transactions": false,
+        "version": "0.1.0"
+      },
+      {
+        "aliases": [
+          "quickjs",
+          "js"
+        ],
+        "artifact_extensions": [
+          ".js"
+        ],
+        "default_runtime": false,
+        "enabled_in_generated_aggregator": true,
+        "in_process": true,
+        "key": "javascript",
+        "name": "JavaScript VM",
+        "operations": {
+          "build_delete_request": "inherited-default",
+          "build_image": "override",
+          "build_terminate_request": "inherited-default",
+          "copy_from_vm": "inherited-default",
+          "copy_to_vm": "inherited-default",
+          "create": "inherited-default",
+          "delete_vm": "override",
+          "destroy": "inherited-default",
+          "detect": "inherited-default",
+          "exec_vm": "override",
+          "forward_http": "inherited-default",
+          "identify_instance_by_ip": "inherited-default",
+          "init": "inherited-default",
+          "meta": "override",
+          "pause": "inherited-default",
+          "plan_delete_entity": "inherited-default",
+          "plan_run_entity": "override",
+          "plan_stop_entity": "inherited-default",
+          "restore": "inherited-default",
+          "resume": "inherited-default",
+          "run_vm": "override",
+          "start": "inherited-default",
+          "status_vm": "override",
+          "stop": "inherited-default",
+          "terminate_vm": "override",
+          "verify_program_execution": "inherited-default",
+          "vm_endpoints": "inherited-default"
+        },
+        "overrides": [
+          "build_image",
+          "delete_vm",
+          "exec_vm",
+          "meta",
+          "plan_run_entity",
+          "run_vm",
+          "status_vm",
+          "terminate_vm"
+        ],
+        "provides_program_verification": false,
+        "restorable": false,
+        "supports_chain_transactions": true,
+        "version": "0.2.0"
+      },
+      {
+        "aliases": [
+          "modalsandbox",
+          "modal-sandbox"
+        ],
+        "artifact_extensions": [],
+        "default_runtime": false,
+        "enabled_in_generated_aggregator": true,
+        "in_process": false,
+        "key": "modal",
+        "name": "Modal Sandboxes",
+        "operations": {
+          "build_delete_request": "inherited-default",
+          "build_image": "override",
+          "build_terminate_request": "override",
+          "copy_from_vm": "override",
+          "copy_to_vm": "override",
+          "create": "inherited-default",
+          "delete_vm": "override",
+          "destroy": "inherited-default",
+          "detect": "inherited-default",
+          "exec_vm": "override",
+          "forward_http": "override",
+          "identify_instance_by_ip": "override",
+          "init": "inherited-default",
+          "meta": "override",
+          "pause": "inherited-default",
+          "plan_delete_entity": "inherited-default",
+          "plan_run_entity": "override",
+          "plan_stop_entity": "override",
+          "restore": "override",
+          "resume": "inherited-default",
+          "run_vm": "override",
+          "start": "inherited-default",
+          "status_vm": "override",
+          "stop": "inherited-default",
+          "terminate_vm": "override",
+          "verify_program_execution": "inherited-default",
+          "vm_endpoints": "override"
+        },
+        "overrides": [
+          "build_image",
+          "build_terminate_request",
+          "copy_from_vm",
+          "copy_to_vm",
+          "delete_vm",
+          "exec_vm",
+          "forward_http",
+          "identify_instance_by_ip",
+          "meta",
+          "plan_run_entity",
+          "plan_stop_entity",
+          "restore",
+          "run_vm",
+          "status_vm",
+          "terminate_vm",
+          "vm_endpoints"
+        ],
+        "provides_program_verification": false,
+        "restorable": true,
+        "supports_chain_transactions": false,
+        "version": "0.1.0"
+      },
+      {
+        "aliases": [],
+        "artifact_extensions": [
+          ".wasm"
+        ],
+        "default_runtime": true,
+        "enabled_in_generated_aggregator": true,
+        "in_process": true,
+        "key": "wasm",
+        "name": "WasmEdge WebAssembly VM",
+        "operations": {
+          "build_delete_request": "inherited-default",
+          "build_image": "override",
+          "build_terminate_request": "inherited-default",
+          "copy_from_vm": "inherited-default",
+          "copy_to_vm": "inherited-default",
+          "create": "inherited-default",
+          "delete_vm": "override",
+          "destroy": "inherited-default",
+          "detect": "inherited-default",
+          "exec_vm": "override",
+          "forward_http": "inherited-default",
+          "identify_instance_by_ip": "inherited-default",
+          "init": "inherited-default",
+          "meta": "override",
+          "pause": "inherited-default",
+          "plan_delete_entity": "inherited-default",
+          "plan_run_entity": "override",
+          "plan_stop_entity": "inherited-default",
+          "restore": "inherited-default",
+          "resume": "inherited-default",
+          "run_vm": "override",
+          "start": "inherited-default",
+          "status_vm": "inherited-default",
+          "stop": "inherited-default",
+          "terminate_vm": "override",
+          "verify_program_execution": "inherited-default",
+          "vm_endpoints": "inherited-default"
+        },
+        "overrides": [
+          "build_image",
+          "delete_vm",
+          "exec_vm",
+          "meta",
+          "plan_run_entity",
+          "run_vm",
+          "terminate_vm"
+        ],
+        "provides_program_verification": false,
+        "restorable": false,
+        "supports_chain_transactions": true,
+        "version": "0.1.0"
+      }
+    ],
+    "trait_operations": [
+      "build_delete_request",
+      "build_image",
+      "build_terminate_request",
+      "copy_from_vm",
+      "copy_to_vm",
+      "create",
+      "delete_vm",
+      "destroy",
+      "detect",
+      "exec_vm",
+      "forward_http",
+      "identify_instance_by_ip",
+      "init",
+      "meta",
+      "pause",
+      "plan_delete_entity",
+      "plan_run_entity",
+      "plan_stop_entity",
+      "restore",
+      "resume",
+      "run_vm",
+      "start",
+      "status_vm",
+      "stop",
+      "terminate_vm",
+      "verify_program_execution",
+      "vm_endpoints"
+    ]
+  }
+}

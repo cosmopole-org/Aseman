@@ -1,0 +1,13 @@
+{
+  "operation": "create_table",
+  "provider_id": "attacker_provider",
+  "database_name": "another_creature",
+  "role_name": "another_role",
+  "definition": {
+    "name": "escape",
+    "columns": {},
+    "primary_key": [],
+    "indexes": [],
+    "foreign_keys": []
+  }
+}

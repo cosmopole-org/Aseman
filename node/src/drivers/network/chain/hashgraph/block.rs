@@ -468,8 +468,16 @@ mod tests {
         assert_eq!(block.round_received(), frame.round, "block round received");
 
         let frame_hash = frame.hash().unwrap();
-        assert_eq!(block.frame_hash(), frame_hash.as_slice(), "block frame hash");
-        assert_eq!(block.transactions(), transactions.as_slice(), "block transactions");
+        assert_eq!(
+            block.frame_hash(),
+            frame_hash.as_slice(),
+            "block frame hash"
+        );
+        assert_eq!(
+            block.transactions(),
+            transactions.as_slice(),
+            "block transactions"
+        );
         assert_eq!(
             block.internal_transactions(),
             internal_transactions.as_slice(),

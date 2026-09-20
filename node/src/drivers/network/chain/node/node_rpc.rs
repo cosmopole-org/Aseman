@@ -82,9 +82,7 @@ impl Node {
     pub fn process_rpc(&self, rpc: Rpc) {
         let is_sync_request = matches!(rpc.command, RpcCommand::Sync(_));
         let state = self.manager.get_state();
-        if !(state == State::Babbling
-            || (state == State::Suspended && is_sync_request))
-        {
+        if !(state == State::Babbling || (state == State::Suspended && is_sync_request)) {
             self.logger
                 .with_field("state", state.to_string())
                 .debug("Not in Babbling state");
@@ -246,8 +244,7 @@ impl Node {
                         peers = resp.peers;
                     }
                     Err(_) => {
-                        let msg =
-                            "Timeout waiting for JoinRequest to go through consensus";
+                        let msg = "Timeout waiting for JoinRequest to go through consensus";
                         self.logger.error(msg);
                         resp_err = Some(msg.to_string());
                     }

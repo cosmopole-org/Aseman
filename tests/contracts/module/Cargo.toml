@@ -1,0 +1,15 @@
+[package]
+name = "aseman-module-conformance"
+description = "Reusable wire and manifest conformance kit for Aseman modules."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+aseman-contracts = { path = "../../../crates/aseman-contracts" }
+aseman-module-runtime = { path = "../../../crates/aseman-module-runtime" }
+
+[lints]
+workspace = true

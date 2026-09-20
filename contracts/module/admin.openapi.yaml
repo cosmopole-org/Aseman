@@ -1,0 +1,58 @@
+openapi: 3.1.0
+info:
+  title: Aseman module administration API
+  version: 1.0.0
+paths:
+  /v1/admin/modules:
+    get:
+      operationId: listModules
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200': { description: Installed modules and routing generation }
+  /v1/admin/modules/trust:
+    post:
+      operationId: enrollModulePublisher
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200': { description: Publisher enrolled }
+  /v1/admin/modules/install:
+    post:
+      operationId: installModule
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200': { description: Signed artifact verified and cached }
+        '501': { description: Cluster placement is not composed }
+  /v1/admin/modules/{moduleKey}:
+    get:
+      operationId: inspectModule
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: moduleKey
+          required: true
+          schema: { type: string, pattern: '^[A-Za-z0-9._@-]+$' }
+      responses:
+        '200': { description: Module lifecycle status }
+  /v1/admin/modules/{moduleKey}/{operation}:
+    post:
+      operationId: changeModuleLifecycle
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: moduleKey
+          required: true
+          schema: { type: string, pattern: '^[A-Za-z0-9._@-]+$' }
+        - in: path
+          name: operation
+          required: true
+          schema:
+            type: string
+            enum: [configure, validate, stage, activate, drain, rollback]
+      responses:
+        '200': { description: Lifecycle operation accepted }
+        '409': { description: Unsafe lifecycle transition rejected }
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer

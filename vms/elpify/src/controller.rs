@@ -65,8 +65,8 @@ impl VmPlugin for ElpifyVmController {
                     // Encode the (tens-of-KB) STARK proof as base64 rather
                     // than a JSON number array — a single scalar survives
                     // wasm round-trips cheaply.
-                    let proof_b64 = base64::engine::general_purpose::STANDARD
-                        .encode(&artifacts.proof_bytes);
+                    let proof_b64 =
+                        base64::engine::general_purpose::STANDARD.encode(&artifacts.proof_bytes);
                     Ok(json!({
                         "ok": true,
                         "runtime": "elpify",

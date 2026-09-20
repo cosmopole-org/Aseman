@@ -80,10 +80,7 @@ impl Vmm {
         let (creature_id, owner_user_id) = self.resolve_vm_ownership(&vm_id);
         let packet = self.storage.log_vm(&vm_id, &log_type, &data, time_val);
         if !owner_user_id.is_empty() {
-            let key = format!(
-                "VmTerminal::{}::{}::{}",
-                creature_id, vm_id, owner_user_id
-            );
+            let key = format!("VmTerminal::{}::{}::{}", creature_id, vm_id, owner_user_id);
             let terminal_slot = Arc::new(Mutex::new(false));
             let term_clone = terminal_slot.clone();
             let key_owned = key.clone();

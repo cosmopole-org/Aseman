@@ -1,0 +1,57 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://aseman.example/contracts/migration/capsule-export.schema.json",
+  "title": "Canonical capsule export stream metadata",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["header", "records", "trailer"],
+  "properties": {
+    "header": {"$ref": "#/$defs/header"},
+    "records": {"type": "array", "items": {"$ref": "#/$defs/record"}},
+    "trailer": {"$ref": "#/$defs/trailer"}
+  },
+  "$defs": {
+    "bytes": {"type": "array", "items": {"type": "integer", "minimum": 0, "maximum": 255}},
+    "digest": {"type": "array", "minItems": 32, "maxItems": 32, "items": {"type": "integer", "minimum": 0, "maximum": 255}},
+    "header": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["format_version", "source_provider", "source_snapshot_id", "transform_manifest_digest", "created_at_micros"],
+      "properties": {
+        "format_version": {"const": 1},
+        "source_provider": {"type": "string", "minLength": 1, "maxLength": 128},
+        "source_snapshot_id": {"type": "string", "minLength": 1, "maxLength": 256},
+        "transform_manifest_digest": {"$ref": "#/$defs/digest"},
+        "created_at_micros": {"type": "integer"}
+      }
+    },
+    "record": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["sequence", "capsule_cbor"],
+      "properties": {
+        "sequence": {"type": "integer", "minimum": 0},
+        "capsule_cbor": {"$ref": "#/$defs/bytes"}
+      }
+    },
+    "trailer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["record_count", "stream_digest"],
+      "properties": {
+        "record_count": {"type": "integer", "minimum": 0},
+        "stream_digest": {"$ref": "#/$defs/digest"}
+      }
+    },
+    "checkpoint": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["next_sequence", "record_count", "stream_digest"],
+      "properties": {
+        "next_sequence": {"type": "integer", "minimum": 0},
+        "record_count": {"type": "integer", "minimum": 0},
+        "stream_digest": {"$ref": "#/$defs/digest"}
+      }
+    }
+  }
+}

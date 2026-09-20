@@ -1,5 +1,5 @@
-use crate::drivers::vmm::prelude::*;
 use crate::drivers::vmm::network::gateway::VmGatewayService;
+use crate::drivers::vmm::prelude::*;
 
 pub(crate) fn handle_gateway_control_api(packet: &JsonValue) -> Result<JsonValue, String> {
     let api = packet["api"].as_str().unwrap_or("");

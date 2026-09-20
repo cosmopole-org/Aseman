@@ -118,8 +118,7 @@ impl Manager {
 
     /// Waits for all background tasks to complete.
     pub fn wait_routines(&self) {
-        let handles: Vec<JoinHandle<()>> =
-            std::mem::take(&mut *self.handles.lock().unwrap());
+        let handles: Vec<JoinHandle<()>> = std::mem::take(&mut *self.handles.lock().unwrap());
         for h in handles {
             let _ = h.join();
         }

@@ -52,13 +52,7 @@ pub trait IStorage: Send + Sync {
     /// "this store has nothing to say" must not look the same to a reader.
     fn read_store_logs(&self, store_id: &str, query: &LogQuery) -> Result<Vec<LogPacket>>;
     fn pick_store_logs(&self, store_id: &str, ids: Vec<String>) -> Vec<LogPacket>;
-    fn log_vm(
-        &self,
-        vm_id: &str,
-        log_type: &str,
-        data: &str,
-        time_val: i64,
-    ) -> BuildPacket;
+    fn log_vm(&self, vm_id: &str, log_type: &str, data: &str, time_val: i64) -> BuildPacket;
     fn read_vm_logs(
         &self,
         vm_id: &str,

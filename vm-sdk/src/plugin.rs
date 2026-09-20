@@ -222,10 +222,7 @@ pub trait VmPlugin: Send + Sync {
         if let Some(input) = plan["input"].as_object_mut() {
             input.insert("purge".to_string(), Value::Bool(true));
             input.insert("delete".to_string(), Value::Bool(true));
-            input.insert(
-                "programId".to_string(),
-                ctx["programId"].clone(),
-            );
+            input.insert("programId".to_string(), ctx["programId"].clone());
         }
         Ok(plan)
     }
@@ -323,7 +320,11 @@ pub trait VmPlugin: Send + Sync {
 pub fn forward_http_via_signal(packet: &Value) -> Result<Value, String> {
     let host = crate::host::host_or_err()?;
 
-    let program_id = packet["programId"].as_str().unwrap_or("").trim().to_string();
+    let program_id = packet["programId"]
+        .as_str()
+        .unwrap_or("")
+        .trim()
+        .to_string();
     if program_id.is_empty() {
         return Err("forward_http requires a programId".to_string());
     }

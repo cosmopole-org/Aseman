@@ -1,0 +1,885 @@
+{
+  "$id": "https://aseman.example/contracts/config/aseman-config.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "Canonical typed configuration keys. Secret fields contain secret references, never secret values in persisted config.",
+  "properties": {
+    "ASEMAN_BABBLE_FRAME_CACHE": {
+      "description": "Typed replacement for legacy CASPAR_BABBLE_FRAME_CACHE (application).",
+      "type": "string",
+      "x-legacy-aliases": [
+        "CASPAR_BABBLE_FRAME_CACHE"
+      ]
+    },
+    "ASEMAN_BABBLE_FRAME_RETENTION": {
+      "description": "Typed replacement for legacy CASPAR_BABBLE_FRAME_RETENTION (application).",
+      "type": "string",
+      "x-legacy-aliases": [
+        "CASPAR_BABBLE_FRAME_RETENTION"
+      ]
+    },
+    "ASEMAN_CLUSTER_TOKEN": {
+      "description": "Typed replacement for legacy CASPAR_CLUSTER_TOKEN (secret-or-sensitive).",
+      "type": "string",
+      "writeOnly": true,
+      "x-legacy-aliases": [
+        "CASPAR_CLUSTER_TOKEN"
+      ],
+      "x-secret-reference": true
+    },
+    "ASEMAN_DOCKER_DISK_QUOTA": {
+      "description": "Typed replacement for legacy CASPAR_DOCKER_DISK_QUOTA (application).",
+      "type": "string",
+      "x-legacy-aliases": [
+        "CASPAR_DOCKER_DISK_QUOTA"
+      ]
+    },
+    "ASEMAN_DOCKER_RUNTIME": {
+      "description": "Typed replacement for legacy CASPAR_DOCKER_RUNTIME (application).",
+      "type": "string",
+      "x-legacy-aliases": [
+        "CASPAR_DOCKER_RUNTIME"
+      ]
+    },
+    "ASEMAN_GATEWAY_NETWORK": {
+      "description": "Typed replacement for legacy CASPAR_GATEWAY_NETWORK (application).",
+      "type": "string",
+      "x-legacy-aliases": [
+        "CASPAR_GATEWAY_NETWORK"
+      ]
+    },
+    "ASEMAN_HOST": {
+      "description": "Typed replacement for legacy CASPAR_HOST (network).",
+      "type": "string",
+      "x-legacy-aliases": [
+        "CASPAR_HOST"
+      ]
+    },
+    "ASEMAN_INSECURE": {
+      "description": "Typed replacement for legacy CASPAR_INSECURE (application).",
+      "type": "string",
+      "x-legacy-aliases": [
+        "CASPAR_INSECURE"
+      ]
+    },
+    "ASEMAN_LEGACY_APPLET_DB_PATH": {
+      "description": "Typed replacement for legacy APPLET_DB_PATH (runtime-or-storage).",
+      "type": "string",
+      "x-legacy-aliases": [
+        "APPLET_DB_PATH"
+      ]
+    },
+    "ASEMAN_LEGACY_BABBLE_DATA_DIR": {
+      "description": "Typed replacement for legacy BABBLE_DATA_DIR (runtime-or-storage).",
+      "type": "string",
+      "x-legacy-aliases": [
+        "BABBLE_DATA_DIR"
+      ]
+    },
+    "ASEMAN_LEGACY_BABBLE_DIR": {
+      "description": "Typed replacement for legacy BABBLE_DIR (runtime-or-storage).",
+      "type": "string",
+      "x-legacy-aliases": [
+        "BABBLE_DIR"
+      ]
+    },
+    "ASEMAN_LEGACY_BASE_DB_PATH": {
+      "description": "Typed replacement for legacy BASE_DB_PATH (runtime-or-storage).",
+      "type": "string",
+      "x-legacy-aliases": [
+        "BASE_DB_PATH"
+      ]
+    },
+    "ASEMAN_LEGACY_CASPARCTL_CLUSTER_ENDPOINT": {
+      "description": "Typed replacement for legacy CASPARCTL_CLUSTER_ENDPOINT (network).",
+      "type": "string",
+      "x-legacy-aliases": [
+        "CASPARCTL_CLUSTER_ENDPOINT"
+      ]
+    },
+    "ASEMAN_LEGACY_CASPARCTL_PPROF": {
+      "description": "Typed replacement for legacy CASPARCTL_PPROF (runtime-or-storage).",
+      "type": "string",
+      "x-legacy-aliases": [
+        "CASPARCTL_PPROF"
+      ]
+    },
+    "ASEMAN_LEGACY_CASPARCTL_TELEMETRY": {
+      "description": "Typed replacement for legacy CASPARCTL_TELEMETRY (runtime-or-storage).",
+      "type": "string",
+      "x-legacy-aliases": [
+        "CASPARCTL_TELEMETRY"
+      ]
+    },
+    "ASEMAN_LEGACY_CLUSTER_ADVERTISE_ADDR": {
+      "description": "Typed replacement for legacy CLUSTER_ADVERTISE_ADDR (network).",
+      "type": "string",
+      "x-legacy-aliases": [
+        "CLUSTER_ADVERTISE_ADDR"
+      ]
+    },
+    "ASEMAN_LEGACY_CLUSTER_AUTH_TOKEN": {
+      "description": "Typed replacement for legacy CLUSTER_AUTH_TOKEN (secret-or-sensitive).",
+      "type": "string",
+      "writeOnly": true,
+      "x-legacy-aliases": [
+        "CLUSTER_AUTH_TOKEN"
+      ],
+      "x-secret-reference": true
+    },
+    "ASEMAN_LEGACY_CLUSTER_BOOTSTRAP": {
+      "description": "Typed replacement for legacy CLUSTER_BOOTSTRAP (application).",
+      "type": "string",
+      "x-legacy-aliases": [
+        "CLUSTER_BOOTSTRAP"
+      ]
+    },
+    "ASEMAN_LEGACY_CLUSTER_CONFIG_PATH": {
+      "description": "Typed replacement for legacy CLUSTER_CONFIG_PATH (application).",
+      "type": "string",
+      "x-legacy-aliases": [
+        "CLUSTER_CONFIG_PATH"
+      ]
+    },
+    "ASEMAN_LEGACY_CLUSTER_ENABLED": {
+      "description": "Typed replacement for legacy CLUSTER_ENABLED (application).",
+      "type": "boolean",
+      "x-legacy-aliases": [
+        "CLUSTER_ENABLED"
+      ]
+    },
+    "ASEMAN_LEGACY_CLUSTER_LISTEN_ADDR": {
+      "description": "Typed replacement for legacy CLUSTER_LISTEN_ADDR (network).",
+      "type": "string",
+      "x-legacy-aliases": [
+        "CLUSTER_LISTEN_ADDR"
+      ]
+    },
+    "ASEMAN_LEGACY_CLUSTER_NODE_ID": {
+      "description": "Typed replacement for legacy CLUSTER_NODE_ID (application).",
+      "type": "string",
+      "x-legacy-aliases": [
+        "CLUSTER_NODE_ID"
+      ]
+    },
+    "ASEMAN_LEGACY_CLUSTER_NODE_NAME": {
+      "description": "Typed replacement for legacy CLUSTER_NODE_NAME (application).",
+      "type": "string",
+      "x-legacy-aliases": [
+        "CLUSTER_NODE_NAME"
+      ]
+    },
+    "ASEMAN_LEGACY_CLUSTER_REGION": {
+      "description": "Typed replacement for legacy CLUSTER_REGION (application).",
+      "type": "string",
+      "x-legacy-aliases": [
+        "CLUSTER_REGION"
+      ]
+    },
+    "ASEMAN_LEGACY_CONSENSUS_PORT": {
+      "description": "Typed replacement for legacy BLOCKCHAIN_API_PORT (network).",
+      "maximum": 65535,
+      "minimum": 0,
+      "type": "integer",
+      "x-legacy-aliases": [
+        "BLOCKCHAIN_API_PORT"
+      ]
+    },
+    "ASEMAN_LEGACY_DEBIAN_FRONTEND": {
+      "description": "Typed replacement for legacy DEBIAN_FRONTEND (runtime-or-storage).",
+      "type": "string",
+      "x-legacy-aliases": [
+        "DEBIAN_FRONTEND"
+      ]
+    },
+    "ASEMAN_LEGACY_DOCKER_HOST_GATEWAY_ADVERTISE_HOST": {
+      "description": "Typed replacement for legacy DOCKER_HOST_GATEWAY_ADVERTISE_HOST (network).",
+      "type": "string",
+      "x-legacy-aliases": [
+        "DOCKER_HOST_GATEWAY_ADVERTISE_HOST"
+      ]
+    },
+    "ASEMAN_LEGACY_DOCKER_HOST_GATEWAY_PORT": {
+      "description": "Typed replacement for legacy DOCKER_HOST_GATEWAY_PORT (network).",
+      "maximum": 65535,
+      "minimum": 0,
+      "type": "integer",
+      "x-legacy-aliases": [
+        "DOCKER_HOST_GATEWAY_PORT"
+      ]
+    },
+    "ASEMAN_LEGACY_ENTITY_API_PORT": {
+      "description": "Typed replacement for legacy ENTITY_API_PORT (network).",
+      "maximum": 65535,
+      "minimum": 0,
+      "type": "integer",
+      "x-legacy-aliases": [
+        "ENTITY_API_PORT"
+      ]
+    },
+    "ASEMAN_LEGACY_FC_VERSION": {
+      "description": "Typed replacement for legacy FC_VERSION (runtime-or-storage).",
+      "type": "string",
+      "x-legacy-aliases": [
+        "FC_VERSION"
+      ]
+    },
+    "ASEMAN_LEGACY_FEDERATION_PORT": {
+      "description": "Typed replacement for legacy FEDERATION_API_PORT (network).",
+      "maximum": 65535,
+      "minimum": 0,
+      "type": "integer",
+      "x-legacy-aliases": [
+        "FEDERATION_API_PORT"
+      ]
+    },
+    "ASEMAN_LEGACY_FIRECRACKER_BIN": {
+      "description": "Typed replacement for legacy FIRECRACKER_BIN (runtime-or-storage).",
+      "type": "string",
+      "x-legacy-aliases": [
+        "FIRECRACKER_BIN"
+      ]
+    },
+    "ASEMAN_LEGACY_FIRECRACKER_BOOT_ARGS": {
+      "description": "Typed replacement for legacy FIRECRACKER_BOOT_ARGS (runtime-or-storage).",
+      "type": "string",
+      "x-legacy-aliases": [
+        "FIRECRACKER_BOOT_ARGS"
+      ]
+    },
+    "ASEMAN_LEGACY_FIRECRACKER_KERNEL_IMAGE": {
+      "description": "Typed replacement for legacy FIRECRACKER_KERNEL_IMAGE (runtime-or-storage).",
+      "type": "string",
+      "x-legacy-aliases": [
+        "FIRECRACKER_KERNEL_IMAGE"
+      ]
+    },
+    "ASEMAN_LEGACY_FIRECRACKER_ROOTFS_IMAGE": {
+      "description": "Typed replacement for legacy FIRECRACKER_ROOTFS_IMAGE (runtime-or-storage).",
+      "type": "string",
+      "x-legacy-aliases": [
+        "FIRECRACKER_ROOTFS_IMAGE"
+      ]
+    },
+    "ASEMAN_LEGACY_HOME": {
+      "description": "Typed replacement for legacy HOME (process-environment).",
+      "type": "string",
+      "x-legacy-aliases": [
+        "HOME"
+      ]
+    },
+    "ASEMAN_LEGACY_INSTALL_FIRECRACKER": {
+      "description": "Typed replacement for legacy INSTALL_FIRECRACKER (runtime-or-storage).",
+      "type": "string",
+      "x-legacy-aliases": [
+        "INSTALL_FIRECRACKER"
+      ]
+    },
+    "ASEMAN_LEGACY_IPADDR": {
+      "description": "Typed replacement for legacy IPADDR (network).",
+      "type": "string",
+      "x-legacy-aliases": [
+        "IPADDR"
+      ]
+    },
+    "ASEMAN_LEGACY_IS_HEAD": {
+      "description": "Typed replacement for legacy IS_HEAD (runtime-or-storage).",
+      "type": "string",
+      "x-legacy-aliases": [
+        "IS_HEAD"
+      ]
+    },
+    "ASEMAN_LEGACY_LD_LIBRARY_PATH": {
+      "description": "Typed replacement for legacy LD_LIBRARY_PATH (process-environment).",
+      "type": "string",
+      "x-legacy-aliases": [
+        "LD_LIBRARY_PATH"
+      ]
+    },
+    "ASEMAN_LEGACY_MAIN_PORT": {
+      "description": "Typed replacement for legacy MAIN_PORT (network).",
+      "maximum": 65535,
+      "minimum": 0,
+      "type": "integer",
+      "x-legacy-aliases": [
+        "MAIN_PORT"
+      ]
+    },
+    "ASEMAN_LEGACY_MODAL_API_KEY": {
+      "description": "Typed replacement for legacy MODAL_API_KEY (secret-or-sensitive).",
+      "type": "string",
+      "x-legacy-aliases": [
+        "MODAL_API_KEY"
+      ]
+    },
+    "ASEMAN_LEGACY_MODAL_APP_NAME": {
+      "description": "Typed replacement for legacy MODAL_APP_NAME (application).",
+      "type": "string",
+      "x-legacy-aliases": [
+        "MODAL_APP_NAME"
+      ]
+    },
+    "ASEMAN_LEGACY_MODAL_APP_PREFIX": {
+      "description": "Typed replacement for legacy MODAL_APP_PREFIX (application).",
+      "type": "string",
+      "x-legacy-aliases": [
+        "MODAL_APP_PREFIX"
+      ],
+      "x-observed-sample": "caspar"
+    },
+    "ASEMAN_LEGACY_MODAL_BUILDER_VERSION": {
+      "description": "Typed replacement for legacy MODAL_BUILDER_VERSION (application).",
+      "type": "string",
+      "x-legacy-aliases": [
+        "MODAL_BUILDER_VERSION"
+      ]
+    },
+    "ASEMAN_LEGACY_MODAL_CLIENT_VERSION": {
+      "description": "Typed replacement for legacy MODAL_CLIENT_VERSION (application).",
+      "type": "string",
+      "x-legacy-aliases": [
+        "MODAL_CLIENT_VERSION"
+      ]
+    },
+    "ASEMAN_LEGACY_MODAL_DEFAULT_IMAGE": {
+      "description": "Typed replacement for legacy MODAL_DEFAULT_IMAGE (application).",
+      "type": "string",
+      "x-legacy-aliases": [
+        "MODAL_DEFAULT_IMAGE"
+      ],
+      "x-observed-sample": "ubuntu:24.04"
+    },
+    "ASEMAN_LEGACY_MODAL_ENVIRONMENT": {
+      "description": "Typed replacement for legacy MODAL_ENVIRONMENT (application).",
+      "type": "string",
+      "x-legacy-aliases": [
+        "MODAL_ENVIRONMENT"
+      ]
+    },
+    "ASEMAN_LEGACY_MODAL_IMAGE_BUILD_TIMEOUT_SECS": {
+      "description": "Typed replacement for legacy MODAL_IMAGE_BUILD_TIMEOUT_SECS (application).",
+      "type": "string",
+      "x-legacy-aliases": [
+        "MODAL_IMAGE_BUILD_TIMEOUT_SECS"
+      ],
+      "x-observed-sample": "900"
+    },
+    "ASEMAN_LEGACY_MODAL_SANDBOX_TIMEOUT_SECS": {
+      "description": "Typed replacement for legacy MODAL_SANDBOX_TIMEOUT_SECS (application).",
+      "type": "string",
+      "x-legacy-aliases": [
+        "MODAL_SANDBOX_TIMEOUT_SECS"
+      ],
+      "x-observed-sample": "3600"
+    },
+    "ASEMAN_LEGACY_MODAL_SERVER_URL": {
+      "description": "Typed replacement for legacy MODAL_SERVER_URL (network).",
+      "type": "string",
+      "x-legacy-aliases": [
+        "MODAL_SERVER_URL"
+      ],
+      "x-observed-sample": "https://api.modal.com:443"
+    },
+    "ASEMAN_LEGACY_MODAL_TASK_READY_TIMEOUT_SECS": {
+      "description": "Typed replacement for legacy MODAL_TASK_READY_TIMEOUT_SECS (application).",
+      "type": "string",
+      "x-legacy-aliases": [
+        "MODAL_TASK_READY_TIMEOUT_SECS"
+      ]
+    },
+    "ASEMAN_LEGACY_MODAL_TOKEN_ID": {
+      "description": "Typed replacement for legacy MODAL_TOKEN_ID (secret-or-sensitive).",
+      "type": "string",
+      "writeOnly": true,
+      "x-legacy-aliases": [
+        "MODAL_TOKEN_ID"
+      ],
+      "x-secret-reference": true
+    },
+    "ASEMAN_LEGACY_MODAL_TOKEN_SECRET": {
+      "description": "Typed replacement for legacy MODAL_TOKEN_SECRET (secret-or-sensitive).",
+      "type": "string",
+      "writeOnly": true,
+      "x-legacy-aliases": [
+        "MODAL_TOKEN_SECRET"
+      ],
+      "x-secret-reference": true
+    },
+    "ASEMAN_LEGACY_MODAL_VOLUME_MOUNT_PATH": {
+      "description": "Typed replacement for legacy MODAL_VOLUME_MOUNT_PATH (application).",
+      "type": "string",
+      "x-legacy-aliases": [
+        "MODAL_VOLUME_MOUNT_PATH"
+      ],
+      "x-observed-sample": "/data"
+    },
+    "ASEMAN_LEGACY_MODAL_VOLUME_SETTLE_MS": {
+      "description": "Typed replacement for legacy MODAL_VOLUME_SETTLE_MS (application).",
+      "minimum": 0,
+      "type": "integer",
+      "x-legacy-aliases": [
+        "MODAL_VOLUME_SETTLE_MS"
+      ]
+    },
+    "ASEMAN_LEGACY_ORIGIN": {
+      "description": "Typed replacement for legacy ORIGIN (network).",
+      "type": "string",
+      "x-legacy-aliases": [
+        "ORIGIN"
+      ]
+    },
+    "ASEMAN_LEGACY_PATH": {
+      "description": "Typed replacement for legacy PATH (process-environment).",
+      "type": "string",
+      "x-legacy-aliases": [
+        "PATH"
+      ]
+    },
+    "ASEMAN_LEGACY_PPROF_PORT": {
+      "description": "Typed replacement for legacy PPROF_PORT (network).",
+      "maximum": 65535,
+      "minimum": 0,
+      "type": "integer",
+      "x-legacy-aliases": [
+        "PPROF_PORT"
+      ]
+    },
+    "ASEMAN_LEGACY_PROBE_CMD": {
+      "description": "Typed replacement for legacy PROBE_CMD (runtime-or-storage).",
+      "type": "string",
+      "x-legacy-aliases": [
+        "PROBE_CMD"
+      ]
+    },
+    "ASEMAN_LEGACY_PROBE_MACHINE_ID": {
+      "description": "Typed replacement for legacy PROBE_MACHINE_ID (runtime-or-storage).",
+      "type": "string",
+      "x-legacy-aliases": [
+        "PROBE_MACHINE_ID"
+      ]
+    },
+    "ASEMAN_LEGACY_PROBE_VM_ID": {
+      "description": "Typed replacement for legacy PROBE_VM_ID (runtime-or-storage).",
+      "type": "string",
+      "x-legacy-aliases": [
+        "PROBE_VM_ID"
+      ]
+    },
+    "ASEMAN_LEGACY_QUESTDB_DATA_DIR": {
+      "description": "Typed replacement for legacy QUESTDB_DATA_DIR (runtime-or-storage).",
+      "type": "string",
+      "x-legacy-aliases": [
+        "QUESTDB_DATA_DIR"
+      ]
+    },
+    "ASEMAN_LEGACY_QUESTDB_HTTP_MIN_PORT": {
+      "description": "Typed replacement for legacy QUESTDB_HTTP_MIN_PORT (network).",
+      "maximum": 65535,
+      "minimum": 0,
+      "type": "integer",
+      "x-legacy-aliases": [
+        "QUESTDB_HTTP_MIN_PORT"
+      ]
+    },
+    "ASEMAN_LEGACY_QUESTDB_HTTP_PORT": {
+      "description": "Typed replacement for legacy QUESTDB_HTTP_PORT (network).",
+      "maximum": 65535,
+      "minimum": 0,
+      "type": "integer",
+      "x-legacy-aliases": [
+        "QUESTDB_HTTP_PORT"
+      ]
+    },
+    "ASEMAN_LEGACY_QUESTDB_ILP_PORT": {
+      "description": "Typed replacement for legacy QUESTDB_ILP_PORT (network).",
+      "maximum": 65535,
+      "minimum": 0,
+      "type": "integer",
+      "x-legacy-aliases": [
+        "QUESTDB_ILP_PORT"
+      ]
+    },
+    "ASEMAN_LEGACY_QUESTDB_PORT": {
+      "description": "Typed replacement for legacy QUESTDB_PORT (network).",
+      "maximum": 65535,
+      "minimum": 0,
+      "type": "integer",
+      "x-legacy-aliases": [
+        "QUESTDB_PORT"
+      ]
+    },
+    "ASEMAN_LEGACY_RATE_LIMIT_ANON_BURST": {
+      "description": "Typed replacement for legacy RATE_LIMIT_ANON_BURST (application).",
+      "type": "string",
+      "x-legacy-aliases": [
+        "RATE_LIMIT_ANON_BURST"
+      ],
+      "x-observed-sample": "20"
+    },
+    "ASEMAN_LEGACY_RATE_LIMIT_ANON_RPS": {
+      "description": "Typed replacement for legacy RATE_LIMIT_ANON_RPS (application).",
+      "type": "string",
+      "x-legacy-aliases": [
+        "RATE_LIMIT_ANON_RPS"
+      ],
+      "x-observed-sample": "10"
+    },
+    "ASEMAN_LEGACY_RATE_LIMIT_AUTH_BURST": {
+      "description": "Typed replacement for legacy RATE_LIMIT_AUTH_BURST (application).",
+      "type": "string",
+      "x-legacy-aliases": [
+        "RATE_LIMIT_AUTH_BURST"
+      ],
+      "x-observed-sample": "100"
+    },
+    "ASEMAN_LEGACY_RATE_LIMIT_AUTH_RPS": {
+      "description": "Typed replacement for legacy RATE_LIMIT_AUTH_RPS (application).",
+      "type": "string",
+      "x-legacy-aliases": [
+        "RATE_LIMIT_AUTH_RPS"
+      ],
+      "x-observed-sample": "50"
+    },
+    "ASEMAN_LEGACY_RATE_LIMIT_ENABLED": {
+      "description": "Typed replacement for legacy RATE_LIMIT_ENABLED (application).",
+      "type": "boolean",
+      "x-legacy-aliases": [
+        "RATE_LIMIT_ENABLED"
+      ],
+      "x-observed-sample": "true"
+    },
+    "ASEMAN_LEGACY_RATE_LIMIT_GLOBAL_BURST": {
+      "description": "Typed replacement for legacy RATE_LIMIT_GLOBAL_BURST (application).",
+      "type": "string",
+      "x-legacy-aliases": [
+        "RATE_LIMIT_GLOBAL_BURST"
+      ],
+      "x-observed-sample": "10000"
+    },
+    "ASEMAN_LEGACY_RATE_LIMIT_GLOBAL_RPS": {
+      "description": "Typed replacement for legacy RATE_LIMIT_GLOBAL_RPS (application).",
+      "type": "string",
+      "x-legacy-aliases": [
+        "RATE_LIMIT_GLOBAL_RPS"
+      ],
+      "x-observed-sample": "5000"
+    },
+    "ASEMAN_LEGACY_RATE_LIMIT_IDLE_EVICT_SECS": {
+      "description": "Typed replacement for legacy RATE_LIMIT_IDLE_EVICT_SECS (application).",
+      "type": "string",
+      "x-legacy-aliases": [
+        "RATE_LIMIT_IDLE_EVICT_SECS"
+      ],
+      "x-observed-sample": "300"
+    },
+    "ASEMAN_LEGACY_ROOT_NODE": {
+      "description": "Typed replacement for legacy ROOT_NODE (runtime-or-storage).",
+      "type": "string",
+      "x-legacy-aliases": [
+        "ROOT_NODE"
+      ]
+    },
+    "ASEMAN_LEGACY_SEARCH_INDEX_PATH": {
+      "description": "Typed replacement for legacy SEARCH_INDEX_PATH (runtime-or-storage).",
+      "type": "string",
+      "x-legacy-aliases": [
+        "SEARCH_INDEX_PATH"
+      ]
+    },
+    "ASEMAN_LEGACY_SHARDCHAIN_SCRIPT": {
+      "description": "Typed replacement for legacy SHARDCHAIN_SCRIPT (runtime-or-storage).",
+      "type": "string",
+      "x-legacy-aliases": [
+        "SHARDCHAIN_SCRIPT"
+      ]
+    },
+    "ASEMAN_LEGACY_STORAGE_ROOT_PATH": {
+      "description": "Typed replacement for legacy STORAGE_ROOT_PATH (runtime-or-storage).",
+      "type": "string",
+      "x-legacy-aliases": [
+        "STORAGE_ROOT_PATH"
+      ]
+    },
+    "ASEMAN_LEGACY_STORE_LOGS_DB": {
+      "description": "Typed replacement for legacy STORE_LOGS_DB (runtime-or-storage).",
+      "type": "string",
+      "x-legacy-aliases": [
+        "STORE_LOGS_DB"
+      ]
+    },
+    "ASEMAN_LEGACY_TCP_PORT": {
+      "description": "Typed replacement for legacy CLIENT_TCP_API_PORT (network).",
+      "maximum": 65535,
+      "minimum": 0,
+      "type": "integer",
+      "x-legacy-aliases": [
+        "CLIENT_TCP_API_PORT"
+      ]
+    },
+    "ASEMAN_LEGACY_TELEMETRY_API_PORT": {
+      "description": "Typed replacement for legacy TELEMETRY_API_PORT (network).",
+      "maximum": 65535,
+      "minimum": 0,
+      "type": "integer",
+      "x-legacy-aliases": [
+        "TELEMETRY_API_PORT"
+      ],
+      "x-observed-sample": "9099"
+    },
+    "ASEMAN_LEGACY_TELEMETRY_DB_PATH": {
+      "description": "Typed replacement for legacy TELEMETRY_DB_PATH (runtime-or-storage).",
+      "type": "string",
+      "x-legacy-aliases": [
+        "TELEMETRY_DB_PATH"
+      ]
+    },
+    "ASEMAN_LEGACY_TLS_CERT_PATH": {
+      "description": "Typed replacement for legacy TLS_CERT_PATH (runtime-or-storage).",
+      "type": "string",
+      "x-legacy-aliases": [
+        "TLS_CERT_PATH"
+      ]
+    },
+    "ASEMAN_LEGACY_TLS_KEY_PATH": {
+      "description": "Typed replacement for legacy TLS_KEY_PATH (secret-or-sensitive).",
+      "type": "string",
+      "x-legacy-aliases": [
+        "TLS_KEY_PATH"
+      ]
+    },
+    "ASEMAN_LEGACY_USERPROFILE": {
+      "description": "Typed replacement for legacy USERPROFILE (process-environment).",
+      "type": "string",
+      "x-legacy-aliases": [
+        "USERPROFILE"
+      ]
+    },
+    "ASEMAN_LEGACY_VM_API_PORT": {
+      "description": "Typed replacement for legacy VM_API_PORT (network).",
+      "maximum": 65535,
+      "minimum": 0,
+      "type": "integer",
+      "x-legacy-aliases": [
+        "VM_API_PORT"
+      ]
+    },
+    "ASEMAN_LEGACY_VM_CPU_CORE_COST_PER_MINUTE": {
+      "description": "Typed replacement for legacy VM_CPU_CORE_COST_PER_MINUTE (application).",
+      "type": "string",
+      "x-legacy-aliases": [
+        "VM_CPU_CORE_COST_PER_MINUTE"
+      ]
+    },
+    "ASEMAN_LEGACY_VM_DISK_COST_PER_GB_PER_MINUTE": {
+      "description": "Typed replacement for legacy VM_DISK_COST_PER_GB_PER_MINUTE (application).",
+      "type": "string",
+      "x-legacy-aliases": [
+        "VM_DISK_COST_PER_GB_PER_MINUTE"
+      ]
+    },
+    "ASEMAN_LEGACY_VM_EXEC_COST_PER_SECOND": {
+      "description": "Typed replacement for legacy VM_EXEC_COST_PER_SECOND (application).",
+      "type": "string",
+      "x-legacy-aliases": [
+        "VM_EXEC_COST_PER_SECOND"
+      ]
+    },
+    "ASEMAN_LEGACY_VM_HTTP_INGRESS_PORT": {
+      "description": "Typed replacement for legacy VM_HTTP_INGRESS_PORT (network).",
+      "maximum": 65535,
+      "minimum": 0,
+      "type": "integer",
+      "x-legacy-aliases": [
+        "VM_HTTP_INGRESS_PORT"
+      ]
+    },
+    "ASEMAN_LEGACY_VM_RAM_COST_PER_MB_PER_MINUTE": {
+      "description": "Typed replacement for legacy VM_RAM_COST_PER_MB_PER_MINUTE (application).",
+      "type": "string",
+      "x-legacy-aliases": [
+        "VM_RAM_COST_PER_MB_PER_MINUTE"
+      ]
+    },
+    "ASEMAN_LEGACY_WASMEDGE_LIB_DIR": {
+      "description": "Typed replacement for legacy WASMEDGE_LIB_DIR (runtime-or-storage).",
+      "type": "string",
+      "x-legacy-aliases": [
+        "WASMEDGE_LIB_DIR"
+      ]
+    },
+    "ASEMAN_LEGACY_WS_PORT": {
+      "description": "Typed replacement for legacy CLIENT_WS_API_PORT (network).",
+      "maximum": 65535,
+      "minimum": 0,
+      "type": "integer",
+      "x-legacy-aliases": [
+        "CLIENT_WS_API_PORT"
+      ]
+    },
+    "ASEMAN_LOGIN_MODE": {
+      "description": "Typed replacement for legacy CASPAR_LOGIN_MODE (application).",
+      "type": "string",
+      "x-legacy-aliases": [
+        "CASPAR_LOGIN_MODE"
+      ]
+    },
+    "ASEMAN_MALLOC_ARENA_MAX": {
+      "description": "Typed replacement for legacy CASPAR_MALLOC_ARENA_MAX (application).",
+      "type": "string",
+      "x-legacy-aliases": [
+        "CASPAR_MALLOC_ARENA_MAX"
+      ]
+    },
+    "ASEMAN_MALLOC_TRIM_SECS": {
+      "description": "Typed replacement for legacy CASPAR_MALLOC_TRIM_SECS (application).",
+      "type": "string",
+      "x-legacy-aliases": [
+        "CASPAR_MALLOC_TRIM_SECS"
+      ]
+    },
+    "ASEMAN_NODE_ID": {
+      "description": "Typed replacement for legacy OWNER_ID (runtime-or-storage).",
+      "type": "string",
+      "x-legacy-aliases": [
+        "OWNER_ID"
+      ]
+    },
+    "ASEMAN_NODE_PRIVATE_KEY_SECRET": {
+      "description": "Typed replacement for legacy OWNER_PRIVATE_KEY (secret-or-sensitive).",
+      "type": "string",
+      "writeOnly": true,
+      "x-legacy-aliases": [
+        "OWNER_PRIVATE_KEY"
+      ],
+      "x-secret-reference": true
+    },
+    "ASEMAN_OWNER_EMAIL": {
+      "description": "Typed replacement for legacy CASPAR_OWNER_EMAIL (application).",
+      "type": "string",
+      "x-legacy-aliases": [
+        "CASPAR_OWNER_EMAIL"
+      ]
+    },
+    "ASEMAN_OWNER_USERNAME": {
+      "description": "Typed replacement for legacy CASPAR_OWNER_USERNAME (application).",
+      "type": "string",
+      "x-legacy-aliases": [
+        "CASPAR_OWNER_USERNAME"
+      ]
+    },
+    "ASEMAN_PORT": {
+      "description": "Typed replacement for legacy CASPAR_PORT (network).",
+      "maximum": 65535,
+      "minimum": 0,
+      "type": "integer",
+      "x-legacy-aliases": [
+        "CASPAR_PORT"
+      ]
+    },
+    "ASEMAN_PROTO": {
+      "description": "Typed replacement for legacy CASPAR_PROTO (application).",
+      "type": "string",
+      "x-legacy-aliases": [
+        "CASPAR_PROTO"
+      ]
+    },
+    "ASEMAN_PUBLIC_STORAGE_PORT": {
+      "description": "Typed replacement for legacy CASPAR_STORAGE_PORT (network).",
+      "maximum": 65535,
+      "minimum": 0,
+      "type": "integer",
+      "x-legacy-aliases": [
+        "CASPAR_STORAGE_PORT"
+      ]
+    },
+    "ASEMAN_ROCKSDB_BLOCK_CACHE_MB": {
+      "description": "Typed replacement for legacy CASPAR_ROCKSDB_BLOCK_CACHE_MB (application).",
+      "type": "string",
+      "x-legacy-aliases": [
+        "CASPAR_ROCKSDB_BLOCK_CACHE_MB"
+      ]
+    },
+    "ASEMAN_ROCKSDB_MAX_OPEN_FILES": {
+      "description": "Typed replacement for legacy CASPAR_ROCKSDB_MAX_OPEN_FILES (application).",
+      "type": "string",
+      "x-legacy-aliases": [
+        "CASPAR_ROCKSDB_MAX_OPEN_FILES"
+      ]
+    },
+    "ASEMAN_ROCKSDB_WRITE_BUFFER_MB": {
+      "description": "Typed replacement for legacy CASPAR_ROCKSDB_WRITE_BUFFER_MB (application).",
+      "type": "string",
+      "x-legacy-aliases": [
+        "CASPAR_ROCKSDB_WRITE_BUFFER_MB"
+      ]
+    },
+    "ASEMAN_SIGNAL_TIMEOUT_MS": {
+      "description": "Typed replacement for legacy CASPAR_SIGNAL_TIMEOUT_MS (application).",
+      "minimum": 0,
+      "type": "integer",
+      "x-legacy-aliases": [
+        "CASPAR_SIGNAL_TIMEOUT_MS"
+      ]
+    },
+    "ASEMAN_STORAGE_MAX_BYTES": {
+      "description": "Typed replacement for legacy CASPAR_STORAGE_MAX_BYTES (application).",
+      "type": "string",
+      "x-legacy-aliases": [
+        "CASPAR_STORAGE_MAX_BYTES"
+      ]
+    },
+    "ASEMAN_TEST_POSTGRES_URL": {
+      "description": "Typed replacement for legacy ASEMAN_TEST_POSTGRES_URL (network).",
+      "type": "string",
+      "x-legacy-aliases": []
+    },
+    "ASEMAN_TLS": {
+      "description": "Typed replacement for legacy CASPAR_TLS (application).",
+      "type": "string",
+      "x-legacy-aliases": [
+        "CASPAR_TLS"
+      ]
+    },
+    "ASEMAN_VMS_DIR": {
+      "description": "Typed replacement for legacy CASPAR_VMS_DIR (application).",
+      "type": "string",
+      "x-legacy-aliases": [
+        "CASPAR_VMS_DIR"
+      ]
+    },
+    "ASEMAN_VM_HTTP_PORT": {
+      "description": "Typed replacement for legacy CASPAR_VM_HTTP_PORT (network).",
+      "maximum": 65535,
+      "minimum": 0,
+      "type": "integer",
+      "x-legacy-aliases": [
+        "CASPAR_VM_HTTP_PORT"
+      ]
+    },
+    "ASEMAN_VM_HTTP_TIMEOUT_SECS": {
+      "description": "Typed replacement for legacy CASPAR_VM_HTTP_TIMEOUT_SECS (application).",
+      "type": "string",
+      "x-legacy-aliases": [
+        "CASPAR_VM_HTTP_TIMEOUT_SECS"
+      ]
+    },
+    "ASEMAN_WASM_AOT": {
+      "description": "Typed replacement for legacy CASPAR_WASM_AOT (application).",
+      "type": "string",
+      "x-legacy-aliases": [
+        "CASPAR_WASM_AOT"
+      ]
+    },
+    "ASEMAN_WASM_VM_CACHE": {
+      "description": "Typed replacement for legacy CASPAR_WASM_VM_CACHE (application).",
+      "type": "string",
+      "x-legacy-aliases": [
+        "CASPAR_WASM_VM_CACHE"
+      ]
+    }
+  },
+  "title": "AsemanConfig",
+  "type": "object",
+  "x-generator": "scripts/generate_phase1_contracts.py",
+  "x-last-verified-commit": "800df24076c794f9b33c29a9f301dd9d674f47d6"
+}

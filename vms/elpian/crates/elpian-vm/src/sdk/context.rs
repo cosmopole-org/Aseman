@@ -53,7 +53,8 @@ impl Scope {
         self.frozen_end = frozen_end;
     }
     pub fn find_val(&self, name: &str) -> Val {
-        self.get_val(name).unwrap_or_else(|| Val::new(0, Payload::Null))
+        self.get_val(name)
+            .unwrap_or_else(|| Val::new(0, Payload::Null))
     }
     /// Presence-based read: `Some` for any binding — **including one whose value
     /// is the first-class null** — and `None` only when the name is not bound in
@@ -167,7 +168,11 @@ impl Context {
         None
     }
     pub fn define_val_globally(&mut self, name: String, val: Val) {
-        self.memory.last().unwrap().borrow_mut().define_val(name, val);
+        self.memory
+            .last()
+            .unwrap()
+            .borrow_mut()
+            .define_val(name, val);
     }
     pub fn update_val_globally(&mut self, name: String, val: Val) {
         // Assignment resolves its target with the same **lexical** rule as reads
@@ -195,11 +200,19 @@ impl Context {
                         return;
                     }
                 }
-                self.memory.last().unwrap().borrow_mut().define_val(name, val);
+                self.memory
+                    .last()
+                    .unwrap()
+                    .borrow_mut()
+                    .define_val(name, val);
                 return;
             }
         }
-        self.memory.last().unwrap().borrow_mut().define_val(name, val);
+        self.memory
+            .last()
+            .unwrap()
+            .borrow_mut()
+            .define_val(name, val);
     }
     pub fn find_val_in_last_scope(&mut self, name: &str) -> Val {
         self.memory.last().unwrap().borrow().find_val(name)

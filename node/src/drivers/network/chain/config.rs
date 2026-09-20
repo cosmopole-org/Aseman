@@ -6,8 +6,8 @@ use std::time::Duration;
 
 use k256::ecdsa::SigningKey;
 
-use crate::drivers::network::chain::proxy::AppProxy;
 use crate::compat::logrus::{Entry, Level, Logger};
+use crate::drivers::network::chain::proxy::AppProxy;
 
 /// Default name of the file containing the validator's private key.
 pub const DEFAULT_KEYFILE: &str = "priv_key";
@@ -190,7 +190,10 @@ pub fn default_data_dir() -> String {
     if !home.is_empty() {
         let p = match std::env::consts::OS {
             "macos" => PathBuf::from(&home).join(".Babble"),
-            "windows" => PathBuf::from(&home).join("AppData").join("Roaming").join("Babble"),
+            "windows" => PathBuf::from(&home)
+                .join("AppData")
+                .join("Roaming")
+                .join("Babble"),
             _ => PathBuf::from(&home).join(".babble"),
         };
         return p.to_string_lossy().into_owned();
@@ -200,14 +203,12 @@ pub fn default_data_dir() -> String {
 
 /// The user's home directory.
 pub fn home_dir() -> String {
-    if let Ok(home) = std::env::var("HOME") {
-        if !home.is_empty() {
-            return home;
+    if let Some(config) = aseman_config::legacy_adapter_snapshot() {
+        if let Some(home) = &config.home_dir {
+            return home.clone();
         }
-    }
-    if let Ok(profile) = std::env::var("USERPROFILE") {
-        if !profile.is_empty() {
-            return profile;
+        if let Some(profile) = &config.user_profile_dir {
+            return profile.clone();
         }
     }
     String::new()

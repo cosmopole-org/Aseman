@@ -30,24 +30,19 @@ use crate::models::DockerIdentity;
 /// Must match the network the node's gateway advertises on; overridable for
 /// non-standard deployments.
 fn gateway_network_name() -> String {
-    std::env::var("CASPAR_GATEWAY_NETWORK").unwrap_or_else(|_| "kasper".to_string())
+    aseman_config::runtime_config().docker_gateway_network
 }
 
 /// TCP port the HTTP server inside a container listens on. The VMM ingress
 /// proxies forwarded requests here; the same value is injected into the
 /// container's environment so the application knows where to bind.
 fn vm_http_port() -> u16 {
-    std::env::var("CASPAR_VM_HTTP_PORT")
-        .ok()
-        .and_then(|p| p.trim().parse::<u16>().ok())
-        .unwrap_or(8080)
+    aseman_config::runtime_config().vm_http_port
 }
 
 /// Timeout (seconds) for a forwarded request to the container HTTP server.
 fn vm_http_timeout_secs() -> u64 {
-    std::env::var("CASPAR_VM_HTTP_TIMEOUT_SECS")
-        .ok()
-        .and_then(|p| p.trim().parse::<u64>().ok())
+    Some(aseman_config::runtime_config().vm_http_timeout_seconds)
         .filter(|s| *s > 0)
         .unwrap_or(30)
 }
@@ -160,7 +155,14 @@ impl DockerVmController {
                     // connection (the create path does the same) — this is what lets
                     // the node flush the queued signals to the resumed tool.
                     // program_id == machine_id for docker.
-                    h.register_vm_container(&container_id, &vm_cache_key, &creature_id, machine_id, machine_id, &entity_id);
+                    h.register_vm_container(
+                        &container_id,
+                        &vm_cache_key,
+                        &creature_id,
+                        machine_id,
+                        machine_id,
+                        &entity_id,
+                    );
                 }
                 return Ok(json!({
                     "ok": true,
@@ -195,71 +197,58 @@ impl DockerVmController {
 
         // Container sandbox runtime. Defaults to gVisor ("runsc"); environments
         // without gVisor set `CASPAR_DOCKER_RUNTIME=runc` (or `default`/empty).
-        let runtime = match std::env::var("CASPAR_DOCKER_RUNTIME") {
-            Ok(v) => {
-                let v = v.trim();
-                if v.is_empty()
-                    || v.eq_ignore_ascii_case("default")
-                    || v.eq_ignore_ascii_case("runc")
-                {
-                    None
-                } else {
-                    Some(v.to_string())
-                }
-            }
-            Err(_) => Some("runsc".to_string()),
-        };
+        let runtime = aseman_config::runtime_config().docker_runtime;
 
         // Per-container disk quota via `storage_opt` only works on a backing
         // storage driver that supports it; opt out with
         // `CASPAR_DOCKER_DISK_QUOTA=0` (also accepts off/false/no).
-        let storage_opt = match std::env::var("CASPAR_DOCKER_DISK_QUOTA") {
-            Ok(v)
-                if matches!(
-                    v.trim().to_ascii_lowercase().as_str(),
-                    "0" | "off" | "false" | "no"
-                ) =>
-            {
-                None
-            }
-            _ => Some(HashMap::from([(
+        let storage_opt = if aseman_config::runtime_config().docker_disk_quota {
+            Some(HashMap::from([(
                 "size".to_string(),
                 format!("{}G", limits.disk_gb),
-            )])),
+            )]))
+        } else {
+            None
         };
 
         // run_vm is launched fire-and-forget by /programs/runEntity, so a
         // failed create/start would otherwise be completely silent. Emit the
         // failure into THIS vm's log stream so the real cause is visible.
-        self.with_async(self.docker.create_container(
-            Some(CreateContainerOptions {
-                name: container_id.clone(),
-                platform: None,
-            }),
-            DockerConfig {
-                image: Some(image_ref),
-                env,
-                cmd,
-                host_config: Some(HostConfig {
-                    runtime,
-                    network_mode: Some(gateway_network_name()),
-                    // Resolve `host.docker.internal` to the node host inside the
-                    // bridge network so the container can dial the gateway.
-                    extra_hosts: Some(vec!["host.docker.internal:host-gateway".to_string()]),
-                    memory: Some((limits.ram_mb * 1024 * 1024) as i64),
-                    cpu_count: Some(limits.cpu_cores as i64),
-                    storage_opt,
-                    // Per-session persistent storage bind-mounted as `/data`.
-                    binds: mount_dir
-                        .as_ref()
-                        .map(|d| vec![format!("{}:/data", d.display())]),
-                    ..Default::default()
+        self.with_async(
+            self.docker.create_container(
+                Some(CreateContainerOptions {
+                    name: container_id.clone(),
+                    platform: None,
                 }),
-                ..Default::default()
-            },
-        ))
+                DockerConfig {
+                    image: Some(image_ref),
+                    env,
+                    cmd,
+                    host_config: Some(HostConfig {
+                        runtime,
+                        network_mode: Some(gateway_network_name()),
+                        // Resolve `host.docker.internal` to the node host inside the
+                        // bridge network so the container can dial the gateway.
+                        extra_hosts: Some(vec!["host.docker.internal:host-gateway".to_string()]),
+                        memory: Some((limits.ram_mb * 1024 * 1024) as i64),
+                        cpu_count: Some(limits.cpu_cores as i64),
+                        storage_opt,
+                        // Per-session persistent storage bind-mounted as `/data`.
+                        binds: mount_dir
+                            .as_ref()
+                            .map(|d| vec![format!("{}:/data", d.display())]),
+                        ..Default::default()
+                    }),
+                    ..Default::default()
+                },
+            ),
+        )
         .map_err(|e| {
-            emit_vm_log(&vm_cache_key, "runtime", &format!("CONTAINER_CREATE_FAILED {}", e));
+            emit_vm_log(
+                &vm_cache_key,
+                "runtime",
+                &format!("CONTAINER_CREATE_FAILED {}", e),
+            );
             e
         })?;
 
@@ -273,7 +262,11 @@ impl DockerVmController {
                 .start_container::<String>(&container_id, None::<StartContainerOptions<String>>),
         )
         .map_err(|e| {
-            emit_vm_log(&vm_cache_key, "runtime", &format!("CONTAINER_START_FAILED {}", e));
+            emit_vm_log(
+                &vm_cache_key,
+                "runtime",
+                &format!("CONTAINER_START_FAILED {}", e),
+            );
             e
         })?;
         let timeout_container = container_id.clone();
@@ -286,10 +279,11 @@ impl DockerVmController {
                     .enable_all()
                     .build();
                 if let Ok(rt) = rt {
-                    let _ = rt.block_on(docker.stop_container(
-                        &timeout_container,
-                        Some(StopContainerOptions { t: 1 }),
-                    ));
+                    let _ =
+                        rt.block_on(docker.stop_container(
+                            &timeout_container,
+                            Some(StopContainerOptions { t: 1 }),
+                        ));
                     let _ = rt.block_on(docker.remove_container(
                         &timeout_container,
                         Some(RemoveContainerOptions {
@@ -353,7 +347,14 @@ impl DockerVmController {
             // Bind the docker container name to this VM's authoritative
             // identity so the gateway can resolve a connection's identity from
             // its source IP. program_id == machine_id for docker.
-            h.register_vm_container(&container_id, &vm_cache_key, &creature_id, machine_id, machine_id, &entity_id);
+            h.register_vm_container(
+                &container_id,
+                &vm_cache_key,
+                &creature_id,
+                machine_id,
+                machine_id,
+                &entity_id,
+            );
             // Begin a lifecycle transaction buffer for this VM execution so all
             // dbOp writes are batched and committed atomically at VM end.
             h.begin_vm_buffer(&vm_cache_key);
@@ -1044,7 +1045,10 @@ impl VmPlugin for DockerVmPlugin {
     fn build_delete_request(&self, input: &JsonValue) -> Result<JsonValue, String> {
         let mut packet = self.build_terminate_request(input)?;
         if let Some(obj) = packet.as_object_mut() {
-            obj.insert("type".to_string(), JsonValue::String("deleteVm".to_string()));
+            obj.insert(
+                "type".to_string(),
+                JsonValue::String("deleteVm".to_string()),
+            );
             obj.insert("purge".to_string(), JsonValue::Bool(true));
             obj.insert("delete".to_string(), JsonValue::Bool(true));
             obj.insert("removeImage".to_string(), input["removeImage"].clone());
@@ -1061,9 +1065,9 @@ impl VmPlugin for DockerVmPlugin {
 /// from the connection's docker-network source IP, which a container cannot
 /// forge. `CASPAR_VM_ID` is exposed for log readability only.
 fn gateway_container_env(vm_id: &str) -> Vec<String> {
-    let host = std::env::var("DOCKER_HOST_GATEWAY_ADVERTISE_HOST")
-        .unwrap_or_else(|_| "host.docker.internal".to_string());
-    let port = std::env::var("DOCKER_HOST_GATEWAY_PORT").unwrap_or_else(|_| "8079".to_string());
+    let config = aseman_config::runtime_config();
+    let host = config.docker_gateway_host;
+    let port = config.docker_gateway_port;
     vec![
         format!("CASPAR_GATEWAY_HOST={}", host),
         format!("CASPAR_GATEWAY_PORT={}", port),
@@ -1191,11 +1195,8 @@ fn build_context_from_path(path: &str) -> Result<Vec<u8>, String> {
 // Mirrors the fire runtime layout: `{STORAGE_ROOT_PATH}/vms/<vm>`.
 
 fn docker_storage_root() -> PathBuf {
-    if let Ok(p) = std::env::var("STORAGE_ROOT_PATH") {
-        let trimmed = p.trim();
-        if !trimmed.is_empty() {
-            return PathBuf::from(trimmed);
-        }
+    if let Some(path) = aseman_config::runtime_config().storage_root {
+        return PathBuf::from(path);
     }
     let in_container = PathBuf::from("/app/data/storage");
     if in_container.exists() {

@@ -1,0 +1,9 @@
+{
+  "provider_id": "eventual-only-v1",
+  "capabilities": [
+    "transactions.single_capsule",
+    "consistency.eventual"
+  ],
+  "max_query_limit": 100,
+  "max_transaction_capsules": 1
+}

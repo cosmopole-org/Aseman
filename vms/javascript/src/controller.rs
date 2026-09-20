@@ -331,7 +331,10 @@ impl VmPlugin for JavascriptVmController {
             return Ok(json!({"ok": true, "runtime": RUNTIME_KEY, "build": "noop"}));
         }
         if !Path::new(path).is_file() {
-            return Err(format!("javascript entity is not a readable file: {}", path));
+            return Err(format!(
+                "javascript entity is not a readable file: {}",
+                path
+            ));
         }
         Ok(json!({"ok": true, "runtime": RUNTIME_KEY, "build": "noop", "astPath": path}))
     }
@@ -345,9 +348,10 @@ mod tests {
     #[test]
     fn watchdog_wakes_immediately_when_the_run_completes() {
         let stop = Arc::new(AtomicBool::new(false));
-        let (done_tx, handle) = spawn_exec_watchdog(stop.clone(), Duration::from_secs(3600), || {
-            panic!("timeout callback must not fire on normal completion");
-        });
+        let (done_tx, handle) =
+            spawn_exec_watchdog(stop.clone(), Duration::from_secs(3600), || {
+                panic!("timeout callback must not fire on normal completion");
+            });
         drop(done_tx);
         let t = Instant::now();
         handle.join().unwrap();

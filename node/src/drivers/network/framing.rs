@@ -110,7 +110,10 @@ impl Write for TlsStream {
 
 /// `bind_tls(port, cfg)` opens a TCP listener and, if `cfg` is provided,
 /// returns the `rustls::ServerConfig` used to wrap accepted connections.
-pub fn bind_tls(port: i64, cfg: Option<&TlsConfig>) -> Result<(TcpListener, Option<Arc<ServerConfig>>)> {
+pub fn bind_tls(
+    port: i64,
+    cfg: Option<&TlsConfig>,
+) -> Result<(TcpListener, Option<Arc<ServerConfig>>)> {
     let listener = TcpListener::bind(format!("0.0.0.0:{}", port))
         .map_err(|e| anyhow!("tcp listen :{}: {}", port, e))?;
     let server = if let Some(cfg) = cfg {
@@ -122,10 +125,7 @@ pub fn bind_tls(port: i64, cfg: Option<&TlsConfig>) -> Result<(TcpListener, Opti
 }
 
 /// Accept the next inbound connection, optionally completing a TLS handshake.
-pub fn accept(
-    listener: &TcpListener,
-    cfg: Option<&Arc<ServerConfig>>,
-) -> Result<TlsStream> {
+pub fn accept(listener: &TcpListener, cfg: Option<&Arc<ServerConfig>>) -> Result<TlsStream> {
     let (stream, _) = listener.accept().map_err(|e| anyhow!("accept: {}", e))?;
     stream
         .set_nodelay(true)
@@ -154,8 +154,8 @@ pub fn dial(addr: &str, tls: Option<&TlsConfig>) -> Result<TlsStream> {
             } else {
                 host
             };
-            let server_name = ServerName::try_from(host)
-                .map_err(|e| anyhow!("server name: {}", e))?;
+            let server_name =
+                ServerName::try_from(host).map_err(|e| anyhow!("server name: {}", e))?;
             let conn = ClientConnection::new(Arc::new(client_cfg), server_name)
                 .map_err(|e| anyhow!("client connection: {}", e))?;
             Ok(TlsStream::Client(Box::new(StreamOwned::new(conn, stream))))
@@ -336,7 +336,8 @@ pub fn write_length_prefixed_frame(w: &mut dyn Write, body: &[u8]) -> Result<()>
     }
     w.write_all(&len.to_be_bytes())
         .map_err(|e| anyhow!("write len: {}", e))?;
-    w.write_all(body).map_err(|e| anyhow!("write body: {}", e))?;
+    w.write_all(body)
+        .map_err(|e| anyhow!("write body: {}", e))?;
     w.flush().map_err(|e| anyhow!("flush: {}", e))?;
     Ok(())
 }
@@ -462,7 +463,15 @@ pub fn encode_request_body(
     payload: &[u8],
 ) -> Vec<u8> {
     let mut out = Vec::with_capacity(
-        1 + 4 + signature.len() + 4 + user_id.len() + 4 + path.len() + 4 + packet_id.len() + payload.len(),
+        1 + 4
+            + signature.len()
+            + 4
+            + user_id.len()
+            + 4
+            + path.len()
+            + 4
+            + packet_id.len()
+            + payload.len(),
     );
     out.push(0x03);
     write_lp_str(&mut out, signature);
@@ -490,9 +499,8 @@ pub fn encode_fed_response_body(
     signature: &str,
     payload: &[u8],
 ) -> Vec<u8> {
-    let mut out = Vec::with_capacity(
-        1 + 4 + packet_id.len() + 4 + 4 + signature.len() + payload.len(),
-    );
+    let mut out =
+        Vec::with_capacity(1 + 4 + packet_id.len() + 4 + 4 + signature.len() + payload.len());
     out.push(0x02);
     write_lp_str(&mut out, packet_id);
     out.extend_from_slice(&(res_code as u32).to_be_bytes());
@@ -521,8 +529,15 @@ pub fn encode_fed_update_body(
 ) -> Vec<u8> {
     let exc_json = serde_json::to_vec(exceptions).unwrap_or_else(|_| b"[]".to_vec());
     let mut out = Vec::with_capacity(
-        1 + 4 + signature.len() + 4 + target_id.len() + 4 + exc_json.len()
-            + 4 + key.len() + payload.len(),
+        1 + 4
+            + signature.len()
+            + 4
+            + target_id.len()
+            + 4
+            + exc_json.len()
+            + 4
+            + key.len()
+            + payload.len(),
     );
     out.push(0x01);
     write_lp_str(&mut out, signature);
@@ -632,7 +647,9 @@ mod tests {
         let mut body = Vec::new();
         body.extend_from_slice(&0u32.to_be_bytes()); // empty packet_id
         body.push(0); // start of (truncated) res_code
-        let err = decode_response_body(&body, false).err().expect("should fail");
+        let err = decode_response_body(&body, false)
+            .err()
+            .expect("should fail");
         assert!(format!("{}", err).contains("truncated"));
     }
 

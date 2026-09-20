@@ -130,7 +130,9 @@ pub fn dispatch(cell: &Rc<RefCell<JsState>>, raw: &str) -> String {
                 "put" => {
                     let key = input["key"].as_str().unwrap_or("");
                     let val = input["val"].as_str().unwrap_or("");
-                    state.trx.put(format!("{}::{}", machine, key), val.to_string());
+                    state
+                        .trx
+                        .put(format!("{}::{}", machine, key), val.to_string());
                     "{}".to_string()
                 }
                 "del" => {

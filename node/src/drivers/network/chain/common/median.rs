@@ -26,11 +26,7 @@ mod tests {
     // Translation of median_test.go::TestMedian.
     #[test]
     fn test_median() {
-        let cases: &[(&[i64], i64)] = &[
-            (&[5, 3, 4, 2, 1], 3),
-            (&[6, 3, 2, 4, 5, 1], 3),
-            (&[1], 1),
-        ];
+        let cases: &[(&[i64], i64)] = &[(&[5, 3, 4, 2, 1], 3), (&[6, 3, 2, 4, 5, 1], 3), (&[1], 1)];
         for (input, out) in cases {
             let got = median(input);
             assert_eq!(got, *out, "Median({:?}) => {} != {}", input, got, out);

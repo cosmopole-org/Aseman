@@ -7,7 +7,6 @@
 //! and inbound block streams from Babble) and the Babble nodes.
 
 use std::collections::HashMap;
-use std::env;
 use std::fs;
 use std::path::PathBuf;
 use std::process::Command;
@@ -19,19 +18,17 @@ use dashmap::DashMap;
 
 use uuid::Uuid;
 
-use crate::models::ports::network::chain::{IChain, PipelineFn};
-use crate::models::ports::network::TlsConfig;
-use crate::models::core::ICore;
-use crate::models::transaction::ITrx;
 use crate::drivers::network::chain::babble::{load_key_for_config, Babble};
 use crate::drivers::network::chain::config::Config;
 use crate::drivers::network::chain::hashgraph::{Block, InternalTransactionReceipt};
 use crate::drivers::network::chain::net::Transport;
 use crate::drivers::network::chain::node::state::State as NodeState;
 use crate::drivers::network::chain::peers::{Peer, PeerSet};
-use crate::drivers::network::chain::proxy::{
-    CommitResponse, InmemProxy, ProxyHandler,
-};
+use crate::drivers::network::chain::proxy::{CommitResponse, InmemProxy, ProxyHandler};
+use crate::models::core::ICore;
+use crate::models::ports::network::chain::{IChain, PipelineFn};
+use crate::models::ports::network::TlsConfig;
+use crate::models::transaction::ITrx;
 use crate::shell::api::model::{Chain, ChainShard, Creature, Program};
 
 /// Extract the host portion of a peer's `net_addr` (`host:port` → `host`).
@@ -195,7 +192,10 @@ impl Blockchain {
                 }
             }
             "1"
-        } else if env::var("IS_HEAD").ok().as_deref() == Some("true") {
+        } else if aseman_config::legacy_adapter_snapshot()
+            .map(|config| config.is_head)
+            .unwrap_or(false)
+        {
             "2"
         } else {
             "3"
@@ -214,9 +214,8 @@ impl Blockchain {
         // node works both in Docker (where node/scripts is mounted at
         // /app/scripts — the default below) and in local/--no-docker runs
         // (where run-nodes.sh points this at the in-repo node/scripts copy).
-        let shardchain_script = env::var("SHARDCHAIN_SCRIPT")
-            .ok()
-            .filter(|p| !p.trim().is_empty())
+        let shardchain_script = aseman_config::legacy_adapter_snapshot()
+            .map(|config| config.shardchain_script.clone())
             .unwrap_or_else(|| "/app/scripts/shardchain.sh".to_string());
         match Command::new("bash")
             .arg(&shardchain_script)
@@ -239,12 +238,10 @@ impl Blockchain {
             ),
         }
 
-        let blockchain_port = env::var("BLOCKCHAIN_API_PORT").unwrap_or_else(|_| "1337".to_string());
-        let mut config = Config::new_default_config(&format!(
-            "{}:{}",
-            env::var("IPADDR").unwrap_or_default(),
-            blockchain_port
-        ));
+        let (blockchain_port, ip_address) = aseman_config::legacy_adapter_snapshot()
+            .map(|config| (config.blockchain_api_port, config.ip_address.as_str()))
+            .unwrap_or((1337, ""));
+        let mut config = Config::new_default_config(&format!("{}:{}", ip_address, blockchain_port));
         config.bind_addr = format!("0.0.0.0:{}", blockchain_port);
         // set_data_dir() also relocates database_dir off the default
         // (/root/.babble) so multiple nodes on one host don't clobber each
@@ -342,7 +339,10 @@ impl Blockchain {
         let shards = shards_slot.lock().unwrap().clone();
         let mut shards_by_chain: HashMap<String, Vec<String>> = HashMap::new();
         for s in shards {
-            shards_by_chain.entry(s.work_chain_id).or_default().push(s.id);
+            shards_by_chain
+                .entry(s.work_chain_id)
+                .or_default()
+                .push(s.id);
         }
         for c in &chains {
             let wchain = self.create_new_work_chain(&c.id, &c.store_id, false);
@@ -474,7 +474,8 @@ impl IChain for Blockchain {
         let shim = Arc::new(BlockchainShim {
             inner: self_clone(self),
         });
-        shim.inner.create_new_shard_chain(&work_chain, &shard_chain_id, true, &peers, true);
+        shim.inner
+            .create_new_shard_chain(&work_chain, &shard_chain_id, true, &peers, true);
         shard_chain_id
     }
 

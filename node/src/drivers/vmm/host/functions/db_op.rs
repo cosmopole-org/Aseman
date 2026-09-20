@@ -1,5 +1,5 @@
+use crate::drivers::vmm::host::vm_host_functions::{run_db_op, HostHierarchy};
 use crate::drivers::vmm::prelude::*;
-use crate::drivers::vmm::host::vm_host_functions::{HostHierarchy, run_db_op};
 
 pub(crate) fn host_fn_db_op(ctx: &HostHierarchy, input: &JsonValue) -> String {
     match run_db_op(ctx, input) {

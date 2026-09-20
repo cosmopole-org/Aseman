@@ -1,0 +1,405 @@
+{
+  "_meta": {
+    "artifact": "A007",
+    "generator": "scripts/generate_current_surface_inventories.py",
+    "last_verified_commit": "800df24076c794f9b33c29a9f301dd9d674f47d6",
+    "lifecycle_status": "GENERATED",
+    "source_of_truth": "casparctl/client-cli dispatch tables and root script option cases",
+    "status": "CURRENT",
+    "verification": "python3 scripts/generate_current_surface_inventories.py --check"
+  },
+  "casparctl": {
+    "cluster": [
+      {
+        "command": "status",
+        "handler": "cmd_status(&args[1..])",
+        "source": "cmd/casparctl/src/cluster.rs:25"
+      },
+      {
+        "command": "init",
+        "handler": "cmd_init(&args[1..])",
+        "source": "cmd/casparctl/src/cluster.rs:26"
+      },
+      {
+        "command": "peers",
+        "handler": "cmd_peers(&args[1..])",
+        "source": "cmd/casparctl/src/cluster.rs:27"
+      },
+      {
+        "command": "nearest",
+        "handler": "cmd_nearest(&args[1..])",
+        "source": "cmd/casparctl/src/cluster.rs:28"
+      },
+      {
+        "command": "add-peer",
+        "handler": "cmd_add_peer(&args[1..])",
+        "source": "cmd/casparctl/src/cluster.rs:29"
+      },
+      {
+        "command": "remove-peer",
+        "handler": "cmd_remove_peer(&args[1..])",
+        "source": "cmd/casparctl/src/cluster.rs:30"
+      },
+      {
+        "command": "promote",
+        "handler": "cmd_promote(&args[1..])",
+        "source": "cmd/casparctl/src/cluster.rs:31"
+      },
+      {
+        "command": "config",
+        "handler": "cmd_config(&args[1..])",
+        "source": "cmd/casparctl/src/cluster.rs:32"
+      },
+      {
+        "command": "apply",
+        "handler": "cmd_apply(&args[1..])",
+        "source": "cmd/casparctl/src/cluster.rs:33"
+      }
+    ],
+    "cluster_config": [
+      {
+        "command": "list",
+        "source": "cmd/casparctl/src/cluster.rs:261"
+      },
+      {
+        "command": "get",
+        "source": "cmd/casparctl/src/cluster.rs:261"
+      },
+      {
+        "command": "set",
+        "source": "cmd/casparctl/src/cluster.rs:261"
+      }
+    ],
+    "pprof": [
+      {
+        "command": "runtime",
+        "source": "cmd/casparctl/src/main.rs:1221"
+      },
+      {
+        "command": "heap",
+        "source": "cmd/casparctl/src/main.rs:1222"
+      },
+      {
+        "command": "threads",
+        "source": "cmd/casparctl/src/main.rs:1223"
+      },
+      {
+        "command": "flamegraph",
+        "source": "cmd/casparctl/src/main.rs:1224"
+      },
+      {
+        "command": "profile",
+        "source": "cmd/casparctl/src/main.rs:1225"
+      }
+    ],
+    "top_level": [
+      {
+        "command": "install",
+        "handler": "",
+        "source": "cmd/casparctl/src/main.rs:150"
+      },
+      {
+        "command": "uninstall",
+        "handler": "run_uninstall(&args[2..])",
+        "source": "cmd/casparctl/src/main.rs:159"
+      },
+      {
+        "command": "purge",
+        "handler": "run_purge(&args[2..])",
+        "source": "cmd/casparctl/src/main.rs:161"
+      },
+      {
+        "command": "start",
+        "handler": "run_start(&args[2..])",
+        "source": "cmd/casparctl/src/main.rs:162"
+      },
+      {
+        "command": "pause",
+        "handler": "run_pause(&args[2..])",
+        "source": "cmd/casparctl/src/main.rs:163"
+      },
+      {
+        "command": "resume",
+        "handler": "run_resume(&args[2..])",
+        "source": "cmd/casparctl/src/main.rs:164"
+      },
+      {
+        "command": "stop",
+        "handler": "run_stop(&args[2..])",
+        "source": "cmd/casparctl/src/main.rs:165"
+      },
+      {
+        "command": "stats",
+        "handler": "run_stats(&args[2..])",
+        "source": "cmd/casparctl/src/main.rs:166"
+      },
+      {
+        "command": "run",
+        "handler": "run::run_run(&args[2..])",
+        "source": "cmd/casparctl/src/main.rs:167"
+      },
+      {
+        "command": "status",
+        "handler": "run::run_status(&args[2..])",
+        "source": "cmd/casparctl/src/main.rs:168"
+      },
+      {
+        "command": "pprof",
+        "handler": "run_pprof(&args[2..])",
+        "source": "cmd/casparctl/src/main.rs:169"
+      },
+      {
+        "command": "vms",
+        "handler": "vms::run_vms(&args[2..])",
+        "source": "cmd/casparctl/src/main.rs:170"
+      },
+      {
+        "command": "cluster",
+        "handler": "cluster::run_cluster(&args[2..])",
+        "source": "cmd/casparctl/src/main.rs:171"
+      },
+      {
+        "command": "module",
+        "handler": "modules::run_modules(&args[2..])",
+        "source": "cmd/casparctl/src/main.rs:172"
+      },
+      {
+        "command": "modules",
+        "handler": "modules::run_modules(&args[2..])",
+        "source": "cmd/casparctl/src/main.rs:172"
+      }
+    ],
+    "vms": [
+      {
+        "command": "list",
+        "handler": "cmd_list(&args[1..])",
+        "source": "cmd/casparctl/src/vms.rs:51"
+      },
+      {
+        "command": "enable",
+        "handler": "cmd_set_enabled(&args[1..]",
+        "source": "cmd/casparctl/src/vms.rs:52"
+      },
+      {
+        "command": "disable",
+        "handler": "cmd_set_enabled(&args[1..]",
+        "source": "cmd/casparctl/src/vms.rs:53"
+      },
+      {
+        "command": "sync",
+        "handler": "cmd_sync(&args[1..])",
+        "source": "cmd/casparctl/src/vms.rs:54"
+      },
+      {
+        "command": "new",
+        "handler": "cmd_new(&args[1..])",
+        "source": "cmd/casparctl/src/vms.rs:55"
+      }
+    ]
+  },
+  "client_cli": [
+    {
+      "command": "login",
+      "source": "client-cli/index.ts:1211"
+    },
+    {
+      "command": "logout",
+      "source": "client-cli/index.ts:1217"
+    },
+    {
+      "command": "printPrivateKey",
+      "source": "client-cli/index.ts:1223"
+    },
+    {
+      "command": "creatures.me",
+      "source": "client-cli/index.ts:1234"
+    },
+    {
+      "command": "creatures.get",
+      "source": "client-cli/index.ts:1242"
+    },
+    {
+      "command": "creatures.lockToken",
+      "source": "client-cli/index.ts:1250"
+    },
+    {
+      "command": "creatures.consumeLock",
+      "source": "client-cli/index.ts:1264"
+    },
+    {
+      "command": "creatures.list",
+      "source": "client-cli/index.ts:1278"
+    },
+    {
+      "command": "creatures.signal",
+      "source": "client-cli/index.ts:1298"
+    },
+    {
+      "command": "creatures.createMachine",
+      "source": "client-cli/index.ts:1312"
+    },
+    {
+      "command": "creatures.listMachines",
+      "source": "client-cli/index.ts:1320"
+    },
+    {
+      "command": "programs.create",
+      "source": "client-cli/index.ts:1340"
+    },
+    {
+      "command": "programs.delete",
+      "source": "client-cli/index.ts:1355"
+    },
+    {
+      "command": "programs.update",
+      "source": "client-cli/index.ts:1363"
+    },
+    {
+      "command": "programs.deployRaw",
+      "source": "client-cli/index.ts:1392"
+    },
+    {
+      "command": "programs.deploy",
+      "source": "client-cli/index.ts:1433"
+    },
+    {
+      "command": "programs.run",
+      "source": "client-cli/index.ts:1463"
+    },
+    {
+      "command": "programs.stop",
+      "source": "client-cli/index.ts:1471"
+    },
+    {
+      "command": "programs.list",
+      "source": "client-cli/index.ts:1479"
+    },
+    {
+      "command": "programs.readBuildLogs",
+      "source": "client-cli/index.ts:1499"
+    },
+    {
+      "command": "vm.types",
+      "source": "client-cli/index.ts:1508"
+    },
+    {
+      "command": "vm.init",
+      "source": "client-cli/index.ts:1522"
+    }
+  ],
+  "root_scripts": [
+    {
+      "flags": [
+        {
+          "flag": "--skip-deploy",
+          "source": "bench-all.sh:101"
+        },
+        {
+          "flag": "--redeploy",
+          "source": "bench-all.sh:102"
+        },
+        {
+          "flag": "--help",
+          "source": "bench-all.sh:103"
+        }
+      ],
+      "script": "bench-all.sh"
+    },
+    {
+      "flags": [
+        {
+          "flag": "--skip-node",
+          "source": "build-dist.sh:61"
+        },
+        {
+          "flag": "--skip-ctl",
+          "source": "build-dist.sh:62"
+        },
+        {
+          "flag": "--wasmedge-ver",
+          "source": "build-dist.sh:63"
+        },
+        {
+          "flag": "--disable-vm",
+          "source": "build-dist.sh:64"
+        },
+        {
+          "flag": "--enable-vm",
+          "source": "build-dist.sh:65"
+        },
+        {
+          "flag": "--help",
+          "source": "build-dist.sh:66"
+        }
+      ],
+      "script": "build-dist.sh"
+    },
+    {
+      "flags": [
+        {
+          "flag": "--no-docker",
+          "source": "run-nodes.sh:133"
+        },
+        {
+          "flag": "--no-questdb",
+          "source": "run-nodes.sh:134"
+        },
+        {
+          "flag": "--fresh",
+          "source": "run-nodes.sh:135"
+        },
+        {
+          "flag": "--no-gvisor",
+          "source": "run-nodes.sh:136"
+        },
+        {
+          "flag": "--no-firecracker",
+          "source": "run-nodes.sh:137"
+        },
+        {
+          "flag": "--no-rebuild",
+          "source": "run-nodes.sh:138"
+        },
+        {
+          "flag": "--foreground",
+          "source": "run-nodes.sh:139"
+        },
+        {
+          "flag": "--skip-deploy",
+          "source": "run-nodes.sh:140"
+        },
+        {
+          "flag": "--help",
+          "source": "run-nodes.sh:141"
+        }
+      ],
+      "script": "run-nodes.sh"
+    },
+    {
+      "flags": [
+        {
+          "flag": "--clean",
+          "source": "stop-nodes.sh:90"
+        },
+        {
+          "flag": "--purge",
+          "source": "stop-nodes.sh:91"
+        },
+        {
+          "flag": "--keep-questdb",
+          "source": "stop-nodes.sh:92"
+        },
+        {
+          "flag": "--help",
+          "source": "stop-nodes.sh:93"
+        }
+      ],
+      "script": "stop-nodes.sh"
+    }
+  ],
+  "summary": {
+    "casparctl_top_level_commands": 15,
+    "client_cli_commands": 22,
+    "root_scripts": 4
+  }
+}

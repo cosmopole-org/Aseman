@@ -16,15 +16,13 @@ use anyhow::Result;
 use dashmap::DashMap;
 use serde_json::Value;
 
+use crate::models::core::ICore;
+use crate::models::packet::{build_error_json, OriginPacket};
 use crate::models::ports::file::IFile;
-use crate::models::ports::network::federation::{
-    FedRequestCallback, IFederation,
-};
+use crate::models::ports::network::federation::{FedRequestCallback, IFederation};
 use crate::models::ports::network::TlsConfig;
 use crate::models::ports::signaler::ISignaler;
 use crate::models::ports::storage::IStorage;
-use crate::models::core::ICore;
-use crate::models::packet::{build_error_json, OriginPacket};
 use crate::models::transaction::ITrx;
 use crate::shell::api::model::StorePermissions;
 use crate::shell::api::packets::{invites, stores};
@@ -157,7 +155,10 @@ impl FedNet {
     }
 
     fn handle_response(&self, pack: OriginPacket) {
-        let Some(cb) = self.packet_callbacks.get(&pack.request_id).map(|e| e.value().clone())
+        let Some(cb) = self
+            .packet_callbacks
+            .get(&pack.request_id)
+            .map(|e| e.value().clone())
         else {
             return;
         };
@@ -179,11 +180,7 @@ impl FedNet {
         }
     }
 
-    fn apply_response_side_effects(
-        &self,
-        cb: &Arc<FedPacketCallback>,
-        pack: &OriginPacket,
-    ) {
+    fn apply_response_side_effects(&self, cb: &Arc<FedPacketCallback>, pack: &OriginPacket) {
         match cb.key.as_str() {
             "/invites/accept" | "/stores/join" => {
                 let store_id = if cb.key == "/invites/accept" {
@@ -220,9 +217,7 @@ impl FedNet {
                 }
             }
             "/stores/create" => {
-                if let Ok(out) =
-                    serde_json::from_slice::<stores::CreateOutput>(&pack.binary)
-                {
+                if let Ok(out) = serde_json::from_slice::<stores::CreateOutput>(&pack.binary) {
                     let user_id = cb.user_id.clone();
                     let store = out.store.store.clone();
                     let store_id = store.id.clone();
@@ -235,10 +230,7 @@ impl FedNet {
                                 // The creator of a store administers it.
                                 &StorePermissions::owner().encode(),
                             );
-                            trx.put_link(
-                                &format!("hasaccess::{}::{}", user_id, store_id),
-                                "true",
-                            );
+                            trx.put_link(&format!("hasaccess::{}::{}", user_id, store_id), "true");
                             Ok(())
                         }),
                     );
@@ -255,12 +247,10 @@ impl FedNet {
         self.react_to_update(&pack.key, &pack.binary);
         if let Some(sig) = self.signaler.lock().unwrap().clone() {
             if pack.store_id.is_empty() {
-                let value =
-                    serde_json::from_slice::<Value>(&pack.binary).unwrap_or(Value::Null);
+                let value = serde_json::from_slice::<Value>(&pack.binary).unwrap_or(Value::Null);
                 sig.signal_user(&pack.key, &pack.user_id, value, false);
             } else {
-                let value =
-                    serde_json::from_slice::<Value>(&pack.binary).unwrap_or(Value::Null);
+                let value = serde_json::from_slice::<Value>(&pack.binary).unwrap_or(Value::Null);
                 // Resolve this node's members of the store from state, the same
                 // way the originating node did — never from the group registry,
                 // which only knows the stores a member had when they connected.
@@ -355,8 +345,7 @@ impl FedNet {
             );
             return;
         };
-        let raw_payload =
-            serde_json::from_slice::<Value>(&pack.binary).unwrap_or(Value::Null);
+        let raw_payload = serde_json::from_slice::<Value>(&pack.binary).unwrap_or(Value::Null);
         let input = match secure.parse_input("fed", raw_payload) {
             Ok(i) => i,
             Err(_) => {
@@ -450,7 +439,14 @@ impl IFederation for FedNet {
         };
         let payload = serde_json::to_vec(&update_pack).unwrap_or_default();
         let signature = self.app.sign_packet(&payload);
-        socket.write_update(key, target_type, target_id_val, &exceptions, &signature, &payload);
+        socket.write_update(
+            key,
+            target_type,
+            target_id_val,
+            &exceptions,
+            &signature,
+            &payload,
+        );
     }
 
     fn send_fed_request_by_callback(
@@ -464,7 +460,11 @@ impl IFederation for FedNet {
         callback: FedRequestCallback,
     ) {
         let Some(address) = self.resolve_destination(dest_org) else {
-            callback(Vec::new(), 0, Some(anyhow::anyhow!("no route to destination")));
+            callback(
+                Vec::new(),
+                0,
+                Some(anyhow::anyhow!("no route to destination")),
+            );
             return;
         };
         let callback_id = secure_unique_string();
@@ -487,7 +487,11 @@ impl IFederation for FedNet {
             if trans_callbacks.remove(&callback_id_for_timeout).is_some() {
                 let mut slot = cb_for_timeout.callback.lock().unwrap();
                 if let Some(cb) = slot.take() {
-                    cb(Vec::new(), 0, Some(anyhow::anyhow!("federation callback timeout")));
+                    cb(
+                        Vec::new(),
+                        0,
+                        Some(anyhow::anyhow!("federation callback timeout")),
+                    );
                 }
             }
         });
@@ -500,7 +504,14 @@ impl IFederation for FedNet {
             if let Some((_, pending)) = self.packet_callbacks.remove(&callback_id) {
                 let mut slot = pending.callback.lock().unwrap();
                 if let Some(cb) = slot.take() {
-                    cb(Vec::new(), 0, Some(anyhow::anyhow!("federation: could not open socket to {}", address)));
+                    cb(
+                        Vec::new(),
+                        0,
+                        Some(anyhow::anyhow!(
+                            "federation: could not open socket to {}",
+                            address
+                        )),
+                    );
                 }
             }
             return;

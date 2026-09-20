@@ -78,9 +78,12 @@ struct ClusterArgs {
 }
 
 fn parse_args(args: &[String]) -> ClusterArgs {
-    let mut endpoint = std::env::var("CASPARCTL_CLUSTER_ENDPOINT")
-        .unwrap_or_else(|_| "http://127.0.0.1:7440".to_string());
-    let mut token = std::env::var("CASPAR_CLUSTER_TOKEN").unwrap_or_default();
+    let mut endpoint = aseman_config::cli_config()
+        .map(|config| config.cluster_endpoint.clone())
+        .unwrap_or_else(|| "http://127.0.0.1:7440".to_string());
+    let mut token = aseman_config::cli_config()
+        .map(|config| config.cluster_token.clone())
+        .unwrap_or_default();
     let mut values = std::collections::HashMap::new();
     let mut positional = Vec::new();
     let mut i = 0;
@@ -176,7 +179,11 @@ fn cmd_status(args: &[String]) -> Result<()> {
 
 fn cmd_init(args: &[String]) -> Result<()> {
     let a = parse_args(args);
-    let include_peers = a.values.get("include-peers").map(|v| v == "true").unwrap_or(false);
+    let include_peers = a
+        .values
+        .get("include-peers")
+        .map(|v| v == "true")
+        .unwrap_or(false);
     let body = json!({"includePeers": include_peers});
     print_json(&curl(&a, "POST", "/cluster/init", Some(&body))?);
     Ok(())
@@ -303,8 +310,7 @@ fn cmd_apply(args: &[String]) -> Result<()> {
         .or_else(|| a.values.get("file"))
         .or_else(|| a.positional.first())
         .ok_or_else(|| anyhow!("usage: casparctl cluster apply -f <cluster.json>"))?;
-    let raw = std::fs::read_to_string(file)
-        .map_err(|e| anyhow!("read {}: {}", file, e))?;
+    let raw = std::fs::read_to_string(file).map_err(|e| anyhow!("read {}: {}", file, e))?;
     let doc: Value =
         serde_json::from_str(&raw).map_err(|e| anyhow!("{} is not valid JSON: {}", file, e))?;
     print_json(&curl(&a, "POST", "/cluster/config/apply", Some(&doc))?);

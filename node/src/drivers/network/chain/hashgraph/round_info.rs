@@ -70,14 +70,10 @@ impl RoundInfo {
 
     /// Sets the famous status of an event.
     pub fn set_fame(&mut self, x: &str, f: bool) {
-        let mut e = self
-            .created_events
-            .get(x)
-            .copied()
-            .unwrap_or(RoundEvent {
-                witness: true,
-                famous: Trilean::Undefined,
-            });
+        let mut e = self.created_events.get(x).copied().unwrap_or(RoundEvent {
+            witness: true,
+            famous: Trilean::Undefined,
+        });
         e.famous = if f { Trilean::True } else { Trilean::False };
         self.created_events.insert(x.to_string(), e);
     }
@@ -149,9 +145,7 @@ impl RoundInfo {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::drivers::network::chain::crypto::keys::{
-        generate_ecdsa_key, public_key_hex,
-    };
+    use crate::drivers::network::chain::crypto::keys::{generate_ecdsa_key, public_key_hex};
     use crate::drivers::network::chain::peers::Peer;
 
     fn make_peer_set(n: usize) -> PeerSet {

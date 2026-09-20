@@ -102,7 +102,10 @@ pub enum ClusterCommand {
     },
     /// Replicated creature program deployment.
     #[serde(rename = "deploy")]
-    Deploy { origin: u64, artifact: DeployArtifact },
+    Deploy {
+        origin: u64,
+        artifact: DeployArtifact,
+    },
     /// Cluster-wide configuration entry (kept in the replicated config store).
     #[serde(rename = "config")]
     ConfigPut { key: String, value: Value },
@@ -118,7 +121,10 @@ pub struct ClusterResponse {
 
 impl ClusterResponse {
     pub fn ok() -> Self {
-        ClusterResponse { ok: true, err: None }
+        ClusterResponse {
+            ok: true,
+            err: None,
+        }
     }
 
     pub fn err(msg: impl Into<String>) -> Self {

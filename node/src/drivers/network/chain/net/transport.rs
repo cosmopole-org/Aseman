@@ -34,11 +34,7 @@ pub trait Transport: Send + Sync {
     fn eager_sync(&self, target: &str, args: &EagerSyncRequest) -> Result<EagerSyncResponse>;
 
     /// Sends a `FastForwardRequest` to the target node.
-    fn fast_forward(
-        &self,
-        target: &str,
-        args: &FastForwardRequest,
-    ) -> Result<FastForwardResponse>;
+    fn fast_forward(&self, target: &str, args: &FastForwardRequest) -> Result<FastForwardResponse>;
 
     /// Sends a `JoinRequest` to the target node.
     fn join(&self, target: &str, args: &JoinRequest) -> Result<JoinResponse>;

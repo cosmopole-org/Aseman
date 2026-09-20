@@ -85,20 +85,39 @@ impl DockerHostGateway {
 
     /// Push a signal to every live container belonging to `machine_id`. Returns
     /// the number of containers reached (`0` ⇒ none connected).
-    pub(crate) fn push_signal_to_machine(&self, machine_id: &str, key: &str, data: &JsonValue) -> usize {
+    pub(crate) fn push_signal_to_machine(
+        &self,
+        machine_id: &str,
+        key: &str,
+        data: &JsonValue,
+    ) -> usize {
         self.registry.push_signal_to_machine(machine_id, key, data)
     }
 
     /// Push a signal to the container serving a specific entity of a machine.
     /// Returns the number reached (`0` ⇒ cold, so the caller queues/spawns it).
-    pub(crate) fn push_signal_to_entity(&self, machine_id: &str, entity_id: &str, key: &str, data: &JsonValue) -> usize {
-        self.registry.push_signal_to_entity(machine_id, entity_id, key, data)
+    pub(crate) fn push_signal_to_entity(
+        &self,
+        machine_id: &str,
+        entity_id: &str,
+        key: &str,
+        data: &JsonValue,
+    ) -> usize {
+        self.registry
+            .push_signal_to_entity(machine_id, entity_id, key, data)
     }
 
     /// Queue a signal for an entity that has no live connection yet, to be
     /// flushed when its container (re)connects. See [`GatewayRegistry::queue_pending_signal`].
-    pub(crate) fn queue_pending_signal(&self, machine_id: &str, entity_id: &str, key: &str, data: &JsonValue) {
-        self.registry.queue_pending_signal(machine_id, entity_id, key, data);
+    pub(crate) fn queue_pending_signal(
+        &self,
+        machine_id: &str,
+        entity_id: &str,
+        key: &str,
+        data: &JsonValue,
+    ) {
+        self.registry
+            .queue_pending_signal(machine_id, entity_id, key, data);
     }
 
     /// Claim the cold-spawn slot for an entity (debounce). `true` ⇒ this caller

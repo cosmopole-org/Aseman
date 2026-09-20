@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "classes": {
+    "telemetry": {"minimum_consistency":"eventual","authority_decisions":false,"bounded_retention_required":true,"native_time_indexes":true},
+    "audit": {"minimum_consistency":"append_linearizable","append_only":true,"ordered_checkpoint":true,"integrity_chain":true},
+    "finance": {"minimum_consistency":"serializable","eventual_fallback":false,"idempotency_required":true,"durable_commit":true},
+    "outbox": {"minimum_consistency":"serializable","eventual_fallback":false,"bounded_claim_batches":true,"fenced_claims":true,"transactional_with_producer":true},
+    "realtime": {"minimum_consistency":"serializable_or_append_linearizable_by_kind","delivery":"at_least_once","global_order":false,"per_stream_order":true,"durable_offsets":true,"bounded_replay":true}
+  },
+  "portable_envelope_required": true,
+  "provider_native_tables_required": true,
+  "universal_payload_table": false
+}

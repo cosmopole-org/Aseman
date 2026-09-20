@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://aseman.example/contracts/capsule/query/errors.schema.json",
+  "title": "Capsule query error",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["code", "message", "retryable", "missing_capabilities"],
+  "properties": {
+    "code": {"enum": ["invalid_query", "unsupported_capability", "revision_conflict", "cursor_invalid", "cursor_expired", "unavailable", "internal"]},
+    "message": {"type": "string", "maxLength": 4096},
+    "retryable": {"type": "boolean"},
+    "missing_capabilities": {"type": "array", "uniqueItems": true, "items": {"type": "string"}}
+  }
+}

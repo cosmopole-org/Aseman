@@ -254,8 +254,9 @@ impl JsMac {
             ))
         })?;
 
-        let rt = Runtime::new()
-            .map_err(|e| RunError::Runtime(format!("could not create a javascript runtime: {}", e)))?;
+        let rt = Runtime::new().map_err(|e| {
+            RunError::Runtime(format!("could not create a javascript runtime: {}", e))
+        })?;
         rt.set_memory_limit((self.ram_limit_mb as usize).saturating_mul(1024 * 1024));
         rt.set_max_stack_size(MAX_STACK_BYTES);
 
@@ -282,8 +283,9 @@ impl JsMac {
             false
         })));
 
-        let ctx = Context::full(&rt)
-            .map_err(|e| RunError::Runtime(format!("could not create a javascript context: {}", e)))?;
+        let ctx = Context::full(&rt).map_err(|e| {
+            RunError::Runtime(format!("could not create a javascript context: {}", e))
+        })?;
 
         self.running_.store(true, Ordering::Relaxed);
         let outcome = self.run_in_context(&ctx, &rt, &source, &mod_path, &input);
@@ -296,9 +298,9 @@ impl JsMac {
 
         match outcome {
             Ok(()) => Ok(()),
-            Err(RunError::Guest(msg)) if self.stopped_or_timed_out(&timed_out) => {
-                Err(RunError::Interrupted(self.interrupt_reason(&timed_out, &msg)))
-            }
+            Err(RunError::Guest(msg)) if self.stopped_or_timed_out(&timed_out) => Err(
+                RunError::Interrupted(self.interrupt_reason(&timed_out, &msg)),
+            ),
             other => other,
         }
     }

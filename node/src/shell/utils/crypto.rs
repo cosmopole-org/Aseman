@@ -8,7 +8,9 @@ use std::fs;
 use std::path::Path;
 
 use anyhow::{anyhow, Result};
-use rsa::pkcs8::{DecodePrivateKey, DecodePublicKey, EncodePrivateKey, EncodePublicKey, LineEnding};
+use rsa::pkcs8::{
+    DecodePrivateKey, DecodePublicKey, EncodePrivateKey, EncodePublicKey, LineEnding,
+};
 use rsa::rand_core::OsRng;
 use rsa::{RsaPrivateKey, RsaPublicKey};
 use uuid::Uuid;
@@ -33,8 +35,8 @@ pub fn secure_key_pairs(save_path: &str) -> Result<(Vec<u8>, Vec<u8>)> {
     }
 
     let mut rng = OsRng;
-    let private_key = RsaPrivateKey::new(&mut rng, 2048)
-        .map_err(|e| anyhow!("rsa generate: {}", e))?;
+    let private_key =
+        RsaPrivateKey::new(&mut rng, 2048).map_err(|e| anyhow!("rsa generate: {}", e))?;
     let public_key = RsaPublicKey::from(&private_key);
 
     let priv_pem = private_key
@@ -125,8 +127,8 @@ mod tests {
             .duration_since(std::time::UNIX_EPOCH)
             .unwrap()
             .as_nanos();
-        let dir = std::env::temp_dir()
-            .join(format!("caspar-keypair-{}-{}", std::process::id(), nanos));
+        let dir =
+            std::env::temp_dir().join(format!("caspar-keypair-{}-{}", std::process::id(), nanos));
         let path = dir.to_string_lossy().into_owned();
 
         let (priv_pem, pub_pem) = secure_key_pairs(&path).expect("generate keypair");

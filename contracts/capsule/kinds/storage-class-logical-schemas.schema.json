@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://aseman.example/contracts/capsule/kinds/storage-class-logical-schemas.schema.json",
+  "title": "Non-core storage-class logical capsule schemas",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "definitions"],
+  "properties": {
+    "schema_version": {"const": 1},
+    "definitions": {
+      "type": "array",
+      "minItems": 13,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["kind", "fields", "required", "unique_indexes", "range_indexes", "relationships", "retention", "mutation_policy"],
+        "properties": {
+          "kind": {"type": "string"},
+          "fields": {"type": "object", "minProperties": 1, "additionalProperties": {"enum": ["bool", "integer", "float", "bytes", "text", "timestamp_micros", "capsule_id"]}},
+          "required": {"type": "array", "uniqueItems": true, "items": {"type": "string"}},
+          "unique_indexes": {"type": "array", "items": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string"}}},
+          "range_indexes": {"type": "array", "items": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string"}}},
+          "relationships": {"type": "object", "additionalProperties": {"type": "string"}},
+          "retention": {"enum": ["telemetry_bounded", "audit_permanent", "financial_permanent", "outbox_until_delivered", "realtime_by_class", "realtime_subscription"]},
+          "mutation_policy": {"enum": ["mutable_cas", "append_only", "eventual_observation"]}
+        }
+      }
+    }
+  }
+}

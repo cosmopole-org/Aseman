@@ -33,12 +33,14 @@ use std::sync::{Arc, Mutex, RwLock};
 use std::time::{Duration, Instant};
 
 use anyhow::{anyhow, Result};
+use aseman_config::ClusterBootstrapConfig;
 use base64::engine::general_purpose::STANDARD as B64;
 use base64::Engine;
 use once_cell::sync::OnceCell;
 use openraft::{BasicNode, Raft};
 use serde_json::{json, Value};
 
+use crate::drivers::module_admin::{ModuleAdminService, ModuleAdministration};
 use crate::models::core::ICore;
 use crate::models::transaction::ITrx;
 
@@ -150,6 +152,7 @@ pub struct ClusterService {
     proposal_tx: crossbeam_channel::Sender<ClusterCommand>,
     rtt: RwLock<HashMap<u64, PeerHealth>>,
     dropped_proposals: AtomicU64,
+    module_admin: Arc<dyn ModuleAdministration>,
 }
 
 impl ClusterService {
@@ -167,6 +170,10 @@ impl ClusterService {
 
     pub fn auth_token(&self) -> String {
         self.config.read().unwrap().auth_token.clone()
+    }
+
+    pub fn module_admin(&self) -> &dyn ModuleAdministration {
+        self.module_admin.as_ref()
     }
 
     /// Persist a config mutation and return the updated copy.
@@ -232,7 +239,10 @@ impl ClusterService {
             if !token.is_empty() {
                 builder = builder.header("x-caspar-cluster-token", &token);
             }
-            let resp = builder.send().await.map_err(|e| anyhow!("forward: {}", e))?;
+            let resp = builder
+                .send()
+                .await
+                .map_err(|e| anyhow!("forward: {}", e))?;
             if !resp.status().is_success() {
                 let text = resp.text().await.unwrap_or_default();
                 return Err(anyhow!("leader rejected proposal: {}", text));
@@ -275,10 +285,7 @@ impl ClusterService {
 
     // ── background workers ────────────────────────────────────────────────
 
-    fn spawn_replication_worker(
-        self: &Arc<Self>,
-        rx: crossbeam_channel::Receiver<ClusterCommand>,
-    ) {
+    fn spawn_replication_worker(self: &Arc<Self>, rx: crossbeam_channel::Receiver<ClusterCommand>) {
         let svc = self.clone();
         std::thread::Builder::new()
             .name("cluster-replicator".into())
@@ -347,9 +354,7 @@ impl ClusterService {
                         });
                     }
                 }
-                std::thread::sleep(Duration::from_secs(
-                    cfg.rtt_probe_interval_secs.max(3),
-                ));
+                std::thread::sleep(Duration::from_secs(cfg.rtt_probe_interval_secs.max(3)));
             })
             .expect("spawn cluster-rtt-prober");
     }
@@ -512,10 +517,31 @@ fn apply_deploy_artifact(app: &Arc<dyn ICore>, artifact: &DeployArtifact) -> Res
 /// Start the cluster subsystem when enabled by config/env. Called once from
 /// `main` after the core is loaded; a standalone node (the default) returns
 /// immediately and behaves exactly as before.
-pub fn init_from_env(app: Arc<dyn ICore>) {
+pub fn init(app: Arc<dyn ICore>, source: &ClusterBootstrapConfig) {
     let storage_root = app.tools().storage().storage_root();
-    let (cfg, path) = ClusterConfig::bootstrap(&storage_root);
+    let (cfg, path) = ClusterConfig::bootstrap(&storage_root, source);
     if !cfg.enabled {
+        if cfg.auth_token.is_empty() {
+            return;
+        }
+        let module_root = PathBuf::from(&storage_root).join("modules");
+        let admin: Arc<dyn ModuleAdministration> = match ModuleAdminService::open(module_root) {
+            Ok(admin) => Arc::new(admin),
+            Err(error) => {
+                eprintln!("[modules] failed to initialize administration: {error}");
+                return;
+            }
+        };
+        if let Err(error) =
+            server::start_module_admin(admin, cfg.listen_addr.clone(), cfg.auth_token.clone())
+        {
+            eprintln!("[modules] failed to start administration: {error}");
+        } else {
+            eprintln!(
+                "[modules] authenticated administration listener on {}",
+                cfg.listen_addr
+            );
+        }
         return;
     }
     match start(app, cfg, path) {
@@ -553,6 +579,9 @@ pub(crate) fn start_service(
     cfg: ClusterConfig,
     config_path: PathBuf,
 ) -> Result<Arc<ClusterService>> {
+    let module_root = PathBuf::from(app.tools().storage().storage_root()).join("modules");
+    let module_admin: Arc<dyn ModuleAdministration> =
+        Arc::new(ModuleAdminService::open(module_root)?);
     let raft_dir = config_path
         .parent()
         .map(|p| p.join("raft-db"))
@@ -563,8 +592,8 @@ pub(crate) fn start_service(
         app: app.clone(),
         node_id: cfg.node_id,
     });
-    let sm = StateMachineStore::new(db, applier)
-        .map_err(|e| anyhow!("state machine open: {}", e))?;
+    let sm =
+        StateMachineStore::new(db, applier).map_err(|e| anyhow!("state machine open: {}", e))?;
     let raft_config = Arc::new(
         cfg.raft_config()
             .validate()
@@ -598,10 +627,7 @@ pub(crate) fn start_service(
         let is_initialized = rt.block_on(raft.is_initialized()).unwrap_or(false);
         if !is_initialized {
             let mut members = BTreeMap::new();
-            members.insert(
-                cfg.node_id,
-                BasicNode::new(cfg.advertise_addr.clone()),
-            );
+            members.insert(cfg.node_id, BasicNode::new(cfg.advertise_addr.clone()));
             let init_res = rt.block_on(raft.initialize(members));
             if let Err(e) = init_res {
                 // A raft that has voted before refuses re-init; that's fine.
@@ -623,6 +649,7 @@ pub(crate) fn start_service(
         proposal_tx,
         rtt: RwLock::new(HashMap::new()),
         dropped_proposals: AtomicU64::new(0),
+        module_admin,
     });
 
     svc.spawn_replication_worker(proposal_rx);

@@ -104,7 +104,9 @@ pub fn unsubscribe(subscriber_id: &str) {
         // topics are creature-supplied strings, so leaving them behind is an
         // unbounded, externally-driven leak.
         if now_empty {
-            REGISTRY.by_topic.remove_if(topic, |_, subs| subs.is_empty());
+            REGISTRY
+                .by_topic
+                .remove_if(topic, |_, subs| subs.is_empty());
         }
     }
 }

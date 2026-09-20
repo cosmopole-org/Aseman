@@ -1,5 +1,5 @@
-use crate::drivers::vmm::prelude::*;
 use crate::drivers::vmm::network::gateway_types::VmGatewayEndpoint;
+use crate::drivers::vmm::prelude::*;
 
 pub(crate) static VM_GATEWAY_ENDPOINTS: Lazy<Arc<Mutex<HashMap<String, VmGatewayEndpoint>>>> =
     Lazy::new(|| Arc::new(Mutex::new(HashMap::new())));

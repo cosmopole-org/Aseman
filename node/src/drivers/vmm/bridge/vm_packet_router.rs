@@ -6,11 +6,11 @@
 //! its `vmType` hint, plugin artifact-extension detection on the resolved
 //! module path, and finally the registered default runtime.
 
-use crate::drivers::vmm::prelude::*;
-use crate::drivers::vmm::bridge::vm_packet_schema::{VmPacketKind, VmPacketContext};
 use crate::drivers::vmm::bridge::gateway_control_api::handle_gateway_control_api;
 use crate::drivers::vmm::bridge::runtime_io::log;
+use crate::drivers::vmm::bridge::vm_packet_schema::{VmPacketContext, VmPacketKind};
 use crate::drivers::vmm::host::vm_host_functions::handle_unified_host_call;
+use crate::drivers::vmm::prelude::*;
 
 use caspar_vm_sdk::registry as vm_registry;
 
@@ -28,9 +28,7 @@ pub fn route_vm_packet(packet: &JsonValue) -> String {
             VmPacketKind::StatusVm => dispatch_exec_packet(&owned, |p, pkt| p.status_vm(pkt)),
             VmPacketKind::CopyToVm => dispatch_exec_packet(&owned, |p, pkt| p.copy_to_vm(pkt)),
             VmPacketKind::CopyFromVm => dispatch_exec_packet(&owned, |p, pkt| p.copy_from_vm(pkt)),
-            VmPacketKind::BuildVmImage => {
-                dispatch_exec_packet(&owned, |p, pkt| p.build_image(pkt))
-            }
+            VmPacketKind::BuildVmImage => dispatch_exec_packet(&owned, |p, pkt| p.build_image(pkt)),
             VmPacketKind::HostCall => handle_unified_host_call(&owned),
             VmPacketKind::VerifyProgramExecution => dispatch_verify_program_packet(&owned),
             VmPacketKind::ForwardHttp => dispatch_forward_http_packet(&owned),
@@ -52,8 +50,7 @@ pub fn route_vm_packet(packet: &JsonValue) -> String {
                         app.tools().vmm().vm_callback(&owned.to_string()).0
                     }) {
                         Some(res) => res,
-                        None => json!({"ok": false, "error": "vmm not initialised"})
-                            .to_string(),
+                        None => json!({"ok": false, "error": "vmm not initialised"}).to_string(),
                     }
                 } else {
                     json!({

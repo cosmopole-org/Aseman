@@ -362,12 +362,21 @@ fn concurrent_runs_of_one_vm_never_share_a_json_transaction() {
     let (second, b) = run("trxiso-b", source, "{}");
     a.expect("first run");
     b.expect("second run");
-    let (ka, kb) = (first.state.borrow().trx_key.clone(), second.state.borrow().trx_key.clone());
+    let (ka, kb) = (
+        first.state.borrow().trx_key.clone(),
+        second.state.borrow().trx_key.clone(),
+    );
     assert_ne!(ka, kb, "each execution needs its own transaction");
-    assert!(ka.starts_with("main#") && kb.starts_with("main#"), "the key still names its VM");
+    assert!(
+        ka.starts_with("main#") && kb.starts_with("main#"),
+        "the key still names its VM"
+    );
     let host = MockHost::get();
     let inner = host.inner.lock().unwrap();
-    assert!(inner.ended_trx.contains(&ka) && inner.ended_trx.contains(&kb), "both committed");
+    assert!(
+        inner.ended_trx.contains(&ka) && inner.ended_trx.contains(&kb),
+        "both committed"
+    );
 }
 
 #[test]
@@ -436,7 +445,9 @@ fn a_missing_module_file_is_a_runtime_error_not_a_panic() {
         64,
         Duration::from_secs(5),
     );
-    let err = vm.execute_on_update("{}".to_string()).expect_err("must fail");
+    let err = vm
+        .execute_on_update("{}".to_string())
+        .expect_err("must fail");
     assert!(matches!(err, RunError::Runtime(_)), "got: {:?}", err);
 }
 
@@ -451,7 +462,9 @@ fn an_empty_module_path_is_refused_before_anything_is_built() {
         64,
         Duration::from_secs(5),
     );
-    let err = vm.execute_on_update("{}".to_string()).expect_err("must fail");
+    let err = vm
+        .execute_on_update("{}".to_string())
+        .expect_err("must fail");
     assert!(err.to_string().contains("astPath"), "got: {}", err);
 }
 
@@ -520,14 +533,22 @@ fn terminate_stops_a_running_vm() {
     let flag = stopped.clone();
     let killer = std::thread::spawn(move || {
         std::thread::sleep(Duration::from_millis(250));
-        flag.store(terminate_managed_vm("terminated", "main"), Ordering::Relaxed);
+        flag.store(
+            terminate_managed_vm("terminated", "main"),
+            Ordering::Relaxed,
+        );
     });
 
     let started = std::time::Instant::now();
-    let err = vm.execute_on_update("{}".to_string()).expect_err("must be stopped");
+    let err = vm
+        .execute_on_update("{}".to_string())
+        .expect_err("must be stopped");
     killer.join().unwrap();
 
-    assert!(stopped.load(Ordering::Relaxed), "the VM must have been found");
+    assert!(
+        stopped.load(Ordering::Relaxed),
+        "the VM must have been found"
+    );
     assert!(
         started.elapsed() < Duration::from_secs(30),
         "terminate must actually stop the script, not wait for the deadline"
@@ -681,7 +702,11 @@ fn an_unparseable_host_request_is_answered_not_swallowed() {
         "{}",
     );
     out.expect("the module should run");
-    assert!(output_of(&vm).contains("not valid JSON"), "got: {}", output_of(&vm));
+    assert!(
+        output_of(&vm).contains("not valid JSON"),
+        "got: {}",
+        output_of(&vm)
+    );
 }
 
 /// A real bundled Da Vinci program, executed in this VM.
@@ -766,7 +791,10 @@ fn a_bundled_davinci_program_runs_and_posts_to_the_log() {
         .iter()
         .find(|c| c["op"] == "signal")
         .unwrap_or_else(|| panic!("no store signal was sent; calls: {calls:?}"));
-    let tags = signal["input"]["tags"].as_array().cloned().unwrap_or_default();
+    let tags = signal["input"]["tags"]
+        .as_array()
+        .cloned()
+        .unwrap_or_default();
     let tags: Vec<&str> = tags.iter().filter_map(|t| t.as_str()).collect();
     assert!(tags.contains(&"kind=answer"), "tags: {tags:?}");
     assert!(tags.contains(&"run=r1"), "tags: {tags:?}");

@@ -47,17 +47,14 @@ use tungstenite::protocol::Message;
 use tungstenite::{accept as ws_accept, WebSocket};
 
 use crate::drivers::gateway_subs;
+use crate::drivers::network::client::session::{self, SessionSocket, SessionTransport};
 use crate::drivers::network::framing::{
-    accept, bind_tls, decode_request_body, encode_client_response_body,
-    encode_client_update_body, TlsStream,
+    accept, bind_tls, encode_client_response_body, encode_client_update_body, TlsStream,
 };
 use crate::models::core::ICore;
-use crate::models::packet::{build_error_json, ResponseSimpleMessage};
 use crate::models::ports::network::ws::IWs;
-use crate::models::ports::ratelimit::{
-    rate_limited_body, Protocol, RateLimitDecision, RateLimitKey, RATE_LIMITED_RES_CODE,
-};
 use crate::models::ports::network::TlsConfig;
+use crate::models::ports::ratelimit::Protocol;
 use crate::models::ports::signaler::Listener;
 use crate::models::transaction::ITrx;
 use crate::shell::utils::crypto::secure_unique_string;
@@ -153,6 +150,36 @@ impl Socket {
     }
 }
 
+impl SessionSocket for Socket {
+    fn peer(&self) -> &str {
+        &self.peer
+    }
+
+    fn peer_ip(&self) -> String {
+        Socket::peer_ip(self)
+    }
+
+    fn user_id(&self) -> String {
+        Socket::user_id(self)
+    }
+
+    fn listener_registered(&self) -> bool {
+        self.listener_registered.load(Ordering::Acquire)
+    }
+
+    fn mark_listener_registered(&self) {
+        self.listener_registered.store(true, Ordering::Release);
+    }
+
+    fn write_response(&self, packet_id: &str, code: i64, body: &[u8]) {
+        Socket::write_response(self, packet_id, code, body);
+    }
+
+    fn write_update(&self, path: &str, body: &[u8]) {
+        Socket::write_update(self, path, body);
+    }
+}
+
 /// `Ws` driver implementing [`IWs`].
 pub struct Ws {
     app: Arc<dyn ICore>,
@@ -175,219 +202,7 @@ impl Ws {
     }
 
     fn process_inbound(self: &Arc<Self>, socket: &Arc<Socket>, body: Vec<u8>) {
-        // The 4-byte length prefix that the legacy Go (gws) client wraps
-        // every message in is already stripped by the I/O loop before this
-        // is called. ACK detection also happens upstream, so any body that
-        // reaches here is a real request body.
-        let body_len = body.len();
-        let parsed = match decode_request_body(&body) {
-            Ok(p) => p,
-            Err(e) => {
-                eprintln!(
-                    "[ws] decode_request_body failed: peer={} body_len={} err={}",
-                    socket.peer, body_len, e
-                );
-                return;
-            }
-        };
-        let peer_ip = socket.peer_ip();
-        let started = Instant::now();
-        eprintln!(
-            "[ws] >> path={} user={} pkt={} payload_len={} peer={}",
-            parsed.path,
-            parsed.user_id,
-            parsed.packet_id,
-            parsed.payload.len(),
-            socket.peer
-        );
-
-        // Cross-protocol admission control — the same shared limiter the TCP and
-        // HTTP-ingress transports use. Key on the socket's verified user id (set
-        // only after signature auth); pre-auth traffic bills the peer IP. See
-        // `Tcp::process_inbound` for the rationale.
-        let verified_user = socket.user_id();
-        let rl_key = if verified_user.is_empty() {
-            RateLimitKey::anonymous(Protocol::Ws, &peer_ip, &parsed.path)
-        } else {
-            RateLimitKey::authenticated(Protocol::Ws, &verified_user, &peer_ip, &parsed.path)
-        };
-        if let RateLimitDecision::Limited { retry_after, scope } =
-            self.app.tools().rate_limiter().check(&rl_key)
-        {
-            let body = serde_json::to_vec(&rate_limited_body(retry_after, scope))
-                .unwrap_or_default();
-            socket.write_response(&parsed.packet_id, RATE_LIMITED_RES_CODE, &body);
-            eprintln!(
-                "[ws] << path={} pkt={} code={} rate_limited scope={} retry_ms={} elapsed_ms={}",
-                parsed.path,
-                parsed.packet_id,
-                RATE_LIMITED_RES_CODE,
-                scope.as_str(),
-                retry_after.as_millis(),
-                started.elapsed().as_millis()
-            );
-            return;
-        }
-
-        match parsed.path.as_str() {
-            "logout" => {
-                let (ok, _, _) = self
-                    .app
-                    .tools()
-                    .security()
-                    .auth_with_signature(&parsed.user_id, &parsed.payload, &parsed.signature);
-                let msg = if ok {
-                    self.app
-                        .tools()
-                        .signaler()
-                        .listeners()
-                        .remove(&parsed.user_id);
-                    "loggedout"
-                } else {
-                    "logout_failed"
-                };
-                socket.write_response(
-                    &parsed.packet_id,
-                    0,
-                    &serde_json::to_vec(&build_error_json(msg)).unwrap_or_default(),
-                );
-                eprintln!(
-                    "[ws] << path=logout pkt={} elapsed_ms={}",
-                    parsed.packet_id,
-                    started.elapsed().as_millis()
-                );
-                return;
-            }
-            "authenticate" | "/creatures/authenticate" => {
-                let (ok, _, _) = self
-                    .app
-                    .tools()
-                    .security()
-                    .auth_with_signature(&parsed.user_id, &parsed.payload, &parsed.signature);
-                if ok {
-                    self.attach_user_listener(socket, &parsed.user_id);
-                    socket.write_response(
-                        &parsed.packet_id,
-                        0,
-                        &serde_json::to_vec(&build_error_json("authenticated"))
-                            .unwrap_or_default(),
-                    );
-                    let msg = serde_json::to_vec(&ResponseSimpleMessage {
-                        message: "old_queue_end".to_string(),
-                    })
-                    .unwrap_or_default();
-                    socket.write_update("old_queue_end", &msg);
-                } else {
-                    socket.write_response(
-                        &parsed.packet_id,
-                        4,
-                        &serde_json::to_vec(&build_error_json("authentication failed"))
-                            .unwrap_or_default(),
-                    );
-                }
-                eprintln!(
-                    "[ws] << path=authenticate pkt={} elapsed_ms={}",
-                    parsed.packet_id,
-                    started.elapsed().as_millis()
-                );
-                return;
-            }
-            _ => {}
-        }
-
-        let secure = match self.app.actor().fetch_secure_action(&parsed.path) {
-            Some(s) => s,
-            None => {
-                socket.write_response(
-                    &parsed.packet_id,
-                    1,
-                    &serde_json::to_vec(&build_error_json("action not found"))
-                        .unwrap_or_default(),
-                );
-                eprintln!(
-                    "[ws] << path={} pkt={} code=1 action_not_found elapsed_ms={}",
-                    parsed.path,
-                    parsed.packet_id,
-                    started.elapsed().as_millis()
-                );
-                return;
-            }
-        };
-        let raw_payload =
-            serde_json::from_slice::<Value>(&parsed.payload).unwrap_or(Value::Null);
-        let input = match secure.parse_input("ws", raw_payload) {
-            Ok(i) => i,
-            Err(e) => {
-                socket.write_response(
-                    &parsed.packet_id,
-                    2,
-                    &serde_json::to_vec(&build_error_json(&format!("{}", e)))
-                        .unwrap_or_default(),
-                );
-                eprintln!(
-                    "[ws] << path={} pkt={} code=2 parse_input_err={} elapsed_ms={}",
-                    parsed.path,
-                    parsed.packet_id,
-                    e,
-                    started.elapsed().as_millis()
-                );
-                return;
-            }
-        };
-        match secure.securely_act(
-            &parsed.user_id,
-            &parsed.packet_id,
-            &parsed.payload,
-            &parsed.signature,
-            input,
-            &peer_ip,
-            &[],
-        ) {
-            Ok((sc, value)) => {
-                let body = serde_json::to_vec(&value).unwrap_or_default();
-                socket.write_response(&parsed.packet_id, sc, &body);
-                eprintln!(
-                    "[ws] << path={} pkt={} code={} resp_len={} elapsed_ms={}",
-                    parsed.path,
-                    parsed.packet_id,
-                    sc,
-                    body.len(),
-                    started.elapsed().as_millis()
-                );
-                // Lazily register the update-stream listener after the first
-                // successful authenticated request on this connection, exactly
-                // like Tcp does. Without this, a WS client that dev-logs-in
-                // via /creatures/login (and never calls the token-based
-                // /creatures/authenticate) has no listener, so creature signal
-                // results (creatures/signal/result) are silently dropped.
-                if !parsed.user_id.is_empty()
-                    && !socket.listener_registered.load(Ordering::Acquire)
-                {
-                    socket.listener_registered.store(true, Ordering::Release);
-                    self.attach_user_listener(socket, &parsed.user_id);
-                }
-                // The gateway subscription channel. `/gateway/subscribe`
-                // verifies the bridge's bearer token and answers with the
-                // topics it granted; binding the socket has to happen here,
-                // because only the transport can write to this connection.
-                self.apply_gateway_subscription(socket, &parsed.path, &value);
-            }
-            Err(e) => {
-                socket.write_response(
-                    &parsed.packet_id,
-                    3,
-                    &serde_json::to_vec(&build_error_json(&format!("{}", e)))
-                        .unwrap_or_default(),
-                );
-                eprintln!(
-                    "[ws] << path={} pkt={} code=3 act_err={} elapsed_ms={}",
-                    parsed.path,
-                    parsed.packet_id,
-                    e,
-                    started.elapsed().as_millis()
-                );
-            }
-        }
+        session::process_inbound(self.as_ref(), socket, body);
     }
 
     /// Bind (or release) this connection's gateway topic subscription from an
@@ -437,7 +252,7 @@ impl Ws {
         }
     }
 
-    fn attach_user_listener(self: &Arc<Self>, socket: &Arc<Socket>, user_id: &str) {
+    fn attach_user_listener(&self, socket: &Arc<Socket>, user_id: &str) {
         // Track every live socket for this user so signal results fan out to all
         // of the user's connections, not just the most recent (the signaler
         // keeps a single listener per user_id). See `Tcp::attach_user_listener`.
@@ -500,7 +315,9 @@ impl Ws {
         // and the I/O loop can interleave outbound sends. The lock-free
         // architecture means writers never block on this; the timeout just
         // bounds how long the loop sleeps between outbound flushes.
-        let _ = ws.get_ref().set_read_timeout(Some(Duration::from_millis(20)));
+        let _ = ws
+            .get_ref()
+            .set_read_timeout(Some(Duration::from_millis(20)));
 
         let (tx, rx) = mpsc::channel::<OutboundFrame>();
         let socket = Socket::new(peer.clone(), tx);
@@ -592,7 +409,11 @@ impl Ws {
                     // The Go (gws) client wraps every payload in its own
                     // 4-byte length prefix, mirroring the TCP framing. Strip
                     // it here so downstream handlers see a clean body.
-                    let body = if body.len() >= 4 { body[4..].to_vec() } else { body };
+                    let body = if body.len() >= 4 {
+                        body[4..].to_vec()
+                    } else {
+                        body
+                    };
                     if body.len() == 1 && body[0] == 0x01 {
                         // Client ACK: the response frame was delivered.
                         // The frame was already removed from buffered at send
@@ -682,6 +503,24 @@ impl Ws {
                 .sockets
                 .remove_if(&user_id, |_, current| Arc::ptr_eq(&socket_clone, current));
         });
+    }
+}
+
+impl SessionTransport<Socket> for Ws {
+    fn app(&self) -> &Arc<dyn ICore> {
+        &self.app
+    }
+
+    fn protocol(&self) -> Protocol {
+        Protocol::Ws
+    }
+
+    fn attach_user_listener(&self, socket: &Arc<Socket>, user_id: &str) {
+        Ws::attach_user_listener(self, socket, user_id);
+    }
+
+    fn apply_gateway_subscription(&self, socket: &Arc<Socket>, path: &str, result: &Value) {
+        Ws::apply_gateway_subscription(self, socket, path, result);
     }
 }
 

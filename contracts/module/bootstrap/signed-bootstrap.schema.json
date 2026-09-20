@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://aseman.example/contracts/module/bootstrap/signed-bootstrap.schema.json",
+  "title": "Signed module bootstrap snapshot",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["snapshot", "signature"],
+  "properties": {
+    "snapshot": {"$ref": "bootstrap.schema.json"},
+    "signature": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["algorithm", "key_id", "signature_hex"],
+      "properties": {
+        "algorithm": {"const": "ed25519"},
+        "key_id": {"type": "string", "minLength": 1, "maxLength": 128},
+        "signature_hex": {"type": "string", "pattern": "^[0-9a-fA-F]{128}$"}
+      }
+    }
+  }
+}

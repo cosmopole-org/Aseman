@@ -184,7 +184,12 @@ impl VmHost for VmmHostBridge {
         }
     }
 
-    fn vm_json_trx_op(&self, vm_id: &str, op: &str, input: &JsonValue) -> Result<JsonValue, String> {
+    fn vm_json_trx_op(
+        &self,
+        vm_id: &str,
+        op: &str,
+        input: &JsonValue,
+    ) -> Result<JsonValue, String> {
         let trx = with_global_app(|app| app.begin_vm_trx(vm_id))
             .ok_or_else(|| "ICore not initialised".to_string())?;
         match op {
@@ -244,7 +249,6 @@ impl VmHost for VmmHostBridge {
     }
 
     fn storage_root(&self) -> String {
-        with_global_app(|app| app.tools().storage().storage_root().to_string())
-            .unwrap_or_default()
+        with_global_app(|app| app.tools().storage().storage_root().to_string()).unwrap_or_default()
     }
 }

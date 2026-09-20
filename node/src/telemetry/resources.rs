@@ -68,7 +68,11 @@ impl ResourceSampler {
         if let Some(rss) = process_rss_bytes() {
             m.insert("process_rss_bytes".to_string(), json!(rss));
         }
-        let path = if disk_path.trim().is_empty() { "/" } else { disk_path };
+        let path = if disk_path.trim().is_empty() {
+            "/"
+        } else {
+            disk_path
+        };
         if let Some((total, free)) = disk_usage(path) {
             let used = total.saturating_sub(free);
             m.insert("disk_path".to_string(), json!(path));

@@ -247,8 +247,7 @@ pub fn save_owner(dir: &Path, username: &str, owner_id: &str, owner_key: &str) -
                  on every start.",
     });
     let path = dir.join("node-owner.json");
-    fs::write(&path, serde_json::to_string_pretty(&record)?)
-        .context("writing node-owner.json")?;
+    fs::write(&path, serde_json::to_string_pretty(&record)?).context("writing node-owner.json")?;
     #[cfg(unix)]
     {
         use std::os::unix::fs::PermissionsExt;
@@ -282,7 +281,12 @@ mod tests {
         let d = std::env::temp_dir().join(format!("ctl-owner-{}", std::process::id()));
         let _ = fs::create_dir_all(&d);
         fs::write(d.join(".env"), "OWNER_ID=owner-node1\nFOO=bar\nBAZ=1\n").unwrap();
-        rewrite_env_owner(&d, "1@abc", "-----BEGIN PRIVATE KEY-----\nkey\n-----END PRIVATE KEY-----").unwrap();
+        rewrite_env_owner(
+            &d,
+            "1@abc",
+            "-----BEGIN PRIVATE KEY-----\nkey\n-----END PRIVATE KEY-----",
+        )
+        .unwrap();
         let out = fs::read_to_string(d.join(".env")).unwrap();
         assert!(out.contains("OWNER_ID=1@abc"));
         assert!(out.contains("FOO=bar") && out.contains("BAZ=1"));
@@ -299,7 +303,12 @@ mod tests {
             "OWNER_ID=owner-node1\nOWNER_PRIVATE_KEY=\"-----BEGIN PRIVATE KEY-----\nold\nline\n-----END PRIVATE KEY-----\"\nKEEP=yes\n",
         )
         .unwrap();
-        rewrite_env_owner(&d, "1@node", "-----BEGIN PRIVATE KEY-----\nnew\n-----END PRIVATE KEY-----").unwrap();
+        rewrite_env_owner(
+            &d,
+            "1@node",
+            "-----BEGIN PRIVATE KEY-----\nnew\n-----END PRIVATE KEY-----",
+        )
+        .unwrap();
         let out = fs::read_to_string(d.join(".env")).unwrap();
         assert!(out.contains("OWNER_ID=1@node"), "{out}");
         assert!(out.contains("KEEP=yes"), "{out}");

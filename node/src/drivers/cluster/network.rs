@@ -44,22 +44,13 @@ impl HttpRaftClient {
         Err: std::error::Error + DeserializeOwned,
     {
         let url = format!("http://{}/raft/{}", self.addr, uri);
-        let mut builder = self
-            .client
-            .post(&url)
-            .timeout(option.hard_ttl())
-            .json(req);
+        let mut builder = self.client.post(&url).timeout(option.hard_ttl()).json(req);
         if !self.auth_token.is_empty() {
             builder = builder.header("x-caspar-cluster-token", &self.auth_token);
         }
-        let resp = builder
-            .send()
-            .await
-            .map_err(|e| Unreachable::new(&e))?;
-        let result: Result<Resp, RaftError<NodeId, Err>> = resp
-            .json()
-            .await
-            .map_err(|e| Unreachable::new(&e))?;
+        let resp = builder.send().await.map_err(|e| Unreachable::new(&e))?;
+        let result: Result<Resp, RaftError<NodeId, Err>> =
+            resp.json().await.map_err(|e| Unreachable::new(&e))?;
         result.map_err(|e| RemoteError::new(self.target, e).into())
     }
 }

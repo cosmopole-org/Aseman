@@ -1,0 +1,28 @@
+[
+  {
+    "code": "invalid_query",
+    "message": "field is not declared by the capsule definition",
+    "retryable": false,
+    "missing_capabilities": []
+  },
+  {
+    "code": "unsupported_capability",
+    "message": "provider cannot guarantee serializable consistency",
+    "retryable": false,
+    "missing_capabilities": [
+      "consistency.linearizable"
+    ]
+  },
+  {
+    "code": "revision_conflict",
+    "message": "expected revision does not match the current revision",
+    "retryable": false,
+    "missing_capabilities": []
+  },
+  {
+    "code": "unavailable",
+    "message": "provider is temporarily unavailable",
+    "retryable": true,
+    "missing_capabilities": []
+  }
+]

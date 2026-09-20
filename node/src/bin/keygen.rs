@@ -6,7 +6,6 @@
 //! plain hex. The Rust port matches that byte format using the `k256`
 //! crate directly so this binary stays self-contained.
 
-use std::env;
 use std::fs;
 use std::path::PathBuf;
 
@@ -22,8 +21,8 @@ fn main() {
 }
 
 fn default_data_dir() -> PathBuf {
-    let home = env::var("HOME").unwrap_or_default();
-    let suffix = match env::consts::OS {
+    let home = aseman_config::process_home_dir().unwrap_or_default();
+    let suffix = match std::env::consts::OS {
         "macos" => ".Babble",
         "windows" => "AppData/Roaming/Babble",
         _ => ".babble",
@@ -37,10 +36,7 @@ fn generate() -> Result<()> {
     let pub_key_file = data_dir.join("key.pub");
 
     if priv_key_file.exists() {
-        return Err(anyhow!(
-            "a key already lives under: {}",
-            data_dir.display()
-        ));
+        return Err(anyhow!("a key already lives under: {}", data_dir.display()));
     }
     fs::create_dir_all(&data_dir)?;
 

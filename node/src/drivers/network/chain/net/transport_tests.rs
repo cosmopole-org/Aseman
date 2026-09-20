@@ -13,8 +13,7 @@ use std::time::Duration;
 use crossbeam_channel::{bounded, RecvTimeoutError};
 
 use crate::drivers::network::chain::hashgraph::{
-    Block, BlockSignature, Event, Frame, FrameEvent, InternalTransaction, Root,
-    TransactionType,
+    Block, BlockSignature, Event, Frame, FrameEvent, InternalTransaction, Root, TransactionType,
 };
 use crate::drivers::network::chain::peers::Peer;
 

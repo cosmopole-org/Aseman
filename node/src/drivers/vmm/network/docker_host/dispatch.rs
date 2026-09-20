@@ -15,7 +15,9 @@
 //! wasm/elpian runtimes use. The result is returned verbatim as the `RESPONSE`
 //! payload.
 
-use crate::drivers::vmm::host::functions::program_target::{PROGRAM_TARGET_OPS, TARGET_PROGRAM_ID_KEY};
+use crate::drivers::vmm::host::functions::program_target::{
+    PROGRAM_TARGET_OPS, TARGET_PROGRAM_ID_KEY,
+};
 use crate::drivers::vmm::host::functions::vm_ownership::{TARGET_VM_ID_KEY, VM_TARGET_OPS};
 use crate::drivers::vmm::host::vm_host_functions::handle_unified_host_call;
 use crate::drivers::vmm::network::docker_host::connection::ContainerIdentity;
@@ -59,7 +61,11 @@ pub(crate) fn dispatch_host_call(identity: &ContainerIdentity, request: &JsonVal
 /// container, and every `deployEntity`/`deleteProgram` at its own program. The
 /// target is split out here instead of being overwritten, and identity stamping
 /// stays exactly as it was.
-fn targets(op: &str, input: &JsonValue, identity: &ContainerIdentity) -> Vec<(&'static str, String)> {
+fn targets(
+    op: &str,
+    input: &JsonValue,
+    identity: &ContainerIdentity,
+) -> Vec<(&'static str, String)> {
     let named_other = |field: &str, own: &str| -> Option<String> {
         let requested = input[field].as_str().unwrap_or("").trim();
         if requested.is_empty() || requested == own {
@@ -126,7 +132,9 @@ fn stamp_identity(input: &mut JsonValue, identity: &ContainerIdentity) {
 }
 
 fn error_response(msg: &str) -> Vec<u8> {
-    json!({ "ok": false, "error": msg }).to_string().into_bytes()
+    json!({ "ok": false, "error": msg })
+        .to_string()
+        .into_bytes()
 }
 
 #[cfg(test)]
@@ -172,7 +180,10 @@ mod tests {
 
     #[test]
     fn a_program_op_keeps_its_target_apart_from_the_callers_identity() {
-        let input = stamped("deployEntity", json!({"programId": "proxy-program", "entityId": "main"}));
+        let input = stamped(
+            "deployEntity",
+            json!({"programId": "proxy-program", "entityId": "main"}),
+        );
         assert_eq!(input["programId"], "10@global");
         assert_eq!(input[TARGET_PROGRAM_ID_KEY], "proxy-program");
         let input = stamped("deleteProgram", json!({"programId": "proxy-program"}));

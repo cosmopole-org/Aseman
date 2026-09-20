@@ -227,8 +227,9 @@ pub fn host_call(
                     "machineId": rt.machine_id,
                     "vmId": rt.vm_id,
                 })),
-                None => json!({"ok": false, "error": "caspar vm host is not initialised"})
-                    .to_string(),
+                None => {
+                    json!({"ok": false, "error": "caspar vm host is not initialised"}).to_string()
+                }
             }
         }
     };
@@ -274,7 +275,10 @@ fn return_string(
 fn read_guest_str(_caller: &mut CallingFrame, offset: WasmValue, len: WasmValue) -> String {
     let mem = _caller.memory_mut(0).unwrap();
     let bytes = mem
-        .get_data(offset.to_i32().cast_unsigned(), len.to_i32().cast_unsigned())
+        .get_data(
+            offset.to_i32().cast_unsigned(),
+            len.to_i32().cast_unsigned(),
+        )
         .unwrap_or_default();
     str::from_utf8(&bytes).unwrap_or("").to_string()
 }

@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://aseman.example/contracts/module/lifecycle.schema.json",
+  "title": "Module lifecycle and routing generation",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["module_key", "state", "routing_generation"],
+  "properties": {
+    "module_key": {"type": "string", "minLength": 3},
+    "state": {"enum": ["installed", "validated", "staged", "ready", "active", "draining", "stopped", "failed"]},
+    "routing_generation": {"type": "integer", "minimum": 0},
+    "previous_module_key": {"type": ["string", "null"]},
+    "conformance_report_digest": {"type": ["string", "null"], "pattern": "^sha256:[0-9a-fA-F]{64}$"}
+  }
+}

@@ -77,8 +77,7 @@ impl TierConfig {
     }
 }
 
-/// Full limiter configuration, normally built from the environment via
-/// [`RateLimiterConfig::from_env`].
+/// Full limiter configuration, built from the composition root's typed values.
 #[derive(Debug, Clone, Copy)]
 pub struct RateLimiterConfig {
     /// Master switch. When `false` every request is admitted.
@@ -121,62 +120,35 @@ impl Default for RateLimiterConfig {
 }
 
 impl RateLimiterConfig {
-    /// Build configuration from `RATE_LIMIT_*` environment variables, falling
-    /// back to [`RateLimiterConfig::default`] for anything unset or malformed.
-    ///
-    /// | Variable | Meaning | Default |
-    /// |---|---|---|
-    /// | `RATE_LIMIT_ENABLED` | master on/off (`false`/`0`/`no`/`off` = off) | on |
-    /// | `RATE_LIMIT_AUTH_RPS` | authenticated sustained req/s | 50 |
-    /// | `RATE_LIMIT_AUTH_BURST` | authenticated burst | 100 |
-    /// | `RATE_LIMIT_ANON_RPS` | anonymous sustained req/s | 10 |
-    /// | `RATE_LIMIT_ANON_BURST` | anonymous burst | 20 |
-    /// | `RATE_LIMIT_GLOBAL_RPS` | node-wide req/s (`<= 0` disables) | 5000 |
-    /// | `RATE_LIMIT_GLOBAL_BURST` | node-wide burst | 10000 |
-    /// | `RATE_LIMIT_IDLE_EVICT_SECS` | idle bucket TTL (seconds) | 300 |
-    pub fn from_env() -> RateLimiterConfig {
-        let mut cfg = RateLimiterConfig::default();
-
-        if let Ok(v) = std::env::var("RATE_LIMIT_ENABLED") {
-            cfg.enabled = !matches!(
-                v.trim().to_ascii_lowercase().as_str(),
-                "0" | "false" | "no" | "off"
-            );
-        }
-        if let Some(v) = env_f64("RATE_LIMIT_AUTH_RPS") {
-            cfg.authenticated.rate_per_sec = v;
-        }
-        if let Some(v) = env_f64("RATE_LIMIT_AUTH_BURST") {
-            cfg.authenticated.burst = v;
-        }
-        if let Some(v) = env_f64("RATE_LIMIT_ANON_RPS") {
-            cfg.anonymous.rate_per_sec = v;
-        }
-        if let Some(v) = env_f64("RATE_LIMIT_ANON_BURST") {
-            cfg.anonymous.burst = v;
-        }
-        if let Some(v) = env_f64("RATE_LIMIT_GLOBAL_RPS") {
-            cfg.global.rate_per_sec = v;
-            cfg.global_enabled = v > 0.0;
-        }
-        if let Some(v) = env_f64("RATE_LIMIT_GLOBAL_BURST") {
-            cfg.global.burst = v;
-        }
-        if let Some(v) = env_f64("RATE_LIMIT_IDLE_EVICT_SECS") {
-            if v > 0.0 {
-                cfg.idle_ttl = Duration::from_secs_f64(v);
-            }
-        }
-
+    pub fn from_typed(source: &aseman_config::RateLimitConfig) -> RateLimiterConfig {
+        let idle_seconds =
+            if source.idle_evict_seconds.is_finite() && source.idle_evict_seconds > 0.0 {
+                source.idle_evict_seconds
+            } else {
+                300.0
+            };
+        let mut cfg = RateLimiterConfig {
+            enabled: source.enabled,
+            authenticated: TierConfig {
+                rate_per_sec: source.authenticated_rps,
+                burst: source.authenticated_burst,
+            },
+            anonymous: TierConfig {
+                rate_per_sec: source.anonymous_rps,
+                burst: source.anonymous_burst,
+            },
+            global: TierConfig {
+                rate_per_sec: source.global_rps,
+                burst: source.global_burst,
+            },
+            global_enabled: source.global_rps > 0.0,
+            idle_ttl: Duration::from_secs_f64(idle_seconds),
+        };
         cfg.authenticated = cfg.authenticated.sanitized();
         cfg.anonymous = cfg.anonymous.sanitized();
         cfg.global = cfg.global.sanitized();
         cfg
     }
-}
-
-fn env_f64(name: &str) -> Option<f64> {
-    std::env::var(name).ok().and_then(|v| v.trim().parse::<f64>().ok())
 }
 
 /// A single token bucket. All time is passed in explicitly so the refill logic
@@ -208,7 +180,9 @@ impl Bucket {
     fn try_acquire(&mut self, now: Instant) -> Result<u32, Duration> {
         // Refill. `saturating_duration_since` guards against any non-monotonic
         // clock surprises (returns zero rather than panicking).
-        let elapsed = now.saturating_duration_since(self.last_refill).as_secs_f64();
+        let elapsed = now
+            .saturating_duration_since(self.last_refill)
+            .as_secs_f64();
         if elapsed > 0.0 {
             self.tokens = (self.tokens + elapsed * self.rate_per_sec).min(self.capacity);
             self.last_refill = now;
@@ -257,9 +231,9 @@ impl RateLimiter {
         limiter
     }
 
-    /// Build a limiter from the environment.
-    pub fn from_env() -> Arc<RateLimiter> {
-        let cfg = RateLimiterConfig::from_env();
+    /// Build a limiter from validated typed configuration.
+    pub fn from_typed(source: &aseman_config::RateLimitConfig) -> Arc<RateLimiter> {
+        let cfg = RateLimiterConfig::from_typed(source);
         eprintln!(
             "[ratelimit] enabled={} auth={}/{} anon={}/{} global={} idle_ttl={}s",
             cfg.enabled,
@@ -296,7 +270,9 @@ impl RateLimiter {
 
     fn check_at(&self, key: &RateLimitKey, now: Instant) -> RateLimitDecision {
         if !self.cfg.enabled {
-            return RateLimitDecision::Allowed { remaining: u32::MAX };
+            return RateLimitDecision::Allowed {
+                remaining: u32::MAX,
+            };
         }
 
         let (bucket_key, tier) = self.resolve(key);

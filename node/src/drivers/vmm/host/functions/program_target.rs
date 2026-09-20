@@ -86,7 +86,11 @@ fn normalize_create_input(caller: &str, obj: &mut Map<String, Value>) {
         .map(str::trim)
         .filter(|s| !s.is_empty())
         .map(str::to_string);
-    let machine = obj.get("machineId").and_then(Value::as_str).unwrap_or("").trim();
+    let machine = obj
+        .get("machineId")
+        .and_then(Value::as_str)
+        .unwrap_or("")
+        .trim();
     if let Some(app_id) = app_id {
         if machine.is_empty() || machine == caller {
             obj.insert("machineId".to_string(), Value::String(app_id));
@@ -101,7 +105,11 @@ fn denied(what: &str) -> String {
 /// Point a program op at the program its caller named, once the caller is known.
 ///
 /// Returns the error response to send when the caller may not act on it.
-pub(crate) fn apply_program_target(op: &str, caller_program_id: &str, input: &mut Value) -> Result<(), String> {
+pub(crate) fn apply_program_target(
+    op: &str,
+    caller_program_id: &str,
+    input: &mut Value,
+) -> Result<(), String> {
     let caller = caller_program_id.trim();
     let Some(obj) = input.as_object_mut() else {
         return Ok(());
@@ -111,7 +119,12 @@ pub(crate) fn apply_program_target(op: &str, caller_program_id: &str, input: &mu
 
     if op == "createProgram" {
         normalize_create_input(caller, obj);
-        let machine = obj.get("machineId").and_then(Value::as_str).unwrap_or("").trim().to_string();
+        let machine = obj
+            .get("machineId")
+            .and_then(Value::as_str)
+            .unwrap_or("")
+            .trim()
+            .to_string();
         if !machine.is_empty() && machine != caller {
             let owner = machine_owner_user(&machine);
             if !owner.is_empty() && owner != program_owner_user(caller) {
@@ -149,7 +162,10 @@ mod tests {
 
     #[test]
     fn the_callers_stamped_program_id_is_not_the_program_to_create() {
-        let input = normalized("10@global", json!({"programId": "10@global", "appId": "3@global"}));
+        let input = normalized(
+            "10@global",
+            json!({"programId": "10@global", "appId": "3@global"}),
+        );
         assert!(input.get("programId").is_none());
     }
 
@@ -161,7 +177,10 @@ mod tests {
 
     #[test]
     fn app_id_wins_over_a_defaulted_machine_id() {
-        let input = normalized("10@global", json!({"machineId": "10@global", "appId": "3@global"}));
+        let input = normalized(
+            "10@global",
+            json!({"machineId": "10@global", "appId": "3@global"}),
+        );
         assert_eq!(input["machineId"], "3@global");
         let input = normalized("10@global", json!({"appId": "3@global"}));
         assert_eq!(input["machineId"], "3@global");
@@ -169,7 +188,10 @@ mod tests {
 
     #[test]
     fn an_explicit_machine_id_wins_over_app_id() {
-        let input = normalized("10@global", json!({"machineId": "4@global", "appId": "3@global"}));
+        let input = normalized(
+            "10@global",
+            json!({"machineId": "4@global", "appId": "3@global"}),
+        );
         assert_eq!(input["machineId"], "4@global");
     }
 }

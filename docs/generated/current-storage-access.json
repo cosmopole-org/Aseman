@@ -1,0 +1,3324 @@
+{
+  "_meta": {
+    "artifact": "A004",
+    "generator": "scripts/generate_legacy_data_inventory.py",
+    "last_verified_commit": "800df24076c794f9b33c29a9f301dd9d674f47d6",
+    "lifecycle_status": "GENERATED",
+    "source_of_truth": "legacy transaction/storage/model/consensus source",
+    "status": "CURRENT",
+    "verification": "python3 scripts/generate_legacy_data_inventory.py --check"
+  },
+  "application_accesses": [
+    {
+      "logical_template": "Chain",
+      "method": "get_obj_list",
+      "mode": "read",
+      "source": "node/src/shell/api/model/chain.rs:55"
+    },
+    {
+      "logical_template": "ChainShard",
+      "method": "get_obj_list",
+      "mode": "read",
+      "source": "node/src/shell/api/model/chain.rs:116"
+    },
+    {
+      "logical_template": "CreatMeta::{}",
+      "method": "put_json",
+      "mode": "write",
+      "source": "node/src/shell/api/actions/creature.rs:257"
+    },
+    {
+      "logical_template": "CreatMeta::{}",
+      "method": "get_json",
+      "mode": "read",
+      "source": "node/src/shell/api/actions/program.rs:1660"
+    },
+    {
+      "logical_template": "CreatMeta::{}",
+      "method": "del_json",
+      "mode": "write",
+      "source": "node/src/shell/api/model/creature.rs:125"
+    },
+    {
+      "logical_template": "Creature",
+      "method": "get_column",
+      "mode": "read",
+      "source": "node/src/core/actor/model/secured/guard.rs:26"
+    },
+    {
+      "logical_template": "Creature",
+      "method": "get_column",
+      "mode": "read",
+      "source": "node/src/drivers/security.rs:209"
+    },
+    {
+      "logical_template": "Creature",
+      "method": "get_column",
+      "mode": "read",
+      "source": "node/src/drivers/signaler.rs:119"
+    },
+    {
+      "logical_template": "Creature",
+      "method": "get_index",
+      "mode": "read",
+      "source": "node/src/drivers/vmm/driver.rs:892"
+    },
+    {
+      "logical_template": "Creature",
+      "method": "del_index",
+      "mode": "write",
+      "source": "node/src/drivers/vmm/hostcall_entities.rs:140"
+    },
+    {
+      "logical_template": "Creature",
+      "method": "has_obj",
+      "mode": "read",
+      "source": "node/src/shell/api/actions/creature.rs:1023"
+    },
+    {
+      "logical_template": "Creature",
+      "method": "has_obj",
+      "mode": "read",
+      "source": "node/src/shell/api/actions/creature.rs:1069"
+    },
+    {
+      "logical_template": "Creature",
+      "method": "has_index",
+      "mode": "read",
+      "source": "node/src/shell/api/actions/creature.rs:1277"
+    },
+    {
+      "logical_template": "Creature",
+      "method": "has_index",
+      "mode": "read",
+      "source": "node/src/shell/api/actions/creature.rs:1410"
+    },
+    {
+      "logical_template": "Creature",
+      "method": "del_index",
+      "mode": "write",
+      "source": "node/src/shell/api/actions/creature.rs:1413"
+    },
+    {
+      "logical_template": "Creature",
+      "method": "get_index",
+      "mode": "read",
+      "source": "node/src/shell/api/actions/creature.rs:1490"
+    },
+    {
+      "logical_template": "Creature",
+      "method": "has_index",
+      "mode": "read",
+      "source": "node/src/shell/api/actions/creature.rs:227"
+    },
+    {
+      "logical_template": "Creature",
+      "method": "has_obj",
+      "mode": "read",
+      "source": "node/src/shell/api/actions/creature.rs:284"
+    },
+    {
+      "logical_template": "Creature",
+      "method": "get_index",
+      "mode": "read",
+      "source": "node/src/shell/api/actions/creature.rs:330"
+    },
+    {
+      "logical_template": "Creature",
+      "method": "has_obj",
+      "mode": "read",
+      "source": "node/src/shell/api/actions/program.rs:594"
+    },
+    {
+      "logical_template": "Creature",
+      "method": "del_index",
+      "mode": "write",
+      "source": "node/src/shell/api/model/creature.rs:123"
+    },
+    {
+      "logical_template": "Creature",
+      "method": "get_obj_list",
+      "mode": "read",
+      "source": "node/src/shell/api/model/creature.rs:144"
+    },
+    {
+      "logical_template": "Creature",
+      "method": "get_obj_list",
+      "mode": "read",
+      "source": "node/src/shell/api/model/creature.rs:170"
+    },
+    {
+      "logical_template": "Creature",
+      "method": "search_link_vals_list",
+      "mode": "read",
+      "source": "node/src/shell/api/model/creature.rs:199"
+    },
+    {
+      "logical_template": "Creature",
+      "method": "get_obj_list",
+      "mode": "read",
+      "source": "node/src/shell/api/model/creature.rs:200"
+    },
+    {
+      "logical_template": "Creature",
+      "method": "put_index",
+      "mode": "write",
+      "source": "node/src/shell/api/model/creature.rs:63"
+    },
+    {
+      "logical_template": "CreatureTypeExists::{}",
+      "method": "put_link",
+      "mode": "write",
+      "source": "node/src/shell/api/actions/creature.rs:118"
+    },
+    {
+      "logical_template": "Json::Creature::{}",
+      "method": "get_json",
+      "mode": "read",
+      "source": "node/src/drivers/vmm/hostcall_entities.rs:1899"
+    },
+    {
+      "logical_template": "Json::Creature::{}",
+      "method": "put_json",
+      "mode": "write",
+      "source": "node/src/shell/api/actions/creature.rs:1038"
+    },
+    {
+      "logical_template": "Json::Creature::{}",
+      "method": "get_json",
+      "mode": "read",
+      "source": "node/src/shell/api/actions/creature.rs:1077"
+    },
+    {
+      "logical_template": "Json::Creature::{}",
+      "method": "del_json",
+      "mode": "write",
+      "source": "node/src/shell/api/actions/creature.rs:1179"
+    },
+    {
+      "logical_template": "Json::Creature::{}",
+      "method": "put_json",
+      "mode": "write",
+      "source": "node/src/shell/api/actions/creature.rs:1200"
+    },
+    {
+      "logical_template": "Json::Creature::{}",
+      "method": "get_json",
+      "mode": "read",
+      "source": "node/src/shell/api/actions/program.rs:245"
+    },
+    {
+      "logical_template": "Json::CreatureNamespace::billing",
+      "method": "get_json",
+      "mode": "read",
+      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:1173"
+    },
+    {
+      "logical_template": "Json::FinanceHold::{hold_id_c}",
+      "method": "get_json",
+      "mode": "read",
+      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:1466"
+    },
+    {
+      "logical_template": "Json::FinanceHold::{hold_id_c}",
+      "method": "get_json",
+      "mode": "read",
+      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:1553"
+    },
+    {
+      "logical_template": "Json::FinanceHold::{hold_id_c}",
+      "method": "get_json",
+      "mode": "read",
+      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:1642"
+    },
+    {
+      "logical_template": "Json::FinancePool::{pool_id_c}",
+      "method": "get_json",
+      "mode": "read",
+      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:1747"
+    },
+    {
+      "logical_template": "Json::StoreMeta::{}::metadata",
+      "method": "del_key",
+      "mode": "write",
+      "source": "node/src/drivers/vmm/hostcall_entities.rs:1708"
+    },
+    {
+      "logical_template": "Json::StoreMeta::{}::metadata",
+      "method": "del_key",
+      "mode": "write",
+      "source": "node/src/drivers/vmm/hostcall_entities.rs:171"
+    },
+    {
+      "logical_template": "Json::VmBilling::{}",
+      "method": "del_json",
+      "mode": "write",
+      "source": "node/src/drivers/vmm/host/functions/vm_ownership.rs:243"
+    },
+    {
+      "logical_template": "Json::VmBilling::{}",
+      "method": "del_json",
+      "mode": "write",
+      "source": "node/src/shell/api/actions/program.rs:1027"
+    },
+    {
+      "logical_template": "Json::VmBilling::{}",
+      "method": "get_json",
+      "mode": "read",
+      "source": "node/src/shell/api/actions/program.rs:345"
+    },
+    {
+      "logical_template": "Json::VmBilling::{}",
+      "method": "del_json",
+      "mode": "write",
+      "source": "node/src/shell/api/actions/program.rs:464"
+    },
+    {
+      "logical_template": "Json::VmBilling::{}",
+      "method": "get_json",
+      "mode": "read",
+      "source": "node/src/shell/api/actions/program.rs:520"
+    },
+    {
+      "logical_template": "Json::VmBilling::{}",
+      "method": "put_json",
+      "mode": "write",
+      "source": "node/src/shell/api/actions/program.rs:525"
+    },
+    {
+      "logical_template": "Json::VmBilling::{}",
+      "method": "put_json",
+      "mode": "write",
+      "source": "node/src/shell/api/actions/program.rs:790"
+    },
+    {
+      "logical_template": "Json::VmBilling::{}",
+      "method": "del_json",
+      "mode": "write",
+      "source": "node/src/shell/api/actions/program.rs:902"
+    },
+    {
+      "logical_template": "Json::VmResourceStore::{}::core",
+      "method": "del_key",
+      "mode": "write",
+      "source": "node/src/drivers/vmm/hostcall_entities.rs:842"
+    },
+    {
+      "logical_template": "Json::VmResourceStore::{}::metadata",
+      "method": "del_key",
+      "mode": "write",
+      "source": "node/src/drivers/vmm/hostcall_entities.rs:838"
+    },
+    {
+      "logical_template": "ProgMeta::{}",
+      "method": "put_json",
+      "mode": "write",
+      "source": "node/src/drivers/vmm/hostcall_entities.rs:310"
+    },
+    {
+      "logical_template": "ProgMeta::{}",
+      "method": "get_json",
+      "mode": "read",
+      "source": "node/src/drivers/vmm/hostcall_entities.rs:399"
+    },
+    {
+      "logical_template": "ProgMeta::{}",
+      "method": "put_json",
+      "mode": "write",
+      "source": "node/src/drivers/vmm/hostcall_entities.rs:500"
+    },
+    {
+      "logical_template": "ProgMeta::{}",
+      "method": "put_json",
+      "mode": "write",
+      "source": "node/src/shell/api/actions/program.rs:620"
+    },
+    {
+      "logical_template": "ProgMeta::{}",
+      "method": "put_json",
+      "mode": "write",
+      "source": "node/src/shell/api/actions/program.rs:688"
+    },
+    {
+      "logical_template": "Program",
+      "method": "has_obj",
+      "mode": "read",
+      "source": "node/src/drivers/vmm/host/functions/vm_ownership.rs:94"
+    },
+    {
+      "logical_template": "Program",
+      "method": "has_obj",
+      "mode": "read",
+      "source": "node/src/drivers/vmm/hostcall_entities.rs:287"
+    },
+    {
+      "logical_template": "Program",
+      "method": "del_index",
+      "mode": "write",
+      "source": "node/src/drivers/vmm/hostcall_entities.rs:368"
+    },
+    {
+      "logical_template": "Program",
+      "method": "has_obj",
+      "mode": "read",
+      "source": "node/src/shell/api/actions/program.rs:1119"
+    },
+    {
+      "logical_template": "Program",
+      "method": "has_obj",
+      "mode": "read",
+      "source": "node/src/shell/api/actions/program.rs:1220"
+    },
+    {
+      "logical_template": "Program",
+      "method": "has_obj",
+      "mode": "read",
+      "source": "node/src/shell/api/actions/program.rs:1253"
+    },
+    {
+      "logical_template": "Program",
+      "method": "has_obj",
+      "mode": "read",
+      "source": "node/src/shell/api/actions/program.rs:1357"
+    },
+    {
+      "logical_template": "Program",
+      "method": "has_obj",
+      "mode": "read",
+      "source": "node/src/shell/api/actions/program.rs:642"
+    },
+    {
+      "logical_template": "Program",
+      "method": "get_index",
+      "mode": "read",
+      "source": "node/src/shell/api/actions/program.rs:645"
+    },
+    {
+      "logical_template": "Program",
+      "method": "del_index",
+      "mode": "write",
+      "source": "node/src/shell/api/actions/program.rs:653"
+    },
+    {
+      "logical_template": "Program",
+      "method": "has_obj",
+      "mode": "read",
+      "source": "node/src/shell/api/actions/program.rs:670"
+    },
+    {
+      "logical_template": "Program",
+      "method": "has_obj",
+      "mode": "read",
+      "source": "node/src/shell/api/actions/program.rs:713"
+    },
+    {
+      "logical_template": "Program",
+      "method": "has_obj",
+      "mode": "read",
+      "source": "node/src/shell/api/actions/program.rs:871"
+    },
+    {
+      "logical_template": "Program",
+      "method": "has_obj",
+      "mode": "read",
+      "source": "node/src/shell/api/actions/program.rs:962"
+    },
+    {
+      "logical_template": "Program",
+      "method": "get_obj_list",
+      "mode": "read",
+      "source": "node/src/shell/api/model/machine_program.rs:106"
+    },
+    {
+      "logical_template": "Program",
+      "method": "get_obj_list",
+      "mode": "read",
+      "source": "node/src/shell/api/model/machine_program.rs:72"
+    },
+    {
+      "logical_template": "Program",
+      "method": "get_obj_list",
+      "mode": "read",
+      "source": "node/src/shell/api/model/machine_program.rs:74"
+    },
+    {
+      "logical_template": "Session",
+      "method": "get_index",
+      "mode": "read",
+      "source": "node/src/shell/api/actions/creature.rs:1259"
+    },
+    {
+      "logical_template": "Store",
+      "method": "get_obj_list",
+      "mode": "read",
+      "source": "node/src/shell/api/model/store.rs:127"
+    },
+    {
+      "logical_template": "Store",
+      "method": "get_obj_list",
+      "mode": "read",
+      "source": "node/src/shell/api/model/store.rs:152"
+    },
+    {
+      "logical_template": "Store",
+      "method": "search_link_vals_list",
+      "mode": "read",
+      "source": "node/src/shell/api/model/store.rs:179"
+    },
+    {
+      "logical_template": "Store",
+      "method": "get_obj_list",
+      "mode": "read",
+      "source": "node/src/shell/api/model/store.rs:180"
+    },
+    {
+      "logical_template": "StoreMeta::{}",
+      "method": "put_json",
+      "mode": "write",
+      "source": "node/src/drivers/vmm/hostcall_entities.rs:1614"
+    },
+    {
+      "logical_template": "StoreMeta::{}",
+      "method": "put_json",
+      "mode": "write",
+      "source": "node/src/drivers/vmm/hostcall_entities.rs:1673"
+    },
+    {
+      "logical_template": "StoreMeta::{}",
+      "method": "get_json",
+      "mode": "read",
+      "source": "node/src/drivers/vmm/hostcall_entities.rs:1764"
+    },
+    {
+      "logical_template": "StoreMeta::{}",
+      "method": "del_json",
+      "mode": "write",
+      "source": "node/src/shell/api/model/store.rs:73"
+    },
+    {
+      "logical_template": "UserEmailToId::{}",
+      "method": "get_link",
+      "mode": "read",
+      "source": "node/src/shell/api/actions/creature.rs:1251"
+    },
+    {
+      "logical_template": "UserEmailToId::{}",
+      "method": "put_link",
+      "mode": "write",
+      "source": "node/src/shell/api/actions/creature.rs:1311"
+    },
+    {
+      "logical_template": "UserEmailToId::{}",
+      "method": "get_link",
+      "mode": "read",
+      "source": "node/src/shell/api/actions/creature.rs:597"
+    },
+    {
+      "logical_template": "UserIdToEmail::{}",
+      "method": "get_link",
+      "mode": "read",
+      "source": "node/src/drivers/vmm/hostcall_entities.rs:142"
+    },
+    {
+      "logical_template": "UserIdToEmail::{}",
+      "method": "put_link",
+      "mode": "write",
+      "source": "node/src/shell/api/actions/creature.rs:1312"
+    },
+    {
+      "logical_template": "UserIdToEmail::{}",
+      "method": "get_link",
+      "mode": "read",
+      "source": "node/src/shell/api/actions/creature.rs:1366"
+    },
+    {
+      "logical_template": "UserIdToEmail::{}",
+      "method": "get_link",
+      "mode": "read",
+      "source": "node/src/shell/api/actions/creature.rs:680"
+    },
+    {
+      "logical_template": "UserMeta::{}",
+      "method": "del_json",
+      "mode": "write",
+      "source": "node/src/shell/api/actions/creature.rs:1341"
+    },
+    {
+      "logical_template": "UserMeta::{}",
+      "method": "get_json",
+      "mode": "read",
+      "source": "node/src/shell/api/actions/creature.rs:1439"
+    },
+    {
+      "logical_template": "UserMeta::{}",
+      "method": "get_json",
+      "mode": "read",
+      "source": "node/src/shell/api/actions/creature.rs:1471"
+    },
+    {
+      "logical_template": "UserMeta::{}",
+      "method": "put_json",
+      "mode": "write",
+      "source": "node/src/shell/api/actions/creature.rs:263"
+    },
+    {
+      "logical_template": "UserPrivateKey::{}",
+      "method": "get_link",
+      "mode": "read",
+      "source": "node/src/shell/api/actions/creature.rs:1265"
+    },
+    {
+      "logical_template": "UserPrivateKey::{}",
+      "method": "put_link",
+      "mode": "write",
+      "source": "node/src/shell/api/actions/creature.rs:1310"
+    },
+    {
+      "logical_template": "VmBilling::",
+      "method": "get_links_list",
+      "mode": "read",
+      "source": "node/src/shell/api/actions/program.rs:335"
+    },
+    {
+      "logical_template": "VmBilling::{}",
+      "method": "put_link",
+      "mode": "write",
+      "source": "node/src/shell/api/actions/program.rs:789"
+    },
+    {
+      "logical_template": "VmBuilds::{}::{}",
+      "method": "put_link",
+      "mode": "write",
+      "source": "node/src/shell/api/actions/program.rs:1544"
+    },
+    {
+      "logical_template": "VmContainerName::{}::{}::{}",
+      "method": "get_link",
+      "mode": "read",
+      "source": "node/src/shell/api/actions/program.rs:1158"
+    },
+    {
+      "logical_template": "VmInstance::",
+      "method": "get_links_list",
+      "mode": "read",
+      "source": "node/src/drivers/vmm/hostcall_logs.rs:25"
+    },
+    {
+      "logical_template": "VmInstance::",
+      "method": "get_links_list",
+      "mode": "read",
+      "source": "node/src/shell/api/actions/program.rs:1056"
+    },
+    {
+      "logical_template": "VmInstance::{}::{}::{}",
+      "method": "put_link",
+      "mode": "write",
+      "source": "node/src/shell/api/actions/program.rs:809"
+    },
+    {
+      "logical_template": "VmStartedAt::{}",
+      "method": "get_link",
+      "mode": "read",
+      "source": "node/src/shell/api/actions/program.rs:1155"
+    },
+    {
+      "logical_template": "VmStartedAt::{}",
+      "method": "put_link",
+      "mode": "write",
+      "source": "node/src/shell/api/actions/program.rs:739"
+    },
+    {
+      "logical_template": "VmStatus::{}",
+      "method": "get_link",
+      "mode": "read",
+      "source": "node/src/shell/api/actions/program.rs:1153"
+    },
+    {
+      "logical_template": "VmStatus::{}",
+      "method": "get_link",
+      "mode": "read",
+      "source": "node/src/shell/api/actions/program.rs:342"
+    },
+    {
+      "logical_template": "VmStatus::{}",
+      "method": "put_link",
+      "mode": "write",
+      "source": "node/src/shell/api/actions/program.rs:738"
+    },
+    {
+      "logical_template": "VmTerminal::{}::{}::{}",
+      "method": "put_link",
+      "mode": "write",
+      "source": "node/src/shell/api/actions/program.rs:1232"
+    },
+    {
+      "logical_template": "creatorof::{}::{}",
+      "method": "put_link",
+      "mode": "write",
+      "source": "node/src/drivers/vmm/hostcall_entities.rs:1625"
+    },
+    {
+      "logical_template": "globalIdCounter",
+      "method": "get_bytes",
+      "mode": "read",
+      "source": "node/src/drivers/storage.rs:199"
+    },
+    {
+      "logical_template": "globalIdCounter",
+      "method": "put_bytes",
+      "mode": "write",
+      "source": "node/src/drivers/storage.rs:208"
+    },
+    {
+      "logical_template": "god::{}",
+      "method": "get_string",
+      "mode": "read",
+      "source": "node/src/drivers/security.rs:212"
+    },
+    {
+      "logical_template": "hasaccess::{}::{}",
+      "method": "put_link",
+      "mode": "write",
+      "source": "node/src/drivers/network/federation/fednet.rs:207"
+    },
+    {
+      "logical_template": "hasaccess::{}::{}",
+      "method": "put_link",
+      "mode": "write",
+      "source": "node/src/drivers/network/federation/fednet.rs:233"
+    },
+    {
+      "logical_template": "hasaccess::{}::{}",
+      "method": "put_link",
+      "mode": "write",
+      "source": "node/src/drivers/network/federation/fednet.rs:300"
+    },
+    {
+      "logical_template": "hasaccess::{}::{}",
+      "method": "get_link",
+      "mode": "read",
+      "source": "node/src/drivers/vmm/driver.rs:147"
+    },
+    {
+      "logical_template": "hasaccess::{}::{}",
+      "method": "get_link",
+      "mode": "read",
+      "source": "node/src/drivers/vmm/driver.rs:980"
+    },
+    {
+      "logical_template": "hasaccess::{}::{}",
+      "method": "put_link",
+      "mode": "write",
+      "source": "node/src/drivers/vmm/hostcall_entities.rs:1350"
+    },
+    {
+      "logical_template": "hasaccess::{}::{}",
+      "method": "put_link",
+      "mode": "write",
+      "source": "node/src/drivers/vmm/hostcall_entities.rs:1621"
+    },
+    {
+      "logical_template": "json::{}::{}",
+      "method": "put_bytes",
+      "mode": "write",
+      "source": "node/src/core/actor/model/trx.rs:668"
+    },
+    {
+      "logical_template": "json::{}::{}",
+      "method": "del_key",
+      "mode": "write",
+      "source": "node/src/core/actor/model/trx.rs:690"
+    },
+    {
+      "logical_template": "json::{}::{}.{}",
+      "method": "put_bytes",
+      "mode": "write",
+      "source": "node/src/core/actor/model/trx.rs:681"
+    },
+    {
+      "logical_template": "link::UserEmailToId::{}",
+      "method": "del_key",
+      "mode": "write",
+      "source": "node/src/drivers/vmm/hostcall_entities.rs:144"
+    },
+    {
+      "logical_template": "link::UserEmailToId::{}",
+      "method": "del_key",
+      "mode": "write",
+      "source": "node/src/shell/api/actions/creature.rs:1274"
+    },
+    {
+      "logical_template": "link::UserEmailToId::{}",
+      "method": "del_key",
+      "mode": "write",
+      "source": "node/src/shell/api/actions/creature.rs:1369"
+    },
+    {
+      "logical_template": "link::UserIdToEmail::{}",
+      "method": "del_key",
+      "mode": "write",
+      "source": "node/src/drivers/vmm/hostcall_entities.rs:146"
+    },
+    {
+      "logical_template": "link::UserIdToEmail::{}",
+      "method": "del_key",
+      "mode": "write",
+      "source": "node/src/shell/api/actions/creature.rs:1367"
+    },
+    {
+      "logical_template": "link::UserPrivateKey::{}",
+      "method": "del_key",
+      "mode": "write",
+      "source": "node/src/drivers/vmm/hostcall_entities.rs:147"
+    },
+    {
+      "logical_template": "link::UserPrivateKey::{}",
+      "method": "del_key",
+      "mode": "write",
+      "source": "node/src/shell/api/actions/creature.rs:1371"
+    },
+    {
+      "logical_template": "link::VmBilling::{}",
+      "method": "del_key",
+      "mode": "write",
+      "source": "node/src/drivers/vmm/host/functions/vm_ownership.rs:241"
+    },
+    {
+      "logical_template": "link::VmBilling::{}",
+      "method": "del_key",
+      "mode": "write",
+      "source": "node/src/shell/api/actions/program.rs:1026"
+    },
+    {
+      "logical_template": "link::VmBilling::{}",
+      "method": "del_key",
+      "mode": "write",
+      "source": "node/src/shell/api/actions/program.rs:463"
+    },
+    {
+      "logical_template": "link::VmBilling::{}",
+      "method": "del_key",
+      "mode": "write",
+      "source": "node/src/shell/api/actions/program.rs:901"
+    },
+    {
+      "logical_template": "link::VmContainerName::{}::{}::{}",
+      "method": "del_key",
+      "mode": "write",
+      "source": "node/src/shell/api/actions/program.rs:1030"
+    },
+    {
+      "logical_template": "link::VmContainerName::{}::{}::{}",
+      "method": "del_key",
+      "mode": "write",
+      "source": "node/src/shell/api/actions/program.rs:922"
+    },
+    {
+      "logical_template": "link::VmInstance::{}::{}::{}",
+      "method": "del_key",
+      "mode": "write",
+      "source": "node/src/shell/api/actions/program.rs:459"
+    },
+    {
+      "logical_template": "link::VmInstance::{}::{}::{}",
+      "method": "del_key",
+      "mode": "write",
+      "source": "node/src/shell/api/actions/program.rs:897"
+    },
+    {
+      "logical_template": "link::VmOwnerProgram::{}",
+      "method": "del_key",
+      "mode": "write",
+      "source": "node/src/shell/api/actions/program.rs:1029"
+    },
+    {
+      "logical_template": "link::VmStartedAt::{}",
+      "method": "del_key",
+      "mode": "write",
+      "source": "node/src/drivers/vmm/host/functions/vm_ownership.rs:240"
+    },
+    {
+      "logical_template": "link::VmStartedAt::{}",
+      "method": "del_key",
+      "mode": "write",
+      "source": "node/src/shell/api/actions/program.rs:1024"
+    },
+    {
+      "logical_template": "link::VmStartedAt::{}",
+      "method": "del_key",
+      "mode": "write",
+      "source": "node/src/shell/api/actions/program.rs:896"
+    },
+    {
+      "logical_template": "link::VmStatus::{}",
+      "method": "del_key",
+      "mode": "write",
+      "source": "node/src/drivers/vmm/host/functions/vm_ownership.rs:239"
+    },
+    {
+      "logical_template": "link::VmStatus::{}",
+      "method": "del_key",
+      "mode": "write",
+      "source": "node/src/shell/api/actions/program.rs:1023"
+    },
+    {
+      "logical_template": "link::VmStatus::{}",
+      "method": "del_key",
+      "mode": "write",
+      "source": "node/src/shell/api/actions/program.rs:458"
+    },
+    {
+      "logical_template": "link::VmStatus::{}",
+      "method": "del_key",
+      "mode": "write",
+      "source": "node/src/shell/api/actions/program.rs:895"
+    },
+    {
+      "logical_template": "link::VmTerminal::{}::{}::{}",
+      "method": "del_key",
+      "mode": "write",
+      "source": "node/src/shell/api/actions/program.rs:1265"
+    },
+    {
+      "logical_template": "link::creatorof::{}::{}",
+      "method": "del_key",
+      "mode": "write",
+      "source": "node/src/drivers/vmm/hostcall_entities.rs:161"
+    },
+    {
+      "logical_template": "link::creatorof::{}::{}",
+      "method": "del_key",
+      "mode": "write",
+      "source": "node/src/drivers/vmm/hostcall_entities.rs:1728"
+    },
+    {
+      "logical_template": "link::creatorof::{}::{}",
+      "method": "del_key",
+      "mode": "write",
+      "source": "node/src/shell/api/actions/creature.rs:1355"
+    },
+    {
+      "logical_template": "link::hasaccess::{}::{}",
+      "method": "del_key",
+      "mode": "write",
+      "source": "node/src/drivers/network/federation/fednet.rs:314"
+    },
+    {
+      "logical_template": "link::hasaccess::{}::{}",
+      "method": "del_key",
+      "mode": "write",
+      "source": "node/src/drivers/vmm/hostcall_entities.rs:1384"
+    },
+    {
+      "logical_template": "link::hasaccess::{}::{}",
+      "method": "del_key",
+      "mode": "write",
+      "source": "node/src/drivers/vmm/hostcall_entities.rs:160"
+    },
+    {
+      "logical_template": "link::hasaccess::{}::{}",
+      "method": "del_key",
+      "mode": "write",
+      "source": "node/src/drivers/vmm/hostcall_entities.rs:1724"
+    },
+    {
+      "logical_template": "link::hasaccess::{}::{}",
+      "method": "del_key",
+      "mode": "write",
+      "source": "node/src/shell/api/actions/creature.rs:1354"
+    },
+    {
+      "logical_template": "link::machinePrograms::{}::{}",
+      "method": "del_key",
+      "mode": "write",
+      "source": "node/src/drivers/vmm/hostcall_entities.rs:363"
+    },
+    {
+      "logical_template": "link::machinePrograms::{}::{}",
+      "method": "del_key",
+      "mode": "write",
+      "source": "node/src/shell/api/actions/program.rs:654"
+    },
+    {
+      "logical_template": "link::onaccess::{}::{}",
+      "method": "del_key",
+      "mode": "write",
+      "source": "node/src/drivers/network/federation/fednet.rs:313"
+    },
+    {
+      "logical_template": "link::onaccess::{}::{}",
+      "method": "del_key",
+      "mode": "write",
+      "source": "node/src/drivers/vmm/hostcall_entities.rs:1380"
+    },
+    {
+      "logical_template": "link::onaccess::{}::{}",
+      "method": "del_key",
+      "mode": "write",
+      "source": "node/src/drivers/vmm/hostcall_entities.rs:159"
+    },
+    {
+      "logical_template": "link::onaccess::{}::{}",
+      "method": "del_key",
+      "mode": "write",
+      "source": "node/src/drivers/vmm/hostcall_entities.rs:1720"
+    },
+    {
+      "logical_template": "link::onaccess::{}::{}",
+      "method": "del_key",
+      "mode": "write",
+      "source": "node/src/shell/api/actions/creature.rs:1353"
+    },
+    {
+      "logical_template": "link::vmAlarmData::{}",
+      "method": "del_key",
+      "mode": "write",
+      "source": "node/src/drivers/vmm/hostcall_entities.rs:1978"
+    },
+    {
+      "logical_template": "link::vmAlarmEntity::{}",
+      "method": "del_key",
+      "mode": "write",
+      "source": "node/src/drivers/vmm/hostcall_entities.rs:1979"
+    },
+    {
+      "logical_template": "link::vmAlarmStoreId::{}",
+      "method": "del_key",
+      "mode": "write",
+      "source": "node/src/drivers/vmm/hostcall_entities.rs:1977"
+    },
+    {
+      "logical_template": "link::vmAlarmTime::{}",
+      "method": "del_key",
+      "mode": "write",
+      "source": "node/src/drivers/vmm/hostcall_entities.rs:1980"
+    },
+    {
+      "logical_template": "link::vmDistributed::{}",
+      "method": "del_key",
+      "mode": "write",
+      "source": "node/src/drivers/vmm/host/functions/vm_ownership.rs:242"
+    },
+    {
+      "logical_template": "link::vmDistributed::{}",
+      "method": "del_key",
+      "mode": "write",
+      "source": "node/src/shell/api/actions/program.rs:1028"
+    },
+    {
+      "logical_template": "link::vmEntityType::",
+      "method": "get_by_prefix",
+      "mode": "read",
+      "source": "node/src/lib.rs:168"
+    },
+    {
+      "logical_template": "link::vmOwnedStore::{}::{}",
+      "method": "del_key",
+      "mode": "write",
+      "source": "node/src/drivers/vmm/hostcall_entities.rs:844"
+    },
+    {
+      "logical_template": "link::vmStandaloneContainerName::{}::{}",
+      "method": "del_key",
+      "mode": "write",
+      "source": "node/src/shell/api/actions/program.rs:1038"
+    },
+    {
+      "logical_template": "link::vmStandaloneContainerName::{}::{}",
+      "method": "del_key",
+      "mode": "write",
+      "source": "node/src/shell/api/actions/program.rs:907"
+    },
+    {
+      "logical_template": "link::vmStandaloneImageName::{}::{}",
+      "method": "del_key",
+      "mode": "write",
+      "source": "node/src/shell/api/actions/program.rs:1034"
+    },
+    {
+      "logical_template": "link::vmStandaloneImageName::{}::{}",
+      "method": "del_key",
+      "mode": "write",
+      "source": "node/src/shell/api/actions/program.rs:903"
+    },
+    {
+      "logical_template": "link::{}",
+      "method": "del_key",
+      "mode": "write",
+      "source": "node/src/drivers/vmm/host/functions/login_grant.rs:85"
+    },
+    {
+      "logical_template": "link::{}",
+      "method": "del_key",
+      "mode": "write",
+      "source": "node/src/drivers/vmm/host/functions/vm_ownership.rs:238"
+    },
+    {
+      "logical_template": "link::{}",
+      "method": "del_key",
+      "mode": "write",
+      "source": "node/src/drivers/vmm/host/functions/vm_ownership.rs:249"
+    },
+    {
+      "logical_template": "link::{}",
+      "method": "del_key",
+      "mode": "write",
+      "source": "node/src/drivers/vmm/host_bridge.rs:175"
+    },
+    {
+      "logical_template": "link::{}",
+      "method": "del_key",
+      "mode": "write",
+      "source": "node/src/drivers/vmm/proxy.rs:90"
+    },
+    {
+      "logical_template": "link::{}",
+      "method": "del_key",
+      "mode": "write",
+      "source": "node/src/shell/api/actions/program.rs:1315"
+    },
+    {
+      "logical_template": "link::{}",
+      "method": "del_key",
+      "mode": "write",
+      "source": "node/src/shell/api/actions/program.rs:1320"
+    },
+    {
+      "logical_template": "machinePrograms::{}::{}",
+      "method": "put_link",
+      "mode": "write",
+      "source": "node/src/drivers/vmm/hostcall_entities.rs:316"
+    },
+    {
+      "logical_template": "machinePrograms::{}::{}",
+      "method": "put_link",
+      "mode": "write",
+      "source": "node/src/shell/api/actions/program.rs:626"
+    },
+    {
+      "logical_template": "obj::Creature::{}::publicKey",
+      "method": "get_string",
+      "mode": "read",
+      "source": "node/src/core/actor/model/trx.rs:634"
+    },
+    {
+      "logical_template": "obj::Creature::{}::{}",
+      "method": "del_key",
+      "mode": "write",
+      "source": "node/src/drivers/vmm/hostcall_entities.rs:184"
+    },
+    {
+      "logical_template": "obj::Store::{}",
+      "method": "del_key",
+      "mode": "write",
+      "source": "node/src/drivers/network/federation/fednet.rs:283"
+    },
+    {
+      "logical_template": "obj::User::{}::privateKey",
+      "method": "get_string",
+      "mode": "read",
+      "source": "node/src/core/actor/model/trx.rs:625"
+    },
+    {
+      "logical_template": "obj::{}::{}::{}",
+      "method": "del_key",
+      "mode": "write",
+      "source": "node/src/shell/api/model/chain.rs:32"
+    },
+    {
+      "logical_template": "obj::{}::{}::{}",
+      "method": "del_key",
+      "mode": "write",
+      "source": "node/src/shell/api/model/creature.rs:120"
+    },
+    {
+      "logical_template": "obj::{}::{}::{}",
+      "method": "del_key",
+      "mode": "write",
+      "source": "node/src/shell/api/model/store.rs:71"
+    },
+    {
+      "logical_template": "onaccess::{}::{}",
+      "method": "put_link",
+      "mode": "write",
+      "source": "node/src/drivers/network/federation/fednet.rs:203"
+    },
+    {
+      "logical_template": "onaccess::{}::{}",
+      "method": "put_link",
+      "mode": "write",
+      "source": "node/src/drivers/network/federation/fednet.rs:228"
+    },
+    {
+      "logical_template": "onaccess::{}::{}",
+      "method": "put_link",
+      "mode": "write",
+      "source": "node/src/drivers/network/federation/fednet.rs:296"
+    },
+    {
+      "logical_template": "onaccess::{}::{}",
+      "method": "put_link",
+      "mode": "write",
+      "source": "node/src/drivers/vmm/hostcall_entities.rs:1346"
+    },
+    {
+      "logical_template": "onaccess::{}::{}",
+      "method": "put_link",
+      "mode": "write",
+      "source": "node/src/drivers/vmm/hostcall_entities.rs:1630"
+    },
+    {
+      "logical_template": "ownerof::{}::{}",
+      "method": "put_link",
+      "mode": "write",
+      "source": "node/src/drivers/vmm/hostcall_entities.rs:67"
+    },
+    {
+      "logical_template": "ownerof::{}::{}",
+      "method": "put_link",
+      "mode": "write",
+      "source": "node/src/shell/api/actions/creature.rs:270"
+    },
+    {
+      "logical_template": "vmAlarmData::{}",
+      "method": "put_link",
+      "mode": "write",
+      "source": "node/src/drivers/vmm/hostcall_entities.rs:1960"
+    },
+    {
+      "logical_template": "vmAlarmData::{}",
+      "method": "get_link",
+      "mode": "read",
+      "source": "node/src/shell/api/actions/program.rs:1769"
+    },
+    {
+      "logical_template": "vmAlarmEntity::{}",
+      "method": "put_link",
+      "mode": "write",
+      "source": "node/src/drivers/vmm/hostcall_entities.rs:1961"
+    },
+    {
+      "logical_template": "vmAlarmEntity::{}",
+      "method": "get_link",
+      "mode": "read",
+      "source": "node/src/shell/api/actions/program.rs:1774"
+    },
+    {
+      "logical_template": "vmAlarmStoreId::{}",
+      "method": "put_link",
+      "mode": "write",
+      "source": "node/src/drivers/vmm/hostcall_entities.rs:1956"
+    },
+    {
+      "logical_template": "vmAlarmStoreId::{}",
+      "method": "get_link",
+      "mode": "read",
+      "source": "node/src/shell/api/actions/program.rs:1763"
+    },
+    {
+      "logical_template": "vmAlarmTime::{}",
+      "method": "put_link",
+      "mode": "write",
+      "source": "node/src/drivers/vmm/hostcall_entities.rs:1965"
+    },
+    {
+      "logical_template": "vmAlarmTime::{}",
+      "method": "get_link",
+      "mode": "read",
+      "source": "node/src/shell/api/actions/program.rs:1768"
+    },
+    {
+      "logical_template": "vmDistributed::{}",
+      "method": "get_link",
+      "mode": "read",
+      "source": "node/src/core/core_orchestrator.rs:751"
+    },
+    {
+      "logical_template": "vmDistributed::{}",
+      "method": "get_link",
+      "mode": "read",
+      "source": "node/src/drivers/vmm/driver.rs:263"
+    },
+    {
+      "logical_template": "vmDistributed::{}",
+      "method": "put_link",
+      "mode": "write",
+      "source": "node/src/shell/api/actions/program.rs:768"
+    },
+    {
+      "logical_template": "vmDistribution::{}",
+      "method": "put_link",
+      "mode": "write",
+      "source": "node/src/drivers/cluster/mod.rs:462"
+    },
+    {
+      "logical_template": "vmDistribution::{}",
+      "method": "get_link",
+      "mode": "read",
+      "source": "node/src/drivers/vmm/driver.rs:266"
+    },
+    {
+      "logical_template": "vmDistribution::{}",
+      "method": "put_link",
+      "mode": "write",
+      "source": "node/src/shell/api/actions/program.rs:1567"
+    },
+    {
+      "logical_template": "vmDistribution::{}",
+      "method": "get_link",
+      "mode": "read",
+      "source": "node/src/shell/api/actions/program.rs:762"
+    },
+    {
+      "logical_template": "vmDistribution::{}::{}",
+      "method": "put_link",
+      "mode": "write",
+      "source": "node/src/drivers/cluster/mod.rs:463"
+    },
+    {
+      "logical_template": "vmDistribution::{}::{}",
+      "method": "put_link",
+      "mode": "write",
+      "source": "node/src/shell/api/actions/program.rs:1571"
+    },
+    {
+      "logical_template": "vmDistribution::{}::{}",
+      "method": "get_link",
+      "mode": "read",
+      "source": "node/src/shell/api/actions/program.rs:763"
+    },
+    {
+      "logical_template": "vmEntityDownloadable::{}::{}",
+      "method": "put_link",
+      "mode": "write",
+      "source": "node/src/drivers/vmm/hostcall_entities.rs:747"
+    },
+    {
+      "logical_template": "vmEntityDownloadable::{}::{}",
+      "method": "put_link",
+      "mode": "write",
+      "source": "node/src/shell/api/actions/program.rs:1537"
+    },
+    {
+      "logical_template": "vmEntityDownloadable::{}::{}",
+      "method": "get_link",
+      "mode": "read",
+      "source": "node/src/shell/api/actions/program.rs:1621"
+    },
+    {
+      "logical_template": "vmEntityPath::{}::{}",
+      "method": "put_link",
+      "mode": "write",
+      "source": "node/src/drivers/cluster/mod.rs:453"
+    },
+    {
+      "logical_template": "vmEntityPath::{}::{}",
+      "method": "get_link",
+      "mode": "read",
+      "source": "node/src/drivers/vmm/driver.rs:1085"
+    },
+    {
+      "logical_template": "vmEntityPath::{}::{}",
+      "method": "get_link",
+      "mode": "read",
+      "source": "node/src/drivers/vmm/driver.rs:231"
+    },
+    {
+      "logical_template": "vmEntityPath::{}::{}",
+      "method": "put_link",
+      "mode": "write",
+      "source": "node/src/drivers/vmm/hostcall_entities.rs:734"
+    },
+    {
+      "logical_template": "vmEntityPath::{}::{}",
+      "method": "put_link",
+      "mode": "write",
+      "source": "node/src/drivers/vmm/proxy.rs:304"
+    },
+    {
+      "logical_template": "vmEntityPath::{}::{}",
+      "method": "get_link",
+      "mode": "read",
+      "source": "node/src/drivers/vmm/proxy.rs:555"
+    },
+    {
+      "logical_template": "vmEntityPath::{}::{}",
+      "method": "put_link",
+      "mode": "write",
+      "source": "node/src/shell/api/actions/program.rs:1498"
+    },
+    {
+      "logical_template": "vmEntityType::{}::{}",
+      "method": "put_link",
+      "mode": "write",
+      "source": "node/src/drivers/cluster/mod.rs:457"
+    },
+    {
+      "logical_template": "vmEntityType::{}::{}",
+      "method": "get_link",
+      "mode": "read",
+      "source": "node/src/drivers/vmm/driver.rs:1078"
+    },
+    {
+      "logical_template": "vmEntityType::{}::{}",
+      "method": "get_link",
+      "mode": "read",
+      "source": "node/src/drivers/vmm/driver.rs:224"
+    },
+    {
+      "logical_template": "vmEntityType::{}::{}",
+      "method": "put_link",
+      "mode": "write",
+      "source": "node/src/drivers/vmm/hostcall_entities.rs:738"
+    },
+    {
+      "logical_template": "vmEntityType::{}::{}",
+      "method": "put_link",
+      "mode": "write",
+      "source": "node/src/drivers/vmm/proxy.rs:300"
+    },
+    {
+      "logical_template": "vmEntityType::{}::{}",
+      "method": "get_link",
+      "mode": "read",
+      "source": "node/src/drivers/vmm/proxy.rs:548"
+    },
+    {
+      "logical_template": "vmEntityType::{}::{}",
+      "method": "put_link",
+      "mode": "write",
+      "source": "node/src/shell/api/actions/program.rs:1502"
+    },
+    {
+      "logical_template": "vmOwnedStore::{}::{}",
+      "method": "put_link",
+      "mode": "write",
+      "source": "node/src/drivers/vmm/hostcall_entities.rs:811"
+    },
+    {
+      "logical_template": "{}::meta",
+      "method": "del_key",
+      "mode": "write",
+      "source": "node/src/drivers/vmm/hostcall_entities.rs:1009"
+    },
+    {
+      "logical_template": "{}::payload",
+      "method": "del_key",
+      "mode": "write",
+      "source": "node/src/drivers/vmm/hostcall_entities.rs:1008"
+    },
+    {
+      "logical_template": "{}::targetCount",
+      "method": "put_bytes",
+      "mode": "write",
+      "source": "node/src/core/core_orchestrator.rs:622"
+    },
+    {
+      "logical_template": "{}::tempCount",
+      "method": "put_bytes",
+      "mode": "write",
+      "source": "node/src/core/core_orchestrator.rs:626"
+    },
+    {
+      "logical_template": "{}::{}",
+      "method": "get_by_prefix",
+      "mode": "read",
+      "source": "vms/javascript/src/host_calls.rs:147"
+    },
+    {
+      "logical_template": "{}::{}",
+      "method": "get_by_prefix",
+      "mode": "read",
+      "source": "vms/wasm/src/host_calls.rs:129"
+    },
+    {
+      "logical_template": "{}::{}",
+      "method": "get_by_prefix",
+      "mode": "read",
+      "source": "vms/wasm/src/host_calls.rs:520"
+    },
+    {
+      "logical_template": "{}|>",
+      "method": "get_by_prefix",
+      "mode": "read",
+      "source": "node/src/core/core_orchestrator.rs:607"
+    },
+    {
+      "logical_template": "{}|>{}",
+      "method": "put_bytes",
+      "mode": "write",
+      "source": "node/src/core/core_orchestrator.rs:608"
+    },
+    {
+      "logical_template": "{}|{}::attachment",
+      "method": "put_bytes",
+      "mode": "write",
+      "source": "node/src/core/core_orchestrator.rs:617"
+    },
+    {
+      "logical_template": "{}|{}::machineId",
+      "method": "put_bytes",
+      "mode": "write",
+      "source": "node/src/core/core_orchestrator.rs:609"
+    },
+    {
+      "logical_template": "{}|{}::storeId",
+      "method": "put_bytes",
+      "mode": "write",
+      "source": "node/src/core/core_orchestrator.rs:613"
+    }
+  ],
+  "candidate_key_templates": [
+    {
+      "logical_template": "::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/drivers/vmm/host/functions/vm_ownership.rs:124"
+    },
+    {
+      "logical_template": "::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/drivers/vmm/host/functions/vm_ownership.rs:245"
+    },
+    {
+      "logical_template": "::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/drivers/vmm/hostcall_logs.rs:21"
+    },
+    {
+      "logical_template": "::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/shell/api/actions/program.rs:1057"
+    },
+    {
+      "logical_template": "::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/shell/api/actions/program.rs:75"
+    },
+    {
+      "logical_template": "AppletDb::{}::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:165"
+    },
+    {
+      "logical_template": "AppletDb::{}::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:166"
+    },
+    {
+      "logical_template": "BridgeTopicOwner::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/shell/api/actions/gateway.rs:50"
+    },
+    {
+      "logical_template": "CreatMeta::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/shell/api/actions/creature.rs:258"
+    },
+    {
+      "logical_template": "CreatMeta::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/shell/api/actions/program.rs:1661"
+    },
+    {
+      "logical_template": "CreatMeta::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/shell/api/model/creature.rs:125"
+    },
+    {
+      "logical_template": "CreatureTypeExists::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/shell/api/actions/creature.rs:118"
+    },
+    {
+      "logical_template": "Json::BridgeGrant::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/shell/api/actions/gateway.rs:44"
+    },
+    {
+      "logical_template": "Json::Creature::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/drivers/vmm/hostcall_entities.rs:1900"
+    },
+    {
+      "logical_template": "Json::Creature::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/shell/api/actions/creature.rs:1039"
+    },
+    {
+      "logical_template": "Json::Creature::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/shell/api/actions/creature.rs:1078"
+    },
+    {
+      "logical_template": "Json::Creature::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/shell/api/actions/creature.rs:1180"
+    },
+    {
+      "logical_template": "Json::Creature::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/shell/api/actions/creature.rs:1201"
+    },
+    {
+      "logical_template": "Json::Creature::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/shell/api/actions/program.rs:246"
+    },
+    {
+      "logical_template": "Json::CreatureType::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/shell/api/actions/creature.rs:100"
+    },
+    {
+      "logical_template": "Json::FinanceHold::{hold_id_c}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:1466"
+    },
+    {
+      "logical_template": "Json::FinanceHold::{hold_id_c}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:1553"
+    },
+    {
+      "logical_template": "Json::FinanceHold::{hold_id_c}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:1642"
+    },
+    {
+      "logical_template": "Json::FinancePool::{pool_id_c}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:1747"
+    },
+    {
+      "logical_template": "Json::ProxyCorrelation::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/drivers/vmm/proxy.rs:66"
+    },
+    {
+      "logical_template": "Json::ProxyEntity::{}::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/drivers/vmm/proxy.rs:79"
+    },
+    {
+      "logical_template": "Json::StoreMeta::{}::metadata",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/drivers/vmm/hostcall_entities.rs:1708"
+    },
+    {
+      "logical_template": "Json::StoreMeta::{}::metadata",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/drivers/vmm/hostcall_entities.rs:171"
+    },
+    {
+      "logical_template": "Json::VmBilling::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/drivers/vmm/host/functions/vm_ownership.rs:243"
+    },
+    {
+      "logical_template": "Json::VmBilling::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/shell/api/actions/program.rs:1027"
+    },
+    {
+      "logical_template": "Json::VmBilling::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/shell/api/actions/program.rs:345"
+    },
+    {
+      "logical_template": "Json::VmBilling::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/shell/api/actions/program.rs:465"
+    },
+    {
+      "logical_template": "Json::VmBilling::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/shell/api/actions/program.rs:520"
+    },
+    {
+      "logical_template": "Json::VmBilling::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/shell/api/actions/program.rs:526"
+    },
+    {
+      "logical_template": "Json::VmBilling::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/shell/api/actions/program.rs:791"
+    },
+    {
+      "logical_template": "Json::VmBilling::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/shell/api/actions/program.rs:902"
+    },
+    {
+      "logical_template": "Json::VmResourceEntity::{}::{}::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/drivers/vmm/hostcall_entities.rs:1004"
+    },
+    {
+      "logical_template": "Json::VmResourceEntity::{}::{}::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/drivers/vmm/hostcall_entities.rs:948"
+    },
+    {
+      "logical_template": "Json::VmResourceStore::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/drivers/vmm/hostcall_entities.rs:802"
+    },
+    {
+      "logical_template": "Json::VmResourceStore::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/drivers/vmm/hostcall_entities.rs:869"
+    },
+    {
+      "logical_template": "Json::VmResourceStore::{}::core",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/drivers/vmm/hostcall_entities.rs:842"
+    },
+    {
+      "logical_template": "Json::VmResourceStore::{}::metadata",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/drivers/vmm/hostcall_entities.rs:838"
+    },
+    {
+      "logical_template": "LoginGrant::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/drivers/vmm/host/functions/login_grant.rs:20"
+    },
+    {
+      "logical_template": "MintApplied::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/shell/api/actions/creature.rs:582"
+    },
+    {
+      "logical_template": "ModalApp::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "vms/modal/src/models.rs:63"
+    },
+    {
+      "logical_template": "ModalApp::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "vms/modal/src/models.rs:72"
+    },
+    {
+      "logical_template": "ModalImage::{}::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "vms/modal/src/models.rs:67"
+    },
+    {
+      "logical_template": "ModalProvisioning::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "vms/modal/src/controller.rs:114"
+    },
+    {
+      "logical_template": "ModalProvisioningError::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "vms/modal/src/controller.rs:118"
+    },
+    {
+      "logical_template": "ModalSandbox::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "vms/modal/src/models.rs:55"
+    },
+    {
+      "logical_template": "ModalVolume::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "vms/modal/src/models.rs:59"
+    },
+    {
+      "logical_template": "NodeIpToHost::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/drivers/network/federation/fednet.rs:145"
+    },
+    {
+      "logical_template": "ProgMeta::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/drivers/vmm/hostcall_entities.rs:311"
+    },
+    {
+      "logical_template": "ProgMeta::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/drivers/vmm/hostcall_entities.rs:399"
+    },
+    {
+      "logical_template": "ProgMeta::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/drivers/vmm/hostcall_entities.rs:501"
+    },
+    {
+      "logical_template": "ProgMeta::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/shell/api/actions/program.rs:621"
+    },
+    {
+      "logical_template": "ProgMeta::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/shell/api/actions/program.rs:689"
+    },
+    {
+      "logical_template": "ProxyCorrExpiry::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/drivers/vmm/proxy.rs:73"
+    },
+    {
+      "logical_template": "Secret::{}::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:846"
+    },
+    {
+      "logical_template": "SecretGrant::{}::{}::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:847"
+    },
+    {
+      "logical_template": "StoreMeta::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/drivers/vmm/hostcall_entities.rs:1615"
+    },
+    {
+      "logical_template": "StoreMeta::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/drivers/vmm/hostcall_entities.rs:1674"
+    },
+    {
+      "logical_template": "StoreMeta::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/drivers/vmm/hostcall_entities.rs:1764"
+    },
+    {
+      "logical_template": "StoreMeta::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/shell/api/model/store.rs:73"
+    },
+    {
+      "logical_template": "Temp::User::{}::consumedTokens::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/drivers/vmm/hostcall_entities.rs:1892"
+    },
+    {
+      "logical_template": "UserEmailToId::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/shell/api/actions/creature.rs:1251"
+    },
+    {
+      "logical_template": "UserEmailToId::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/shell/api/actions/creature.rs:1311"
+    },
+    {
+      "logical_template": "UserEmailToId::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/shell/api/actions/creature.rs:597"
+    },
+    {
+      "logical_template": "UserIdToEmail::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/drivers/vmm/hostcall_entities.rs:142"
+    },
+    {
+      "logical_template": "UserIdToEmail::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/shell/api/actions/creature.rs:1312"
+    },
+    {
+      "logical_template": "UserIdToEmail::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/shell/api/actions/creature.rs:1366"
+    },
+    {
+      "logical_template": "UserIdToEmail::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/shell/api/actions/creature.rs:680"
+    },
+    {
+      "logical_template": "UserMeta::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/shell/api/actions/creature.rs:1341"
+    },
+    {
+      "logical_template": "UserMeta::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/shell/api/actions/creature.rs:1439"
+    },
+    {
+      "logical_template": "UserMeta::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/shell/api/actions/creature.rs:1471"
+    },
+    {
+      "logical_template": "UserMeta::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/shell/api/actions/creature.rs:264"
+    },
+    {
+      "logical_template": "UserPrivateKey::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/shell/api/actions/creature.rs:1265"
+    },
+    {
+      "logical_template": "UserPrivateKey::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/shell/api/actions/creature.rs:1310"
+    },
+    {
+      "logical_template": "VmBilling::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/shell/api/actions/program.rs:789"
+    },
+    {
+      "logical_template": "VmBuilds::{}::",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/shell/api/actions/program.rs:1282"
+    },
+    {
+      "logical_template": "VmBuilds::{}::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/shell/api/actions/program.rs:1544"
+    },
+    {
+      "logical_template": "VmContainerName::{}::{}::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/shell/api/actions/program.rs:1158"
+    },
+    {
+      "logical_template": "VmContainerName::{}::{}::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "vms/docker/src/controller.rs:1014"
+    },
+    {
+      "logical_template": "VmContainerName::{}::{}::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "vms/docker/src/controller.rs:993"
+    },
+    {
+      "logical_template": "VmInstance::{}::",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/drivers/vmm/host/functions/vm_ownership.rs:123"
+    },
+    {
+      "logical_template": "VmInstance::{}::",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/drivers/vmm/host/functions/vm_ownership.rs:231"
+    },
+    {
+      "logical_template": "VmInstance::{}::{}::",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/shell/api/actions/program.rs:1144"
+    },
+    {
+      "logical_template": "VmInstance::{}::{}::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/shell/api/actions/program.rs:810"
+    },
+    {
+      "logical_template": "VmInstance::{}::{}::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/shell/api/actions/program.rs:992"
+    },
+    {
+      "logical_template": "VmOwnerProgram::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/drivers/vmm/host/functions/vm_ownership.rs:24"
+    },
+    {
+      "logical_template": "VmStartedAt::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/shell/api/actions/program.rs:1155"
+    },
+    {
+      "logical_template": "VmStartedAt::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/shell/api/actions/program.rs:740"
+    },
+    {
+      "logical_template": "VmStatus::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/shell/api/actions/program.rs:1153"
+    },
+    {
+      "logical_template": "VmStatus::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/shell/api/actions/program.rs:342"
+    },
+    {
+      "logical_template": "VmStatus::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/shell/api/actions/program.rs:738"
+    },
+    {
+      "logical_template": "VmTerminal::{}::{}::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/drivers/vmm/hostcall_logs.rs:83"
+    },
+    {
+      "logical_template": "VmTerminal::{}::{}::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/shell/api/actions/program.rs:1233"
+    },
+    {
+      "logical_template": "chainCallback::{}_{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/core/core_orchestrator.rs:606"
+    },
+    {
+      "logical_template": "creatorof::{}::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/drivers/vmm/hostcall_entities.rs:1626"
+    },
+    {
+      "logical_template": "god::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/drivers/security.rs:212"
+    },
+    {
+      "logical_template": "hasaccess::{}::",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/drivers/network/client/tcp.rs:259"
+    },
+    {
+      "logical_template": "hasaccess::{}::",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/drivers/network/client/ws.rs:285"
+    },
+    {
+      "logical_template": "hasaccess::{}::",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/drivers/vmm/hostcall_entities.rs:150"
+    },
+    {
+      "logical_template": "hasaccess::{}::",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/drivers/vmm/hostcall_entities.rs:1781"
+    },
+    {
+      "logical_template": "hasaccess::{}::",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/shell/api/actions/creature.rs:1344"
+    },
+    {
+      "logical_template": "hasaccess::{}::",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/shell/api/actions/program.rs:1805"
+    },
+    {
+      "logical_template": "hasaccess::{}::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/drivers/network/federation/fednet.rs:208"
+    },
+    {
+      "logical_template": "hasaccess::{}::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/drivers/network/federation/fednet.rs:233"
+    },
+    {
+      "logical_template": "hasaccess::{}::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/drivers/network/federation/fednet.rs:300"
+    },
+    {
+      "logical_template": "hasaccess::{}::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/drivers/security.rs:227"
+    },
+    {
+      "logical_template": "hasaccess::{}::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/drivers/vmm/driver.rs:147"
+    },
+    {
+      "logical_template": "hasaccess::{}::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/drivers/vmm/driver.rs:980"
+    },
+    {
+      "logical_template": "hasaccess::{}::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/drivers/vmm/hostcall_entities.rs:1351"
+    },
+    {
+      "logical_template": "hasaccess::{}::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/drivers/vmm/hostcall_entities.rs:1622"
+    },
+    {
+      "logical_template": "index::{}::{}::{}::",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/core/actor/model/trx.rs:469"
+    },
+    {
+      "logical_template": "index::{}::{}::{}::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/core/actor/model/trx.rs:271"
+    },
+    {
+      "logical_template": "index::{}::{}::{}::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/core/actor/model/trx.rs:286"
+    },
+    {
+      "logical_template": "index::{}::{}::{}::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/core/actor/model/trx.rs:298"
+    },
+    {
+      "logical_template": "index::{}::{}::{}::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/core/actor/model/trx.rs:312"
+    },
+    {
+      "logical_template": "json::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/drivers/vmm/host_bridge.rs:217"
+    },
+    {
+      "logical_template": "json::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/drivers/vmm/hostcall_entities.rs:1442"
+    },
+    {
+      "logical_template": "json::{}::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/core/actor/model/trx.rs:430"
+    },
+    {
+      "logical_template": "json::{}::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/core/actor/model/trx.rs:668"
+    },
+    {
+      "logical_template": "json::{}::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/core/actor/model/trx.rs:690"
+    },
+    {
+      "logical_template": "json::{}::{}.",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/core/actor/model/trx.rs:691"
+    },
+    {
+      "logical_template": "json::{}::{}.{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/core/actor/model/trx.rs:681"
+    },
+    {
+      "logical_template": "link::UserEmailToId::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/drivers/vmm/hostcall_entities.rs:144"
+    },
+    {
+      "logical_template": "link::UserEmailToId::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/shell/api/actions/creature.rs:1274"
+    },
+    {
+      "logical_template": "link::UserEmailToId::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/shell/api/actions/creature.rs:1369"
+    },
+    {
+      "logical_template": "link::UserIdToEmail::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/drivers/vmm/hostcall_entities.rs:146"
+    },
+    {
+      "logical_template": "link::UserIdToEmail::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/shell/api/actions/creature.rs:1367"
+    },
+    {
+      "logical_template": "link::UserPrivateKey::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/drivers/vmm/hostcall_entities.rs:147"
+    },
+    {
+      "logical_template": "link::UserPrivateKey::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/shell/api/actions/creature.rs:1371"
+    },
+    {
+      "logical_template": "link::VmBilling::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/drivers/vmm/host/functions/vm_ownership.rs:241"
+    },
+    {
+      "logical_template": "link::VmBilling::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/shell/api/actions/program.rs:1026"
+    },
+    {
+      "logical_template": "link::VmBilling::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/shell/api/actions/program.rs:463"
+    },
+    {
+      "logical_template": "link::VmBilling::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/shell/api/actions/program.rs:901"
+    },
+    {
+      "logical_template": "link::VmContainerName::{}::{}::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/shell/api/actions/program.rs:1030"
+    },
+    {
+      "logical_template": "link::VmContainerName::{}::{}::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/shell/api/actions/program.rs:922"
+    },
+    {
+      "logical_template": "link::VmInstance::{}::{}::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/shell/api/actions/program.rs:459"
+    },
+    {
+      "logical_template": "link::VmInstance::{}::{}::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/shell/api/actions/program.rs:897"
+    },
+    {
+      "logical_template": "link::VmOwnerProgram::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/shell/api/actions/program.rs:1029"
+    },
+    {
+      "logical_template": "link::VmStartedAt::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/drivers/vmm/host/functions/vm_ownership.rs:240"
+    },
+    {
+      "logical_template": "link::VmStartedAt::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/shell/api/actions/program.rs:1024"
+    },
+    {
+      "logical_template": "link::VmStartedAt::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/shell/api/actions/program.rs:896"
+    },
+    {
+      "logical_template": "link::VmStatus::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/drivers/vmm/host/functions/vm_ownership.rs:239"
+    },
+    {
+      "logical_template": "link::VmStatus::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/shell/api/actions/program.rs:1023"
+    },
+    {
+      "logical_template": "link::VmStatus::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/shell/api/actions/program.rs:458"
+    },
+    {
+      "logical_template": "link::VmStatus::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/shell/api/actions/program.rs:895"
+    },
+    {
+      "logical_template": "link::VmTerminal::{}::{}::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/shell/api/actions/program.rs:1265"
+    },
+    {
+      "logical_template": "link::creatorof::{}::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/drivers/vmm/hostcall_entities.rs:161"
+    },
+    {
+      "logical_template": "link::creatorof::{}::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/drivers/vmm/hostcall_entities.rs:1728"
+    },
+    {
+      "logical_template": "link::creatorof::{}::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/shell/api/actions/creature.rs:1355"
+    },
+    {
+      "logical_template": "link::hasaccess::{}::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/drivers/network/federation/fednet.rs:314"
+    },
+    {
+      "logical_template": "link::hasaccess::{}::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/drivers/vmm/hostcall_entities.rs:1384"
+    },
+    {
+      "logical_template": "link::hasaccess::{}::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/drivers/vmm/hostcall_entities.rs:160"
+    },
+    {
+      "logical_template": "link::hasaccess::{}::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/drivers/vmm/hostcall_entities.rs:1724"
+    },
+    {
+      "logical_template": "link::hasaccess::{}::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/shell/api/actions/creature.rs:1354"
+    },
+    {
+      "logical_template": "link::machinePrograms::{}::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/drivers/vmm/hostcall_entities.rs:363"
+    },
+    {
+      "logical_template": "link::machinePrograms::{}::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/shell/api/actions/program.rs:654"
+    },
+    {
+      "logical_template": "link::onaccess::{}::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/drivers/network/federation/fednet.rs:313"
+    },
+    {
+      "logical_template": "link::onaccess::{}::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/drivers/vmm/hostcall_entities.rs:1380"
+    },
+    {
+      "logical_template": "link::onaccess::{}::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/drivers/vmm/hostcall_entities.rs:159"
+    },
+    {
+      "logical_template": "link::onaccess::{}::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/drivers/vmm/hostcall_entities.rs:1720"
+    },
+    {
+      "logical_template": "link::onaccess::{}::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/shell/api/actions/creature.rs:1353"
+    },
+    {
+      "logical_template": "link::vmAlarmData::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/drivers/vmm/hostcall_entities.rs:1978"
+    },
+    {
+      "logical_template": "link::vmAlarmEntity::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/drivers/vmm/hostcall_entities.rs:1979"
+    },
+    {
+      "logical_template": "link::vmAlarmStoreId::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/drivers/vmm/hostcall_entities.rs:1977"
+    },
+    {
+      "logical_template": "link::vmAlarmTime::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/drivers/vmm/hostcall_entities.rs:1980"
+    },
+    {
+      "logical_template": "link::vmDistributed::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/drivers/vmm/host/functions/vm_ownership.rs:242"
+    },
+    {
+      "logical_template": "link::vmDistributed::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/shell/api/actions/program.rs:1028"
+    },
+    {
+      "logical_template": "link::vmOwnedStore::{}::",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/drivers/vmm/hostcall_entities.rs:892"
+    },
+    {
+      "logical_template": "link::vmOwnedStore::{}::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/drivers/vmm/hostcall_entities.rs:844"
+    },
+    {
+      "logical_template": "link::vmStandaloneContainerName::{}::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/shell/api/actions/program.rs:1038"
+    },
+    {
+      "logical_template": "link::vmStandaloneContainerName::{}::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/shell/api/actions/program.rs:907"
+    },
+    {
+      "logical_template": "link::vmStandaloneImageName::{}::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/shell/api/actions/program.rs:1034"
+    },
+    {
+      "logical_template": "link::vmStandaloneImageName::{}::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/shell/api/actions/program.rs:903"
+    },
+    {
+      "logical_template": "link::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/core/actor/model/trx.rs:320"
+    },
+    {
+      "logical_template": "link::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/core/actor/model/trx.rs:325"
+    },
+    {
+      "logical_template": "link::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/core/actor/model/trx.rs:446"
+    },
+    {
+      "logical_template": "link::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/core/actor/model/trx.rs:511"
+    },
+    {
+      "logical_template": "link::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/drivers/vmm/host/functions/login_grant.rs:85"
+    },
+    {
+      "logical_template": "link::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/drivers/vmm/host/functions/vm_ownership.rs:238"
+    },
+    {
+      "logical_template": "link::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/drivers/vmm/host/functions/vm_ownership.rs:249"
+    },
+    {
+      "logical_template": "link::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/drivers/vmm/host_bridge.rs:175"
+    },
+    {
+      "logical_template": "link::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/drivers/vmm/proxy.rs:90"
+    },
+    {
+      "logical_template": "link::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/shell/api/actions/program.rs:1315"
+    },
+    {
+      "logical_template": "link::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/shell/api/actions/program.rs:1320"
+    },
+    {
+      "logical_template": "machinePrograms::{}::",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/drivers/vmm/hostcall_entities.rs:451"
+    },
+    {
+      "logical_template": "machinePrograms::{}::",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/shell/api/actions/program.rs:1715"
+    },
+    {
+      "logical_template": "machinePrograms::{}::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/drivers/vmm/hostcall_entities.rs:317"
+    },
+    {
+      "logical_template": "machinePrograms::{}::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/shell/api/actions/program.rs:627"
+    },
+    {
+      "logical_template": "no gateway endpoint registered for {}::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/drivers/vmm/network/gateway.rs:86"
+    },
+    {
+      "logical_template": "obj::Creature::{}::publicKey",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/core/actor/model/trx.rs:634"
+    },
+    {
+      "logical_template": "obj::Creature::{}::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/drivers/vmm/hostcall_entities.rs:184"
+    },
+    {
+      "logical_template": "obj::Store::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/drivers/network/federation/fednet.rs:283"
+    },
+    {
+      "logical_template": "obj::User::{}::privateKey",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/core/actor/model/trx.rs:625"
+    },
+    {
+      "logical_template": "obj::{}::",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/core/actor/model/trx.rs:574"
+    },
+    {
+      "logical_template": "obj::{}::{}::",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/core/actor/model/trx.rs:366"
+    },
+    {
+      "logical_template": "obj::{}::{}::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/core/actor/model/trx.rs:248"
+    },
+    {
+      "logical_template": "obj::{}::{}::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/core/actor/model/trx.rs:380"
+    },
+    {
+      "logical_template": "obj::{}::{}::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/shell/api/model/chain.rs:32"
+    },
+    {
+      "logical_template": "obj::{}::{}::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/shell/api/model/creature.rs:120"
+    },
+    {
+      "logical_template": "obj::{}::{}::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/shell/api/model/store.rs:71"
+    },
+    {
+      "logical_template": "obj::{}::{}::|",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/core/actor/model/trx.rs:260"
+    },
+    {
+      "logical_template": "onaccess::{}::",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/drivers/signaler.rs:80"
+    },
+    {
+      "logical_template": "onaccess::{}::",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/drivers/vmm/hostcall_entities.rs:162"
+    },
+    {
+      "logical_template": "onaccess::{}::",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/drivers/vmm/hostcall_entities.rs:1713"
+    },
+    {
+      "logical_template": "onaccess::{}::",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/drivers/vmm/hostcall_entities.rs:1819"
+    },
+    {
+      "logical_template": "onaccess::{}::",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/shell/api/actions/creature.rs:1356"
+    },
+    {
+      "logical_template": "onaccess::{}::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/drivers/network/federation/fednet.rs:204"
+    },
+    {
+      "logical_template": "onaccess::{}::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/drivers/network/federation/fednet.rs:229"
+    },
+    {
+      "logical_template": "onaccess::{}::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/drivers/network/federation/fednet.rs:297"
+    },
+    {
+      "logical_template": "onaccess::{}::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/drivers/vmm/hostcall_entities.rs:1347"
+    },
+    {
+      "logical_template": "onaccess::{}::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/drivers/vmm/hostcall_entities.rs:1631"
+    },
+    {
+      "logical_template": "ownerof::{}::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/drivers/vmm/hostcall_entities.rs:67"
+    },
+    {
+      "logical_template": "ownerof::{}::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/shell/api/actions/creature.rs:270"
+    },
+    {
+      "logical_template": "proxy entity {}::{} has no target configured; dropping signal",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/drivers/vmm/proxy.rs:570"
+    },
+    {
+      "logical_template": "proxy {}::{} -> {}::{} corr={}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/drivers/vmm/proxy.rs:652"
+    },
+    {
+      "logical_template": "user::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/core/globe.rs:150"
+    },
+    {
+      "logical_template": "user::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/core/globe.rs:199"
+    },
+    {
+      "logical_template": "vmAlarmData::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/drivers/vmm/hostcall_entities.rs:1960"
+    },
+    {
+      "logical_template": "vmAlarmData::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/shell/api/actions/program.rs:1769"
+    },
+    {
+      "logical_template": "vmAlarmEntity::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/drivers/vmm/hostcall_entities.rs:1962"
+    },
+    {
+      "logical_template": "vmAlarmEntity::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/shell/api/actions/program.rs:1774"
+    },
+    {
+      "logical_template": "vmAlarmStoreId::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/drivers/vmm/hostcall_entities.rs:1957"
+    },
+    {
+      "logical_template": "vmAlarmStoreId::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/shell/api/actions/program.rs:1763"
+    },
+    {
+      "logical_template": "vmAlarmTime::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/drivers/vmm/hostcall_entities.rs:1966"
+    },
+    {
+      "logical_template": "vmAlarmTime::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/shell/api/actions/program.rs:1768"
+    },
+    {
+      "logical_template": "vmDistributed::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/core/core_orchestrator.rs:751"
+    },
+    {
+      "logical_template": "vmDistributed::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/drivers/vmm/driver.rs:263"
+    },
+    {
+      "logical_template": "vmDistributed::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/shell/api/actions/program.rs:768"
+    },
+    {
+      "logical_template": "vmDistribution::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/drivers/cluster/mod.rs:462"
+    },
+    {
+      "logical_template": "vmDistribution::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/drivers/vmm/driver.rs:266"
+    },
+    {
+      "logical_template": "vmDistribution::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/shell/api/actions/program.rs:1568"
+    },
+    {
+      "logical_template": "vmDistribution::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/shell/api/actions/program.rs:762"
+    },
+    {
+      "logical_template": "vmDistribution::{}::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/drivers/cluster/mod.rs:464"
+    },
+    {
+      "logical_template": "vmDistribution::{}::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/shell/api/actions/program.rs:1572"
+    },
+    {
+      "logical_template": "vmDistribution::{}::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/shell/api/actions/program.rs:763"
+    },
+    {
+      "logical_template": "vmEntityDownloadable::{}::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/drivers/vmm/hostcall_entities.rs:748"
+    },
+    {
+      "logical_template": "vmEntityDownloadable::{}::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/shell/api/actions/program.rs:1538"
+    },
+    {
+      "logical_template": "vmEntityDownloadable::{}::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/shell/api/actions/program.rs:1621"
+    },
+    {
+      "logical_template": "vmEntityPath::{}::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/drivers/cluster/mod.rs:454"
+    },
+    {
+      "logical_template": "vmEntityPath::{}::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/drivers/vmm/driver.rs:1085"
+    },
+    {
+      "logical_template": "vmEntityPath::{}::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/drivers/vmm/driver.rs:231"
+    },
+    {
+      "logical_template": "vmEntityPath::{}::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/drivers/vmm/hostcall_entities.rs:735"
+    },
+    {
+      "logical_template": "vmEntityPath::{}::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/drivers/vmm/proxy.rs:305"
+    },
+    {
+      "logical_template": "vmEntityPath::{}::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/drivers/vmm/proxy.rs:555"
+    },
+    {
+      "logical_template": "vmEntityPath::{}::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/shell/api/actions/program.rs:1499"
+    },
+    {
+      "logical_template": "vmEntityPath::{}::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "vms/javascript/src/controller.rs:298"
+    },
+    {
+      "logical_template": "vmEntityPath::{}::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "vms/wasm/src/controller.rs:272"
+    },
+    {
+      "logical_template": "vmEntityType::{}::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/drivers/cluster/mod.rs:458"
+    },
+    {
+      "logical_template": "vmEntityType::{}::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/drivers/vmm/driver.rs:1078"
+    },
+    {
+      "logical_template": "vmEntityType::{}::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/drivers/vmm/driver.rs:224"
+    },
+    {
+      "logical_template": "vmEntityType::{}::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/drivers/vmm/hostcall_entities.rs:739"
+    },
+    {
+      "logical_template": "vmEntityType::{}::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/drivers/vmm/proxy.rs:301"
+    },
+    {
+      "logical_template": "vmEntityType::{}::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/drivers/vmm/proxy.rs:548"
+    },
+    {
+      "logical_template": "vmEntityType::{}::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/shell/api/actions/program.rs:1503"
+    },
+    {
+      "logical_template": "vmOwnedStore::{}::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/drivers/vmm/hostcall_entities.rs:812"
+    },
+    {
+      "logical_template": "{SECRET_GRANTEE_PREFIX}{grantee}::",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/shell/api/actions/creature.rs:718"
+    },
+    {
+      "logical_template": "{SECRET_GRANTEE_PREFIX}{grantee}::{owner}::{name}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/shell/api/actions/creature.rs:707"
+    },
+    {
+      "logical_template": "{SECRET_GRANT_PREFIX}{owner}::{name}::{grantee}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/shell/api/actions/creature.rs:703"
+    },
+    {
+      "logical_template": "{SECRET_PREFIX}{owner}::",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/shell/api/actions/creature.rs:897"
+    },
+    {
+      "logical_template": "{SECRET_PREFIX}{owner}::{name}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/shell/api/actions/creature.rs:700"
+    },
+    {
+      "logical_template": "{}::",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "vms/elpify/src/queue.rs:187"
+    },
+    {
+      "logical_template": "{}::",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "vms/javascript/src/runtime.rs:92"
+    },
+    {
+      "logical_template": "{}::meta",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/drivers/vmm/hostcall_entities.rs:1009"
+    },
+    {
+      "logical_template": "{}::payload",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/drivers/vmm/hostcall_entities.rs:1008"
+    },
+    {
+      "logical_template": "{}::targetCount",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/core/core_orchestrator.rs:623"
+    },
+    {
+      "logical_template": "{}::tempCount",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/core/core_orchestrator.rs:627"
+    },
+    {
+      "logical_template": "{}::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/core/globe.rs:506"
+    },
+    {
+      "logical_template": "{}::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/core/globe.rs:705"
+    },
+    {
+      "logical_template": "{}::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/drivers/network/chain/net/net_transport.rs:139"
+    },
+    {
+      "logical_template": "{}::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/drivers/network/chain/net/net_transport.rs:140"
+    },
+    {
+      "logical_template": "{}::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/drivers/network/chain/net/net_transport.rs:141"
+    },
+    {
+      "logical_template": "{}::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/drivers/network/chain/net/net_transport.rs:142"
+    },
+    {
+      "logical_template": "{}::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/drivers/network/chain/net/net_transport.rs:311"
+    },
+    {
+      "logical_template": "{}::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/drivers/network/federation/netserver.rs:136"
+    },
+    {
+      "logical_template": "{}::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:157"
+    },
+    {
+      "logical_template": "{}::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/drivers/vmm/network/gateway_registry.rs:17"
+    },
+    {
+      "logical_template": "{}::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/drivers/vmm/network/gateway_registry.rs:23"
+    },
+    {
+      "logical_template": "{}::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/drivers/vmm/network/gateway_types.rs:36"
+    },
+    {
+      "logical_template": "{}::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/shell/api/actions/program.rs:1331"
+    },
+    {
+      "logical_template": "{}::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/shell/api/model/entity.rs:27"
+    },
+    {
+      "logical_template": "{}::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "vms/elpify/src/queue.rs:156"
+    },
+    {
+      "logical_template": "{}::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "vms/javascript/src/host_calls.rs:133"
+    },
+    {
+      "logical_template": "{}::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "vms/javascript/src/host_calls.rs:138"
+    },
+    {
+      "logical_template": "{}::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "vms/javascript/src/host_calls.rs:143"
+    },
+    {
+      "logical_template": "{}::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "vms/javascript/src/host_calls.rs:147"
+    },
+    {
+      "logical_template": "{}::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "vms/javascript/src/runtime.rs:69"
+    },
+    {
+      "logical_template": "{}::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "vms/wasm/src/host_calls.rs:116"
+    },
+    {
+      "logical_template": "{}::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "vms/wasm/src/host_calls.rs:120"
+    },
+    {
+      "logical_template": "{}::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "vms/wasm/src/host_calls.rs:124"
+    },
+    {
+      "logical_template": "{}::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "vms/wasm/src/host_calls.rs:129"
+    },
+    {
+      "logical_template": "{}::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "vms/wasm/src/host_calls.rs:480"
+    },
+    {
+      "logical_template": "{}::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "vms/wasm/src/host_calls.rs:492"
+    },
+    {
+      "logical_template": "{}::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "vms/wasm/src/host_calls.rs:505"
+    },
+    {
+      "logical_template": "{}::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "vms/wasm/src/host_calls.rs:520"
+    },
+    {
+      "logical_template": "{}::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "vms/wasm/src/runtime.rs:324"
+    },
+    {
+      "logical_template": "{}::{}::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/core/globe.rs:489"
+    },
+    {
+      "logical_template": "{}::{}::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/core/globe.rs:676"
+    },
+    {
+      "logical_template": "{}::{}::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:152"
+    },
+    {
+      "logical_template": "{}::{}::{}::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:147"
+    },
+    {
+      "logical_template": "{}|{}::attachment",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/core/core_orchestrator.rs:618"
+    },
+    {
+      "logical_template": "{}|{}::machineId",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/core/core_orchestrator.rs:610"
+    },
+    {
+      "logical_template": "{}|{}::storeId",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/core/core_orchestrator.rs:614"
+    }
+  ],
+  "cluster_rocksdb": {
+    "column_families": [
+      "meta",
+      "logs",
+      "sm"
+    ],
+    "database": "OpenRaft RocksDB",
+    "log_key": "big-endian u64 log index in logs column family",
+    "metadata_keys": [
+      "committed",
+      "last_purged",
+      "vote"
+    ],
+    "path": "<storage_root>/cluster/raft-db",
+    "serialization": "JSON values; binary log keys",
+    "source": "node/src/drivers/cluster/store.rs:1"
+  },
+  "core_objects": [
+    {
+      "columns": [
+        "id",
+        "storeId"
+      ],
+      "object_type": "Chain",
+      "physical_pattern": "obj::Chain::{id}::{column}",
+      "rust_type": "Chain",
+      "source": "node/src/shell/api/model/chain.rs:18"
+    },
+    {
+      "columns": [
+        "id",
+        "workChainId"
+      ],
+      "object_type": "ChainShard",
+      "physical_pattern": "obj::ChainShard::{id}::{column}",
+      "rust_type": "ChainShard",
+      "source": "node/src/shell/api/model/chain.rs:85"
+    },
+    {
+      "columns": [
+        "balance",
+        "chainId",
+        "ownerId",
+        "publicKey",
+        "subchainId",
+        "type",
+        "username"
+      ],
+      "object_type": "Creature",
+      "physical_pattern": "obj::Creature::{id}::{column}",
+      "rust_type": "Creature",
+      "source": "node/src/shell/api/model/creature.rs:46"
+    },
+    {
+      "columns": [
+        "entityId",
+        "entityType",
+        "imageName",
+        "programId"
+      ],
+      "object_type": "Entity",
+      "physical_pattern": "obj::Entity::{id}::{column}",
+      "rust_type": "Entity",
+      "source": "node/src/shell/api/model/entity.rs:21"
+    },
+    {
+      "columns": [
+        "ownerId",
+        "storeId"
+      ],
+      "object_type": "File",
+      "physical_pattern": "obj::File::{id}::{column}",
+      "rust_type": "File",
+      "source": "node/src/shell/api/model/file.rs:19"
+    },
+    {
+      "columns": [
+        "comment",
+        "id",
+        "machineId",
+        "path",
+        "runtime"
+      ],
+      "object_type": "Program",
+      "physical_pattern": "obj::Program::{id}::{column}",
+      "rust_type": "Program",
+      "source": "node/src/shell/api/model/machine_program.rs:27"
+    },
+    {
+      "columns": [
+        "userId"
+      ],
+      "object_type": "Session",
+      "physical_pattern": "obj::Session::{id}::{column}",
+      "rust_type": "Session",
+      "source": "node/src/shell/api/model/session.rs:17"
+    },
+    {
+      "columns": [
+        "isPublic",
+        "memberCount",
+        "parentId",
+        "persHist",
+        "signalCount",
+        "tag"
+      ],
+      "object_type": "Store",
+      "physical_pattern": "obj::Store::{id}::{column}",
+      "rust_type": "Store",
+      "source": "node/src/shell/api/model/store.rs:28"
+    }
+  ],
+  "hashgraph_rocksdb": [
+    {
+      "database": "separate Hashgraph RocksDB",
+      "family": "repertoire",
+      "physical_pattern": "rep_{public_key}",
+      "source": "node/src/drivers/network/chain/hashgraph/rocks_store.rs:35",
+      "value_shape": "Peer marshal bytes"
+    },
+    {
+      "database": "separate Hashgraph RocksDB",
+      "family": "peer-set",
+      "physical_pattern": "peerset_{round:09}",
+      "source": "node/src/drivers/network/chain/hashgraph/rocks_store.rs:35",
+      "value_shape": "PeerSet marshal bytes"
+    },
+    {
+      "database": "separate Hashgraph RocksDB",
+      "family": "topological-event",
+      "physical_pattern": "topo_{index:09}",
+      "source": "node/src/drivers/network/chain/hashgraph/rocks_store.rs:35",
+      "value_shape": "Event marshal bytes"
+    },
+    {
+      "database": "separate Hashgraph RocksDB",
+      "family": "participant-event",
+      "physical_pattern": "{participant}__event_{index:09}",
+      "source": "node/src/drivers/network/chain/hashgraph/rocks_store.rs:35",
+      "value_shape": "Event marshal bytes"
+    },
+    {
+      "database": "separate Hashgraph RocksDB",
+      "family": "participant-root",
+      "physical_pattern": "{participant}_root",
+      "source": "node/src/drivers/network/chain/hashgraph/rocks_store.rs:35",
+      "value_shape": "Root marshal bytes"
+    },
+    {
+      "database": "separate Hashgraph RocksDB",
+      "family": "round",
+      "physical_pattern": "round_{index:09}",
+      "source": "node/src/drivers/network/chain/hashgraph/rocks_store.rs:35",
+      "value_shape": "RoundInfo marshal bytes"
+    },
+    {
+      "database": "separate Hashgraph RocksDB",
+      "family": "block",
+      "physical_pattern": "block_{index:09}",
+      "source": "node/src/drivers/network/chain/hashgraph/rocks_store.rs:35",
+      "value_shape": "Block marshal bytes"
+    },
+    {
+      "database": "separate Hashgraph RocksDB",
+      "family": "frame",
+      "physical_pattern": "frame_{index:09}",
+      "source": "node/src/drivers/network/chain/hashgraph/rocks_store.rs:35",
+      "value_shape": "Frame marshal bytes; retention applies"
+    }
+  ],
+  "physical_layouts": [
+    {
+      "family": "object-column",
+      "pattern": "obj::{type}::{object_id}::{column}",
+      "source": "node/src/core/actor/model/trx.rs:247"
+    },
+    {
+      "family": "secondary-index",
+      "pattern": "index::{type}::{from_column}::{to_column}::{from_value}",
+      "source": "node/src/core/actor/model/trx.rs:264"
+    },
+    {
+      "family": "link",
+      "pattern": "link::{logical_key}",
+      "source": "node/src/core/actor/model/trx.rs:325"
+    },
+    {
+      "family": "json-document-and-leaves",
+      "pattern": "json::{logical_key}::{path}[.{descendant_path}]",
+      "source": "node/src/core/actor/model/trx.rs:430"
+    },
+    {
+      "family": "raw",
+      "pattern": "caller-defined byte/string key",
+      "source": "node/src/core/actor/model/trx.rs:339"
+    }
+  ],
+  "questdb_tables": [
+    {
+      "columns": [
+        {
+          "name": "id",
+          "type": "text"
+        },
+        {
+          "name": "build_id",
+          "type": "text"
+        },
+        {
+          "name": "machine_id",
+          "type": "text"
+        },
+        {
+          "name": "vm_id",
+          "type": "text"
+        },
+        {
+          "name": "log_type",
+          "type": "text"
+        },
+        {
+          "name": "data",
+          "type": "text"
+        },
+        {
+          "name": "time",
+          "type": "bigint"
+        }
+      ],
+      "name": "buildlogs",
+      "operations": [
+        {
+          "kind": "INSERT",
+          "source": "node/src/drivers/storage.rs:416"
+        },
+        {
+          "kind": "SELECT",
+          "source": "node/src/drivers/storage.rs:456"
+        },
+        {
+          "kind": "SELECT",
+          "source": "node/src/drivers/storage.rs:464"
+        }
+      ],
+      "source": "node/src/drivers/storage.rs:150"
+    },
+    {
+      "columns": [
+        {
+          "name": "id",
+          "type": "text"
+        },
+        {
+          "name": "store_id",
+          "type": "text"
+        },
+        {
+          "name": "user_id",
+          "type": "text"
+        },
+        {
+          "name": "data",
+          "type": "text"
+        },
+        {
+          "name": "tags",
+          "type": "text"
+        },
+        {
+          "name": "time",
+          "type": "bigint"
+        },
+        {
+          "name": "edited",
+          "type": "boolean"
+        }
+      ],
+      "name": "storage",
+      "operations": [
+        {
+          "kind": "SELECT",
+          "source": "node/src/drivers/storage.rs:125"
+        },
+        {
+          "kind": "SELECT",
+          "source": "node/src/drivers/storage.rs:137"
+        },
+        {
+          "kind": "INSERT",
+          "source": "node/src/drivers/storage.rs:251"
+        },
+        {
+          "kind": "UPDATE",
+          "source": "node/src/drivers/storage.rs:277"
+        },
+        {
+          "kind": "SELECT",
+          "source": "node/src/drivers/storage.rs:335"
+        },
+        {
+          "kind": "SELECT",
+          "source": "node/src/drivers/storage.rs:375"
+        }
+      ],
+      "source": "node/src/drivers/storage.rs:131"
+    }
+  ],
+  "summary": {
+    "candidate_key_templates": 306,
+    "core_object_types": 8,
+    "direct_application_accesses": 243,
+    "hashgraph_key_families": 8,
+    "questdb_tables": 2
+  },
+  "unresolved": [
+    "Dynamic keys passed through variables need caller-by-caller semantic ownership review.",
+    "JSON payload schemas are not uniformly typed and require fixtures before capsule transforms.",
+    "Guest-visible dbOp calls require ownership analysis before migration to ADR 0001's signed proxy and trusted creature database/role binding.",
+    "Filesystem artifacts and deployed entity blobs require a separate ownership/retention pass.",
+    "No target capsule kind is assigned until canonical capsule/consistency ADRs are accepted."
+  ]
+}

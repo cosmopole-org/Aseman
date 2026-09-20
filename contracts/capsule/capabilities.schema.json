@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://aseman.example/contracts/capsule/capabilities.schema.json",
+  "title": "Storage provider capabilities",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["provider_id", "capabilities", "max_query_limit", "max_transaction_capsules"],
+  "properties": {
+    "provider_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"},
+    "capabilities": {"type": "array", "uniqueItems": true, "items": {"enum": ["transactions.single_capsule", "transactions.multi_capsule", "relationships.foreign_keys", "queries.range", "queries.full_text", "queries.relationship_traversal", "indexes.unique", "events.change_stream", "consistency.linearizable", "consistency.snapshot", "consistency.read_committed", "consistency.eventual", "append_only.verifiable", "guest_database.isolated_roles", "guest_database.catalog_isolation", "guest_database.schema_management", "guest_database.safe_role_assumption"]}},
+    "max_query_limit": {"type": "integer", "minimum": 1},
+    "max_transaction_capsules": {"type": "integer", "minimum": 1}
+  }
+}

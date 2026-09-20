@@ -256,8 +256,7 @@ fn off_chain_proof_verifies_on_chain_for_simple_arithmetic() {
     // On-chain side: verify the proof against the (program info, public
     // inputs, public outputs, proof) tuple — the exact data Caspar would
     // ship across consensus.
-    let outputs =
-        stack_outputs_from_ints(&artifacts.stack_outputs).expect("outputs convert");
+    let outputs = stack_outputs_from_ints(&artifacts.stack_outputs).expect("outputs convert");
     let cycles = verify_execution(
         artifacts.program_info,
         artifacts.stack_inputs,
@@ -280,8 +279,7 @@ fn proof_bytes_round_trip_preserves_verifiability() {
     let on_wire = artifacts.proof_bytes.clone();
     let received = on_wire.to_vec();
 
-    let outputs =
-        stack_outputs_from_ints(&artifacts.stack_outputs).expect("outputs convert");
+    let outputs = stack_outputs_from_ints(&artifacts.stack_outputs).expect("outputs convert");
     let result = verify_execution(
         artifacts.program_info,
         artifacts.stack_inputs,
@@ -299,8 +297,7 @@ fn verify_rejects_truncated_proof_bytes() {
     // Lop a few bytes off the end — should produce a deserialization or
     // verification error, not a panic.
     let short = &artifacts.proof_bytes[..artifacts.proof_bytes.len() / 2];
-    let outputs =
-        stack_outputs_from_ints(&artifacts.stack_outputs).expect("outputs convert");
+    let outputs = stack_outputs_from_ints(&artifacts.stack_outputs).expect("outputs convert");
     let err = verify_execution(
         artifacts.program_info,
         artifacts.stack_inputs,

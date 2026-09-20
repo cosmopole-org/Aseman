@@ -1,0 +1,10 @@
+{
+  "kind": "core.program",
+  "predicate": {"op": "compare", "field": "runtime", "operator": "equal", "value": {"type": "text", "value": "wasm"}},
+  "projection": ["machine_id", "runtime"],
+  "sort": [{"field": "machine_id", "direction": "ascending"}],
+  "aggregates": [{"function": "count", "alias": "total"}],
+  "traversals": [],
+  "limit": 100,
+  "cursor": null
+}

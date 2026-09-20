@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://aseman.example/contracts/capsule/guest/binding.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["creature_id", "provider_id", "database_name", "role_name", "generation", "schema_catalog_revision", "status"],
+  "properties": {
+    "creature_id": {"type": "array", "minItems": 16, "maxItems": 16, "items": {"type": "integer", "minimum": 0, "maximum": 255}},
+    "provider_id": {"$ref": "#/$defs/provider_token"},
+    "database_name": {"$ref": "#/$defs/identifier"},
+    "role_name": {"$ref": "#/$defs/identifier"},
+    "generation": {"type": "integer", "minimum": 1},
+    "schema_catalog_revision": {"type": "integer", "minimum": 0},
+    "status": {"enum": ["provisioning", "disabled", "active", "draining", "retained", "retired"]}
+  },
+  "$defs": {
+    "identifier": {"type": "string", "pattern": "^[a-z][a-z0-9_]{0,62}$"},
+    "provider_token": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"}
+  }
+}

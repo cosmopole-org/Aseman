@@ -10,11 +10,9 @@ use anyhow::Result;
 use dashmap::DashMap;
 use serde_json::Value;
 
-use crate::models::ports::network::federation::IFederation;
-use crate::models::ports::signaler::{
-    GlobalListener, Group, ISignaler, JoinListener, Listener,
-};
 use crate::models::core::ICore;
+use crate::models::ports::network::federation::IFederation;
+use crate::models::ports::signaler::{GlobalListener, Group, ISignaler, JoinListener, Listener};
 use crate::models::transaction::ITrx;
 use crate::shell::api::model::access::StorePermissions;
 
@@ -50,8 +48,7 @@ impl Signaler {
     /// always a `Value`; `pack` is preserved for API compatibility but has no
     /// effect (Rust `Value` is already JSON-encodable).
     fn signal_listener(&self, key: &str, listener_id: &str, data: Value) {
-        let Some(listener) = self.listeners.get(listener_id).map(|e| e.value().clone())
-        else {
+        let Some(listener) = self.listeners.get(listener_id).map(|e| e.value().clone()) else {
             return;
         };
         (listener.signal)(key.to_string(), data);
@@ -87,7 +84,9 @@ impl Signaler {
         self.app.modify_state(
             true,
             Box::new(move |trx: &dyn ITrx| {
-                let keys = trx.get_links_list(&prefix_owned, -1, -1, &[]).unwrap_or_default();
+                let keys = trx
+                    .get_links_list(&prefix_owned, -1, -1, &[])
+                    .unwrap_or_default();
                 let mut members = Vec::with_capacity(keys.len());
                 for key in keys {
                     let member = key
@@ -234,14 +233,8 @@ impl ISignaler for Signaler {
         if origin == self.app.id() {
             self.signal_listener(key, listener_id, data);
         } else {
-            self.federation.send_fed_update(
-                &origin,
-                key,
-                data,
-                "user",
-                listener_id,
-                Vec::new(),
-            );
+            self.federation
+                .send_fed_update(&origin, key, data, "user", listener_id, Vec::new());
         }
     }
 
@@ -294,14 +287,12 @@ impl ISignaler for Signaler {
             if username.is_empty() {
                 continue;
             }
-            let Some(user_origin) = username.rsplit_once('@').map(|(_, s)| s.to_string())
-            else {
+            let Some(user_origin) = username.rsplit_once('@').map(|(_, s)| s.to_string()) else {
                 continue;
             };
             if user_origin == self.app.id() || user_origin == "global" {
                 if !exc.contains(&store_key) {
-                    if let Some(listener) =
-                        self.listeners.get(&user_id).map(|e| e.value().clone())
+                    if let Some(listener) = self.listeners.get(&user_id).map(|e| e.value().clone())
                     {
                         (listener.signal)(key.to_string(), packet.clone());
                     }
@@ -457,33 +448,100 @@ mod tests {
 
     #[allow(unused_variables)]
     impl crate::models::core::ICore for StubCore {
-        fn owner_id(&self) -> String { unimplemented!() }
-        fn id(&self) -> String { "global".to_string() }
-        fn gods(&self) -> Vec<String> { unimplemented!() }
-        fn add_god(&self, username: &str) { unimplemented!() }
-        fn tools(&self) -> Arc<dyn crate::models::ports::tools::ITools> { unimplemented!() }
-        fn free_nodes(&self) -> std::collections::HashMap<String, bool> { unimplemented!() }
-        fn add_free_node(&self, node_id: &str) { unimplemented!() }
-        fn actor(&self) -> Arc<dyn crate::models::action::actor::IActor> { unimplemented!() }
-        fn load(&self, args: Vec<String>, config: std::collections::HashMap<String, Value>) { unimplemented!() }
-        fn close(&self) { unimplemented!() }
-        fn plant_chain_trigger(&self, count: i64, user_id: &str, tag: &str, machine_id: &str, store_id: &str, input: &str) { unimplemented!() }
-        fn app_pending_trxs(&self) { unimplemented!() }
-        fn ip_addr(&self) -> String { unimplemented!() }
+        fn owner_id(&self) -> String {
+            unimplemented!()
+        }
+        fn id(&self) -> String {
+            "global".to_string()
+        }
+        fn gods(&self) -> Vec<String> {
+            unimplemented!()
+        }
+        fn add_god(&self, username: &str) {
+            unimplemented!()
+        }
+        fn tools(&self) -> Arc<dyn crate::models::ports::tools::ITools> {
+            unimplemented!()
+        }
+        fn free_nodes(&self) -> std::collections::HashMap<String, bool> {
+            unimplemented!()
+        }
+        fn add_free_node(&self, node_id: &str) {
+            unimplemented!()
+        }
+        fn actor(&self) -> Arc<dyn crate::models::action::actor::IActor> {
+            unimplemented!()
+        }
+        fn load(&self, args: Vec<String>, config: std::collections::HashMap<String, Value>) {
+            unimplemented!()
+        }
+        fn close(&self) {
+            unimplemented!()
+        }
+        fn plant_chain_trigger(
+            &self,
+            count: i64,
+            user_id: &str,
+            tag: &str,
+            machine_id: &str,
+            store_id: &str,
+            input: &str,
+        ) {
+            unimplemented!()
+        }
+        fn app_pending_trxs(&self) {
+            unimplemented!()
+        }
+        fn ip_addr(&self) -> String {
+            unimplemented!()
+        }
         // An empty state: the closure needs a transaction this stub has no
         // store behind, so a member read simply yields nothing.
         fn modify_state(&self, readonly: bool, fn_: crate::models::action::TrxClosure) {}
-        fn modify_state_securly_with_source(&self, readonly: bool, info: Arc<dyn crate::models::info::IInfo>, src: &str, fn_: crate::models::core::StateClosure) { unimplemented!() }
-        fn modify_state_securly(&self, readonly: bool, info: Arc<dyn crate::models::info::IInfo>, fn_: crate::models::core::StateClosure) { unimplemented!() }
-        fn sign_packet(&self, data: &[u8]) -> String { unimplemented!() }
-        fn sign_packet_as_owner(&self, data: &[u8]) -> String { unimplemented!() }
-        fn execution_cost_per_second(&self) -> i64 { unimplemented!() }
-        fn vm_ram_cost_per_mb_per_minute(&self) -> i64 { unimplemented!() }
-        fn vm_cpu_core_cost_per_minute(&self) -> i64 { unimplemented!() }
-        fn vm_disk_cost_per_gb_per_minute(&self) -> i64 { unimplemented!() }
-        fn globe(&self) -> Arc<dyn crate::models::globe::IGlobe> { unimplemented!() }
-        fn begin_vm_trx(&self, vm_id: &str) -> Arc<dyn crate::models::transaction::ITrx> { unimplemented!() }
-        fn end_vm_trx(&self, vm_id: &str) { unimplemented!() }
+        fn modify_state_securly_with_source(
+            &self,
+            readonly: bool,
+            info: Arc<dyn crate::models::info::IInfo>,
+            src: &str,
+            fn_: crate::models::core::StateClosure,
+        ) {
+            unimplemented!()
+        }
+        fn modify_state_securly(
+            &self,
+            readonly: bool,
+            info: Arc<dyn crate::models::info::IInfo>,
+            fn_: crate::models::core::StateClosure,
+        ) {
+            unimplemented!()
+        }
+        fn sign_packet(&self, data: &[u8]) -> String {
+            unimplemented!()
+        }
+        fn sign_packet_as_owner(&self, data: &[u8]) -> String {
+            unimplemented!()
+        }
+        fn execution_cost_per_second(&self) -> i64 {
+            unimplemented!()
+        }
+        fn vm_ram_cost_per_mb_per_minute(&self) -> i64 {
+            unimplemented!()
+        }
+        fn vm_cpu_core_cost_per_minute(&self) -> i64 {
+            unimplemented!()
+        }
+        fn vm_disk_cost_per_gb_per_minute(&self) -> i64 {
+            unimplemented!()
+        }
+        fn globe(&self) -> Arc<dyn crate::models::globe::IGlobe> {
+            unimplemented!()
+        }
+        fn begin_vm_trx(&self, vm_id: &str) -> Arc<dyn crate::models::transaction::ITrx> {
+            unimplemented!()
+        }
+        fn end_vm_trx(&self, vm_id: &str) {
+            unimplemented!()
+        }
     }
 
     fn new_signaler() -> Arc<Signaler> {
@@ -492,7 +550,12 @@ mod tests {
 
     fn noop_listener(id: &str) -> Arc<Listener> {
         let signal: SignalFn = Arc::new(|_k, _v| {});
-        Arc::new(Listener { id: id.to_string(), paused: false, dis_time: 0, signal })
+        Arc::new(Listener {
+            id: id.to_string(),
+            paused: false,
+            dis_time: 0,
+            signal,
+        })
     }
 
     #[test]
@@ -525,7 +588,10 @@ mod tests {
         // member) is reaped, space1 survives for userB.
         sig.leave_all_groups("userA");
         let groups = sig.groups();
-        assert!(groups.get("space2").is_none(), "single-member group must be reaped");
+        assert!(
+            groups.get("space2").is_none(),
+            "single-member group must be reaped"
+        );
         let s1 = groups.get("space1").unwrap();
         assert_eq!(s1.stores.len(), 1);
         assert!(s1.stores.contains_key("userB"));
@@ -544,8 +610,11 @@ mod tests {
             "5@peer-b".to_string(),
             "legacy".to_string(),
         ];
-        let (local, foreign) =
-            split_store_members("global", members, &["2@global".to_string(), "4@peer-a".to_string()]);
+        let (local, foreign) = split_store_members(
+            "global",
+            members,
+            &["2@global".to_string(), "4@peer-a".to_string()],
+        );
 
         // The sender is dropped; an id with no origin is this node's own.
         assert_eq!(local, vec!["1@global".to_string(), "legacy".to_string()]);
@@ -565,8 +634,18 @@ mod tests {
     #[test]
     fn store_fan_out_needs_no_group_membership() {
         let sig = new_signaler();
-        sig.signal_store("stores/signal", "space-created-just-now", serde_json::json!({"n": 1}), Vec::new(), false);
-        assert_eq!(sig.groups().len(), 0, "a store fan-out must not touch the group registry");
+        sig.signal_store(
+            "stores/signal",
+            "space-created-just-now",
+            serde_json::json!({"n": 1}),
+            Vec::new(),
+            false,
+        );
+        assert_eq!(
+            sig.groups().len(),
+            0,
+            "a store fan-out must not touch the group registry"
+        );
     }
 
     #[test]
@@ -587,6 +666,13 @@ mod tests {
         sig.join_group("machine1", "userA");
         sig.leave_group("machine1", "userA");
         assert_eq!(sig.groups().len(), 1, "listener-backed group must be kept");
-        assert!(sig.groups().get("machine1").unwrap().listener.lock().unwrap().is_some());
+        assert!(sig
+            .groups()
+            .get("machine1")
+            .unwrap()
+            .listener
+            .lock()
+            .unwrap()
+            .is_some());
     }
 }

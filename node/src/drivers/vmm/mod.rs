@@ -11,7 +11,6 @@
 //! reach the node exclusively through the SDK's `VmHost` interface,
 //! implemented in [`host_bridge`].
 
-mod prelude;
 pub mod bootstrap;
 pub mod bridge;
 pub mod driver;
@@ -23,6 +22,7 @@ pub mod hostcall_global;
 pub mod hostcall_logs;
 pub mod http_route;
 pub mod network;
+mod prelude;
 pub mod proxy;
 
 use serde_json::Value as JsonValue;

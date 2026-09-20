@@ -194,7 +194,10 @@ pub(crate) fn terminate_elpify_vms(machine_id: &str) {
     for key in keys {
         if let Some(handle) = emap.remove(&key) {
             handle.terminate();
-            log(format!("terminate requested for running elpify vm: {}", key));
+            log(format!(
+                "terminate requested for running elpify vm: {}",
+                key
+            ));
         }
     }
 }

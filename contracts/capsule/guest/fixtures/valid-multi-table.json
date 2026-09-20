@@ -1,0 +1,29 @@
+[
+  {
+    "operation": "create_table",
+    "definition": {
+      "name": "customers",
+      "columns": {
+        "customer_id": {"field_type": "capsule_id", "required": true, "default": null},
+        "display_name": {"field_type": "text", "required": true, "default": {"type": "text", "value": "anonymous"}}
+      },
+      "primary_key": ["customer_id"],
+      "indexes": [{"name": "customers_display_name", "columns": ["display_name"], "unique": false}],
+      "foreign_keys": []
+    }
+  },
+  {
+    "operation": "create_table",
+    "definition": {
+      "name": "orders",
+      "columns": {
+        "order_id": {"field_type": "capsule_id", "required": true, "default": null},
+        "customer_id": {"field_type": "capsule_id", "required": true, "default": null},
+        "amount": {"field_type": "integer", "required": true, "default": {"type": "integer", "value": 0}}
+      },
+      "primary_key": ["order_id"],
+      "indexes": [{"name": "orders_customer", "columns": ["customer_id"], "unique": false}],
+      "foreign_keys": [{"name": "orders_customer_fk", "columns": ["customer_id"], "target_table": "customers", "target_columns": ["customer_id"], "on_delete": "restrict"}]
+    }
+  }
+]

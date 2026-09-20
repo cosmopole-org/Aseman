@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://aseman.example/contracts/module/permissions.schema.json",
+  "title": "Aseman module permission declaration",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "network_egress": {"type": "array", "uniqueItems": true, "items": {"type": "string", "minLength": 1, "maxLength": 255}},
+    "network_listen": {"type": "array", "uniqueItems": true, "items": {"type": "string", "minLength": 1, "maxLength": 255}},
+    "read_only_mounts": {"type": "array", "uniqueItems": true, "items": {"type": "string", "pattern": "^/(?!.*(?:^|/)\\.\\.(?:/|$)).+$"}},
+    "read_write_mounts": {"type": "array", "uniqueItems": true, "items": {"type": "string", "pattern": "^/(?!.*(?:^|/)\\.\\.(?:/|$)).+$"}},
+    "secret_refs": {"type": "array", "uniqueItems": true, "items": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"}}
+  }
+}

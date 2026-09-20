@@ -67,10 +67,7 @@ fn requested_topics(input: &JsonValue) -> Vec<String> {
 }
 
 /// `registerBridgeToken` — mint (or replace) the grant behind a bearer token.
-pub(crate) fn host_fn_register_bridge_token(
-    caller_program_id: &str,
-    input: &JsonValue,
-) -> String {
+pub(crate) fn host_fn_register_bridge_token(caller_program_id: &str, input: &JsonValue) -> String {
     let caller = caller_program_id.trim().to_string();
     if caller.is_empty() {
         return json!({"ok": false, "error": "registerBridgeToken requires an identified caller"})
@@ -185,10 +182,7 @@ pub(crate) fn host_fn_register_bridge_token(
 
 /// `revokeBridgeToken` — drop a grant, and with it every subscription that
 /// authenticated through it on the next publish.
-pub(crate) fn host_fn_revoke_bridge_token(
-    caller_program_id: &str,
-    input: &JsonValue,
-) -> String {
+pub(crate) fn host_fn_revoke_bridge_token(caller_program_id: &str, input: &JsonValue) -> String {
     let caller = caller_program_id.trim().to_string();
     let token = input["token"].as_str().unwrap_or("").trim().to_string();
     let hash = if token.is_empty() {
@@ -266,8 +260,7 @@ pub(crate) fn host_fn_publish_update(caller_program_id: &str, input: &JsonValue)
     });
     let owner = owner.lock().unwrap().clone();
     if owner.is_empty() {
-        return json!({"ok": false, "error": "no bridge grant exists for this topic"})
-            .to_string();
+        return json!({"ok": false, "error": "no bridge grant exists for this topic"}).to_string();
     }
     if owner != caller && !same_owner_user(&owner, &caller) {
         return json!({"ok": false, "error": "you do not own this topic"}).to_string();

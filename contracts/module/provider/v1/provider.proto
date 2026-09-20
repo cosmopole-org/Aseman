@@ -1,0 +1,24 @@
+syntax = "proto3";
+
+package aseman.module.provider.v1;
+
+import "module/control/v1/control.proto";
+
+message CapabilityRequest {
+  aseman.module.control.v1.RequestMetadata meta = 1;
+  string capability = 2;
+  bytes payload = 3;
+}
+
+message CapabilityResponse {
+  bytes payload = 1;
+  aseman.module.control.v1.ModuleError error = 2;
+}
+
+service Provider {
+  rpc Invoke(CapabilityRequest) returns (CapabilityResponse);
+}
+
+// Provider-specific packages extend this convention with typed RPCs. They must retain
+// RequestMetadata, bounded messages, structured errors, explicit capability negotiation,
+// unknown-enum-as-UNSUPPORTED behavior, deadlines, cancellation, and idempotency.

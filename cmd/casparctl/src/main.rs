@@ -36,6 +36,7 @@ use std::time::{Duration, Instant};
 use anyhow::{anyhow, bail, Context, Result};
 
 mod cluster;
+mod modules;
 mod owner;
 mod run;
 mod vms;
@@ -137,6 +138,10 @@ struct TelemetrySnapshot {
 // ───────────────────────── Entry point + dispatch ─────────────────────────
 
 fn main() {
+    if let Err(error) = aseman_config::install_cli_process_config() {
+        eprintln!("invalid Aseman CLI configuration: {error}");
+        std::process::exit(2);
+    }
     let args: Vec<String> = std::env::args().collect();
     if args.len() < 2 {
         print_usage();
@@ -165,6 +170,7 @@ fn main() {
         "pprof" => run_pprof(&args[2..]),
         "vms" => vms::run_vms(&args[2..]),
         "cluster" => cluster::run_cluster(&args[2..]),
+        "module" | "modules" => modules::run_modules(&args[2..]),
         "help" | "-h" | "--help" => {
             print_usage();
             Ok(())
@@ -200,6 +206,7 @@ fn print_usage() {
          pprof      Query the node runtime profiler (rust pprof crate)\n  \
          vms        Manage the node's pluggable VM types (list/enable/disable/sync/new)\n  \
          cluster    Orchestrate the geo-distributed instance mesh (peers/config/status)\n\n\
+         module     Manage signed provider modules (install/validate/stage/activate/rollback)\n\n\
          Run \"casparctl <command> --help\" for command-specific flags."
     );
 }
@@ -284,8 +291,10 @@ impl<'a> FlagSet<'a> {
                 }
             };
             if self.strings.contains_key(key) {
-                self.parsed_strings
-                    .insert(self.strings.keys().find(|k| **k == key).copied().unwrap(), raw_value);
+                self.parsed_strings.insert(
+                    self.strings.keys().find(|k| **k == key).copied().unwrap(),
+                    raw_value,
+                );
             } else if self.ints.contains_key(key) {
                 let v = raw_value
                     .parse::<i64>()
@@ -364,7 +373,11 @@ fn run_install(args: &[String]) -> Result<()> {
         "",
         "path to Caspar node directory (auto-detected when omitted)",
     );
-    fs_set.string("env-file", ".env", "environment file relative to project-dir");
+    fs_set.string(
+        "env-file",
+        ".env",
+        "environment file relative to project-dir",
+    );
     fs_set.string(
         "envvpath",
         "",
@@ -482,7 +495,10 @@ fn run_uninstall(args: &[String]) -> Result<()> {
     let abs_project = resolve_project_dir(&fs_set.get_string("project-dir"))?;
     let name = load_saved_name(&abs_project)?;
     if !container_exists(&name) {
-        println!("container \"{}\" does not exist; nothing to uninstall", name);
+        println!(
+            "container \"{}\" does not exist; nothing to uninstall",
+            name
+        );
         return Ok(());
     }
     run_command(None, "docker", &["rm", "-f", &name])?;
@@ -693,7 +709,11 @@ fn get_inspect_info(container: &str) -> Result<InspectInfo> {
             .and_then(|v| v.as_str())
             .unwrap_or("")
             .to_string(),
-        created_at: short_time(item.pointer("/Created").and_then(|v| v.as_str()).unwrap_or("")),
+        created_at: short_time(
+            item.pointer("/Created")
+                .and_then(|v| v.as_str())
+                .unwrap_or(""),
+        ),
         started_at: short_time(
             item.pointer("/State/StartedAt")
                 .and_then(|v| v.as_str())
@@ -707,7 +727,10 @@ fn get_inspect_info(container: &str) -> Result<InspectInfo> {
         ports: vec![],
         mounts: vec![],
     };
-    if let Some(h) = item.pointer("/State/Health/Status").and_then(|v| v.as_str()) {
+    if let Some(h) = item
+        .pointer("/State/Health/Status")
+        .and_then(|v| v.as_str())
+    {
         if !h.is_empty() {
             info.health = h.to_string();
         }
@@ -723,15 +746,13 @@ fn get_inspect_info(container: &str) -> Result<InspectInfo> {
                 continue;
             }
             for b in arr.unwrap() {
-                let host_ip = b
-                    .get("HostIp")
-                    .and_then(|v| v.as_str())
-                    .unwrap_or("");
-                let host_port = b
-                    .get("HostPort")
-                    .and_then(|v| v.as_str())
-                    .unwrap_or("");
-                let host = if host_ip.is_empty() { "0.0.0.0" } else { host_ip };
+                let host_ip = b.get("HostIp").and_then(|v| v.as_str()).unwrap_or("");
+                let host_port = b.get("HostPort").and_then(|v| v.as_str()).unwrap_or("");
+                let host = if host_ip.is_empty() {
+                    "0.0.0.0"
+                } else {
+                    host_ip
+                };
                 info.ports.push(format!("{}:{} -> {}", host, host_port, p));
             }
         }
@@ -754,13 +775,7 @@ fn get_inspect_info(container: &str) -> Result<InspectInfo> {
 
 fn get_container_stats(container: &str) -> Result<DockerStats> {
     let out = Command::new("docker")
-        .args([
-            "stats",
-            "--no-stream",
-            "--format",
-            "{{json .}}",
-            container,
-        ])
+        .args(["stats", "--no-stream", "--format", "{{json .}}", container])
         .output()?;
     if !out.status.success() {
         let msg = String::from_utf8_lossy(&out.stderr).trim().to_string();
@@ -779,8 +794,8 @@ fn get_container_stats(container: &str) -> Result<DockerStats> {
         if line.is_empty() {
             continue;
         }
-        let stats: DockerStats = serde_json::from_str(line)
-            .with_context(|| "cannot parse docker stats output")?;
+        let stats: DockerStats =
+            serde_json::from_str(line).with_context(|| "cannot parse docker stats output")?;
         return Ok(stats);
     }
     Err(anyhow!(
@@ -906,8 +921,9 @@ fn render_dashboard(
 }
 
 fn get_telemetry_snapshot() -> Result<TelemetrySnapshot> {
-    let url = std::env::var("CASPARCTL_TELEMETRY")
-        .unwrap_or_else(|_| "http://127.0.0.1:9099/telemetry/snapshot".to_string());
+    let url = aseman_config::cli_config()
+        .map(|config| config.telemetry_url.as_str())
+        .unwrap_or("http://127.0.0.1:9099/telemetry/snapshot");
     let body = curl_get(&url, Duration::from_millis(1200))?;
     Ok(serde_json::from_slice(&body)?)
 }
@@ -998,14 +1014,20 @@ fn host_resource_lines(t: Option<&TelemetrySnapshot>, cpu_trend: &str) -> Vec<St
     let cores = num("cpu_cores");
     lines.push(format!(
         "CPU: {}   Cores: {}   Trend: {}",
-        cpu.map(|v| format!("{:.1}%", v)).unwrap_or_else(|| "n/a".into()),
-        cores.map(|v| format!("{}", v as u64)).unwrap_or_else(|| "?".into()),
+        cpu.map(|v| format!("{:.1}%", v))
+            .unwrap_or_else(|| "n/a".into()),
+        cores
+            .map(|v| format!("{}", v as u64))
+            .unwrap_or_else(|| "?".into()),
         cpu_trend,
     ));
     if let (Some(l1), Some(l5), Some(l15)) =
         (num("load_avg_1m"), num("load_avg_5m"), num("load_avg_15m"))
     {
-        lines.push(format!("Load avg: {:.2}  {:.2}  {:.2}  (1m/5m/15m)", l1, l5, l15));
+        lines.push(format!(
+            "Load avg: {:.2}  {:.2}  {:.2}  (1m/5m/15m)",
+            l1, l5, l15
+        ));
     }
     if let (Some(used), Some(total)) = (num("mem_used_bytes"), num("mem_total_bytes")) {
         lines.push(format!(
@@ -1033,7 +1055,10 @@ fn host_resource_lines(t: Option<&TelemetrySnapshot>, cpu_trend: &str) -> Vec<St
         lines.push(format!("Node process RSS: {}", human_bytes(rss)));
     }
     if let Some(up) = num("host_uptime_sec") {
-        lines.push(format!("Host uptime: {}", format_duration(Duration::from_secs(up as u64))));
+        lines.push(format!(
+            "Host uptime: {}",
+            format_duration(Duration::from_secs(up as u64))
+        ));
     }
     lines
 }
@@ -1211,7 +1236,11 @@ fn run_pprof(args: &[String]) -> Result<()> {
     let mut fs_set = FlagSet::new(&name);
     fs_set.string("host", &host_default, "node profiler base URL");
     fs_set.int("seconds", 5, "sample window for cpu profiling (1..=60)");
-    fs_set.string("output", "", "write the response body to this file (default stdout)");
+    fs_set.string(
+        "output",
+        "",
+        "write the response body to this file (default stdout)",
+    );
     fs_set.parse(rest)?;
     let host = fs_set.get_string("host");
     let seconds = fs_set.get_int("seconds").clamp(1, 60);
@@ -1221,7 +1250,10 @@ fn run_pprof(args: &[String]) -> Result<()> {
         "runtime" => ("/debug/pprof/runtime".to_string(), ".json"),
         "heap" => ("/debug/pprof/heap".to_string(), ".json"),
         "threads" => ("/debug/pprof/threads".to_string(), ".json"),
-        "flamegraph" => (format!("/debug/pprof/flamegraph?seconds={}", seconds), ".svg"),
+        "flamegraph" => (
+            format!("/debug/pprof/flamegraph?seconds={}", seconds),
+            ".svg",
+        ),
         "profile" => (format!("/debug/pprof/profile?seconds={}", seconds), ".pb"),
         "help" | "-h" | "--help" => {
             print_pprof_usage();
@@ -1270,7 +1302,9 @@ fn run_pprof(args: &[String]) -> Result<()> {
 }
 
 fn default_pprof_host() -> String {
-    std::env::var("CASPARCTL_PPROF").unwrap_or_else(|_| "http://127.0.0.1:9999".to_string())
+    aseman_config::cli_config()
+        .map(|config| config.pprof_url.clone())
+        .unwrap_or_else(|| "http://127.0.0.1:9999".to_string())
 }
 
 fn print_pprof_usage() {
@@ -1311,11 +1345,12 @@ fn require_docker() -> Result<()> {
 }
 
 mod which {
-    use std::env;
     use std::path::PathBuf;
     pub fn which(prog: &str) -> Result<PathBuf, ()> {
-        let path = env::var_os("PATH").ok_or(())?;
-        for dir in env::split_paths(&path) {
+        let path = aseman_config::cli_config()
+            .and_then(|config| config.executable_path.as_ref())
+            .ok_or(())?;
+        for dir in std::env::split_paths(path) {
             let candidate = dir.join(prog);
             if candidate.is_file() {
                 return Ok(candidate);
@@ -1383,10 +1418,7 @@ fn configure_runsc_runtime() -> Result<()> {
         }),
     );
     let pretty = serde_json::to_vec_pretty(&cfg)?;
-    let tmp = std::env::temp_dir().join(format!(
-        "casparctl-daemon-{}.json",
-        std::process::id()
-    ));
+    let tmp = std::env::temp_dir().join(format!("casparctl-daemon-{}.json", std::process::id()));
     fs::write(&tmp, pretty)?;
     let tmp_str = tmp.to_string_lossy().to_string();
     let res = run_privileged_command("cp", &[&tmp_str, daemon_path]);
@@ -1449,11 +1481,7 @@ fn ensure_tls_certs(cert_dir: &str) -> Result<()> {
     )?;
     let fullchain = PathBuf::from(cert_dir).join("fullchain.pem");
     let privkey = PathBuf::from(cert_dir).join("privkey.pem");
-    let _ = run_command_quiet(
-        None,
-        "cp",
-        &[&cert_str, &fullchain.to_string_lossy()],
-    );
+    let _ = run_command_quiet(None, "cp", &[&cert_str, &fullchain.to_string_lossy()]);
     let _ = run_command_quiet(None, "cp", &[&key_str, &privkey.to_string_lossy()]);
     Ok(())
 }
@@ -1483,8 +1511,8 @@ fn image_file_path(project_dir: &Path) -> Result<PathBuf> {
 
 fn resolve_project_dir(project_dir: &str) -> Result<PathBuf> {
     if !project_dir.trim().is_empty() {
-        let abs = fs::canonicalize(project_dir)
-            .unwrap_or_else(|_| PathBuf::from(project_dir.trim()));
+        let abs =
+            fs::canonicalize(project_dir).unwrap_or_else(|_| PathBuf::from(project_dir.trim()));
         validate_node_project_dir(&abs)?;
         return Ok(abs);
     }
@@ -1607,13 +1635,7 @@ fn curl_get(url: &str, timeout: Duration) -> Result<Vec<u8>> {
     let timeout_str = timeout.as_secs().max(1).to_string();
     let start = Instant::now();
     let out = Command::new("curl")
-        .args([
-            "-sS",
-            "--fail-with-body",
-            "--max-time",
-            &timeout_str,
-            url,
-        ])
+        .args(["-sS", "--fail-with-body", "--max-time", &timeout_str, url])
         .output()?;
     let _elapsed = start.elapsed();
     if !out.status.success() {
@@ -1810,8 +1832,12 @@ mod tests {
             .duration_since(std::time::UNIX_EPOCH)
             .unwrap()
             .as_nanos();
-        let dir = std::env::temp_dir()
-            .join(format!("casparctl-{}-{}-{}", label, std::process::id(), nanos));
+        let dir = std::env::temp_dir().join(format!(
+            "casparctl-{}-{}-{}",
+            label,
+            std::process::id(),
+            nanos
+        ));
         std::fs::create_dir_all(&dir).unwrap();
         // Drop a Dockerfile so validate_node_project_dir accepts the dir.
         std::fs::write(dir.join("Dockerfile"), "FROM scratch\n").unwrap();

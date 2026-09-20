@@ -1,0 +1,24 @@
+{
+  "protocol_major": 1,
+  "package": "aseman.capsule.provider.v1",
+  "messages": {
+    "DescribeRequest": {"meta": 1},
+    "DescribeResponse": {"provider_id": 1, "capabilities": 2, "max_query_limit": 3, "max_transaction_capsules": 4, "error": 5},
+    "PutCapsuleRequest": {"meta": 1, "capsule_cbor": 2, "expected_revision": 3},
+    "PutCapsuleResponse": {"revision": 1, "error": 2},
+    "GetCapsuleRequest": {"meta": 1, "kind": 2, "id": 3},
+    "GetCapsuleResponse": {"found": 1, "capsule_cbor": 2, "error": 3},
+    "QueryCapsulesRequest": {"meta": 1, "query_json": 2},
+    "QueryCapsulesResponse": {"capsule_cbor": 1, "error": 2}
+  },
+  "service": {
+    "name": "CapsuleStorage",
+    "methods": ["Describe", "PutCapsule", "GetCapsule", "QueryCapsules"]
+  },
+  "rules": [
+    "Capsules use deterministic CBOR version 1.",
+    "Queries use the closed typed JSON query contract.",
+    "Caller-selected physical table, database, role, provider, and namespace values are forbidden.",
+    "Field numbers and meanings are immutable within major version 1."
+  ]
+}

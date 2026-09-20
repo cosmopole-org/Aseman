@@ -69,7 +69,10 @@ mod tests {
     fn mk_frame_event(lamport: i64) -> FrameEvent {
         FrameEvent {
             core: Box::new(Event {
-                body: EventBody { index: lamport, ..EventBody::default() },
+                body: EventBody {
+                    index: lamport,
+                    ..EventBody::default()
+                },
                 ..Event::default()
             }),
             lamport_timestamp: lamport,
@@ -118,8 +121,14 @@ mod tests {
 
     #[test]
     fn hash_changes_with_round() {
-        let a = Frame { round: 1, ..Frame::default() };
-        let b = Frame { round: 2, ..Frame::default() };
+        let a = Frame {
+            round: 1,
+            ..Frame::default()
+        };
+        let b = Frame {
+            round: 2,
+            ..Frame::default()
+        };
         assert_ne!(a.hash().unwrap(), b.hash().unwrap());
     }
 

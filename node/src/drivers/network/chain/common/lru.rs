@@ -138,7 +138,12 @@ impl<K: Eq + Hash + Clone, V: Clone> LRU<K, V> {
         }
 
         // Add a new item.
-        let idx = self.alloc(Node { key: key.clone(), value, prev: None, next: None });
+        let idx = self.alloc(Node {
+            key: key.clone(),
+            value,
+            prev: None,
+            next: None,
+        });
         self.push_front(idx);
         self.items.insert(key, idx);
 
@@ -252,11 +257,7 @@ mod tests {
 
         for (i, k) in l.keys().iter().enumerate() {
             let v = l.get(k);
-            assert!(
-                v == Some(*k) && v == Some(i as i64 + 128),
-                "bad key: {}",
-                k
-            );
+            assert!(v == Some(*k) && v == Some(i as i64 + 128), "bad key: {}", k);
         }
         for i in 0..128 {
             assert!(l.get(&i).is_none(), "should be evicted");
@@ -331,7 +332,10 @@ mod tests {
         l.add(2, 2);
         assert!(l.contains(&1), "1 should be contained");
         l.add(3, 3);
-        assert!(!l.contains(&1), "Contains should not have updated recent-ness of 1");
+        assert!(
+            !l.contains(&1),
+            "Contains should not have updated recent-ness of 1"
+        );
     }
 
     // Translation of lru_test.go::TestLRU_Peek.

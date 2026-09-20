@@ -533,9 +533,7 @@ pub fn sort_frame_events(events: &mut [FrameEvent]) {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::drivers::network::chain::crypto::keys::{
-        from_public_key, generate_ecdsa_key,
-    };
+    use crate::drivers::network::chain::crypto::keys::{from_public_key, generate_ecdsa_key};
 
     fn create_dummy_event_body() -> EventBody {
         EventBody {
@@ -665,7 +663,10 @@ mod tests {
         assert!(!event.is_loaded(), "should be false for empty transactions");
 
         event.body.block_signatures = vec![];
-        assert!(!event.is_loaded(), "should be false for empty block signatures");
+        assert!(
+            !event.is_loaded(),
+            "should be false for empty block signatures"
+        );
 
         // initial event
         event.body.index = 0;
@@ -678,6 +679,9 @@ mod tests {
         // non-empty internal-transaction payload
         event.body.transactions = vec![];
         event.body.internal_transactions = vec![InternalTransaction::default()];
-        assert!(event.is_loaded(), "should be true for non-empty itx payload");
+        assert!(
+            event.is_loaded(),
+            "should be true for non-empty itx payload"
+        );
     }
 }

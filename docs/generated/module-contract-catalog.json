@@ -1,0 +1,92 @@
+{
+  "_meta": {
+    "artifact": "A201-A208",
+    "generator": "scripts/generate_phase2_contracts.py",
+    "last_verified_commit": "800df24076c794f9b33c29a9f301dd9d674f47d6",
+    "status": "CURRENT"
+  },
+  "contracts": [
+    {
+      "digest": "sha256:fb438b20fd8bd7a20fc23b40897a95e9002cf961f02aa7b52954ae0de177091c",
+      "path": "contracts/module/admin.openapi.yaml"
+    },
+    {
+      "digest": "sha256:bdf3d19f31b6774129a7b4ac41c59101d3fc9fd133db43a00372fbdcd8d95a27",
+      "path": "contracts/module/amod.schema.json"
+    },
+    {
+      "digest": "sha256:a8589c08efd6b13e8f3f26fcd9356ab9d076e69e9a5fa6c2e647de461aa027dc",
+      "path": "contracts/module/bootstrap/bootstrap.schema.json"
+    },
+    {
+      "digest": "sha256:ed3bd0d1d1e18cec9f6a400a2c06805765bf9ad9b61a45e042039cfde90b44bc",
+      "path": "contracts/module/bootstrap/signed-bootstrap.schema.json"
+    },
+    {
+      "digest": "sha256:5358721edc9309722de1c6797feabd3532be57895ae4b583f3422758342b71e1",
+      "path": "contracts/module/control/v1/control.proto"
+    },
+    {
+      "digest": "sha256:f8c266c3560b0d7f4c6d9009711fe05505b54d274ecc1f3d67c71bfd36a14e3f",
+      "path": "contracts/module/lifecycle.schema.json"
+    },
+    {
+      "digest": "sha256:c9180af4c052f2aee954490dc3b047f3eaec6c0fdfc0648e5530637a7c67be58",
+      "path": "contracts/module/module.schema.json"
+    },
+    {
+      "digest": "sha256:2369d0e4c2944764b08248c71b88b55f6f52c3ccc60fb1b512fc9fde3bf95718",
+      "path": "contracts/module/permissions.schema.json"
+    },
+    {
+      "digest": "sha256:7656b7c7d1cac05f6de096bf0ac131c516baefb554b2bf5b47dd081291167a5b",
+      "path": "contracts/module/placement.schema.json"
+    },
+    {
+      "digest": "sha256:77abd5f82e416c756c5f57d6cc391418615473237f92216ea5ed59377094c46f",
+      "path": "contracts/module/protocol-compatibility.json"
+    },
+    {
+      "digest": "sha256:e0f9999e4a87d068fbc8628c981e544f86bd6dbbf749a83899da8ca7e795f3b1",
+      "path": "contracts/module/provider/v1/provider.proto"
+    },
+    {
+      "digest": "sha256:62bb606da601f53e9495bc91ac0b173c6d3459058160f83be55ae8992dd93468",
+      "path": "contracts/module/sample/v1/sample.proto"
+    },
+    {
+      "digest": "sha256:1e6e1deaa7e989c826c1bb18da5422bfa8510d2799b3d96bb9d5d63f614f7171",
+      "path": "contracts/module/trust.schema.json"
+    }
+  ],
+  "module_kinds": [
+    "storage",
+    "client_network",
+    "federation",
+    "security",
+    "realtime",
+    "finance_ledger",
+    "consensus",
+    "coordination",
+    "vmm",
+    "vmm_backend",
+    "runtime",
+    "telemetry",
+    "sample"
+  ],
+  "protocol_major": 1,
+  "required_request_semantics": [
+    "request_id",
+    "trace_id",
+    "deadline",
+    "cancellation",
+    "idempotency",
+    "bounded_messages",
+    "backpressure",
+    "structured_errors"
+  ],
+  "sample_capabilities": [
+    "sample.echo",
+    "sample.health"
+  ]
+}

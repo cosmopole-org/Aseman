@@ -36,6 +36,7 @@ use serde_json::{json, Value};
 use super::command::{ClusterCommand, TypeConfig};
 use super::config::PeerConfig;
 use super::ClusterService;
+use crate::drivers::module_admin::ModuleAdministration;
 
 const MAX_BODY_BYTES: usize = 256 * 1024 * 1024;
 
@@ -52,6 +53,31 @@ pub fn start(svc: Arc<ClusterService>) -> Result<()> {
             }
         })
         .map_err(|e| anyhow!("cluster server spawn: {}", e))?;
+    Ok(())
+}
+
+pub fn start_module_admin(
+    admin: Arc<dyn ModuleAdministration>,
+    listen: String,
+    auth_token: String,
+) -> Result<()> {
+    if auth_token.is_empty() {
+        return Err(anyhow!(
+            "standalone module administration requires an auth token"
+        ));
+    }
+    let listener = TcpListener::bind(&listen)
+        .map_err(|error| anyhow!("module admin bind {listen}: {error}"))?;
+    thread::Builder::new()
+        .name("module-admin-http".into())
+        .spawn(move || {
+            for stream in listener.incoming().flatten() {
+                let admin = admin.clone();
+                let auth_token = auth_token.clone();
+                thread::spawn(move || handle_module_admin_connection(admin, auth_token, stream));
+            }
+        })
+        .map_err(|error| anyhow!("module admin server spawn: {error}"))?;
     Ok(())
 }
 
@@ -82,12 +108,15 @@ fn read_request(stream: &TcpStream) -> Option<Request> {
             content_length = v.trim().parse().unwrap_or(0);
         }
         if lower.starts_with("x-caspar-cluster-token:") {
-            token = line
-                .splitn(2, ':')
-                .nth(1)
-                .unwrap_or("")
-                .trim()
-                .to_string();
+            token = line.splitn(2, ':').nth(1).unwrap_or("").trim().to_string();
+        }
+        if lower.starts_with("authorization:") {
+            let value = line.splitn(2, ':').nth(1).unwrap_or("").trim();
+            if let Some(value) = value.strip_prefix("Bearer ") {
+                token = value.to_owned();
+            } else if let Some(value) = value.strip_prefix("bearer ") {
+                token = value.to_owned();
+            }
         }
     }
     if content_length > MAX_BODY_BYTES {
@@ -121,6 +150,16 @@ fn handle_connection(svc: Arc<ClusterService>, stream: TcpStream) {
         return;
     };
     let expected = svc.auth_token();
+    if (req.path == "/v1/admin/modules" || req.path.starts_with("/v1/admin/modules/"))
+        && expected.is_empty()
+    {
+        respond(
+            stream,
+            503,
+            br#"{"error":"module administration requires a configured cluster auth token"}"#,
+        );
+        return;
+    }
     if !expected.is_empty() && req.token != expected {
         respond(stream, 401, br#"{"error":"invalid cluster token"}"#);
         return;
@@ -129,26 +168,54 @@ fn handle_connection(svc: Arc<ClusterService>, stream: TcpStream) {
     respond(stream, status, &body);
 }
 
+fn handle_module_admin_connection(
+    admin: Arc<dyn ModuleAdministration>,
+    auth_token: String,
+    stream: TcpStream,
+) {
+    let Some(req) = read_request(&stream) else {
+        return;
+    };
+    if req.token != auth_token {
+        respond(stream, 401, br#"{"error":"invalid administration token"}"#);
+        return;
+    }
+    if req.path != "/v1/admin/modules" && !req.path.starts_with("/v1/admin/modules/") {
+        respond(stream, 404, br#"{"error":"not found"}"#);
+        return;
+    }
+    match admin.handle(&req.method, &req.path, &req.body) {
+        Ok(value) => {
+            let (_, body) = json_ok(value);
+            respond(stream, 200, &body);
+        }
+        Err(error) => {
+            let (_, body) = json_err(error.status, error.message);
+            respond(stream, error.status, &body);
+        }
+    }
+}
+
 fn route(svc: &Arc<ClusterService>, req: &Request) -> (u16, Vec<u8>) {
+    if req.path == "/v1/admin/modules" || req.path.starts_with("/v1/admin/modules/") {
+        return match svc.module_admin().handle(&req.method, &req.path, &req.body) {
+            Ok(value) => json_ok(value),
+            Err(error) => json_err(error.status, error.message),
+        };
+    }
     match (req.method.as_str(), req.path.as_str()) {
         // ── raft RPC ────────────────────────────────────────────────────
         ("POST", "/raft/vote") => raft_rpc(req, |body| {
             let rpc: VoteRequest<u64> = serde_json::from_slice(body)?;
-            Ok(svc
-                .runtime()
-                .block_on(svc.raft().vote(rpc)))
+            Ok(svc.runtime().block_on(svc.raft().vote(rpc)))
         }),
         ("POST", "/raft/append") => raft_rpc(req, |body| {
             let rpc: AppendEntriesRequest<TypeConfig> = serde_json::from_slice(body)?;
-            Ok(svc
-                .runtime()
-                .block_on(svc.raft().append_entries(rpc)))
+            Ok(svc.runtime().block_on(svc.raft().append_entries(rpc)))
         }),
         ("POST", "/raft/snapshot") => raft_rpc(req, |body| {
             let rpc: InstallSnapshotRequest<TypeConfig> = serde_json::from_slice(body)?;
-            Ok(svc
-                .runtime()
-                .block_on(svc.raft().install_snapshot(rpc)))
+            Ok(svc.runtime().block_on(svc.raft().install_snapshot(rpc)))
         }),
 
         // ── identity / telemetry ────────────────────────────────────────
@@ -444,11 +511,7 @@ fn voter_set_with(
     remove: Option<u64>,
 ) -> BTreeSet<u64> {
     let metrics = svc.raft().metrics().borrow().clone();
-    let mut voters: BTreeSet<u64> = metrics
-        .membership_config
-        .membership()
-        .voter_ids()
-        .collect();
+    let mut voters: BTreeSet<u64> = metrics.membership_config.membership().voter_ids().collect();
     if let Some(id) = add {
         voters.insert(id);
     }

@@ -11,8 +11,8 @@ use std::path::Path;
 
 use anyhow::{anyhow, Result};
 
-use crate::models::ports::file::IFile;
 use crate::compat::multipart::FileHeader;
+use crate::models::ports::file::IFile;
 
 /// Filesystem-backed [`IFile`] implementation. Stateless apart from the
 /// constructor ensuring `<storage_root>/files` exists.
@@ -40,7 +40,9 @@ fn write_file(path: &str, data: &[u8], overwrite: bool) -> Result<()> {
     } else {
         opts.append(true);
     }
-    let mut f = opts.open(path).map_err(|e| anyhow!("open {}: {}", path, e))?;
+    let mut f = opts
+        .open(path)
+        .map_err(|e| anyhow!("open {}: {}", path, e))?;
     f.write_all(data)
         .map_err(|e| anyhow!("write {}: {}", path, e))?;
     Ok(())
@@ -93,8 +95,7 @@ impl IFile for File {
             .append(true)
             .open(&path)
             .map_err(|e| anyhow!("open {}: {}", path, e))?;
-        std::io::copy(reader, &mut dest)
-            .map_err(|e| anyhow!("copy {}: {}", path, e))?;
+        std::io::copy(reader, &mut dest).map_err(|e| anyhow!("copy {}: {}", path, e))?;
         Ok(())
     }
 
@@ -113,8 +114,8 @@ impl IFile for File {
     }
 
     fn read_file_from_global_storage(&self, storage_root: &str, key: &str) -> Result<String> {
-        let bytes = fs::read(format!("{}/{}", storage_root, key))
-            .map_err(|e| anyhow!("read: {}", e))?;
+        let bytes =
+            fs::read(format!("{}/{}", storage_root, key)).map_err(|e| anyhow!("read: {}", e))?;
         Ok(String::from_utf8_lossy(&bytes).into_owned())
     }
 
@@ -125,8 +126,7 @@ impl IFile for File {
         key: &str,
         overwrite: bool,
     ) -> Result<()> {
-        fs::create_dir_all(storage_root)
-            .map_err(|e| anyhow!("mkdir {}: {}", storage_root, e))?;
+        fs::create_dir_all(storage_root).map_err(|e| anyhow!("mkdir {}: {}", storage_root, e))?;
         let path = format!("{}/{}", storage_root, key);
         if self.check_file_from_global_storage(storage_root, key) {
             let _ = fs::remove_file(&path);
@@ -141,8 +141,7 @@ impl IFile for File {
         key: &str,
         overwrite: bool,
     ) -> Result<()> {
-        fs::create_dir_all(storage_root)
-            .map_err(|e| anyhow!("mkdir {}: {}", storage_root, e))?;
+        fs::create_dir_all(storage_root).map_err(|e| anyhow!("mkdir {}: {}", storage_root, e))?;
         let path = format!("{}/{}", storage_root, key);
         if overwrite {
             let _ = fs::remove_file(&path);
@@ -203,7 +202,8 @@ mod tests {
             f.read_file_from_global_storage(&root, "key.txt").unwrap(),
             "data"
         );
-        f.delete_file_from_global_storage(&root, "key.txt", true).unwrap();
+        f.delete_file_from_global_storage(&root, "key.txt", true)
+            .unwrap();
         assert!(!f.check_file_from_global_storage(&root, "key.txt"));
         let _ = fs::remove_dir_all(&root);
     }

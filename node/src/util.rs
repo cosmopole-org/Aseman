@@ -15,7 +15,9 @@ pub mod bytes_base64 {
         let opt = Option::<String>::deserialize(d)?;
         match opt {
             None => Ok(Vec::new()),
-            Some(s) => STANDARD.decode(s.as_bytes()).map_err(serde::de::Error::custom),
+            Some(s) => STANDARD
+                .decode(s.as_bytes())
+                .map_err(serde::de::Error::custom),
         }
     }
 }
@@ -84,7 +86,9 @@ mod tests {
 
     #[test]
     fn bytes_base64_serializes_to_standard_base64() {
-        let v = OneBlob { bytes: vec![0u8, 1, 2, 3, 255] };
+        let v = OneBlob {
+            bytes: vec![0u8, 1, 2, 3, 255],
+        };
         let s = serde_json::to_string(&v).unwrap();
         // AAECA/8= is the std-base64 encoding of [0,1,2,3,255].
         assert_eq!(s, r#"{"bytes":"AAECA/8="}"#);
@@ -93,7 +97,9 @@ mod tests {
     #[test]
     fn bytes_base64_round_trips_empty_and_nonempty() {
         for payload in [vec![], vec![1, 2, 3], (0u8..=255).collect::<Vec<u8>>()] {
-            let v = OneBlob { bytes: payload.clone() };
+            let v = OneBlob {
+                bytes: payload.clone(),
+            };
             let s = serde_json::to_string(&v).unwrap();
             let parsed: OneBlob = serde_json::from_str(&s).unwrap();
             assert_eq!(parsed.bytes, payload);

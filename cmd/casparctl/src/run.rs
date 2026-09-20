@@ -178,7 +178,11 @@ fn gen_babble_key(repo: &Path, dir: &Path) -> Result<()> {
     let pub_src = tmp.join(".babble/key.pub");
     if !priv_src.exists() || !pub_src.exists() {
         let _ = fs::remove_dir_all(&tmp);
-        bail!("caspar-keygen at {} ({}) did not produce priv_key + key.pub", keygen.display(), status);
+        bail!(
+            "caspar-keygen at {} ({}) did not produce priv_key + key.pub",
+            keygen.display(),
+            status
+        );
     }
     fs::copy(&priv_src, dir.join("babble/priv_key"))?;
     fs::copy(&pub_src, dir.join("babble/key.pub"))?;
@@ -385,8 +389,8 @@ fn launch_node(repo: &Path, dir: &Path, detach: bool) -> Result<u32> {
     for (k, v) in env_lines(dir)? {
         cmd.env(k, v);
     }
-    let ld = match std::env::var("LD_LIBRARY_PATH") {
-        Ok(existing) if !existing.is_empty() => format!("{}:{}", wasmedge.display(), existing),
+    let ld = match aseman_config::cli_config().and_then(|config| config.library_path.as_ref()) {
+        Some(existing) => format!("{}:{}", wasmedge.display(), existing),
         _ => wasmedge.display().to_string(),
     };
     cmd.env("LD_LIBRARY_PATH", ld)
@@ -430,7 +434,10 @@ fn check_requirements(repo: &Path) -> Result<()> {
         } else if wasmedge_dir.join("libwasmedge.so").exists() {
             wasmedge_dir.join("libwasmedge.so")
         } else {
-            bail!("bundled WasmEdge library not found under {}", wasmedge_dir.display());
+            bail!(
+                "bundled WasmEdge library not found under {}",
+                wasmedge_dir.display()
+            );
         };
         // The real .so is stored in Git LFS. Follow the symlink to the object
         // and confirm it is a genuine ELF library, not an unresolved LFS
@@ -451,7 +458,10 @@ unresolved Git LFS pointer. Install Git LFS and fetch it:\n  git lfs install && 
         }
     }
     if !dist.join("bin/caspar-keygen").exists() {
-        bail!("caspar-keygen not found at {}", dist.join("bin/caspar-keygen").display());
+        bail!(
+            "caspar-keygen not found at {}",
+            dist.join("bin/caspar-keygen").display()
+        );
     }
     if resolve_questdb_jar(repo).is_none() {
         bail!("QuestDB jar not found (dist/questdb/questdb.jar or /opt/questdb/questdb.jar)");
@@ -514,25 +524,26 @@ pub fn install_local(args: &[String]) -> Result<()> {
 /// Non-fatal: if registration fails the node keeps running on its placeholder
 /// owner and the next `casparctl run` retries.
 fn bootstrap_node_owner(repo: &Path, dir: &Path, detach: bool) -> Result<()> {
-    let username = std::env::var("CASPAR_OWNER_USERNAME")
-        .ok()
-        .filter(|s| !s.trim().is_empty())
+    let username = aseman_config::cli_config()
+        .and_then(|config| config.owner_username.clone())
         .unwrap_or_else(|| crate::owner::DEFAULT_OWNER_USERNAME.to_string());
-    let email = std::env::var("CASPAR_OWNER_EMAIL")
-        .ok()
+    let email = aseman_config::cli_config()
+        .and_then(|config| config.owner_email.clone())
         .filter(|s| s.contains('@'))
         .unwrap_or_else(|| format!("{username}@dev.local"));
 
     println!("→ Bootstrapping the node owner as a real creature (\"{username}\")…");
-    let (owner_id, owner_key) = match crate::owner::login_creature("127.0.0.1", TCP_PORT, &username, &email)
-    {
-        Ok(v) => v,
-        Err(e) => {
-            eprintln!("! could not create the node-owner creature: {e:#}");
-            eprintln!("  the node keeps its placeholder owner; re-run `casparctl run` to retry");
-            return Ok(());
-        }
-    };
+    let (owner_id, owner_key) =
+        match crate::owner::login_creature("127.0.0.1", TCP_PORT, &username, &email) {
+            Ok(v) => v,
+            Err(e) => {
+                eprintln!("! could not create the node-owner creature: {e:#}");
+                eprintln!(
+                    "  the node keeps its placeholder owner; re-run `casparctl run` to retry"
+                );
+                return Ok(());
+            }
+        };
     println!("✓ node owner creature: {owner_id}");
 
     crate::owner::save_owner(dir, &username, &owner_id, &owner_key)
@@ -599,10 +610,11 @@ pub fn run_run(args: &[String]) -> Result<()> {
     if crate::owner::needs_bootstrap(&dir) {
         bootstrap_node_owner(&repo, &dir, detach)?;
     } else if let Ok(env) = fs::read_to_string(dir.join(".env")) {
-        if let Some(id) = env
-            .lines()
-            .find_map(|l| l.trim().strip_prefix("OWNER_ID=").map(|v| v.trim().to_string()))
-        {
+        if let Some(id) = env.lines().find_map(|l| {
+            l.trim()
+                .strip_prefix("OWNER_ID=")
+                .map(|v| v.trim().to_string())
+        }) {
             println!("  node owner: {id}");
         }
     }
@@ -640,7 +652,14 @@ pub fn run_status(args: &[String]) -> Result<()> {
     let qdb = read_pid(&dir, "questdb.pid");
     match qdb {
         Some(pid) if pid_alive(pid) => println!("QuestDB:     RUNNING (pid {})", pid),
-        _ => println!("QuestDB:     {}", if port_open(QDB_PG) { "port open" } else { "not running" }),
+        _ => println!(
+            "QuestDB:     {}",
+            if port_open(QDB_PG) {
+                "port open"
+            } else {
+                "not running"
+            }
+        ),
     }
     println!("Ports:");
     for (label, port) in [

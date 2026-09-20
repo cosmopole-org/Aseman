@@ -10,12 +10,12 @@
 //! callbacks all stay as background threads spawned by `Load`.
 
 use std::collections::HashMap;
-use std::env;
 use std::sync::{Arc, Mutex};
 use std::thread;
 use std::time::{Duration, SystemTime};
 
 use anyhow::Result;
+use aseman_config::AsemanConfig;
 use base64::{engine::general_purpose::STANDARD as B64, Engine};
 use rsa::pkcs1v15::SigningKey as Pkcs1v15SigningKey;
 use rsa::pkcs8::DecodePrivateKey;
@@ -26,7 +26,27 @@ use rsa::signature::{RandomizedSigner, SignatureEncoding};
 use rsa::RsaPrivateKey;
 use serde_json::{json, Value};
 
+use crate::core::actor::model::trx::TrxWrapper;
+use crate::core::actor::{Actor, Info as BaseInfo, State as ActorState};
+use crate::core::globe::{ChainPacketOp, Globe};
+use crate::drivers::file::File as FileDriver;
+use crate::drivers::network::chain::Blockchain;
+use crate::drivers::network::federation::FedNet;
 use crate::drivers::network::framing::tls_config_from_files;
+use crate::drivers::network::Network as NetworkDriver;
+use crate::drivers::security::Security;
+use crate::drivers::signaler::Signaler;
+use crate::drivers::storage::Storage;
+use crate::drivers::vmm::Vmm;
+use crate::models::action::actor::IActor;
+use crate::models::action::TrxClosure;
+use crate::models::chain::{
+    ChainBaseRequest, ChainCallback, ChainElectionPacket, ChainMessage, ChainPayPacket,
+    ChainResponse, ChainStakePacket, MessageCallback,
+};
+use crate::models::core::{ICore, StateClosure};
+use crate::models::globe::IGlobe;
+use crate::models::info::IInfo;
 use crate::models::ports::file::IFile;
 use crate::models::ports::network::INetwork;
 use crate::models::ports::ratelimit::IRateLimiter;
@@ -35,30 +55,10 @@ use crate::models::ports::signaler::ISignaler;
 use crate::models::ports::storage::IStorage;
 use crate::models::ports::tools::ITools;
 use crate::models::ports::vmm::IVmm;
-use crate::models::action::TrxClosure;
-use crate::models::action::actor::IActor;
-use crate::models::chain::{
-    ChainBaseRequest, ChainCallback, ChainElectionPacket, ChainMessage, ChainPayPacket,
-    ChainResponse, ChainStakePacket, MessageCallback,
-};
-use crate::models::core::{ICore, StateClosure};
-use crate::models::globe::IGlobe;
-use crate::models::info::IInfo;
 use crate::models::transaction::ITrx;
 use crate::models::worker::Trx as WorkerTrx;
-use crate::core::actor::{Actor, Info as BaseInfo, State as ActorState};
-use crate::core::actor::model::trx::TrxWrapper;
-use crate::core::globe::{ChainPacketOp, Globe};
-use crate::drivers::file::File as FileDriver;
-use crate::drivers::network::Network as NetworkDriver;
-use crate::drivers::network::chain::Blockchain;
-use crate::drivers::network::federation::FedNet;
-use crate::drivers::security::Security;
-use crate::drivers::signaler::Signaler;
-use crate::drivers::storage::Storage;
-use crate::drivers::vmm::Vmm;
-use crate::shell::api::packets::creatures::ConsumeLockInput;
 use crate::shell::api::model::Program;
+use crate::shell::api::packets::creatures::ConsumeLockInput;
 use crate::shell::utils::crypto::secure_unique_string;
 use crate::util::GoError;
 
@@ -110,6 +110,7 @@ struct ChainSubmission {
 
 /// The Caspar node orchestrator implementing [`ICore`].
 pub struct Core {
+    config: Option<Arc<AsemanConfig>>,
     owner_id: String,
     owner_priv_key: Arc<RsaPrivateKey>,
     id: String,
@@ -152,16 +153,34 @@ struct CostConfig {
 
 impl Core {
     /// `NewCore(origin, ownerId, ownerPrivateKey)`.
-    pub fn new(
+    pub fn new(origin: &str, owner_id: &str, owner_priv_key: Arc<RsaPrivateKey>) -> Arc<Core> {
+        Self::new_inner(origin, owner_id, owner_priv_key, None)
+    }
+
+    pub fn new_configured(
         origin: &str,
         owner_id: &str,
         owner_priv_key: Arc<RsaPrivateKey>,
+        config: Arc<AsemanConfig>,
+    ) -> Arc<Core> {
+        Self::new_inner(origin, owner_id, owner_priv_key, Some(config))
+    }
+
+    fn new_inner(
+        origin: &str,
+        owner_id: &str,
+        owner_priv_key: Arc<RsaPrivateKey>,
+        config: Option<Arc<AsemanConfig>>,
     ) -> Arc<Core> {
         let mut free_nodes = HashMap::new();
-        if let Ok(root) = env::var("ROOT_NODE") {
-            free_nodes.insert(root, true);
+        if let Some(root) = config
+            .as_ref()
+            .and_then(|config| config.core.root_node.as_ref())
+        {
+            free_nodes.insert(root.clone(), true);
         }
         Arc::new(Core {
+            config,
             owner_id: owner_id.to_string(),
             owner_priv_key,
             id: origin.to_string(),
@@ -247,8 +266,7 @@ impl Core {
                     let payload = packet.payload.clone();
                     let machine_id_inner = machine_id.clone();
                     thread::spawn(move || {
-                        let value =
-                            Value::String(String::from_utf8_lossy(&payload).into_owned());
+                        let value = Value::String(String::from_utf8_lossy(&payload).into_owned());
                         (listener.signal)("creatures/signal".to_string(), value);
                         let _ = machine_id_inner;
                     });
@@ -266,7 +284,10 @@ impl Core {
                 // reached via their live gateway listeners above.
                 if trans.tools().vmm().is_managed_runtime(&runtime_clone) {
                     let data = String::from_utf8_lossy(&payload).into_owned();
-                    trans.tools().vmm().run_vm(&machine_id_owned, &store_id, &data);
+                    trans
+                        .tools()
+                        .vmm()
+                        .run_vm(&machine_id_owned, &store_id, &data);
                 }
             });
         }
@@ -303,14 +324,7 @@ impl Core {
                 let ok = err.is_none() && status < 400;
                 let _ = tx.send(ok);
             });
-        globe.send_base_request_on_chain(
-            "/creatures/consumeLock",
-            inp,
-            &sign,
-            &owner,
-            "",
-            cb,
-        );
+        globe.send_base_request_on_chain("/creatures/consumeLock", inp, &sign, &owner, "", cb);
         rx.recv_timeout(Duration::from_secs(30)).unwrap_or(false)
     }
 
@@ -390,14 +404,16 @@ impl Core {
                                 "vm.execute.request" | "vm.execute.charge"
                             ) {
                                 if let Some(pay) = packet.pay.as_ref() {
-                                    let free =
-                                        self.free_nodes.lock().unwrap().contains_key(&packet.submitter);
+                                    let free = self
+                                        .free_nodes
+                                        .lock()
+                                        .unwrap()
+                                        .contains_key(&packet.submitter);
                                     if !free && !self.consume_pay_lock_on_chain(Some(pay)) {
                                         return String::new();
                                     }
                                     let mut packet_cpy = packet.clone();
-                                    let cps =
-                                        self.cost.lock().unwrap().execution_cost_per_second;
+                                    let cps = self.cost.lock().unwrap().execution_cost_per_second;
                                     if let Some(p) = packet_cpy.pay.as_mut() {
                                         if p.accepted_seconds <= 0 && cps > 0 {
                                             p.accepted_seconds = p.amount / cps;
@@ -433,13 +449,14 @@ impl Core {
                 // routed through the node, unbounded over its lifetime.
                 if packet.submitter == self.id {
                     let mut cbs = self.callbacks.lock().unwrap();
-                    cbs.entry(packet.request_id.clone())
-                        .or_insert_with(|| Arc::new(ChainCallback {
+                    cbs.entry(packet.request_id.clone()).or_insert_with(|| {
+                        Arc::new(ChainCallback {
                             fn_: Arc::new(|_, _, _| {}),
                             executors: HashMap::new(),
                             responses: HashMap::new(),
                             tag: String::new(),
-                        }));
+                        })
+                    });
                 }
                 let user_id = packet
                     .author
@@ -606,7 +623,10 @@ impl ICore for Core {
                         &format!("{}::targetCount", prefix),
                         (count as u32).to_be_bytes().to_vec(),
                     );
-                    trx.put_bytes(&format!("{}::tempCount", prefix), 0u32.to_be_bytes().to_vec());
+                    trx.put_bytes(
+                        &format!("{}::tempCount", prefix),
+                        0u32.to_be_bytes().to_vec(),
+                    );
                 }
                 Ok(())
             }),
@@ -705,10 +725,15 @@ impl ICore for Core {
         // Slow path: create a new TrxWrapper and register it.
         // weak_self() and tools lock are taken without holding vm_trxs.
         let Some(tools) = self.tools.lock().unwrap().clone() else {
-            panic!("ICore::begin_vm_trx called before tools were set (vm_id: {})", vm_id);
+            panic!(
+                "ICore::begin_vm_trx called before tools were set (vm_id: {})",
+                vm_id
+            );
         };
         let trx: Arc<dyn ITrx> = TrxWrapper::new(self.weak_self(), tools.storage(), false);
-        self.vm_trxs.lock().unwrap()
+        self.vm_trxs
+            .lock()
+            .unwrap()
             .entry(vm_id.to_string())
             .or_insert(trx)
             .clone()
@@ -756,7 +781,6 @@ impl Core {
         })
     }
 
-
     /// Runtime start phase invoked after load/module initialization.
     pub fn run(self: &Arc<Self>) {
         crate::drivers::vmm::bootstrap::run();
@@ -786,9 +810,12 @@ impl Core {
             base_db_path,
             store_logs_db,
             searcher_db,
+            self.config
+                .as_ref()
+                .map(|config| config.legacy_adapters.questdb_port)
+                .unwrap_or(8812),
         )?;
-        let signaler: Arc<dyn ISignaler> =
-            Signaler::new(self.clone(), fed.clone());
+        let signaler: Arc<dyn ISignaler> = Signaler::new(self.clone(), fed.clone());
         let security: Arc<dyn ISecurity> = Security::new(
             self.clone(),
             storage_root,
@@ -798,17 +825,18 @@ impl Core {
         let file: Arc<dyn IFile> = Arc::new(FileDriver::new(storage_root));
         let chain: Arc<dyn crate::models::ports::network::chain::IChain> =
             Blockchain::new(self.clone(), storage_root);
-        let tls_cfg = match (env::var("TLS_CERT_PATH"), env::var("TLS_KEY_PATH")) {
-            (Ok(cert), Ok(key)) if !cert.is_empty() && !key.is_empty() => {
-                match tls_config_from_files(&cert, &key) {
+        let tls_cfg = match self.config.as_ref().map(|config| &config.core) {
+            Some(config) => match (&config.tls_certificate_path, &config.tls_private_key_path) {
+                (Some(cert), Some(key)) => match tls_config_from_files(&cert, &key) {
                     Ok(cfg) => Some(cfg),
                     Err(e) => {
                         eprintln!("TLS config load failed: {}; running without TLS", e);
                         None
                     }
-                }
-            }
-            _ => None,
+                },
+                _ => None,
+            },
+            None => None,
         };
         let network: Arc<dyn INetwork> = NetworkDriver::new(
             self.clone(),
@@ -840,9 +868,14 @@ impl Core {
 
         // Cross-protocol client-request rate limiter. One instance is shared by
         // every client-facing transport (TCP / WS / HTTP ingress) so a client's
-        // quota is unified across protocols. Configured from `RATE_LIMIT_*` env.
-        let rate_limiter: Arc<dyn crate::models::ports::ratelimit::IRateLimiter> =
-            crate::drivers::ratelimit::RateLimiter::from_env();
+        // quota is unified across protocols.
+        let rate_limiter: Arc<dyn crate::models::ports::ratelimit::IRateLimiter> = match self
+            .config
+            .as_ref()
+        {
+            Some(config) => crate::drivers::ratelimit::RateLimiter::from_typed(&config.rate_limit),
+            None => crate::drivers::ratelimit::RateLimiter::new(Default::default()),
+        };
 
         // Install tools + chain restore.
         let tools: Arc<dyn ITools> = Arc::new(Tools {
@@ -857,27 +890,13 @@ impl Core {
         *self.tools.lock().unwrap() = Some(tools);
         network.chain().restore_from_storage();
 
-        // Cost knobs from env (matches Go).
+        // Cost knobs are validated once by the composition root.
         let mut cost = self.cost.lock().unwrap();
-        if let Ok(v) = env::var("VM_EXEC_COST_PER_SECOND") {
-            if let Ok(n) = v.parse::<i64>() {
-                cost.execution_cost_per_second = n.max(0);
-            }
-        }
-        if let Ok(v) = env::var("VM_RAM_COST_PER_MB_PER_MINUTE") {
-            if let Ok(n) = v.parse::<i64>() {
-                cost.vm_ram_cost_per_mb_minute = n.max(0);
-            }
-        }
-        if let Ok(v) = env::var("VM_CPU_CORE_COST_PER_MINUTE") {
-            if let Ok(n) = v.parse::<i64>() {
-                cost.vm_cpu_core_cost_per_minute = n.max(0);
-            }
-        }
-        if let Ok(v) = env::var("VM_DISK_COST_PER_GB_PER_MINUTE") {
-            if let Ok(n) = v.parse::<i64>() {
-                cost.vm_disk_cost_per_gb_minute = n.max(0);
-            }
+        if let Some(config) = self.config.as_ref().map(|config| &config.core) {
+            cost.execution_cost_per_second = config.execution_cost_per_second;
+            cost.vm_ram_cost_per_mb_minute = config.ram_cost_per_mb_minute;
+            cost.vm_cpu_core_cost_per_minute = config.cpu_core_cost_per_minute;
+            cost.vm_disk_cost_per_gb_minute = config.disk_cost_per_gb_minute;
         }
         drop(cost);
 
@@ -940,8 +959,8 @@ impl Core {
         // Wire the chain pipeline so committed blocks flow through
         // `handle_chain_packet`.
         let trans = self.clone();
-        let pipeline: crate::models::ports::network::chain::PipelineFn =
-            Box::new(move |txs: Vec<Vec<u8>>, insider_cb: Box<dyn Fn(Vec<u8>) + Send + Sync>| {
+        let pipeline: crate::models::ports::network::chain::PipelineFn = Box::new(
+            move |txs: Vec<Vec<u8>>, insider_cb: Box<dyn Fn(Vec<u8>) + Send + Sync>| {
                 let mut machine_ids: Vec<String> = Vec::new();
                 for tx in txs {
                     let s = String::from_utf8_lossy(&tx);
@@ -964,7 +983,8 @@ impl Core {
                 }
                 trans.app_pending_trxs();
                 machine_ids
-            });
+            },
+        );
         network.chain().register_pipeline(pipeline);
 
         // Background: drain the chain submission queue and forward each
@@ -1093,7 +1113,9 @@ impl ICore for WeakCoreView {
         // because the resulting closures don't recurse back into
         // modify_state.
         let core_for_trx: Arc<dyn ICore> = Arc::new(WeakCoreView {
-            inner: CoreWeakHandles { ..clone_handles(&self.inner) },
+            inner: CoreWeakHandles {
+                ..clone_handles(&self.inner)
+            },
         });
         let trx = TrxWrapper::new(core_for_trx, tools.storage(), readonly);
         let res = fn_(&*trx);
@@ -1114,7 +1136,9 @@ impl ICore for WeakCoreView {
             return;
         };
         let core_for_trx: Arc<dyn ICore> = Arc::new(WeakCoreView {
-            inner: CoreWeakHandles { ..clone_handles(&self.inner) },
+            inner: CoreWeakHandles {
+                ..clone_handles(&self.inner)
+            },
         });
         let trx = TrxWrapper::new(core_for_trx, tools.storage(), readonly);
         let state: Arc<dyn crate::models::state::IState> =
@@ -1151,10 +1175,7 @@ impl ICore for WeakCoreView {
         self.inner.cost.vm_disk_cost_per_gb_minute
     }
     fn globe(&self) -> Arc<dyn IGlobe> {
-        self.inner
-            .globe
-            .clone()
-            .expect("Globe unset on weak view")
+        self.inner.globe.clone().expect("Globe unset on weak view")
     }
 
     fn begin_vm_trx(&self, _vm_id: &str) -> Arc<dyn ITrx> {
@@ -1164,7 +1185,9 @@ impl ICore for WeakCoreView {
         let Some(tools) = self.inner.tools.clone() else {
             panic!("WeakCoreView tools not set in begin_vm_trx");
         };
-        let core: Arc<dyn ICore> = Arc::new(WeakCoreView { inner: clone_handles(&self.inner) });
+        let core: Arc<dyn ICore> = Arc::new(WeakCoreView {
+            inner: clone_handles(&self.inner),
+        });
         TrxWrapper::new(core, tools.storage(), false)
     }
 

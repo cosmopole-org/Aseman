@@ -1,0 +1,18 @@
+{
+  "provider_id": "postgres-core-v1",
+  "capabilities": [
+    "transactions.single_capsule",
+    "transactions.multi_capsule",
+    "relationships.foreign_keys",
+    "queries.range",
+    "queries.relationship_traversal",
+    "indexes.unique",
+    "events.change_stream",
+    "consistency.linearizable",
+    "consistency.snapshot",
+    "consistency.read_committed",
+    "append_only.verifiable"
+  ],
+  "max_query_limit": 10000,
+  "max_transaction_capsules": 1000
+}

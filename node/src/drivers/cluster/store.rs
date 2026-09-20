@@ -118,8 +118,7 @@ impl LogStore {
             .iterator_cf(self.cf_logs(), rocksdb::IteratorMode::End);
         match it.next() {
             Some(Ok((_, v))) => {
-                let entry: Entry<TypeConfig> =
-                    serde_json::from_slice(&v).map_err(read_err)?;
+                let entry: Entry<TypeConfig> = serde_json::from_slice(&v).map_err(read_err)?;
                 Ok(Some(entry.log_id))
             }
             _ => Ok(None),
@@ -188,7 +187,9 @@ impl RaftLogStorage<TypeConfig> for LogStore {
     }
 
     async fn read_committed(&mut self) -> StorageResult<Option<LogId<NodeId>>> {
-        Ok(self.get_meta::<Option<LogId<NodeId>>>("committed")?.flatten())
+        Ok(self
+            .get_meta::<Option<LogId<NodeId>>>("committed")?
+            .flatten())
     }
 
     async fn append<I>(&mut self, entries: I, callback: LogFlushed<TypeConfig>) -> StorageResult<()>
@@ -209,11 +210,7 @@ impl RaftLogStorage<TypeConfig> for LogStore {
 
     async fn truncate(&mut self, log_id: LogId<NodeId>) -> StorageResult<()> {
         self.db
-            .delete_range_cf(
-                self.cf_logs(),
-                id_to_bin(log_id.index),
-                id_to_bin(u64::MAX),
-            )
+            .delete_range_cf(self.cf_logs(), id_to_bin(log_id.index), id_to_bin(u64::MAX))
             .map_err(write_err)?;
         self.db.flush_wal(true).map_err(write_err)?;
         Ok(())
@@ -347,9 +344,7 @@ impl RaftStateMachine<TypeConfig> for StateMachineStore {
                 }
                 EntryPayload::Normal(cmd) => {
                     if let ClusterCommand::ConfigPut { key, value } = &cmd {
-                        self.state
-                            .shared_config
-                            .insert(key.clone(), value.clone());
+                        self.state.shared_config.insert(key.clone(), value.clone());
                     }
                     self.applier.apply(&cmd)
                 }
@@ -377,8 +372,7 @@ impl RaftStateMachine<TypeConfig> for StateMachineStore {
         snapshot: Box<Cursor<Vec<u8>>>,
     ) -> StorageResult<()> {
         let data = snapshot.into_inner();
-        let mut incoming: SmSnapshot =
-            serde_json::from_slice(&data).map_err(read_err)?;
+        let mut incoming: SmSnapshot = serde_json::from_slice(&data).map_err(read_err)?;
         incoming.last_applied = meta.last_log_id;
         incoming.membership = meta.last_membership.clone();
         self.state = incoming;
@@ -405,8 +399,7 @@ impl RaftStateMachine<TypeConfig> for StateMachineStore {
         let data = self.db.get_cf(cf, "snapshot_data").map_err(read_err)?;
         match (meta_bytes, data) {
             (Some(mb), Some(db_)) => {
-                let stored: StoredSnapshotMeta =
-                    serde_json::from_slice(&mb).map_err(read_err)?;
+                let stored: StoredSnapshotMeta = serde_json::from_slice(&mb).map_err(read_err)?;
                 Ok(Some(Snapshot {
                     meta: stored.meta,
                     snapshot: Box::new(Cursor::new(db_)),

@@ -29,8 +29,8 @@ use rocksdb::{IteratorMode, WriteBatchWithTransaction};
 use rsa::{RsaPrivateKey, RsaPublicKey};
 use serde_json::{Map, Value};
 
-use crate::models::ports::storage::IStorage;
 use crate::models::core::ICore;
+use crate::models::ports::storage::IStorage;
 use crate::models::transaction::ITrx;
 use crate::models::update::Update;
 use crate::shell::utils::crypto as cryp;
@@ -294,13 +294,7 @@ impl ITrx for TrxWrapper {
         self.record_change(&mut inner, "put", key.into_bytes(), to_column_val);
     }
 
-    fn del_index(
-        &self,
-        typ: &str,
-        from_column: &str,
-        to_column: &str,
-        from_column_val: &str,
-    ) {
+    fn del_index(&self, typ: &str, from_column: &str, to_column: &str, from_column_val: &str) {
         let key = format!(
             "index::{}::{}::{}::{}",
             typ, from_column, to_column, from_column_val
@@ -333,7 +327,12 @@ impl ITrx for TrxWrapper {
         inner
             .overlay
             .insert(full.as_bytes().to_vec(), Some(value.as_bytes().to_vec()));
-        self.record_change(&mut inner, "put", full.into_bytes(), value.as_bytes().to_vec());
+        self.record_change(
+            &mut inner,
+            "put",
+            full.into_bytes(),
+            value.as_bytes().to_vec(),
+        );
     }
 
     fn put_bytes(&self, key: &str, value: Vec<u8>) {
@@ -530,7 +529,8 @@ impl ITrx for TrxWrapper {
                 continue;
             }
             for (fk, vals) in in_arr_filter {
-                let probe = String::from_utf8_lossy(&self.get_column(typ, &obj_id, fk)).into_owned();
+                let probe =
+                    String::from_utf8_lossy(&self.get_column(typ, &obj_id, fk)).into_owned();
                 if !vals.iter().any(|v| v == &probe) {
                     matched = false;
                     break;
@@ -720,7 +720,12 @@ impl TrxWrapper {
         };
         for op in &ops {
             match op {
-                JsonOp::Put { key, path, obj, merge } => {
+                JsonOp::Put {
+                    key,
+                    path,
+                    obj,
+                    merge,
+                } => {
                     let _ = self.index_json(key, path, obj, *merge);
                 }
                 JsonOp::Del { key, path } => self.delete_json_tree(key, path),
@@ -780,15 +785,23 @@ mod tests {
     }
 
     impl ICore for StubCore {
-        fn owner_id(&self) -> String { String::new() }
-        fn id(&self) -> String { "test-node".into() }
-        fn gods(&self) -> Vec<String> { Vec::new() }
+        fn owner_id(&self) -> String {
+            String::new()
+        }
+        fn id(&self) -> String {
+            "test-node".into()
+        }
+        fn gods(&self) -> Vec<String> {
+            Vec::new()
+        }
         fn add_god(&self, _: &str) {}
         fn tools(&self) -> Arc<dyn ITools> {
             // Tests never call core.tools() — provide a panic-on-use stub.
             unimplemented!("tools() not used by trx tests");
         }
-        fn free_nodes(&self) -> HashMap<String, bool> { HashMap::new() }
+        fn free_nodes(&self) -> HashMap<String, bool> {
+            HashMap::new()
+        }
         fn add_free_node(&self, _: &str) {}
         fn actor(&self) -> Arc<dyn crate::models::action::actor::IActor> {
             unimplemented!()
@@ -797,14 +810,14 @@ mod tests {
         fn close(&self) {}
         fn plant_chain_trigger(&self, _: i64, _: &str, _: &str, _: &str, _: &str, _: &str) {}
         fn app_pending_trxs(&self) {}
-        fn ip_addr(&self) -> String { String::new() }
-        fn modify_state(
-            &self,
-            _: bool,
-            mut fn_: crate::models::action::TrxClosure,
-        ) {
+        fn ip_addr(&self) -> String {
+            String::new()
+        }
+        fn modify_state(&self, _: bool, mut fn_: crate::models::action::TrxClosure) {
             let tw = TrxWrapper::new(
-                Arc::new(StubCore { storage: self.storage.clone() }),
+                Arc::new(StubCore {
+                    storage: self.storage.clone(),
+                }),
                 self.storage.clone(),
                 true,
             );
@@ -825,12 +838,24 @@ mod tests {
             _: crate::models::core::StateClosure,
         ) {
         }
-        fn sign_packet(&self, _: &[u8]) -> String { String::new() }
-        fn sign_packet_as_owner(&self, _: &[u8]) -> String { String::new() }
-        fn execution_cost_per_second(&self) -> i64 { 0 }
-        fn vm_ram_cost_per_mb_per_minute(&self) -> i64 { 0 }
-        fn vm_cpu_core_cost_per_minute(&self) -> i64 { 0 }
-        fn vm_disk_cost_per_gb_per_minute(&self) -> i64 { 0 }
+        fn sign_packet(&self, _: &[u8]) -> String {
+            String::new()
+        }
+        fn sign_packet_as_owner(&self, _: &[u8]) -> String {
+            String::new()
+        }
+        fn execution_cost_per_second(&self) -> i64 {
+            0
+        }
+        fn vm_ram_cost_per_mb_per_minute(&self) -> i64 {
+            0
+        }
+        fn vm_cpu_core_cost_per_minute(&self) -> i64 {
+            0
+        }
+        fn vm_disk_cost_per_gb_per_minute(&self) -> i64 {
+            0
+        }
         fn globe(&self) -> Arc<dyn crate::models::globe::IGlobe> {
             unimplemented!()
         }
@@ -857,9 +882,8 @@ mod tests {
                     .as_nanos()
             );
             std::fs::create_dir_all(&dir).unwrap();
-            let kv: crate::models::ports::storage::KvDb = Arc::new(
-                rocksdb::TransactionDB::open_default(&dir).expect("rocksdb"),
-            );
+            let kv: crate::models::ports::storage::KvDb =
+                Arc::new(rocksdb::TransactionDB::open_default(&dir).expect("rocksdb"));
             // The tests never touch ts_db, but the trait requires a value.
             // Build an unconnected pool — get() will fail but no test calls it.
             let manager = r2d2_postgres::PostgresConnectionManager::new(
@@ -872,27 +896,71 @@ mod tests {
     }
 
     impl IStorage for StubStorage {
-        fn storage_root(&self) -> String { self.root.clone() }
-        fn kv_db(&self) -> crate::models::ports::storage::KvDb { self.kv.clone() }
-        fn ts_db(&self) -> crate::models::ports::storage::TsDb { self.ts.clone() }
-        fn gen_id(&self, _t: &dyn ITrx, _: &str) -> String { String::new() }
+        fn storage_root(&self) -> String {
+            self.root.clone()
+        }
+        fn kv_db(&self) -> crate::models::ports::storage::KvDb {
+            self.kv.clone()
+        }
+        fn ts_db(&self) -> crate::models::ports::storage::TsDb {
+            self.ts.clone()
+        }
+        fn gen_id(&self, _t: &dyn ITrx, _: &str) -> String {
+            String::new()
+        }
         fn log_time_sieries(
-            &self, _: &str, _: &str, _: &str, _: &[String], _: i64,
-        ) -> anyhow::Result<crate::models::packet::LogPacket> { Ok(Default::default()) }
+            &self,
+            _: &str,
+            _: &str,
+            _: &str,
+            _: &[String],
+            _: i64,
+        ) -> anyhow::Result<crate::models::packet::LogPacket> {
+            Ok(Default::default())
+        }
         fn update_log(
-            &self, _: &str, _: &str, _: &str, _: &str, _: i64,
-        ) -> crate::models::packet::LogPacket { Default::default() }
+            &self,
+            _: &str,
+            _: &str,
+            _: &str,
+            _: &str,
+            _: i64,
+        ) -> crate::models::packet::LogPacket {
+            Default::default()
+        }
         fn read_store_logs(
-            &self, _: &str, _: &crate::models::packet::LogQuery,
-        ) -> anyhow::Result<Vec<crate::models::packet::LogPacket>> { Ok(Vec::new()) }
-        fn pick_store_logs(&self, _: &str, _: Vec<String>) -> Vec<crate::models::packet::LogPacket> { Vec::new() }
-        fn log_vm(&self, _: &str, _: &str, _: &str, _: i64) -> crate::models::packet::BuildPacket { Default::default() }
-        fn read_vm_logs(&self, _: &str, _: &str, _: i64, _: i64) -> Vec<crate::models::packet::BuildPacket> { Vec::new() }
+            &self,
+            _: &str,
+            _: &crate::models::packet::LogQuery,
+        ) -> anyhow::Result<Vec<crate::models::packet::LogPacket>> {
+            Ok(Vec::new())
+        }
+        fn pick_store_logs(
+            &self,
+            _: &str,
+            _: Vec<String>,
+        ) -> Vec<crate::models::packet::LogPacket> {
+            Vec::new()
+        }
+        fn log_vm(&self, _: &str, _: &str, _: &str, _: i64) -> crate::models::packet::BuildPacket {
+            Default::default()
+        }
+        fn read_vm_logs(
+            &self,
+            _: &str,
+            _: &str,
+            _: i64,
+            _: i64,
+        ) -> Vec<crate::models::packet::BuildPacket> {
+            Vec::new()
+        }
     }
 
     fn fresh_trx(readonly: bool) -> (Arc<dyn IStorage>, Arc<TrxWrapper>) {
         let storage: Arc<dyn IStorage> = StubStorage::new();
-        let core: Arc<dyn ICore> = Arc::new(StubCore { storage: storage.clone() });
+        let core: Arc<dyn ICore> = Arc::new(StubCore {
+            storage: storage.clone(),
+        });
         let tw = TrxWrapper::new(core, storage.clone(), readonly);
         (storage, tw)
     }
@@ -904,26 +972,59 @@ mod tests {
         // at call time made the second commit write back a document without the
         // first one's field.
         let (storage, a) = fresh_trx(false);
-        let core: Arc<dyn ICore> = Arc::new(StubCore { storage: storage.clone() });
+        let core: Arc<dyn ICore> = Arc::new(StubCore {
+            storage: storage.clone(),
+        });
         let b = TrxWrapper::new(core.clone(), storage.clone(), false);
-        a.put_json("Json::Runs", "runs", &serde_json::json!({"r1": {"state": "succeeded"}}), true).unwrap();
-        b.put_json("Json::Runs", "runs", &serde_json::json!({"r2": {"state": "running"}}), true).unwrap();
+        a.put_json(
+            "Json::Runs",
+            "runs",
+            &serde_json::json!({"r1": {"state": "succeeded"}}),
+            true,
+        )
+        .unwrap();
+        b.put_json(
+            "Json::Runs",
+            "runs",
+            &serde_json::json!({"r2": {"state": "running"}}),
+            true,
+        )
+        .unwrap();
         a.commit();
         b.commit();
         let read = TrxWrapper::new(core, storage, true);
         let runs = read.get_json("Json::Runs", "runs").unwrap();
-        assert_eq!(runs["r1"]["state"], "succeeded", "the first commit's field was lost");
+        assert_eq!(
+            runs["r1"]["state"], "succeeded",
+            "the first commit's field was lost"
+        );
         assert_eq!(runs["r2"]["state"], "running");
-        assert_eq!(read.get_bytes("json::Json::Runs::runs.r1.state"), br#""succeeded""#);
+        assert_eq!(
+            read.get_bytes("json::Json::Runs::runs.r1.state"),
+            br#""succeeded""#
+        );
     }
 
     #[test]
     fn a_later_write_in_the_same_transaction_still_wins_after_replay() {
         let (storage, tw) = fresh_trx(false);
-        tw.put_json("Json::Doc", "doc", &serde_json::json!({"n": 1, "keep": true}), false).unwrap();
-        tw.put_json("Json::Doc", "doc", &serde_json::json!({"n": 2}), true).unwrap();
+        tw.put_json(
+            "Json::Doc",
+            "doc",
+            &serde_json::json!({"n": 1, "keep": true}),
+            false,
+        )
+        .unwrap();
+        tw.put_json("Json::Doc", "doc", &serde_json::json!({"n": 2}), true)
+            .unwrap();
         tw.commit();
-        let read = TrxWrapper::new(Arc::new(StubCore { storage: storage.clone() }), storage, true);
+        let read = TrxWrapper::new(
+            Arc::new(StubCore {
+                storage: storage.clone(),
+            }),
+            storage,
+            true,
+        );
         let doc = read.get_json("Json::Doc", "doc").unwrap();
         assert_eq!(doc["n"], 2);
         assert_eq!(doc["keep"], true);
@@ -932,15 +1033,30 @@ mod tests {
     #[test]
     fn deleting_a_json_document_removes_it_and_its_leaf_paths() {
         let (storage, tw) = fresh_trx(false);
-        let core: Arc<dyn ICore> = Arc::new(StubCore { storage: storage.clone() });
-        tw.put_json("Json::DvFrame::f1", "doc", &serde_json::json!({"fn": "onAnswer", "state": {"q": 1}}), false).unwrap();
+        let core: Arc<dyn ICore> = Arc::new(StubCore {
+            storage: storage.clone(),
+        });
+        tw.put_json(
+            "Json::DvFrame::f1",
+            "doc",
+            &serde_json::json!({"fn": "onAnswer", "state": {"q": 1}}),
+            false,
+        )
+        .unwrap();
         tw.commit();
         let del = TrxWrapper::new(core.clone(), storage.clone(), false);
         del.del_json("Json::DvFrame::f1", "doc");
         del.commit();
         let read = TrxWrapper::new(core, storage, true);
-        assert!(read.get_json("Json::DvFrame::f1", "doc").is_err(), "the document must be gone");
-        assert!(read.get_bytes("json::Json::DvFrame::f1::doc.state.q").is_empty(), "and its leaves");
+        assert!(
+            read.get_json("Json::DvFrame::f1", "doc").is_err(),
+            "the document must be gone"
+        );
+        assert!(
+            read.get_bytes("json::Json::DvFrame::f1::doc.state.q")
+                .is_empty(),
+            "and its leaves"
+        );
     }
 
     #[test]
@@ -958,7 +1074,9 @@ mod tests {
         tw.put_string("persist", "yes");
         tw.commit();
         let tw2 = TrxWrapper::new(
-            Arc::new(StubCore { storage: storage.clone() }),
+            Arc::new(StubCore {
+                storage: storage.clone(),
+            }),
             storage,
             true,
         );
@@ -997,7 +1115,9 @@ mod tests {
         tw.discard();
         // A fresh wrapper must not see the put.
         let tw2 = TrxWrapper::new(
-            Arc::new(StubCore { storage: storage.clone() }),
+            Arc::new(StubCore {
+                storage: storage.clone(),
+            }),
             storage,
             true,
         );
@@ -1052,7 +1172,9 @@ mod tests {
         // A second commit on the same wrapper must not double-apply nor panic.
         tw.commit();
         let tw2 = TrxWrapper::new(
-            Arc::new(StubCore { storage: storage.clone() }),
+            Arc::new(StubCore {
+                storage: storage.clone(),
+            }),
             storage,
             true,
         );
@@ -1077,5 +1199,12 @@ mod tests {
     // Suppress unused-import warnings on driver traits referenced by the
     // stub `ICore` impl path.
     #[allow(dead_code)]
-    fn _silence(_: Option<Arc<dyn IFile>>, _: Option<Arc<dyn INetwork>>, _: Option<Arc<dyn ISecurity>>, _: Option<Arc<dyn ISignaler>>, _: Option<Arc<dyn IVmm>>) {}
+    fn _silence(
+        _: Option<Arc<dyn IFile>>,
+        _: Option<Arc<dyn INetwork>>,
+        _: Option<Arc<dyn ISecurity>>,
+        _: Option<Arc<dyn ISignaler>>,
+        _: Option<Arc<dyn IVmm>>,
+    ) {
+    }
 }

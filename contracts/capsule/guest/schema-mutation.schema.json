@@ -1,0 +1,119 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://aseman.example/contracts/capsule/guest/schema-mutation.schema.json",
+  "title": "Guest schema mutation resolved against an authenticated creature binding",
+  "unevaluatedProperties": false,
+  "oneOf": [
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["operation", "definition"],
+      "properties": {
+        "operation": {"const": "create_table"},
+        "definition": {"$ref": "#/$defs/table"}
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["operation", "table", "name", "definition"],
+      "properties": {
+        "operation": {"const": "add_column"},
+        "table": {"$ref": "#/$defs/user_identifier"},
+        "name": {"$ref": "#/$defs/user_identifier"},
+        "definition": {"$ref": "#/$defs/column"}
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["operation", "table", "definition"],
+      "properties": {
+        "operation": {"const": "create_index"},
+        "table": {"$ref": "#/$defs/user_identifier"},
+        "definition": {"$ref": "#/$defs/index"}
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["operation", "table", "name"],
+      "properties": {
+        "operation": {"const": "drop_index"},
+        "table": {"$ref": "#/$defs/user_identifier"},
+        "name": {"$ref": "#/$defs/user_identifier"}
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["operation", "table", "destructive_change_approved"],
+      "properties": {
+        "operation": {"const": "drop_table"},
+        "table": {"$ref": "#/$defs/user_identifier"},
+        "destructive_change_approved": {"const": true}
+      }
+    }
+  ],
+  "$defs": {
+    "user_identifier": {"type": "string", "pattern": "^(?!_aseman_|pg_|information_schema$|guest_capsules$)[a-z][a-z0-9_]{0,62}$"},
+    "field_type": {"enum": ["bool", "integer", "float", "bytes", "text", "timestamp_micros", "capsule_id"]},
+    "column": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["field_type", "required", "default"],
+      "properties": {
+        "field_type": {"$ref": "#/$defs/field_type"},
+        "required": {"type": "boolean"},
+        "default": {
+          "oneOf": [
+            {"type": "null"},
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["type", "value"],
+              "properties": {
+                "type": {"enum": ["bool", "integer", "float", "bytes", "text"]},
+                "value": {}
+              }
+            }
+          ]
+        }
+      }
+    },
+    "index": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "columns", "unique"],
+      "properties": {
+        "name": {"$ref": "#/$defs/user_identifier"},
+        "columns": {"type": "array", "minItems": 1, "maxItems": 16, "uniqueItems": true, "items": {"$ref": "#/$defs/user_identifier"}},
+        "unique": {"type": "boolean"}
+      }
+    },
+    "foreign_key": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "columns", "target_table", "target_columns", "on_delete"],
+      "properties": {
+        "name": {"$ref": "#/$defs/user_identifier"},
+        "columns": {"type": "array", "minItems": 1, "maxItems": 16, "uniqueItems": true, "items": {"$ref": "#/$defs/user_identifier"}},
+        "target_table": {"$ref": "#/$defs/user_identifier"},
+        "target_columns": {"type": "array", "minItems": 1, "maxItems": 16, "items": {"$ref": "#/$defs/user_identifier"}},
+        "on_delete": {"enum": ["restrict", "cascade", "set_null"]}
+      }
+    },
+    "table": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "columns", "primary_key", "indexes", "foreign_keys"],
+      "properties": {
+        "name": {"$ref": "#/$defs/user_identifier"},
+        "columns": {"type": "object", "minProperties": 1, "maxProperties": 128, "additionalProperties": {"$ref": "#/$defs/column"}},
+        "primary_key": {"type": "array", "maxItems": 16, "uniqueItems": true, "items": {"$ref": "#/$defs/user_identifier"}},
+        "indexes": {"type": "array", "maxItems": 32, "items": {"$ref": "#/$defs/index"}},
+        "foreign_keys": {"type": "array", "maxItems": 32, "items": {"$ref": "#/$defs/foreign_key"}}
+      }
+    }
+  }
+}

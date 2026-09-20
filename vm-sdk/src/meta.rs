@@ -80,8 +80,8 @@ pub struct VmPluginMeta {
 impl VmPluginMeta {
     /// Parse a `vm.config.json` document.
     pub fn from_config_str(raw: &str) -> Result<Self, String> {
-        let mut meta: VmPluginMeta = serde_json::from_str(raw)
-            .map_err(|e| format!("invalid vm.config.json: {}", e))?;
+        let mut meta: VmPluginMeta =
+            serde_json::from_str(raw).map_err(|e| format!("invalid vm.config.json: {}", e))?;
         meta.key = crate::util::normalize_runtime(&meta.key);
         if meta.key.is_empty() {
             return Err("vm.config.json: `key` is required".to_string());

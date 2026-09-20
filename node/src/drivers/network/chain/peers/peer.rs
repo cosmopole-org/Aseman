@@ -80,9 +80,7 @@ pub fn exclude_peer(peers: &[Peer], peer: u32) -> (i64, Vec<Peer>) {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::drivers::network::chain::crypto::keys::{
-        generate_ecdsa_key, public_key_hex,
-    };
+    use crate::drivers::network::chain::crypto::keys::{generate_ecdsa_key, public_key_hex};
 
     fn fresh_peer(addr: &str, moniker: &str) -> Peer {
         let key = generate_ecdsa_key().unwrap();
@@ -107,7 +105,11 @@ mod tests {
     fn id_differs_for_different_pub_keys() {
         let a = fresh_peer("addr1", "m1");
         let b = fresh_peer("addr2", "m2");
-        assert_ne!(a.id(), b.id(), "different pub keys should yield different ids");
+        assert_ne!(
+            a.id(),
+            b.id(),
+            "different pub keys should yield different ids"
+        );
     }
 
     #[test]
@@ -127,7 +129,11 @@ mod tests {
         let p = Peer::new("0X11", "addr", "m");
         let s = String::from_utf8(p.marshal().unwrap()).unwrap();
         assert!(s.contains(r#""NetAddr":"addr""#), "missing NetAddr: {}", s);
-        assert!(s.contains(r#""PubKeyHex":"0X11""#), "missing PubKeyHex: {}", s);
+        assert!(
+            s.contains(r#""PubKeyHex":"0X11""#),
+            "missing PubKeyHex: {}",
+            s
+        );
         assert!(s.contains(r#""Moniker":"m""#), "missing Moniker: {}", s);
     }
 

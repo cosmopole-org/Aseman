@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://aseman.example/contracts/module/module.schema.json",
+  "title": "Aseman module.toml parsed model",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "name", "kind", "version", "contract", "artifact_digest", "command", "health_endpoint", "config_schema", "platforms", "sbom", "license_manifest"],
+  "properties": {
+    "schema_version": {"const": 1},
+    "name": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"},
+    "kind": {"enum": ["storage", "client_network", "federation", "security", "realtime", "finance_ledger", "consensus", "coordination", "vmm", "vmm_backend", "runtime", "telemetry", "sample"]},
+    "version": {"type": "string", "minLength": 1, "maxLength": 128},
+    "contract": {"type": "string", "minLength": 1, "maxLength": 128},
+    "artifact_digest": {"type": "string", "pattern": "^sha256:[0-9a-fA-F]{64}$"},
+    "command": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}},
+    "health_endpoint": {"type": "string", "pattern": "^/(?!.*\\.\\.).*$"},
+    "config_schema": {"$ref": "#/$defs/bundle_path"},
+    "capabilities": {"type": "array", "uniqueItems": true, "items": {"$ref": "#/$defs/token"}},
+    "permissions": {"$ref": "permissions.schema.json"},
+    "platforms": {"type": "array", "minItems": 1, "items": {"type": "object", "additionalProperties": false, "required": ["os", "architecture"], "properties": {"os": {"$ref": "#/$defs/token"}, "architecture": {"$ref": "#/$defs/token"}}}},
+    "migrations": {"type": "array", "uniqueItems": true, "items": {"$ref": "#/$defs/bundle_path"}},
+    "sbom": {"$ref": "#/$defs/bundle_path"},
+    "license_manifest": {"$ref": "#/$defs/bundle_path"}
+  },
+  "$defs": {
+    "token": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"},
+    "bundle_path": {"type": "string", "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$))[^\\\\]+$"}
+  }
+}

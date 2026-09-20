@@ -38,8 +38,14 @@ impl Store {
         let mut cols: HashMap<String, Vec<u8>> = HashMap::new();
         cols.insert("tag".into(), me.tag.as_bytes().to_vec());
         cols.insert("parentId".into(), me.parent_id.as_bytes().to_vec());
-        cols.insert("isPublic".into(), vec![if me.is_public { 0x01 } else { 0x00 }]);
-        cols.insert("persHist".into(), vec![if me.pers_hist { 0x01 } else { 0x00 }]);
+        cols.insert(
+            "isPublic".into(),
+            vec![if me.is_public { 0x01 } else { 0x00 }],
+        );
+        cols.insert(
+            "persHist".into(),
+            vec![if me.pers_hist { 0x01 } else { 0x00 }],
+        );
         cols.insert(
             "memberCount".into(),
             (me.member_count as u32).to_le_bytes().to_vec(),
@@ -169,7 +175,8 @@ impl Store {
         word: &str,
         filter: &HashMap<String, String>,
     ) -> Result<Vec<Store>> {
-        let links = trx.search_link_vals_list("Store", "title", "id", word, filter, offset, count)?;
+        let links =
+            trx.search_link_vals_list("Store", "title", "id", word, filter, offset, count)?;
         let objs = trx.get_obj_list("Store", &links, &HashMap::new(), &[])?;
         let mut entities: Vec<Store> = objs
             .into_iter()

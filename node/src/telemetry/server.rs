@@ -1,7 +1,6 @@
 //! Translation of `telemetry/server.go`.
 
 use std::collections::HashMap;
-use std::env;
 use std::fs;
 use std::io::{BufRead, BufReader, Read, Write};
 use std::net::TcpListener;
@@ -11,6 +10,7 @@ use std::thread;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 use anyhow::{anyhow, Result};
+use aseman_config::AsemanConfig;
 use chrono::Utc;
 use rocksdb::DB;
 use serde::{Deserialize, Serialize};
@@ -48,44 +48,48 @@ pub struct Snapshot {
 pub struct TelemetryServer {
     db: Arc<DB>,
     started_at: SystemTime,
-    chain_port: String,
-    federation_port: String,
-    client_tcp_port: String,
-    client_ws_port: String,
-    entity_port: String,
-    vm_port: String,
-    telemetry_port: String,
+    origin: String,
+    chain_port: u16,
+    federation_port: u16,
+    client_tcp_port: u16,
+    client_ws_port: u16,
+    entity_port: u16,
+    vm_port: u16,
+    telemetry_port: u16,
     storage_root: String,
     resources: crate::telemetry::resources::ResourceSampler,
     lock: Mutex<()>,
 }
 
-/// `StartFromEnv` — pulls every config knob from environment variables.
-pub fn start_from_env() -> Result<()> {
-    let mut db_path = env::var("TELEMETRY_DB_PATH").unwrap_or_default();
+/// Start telemetry from the composition root's validated configuration.
+pub fn start(config: &AsemanConfig) -> Result<()> {
+    let mut db_path = config.telemetry.database_path.clone();
     if db_path.trim().is_empty() {
-        let root = env::var("STORAGE_ROOT_PATH").unwrap_or_else(|_| ".".to_string());
+        let root = if config.storage.root_path.trim().is_empty() {
+            "."
+        } else {
+            &config.storage.root_path
+        };
         db_path = PathBuf::from(root)
             .join("telemetry-rocks")
             .to_string_lossy()
             .into_owned();
     }
-    fs::create_dir_all(&db_path)
-        .map_err(|e| anyhow!("mkdir telemetry db: {}", e))?;
-    let db = Arc::new(DB::open_default(&db_path)
-        .map_err(|e| anyhow!("open telemetry db: {}", e))?);
+    fs::create_dir_all(&db_path).map_err(|e| anyhow!("mkdir telemetry db: {}", e))?;
+    let db = Arc::new(DB::open_default(&db_path).map_err(|e| anyhow!("open telemetry db: {}", e))?);
 
     let server = Arc::new(TelemetryServer {
         db,
         started_at: SystemTime::now(),
-        chain_port: env::var("BLOCKCHAIN_API_PORT").unwrap_or_default(),
-        federation_port: env::var("FEDERATION_API_PORT").unwrap_or_default(),
-        client_tcp_port: env::var("CLIENT_TCP_API_PORT").unwrap_or_default(),
-        client_ws_port: env::var("CLIENT_WS_API_PORT").unwrap_or_default(),
-        entity_port: env::var("ENTITY_API_PORT").unwrap_or_default(),
-        vm_port: env::var("VM_API_PORT").unwrap_or_default(),
-        telemetry_port: env_or("TELEMETRY_API_PORT", "9099"),
-        storage_root: env::var("STORAGE_ROOT_PATH").unwrap_or_default(),
+        origin: config.node.origin.clone(),
+        chain_port: config.network.legacy_consensus_port,
+        federation_port: config.network.legacy_federation_port,
+        client_tcp_port: config.network.legacy_tcp_port,
+        client_ws_port: config.network.legacy_ws_port,
+        entity_port: config.telemetry.entity_port,
+        vm_port: config.telemetry.vm_port,
+        telemetry_port: config.telemetry.api_port,
+        storage_root: config.storage.root_path.clone(),
         resources: crate::telemetry::resources::ResourceSampler::new(),
         lock: Mutex::new(()),
     });
@@ -177,7 +181,7 @@ impl TelemetryServer {
             timestamp: now,
             uptime_sec: uptime,
             node: map_lit! {
-                "origin" => json!(env::var("ORIGIN").unwrap_or_default()),
+                "origin" => json!(self.origin),
                 "telemetry_port" => json!(self.telemetry_port),
                 "entity_port" => json!(self.entity_port),
                 "vm_port" => json!(self.vm_port),
@@ -255,7 +259,10 @@ fn fetch_json(url: &str) -> Result<Value> {
         None => (rest, "/"),
     };
     let mut stream = std::net::TcpStream::connect_timeout(
-        &authority.to_socket_addrs()?.next().ok_or_else(|| anyhow!("resolve"))?,
+        &authority
+            .to_socket_addrs()?
+            .next()
+            .ok_or_else(|| anyhow!("resolve"))?,
         Duration::from_millis(1200),
     )?;
     let req = format!(
@@ -271,18 +278,6 @@ fn fetch_json(url: &str) -> Result<Value> {
         None => &buf[..],
     };
     serde_json::from_slice::<Value>(body).map_err(|e| anyhow!("decode: {}", e))
-}
-
-fn env_or(k: &str, def: &str) -> String {
-    let v = env::var(k).unwrap_or_default();
-    let trimmed = v.trim();
-    if trimmed.is_empty() {
-        return def.to_string();
-    }
-    if trimmed.parse::<i64>().is_err() {
-        return def.to_string();
-    }
-    trimmed.to_string()
 }
 
 use std::net::ToSocketAddrs;

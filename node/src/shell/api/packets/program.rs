@@ -42,7 +42,11 @@ pub struct ReadVmLogsInput {
 pub struct CreateAppInput {
     #[serde(rename = "chainId", default)]
     pub chain_id: String,
-    #[serde(rename = "shardChainId", default, skip_serializing_if = "Option::is_none")]
+    #[serde(
+        rename = "shardChainId",
+        default,
+        skip_serializing_if = "Option::is_none"
+    )]
     pub shard_chain_id: Option<String>,
     #[serde(default)]
     pub username: String,

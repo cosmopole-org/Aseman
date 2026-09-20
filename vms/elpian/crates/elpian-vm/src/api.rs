@@ -130,7 +130,11 @@ pub struct VmExecResult {
 
 impl VmExecResult {
     fn host_call(data: String) -> Self {
-        VmExecResult { has_host_call: true, host_call_data: data, result_value: String::new() }
+        VmExecResult {
+            has_host_call: true,
+            host_call_data: data,
+            result_value: String::new(),
+        }
     }
     fn done(result_value: &str) -> Self {
         VmExecResult {
@@ -259,7 +263,12 @@ pub const HOST_MESSAGE_HANDLER: &str = "onHostMessage";
 /// embedder pumps any host calls the handler makes (a re-render, a reply) through
 /// the same continue/loop it uses for events.
 pub fn deliver_host_message(machine_id: String, message_json: String, cb_id: i64) -> VmExecResult {
-    execute_vm_func_with_input(machine_id, HOST_MESSAGE_HANDLER.to_string(), message_json, cb_id)
+    execute_vm_func_with_input(
+        machine_id,
+        HOST_MESSAGE_HANDLER.to_string(),
+        message_json,
+        cb_id,
+    )
 }
 
 /// Resume a VM after a host call, injecting the call's return value.
@@ -429,7 +438,10 @@ pub fn run_state(machine_id: &str) -> Option<RunState> {
 /// The fatal trap reason if a VM was stopped by a limit overrun or runtime
 /// error, else `None`.
 pub fn trap_reason(machine_id: &str) -> Option<String> {
-    VMS.lock().unwrap().get(machine_id).and_then(|vm| vm.trap_reason())
+    VMS.lock()
+        .unwrap()
+        .get(machine_id)
+        .and_then(|vm| vm.trap_reason())
 }
 
 /// Charge the storage governor on behalf of the host's fabricated filesystem.
@@ -492,7 +504,9 @@ pub fn adopt_vm(parent_id: &str, child_id: &str) -> bool {
 
 /// The parent of a VM in the tree, if it has one.
 pub fn vm_parent(machine_id: &str) -> Option<String> {
-    lock_tolerant(&HIERARCHY).parent_of(machine_id).map(|s| s.to_string())
+    lock_tolerant(&HIERARCHY)
+        .parent_of(machine_id)
+        .map(|s| s.to_string())
 }
 
 /// The direct children of a VM.
@@ -519,10 +533,13 @@ pub fn set_local_capability(machine_id: &str, cap: Capability, allowed: bool) ->
     let updates: Vec<(String, CapabilitySet)> = {
         let mut h = lock_tolerant(&HIERARCHY);
         h.set_local_capability(machine_id, cap, allowed);
-        h.subtree(machine_id).into_iter().map(|id| {
-            let eff = h.effective_caps(&id);
-            (id, eff)
-        }).collect()
+        h.subtree(machine_id)
+            .into_iter()
+            .map(|id| {
+                let eff = h.effective_caps(&id);
+                (id, eff)
+            })
+            .collect()
     };
     let mut any = false;
     for (id, eff) in updates {
@@ -630,7 +647,9 @@ pub fn enforce_tree_budgets() -> Vec<(String, String, Vec<String>)> {
             continue; // already inside a destroyed subtree
         }
         let Some(limits) = limits(&id) else { continue };
-        let Some(aggregate) = subtree_usage(&id) else { continue };
+        let Some(aggregate) = subtree_usage(&id) else {
+            continue;
+        };
         if let Some(axis) = aggregate_exceeds(&limits, &aggregate) {
             let destroyed = destroy_vm_tree(&id);
             dead.extend(destroyed.iter().cloned());

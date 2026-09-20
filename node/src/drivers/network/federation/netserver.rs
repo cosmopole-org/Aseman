@@ -119,13 +119,7 @@ impl Socket {
         self.enqueue(frame);
     }
 
-    pub fn write_response(
-        &self,
-        request_id: &str,
-        res_code: i64,
-        signature: &str,
-        payload: &[u8],
-    ) {
+    pub fn write_response(&self, request_id: &str, res_code: i64, signature: &str, payload: &[u8]) {
         let frame = encode_fed_response_body(request_id, res_code, signature, payload);
         self.enqueue(frame);
     }

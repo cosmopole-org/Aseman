@@ -99,10 +99,9 @@ pub(crate) fn program_owner_user(program_id: &str) -> String {
                     ..Default::default()
                 }
                 .pull(trx);
-                let machine =
-                    crate::shell::api::actions::program::resolve_program_owner_machine(
-                        trx, &program,
-                    );
+                let machine = crate::shell::api::actions::program::resolve_program_owner_machine(
+                    trx, &program,
+                );
                 *slot_c.lock().unwrap() = machine.owner_id;
                 Ok(())
             }),

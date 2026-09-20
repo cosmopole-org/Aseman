@@ -17,3 +17,7 @@ vm-sdk/Cargo.lock
 
 # casparctl run local node data
 caspar-data/
+
+# Python inventory-tool caches
+__pycache__/
+*.py[cod]

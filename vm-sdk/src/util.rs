@@ -35,7 +35,10 @@ pub fn parse_vm_resource_limits(packet: &Value) -> VmResourceLimits {
     let mut limits = VmResourceLimits::with_defaults();
     let resources = &packet["resources"];
     if resources.is_object() {
-        limits.max_exec_time_secs = resources["maxExecTimeSeconds"].as_u64().unwrap_or(60).max(1);
+        limits.max_exec_time_secs = resources["maxExecTimeSeconds"]
+            .as_u64()
+            .unwrap_or(60)
+            .max(1);
         limits.ram_mb = resources["ramMb"].as_u64().unwrap_or(64).max(1);
         limits.disk_gb = resources["diskGb"].as_u64().unwrap_or(1).max(1);
         limits.cpu_cores = resources["cpuCores"].as_u64().unwrap_or(1).max(1);

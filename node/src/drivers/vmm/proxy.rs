@@ -87,7 +87,10 @@ fn now_ms() -> i64 {
 /// transaction.
 fn delete_correlation(trx: &dyn ITrx, correlation_id: &str) {
     trx.del_json(&correlation_key(correlation_id), "record");
-    trx.del_key(&format!("link::{}", correlation_expiry_link(correlation_id)));
+    trx.del_key(&format!(
+        "link::{}",
+        correlation_expiry_link(correlation_id)
+    ));
 }
 
 /// Normalized proxy-entity configuration.
@@ -132,10 +135,7 @@ impl ProxyConfig {
             target_program_id: s("targetProgramId"),
             target_entity_id: s("targetEntityId"),
             attach_field: s("attachField"),
-            correlation_ttl_ms: v
-                .get("correlationTtlMs")
-                .and_then(value_as_ms)
-                .unwrap_or(0),
+            correlation_ttl_ms: v.get("correlationTtlMs").and_then(value_as_ms).unwrap_or(0),
             inject: v
                 .get("inject")
                 .filter(|x| x.is_object())
@@ -425,7 +425,13 @@ pub fn try_route_proxy_response(
     if record.is_empty() {
         return false;
     }
-    let rec = |k: &str| record.get(k).and_then(Value::as_str).unwrap_or("").to_string();
+    let rec = |k: &str| {
+        record
+            .get(k)
+            .and_then(Value::as_str)
+            .unwrap_or("")
+            .to_string()
+    };
     // Only the proxy that created the correlation may route the response —
     // the same correlation id travelling on the forwarded request must not
     // bounce at the target's own listener.
@@ -539,13 +545,17 @@ pub fn try_forward_through_proxy(
         app,
         (String::new(), String::new(), Map::new()),
         move |trx| {
-            let etype =
-                trx.get_link(&format!("vmEntityType::{}::{}", machine_owned, entity_owned));
+            let etype = trx.get_link(&format!(
+                "vmEntityType::{}::{}",
+                machine_owned, entity_owned
+            ));
             if etype != PROXY_RUNTIME_KEY {
                 return (etype, String::new(), Map::new());
             }
-            let path =
-                trx.get_link(&format!("vmEntityPath::{}::{}", machine_owned, entity_owned));
+            let path = trx.get_link(&format!(
+                "vmEntityPath::{}::{}",
+                machine_owned, entity_owned
+            ));
             let cfg = trx
                 .get_json(&config_key(&machine_owned, &entity_owned), "config")
                 .unwrap_or_default();
@@ -746,11 +756,17 @@ mod inject_tests {
             }
         }));
         let cfg = config_from_metadata(get).expect("config");
-        assert_eq!(cfg.inject.pointer("/config/llm/apiKey"), Some(&json!("sk-SECRET")));
+        assert_eq!(
+            cfg.inject.pointer("/config/llm/apiKey"),
+            Some(&json!("sk-SECRET"))
+        );
 
         // Stored-config round-trip (record_proxy_entity persists to_value()).
         let restored = ProxyConfig::from_value(&cfg.to_value());
-        assert_eq!(restored.inject.pointer("/config/llm/model"), Some(&json!("gpt-5")));
+        assert_eq!(
+            restored.inject.pointer("/config/llm/model"),
+            Some(&json!("gpt-5"))
+        );
 
         // Merge onto a payload with caller tools + a forged llm.
         let mut payload = json!({
@@ -758,10 +774,26 @@ mod inject_tests {
             "config": { "tools": ["caspar__sandbox"], "llm": { "provider": "attacker", "apiKey": "sk-FORGED" } }
         });
         deep_merge(&mut payload, &restored.inject);
-        assert_eq!(payload.pointer("/config/llm/apiKey"), Some(&json!("sk-SECRET")), "agent key wins");
-        assert_eq!(payload.pointer("/config/llm/provider"), Some(&json!("openai")), "agent provider wins");
-        assert_eq!(payload.pointer("/config/tools/0"), Some(&json!("caspar__sandbox")), "caller tools kept");
-        assert_eq!(payload.pointer("/prompt"), Some(&json!("hi")), "caller prompt kept");
+        assert_eq!(
+            payload.pointer("/config/llm/apiKey"),
+            Some(&json!("sk-SECRET")),
+            "agent key wins"
+        );
+        assert_eq!(
+            payload.pointer("/config/llm/provider"),
+            Some(&json!("openai")),
+            "agent provider wins"
+        );
+        assert_eq!(
+            payload.pointer("/config/tools/0"),
+            Some(&json!("caspar__sandbox")),
+            "caller tools kept"
+        );
+        assert_eq!(
+            payload.pointer("/prompt"),
+            Some(&json!("hi")),
+            "caller prompt kept"
+        );
     }
 
     #[test]

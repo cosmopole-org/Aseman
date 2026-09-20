@@ -21,9 +21,9 @@ use super::rocks_store::RocksDbStore;
 use super::root::Root;
 use super::round_info::RoundInfo;
 use super::store::Store;
+use crate::compat::logrus::Entry;
 use crate::drivers::network::chain::common::{self, is_store, StoreErrType, LRU};
 use crate::drivers::network::chain::peers::PeerSet;
-use crate::compat::logrus::Entry;
 
 /// Determines how many `FrameEvent`s are included in a Root. It is deliberately
 /// not configurable: peers using different values would produce different
@@ -107,7 +107,9 @@ impl Hashgraph {
     ) -> Hashgraph {
         let logger = logger.unwrap_or_else(|| {
             let entry = Entry::standalone();
-            entry.logger().set_level(crate::compat::logrus::Level::Debug);
+            entry
+                .logger()
+                .set_level(crate::compat::logrus::Level::Debug);
             entry
         });
 
@@ -965,9 +967,7 @@ impl Hashgraph {
                 let last_block_index = self.store.last_block_index();
                 let block = Block::new_from_frame(last_block_index + 1, &frame)?;
 
-                if !block.transactions().is_empty()
-                    || !block.internal_transactions().is_empty()
-                {
+                if !block.transactions().is_empty() || !block.internal_transactions().is_empty() {
                     self.store.set_block(&block)?;
                     if (self.commit_callback)(&block).is_err() {
                         self.logger
@@ -977,15 +977,15 @@ impl Hashgraph {
 
                 self.last_commited_round_events = frame.events.len() as i64;
             } else {
-                self.logger
-                    .debug(format!("No Events to commit for ConsensusRound {}", r.index));
+                self.logger.debug(format!(
+                    "No Events to commit for ConsensusRound {}",
+                    r.index
+                ));
             }
 
             processed_rounds.push(r.index);
 
-            if self.last_consensus_round.is_none()
-                || r.index > self.last_consensus_round.unwrap()
-            {
+            if self.last_consensus_round.is_none() || r.index > self.last_consensus_round.unwrap() {
                 self.set_last_consensus_round(r.index);
             }
         }
@@ -1015,8 +1015,7 @@ impl Hashgraph {
 
         // Get/create Roots. Events are in topological order, so the first
         // event of a participant triggers Root creation.
-        let mut roots: std::collections::BTreeMap<String, Root> =
-            std::collections::BTreeMap::new();
+        let mut roots: std::collections::BTreeMap<String, Root> = std::collections::BTreeMap::new();
         for ev in &events {
             let p = ev.core.creator();
             if !roots.contains_key(&p) {
@@ -1101,7 +1100,9 @@ impl Hashgraph {
                     .with_field("index", bs.index)
                     .with_field("round", block.round_received())
                     .with_field("validator", bs.validator_hex())
-                    .warn("Verifying Block signature. Validator does not belong to Block's PeerSet");
+                    .warn(
+                        "Verifying Block signature. Validator does not belong to Block's PeerSet",
+                    );
                 continue;
             }
 
@@ -1301,8 +1302,11 @@ impl Hashgraph {
             let other_parent_creator = repertoire_by_id
                 .get(&wevent.body.other_parent_creator_id)
                 .ok_or_else(|| {
-                    anyhow!("Participant {} not found", wevent.body.other_parent_creator_id)
-                })?;
+                anyhow!(
+                    "Participant {} not found",
+                    wevent.body.other_parent_creator_id
+                )
+            })?;
             other_parent = self
                 .store
                 .participant_event(
@@ -1545,11 +1549,7 @@ mod tests {
         }
     }
 
-    fn create_hashgraph(
-        db: bool,
-        ordered_events: &mut [Event],
-        peer_set: PeerSet,
-    ) -> Hashgraph {
+    fn create_hashgraph(db: bool, ordered_events: &mut [Event], peer_set: PeerSet) -> Hashgraph {
         let store: Box<dyn Store> = if db {
             Box::new(RocksDbStore::new(CACHE_SIZE, &temp_badger_dir(), false).unwrap())
         } else {
@@ -1701,7 +1701,11 @@ mod tests {
                 descendant,
                 ancestor
             );
-            assert_eq!(a, val, "self_ancestor({}, {}) mismatch", descendant, ancestor);
+            assert_eq!(
+                a, val,
+                "self_ancestor({}, {}) mismatch",
+                descendant, ancestor
+            );
         }
     }
 
@@ -1889,7 +1893,10 @@ mod tests {
         ]
         .into_iter()
         .collect();
-        assert_eq!(e21.first_descendants, e21_fd, "e21 firstDescendants mismatch");
+        assert_eq!(
+            e21.first_descendants, e21_fd,
+            "e21 firstDescendants mismatch"
+        );
         assert_eq!(e21.last_ancestors, e21_la, "e21 lastAncestors mismatch");
 
         // f1
@@ -1925,7 +1932,10 @@ mod tests {
             );
         }
         // 3 Events with index 0 + 1 Event with non-empty Transactions.
-        assert_eq!(h.pending_loaded_events, 4, "PendingLoadedEvents should be 4");
+        assert_eq!(
+            h.pending_loaded_events, 4,
+            "PendingLoadedEvents should be 4"
+        );
     }
 
     // Translation of hashgraph_test.go::TestReadWireInfo.
@@ -1942,13 +1952,21 @@ mod tests {
                 "BlockSignatures from wire mismatch for {}",
                 k
             );
-            assert_eq!(ev.body, ev_from_wire.body, "Body from wire mismatch for {}", k);
+            assert_eq!(
+                ev.body, ev_from_wire.body,
+                "Body from wire mismatch for {}",
+                k
+            );
             assert_eq!(
                 ev.signature, ev_from_wire.signature,
                 "Signature from wire mismatch for {}",
                 k
             );
-            assert!(ev.verify().unwrap_or(false), "Error verifying signature for {}", k);
+            assert!(
+                ev.verify().unwrap_or(false),
+                "Error verifying signature for {}",
+                k
+            );
         }
     }
 
@@ -1977,21 +1995,22 @@ mod tests {
         let peer_set = h.store.get_peer_set(0).unwrap();
 
         for (descendant, ancestor, val, exp_err) in expected {
-            let (a, is_err) = match h.strongly_see(
-                &idx(&index, descendant),
-                &idx(&index, ancestor),
-                &peer_set,
-            ) {
-                Ok(v) => (v, false),
-                Err(_) => (false, true),
-            };
+            let (a, is_err) =
+                match h.strongly_see(&idx(&index, descendant), &idx(&index, ancestor), &peer_set) {
+                    Ok(v) => (v, false),
+                    Err(_) => (false, true),
+                };
             assert!(
                 !(is_err && !exp_err),
                 "Error computing strongly_see({}, {})",
                 descendant,
                 ancestor
             );
-            assert_eq!(a, val, "strongly_see({}, {}) mismatch", descendant, ancestor);
+            assert_eq!(
+                a, val,
+                "strongly_see({}, {}) mismatch",
+                descendant, ancestor
+            );
         }
     }
 
@@ -2102,8 +2121,14 @@ mod tests {
         assert_eq!(
             pending,
             vec![
-                PendingRound { index: 0, decided: false },
-                PendingRound { index: 1, decided: false },
+                PendingRound {
+                    index: 0,
+                    decided: false
+                },
+                PendingRound {
+                    index: 1,
+                    decided: false
+                },
             ]
         );
 
@@ -2205,21 +2230,40 @@ mod tests {
         let u = Trilean::Undefined;
         let expected: Vec<Vec<(&str, bool)>> = vec![
             vec![
-                ("e0", true), ("e1", true), ("e2", true), ("e10", false),
-                ("e21", false), ("e21b", false), ("e02", false),
+                ("e0", true),
+                ("e1", true),
+                ("e2", true),
+                ("e10", false),
+                ("e21", false),
+                ("e21b", false),
+                ("e02", false),
             ],
             vec![
-                ("f1", true), ("f1b", false), ("f0", true), ("f2", true),
-                ("f10", false), ("f21", false), ("f0x", false), ("f02", false),
+                ("f1", true),
+                ("f1b", false),
+                ("f0", true),
+                ("f2", true),
+                ("f10", false),
+                ("f21", false),
+                ("f0x", false),
+                ("f02", false),
                 ("f02b", false),
             ],
             vec![
-                ("g1", true), ("g0", true), ("g2", true), ("g10", false),
-                ("g21", false), ("g02", false),
+                ("g1", true),
+                ("g0", true),
+                ("g2", true),
+                ("g10", false),
+                ("g21", false),
+                ("g02", false),
             ],
             vec![
-                ("h1", true), ("h0", true), ("h2", true), ("h10", false),
-                ("h21", false), ("h02", false),
+                ("h1", true),
+                ("h0", true),
+                ("h2", true),
+                ("h10", false),
+                ("h21", false),
+                ("h02", false),
             ],
             vec![("i1", true), ("i0", true), ("i2", true)],
         ];
@@ -2244,22 +2288,40 @@ mod tests {
         let tt = Trilean::True;
         let expected: Vec<Vec<(&str, bool, Trilean)>> = vec![
             vec![
-                ("e0", true, tt), ("e1", true, tt), ("e2", true, tt),
-                ("e10", false, u), ("e21", false, u), ("e21b", false, u),
+                ("e0", true, tt),
+                ("e1", true, tt),
+                ("e2", true, tt),
+                ("e10", false, u),
+                ("e21", false, u),
+                ("e21b", false, u),
                 ("e02", false, u),
             ],
             vec![
-                ("f1", true, tt), ("f1b", false, u), ("f0", true, tt),
-                ("f2", true, tt), ("f10", false, u), ("f21", false, u),
-                ("f0x", false, u), ("f02", false, u), ("f02b", false, u),
+                ("f1", true, tt),
+                ("f1b", false, u),
+                ("f0", true, tt),
+                ("f2", true, tt),
+                ("f10", false, u),
+                ("f21", false, u),
+                ("f0x", false, u),
+                ("f02", false, u),
+                ("f02b", false, u),
             ],
             vec![
-                ("g1", true, tt), ("g0", true, tt), ("g2", true, tt),
-                ("g10", false, u), ("g21", false, u), ("g02", false, u),
+                ("g1", true, tt),
+                ("g0", true, tt),
+                ("g2", true, tt),
+                ("g10", false, u),
+                ("g21", false, u),
+                ("g02", false, u),
             ],
             vec![
-                ("h1", true, u), ("h0", true, u), ("h2", true, u),
-                ("h10", false, u), ("h21", false, u), ("h02", false, u),
+                ("h1", true, u),
+                ("h0", true, u),
+                ("h2", true, u),
+                ("h10", false, u),
+                ("h21", false, u),
+                ("h02", false, u),
             ],
             vec![("i1", true, u), ("i0", true, u), ("i2", true, u)],
         ];
@@ -2273,11 +2335,26 @@ mod tests {
         }
 
         let expected_pending = vec![
-            PendingRound { index: 0, decided: true },
-            PendingRound { index: 1, decided: true },
-            PendingRound { index: 2, decided: true },
-            PendingRound { index: 3, decided: false },
-            PendingRound { index: 4, decided: false },
+            PendingRound {
+                index: 0,
+                decided: true,
+            },
+            PendingRound {
+                index: 1,
+                decided: true,
+            },
+            PendingRound {
+                index: 2,
+                decided: true,
+            },
+            PendingRound {
+                index: 3,
+                decided: false,
+            },
+            PendingRound {
+                index: 4,
+                decided: false,
+            },
         ];
         assert_eq!(
             h.pending_rounds.get_ordered_pending_rounds(),
@@ -2314,13 +2391,17 @@ mod tests {
             } else if name.starts_with('f') {
                 assert_eq!(e.round_received, Some(2), "{} round received", name);
             } else {
-                assert_eq!(e.round_received, None, "{} round received should be None", name);
+                assert_eq!(
+                    e.round_received, None,
+                    "{} round received should be None",
+                    name
+                );
             }
         }
 
         let expected_undetermined = [
-            "g1", "g0", "g2", "g10", "g21", "g02", "h1", "h0", "h2", "h10", "h21",
-            "h02", "i1", "i0", "i2",
+            "g1", "g0", "g2", "g10", "g21", "g02", "h1", "h0", "h2", "h10", "h21", "h02", "i1",
+            "i0", "i2",
         ];
         for (i, name) in expected_undetermined.iter().enumerate() {
             assert_eq!(
@@ -2343,7 +2424,10 @@ mod tests {
 
         let consensus_events = h.store.consensus_events();
         assert_eq!(consensus_events.len(), 16, "consensus length should be 16");
-        assert_eq!(h.pending_loaded_events, 2, "PendingLoadedEvents should be 2");
+        assert_eq!(
+            h.pending_loaded_events, 2,
+            "PendingLoadedEvents should be 2"
+        );
 
         // Block 0
         let block0 = h.store.get_block(0).expect("Store should contain Block 0");
@@ -2352,7 +2436,11 @@ mod tests {
         assert_eq!(block0.transactions().len(), 1, "Block0 transaction count");
         assert_eq!(block0.transactions()[0], b"e21", "Block0.Transactions[0]");
         let frame1 = h.get_frame(block0.round_received()).unwrap();
-        assert_eq!(block0.frame_hash(), frame1.hash().unwrap().as_slice(), "Block0 FrameHash");
+        assert_eq!(
+            block0.frame_hash(),
+            frame1.hash().unwrap().as_slice(),
+            "Block0 FrameHash"
+        );
 
         // Block 1
         let block1 = h.store.get_block(1).expect("Store should contain Block 1");
@@ -2361,14 +2449,24 @@ mod tests {
         assert_eq!(block1.transactions().len(), 2, "Block1 transaction count");
         assert_eq!(block1.transactions()[1], b"f02b", "Block1.Transactions[1]");
         let frame2 = h.get_frame(block1.round_received()).unwrap();
-        assert_eq!(block1.frame_hash(), frame2.hash().unwrap().as_slice(), "Block1 FrameHash");
+        assert_eq!(
+            block1.frame_hash(),
+            frame2.hash().unwrap().as_slice(),
+            "Block1 FrameHash"
+        );
 
         let pending = h.pending_rounds.get_ordered_pending_rounds();
         assert_eq!(
             pending,
             vec![
-                PendingRound { index: 3, decided: false },
-                PendingRound { index: 4, decided: false },
+                PendingRound {
+                    index: 3,
+                    decided: false
+                },
+                PendingRound {
+                    index: 4,
+                    decided: false
+                },
             ]
         );
 
@@ -2382,13 +2480,9 @@ mod tests {
         let peer_set = h.store.get_peer_set(0).unwrap();
         let ids = peer_set.ids();
 
-        let expected_known: HashMap<u32, i64> = [
-            (ids[0], 10),
-            (ids[1], 9),
-            (ids[2], 9),
-        ]
-        .into_iter()
-        .collect();
+        let expected_known: HashMap<u32, i64> = [(ids[0], 10), (ids[1], 9), (ids[2], 9)]
+            .into_iter()
+            .collect();
 
         let known = h.store.known_events();
         for id in &ids {
@@ -2425,7 +2519,11 @@ mod tests {
                 .iter()
                 .map(|fw| h.store.get_event(&idx(&index, fw)).unwrap().timestamp())
                 .collect();
-            assert_eq!(common::median(&timestamps), frame.timestamp, "Round 1 Timestamp");
+            assert_eq!(
+                common::median(&timestamps),
+                frame.timestamp,
+                "Round 1 Timestamp"
+            );
 
             let block0 = h.store.get_block(0).unwrap();
             assert_eq!(
@@ -2456,9 +2554,7 @@ mod tests {
                 assert_eq!(*r, expected_roots[p], "Round 2 Roots[{}]", p);
             }
 
-            let expected_hashes = [
-                "f1", "f1b", "f0", "f2", "f10", "f0x", "f21", "f02", "f02b",
-            ];
+            let expected_hashes = ["f1", "f1b", "f0", "f2", "f10", "f0x", "f21", "f02", "f02b"];
             let mut expected_events: Vec<FrameEvent> = expected_hashes
                 .iter()
                 .map(|eh| h.create_frame_event(&idx(&index, eh)).unwrap())
@@ -2470,7 +2566,11 @@ mod tests {
                 .iter()
                 .map(|fw| h.store.get_event(&idx(&index, fw)).unwrap().timestamp())
                 .collect();
-            assert_eq!(common::median(&timestamps), frame.timestamp, "Round 2 Timestamp");
+            assert_eq!(
+                common::median(&timestamps),
+                frame.timestamp,
+                "Round 2 Timestamp"
+            );
         }
     }
 
@@ -2530,8 +2630,7 @@ mod tests {
         }
 
         // Test DivideRounds: rounds/timestamps must match the original.
-        let frame_hashes: Vec<String> =
-            frame.events.iter().map(|ev| ev.core.hex()).collect();
+        let frame_hashes: Vec<String> = frame.events.iter().map(|ev| ev.core.hex()).collect();
         for ev_hex in &frame_hashes {
             let h2r = h2.round(ev_hex).expect("h2 round");
             let hr = h.round(ev_hex).unwrap();
@@ -2551,11 +2650,7 @@ mod tests {
         assert_eq!(hw, h2w, "Reset Round 1 witnesses");
 
         // Test Consensus.
-        assert_eq!(
-            h2.store.last_block_index(),
-            block.index(),
-            "LastBlockIndex"
-        );
+        assert_eq!(h2.store.last_block_index(), block.index(), "LastBlockIndex");
         assert_eq!(
             h2.last_consensus_round,
             Some(block.round_received()),
@@ -2599,9 +2694,13 @@ mod tests {
 
         // Build a first Hashgraph with a RocksDB backend; run consensus.
         let (mut nodes, mut index, mut ordered_events, peer_set) = init_hashgraph_nodes(N);
-        play_events(&consensus_plays(), &mut nodes, &mut index, &mut ordered_events);
-        let store: Box<dyn Store> =
-            Box::new(RocksDbStore::new(CACHE_SIZE, &dir, false).unwrap());
+        play_events(
+            &consensus_plays(),
+            &mut nodes,
+            &mut index,
+            &mut ordered_events,
+        );
+        let store: Box<dyn Store> = Box::new(RocksDbStore::new(CACHE_SIZE, &dir, false).unwrap());
         let mut h = Hashgraph::new(
             store,
             Box::new(dummy_internal_commit_callback),
@@ -2629,8 +2728,7 @@ mod tests {
         // Reopen the database and bootstrap a fresh Hashgraph from it.
         let recycled: Box<dyn Store> =
             Box::new(RocksDbStore::new(CACHE_SIZE, &dir, false).unwrap());
-        let mut nh =
-            Hashgraph::new(recycled, Box::new(dummy_internal_commit_callback), None);
+        let mut nh = Hashgraph::new(recycled, Box::new(dummy_internal_commit_callback), None);
         nh.bootstrap().expect("bootstrap");
 
         assert_eq!(

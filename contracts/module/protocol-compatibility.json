@@ -1,0 +1,29 @@
+{
+  "protocol_major": 1,
+  "packages": {
+    "aseman.module.control.v1": {
+      "Handshake": {"protocol": 1, "provider_kind": 2, "implementation_version": 3, "capabilities": 4, "max_message_bytes": 5, "schema_digests": 6, "instance_id": 7},
+      "RequestMetadata": {"request_id": 1, "trace_id": 2, "deadline_unix_millis": 3, "cancellation_id": 4, "idempotency_key": 5},
+      "ModuleError": {"code": 1, "message": 2, "retryable": 3, "request_id": 4, "details": 5}
+    },
+    "aseman.module.provider.v1": {
+      "CapabilityRequest": {"meta": 1, "capability": 2, "payload": 3},
+      "CapabilityResponse": {"payload": 1, "error": 2}
+    },
+    "aseman.module.sample.v1": {
+      "EchoRequest": {"meta": 1, "value": 2},
+      "EchoResponse": {"value": 1}
+    }
+  },
+  "services": {
+    "ModuleControl": ["Negotiate", "Health", "Stage", "Restore", "Drain", "Stop", "Cancel"],
+    "Provider": ["Invoke"],
+    "Sample": ["Echo"]
+  },
+  "rules": [
+    "Field numbers and meanings are immutable within major version 1.",
+    "Unknown fields are ignored and unknown enum values map to UNSUPPORTED behavior.",
+    "Every operation carries request identity, trace identity, deadline, cancellation, and idempotency metadata.",
+    "Major-version mismatch and missing required capabilities fail negotiation."
+  ]
+}

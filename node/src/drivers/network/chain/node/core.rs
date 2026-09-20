@@ -20,6 +20,7 @@ use crossbeam_channel::Receiver;
 use super::peer_selector::{PeerSelector, RandomPeerSelector};
 use super::promise::{JoinPromise, JoinPromiseResponse};
 use super::validator::Validator;
+use crate::compat::logrus::Entry;
 use crate::drivers::network::chain::common::{self, is_store, StoreErrType};
 use crate::drivers::network::chain::hashgraph::{
     self as hg, Block, BlockSignature, Event, Frame, Hashgraph, InternalTransaction,
@@ -27,7 +28,6 @@ use crate::drivers::network::chain::hashgraph::{
 };
 use crate::drivers::network::chain::peers::PeerSet;
 use crate::drivers::network::chain::proxy::CommitCallback;
-use crate::compat::logrus::Entry;
 
 /// Manipulates the hashgraph on behalf of the `Node`.
 pub struct Core {
@@ -86,7 +86,13 @@ pub struct Core {
 fn peer_hosts_of(ps: &PeerSet) -> Vec<String> {
     ps.peers
         .iter()
-        .map(|p| p.net_addr.split(':').next().unwrap_or(&p.net_addr).to_string())
+        .map(|p| {
+            p.net_addr
+                .split(':')
+                .next()
+                .unwrap_or(&p.net_addr)
+                .to_string()
+        })
         .collect()
 }
 
@@ -447,8 +453,7 @@ impl Core {
                     .debug("leave request processed");
             }
             Err(_) => {
-                let err =
-                    anyhow!("Timeout waiting for leave request to go through consensus");
+                let err = anyhow!("Timeout waiting for leave request to go through consensus");
                 self.logger.with_error(&err).error("");
                 return Err(err);
             }
@@ -458,8 +463,7 @@ impl Core {
             let deadline = Instant::now() + leave_timeout;
             loop {
                 if Instant::now() >= deadline {
-                    let err =
-                        anyhow!("Timeout waiting for leaving node to reach TargetRound");
+                    let err = anyhow!("Timeout waiting for leaving node to reach TargetRound");
                     self.logger.with_error(&err).error("");
                     return Err(err);
                 }
@@ -566,13 +570,11 @@ impl Core {
                 match tx_body.typ {
                     TransactionType::PeerAdd => {
                         validators = Arc::new(validators.with_new_peer(&tx_body.peer));
-                        current_peers =
-                            Arc::new(current_peers.with_new_peer(&tx_body.peer));
+                        current_peers = Arc::new(current_peers.with_new_peer(&tx_body.peer));
                     }
                     TransactionType::PeerRemove => {
                         validators = Arc::new(validators.with_removed_peer(&tx_body.peer));
-                        current_peers =
-                            Arc::new(current_peers.with_removed_peer(&tx_body.peer));
+                        current_peers = Arc::new(current_peers.with_removed_peer(&tx_body.peer));
                         if tx_body.peer.id() == self.validator.id() {
                             self.logger.debug(format!(
                                 "Update RemovedRound from {} to {}",

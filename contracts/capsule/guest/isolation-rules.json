@@ -1,0 +1,39 @@
+{
+  "schema_version": 1,
+  "routing": {
+    "source": "authenticated_workload_to_program_to_creature_binding",
+    "caller_selectable": [],
+    "server_selected": ["provider_id", "database_name", "role_name", "generation"]
+  },
+  "signed_proxy_authentication": {
+    "implementation_work_unit": "P4-04",
+    "normative_contract": "A401",
+    "signed_fields": ["operation_digest", "nonce", "issued_at", "expires_at", "audience", "key_epoch"],
+    "required_checks": ["signature", "freshness", "audience", "replay", "revocation", "key_epoch"],
+    "authoritative_resolution": ["workload", "program", "creature", "guest_database_binding"],
+    "workload_credentials": false,
+    "direct_provider_access": false
+  },
+  "postgres": {
+    "database_per_creature": true,
+    "role_per_creature": true,
+    "role_login": false,
+    "public_connect": false,
+    "public_schema_create": false,
+    "role_assumption": "transaction_local",
+    "checkout_reset_required": true,
+    "return_reset_required": true
+  },
+  "guest_schema": {
+    "multiple_tables": true,
+    "raw_sql": false,
+    "shared_guest_capsules_table": false,
+    "reserved_prefixes": ["_aseman_", "pg_"],
+    "max_tables": 128,
+    "max_columns_per_table": 128,
+    "max_indexes_per_table": 32,
+    "catalog_compare_and_swap": true,
+    "provider_private_change_journal": true
+  },
+  "binding_required_for": ["pool", "cursor", "cache", "event", "export_checkpoint"]
+}

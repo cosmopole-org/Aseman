@@ -1,6 +1,8 @@
 fn main() {
-    use rocksdb::{DB, Options, IteratorMode};
-    let path = std::env::args().nth(1).unwrap_or_else(|| "/tmp/caspar/node1/db".to_string());
+    use rocksdb::{IteratorMode, Options, DB};
+    let path = std::env::args()
+        .nth(1)
+        .unwrap_or_else(|| "/tmp/caspar/node1/db".to_string());
     let mut opts = Options::default();
     opts.set_max_open_files(64);
     let db = DB::open_for_read_only(&opts, &path, false).expect("open db");

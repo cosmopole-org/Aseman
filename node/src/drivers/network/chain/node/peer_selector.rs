@@ -94,6 +94,8 @@ impl PeerSelector for RandomPeerSelector {
             next_id = other_peers[i];
         }
 
-        self.selectable_peers_map.get(&next_id).map(|it| it.peer.clone())
+        self.selectable_peers_map
+            .get(&next_id)
+            .map(|it| it.peer.clone())
     }
 }

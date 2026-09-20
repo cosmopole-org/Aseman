@@ -20,7 +20,9 @@ fn pool() -> &'static Mutex<Vec<Vec<u8>>> {
 /// Get an empty buffer with at least `size` bytes of capacity.
 pub fn get_buffer(size: usize) -> Vec<u8> {
     let mut guard = pool().lock().unwrap();
-    let mut buf = guard.pop().unwrap_or_else(|| Vec::with_capacity(DEFAULT_CAPACITY));
+    let mut buf = guard
+        .pop()
+        .unwrap_or_else(|| Vec::with_capacity(DEFAULT_CAPACITY));
     drop(guard);
     if buf.capacity() < size {
         buf = Vec::with_capacity(size);

@@ -201,7 +201,13 @@ impl crate::models::ports::vmm::IVmm for StubVmm {
     }
     fn run_vm(&self, _: &str, _: &str, _: &str) {}
     fn terminate_vm(&self, _: &str) {}
-    fn build_vm_image(&self, machine_id: &str, entity_id: &str, _build_path: &str, build_type: &str) {
+    fn build_vm_image(
+        &self,
+        machine_id: &str,
+        entity_id: &str,
+        _build_path: &str,
+        build_type: &str,
+    ) {
         self.builds.lock().unwrap().push((
             machine_id.to_string(),
             entity_id.to_string(),
@@ -218,7 +224,10 @@ impl crate::models::ports::vmm::IVmm for StubVmm {
     fn start_http_ingress(&self, _: i64) {}
     fn register_vm_container(&self, _: &str, _: &str, _: &str, _: &str, _: &str, _: &str) {}
     fn unregister_vm_container(&self, _: &str) {}
-    fn identify_container_by_ip(&self, _: &str) -> Option<(String, String, String, String, String)> {
+    fn identify_container_by_ip(
+        &self,
+        _: &str,
+    ) -> Option<(String, String, String, String, String)> {
         None
     }
     fn push_signal_to_machine(&self, _: &str, _: &str, _: &Value) -> usize {
@@ -748,16 +757,17 @@ fn three_instance_cluster_replication() {
     };
     super::propose_deploy(artifact);
 
-    wait_for("deploy materializes on n2+n3", Duration::from_secs(20), || {
-        !n2.vmm.assigned.lock().unwrap().is_empty()
-            && !n3.vmm.assigned.lock().unwrap().is_empty()
-    });
+    wait_for(
+        "deploy materializes on n2+n3",
+        Duration::from_secs(20),
+        || {
+            !n2.vmm.assigned.lock().unwrap().is_empty()
+                && !n3.vmm.assigned.lock().unwrap().is_empty()
+        },
+    );
     for inst in [&n2, &n3] {
         // Artifact file written on the remote instance.
-        let file = format!(
-            "{}/machines/prog-42/entities/api/project.tar",
-            inst.dir
-        );
+        let file = format!("{}/machines/prog-42/entities/api/project.tar", inst.dir);
         assert_eq!(
             std::fs::read(&file).expect("replicated artifact file"),
             b"tar-bytes-of-creature",
@@ -787,7 +797,11 @@ fn three_instance_cluster_replication() {
         assert_eq!(inst.vmm.assigned.lock().unwrap().as_slice(), ["prog-42"]);
         assert_eq!(
             inst.vmm.builds.lock().unwrap().first(),
-            Some(&("prog-42".to_string(), "api".to_string(), "docker".to_string()))
+            Some(&(
+                "prog-42".to_string(),
+                "api".to_string(),
+                "docker".to_string()
+            ))
         );
     }
     // The origin instance skips re-application (it already deployed locally):
@@ -841,7 +855,12 @@ fn three_instance_cluster_replication() {
                 base64::Engine::encode(&base64::engine::general_purpose::STANDARD, b"hi")}]
         }),
     );
-    assert_eq!(forwarded["ok"], json!(true), "follower forward: {}", forwarded);
+    assert_eq!(
+        forwarded["ok"],
+        json!(true),
+        "follower forward: {}",
+        forwarded
+    );
     wait_for("follower write on n1+n3", Duration::from_secs(15), || {
         kv_get(&n1, "link::fromFollower").as_deref() == Some(b"hi".as_ref())
             && kv_get(&n3, "link::fromFollower").as_deref() == Some(b"hi".as_ref())
@@ -887,10 +906,7 @@ fn three_instance_cluster_replication() {
 fn cluster_listener_enforces_auth_token() {
     let port = PORT_BASE.fetch_add(1, Ordering::SeqCst);
     let addr = format!("127.0.0.1:{}", port);
-    let dir = format!(
-        "/tmp/caspar-cluster-test-{}/auth-node",
-        std::process::id()
-    );
+    let dir = format!("/tmp/caspar-cluster-test-{}/auth-node", std::process::id());
     std::fs::create_dir_all(&dir).unwrap();
     let (core, _vmm) = StubCore::new("origin-auth", &dir);
     let mut cfg = ClusterConfig::default();
@@ -901,8 +917,7 @@ fn cluster_listener_enforces_auth_token() {
     cfg.advertise_addr = addr.clone();
     cfg.auth_token = "sekret".into();
     let app: Arc<dyn ICore> = core;
-    let _svc =
-        super::start_service(app, cfg, PathBuf::from(&dir).join("cluster.json")).unwrap();
+    let _svc = super::start_service(app, cfg, PathBuf::from(&dir).join("cluster.json")).unwrap();
 
     let client = reqwest::blocking::Client::new();
     // No token → 401.

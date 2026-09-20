@@ -988,10 +988,8 @@ fn delete_program_entity(app: Arc<dyn ICore>) -> Arc<dyn ISecureAction> {
             // The instance must belong to THIS entity. Without the check a
             // caller who owns one program could pass any vm id and have the
             // runtime destroy an instance that program never launched.
-            let instance_key = format!(
-                "VmInstance::{}::{}::{}",
-                program.id, input.entity_id, vm_id
-            );
+            let instance_key =
+                format!("VmInstance::{}::{}::{}", program.id, input.entity_id, vm_id);
             if trx.get_link(&instance_key).is_empty() {
                 return Err(anyhow!("vm does not belong to this entity"));
             }
@@ -1772,7 +1770,8 @@ fn install_program_bootstrap(app: Arc<dyn ICore>) {
                         // The entity to re-run ("main" for creatures); older alarms
                         // without the link fall back to "main" so a wasm creature's
                         // module still resolves after a restart.
-                        let mut alarm_entity = trx.get_link(&format!("vmAlarmEntity::{}", machine_id));
+                        let mut alarm_entity =
+                            trx.get_link(&format!("vmAlarmEntity::{}", machine_id));
                         if alarm_entity.is_empty() {
                             alarm_entity = "main".to_string();
                         }

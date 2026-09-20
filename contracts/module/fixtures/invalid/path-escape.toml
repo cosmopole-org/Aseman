@@ -1,0 +1,15 @@
+schema_version = 1
+name = "unsafe-sample"
+kind = "sample"
+version = "1.0.0"
+contract = ">=1.0, <2.0"
+artifact_digest = "sha256:6b68a15f5f1e80d446b18fc9481153ea187a0f114eb9164146df75d5bfb1dd6e"
+command = ["relative/executable"]
+health_endpoint = "/../admin"
+config_schema = "../host.json"
+platforms = [{ os = "linux", architecture = "x86_64" }]
+sbom = "sbom.spdx.json"
+license_manifest = "licenses.json"
+
+[permissions]
+read_write_mounts = ["../host"]

@@ -1,0 +1,50 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://aseman.example/contracts/capsule/capsule.schema.json",
+  "title": "Portable Aseman capsule envelope JSON projection",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["encoding_version", "id", "kind", "storage_class", "owner_scope", "schema_version", "revision", "created_at_micros", "updated_at_micros", "previous_integrity", "integrity_hash", "tombstone", "relationships", "body"],
+  "properties": {
+    "encoding_version": {"const": 1},
+    "id": {"type": "string", "pattern": "^[0-9a-f]{32}$"},
+    "kind": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"},
+    "storage_class": {"$ref": "#/$defs/storageClass"},
+    "owner_scope": {"$ref": "#/$defs/ownerScope"},
+    "schema_version": {"type": "integer", "minimum": 1, "maximum": 4294967295},
+    "revision": {"type": "integer", "minimum": 1},
+    "created_at_micros": {"type": "integer"},
+    "updated_at_micros": {"type": "integer"},
+    "previous_integrity": {"oneOf": [{"type": "null"}, {"$ref": "#/$defs/digest"}]},
+    "integrity_hash": {"$ref": "#/$defs/digest"},
+    "tombstone": {"type": "boolean"},
+    "relationships": {"type": "array", "maxItems": 1024, "items": {"$ref": "#/$defs/relationship"}},
+    "body": {"description": "Tagged CapsuleValue JSON projection or null"}
+  },
+  "$defs": {
+    "digest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["algorithm", "bytes"],
+      "properties": {"algorithm": {"const": "sha2-256"}, "bytes": {"type": "string", "pattern": "^[0-9a-f]{64}$"}}
+    },
+    "storageClass": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type"],
+      "properties": {"type": {"enum": ["core", "guest_data", "telemetry", "audit", "finance", "outbox", "realtime", "module"]}, "name": {"type": ["string", "null"]}}
+    },
+    "ownerScope": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "id"],
+      "properties": {"type": {"enum": ["global", "node", "creature", "module"]}, "id": {"type": ["string", "null"]}}
+    },
+    "relationship": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "target_kind", "target_id"],
+      "properties": {"name": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"}, "target_kind": {"type": "string"}, "target_id": {"type": "string", "pattern": "^[0-9a-f]{32}$"}}
+    }
+  }
+}

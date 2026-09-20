@@ -1,5 +1,5 @@
-use crate::drivers::vmm::prelude::*;
 use crate::drivers::vmm::host::functions::protocol_api::forward_host_api_packet;
+use crate::drivers::vmm::prelude::*;
 
 pub(crate) fn host_fn_signal(input: &JsonValue) -> String {
     let signal_type = input["type"].as_str().unwrap_or("").trim();

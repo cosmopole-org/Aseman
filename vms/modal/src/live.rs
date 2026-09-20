@@ -49,10 +49,10 @@ impl VmHost for MemoryHost {
     }
     fn storage_log_vm(&self, _vm_id: &str, _log_type: &str, _text: &str, _timestamp_ms: i64) {}
     fn register_vm_context(&self, vm_id: &str, creature_id: &str, machine_id: &str) {
-        self.contexts
-            .lock()
-            .unwrap()
-            .insert(vm_id.to_string(), (creature_id.to_string(), machine_id.to_string()));
+        self.contexts.lock().unwrap().insert(
+            vm_id.to_string(),
+            (creature_id.to_string(), machine_id.to_string()),
+        );
     }
     fn unregister_vm_context(&self, vm_id: &str) {
         self.contexts.lock().unwrap().remove(vm_id);
@@ -80,7 +80,12 @@ impl VmHost for MemoryHost {
         Ok(())
     }
     fn state_get(&self, key: &str) -> String {
-        self.links.lock().unwrap().get(key).cloned().unwrap_or_default()
+        self.links
+            .lock()
+            .unwrap()
+            .get(key)
+            .cloned()
+            .unwrap_or_default()
     }
     fn state_get_by_prefix(&self, prefix: &str) -> Vec<String> {
         self.links
@@ -203,7 +208,11 @@ fn a_project_machine_starts_execs_and_is_destroyed() {
         .unwrap_or_else(|e| panic!("run_vm failed: {}", e));
     assert_eq!(started["ok"], json!(true), "run_vm: {}", started);
     let sandbox_id = started["sandboxId"].as_str().unwrap_or("").to_string();
-    assert!(!sandbox_id.is_empty(), "run_vm returned no sandboxId: {}", started);
+    assert!(
+        !sandbox_id.is_empty(),
+        "run_vm returned no sandboxId: {}",
+        started
+    );
     println!("started sandbox {} for vm {}", sandbox_id, vm_id);
 
     // Everything below must run even when an assertion fails, or a failed test
@@ -211,7 +220,11 @@ fn a_project_machine_starts_execs_and_is_destroyed() {
     let outcome = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
         // 1) The file explorer's own command, verbatim.
         let listed = plugin
-            .exec_vm(&exec_packet(machine_id, &vm_id, "mkdir -p '/data' && ls -Ap1 '/data'"))
+            .exec_vm(&exec_packet(
+                machine_id,
+                &vm_id,
+                "mkdir -p '/data' && ls -Ap1 '/data'",
+            ))
             .unwrap_or_else(|e| panic!("exec_vm (list) failed: {}", e));
         assert_eq!(listed["ok"], json!(true), "listing /data: {}", listed);
         assert_eq!(listed["exitCode"], json!(0), "listing /data: {}", listed);
@@ -227,7 +240,10 @@ fn a_project_machine_starts_execs_and_is_destroyed() {
             .exec_vm(&exec_packet(machine_id, &vm_id, "readlink -f /data"))
             .unwrap_or_else(|e| panic!("exec_vm (readlink) failed: {}", e));
         assert!(
-            resolved["stdout"].as_str().unwrap_or("").contains("/__modal/volumes/"),
+            resolved["stdout"]
+                .as_str()
+                .unwrap_or("")
+                .contains("/__modal/volumes/"),
             "/data is not the project's Modal volume: {}",
             resolved,
         );
@@ -235,7 +251,11 @@ fn a_project_machine_starts_execs_and_is_destroyed() {
         // 3) Round-trip a file, and read it back in a SEPARATE exec — one exec
         //    seeing its own write proves nothing about the sandbox's state.
         let written = plugin
-            .exec_vm(&exec_packet(machine_id, &vm_id, "echo decillion > /data/live-test.txt"))
+            .exec_vm(&exec_packet(
+                machine_id,
+                &vm_id,
+                "echo decillion > /data/live-test.txt",
+            ))
             .unwrap_or_else(|e| panic!("exec_vm (write) failed: {}", e));
         assert_eq!(written["ok"], json!(true), "writing a file: {}", written);
         let read_back = plugin
@@ -273,7 +293,12 @@ fn a_project_machine_starts_execs_and_is_destroyed() {
         let resumed = plugin
             .run_vm(&run_packet(machine_id, &vm_id))
             .unwrap_or_else(|e| panic!("run_vm (resume) failed: {}", e));
-        assert_eq!(resumed["resumed"], json!(true), "second run_vm: {}", resumed);
+        assert_eq!(
+            resumed["resumed"],
+            json!(true),
+            "second run_vm: {}",
+            resumed
+        );
         assert_eq!(
             resumed["sandboxId"].as_str().unwrap_or(""),
             sandbox_id,
@@ -318,7 +343,12 @@ fn a_project_machine_starts_execs_and_is_destroyed() {
     // that answering without an exit code so it knows to start one.
     let after = plugin.status_vm(&delete_packet(machine_id, &vm_id));
     match after {
-        Ok(v) => assert_ne!(v["running"], json!(true), "sandbox still running after delete: {}", v),
+        Ok(v) => assert_ne!(
+            v["running"],
+            json!(true),
+            "sandbox still running after delete: {}",
+            v
+        ),
         Err(_) => {}
     }
 }
@@ -340,7 +370,11 @@ fn a_forced_run_replaces_the_machine() {
         .run_vm(&run_packet(machine_id, &vm_id))
         .unwrap_or_else(|e| panic!("run_vm failed: {}", e));
     let first_id = first["sandboxId"].as_str().unwrap_or("").to_string();
-    assert!(!first_id.is_empty(), "run_vm returned no sandboxId: {}", first);
+    assert!(
+        !first_id.is_empty(),
+        "run_vm returned no sandboxId: {}",
+        first
+    );
 
     let outcome = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
         let mut forced = run_packet(machine_id, &vm_id);
@@ -349,7 +383,11 @@ fn a_forced_run_replaces_the_machine() {
             .run_vm(&forced)
             .unwrap_or_else(|e| panic!("run_vm (force) failed: {}", e));
         let second_id = second["sandboxId"].as_str().unwrap_or("").to_string();
-        assert!(!second_id.is_empty(), "forced run returned no sandboxId: {}", second);
+        assert!(
+            !second_id.is_empty(),
+            "forced run returned no sandboxId: {}",
+            second
+        );
         assert_ne!(
             second_id, first_id,
             "forceRestart re-attached instead of replacing the machine: {}",
@@ -359,7 +397,12 @@ fn a_forced_run_replaces_the_machine() {
         let listed = plugin
             .exec_vm(&exec_packet(machine_id, &vm_id, "ls -Ap1 /data"))
             .unwrap_or_else(|e| panic!("exec on the replacement failed: {}", e));
-        assert_eq!(listed["ok"], json!(true), "exec on the replacement: {}", listed);
+        assert_eq!(
+            listed["ok"],
+            json!(true),
+            "exec on the replacement: {}",
+            listed
+        );
     }));
 
     let _ = plugin.delete_vm(&delete_packet(machine_id, &vm_id));
@@ -467,20 +510,38 @@ fn a_slept_machine_is_woken_with_its_files() {
         .run_vm(&run_packet(machine_id, &vm_id))
         .unwrap_or_else(|e| panic!("run_vm failed: {}", e));
     let first_sandbox = started["sandboxId"].as_str().unwrap_or("").to_string();
-    assert!(!first_sandbox.is_empty(), "run_vm returned no sandboxId: {}", started);
+    assert!(
+        !first_sandbox.is_empty(),
+        "run_vm returned no sandboxId: {}",
+        started
+    );
 
     let outcome = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
         let wrote = plugin
-            .exec_vm(&exec_packet(machine_id, &vm_id, "echo woken > /data/wake-test.txt"))
+            .exec_vm(&exec_packet(
+                machine_id,
+                &vm_id,
+                "echo woken > /data/wake-test.txt",
+            ))
             .unwrap_or_else(|e| panic!("exec_vm (write) failed: {}", e));
-        assert_eq!(wrote["ok"], json!(true), "writing before the sleep: {}", wrote);
+        assert_eq!(
+            wrote["ok"],
+            json!(true),
+            "writing before the sleep: {}",
+            wrote
+        );
 
         // Stop the machine the way its idle window does: terminate it, leaving
         // the volume and the recorded link exactly as a sleep leaves them.
         let suspended = plugin
             .terminate_vm(&delete_packet(machine_id, &vm_id))
             .unwrap_or_else(|e| panic!("terminate_vm failed: {}", e));
-        assert_eq!(suspended["terminated"], json!(true), "terminate_vm: {}", suspended);
+        assert_eq!(
+            suspended["terminated"],
+            json!(true),
+            "terminate_vm: {}",
+            suspended
+        );
 
         // Now the wake: the same call `ensureSpaceVmAwake` makes.
         let woken = plugin
@@ -538,18 +599,28 @@ fn an_idle_timed_out_machine_wakes_asynchronously() {
         .unwrap_or_else(|e| panic!("run_vm failed: {}", e));
     assert_eq!(started["ok"], json!(true), "run_vm: {}", started);
     let wrote = plugin
-        .exec_vm(&exec_packet(machine_id, &vm_id, "echo awake-again > /data/async-wake.txt"))
+        .exec_vm(&exec_packet(
+            machine_id,
+            &vm_id,
+            "echo awake-again > /data/async-wake.txt",
+        ))
         .unwrap_or_else(|e| panic!("write failed: {}", e));
     assert_eq!(wrote["ok"], json!(true), "write: {}", wrote);
 
     let outcome = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
         let expiry_deadline = std::time::Instant::now() + std::time::Duration::from_secs(45);
         loop {
-            let status = plugin.status_vm(&packet).unwrap_or_else(|e| panic!("status failed: {}", e));
+            let status = plugin
+                .status_vm(&packet)
+                .unwrap_or_else(|e| panic!("status failed: {}", e));
             if status["status"] == json!("stopped") {
                 break;
             }
-            assert!(std::time::Instant::now() < expiry_deadline, "Modal did not idle-timeout: {}", status);
+            assert!(
+                std::time::Instant::now() < expiry_deadline,
+                "Modal did not idle-timeout: {}",
+                status
+            );
             std::thread::sleep(std::time::Duration::from_secs(2));
         }
 
@@ -558,29 +629,52 @@ fn an_idle_timed_out_machine_wakes_asynchronously() {
         let accepted = plugin
             .run_vm(&wake)
             .unwrap_or_else(|e| panic!("async wake failed: {}", e));
-        assert_eq!(accepted["accepted"], json!(true), "async wake: {}", accepted);
-        assert_eq!(accepted["status"], json!("provisioning"), "async wake: {}", accepted);
+        assert_eq!(
+            accepted["accepted"],
+            json!(true),
+            "async wake: {}",
+            accepted
+        );
+        assert_eq!(
+            accepted["status"],
+            json!("provisioning"),
+            "async wake: {}",
+            accepted
+        );
 
         // The dead sandbox link is removed synchronously. A caller now sees
         // "not ready" and can poll; it can never receive IdleTimeout from the
         // task whose replacement is already underway.
         let immediate = plugin.exec_vm(&exec_packet(machine_id, &vm_id, "true"));
-        assert!(immediate.is_err(), "exec unexpectedly targeted a sandbox: {:?}", immediate);
+        assert!(
+            immediate.is_err(),
+            "exec unexpectedly targeted a sandbox: {:?}",
+            immediate
+        );
         assert!(!immediate.unwrap_err().contains("IdleTimeout"));
 
         let wake_deadline = std::time::Instant::now() + std::time::Duration::from_secs(240);
         loop {
-            let status = plugin.status_vm(&packet).unwrap_or_else(|e| panic!("wake status failed: {}", e));
+            let status = plugin
+                .status_vm(&packet)
+                .unwrap_or_else(|e| panic!("wake status failed: {}", e));
             if status["status"] == json!("running") {
                 break;
             }
-            assert!(std::time::Instant::now() < wake_deadline, "replacement did not start: {}", status);
+            assert!(
+                std::time::Instant::now() < wake_deadline,
+                "replacement did not start: {}",
+                status
+            );
             std::thread::sleep(std::time::Duration::from_secs(2));
         }
         let read_back = plugin
             .exec_vm(&exec_packet(machine_id, &vm_id, "cat /data/async-wake.txt"))
             .unwrap_or_else(|e| panic!("read after wake failed: {}", e));
-        assert_eq!(read_back["stdout"].as_str().unwrap_or("").trim(), "awake-again");
+        assert_eq!(
+            read_back["stdout"].as_str().unwrap_or("").trim(),
+            "awake-again"
+        );
     }));
 
     let _ = plugin.delete_vm(&delete_packet(machine_id, &vm_id));
@@ -616,7 +710,10 @@ fn a_machine_publishes_reachable_endpoints() {
         let endpoints = plugin
             .vm_endpoints(&delete_packet(machine_id, &vm_id))
             .unwrap_or_else(|e| panic!("vm_endpoints failed: {}", e));
-        let list = endpoints["endpoints"].as_array().cloned().unwrap_or_default();
+        let list = endpoints["endpoints"]
+            .as_array()
+            .cloned()
+            .unwrap_or_default();
         assert!(
             !list.is_empty(),
             "the machine published no endpoints, so nothing running on it can be reached: {}",
@@ -665,10 +762,10 @@ fn probe_project_machine() {
         eprintln!("skipping: MODAL_TOKEN_ID / MODAL_TOKEN_SECRET are not set");
         return;
     }
-    let machine_id = std::env::var("PROBE_MACHINE_ID").unwrap_or_default();
-    let vm_id = std::env::var("PROBE_VM_ID").unwrap_or_default();
-    let command = std::env::var("PROBE_CMD")
-        .unwrap_or_else(|_| "tail -60 /var/log/decillion/bridge.log 2>&1".to_string());
+    let config = aseman_config::runtime_config();
+    let machine_id = config.probe_machine_id;
+    let vm_id = config.probe_vm_id;
+    let command = config.probe_command;
     if machine_id.is_empty() || vm_id.is_empty() {
         eprintln!("set PROBE_MACHINE_ID and PROBE_VM_ID");
         return;
@@ -687,22 +784,22 @@ fn probe_project_machine() {
     .into_inner()
     .app_id;
 
-    let listed = crate::client::block_on(conn.stub.sandbox_list(
-        crate::proto::SandboxListRequest {
+    let listed =
+        crate::client::block_on(conn.stub.sandbox_list(crate::proto::SandboxListRequest {
             app_id,
             environment_name: conn.environment.clone(),
             include_finished: false,
             ..Default::default()
-        },
-    ))
-    .expect("transport")
-    .expect("list")
-    .into_inner();
+        }))
+        .expect("transport")
+        .expect("list")
+        .into_inner();
 
-    let sandbox = listed
-        .sandboxes
-        .into_iter()
-        .find(|s| s.tags.iter().any(|t| t.tag_name == "caspar-vm-id" && t.tag_value == vm_id));
+    let sandbox = listed.sandboxes.into_iter().find(|s| {
+        s.tags
+            .iter()
+            .any(|t| t.tag_name == "caspar-vm-id" && t.tag_value == vm_id)
+    });
     let Some(sandbox) = sandbox else {
         println!("no live sandbox tagged caspar-vm-id={}", vm_id);
         return;
@@ -725,6 +822,10 @@ fn probe_project_machine() {
     let out = plugin
         .exec_vm(&exec_packet(&machine_id, &vm_id, &command))
         .unwrap_or_else(|e| panic!("exec failed: {}", e));
-    println!("exit={} \n--- stdout ---\n{}\n--- stderr ---\n{}",
-        out["exitCode"], out["stdout"].as_str().unwrap_or(""), out["stderr"].as_str().unwrap_or(""));
+    println!(
+        "exit={} \n--- stdout ---\n{}\n--- stderr ---\n{}",
+        out["exitCode"],
+        out["stdout"].as_str().unwrap_or(""),
+        out["stderr"].as_str().unwrap_or("")
+    );
 }

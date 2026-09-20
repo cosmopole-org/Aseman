@@ -1,0 +1,16 @@
+syntax = "proto3";
+
+package aseman.module.sample.v1;
+
+import "module/control/v1/control.proto";
+
+message EchoRequest {
+  aseman.module.control.v1.RequestMetadata meta = 1;
+  string value = 2;
+}
+
+message EchoResponse { string value = 1; }
+
+service Sample {
+  rpc Echo(EchoRequest) returns (EchoResponse);
+}

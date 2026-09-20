@@ -330,11 +330,7 @@ impl Transport for NetworkTransport {
         self.generic_rpc(target, RPC_EAGER_SYNC, self.timeout, args)
     }
 
-    fn fast_forward(
-        &self,
-        target: &str,
-        args: &FastForwardRequest,
-    ) -> Result<FastForwardResponse> {
+    fn fast_forward(&self, target: &str, args: &FastForwardRequest) -> Result<FastForwardResponse> {
         self.generic_rpc(target, RPC_FAST_FORWARD, self.timeout, args)
     }
 
@@ -502,7 +498,8 @@ fn write_frame(w: &mut dyn Write, body: &[u8]) -> Result<()> {
     }
     w.write_all(&len.to_be_bytes())
         .map_err(|e| anyhow!("write len: {}", e))?;
-    w.write_all(body).map_err(|e| anyhow!("write body: {}", e))?;
+    w.write_all(body)
+        .map_err(|e| anyhow!("write body: {}", e))?;
     w.flush().map_err(|e| anyhow!("flush: {}", e))?;
     Ok(())
 }

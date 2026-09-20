@@ -6,7 +6,7 @@
 //! queried by `casparctl pprof <subcmd>`; nothing else in the node touches
 //! it.
 //!
-//! Endpoints, all served from `PPROF_PORT` (default `9999`, same port as
+//! Endpoints, all served from the typed pprof port (default `9999`, same port as
 //! the Go original):
 //!
 //! | Path                          | Body                                  |
@@ -21,7 +21,6 @@
 //! All sampling is opt-in (the profiler is started **per request**) so
 //! the steady-state cost when nobody is querying is zero.
 
-use std::env;
 use std::fs;
 use std::io::{BufRead, BufReader, Read, Write};
 use std::net::{TcpListener, TcpStream};
@@ -36,11 +35,7 @@ static STARTED_AT_UNIX: AtomicU64 = AtomicU64::new(0);
 
 /// Spawn the profiling HTTP server in a background thread. Returns
 /// immediately. Errors during bind are logged but don't kill the node.
-pub fn start_from_env() {
-    let port = env::var("PPROF_PORT")
-        .ok()
-        .filter(|p| !p.trim().is_empty())
-        .unwrap_or_else(|| "9999".to_string());
+pub fn start(port: u16) {
     let started = SystemTime::now()
         .duration_since(UNIX_EPOCH)
         .map(|d| d.as_secs())
@@ -261,9 +256,7 @@ fn render_flamegraph(seconds: u64) -> Result<Vec<u8>, String> {
 fn render_pprof_protobuf(seconds: u64) -> Result<Vec<u8>, String> {
     use pprof::protos::Message;
     let report = build_profiler(seconds)?;
-    let profile = report
-        .pprof()
-        .map_err(|e| format!("pprof: {}", e))?;
+    let profile = report.pprof().map_err(|e| format!("pprof: {}", e))?;
     profile
         .write_to_bytes()
         .map_err(|e| format!("encode: {}", e))

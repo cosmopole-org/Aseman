@@ -3,8 +3,8 @@
 use std::sync::{Arc, Mutex};
 
 use crate::models::info::IInfo;
-use crate::models::transaction::ITrx;
 use crate::models::state::IState;
+use crate::models::transaction::ITrx;
 
 /// Concrete state carrier handed to action closures.
 ///
@@ -24,11 +24,7 @@ struct Inner {
 impl State {
     /// Build a new `State` with all three fields. Pass `None` to skip a
     /// field, equivalent to the variadic `NewState` arg patterns.
-    pub fn new(
-        info: Option<Arc<dyn IInfo>>,
-        trx: Option<Arc<dyn ITrx>>,
-        src: &str,
-    ) -> State {
+    pub fn new(info: Option<Arc<dyn IInfo>>, trx: Option<Arc<dyn ITrx>>, src: &str) -> State {
         State {
             inner: Mutex::new(Inner {
                 info,

@@ -19,7 +19,11 @@ impl ModalIdentity {
     pub(crate) fn from_packet(packet: &JsonValue) -> Self {
         let vm_id = packet["vmId"].as_str().unwrap_or("").trim();
         Self {
-            machine_id: packet["machineId"].as_str().unwrap_or("").trim().to_string(),
+            machine_id: packet["machineId"]
+                .as_str()
+                .unwrap_or("")
+                .trim()
+                .to_string(),
             entity_id: packet["entityId"]
                 .as_str()
                 .filter(|s| !s.trim().is_empty())
@@ -77,20 +81,16 @@ pub(crate) fn shared_app_link_key() -> String {
 ///
 /// Override with `MODAL_APP_NAME`, or `MODAL_APP_PREFIX` (default `caspar`).
 pub(crate) fn modal_app_name() -> String {
-    if let Ok(name) = std::env::var("MODAL_APP_NAME") {
-        let trimmed = name.trim();
-        if !trimmed.is_empty() {
-            return sanitize_component(trimmed);
-        }
+    let config = aseman_config::runtime_config();
+    if let Some(name) = config.modal_app_name {
+        return sanitize_component(&name);
     }
-    let prefix = std::env::var("MODAL_APP_PREFIX").unwrap_or_else(|_| "caspar".to_string());
-    sanitize_component(&prefix)
+    sanitize_component(&config.modal_app_prefix)
 }
 
 /// Deterministic Modal volume name for one VM instance.
 pub(crate) fn modal_volume_name(vm_id: &str) -> String {
-    let prefix =
-        std::env::var("MODAL_APP_PREFIX").unwrap_or_else(|_| "caspar".to_string());
+    let prefix = aseman_config::runtime_config().modal_app_prefix;
     format!("{}-vol-{}", prefix, sanitize_component(vm_id))
 }
 

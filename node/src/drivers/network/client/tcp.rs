@@ -28,17 +28,15 @@ use dashmap::DashMap;
 use serde_json::Value;
 
 use crate::drivers::gateway_subs;
+use crate::drivers::network::client::session::{self, SessionSocket, SessionTransport};
 use crate::drivers::network::framing::{
-    accept, bind_tls, decode_request_body, encode_client_response_body, encode_client_update_body,
+    accept, bind_tls, encode_client_response_body, encode_client_update_body,
     write_length_prefixed_frame, TlsStream,
 };
 use crate::models::core::ICore;
-use crate::models::packet::{build_error_json, ResponseSimpleMessage};
 use crate::models::ports::network::tcp::ITcp;
-use crate::models::ports::ratelimit::{
-    rate_limited_body, Protocol, RateLimitDecision, RateLimitKey, RATE_LIMITED_RES_CODE,
-};
 use crate::models::ports::network::TlsConfig;
+use crate::models::ports::ratelimit::Protocol;
 use crate::models::ports::signaler::Listener;
 use crate::models::transaction::ITrx;
 use crate::shell::utils::crypto::secure_unique_string;
@@ -126,6 +124,36 @@ impl Socket {
     }
 }
 
+impl SessionSocket for Socket {
+    fn peer(&self) -> &str {
+        &self.peer
+    }
+
+    fn peer_ip(&self) -> String {
+        Socket::peer_ip(self)
+    }
+
+    fn user_id(&self) -> String {
+        Socket::user_id(self)
+    }
+
+    fn listener_registered(&self) -> bool {
+        self.listener_registered.load(Ordering::Acquire)
+    }
+
+    fn mark_listener_registered(&self) {
+        self.listener_registered.store(true, Ordering::Release);
+    }
+
+    fn write_response(&self, packet_id: &str, code: i64, body: &[u8]) {
+        Socket::write_response(self, packet_id, code, body);
+    }
+
+    fn write_update(&self, path: &str, body: &[u8]) {
+        Socket::write_update(self, path, body);
+    }
+}
+
 /// `Tcp` driver implementing [`ITcp`].
 pub struct Tcp {
     app: Arc<dyn ICore>,
@@ -150,226 +178,7 @@ impl Tcp {
     }
 
     fn process_inbound(self: &Arc<Self>, socket: &Arc<Socket>, body: Vec<u8>) {
-        // ACKs are handled inline by the I/O loop, so anything that reaches
-        // here is a real request body.
-        let body_len = body.len();
-        let parsed = match decode_request_body(&body) {
-            Ok(p) => p,
-            Err(e) => {
-                eprintln!(
-                    "[tcp] decode_request_body failed: peer={} body_len={} err={}",
-                    socket.peer, body_len, e
-                );
-                return;
-            }
-        };
-        let peer_ip = socket.peer_ip();
-        let started = Instant::now();
-        // Per-request entry log so a stall is visible in the node log — the
-        // previous benchmark run had no app-level logs at all, which made it
-        // impossible to tell whether a request had reached the server.
-        eprintln!(
-            "[tcp] >> path={} user={} pkt={} payload_len={} peer={}",
-            parsed.path,
-            parsed.user_id,
-            parsed.packet_id,
-            parsed.payload.len(),
-            socket.peer
-        );
-
-        // Cross-protocol admission control. Every inbound client request — the
-        // `authenticate`/`logout` shortcuts included — passes through the shared
-        // rate limiter before any work is done. We key on the socket's
-        // *verified* user id (set only after a successful signature auth), never
-        // the unverified `parsed.user_id`, so a spoofed id cannot mint a fresh
-        // bucket; pre-auth traffic is billed to the peer IP.
-        let verified_user = socket.user_id();
-        let rl_key = if verified_user.is_empty() {
-            RateLimitKey::anonymous(Protocol::Tcp, &peer_ip, &parsed.path)
-        } else {
-            RateLimitKey::authenticated(Protocol::Tcp, &verified_user, &peer_ip, &parsed.path)
-        };
-        if let RateLimitDecision::Limited { retry_after, scope } =
-            self.app.tools().rate_limiter().check(&rl_key)
-        {
-            let body = serde_json::to_vec(&rate_limited_body(retry_after, scope))
-                .unwrap_or_default();
-            socket.write_response(&parsed.packet_id, RATE_LIMITED_RES_CODE, &body);
-            eprintln!(
-                "[tcp] << path={} pkt={} code={} rate_limited scope={} retry_ms={} elapsed_ms={}",
-                parsed.path,
-                parsed.packet_id,
-                RATE_LIMITED_RES_CODE,
-                scope.as_str(),
-                retry_after.as_millis(),
-                started.elapsed().as_millis()
-            );
-            return;
-        }
-
-        match parsed.path.as_str() {
-            "logout" => {
-                let (ok, _, _) = self
-                    .app
-                    .tools()
-                    .security()
-                    .auth_with_signature(&parsed.user_id, &parsed.payload, &parsed.signature);
-                if ok {
-                    self.app
-                        .tools()
-                        .signaler()
-                        .listeners()
-                        .remove(&parsed.user_id);
-                    socket.write_response(
-                        &parsed.packet_id,
-                        0,
-                        &serde_json::to_vec(&build_error_json("loggedout")).unwrap_or_default(),
-                    );
-                } else {
-                    socket.write_response(
-                        &parsed.packet_id,
-                        0,
-                        &serde_json::to_vec(&build_error_json("logout_failed"))
-                            .unwrap_or_default(),
-                    );
-                }
-                eprintln!(
-                    "[tcp] << path=logout pkt={} elapsed_ms={}",
-                    parsed.packet_id,
-                    started.elapsed().as_millis()
-                );
-                return;
-            }
-            "authenticate" | "/creatures/authenticate" => {
-                let (ok, _, _) = self
-                    .app
-                    .tools()
-                    .security()
-                    .auth_with_signature(&parsed.user_id, &parsed.payload, &parsed.signature);
-                if ok {
-                    self.attach_user_listener(socket, &parsed.user_id);
-                    socket.write_response(
-                        &parsed.packet_id,
-                        0,
-                        &serde_json::to_vec(&build_error_json("authenticated"))
-                            .unwrap_or_default(),
-                    );
-                    let msg = serde_json::to_vec(&ResponseSimpleMessage {
-                        message: "old_queue_end".to_string(),
-                    })
-                    .unwrap_or_default();
-                    socket.write_update("old_queue_end", &msg);
-                } else {
-                    socket.write_response(
-                        &parsed.packet_id,
-                        4,
-                        &serde_json::to_vec(&build_error_json("authentication failed"))
-                            .unwrap_or_default(),
-                    );
-                }
-                eprintln!(
-                    "[tcp] << path=authenticate pkt={} elapsed_ms={}",
-                    parsed.packet_id,
-                    started.elapsed().as_millis()
-                );
-                return;
-            }
-            _ => {}
-        }
-
-        let secure = match self.app.actor().fetch_secure_action(&parsed.path) {
-            Some(s) => s,
-            None => {
-                socket.write_response(
-                    &parsed.packet_id,
-                    1,
-                    &serde_json::to_vec(&build_error_json("action not found"))
-                        .unwrap_or_default(),
-                );
-                eprintln!(
-                    "[tcp] << path={} pkt={} code=1 action_not_found elapsed_ms={}",
-                    parsed.path,
-                    parsed.packet_id,
-                    started.elapsed().as_millis()
-                );
-                return;
-            }
-        };
-        let raw_payload =
-            serde_json::from_slice::<Value>(&parsed.payload).unwrap_or(Value::Null);
-        let input = match secure.parse_input("tcp", raw_payload) {
-            Ok(i) => i,
-            Err(e) => {
-                socket.write_response(
-                    &parsed.packet_id,
-                    2,
-                    &serde_json::to_vec(&build_error_json(&format!("{}", e)))
-                        .unwrap_or_default(),
-                );
-                eprintln!(
-                    "[tcp] << path={} pkt={} code=2 parse_input_err={} elapsed_ms={}",
-                    parsed.path,
-                    parsed.packet_id,
-                    e,
-                    started.elapsed().as_millis()
-                );
-                return;
-            }
-        };
-        match secure.securely_act(
-            &parsed.user_id,
-            &parsed.packet_id,
-            &parsed.payload,
-            &parsed.signature,
-            input,
-            &peer_ip,
-            &[],
-        ) {
-            Ok((sc, value)) => {
-                let body = serde_json::to_vec(&value).unwrap_or_default();
-                socket.write_response(&parsed.packet_id, sc, &body);
-                eprintln!(
-                    "[tcp] << path={} pkt={} code={} resp_len={} elapsed_ms={}",
-                    parsed.path,
-                    parsed.packet_id,
-                    sc,
-                    body.len(),
-                    started.elapsed().as_millis()
-                );
-                // Lazily register the update-stream listener after the first
-                // successful authenticated request on this connection. We use
-                // a per-socket flag (not a global listener check) so that a
-                // new connection always refreshes the listener even if a stale
-                // entry for the same user_id exists from a previous connection.
-                if !parsed.user_id.is_empty()
-                    && !socket.listener_registered.load(Ordering::Acquire)
-                {
-                    socket.listener_registered.store(true, Ordering::Release);
-                    self.attach_user_listener(socket, &parsed.user_id);
-                }
-                // Gateway topic subscriptions, exactly as on the WS driver: a
-                // bridge authenticates with a bearer token rather than a key,
-                // and the transport binds the socket the action authorized.
-                // Both client transports carry it, so which one a bridge dials
-                // is its own choice.
-                self.apply_gateway_subscription(socket, &parsed.path, &value);
-            }
-            Err(e) => {
-                socket.write_response(
-                    &parsed.packet_id,
-                    3,
-                    &serde_json::to_vec(&build_error_json(&format!("{}", e)))
-                        .unwrap_or_default(),
-                );
-                eprintln!(
-                    "[tcp] << path={} pkt={} code=3 act_err={} elapsed_ms={}",
-                    parsed.path,
-                    parsed.packet_id,
-                    e,
-                    started.elapsed().as_millis()
-                );
-            }
-        }
+        session::process_inbound(self.as_ref(), socket, body);
     }
 
     /// Bind (or release) this connection's gateway topic subscription from an
@@ -416,7 +225,7 @@ impl Tcp {
         }
     }
 
-    fn attach_user_listener(self: &Arc<Self>, socket: &Arc<Socket>, user_id: &str) {
+    fn attach_user_listener(&self, socket: &Arc<Socket>, user_id: &str) {
         // Register this connection's socket in the per-user set so signal
         // results fan out to every live connection of the user, not just the
         // most recent one (the signaler holds a single listener per user_id).
@@ -617,11 +426,9 @@ impl Tcp {
             let peer_key_clone = peer_key.clone();
             let socket_clone = socket.clone();
             if !peer_key_clone.is_empty() {
-                trans
-                    .sockets
-                    .remove_if(&peer_key_clone, |_, current| {
-                        Arc::ptr_eq(&socket_clone, current)
-                    });
+                trans.sockets.remove_if(&peer_key_clone, |_, current| {
+                    Arc::ptr_eq(&socket_clone, current)
+                });
             }
         }
         if user_id.is_empty() {
@@ -710,6 +517,24 @@ fn read_into(stream: &mut TlsStream, buf: &mut [u8]) -> ReadOutcome {
         }
         Err(e) if e.kind() == ErrorKind::Interrupted => ReadOutcome::Idle,
         Err(_) => ReadOutcome::Error,
+    }
+}
+
+impl SessionTransport<Socket> for Tcp {
+    fn app(&self) -> &Arc<dyn ICore> {
+        &self.app
+    }
+
+    fn protocol(&self) -> Protocol {
+        Protocol::Tcp
+    }
+
+    fn attach_user_listener(&self, socket: &Arc<Socket>, user_id: &str) {
+        Tcp::attach_user_listener(self, socket, user_id);
+    }
+
+    fn apply_gateway_subscription(&self, socket: &Arc<Socket>, path: &str, result: &Value) {
+        Tcp::apply_gateway_subscription(self, socket, path, result);
     }
 }
 

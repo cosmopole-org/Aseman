@@ -25,10 +25,9 @@ mod tests {
     #[test]
     fn sha256_known_empty_vector() {
         let got = sha256(b"");
-        let expected = ::hex::decode(
-            "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-        )
-        .unwrap();
+        let expected =
+            ::hex::decode("e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855")
+                .unwrap();
         assert_eq!(got, expected);
     }
 
@@ -36,10 +35,9 @@ mod tests {
     fn sha256_known_abc_vector() {
         // SHA-256("abc") = ba7816...
         let got = sha256(b"abc");
-        let expected = ::hex::decode(
-            "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad",
-        )
-        .unwrap();
+        let expected =
+            ::hex::decode("ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad")
+                .unwrap();
         assert_eq!(got, expected);
     }
 

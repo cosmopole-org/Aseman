@@ -1,8 +1,4 @@
-use std::{
-    cell::RefCell,
-    collections::HashMap,
-    rc::Rc,
-};
+use std::{cell::RefCell, collections::HashMap, rc::Rc};
 
 use serde_json::{json, Value};
 
@@ -104,9 +100,17 @@ fn serialize_expr(val: serde_json::Value) -> Vec<u8> {
             // value, trapping on a mismatch). The type name is the base type as a
             // length-prefixed string.
             result.push(0xed);
-            result.push(if val["data"]["cast"].as_bool().unwrap_or(false) { 1 } else { 0 });
+            result.push(if val["data"]["cast"].as_bool().unwrap_or(false) {
+                1
+            } else {
+                0
+            });
             result.append(&mut serialize_expr(val["data"]["value"].clone()));
-            let type_bytes = val["data"]["typeName"].as_str().unwrap_or("").as_bytes().to_vec();
+            let type_bytes = val["data"]["typeName"]
+                .as_str()
+                .unwrap_or("")
+                .as_bytes()
+                .to_vec();
             result.append(&mut i32::to_be_bytes(type_bytes.len() as i32).to_vec());
             result.append(&mut type_bytes.clone());
         }
@@ -138,7 +142,12 @@ fn serialize_expr(val: serde_json::Value) -> Vec<u8> {
                     }
                 }
             } else {
-                result.append(&mut i32::to_be_bytes(val["data"]["value"].as_object().unwrap().iter().len() as i32).to_vec());
+                result.append(
+                    &mut i32::to_be_bytes(
+                        val["data"]["value"].as_object().unwrap().iter().len() as i32
+                    )
+                    .to_vec(),
+                );
                 for (k, v) in val["data"]["value"].as_object().unwrap().iter() {
                     result.push(7);
                     let mut key_bytes = k.as_bytes().to_vec();
@@ -330,9 +339,15 @@ fn serialize_destructure(data: &Value) -> Vec<u8> {
         let is_rest = b.get("rest").and_then(|v| v.as_bool()).unwrap_or(false);
         let has_default = b.get("default").is_some();
         let mut flags = 0u8;
-        if has_default { flags |= 1; }
-        if is_rest { flags |= 2; }
-        if is_hole { flags |= 4; }
+        if has_default {
+            flags |= 1;
+        }
+        if is_rest {
+            flags |= 2;
+        }
+        if is_hole {
+            flags |= 4;
+        }
         result.push(flags);
         if is_hole {
             continue;
@@ -438,23 +453,49 @@ fn collect_bound(node: &Value, bound: &mut std::collections::BTreeSet<String>) {
         }
         "ifStmt" => {
             let d = &node["data"];
-            if let Some(b) = d["body"].as_array() { for s in b { collect_bound(s, bound); } }
-            if d.get("elseifStmt").is_some() { collect_bound(&d["elseifStmt"], bound); }
+            if let Some(b) = d["body"].as_array() {
+                for s in b {
+                    collect_bound(s, bound);
+                }
+            }
+            if d.get("elseifStmt").is_some() {
+                collect_bound(&d["elseifStmt"], bound);
+            }
             if let Some(e) = d.get("elseStmt") {
-                if let Some(b) = e["data"]["body"].as_array() { for s in b { collect_bound(s, bound); } }
+                if let Some(b) = e["data"]["body"].as_array() {
+                    for s in b {
+                        collect_bound(s, bound);
+                    }
+                }
             }
         }
         "loopStmt" => {
-            if let Some(b) = node["data"]["body"].as_array() { for s in b { collect_bound(s, bound); } }
+            if let Some(b) = node["data"]["body"].as_array() {
+                for s in b {
+                    collect_bound(s, bound);
+                }
+            }
         }
         "tryStmt" => {
-            if let Some(b) = node["data"]["body"].as_array() { for s in b { collect_bound(s, bound); } }
-            if let Some(b) = node["data"]["catchBody"].as_array() { for s in b { collect_bound(s, bound); } }
+            if let Some(b) = node["data"]["body"].as_array() {
+                for s in b {
+                    collect_bound(s, bound);
+                }
+            }
+            if let Some(b) = node["data"]["catchBody"].as_array() {
+                for s in b {
+                    collect_bound(s, bound);
+                }
+            }
         }
         "switchStmt" => {
             if let Some(cases) = node["data"]["cases"].as_array() {
                 for c in cases {
-                    if let Some(b) = c["body"]["body"].as_array() { for s in b { collect_bound(s, bound); } }
+                    if let Some(b) = c["body"]["body"].as_array() {
+                        for s in b {
+                            collect_bound(s, bound);
+                        }
+                    }
                 }
             }
         }
@@ -462,8 +503,12 @@ fn collect_bound(node: &Value, bound: &mut std::collections::BTreeSet<String>) {
             // Every non-hole binding introduces a name at this scope level.
             if let Some(bindings) = node["data"]["bindings"].as_array() {
                 for b in bindings {
-                    if b.get("hole").and_then(|v| v.as_bool()).unwrap_or(false) { continue; }
-                    if let Some(n) = b["name"].as_str() { bound.insert(n.to_string()); }
+                    if b.get("hole").and_then(|v| v.as_bool()).unwrap_or(false) {
+                        continue;
+                    }
+                    if let Some(n) = b["name"].as_str() {
+                        bound.insert(n.to_string());
+                    }
                 }
             }
         }
@@ -478,12 +523,19 @@ fn collect_bound(node: &Value, bound: &mut std::collections::BTreeSet<String>) {
 fn collect_used(node: &Value, used: &mut std::collections::BTreeSet<String>) {
     match node["type"].as_str().unwrap_or("") {
         "identifier" => {
-            if let Some(n) = node["data"]["name"].as_str() { used.insert(n.to_string()); }
+            if let Some(n) = node["data"]["name"].as_str() {
+                used.insert(n.to_string());
+            }
         }
         "functionDefinition" => {
-            let nparams = node["data"]["params"].as_array().cloned().unwrap_or_default();
+            let nparams = node["data"]["params"]
+                .as_array()
+                .cloned()
+                .unwrap_or_default();
             let nbody = node["data"]["body"].as_array().cloned().unwrap_or_default();
-            for f in free_vars(&nparams, &nbody) { used.insert(f); }
+            for f in free_vars(&nparams, &nbody) {
+                used.insert(f);
+            }
         }
         "indexer" => {
             collect_used(&node["data"]["target"], used);
@@ -491,7 +543,11 @@ fn collect_used(node: &Value, used: &mut std::collections::BTreeSet<String>) {
         }
         "functionCall" => {
             collect_used(&node["data"]["callee"], used);
-            if let Some(args) = node["data"]["args"].as_array() { for a in args { collect_used(a, used); } }
+            if let Some(args) = node["data"]["args"].as_array() {
+                for a in args {
+                    collect_used(a, used);
+                }
+            }
         }
         "arithmetic" | "logical" => {
             collect_used(&node["data"]["operand1"], used);
@@ -512,60 +568,97 @@ fn collect_used(node: &Value, used: &mut std::collections::BTreeSet<String>) {
         "object" => {
             if let Some(entries) = node["data"].get("entries").and_then(|e| e.as_array()) {
                 for entry in entries {
-                    if let Some(spread) = entry.get("spread") { collect_used(spread, used); }
-                    else { collect_used(&entry["value"], used); }
+                    if let Some(spread) = entry.get("spread") {
+                        collect_used(spread, used);
+                    } else {
+                        collect_used(&entry["value"], used);
+                    }
                 }
             }
             if let Some(obj) = node["data"]["value"].as_object() {
-                for (_k, v) in obj { collect_used(v, used); }
+                for (_k, v) in obj {
+                    collect_used(v, used);
+                }
             }
         }
         "array" => {
             if let Some(arr) = node["data"]["value"].as_array() {
-                for v in arr { collect_used(v, used); }
+                for v in arr {
+                    collect_used(v, used);
+                }
             }
         }
         "spread" => collect_used(&node["data"]["value"], used),
         "template" => {
             if let Some(parts) = node["data"]["parts"].as_array() {
-                for p in parts { collect_used(p, used); }
+                for p in parts {
+                    collect_used(p, used);
+                }
             }
         }
         "destructure" => {
             collect_used(&node["data"]["source"], used);
             if let Some(bindings) = node["data"]["bindings"].as_array() {
                 for b in bindings {
-                    if let Some(def) = b.get("default") { collect_used(def, used); }
+                    if let Some(def) = b.get("default") {
+                        collect_used(def, used);
+                    }
                 }
             }
         }
         "ifStmt" => {
             let d = &node["data"];
             collect_used(&d["condition"], used);
-            if let Some(b) = d["body"].as_array() { for s in b { collect_used(s, used); } }
-            if d.get("elseifStmt").is_some() { collect_used(&d["elseifStmt"], used); }
+            if let Some(b) = d["body"].as_array() {
+                for s in b {
+                    collect_used(s, used);
+                }
+            }
+            if d.get("elseifStmt").is_some() {
+                collect_used(&d["elseifStmt"], used);
+            }
             if let Some(e) = d.get("elseStmt") {
-                if let Some(b) = e["data"]["body"].as_array() { for s in b { collect_used(s, used); } }
+                if let Some(b) = e["data"]["body"].as_array() {
+                    for s in b {
+                        collect_used(s, used);
+                    }
+                }
             }
         }
         "loopStmt" => {
             collect_used(&node["data"]["condition"], used);
-            if let Some(b) = node["data"]["body"].as_array() { for s in b { collect_used(s, used); } }
+            if let Some(b) = node["data"]["body"].as_array() {
+                for s in b {
+                    collect_used(s, used);
+                }
+            }
         }
         "throwOperation" => collect_used(&node["data"]["value"], used),
         "tryStmt" => {
             // The catch binding (`errName`) is a runtime scope binding; treating
             // its uses as free at worst captures an outer same-named variable
             // needlessly, which is harmless.
-            if let Some(b) = node["data"]["body"].as_array() { for s in b { collect_used(s, used); } }
-            if let Some(b) = node["data"]["catchBody"].as_array() { for s in b { collect_used(s, used); } }
+            if let Some(b) = node["data"]["body"].as_array() {
+                for s in b {
+                    collect_used(s, used);
+                }
+            }
+            if let Some(b) = node["data"]["catchBody"].as_array() {
+                for s in b {
+                    collect_used(s, used);
+                }
+            }
         }
         "switchStmt" => {
             collect_used(&node["data"]["value"], used);
             if let Some(cases) = node["data"]["cases"].as_array() {
                 for c in cases {
                     collect_used(&c["value"], used);
-                    if let Some(b) = c["body"]["body"].as_array() { for s in b { collect_used(s, used); } }
+                    if let Some(b) = c["body"]["body"].as_array() {
+                        for s in b {
+                            collect_used(s, used);
+                        }
+                    }
                 }
             }
         }
@@ -576,11 +669,17 @@ fn collect_used(node: &Value, used: &mut std::collections::BTreeSet<String>) {
 /// The free variables of a function: identifiers it (transitively) references,
 /// minus everything bound at its own level (params, locals, nested-fn names).
 fn free_vars(params: &[Value], body: &[Value]) -> Vec<String> {
-    let mut bound: std::collections::BTreeSet<String> =
-        params.iter().filter_map(|p| p.as_str().map(|s| s.to_string())).collect();
-    for stmt in body { collect_bound(stmt, &mut bound); }
+    let mut bound: std::collections::BTreeSet<String> = params
+        .iter()
+        .filter_map(|p| p.as_str().map(|s| s.to_string()))
+        .collect();
+    for stmt in body {
+        collect_bound(stmt, &mut bound);
+    }
     let mut used: std::collections::BTreeSet<String> = std::collections::BTreeSet::new();
-    for stmt in body { collect_used(stmt, &mut used); }
+    for stmt in body {
+        collect_used(stmt, &mut used);
+    }
     used.into_iter().filter(|n| !bound.contains(n)).collect()
 }
 
@@ -792,8 +891,12 @@ pub fn compile_ast(program: serde_json::Value, start_point: usize) -> Vec<u8> {
                 // than cloning the whole enclosing scope.
                 let empty_params = vec![];
                 let frees = free_vars(
-                    operation["data"]["params"].as_array().unwrap_or(&empty_params),
-                    operation["data"]["body"].as_array().unwrap_or(&empty_params),
+                    operation["data"]["params"]
+                        .as_array()
+                        .unwrap_or(&empty_params),
+                    operation["data"]["body"]
+                        .as_array()
+                        .unwrap_or(&empty_params),
                 );
                 result.append(&mut i32::to_be_bytes(frees.len() as i32).to_vec());
                 for f in frees.iter() {
@@ -1757,4 +1860,3 @@ pub fn compile_code(p: String) -> Vec<u8> {
 
     vec![]
 }
-

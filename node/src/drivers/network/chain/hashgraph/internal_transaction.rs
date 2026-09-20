@@ -166,9 +166,7 @@ pub struct InternalTransactionReceipt {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::drivers::network::chain::crypto::keys::{
-        generate_ecdsa_key, public_key_hex,
-    };
+    use crate::drivers::network::chain::crypto::keys::{generate_ecdsa_key, public_key_hex};
 
     fn fresh_peer() -> Peer {
         let key = generate_ecdsa_key().unwrap();
@@ -188,8 +186,14 @@ mod tests {
 
     #[test]
     fn transaction_type_serializes_as_repr() {
-        assert_eq!(serde_json::to_string(&TransactionType::PeerAdd).unwrap(), "0");
-        assert_eq!(serde_json::to_string(&TransactionType::PeerRemove).unwrap(), "1");
+        assert_eq!(
+            serde_json::to_string(&TransactionType::PeerAdd).unwrap(),
+            "0"
+        );
+        assert_eq!(
+            serde_json::to_string(&TransactionType::PeerRemove).unwrap(),
+            "1"
+        );
     }
 
     #[test]
@@ -240,15 +244,16 @@ mod tests {
         let peer = Peer::new(&public_key_hex(key_b.verifying_key()), "addr", "m");
         let mut itx = InternalTransaction::new(TransactionType::PeerAdd, peer);
         itx.sign(&key_a).expect("sign");
-        assert!(!itx.verify().unwrap(), "verify should fail with wrong pub key");
+        assert!(
+            !itx.verify().unwrap(),
+            "verify should fail with wrong pub key"
+        );
     }
 
     #[test]
     fn verify_returns_false_on_unparseable_pub_key() {
-        let mut itx = InternalTransaction::new(
-            TransactionType::PeerAdd,
-            Peer::new("0XZZ", "addr", "m"),
-        );
+        let mut itx =
+            InternalTransaction::new(TransactionType::PeerAdd, Peer::new("0XZZ", "addr", "m"));
         // Forge a syntactically valid signature so we exercise the pub-key
         // parse path.
         itx.signature = "1|1".to_string();

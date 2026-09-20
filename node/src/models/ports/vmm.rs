@@ -24,13 +24,7 @@ pub trait IVmm: Send + Sync {
         self.run_vm(machine_id, store_id, data);
     }
     fn terminate_vm(&self, machine_id: &str);
-    fn build_vm_image(
-        &self,
-        machine_id: &str,
-        entity_id: &str,
-        build_path: &str,
-        build_type: &str,
-    );
+    fn build_vm_image(&self, machine_id: &str, entity_id: &str, build_path: &str, build_type: &str);
     fn execute_chain_trxs_group(&self, trxs: Vec<Trx>);
     fn execute_chain_effects(&self, effects: &str);
     fn close_kvdb(&self);
@@ -69,13 +63,22 @@ pub trait IVmm: Send + Sync {
     /// the container name to its registered identity. Returns
     /// `(vm_id, creature_id, program_id, machine_id, entity_id)`. Spoof-resistant —
     /// the container cannot forge its bridge IP or docker's view of it.
-    fn identify_container_by_ip(&self, ip: &str) -> Option<(String, String, String, String, String)>;
+    fn identify_container_by_ip(
+        &self,
+        ip: &str,
+    ) -> Option<(String, String, String, String, String)>;
     /// Push a signal to every live docker container of `machine_id`, regardless of
     /// entity. For packets that name no entity only. Returns the number reached.
     fn push_signal_to_machine(&self, machine_id: &str, key: &str, data: &JsonValue) -> usize;
     /// Push a signal to the container serving `entity_id` on `machine_id`. Returns
     /// the number reached (`0` ⇒ that entity is cold, so the caller queues/spawns).
-    fn push_signal_to_entity(&self, machine_id: &str, entity_id: &str, key: &str, data: &JsonValue) -> usize;
+    fn push_signal_to_entity(
+        &self,
+        machine_id: &str,
+        entity_id: &str,
+        key: &str,
+        data: &JsonValue,
+    ) -> usize;
     /// Queue a signal for a docker entity that has no live container yet, to be
     /// delivered when it (re)connects to the gateway. Used on the cold-spawn path
     /// so the signal that woke the creature is not lost while it boots.
@@ -134,7 +137,8 @@ pub trait IVmm: Send + Sync {
     /// the reason a guest cannot nominate its own.
     fn exec_shell_action(&self, caller: &str, input: &JsonValue) -> String;
     /// Dispatch a resource-store CRUD host action.
-    fn host_action_resource_store(&self, op: &str, input: &JsonValue, req_id: i64) -> (String, i64);
+    fn host_action_resource_store(&self, op: &str, input: &JsonValue, req_id: i64)
+        -> (String, i64);
     /// Dispatch a resource-entity create/delete host action.
     fn host_action_resource_entity_create(&self, input: &JsonValue, req_id: i64) -> (String, i64);
     fn host_action_resource_entity_delete(&self, input: &JsonValue, req_id: i64) -> (String, i64);

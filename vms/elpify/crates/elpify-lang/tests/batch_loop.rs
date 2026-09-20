@@ -2,8 +2,8 @@
 //! the elpify managed VM scheduler.
 
 use elpify_lang::executor::{
-    assemble_program, execute_batch_with_proof, stack_outputs_from_ints, verify_execution,
-    wrap_masm_in_batch_loop, BATCH_MAX_EXPOSED_OUTPUTS,
+    BATCH_MAX_EXPOSED_OUTPUTS, assemble_program, execute_batch_with_proof, stack_outputs_from_ints,
+    verify_execution, wrap_masm_in_batch_loop,
 };
 use elpify_lang::transpile_js_to_masm;
 

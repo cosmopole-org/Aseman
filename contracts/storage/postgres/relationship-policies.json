@@ -1,0 +1,27 @@
+{
+  "schema_version": 1,
+  "relationships": [
+    {"kind":"core.creature","name":"owner","required":true,"on_delete":"restrict"},
+    {"kind":"core.program","name":"creature","required":true,"on_delete":"restrict"},
+    {"kind":"core.store","name":"creature","required":true,"on_delete":"restrict"},
+    {"kind":"core.store","name":"parent","required":false,"on_delete":"restrict"},
+    {"kind":"core.store_membership","name":"store","required":true,"on_delete":"cascade"},
+    {"kind":"core.store_membership","name":"user","required":true,"on_delete":"cascade"},
+    {"kind":"core.access_level","name":"store","required":true,"on_delete":"cascade"},
+    {"kind":"core.capability_grant","name":"subject","required":true,"on_delete":"restrict"},
+    {"kind":"core.capability_grant","name":"issuer","required":true,"on_delete":"restrict"},
+    {"kind":"core.session","name":"user","required":true,"on_delete":"cascade"},
+    {"kind":"core.file","name":"owner","required":true,"on_delete":"restrict"},
+    {"kind":"core.file","name":"store","required":false,"on_delete":"restrict"},
+    {"kind":"core.workload","name":"program","required":true,"on_delete":"restrict"},
+    {"kind":"core.workload","name":"creature","required":true,"on_delete":"restrict"},
+    {"kind":"core.workload_operation","name":"workload","required":true,"on_delete":"cascade"},
+    {"kind":"core.node_key","name":"node","required":true,"on_delete":"cascade"},
+    {"kind":"core.guest_database_binding","name":"creature","required":true,"on_delete":"restrict"},
+    {"kind":"core.guest_schema_definition","name":"creature","required":true,"on_delete":"cascade"},
+    {"kind":"core.guest_schema_definition","name":"binding","required":true,"on_delete":"cascade"},
+    {"kind":"core.chain","name":"store","required":true,"on_delete":"restrict"},
+    {"kind":"core.chain_shard","name":"chain","required":true,"on_delete":"cascade"},
+    {"kind":"core.entity","name":"program","required":true,"on_delete":"cascade"}
+  ]
+}

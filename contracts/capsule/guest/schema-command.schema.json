@@ -1,0 +1,12 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://aseman.example/contracts/capsule/guest/schema-command.schema.json",
+  "title": "Revision-fenced guest schema command",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["expected_catalog_revision", "mutation"],
+  "properties": {
+    "expected_catalog_revision": {"type": "integer", "minimum": 0},
+    "mutation": {"$ref": "schema-mutation.schema.json"}
+  }
+}

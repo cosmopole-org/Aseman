@@ -70,18 +70,17 @@ impl<T: Clone> RollingIndexMap<T> {
         })?;
         let (cached, _) = pe.get_last_window();
         if cached.is_empty() {
-            return Err(
-                new_store_err(&self.name, StoreErrType::Empty, &key.to_string()).into(),
-            );
+            return Err(new_store_err(&self.name, StoreErrType::Empty, &key.to_string()).into());
         }
         Ok(cached[cached.len() - 1].clone())
     }
 
     /// Inserts or updates an item into a `RollingIndex` identified by `key`.
     pub fn set(&mut self, key: u32, item: T, index: i64) -> Result<()> {
-        let items = self.mapping.entry(key).or_insert_with(|| {
-            RollingIndex::new(&format!("{}[{}]", self.name, key), self.size)
-        });
+        let items = self
+            .mapping
+            .entry(key)
+            .or_insert_with(|| RollingIndex::new(&format!("{}[{}]", self.name, key), self.size));
         items.set(item, index)
     }
 
