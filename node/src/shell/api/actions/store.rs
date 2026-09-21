@@ -25,7 +25,7 @@ use anyhow::{anyhow, Result};
 use serde_json::{json, Value};
 
 use crate::shell::api::model::store_ports::{
-    legacy_error, log_packet, LegacyStorePorts, SystemClock,
+    legacy_error, log_packet, MembershipPorts, SignalPorts, StorePorts, SystemClock,
 };
 use aseman_application::store::{GetStoreAccess, ReadStoreHistory, SetStoreAccess, SignalStore};
 
@@ -99,14 +99,15 @@ fn signal(app: Arc<dyn ICore>) -> Arc<dyn ISecureAction> {
         move |state: Arc<dyn IState>, input: SignalInput| -> Result<Value> {
             let sender_id = state.info().user_id();
             let trx = state.trx();
-            let ports = LegacyStorePorts {
-                trx: &*trx,
+            let store_ports = StorePorts { trx: &*trx };
+            let membership = MembershipPorts { trx: &*trx };
+            let signal_log = SignalPorts {
                 storage: app_for_handler.tools().storage(),
             };
             let outcome = SignalStore {
-                stores: &ports,
-                access: &ports,
-                log: &ports,
+                stores: &store_ports,
+                access: &membership,
+                log: &signal_log,
                 clock: &SystemClock,
             }
             .execute(
@@ -119,7 +120,7 @@ fn signal(app: Arc<dyn ICore>) -> Arc<dyn ISecureAction> {
             .map_err(legacy_error)?;
 
             let mut sender =
-                (crate::shell::api::model::creature_ports::LegacyCreatures { trx: &*trx })
+                (crate::shell::api::model::creature_ports::CreaturePorts { trx: &*trx })
                     .creature_or_empty(&sender_id.clone());
             // Balance is never leaked over the signalling channel.
             sender.balance = 0;
@@ -174,13 +175,13 @@ fn history(app: Arc<dyn ICore>) -> Arc<dyn ISecureAction> {
         store_guard(),
         move |state: Arc<dyn IState>, input: HistoryInput| -> Result<Value> {
             let trx = state.trx();
-            let ports = LegacyStorePorts {
-                trx: &*trx,
+            let membership = MembershipPorts { trx: &*trx };
+            let signal_log = SignalPorts {
                 storage: app_for_handler.tools().storage(),
             };
             let signals = ReadStoreHistory {
-                access: &ports,
-                log: &ports,
+                access: &membership,
+                log: &signal_log,
             }
             .execute(
                 &state.info().user_id(),
@@ -208,25 +209,23 @@ fn history(app: Arc<dyn ICore>) -> Arc<dyn ISecureAction> {
 /// granted `read` alone, an ordinary member `read,signal`, an administrator
 /// `read,signal,manage`.
 fn set_access(app: Arc<dyn ICore>) -> Arc<dyn ISecureAction> {
-    let app_for_handler = app.clone();
     build_secure_action::<SetAccessInput, _>(
         app,
         "/stores/setAccess",
         store_guard(),
         move |state: Arc<dyn IState>, input: SetAccessInput| -> Result<Value> {
             let trx = state.trx();
-            let ports = LegacyStorePorts {
-                trx: &*trx,
-                storage: app_for_handler.tools().storage(),
-            };
-            let perms = SetStoreAccess { access: &ports }
-                .execute(
-                    &state.info().user_id(),
-                    &input.store_id,
-                    &input.member_id,
-                    &input.permissions,
-                )
-                .map_err(legacy_error)?;
+            let membership = MembershipPorts { trx: &*trx };
+            let perms = SetStoreAccess {
+                access: &membership,
+            }
+            .execute(
+                &state.info().user_id(),
+                &input.store_id,
+                &input.member_id,
+                &input.permissions,
+            )
+            .map_err(legacy_error)?;
             Ok(json!({
                 "storeId": input.store_id,
                 "memberId": input.member_id,
@@ -239,20 +238,18 @@ fn set_access(app: Arc<dyn ICore>) -> Arc<dyn ISecureAction> {
 /// `/stores/getAccess` — read a member's permissions. A member may always read
 /// their own; reading somebody else's requires `manage`.
 fn get_access(app: Arc<dyn ICore>) -> Arc<dyn ISecureAction> {
-    let app_for_handler = app.clone();
     build_secure_action::<GetAccessInput, _>(
         app,
         "/stores/getAccess",
         store_guard(),
         move |state: Arc<dyn IState>, input: GetAccessInput| -> Result<Value> {
             let trx = state.trx();
-            let ports = LegacyStorePorts {
-                trx: &*trx,
-                storage: app_for_handler.tools().storage(),
-            };
-            let (member, perms) = GetStoreAccess { access: &ports }
-                .execute(&state.info().user_id(), &input.store_id, &input.member_id)
-                .map_err(legacy_error)?;
+            let membership = MembershipPorts { trx: &*trx };
+            let (member, perms) = GetStoreAccess {
+                access: &membership,
+            }
+            .execute(&state.info().user_id(), &input.store_id, &input.member_id)
+            .map_err(legacy_error)?;
             Ok(json!({
                 "storeId": input.store_id,
                 "memberId": member,
@@ -333,7 +330,7 @@ mod tests {
     }
 
     /// Characterization of the rewired path: the store use cases running through
-    /// `LegacyStorePorts` on a real transaction keep the legacy key encodings.
+    /// The routed store ports on a real legacy transaction keep the legacy key encodings.
     mod legacy_ports {
         use super::super::*;
         use crate::core::actor::model::trx::tests::StubCore;
@@ -438,15 +435,16 @@ mod tests {
                 &access_link_key("s1", "alice"),
                 &StorePermissions::owner().encode(),
             );
-            let ports = LegacyStorePorts {
-                trx: &*trx,
+            let store_ports = StorePorts { trx: &*trx };
+            let membership = MembershipPorts { trx: &*trx };
+            let signal_log = SignalPorts {
                 storage: dyn_storage,
             };
 
             let outcome = SignalStore {
-                stores: &ports,
-                access: &ports,
-                log: &ports,
+                stores: &store_ports,
+                access: &membership,
+                log: &signal_log,
                 clock: &SystemClock,
             }
             .execute("alice", "s1", "hello", &["kind=message".to_string()], false)
@@ -461,34 +459,38 @@ mod tests {
             assert_eq!(counted.signal_count, 1);
 
             let history = ReadStoreHistory {
-                access: &ports,
-                log: &ports,
+                access: &membership,
+                log: &signal_log,
             }
             .execute("alice", "s1", LogQuery::default())
             .unwrap();
             assert_eq!(history.len(), 1);
 
             // Legacy `onaccess` link encoding is preserved exactly.
-            SetStoreAccess { access: &ports }
-                .execute(
-                    "alice",
-                    "s1",
-                    "bob",
-                    &["signal".to_string(), "read".to_string()],
-                )
-                .unwrap();
+            SetStoreAccess {
+                access: &membership,
+            }
+            .execute(
+                "alice",
+                "s1",
+                "bob",
+                &["signal".to_string(), "read".to_string()],
+            )
+            .unwrap();
             assert_eq!(trx.get_link(&access_link_key("s1", "bob")), "read,signal");
-            let (member, perms) = GetStoreAccess { access: &ports }
-                .execute("bob", "s1", "")
-                .unwrap();
+            let (member, perms) = GetStoreAccess {
+                access: &membership,
+            }
+            .execute("bob", "s1", "")
+            .unwrap();
             assert_eq!(
                 (member.as_str(), perms),
                 ("bob", StorePermissions::member())
             );
             let denied = SignalStore {
-                stores: &ports,
-                access: &ports,
-                log: &ports,
+                stores: &store_ports,
+                access: &membership,
+                log: &signal_log,
                 clock: &SystemClock,
             }
             .execute("mallory", "s1", "x", &[], false)
@@ -532,7 +534,7 @@ mod tests {
                 }
                 .push(&*trx);
             }
-            let ports = crate::shell::api::model::store_ports::LegacyMembership { trx: &*trx };
+            let ports = crate::shell::api::model::store_ports::MembershipPorts { trx: &*trx };
             let member = StorePermissions::member();
             aseman_ports::StoreAccess::join(&ports, "s1", "alice", member).unwrap();
             aseman_ports::StoreAccess::join(&ports, "s1", "bob", member).unwrap();

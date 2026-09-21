@@ -281,11 +281,15 @@ fn reserve_project_budget(trx: &dyn ITrx, project_id: &str, amount: i64, now: i6
     if project_id.is_empty() {
         return Ok(());
     }
-    if !trx.has_obj(Store::type_(), project_id) {
+    let stores = crate::shell::api::model::store_ports::StorePorts { trx };
+    if aseman_ports::StoreDirectory::store(&stores, project_id)
+        .map_err(|error| anyhow!("{error}"))?
+        .is_none()
+    {
         return Err(anyhow!("project not found"));
     }
-    let metadata = trx
-        .get_json(&format!("StoreMeta::{project_id}"), "metadata")
+    let metadata = stores
+        .metadata_object(project_id, "metadata")
         .unwrap_or_default();
     let configured_budget = finance_nonnegative_field(&metadata, "budgetMinor")?;
     let metadata_spent = finance_nonnegative_field(&metadata, "spentMinor")?;
@@ -505,7 +509,7 @@ fn publish_finance_catalog(app: Arc<dyn ICore>) -> Arc<dyn ISecureAction> {
             ] {
                 let account = catalog.get(key).and_then(Value::as_str).unwrap_or("");
                 if !valid_finance_id(account)
-                    || (crate::shell::api::model::creature_ports::LegacyCreatures { trx: &*trx })
+                    || (crate::shell::api::model::creature_ports::CreaturePorts { trx: &*trx })
                         .account(account)?
                         .is_none()
                 {
@@ -601,7 +605,7 @@ fn register_finance_node(app: Arc<dyn ICore>) -> Arc<dyn ISecureAction> {
                 || !valid_finance_hash(revision)
                 || rate <= 0
                 || rate > 9_007_199_254_740_991
-                || (crate::shell::api::model::creature_ports::LegacyCreatures { trx: &*trx })
+                || (crate::shell::api::model::creature_ports::CreaturePorts { trx: &*trx })
                     .account(&caller)?
                     .is_none()
             {
@@ -698,7 +702,7 @@ fn register_finance_resource(app: Arc<dyn ICore>) -> Arc<dyn ISecureAction> {
             if caller != host_owner
                 || !valid_finance_id(&resource_id)
                 || !valid_finance_id(&owner)
-                || (crate::shell::api::model::creature_ports::LegacyCreatures { trx: &*trx })
+                || (crate::shell::api::model::creature_ports::CreaturePorts { trx: &*trx })
                     .account(&owner)?
                     .is_none()
                 || !federated_finance_safe_numbers(&pricing)
@@ -1002,10 +1006,10 @@ fn publish_finance_quote(app: Arc<dyn ICore>) -> Arc<dyn ISecureAction> {
                 || hold.get("maxAmount").and_then(Value::as_i64) != Some(max_amount)
                 || hold.get("settlementAuthority").and_then(Value::as_str) != Some(authority)
                 || hold.get("meterProgramId").and_then(Value::as_str) != Some(meter)
-                || (crate::shell::api::model::creature_ports::LegacyCreatures { trx: &*trx })
+                || (crate::shell::api::model::creature_ports::CreaturePorts { trx: &*trx })
                     .account(&payer)?
                     .is_none()
-                || (crate::shell::api::model::creature_ports::LegacyCreatures { trx: &*trx })
+                || (crate::shell::api::model::creature_ports::CreaturePorts { trx: &*trx })
                     .account(&caller)?
                     .is_none()
                 || !federated_finance_safe_numbers(&Value::Object(quote.clone()))
@@ -1079,7 +1083,7 @@ fn publish_finance_quote(app: Arc<dyn ICore>) -> Arc<dyn ISecureAction> {
                 let amount = row.get("maxAmount").and_then(Value::as_i64).unwrap_or(0);
                 if !valid_finance_id(user_id)
                     || amount <= 0
-                    || (crate::shell::api::model::creature_ports::LegacyCreatures { trx: &*trx })
+                    || (crate::shell::api::model::creature_ports::CreaturePorts { trx: &*trx })
                         .account(user_id)?
                         .is_none()
                 {
@@ -1191,13 +1195,19 @@ fn create_hold(app: Arc<dyn ICore>) -> Arc<dyn ISecureAction> {
             {
                 return Err(anyhow!("payer is not a project member"));
             }
-            if (crate::shell::api::model::creature_ports::LegacyCreatures { trx: &*trx })
+            if (crate::shell::api::model::creature_ports::CreaturePorts { trx: &*trx })
                 .account(&input.settlement_authority)?
                 .is_none()
             {
                 return Err(anyhow!("settlement authority not found"));
             }
-            if !trx.has_obj("Program", &input.meter_program_id) {
+            if aseman_ports::ProgramDirectory::program(
+                &crate::shell::api::model::program_ports::ProgramPorts { trx: &*trx },
+                &input.meter_program_id,
+            )
+            .map_err(|error| anyhow::anyhow!("{error}"))?
+            .is_none()
+            {
                 return Err(anyhow!("meter program not found"));
             }
 
@@ -1243,7 +1253,7 @@ fn create_hold(app: Arc<dyn ICore>) -> Arc<dyn ISecureAction> {
                 if caps.insert(cap_key, beneficiary.max_amount).is_some() {
                     return Err(anyhow!("duplicate beneficiary role"));
                 }
-                if (crate::shell::api::model::creature_ports::LegacyCreatures { trx: &*trx })
+                if (crate::shell::api::model::creature_ports::CreaturePorts { trx: &*trx })
                     .account(&beneficiary.user_id)?
                     .is_none()
                 {
@@ -1259,7 +1269,7 @@ fn create_hold(app: Arc<dyn ICore>) -> Arc<dyn ISecureAction> {
             }
 
             let Some(mut payer) =
-                (crate::shell::api::model::creature_ports::LegacyCreatures { trx: &*trx })
+                (crate::shell::api::model::creature_ports::CreaturePorts { trx: &*trx })
                     .account(&payer_id.clone())?
             else {
                 return Err(anyhow!("payer creature not found"));
@@ -1325,7 +1335,7 @@ fn create_hold(app: Arc<dyn ICore>) -> Arc<dyn ISecureAction> {
                 .cloned()
                 .ok_or_else(|| anyhow!("invalid hold record"))?;
 
-            (crate::shell::api::model::creature_ports::LegacyCreatures { trx: &*trx })
+            (crate::shell::api::model::creature_ports::CreaturePorts { trx: &*trx })
                 .store_account(&payer)?;
             set_finance_held_amount(&*trx, &payer_id, held)?;
             put_finance_hold(&*trx, &hold_id, &hold_map)?;
@@ -1573,7 +1583,7 @@ fn settle_hold(app: Arc<dyn ICore>) -> Arc<dyn ISecureAction> {
             for (user_id, amount) in &credits {
                 add_finance_counter(&*trx, &format!("FinanceEarned::{user_id}"), *amount)?;
                 let Some(mut receiver) =
-                    (crate::shell::api::model::creature_ports::LegacyCreatures { trx: &*trx })
+                    (crate::shell::api::model::creature_ports::CreaturePorts { trx: &*trx })
                         .account(&user_id.clone())?
                 else {
                     return Err(anyhow!("settlement beneficiary not found"));
@@ -1594,13 +1604,13 @@ fn settle_hold(app: Arc<dyn ICore>) -> Arc<dyn ISecureAction> {
                 set_finance_withdrawable_amount(&*trx, user_id, withdrawable)?;
                 wallet_credits.insert(user_id.clone(), wallet_credit);
                 debt_repays.insert(user_id.clone(), debt_repaid);
-                (crate::shell::api::model::creature_ports::LegacyCreatures { trx: &*trx })
+                (crate::shell::api::model::creature_ports::CreaturePorts { trx: &*trx })
                     .store_account(&receiver)?;
                 participants.push(user_id.clone());
             }
 
             let Some(mut payer) =
-                (crate::shell::api::model::creature_ports::LegacyCreatures { trx: &*trx })
+                (crate::shell::api::model::creature_ports::CreaturePorts { trx: &*trx })
                     .account(&input.payer_user_id.clone())?
             else {
                 return Err(anyhow!("payer creature not found"));
@@ -1618,7 +1628,7 @@ fn settle_hold(app: Arc<dyn ICore>) -> Arc<dyn ISecureAction> {
                 .checked_add(withdrawable_refund)
                 .ok_or_else(|| anyhow!("withdrawable refund overflow"))?;
             set_finance_withdrawable_amount(&*trx, &input.payer_user_id, payer_withdrawable)?;
-            (crate::shell::api::model::creature_ports::LegacyCreatures { trx: &*trx })
+            (crate::shell::api::model::creature_ports::CreaturePorts { trx: &*trx })
                 .store_account(&payer)?;
             let held = finance_held_amount(&*trx, &input.payer_user_id)?
                 .checked_sub(max_amount)
@@ -1762,7 +1772,7 @@ fn release_hold(app: Arc<dyn ICore>) -> Arc<dyn ISecureAction> {
             finalize_project_budget(&*trx, &project_id, max_amount, 0, now)?;
 
             let Some(mut payer) =
-                (crate::shell::api::model::creature_ports::LegacyCreatures { trx: &*trx })
+                (crate::shell::api::model::creature_ports::CreaturePorts { trx: &*trx })
                     .account(&input.payer_user_id.clone())?
             else {
                 return Err(anyhow!("payer creature not found"));
@@ -1776,7 +1786,7 @@ fn release_hold(app: Arc<dyn ICore>) -> Arc<dyn ISecureAction> {
                 .checked_add(withdrawable_refund)
                 .ok_or_else(|| anyhow!("withdrawable refund overflow"))?;
             set_finance_withdrawable_amount(&*trx, &input.payer_user_id, withdrawable)?;
-            (crate::shell::api::model::creature_ports::LegacyCreatures { trx: &*trx })
+            (crate::shell::api::model::creature_ports::CreaturePorts { trx: &*trx })
                 .store_account(&payer)?;
             let held = finance_held_amount(&*trx, &input.payer_user_id)?
                 .checked_sub(max_amount)
@@ -1899,7 +1909,7 @@ fn finance_payout_records(trx: &dyn ITrx, user_id: &str, limit: usize) -> Vec<Va
 }
 
 fn financial_account_snapshot(trx: &dyn ITrx, user_id: &str, limit: usize) -> Result<Value> {
-    let Some(creature) = (crate::shell::api::model::creature_ports::LegacyCreatures { trx })
+    let Some(creature) = (crate::shell::api::model::creature_ports::CreaturePorts { trx })
         .account(&user_id.to_string())?
     else {
         return Err(anyhow!("financial account not found"));
@@ -2042,7 +2052,7 @@ fn request_payout(app: Arc<dyn ICore>) -> Arc<dyn ISecureAction> {
                 return Err(anyhow!("wallet has outstanding payment debt"));
             }
             let Some(mut creature) =
-                (crate::shell::api::model::creature_ports::LegacyCreatures { trx: &*trx })
+                (crate::shell::api::model::creature_ports::CreaturePorts { trx: &*trx })
                     .account(&user_id.clone())?
             else {
                 return Err(anyhow!("financial account not found"));
@@ -2077,7 +2087,7 @@ fn request_payout(app: Arc<dyn ICore>) -> Arc<dyn ISecureAction> {
                 .as_object()
                 .cloned()
                 .ok_or_else(|| anyhow!("invalid payout record"))?;
-            (crate::shell::api::model::creature_ports::LegacyCreatures { trx: &*trx })
+            (crate::shell::api::model::creature_ports::CreaturePorts { trx: &*trx })
                 .store_account(&creature)?;
             set_finance_withdrawable_amount(&*trx, &user_id, next_withdrawable)?;
             set_finance_payout_held_amount(&*trx, &user_id, payout_held)?;
@@ -2173,7 +2183,7 @@ fn resolve_payout(app: Arc<dyn ICore>) -> Arc<dyn ISecureAction> {
             })];
             if input.status == "rejected" {
                 let Some(mut creature) =
-                    (crate::shell::api::model::creature_ports::LegacyCreatures { trx: &*trx })
+                    (crate::shell::api::model::creature_ports::CreaturePorts { trx: &*trx })
                         .account(&user_id.clone())?
                 else {
                     return Err(anyhow!("payout owner not found"));
@@ -2185,7 +2195,7 @@ fn resolve_payout(app: Arc<dyn ICore>) -> Arc<dyn ISecureAction> {
                 let withdrawable = finance_withdrawable_amount(&*trx, &user_id)?
                     .checked_add(amount)
                     .ok_or_else(|| anyhow!("withdrawable payout refund overflow"))?;
-                (crate::shell::api::model::creature_ports::LegacyCreatures { trx: &*trx })
+                (crate::shell::api::model::creature_ports::CreaturePorts { trx: &*trx })
                     .store_account(&creature)?;
                 set_finance_withdrawable_amount(&*trx, &user_id, withdrawable)?;
                 entries.push(
@@ -2333,7 +2343,7 @@ fn open_pool(app: Arc<dyn ICore>) -> Arc<dyn ISecureAction> {
                 return Err(anyhow!("wallet has outstanding payment debt"));
             }
             let Some(mut payer) =
-                (crate::shell::api::model::creature_ports::LegacyCreatures { trx: &*trx })
+                (crate::shell::api::model::creature_ports::CreaturePorts { trx: &*trx })
                     .account(&payer_id.clone())?
             else {
                 return Err(anyhow!("payer creature not found"));
@@ -2355,7 +2365,7 @@ fn open_pool(app: Arc<dyn ICore>) -> Arc<dyn ISecureAction> {
                     .checked_sub(withdrawable_amount)
                     .ok_or_else(|| anyhow!("withdrawable composition underflow"))?,
             )?;
-            (crate::shell::api::model::creature_ports::LegacyCreatures { trx: &*trx })
+            (crate::shell::api::model::creature_ports::CreaturePorts { trx: &*trx })
                 .store_account(&payer)?;
             let held = finance_held_amount(&*trx, &payer_id)?
                 .checked_add(input.max_amount)
@@ -2436,7 +2446,7 @@ fn refresh_pool(app: Arc<dyn ICore>) -> Arc<dyn ISecureAction> {
                 return Err(anyhow!("pool is not open"));
             }
             let Some(mut payer) =
-                (crate::shell::api::model::creature_ports::LegacyCreatures { trx: &*trx })
+                (crate::shell::api::model::creature_ports::CreaturePorts { trx: &*trx })
                     .account(&payer_id.clone())?
             else {
                 return Err(anyhow!("payer creature not found"));
@@ -2458,7 +2468,7 @@ fn refresh_pool(app: Arc<dyn ICore>) -> Arc<dyn ISecureAction> {
                     .checked_sub(withdrawable_add)
                     .ok_or_else(|| anyhow!("withdrawable composition underflow"))?,
             )?;
-            (crate::shell::api::model::creature_ports::LegacyCreatures { trx: &*trx })
+            (crate::shell::api::model::creature_ports::CreaturePorts { trx: &*trx })
                 .store_account(&payer)?;
             let held = finance_held_amount(&*trx, &payer_id)?
                 .checked_add(input.amount)
@@ -2564,7 +2574,7 @@ fn close_pool(app: Arc<dyn ICore>) -> Arc<dyn ISecureAction> {
             let withdrawable_refund = remaining.min(pool_withdrawable);
             if remaining > 0 {
                 let Some(mut payer) =
-                    (crate::shell::api::model::creature_ports::LegacyCreatures { trx: &*trx })
+                    (crate::shell::api::model::creature_ports::CreaturePorts { trx: &*trx })
                         .account(&payer_id.clone())?
                 else {
                     return Err(anyhow!("payer creature not found"));
@@ -2577,7 +2587,7 @@ fn close_pool(app: Arc<dyn ICore>) -> Arc<dyn ISecureAction> {
                     .checked_add(withdrawable_refund)
                     .ok_or_else(|| anyhow!("withdrawable refund overflow"))?;
                 set_finance_withdrawable_amount(&*trx, &payer_id, withdrawable)?;
-                (crate::shell::api::model::creature_ports::LegacyCreatures { trx: &*trx })
+                (crate::shell::api::model::creature_ports::CreaturePorts { trx: &*trx })
                     .store_account(&payer)?;
                 let held = finance_held_amount(&*trx, &payer_id)?
                     .checked_sub(remaining)
@@ -2840,7 +2850,7 @@ fn settle_pool(app: Arc<dyn ICore>) -> Arc<dyn ISecureAction> {
             for (user_id, amount) in &credits {
                 add_finance_counter(&*trx, &format!("FinanceEarned::{user_id}"), *amount)?;
                 let Some(mut receiver) =
-                    (crate::shell::api::model::creature_ports::LegacyCreatures { trx: &*trx })
+                    (crate::shell::api::model::creature_ports::CreaturePorts { trx: &*trx })
                         .account(&user_id.clone())?
                 else {
                     return Err(anyhow!("settlement beneficiary not found"));
@@ -2859,7 +2869,7 @@ fn settle_pool(app: Arc<dyn ICore>) -> Arc<dyn ISecureAction> {
                     .ok_or_else(|| anyhow!("withdrawable earnings overflow"))?;
                 set_finance_debt_amount(&*trx, user_id, debt - debt_repaid)?;
                 set_finance_withdrawable_amount(&*trx, user_id, withdrawable)?;
-                (crate::shell::api::model::creature_ports::LegacyCreatures { trx: &*trx })
+                (crate::shell::api::model::creature_ports::CreaturePorts { trx: &*trx })
                     .store_account(&receiver)?;
                 participants.push(user_id.clone());
             }
@@ -3189,7 +3199,7 @@ fn debit_pool(app: Arc<dyn ICore>) -> Arc<dyn ISecureAction> {
                 }
                 add_finance_counter(&*trx, &format!("FinanceEarned::{user_id}"), *amount)?;
                 let Some(mut receiver) =
-                    (crate::shell::api::model::creature_ports::LegacyCreatures { trx: &*trx })
+                    (crate::shell::api::model::creature_ports::CreaturePorts { trx: &*trx })
                         .account(&user_id.to_string())?
                 else {
                     return Err(anyhow!("debit beneficiary not found"));
@@ -3208,7 +3218,7 @@ fn debit_pool(app: Arc<dyn ICore>) -> Arc<dyn ISecureAction> {
                     .ok_or_else(|| anyhow!("withdrawable earnings overflow"))?;
                 set_finance_debt_amount(&*trx, user_id, debt - debt_repaid)?;
                 set_finance_withdrawable_amount(&*trx, user_id, withdrawable)?;
-                (crate::shell::api::model::creature_ports::LegacyCreatures { trx: &*trx })
+                (crate::shell::api::model::creature_ports::CreaturePorts { trx: &*trx })
                     .store_account(&receiver)?;
                 participants.push(user_id.to_string());
             }
@@ -3840,7 +3850,7 @@ fn reconcile_financial_system(app: Arc<dyn ICore>) -> Arc<dyn ISecureAction> {
                 // LD-13: a counter for a missing creature is now reported; the old
                 // `id.is_empty()` check could never see one.
                 let available =
-                    crate::shell::api::model::creature_ports::LegacyCreatures { trx: &*trx }
+                    crate::shell::api::model::creature_ports::CreaturePorts { trx: &*trx }
                         .account(user_id)?
                         .map(|account| account.balance);
                 if withdrawable < 0 || available.is_none_or(|available| withdrawable > available) {
@@ -4016,7 +4026,7 @@ fn payment_adjustment(app: Arc<dyn ICore>) -> Arc<dyn ISecureAction> {
                 }));
             }
             let Some(mut creature) =
-                (crate::shell::api::model::creature_ports::LegacyCreatures { trx: &*trx })
+                (crate::shell::api::model::creature_ports::CreaturePorts { trx: &*trx })
                     .account(&input.user_id.clone())?
             else {
                 return Err(anyhow!("payment adjustment target not found"));
@@ -4065,7 +4075,7 @@ fn payment_adjustment(app: Arc<dyn ICore>) -> Arc<dyn ISecureAction> {
                 set_finance_debt_amount(&*trx, &input.user_id, old_debt - debt_repaid)?;
                 (wallet_credit, -debt_repaid)
             };
-            (crate::shell::api::model::creature_ports::LegacyCreatures { trx: &*trx })
+            (crate::shell::api::model::creature_ports::CreaturePorts { trx: &*trx })
                 .store_account(&creature)?;
             let participants = vec![input.user_id.clone(), state.info().user_id()];
             let journal_id = write_finance_journal(

@@ -67,7 +67,7 @@
       "path": "contracts/capsule/guest/schema-mutation.schema.json"
     },
     {
-      "digest": "sha256:652506b8fc746677a5bedb8f0778b4e7f294532e3abf12d99be448b05fac5e80",
+      "digest": "sha256:7b419ab1e90c2186dae0135fb3ff23684554801ad4fd64c4f3d05f4826f97639",
       "path": "contracts/capsule/kinds/core-logical-schemas.json"
     },
     {

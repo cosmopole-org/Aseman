@@ -108,11 +108,7 @@
         "path"
       ],
       "table": "programs",
-      "unique_indexes": [
-        [
-          "machine_id"
-        ]
-      ]
+      "unique_indexes": []
     },
     {
       "document_fields": [],

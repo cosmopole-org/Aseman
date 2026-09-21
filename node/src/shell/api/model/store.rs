@@ -73,6 +73,16 @@ impl Store {
         trx.del_json(&format!("StoreMeta::{}", self.id), "metadata");
     }
 
+    /// A store filled from its object columns.
+    pub(crate) fn from_columns(id: String, columns: &HashMap<String, Vec<u8>>) -> Store {
+        let mut store = Store {
+            id,
+            ..Default::default()
+        };
+        Store::fill(&mut store, columns);
+        store
+    }
+
     fn fill(d: &mut Store, m: &HashMap<String, Vec<u8>>) {
         if let Some(v) = m.get("tag") {
             d.tag = String::from_utf8_lossy(v).into_owned();

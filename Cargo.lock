@@ -710,6 +710,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "aseman-application",
+ "aseman-capsule-repositories",
  "aseman-config",
  "aseman-contracts",
  "aseman-domain",
@@ -717,6 +718,7 @@ dependencies = [
  "aseman-observability",
  "aseman-ports",
  "aseman-storage-legacy",
+ "aseman-storage-postgres",
  "base64 0.22.1",
  "caspar-vm-plugins",
  "caspar-vm-sdk",

@@ -8,6 +8,8 @@ use thiserror::Error;
 use uuid::Uuid;
 
 pub mod creature;
+pub mod gateway;
+pub mod program;
 pub mod signal_tags;
 pub mod storage_migration;
 pub mod store;

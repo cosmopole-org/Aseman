@@ -82,6 +82,10 @@ The audit applies this ADR's resolution rules and the export's derived-link chec
 | Store with no creator, or a dangling local creator | None. An operator reassigns or deletes the store |
 | `ownerof` link to a missing creature, or naming an owner other than `ownerId` (LD-16) | Remove the link |
 | Non-human creature without its derived `ownerof` link (LD-16) | Rebuild it from `ownerId`. With no `ownerId`, an operator decides |
+| `machinePrograms` link to a missing program, or naming another machine (LD-17) | Remove the link |
+| Program without its derived `machinePrograms` link (LD-17) | Rebuild it from `machineId` |
+| Program with no `machineId` or a missing machine (LD-17) | None. An operator deletes the program or assigns a machine |
+| Store whose `parentId` names itself or a missing store | None. An operator clears the parent or restores the parent store |
 
 The audit's digest is the approval token. The repair recomputes the audit from the
 stopped node's keys and writes nothing unless the digest matches. It then deletes the approved links and rebuilds the approved derived links, in one

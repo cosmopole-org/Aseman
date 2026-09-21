@@ -13,8 +13,10 @@ use aseman_ports::{
 use crate::models::transaction::ITrx;
 use crate::shell::api::model::Creature;
 
-pub(crate) struct LegacyCreatures<'a> {
-    pub(crate) trx: &'a dyn ITrx,
+/// The legacy adapter: the `Creature` object, its `username` index, its `balance`
+/// column, the `ownerof` link, `CreatMeta`/`UserMeta`, and the type registry.
+struct LegacyCreatures<'a> {
+    trx: &'a dyn ITrx,
 }
 
 fn record(creature: Creature) -> CreatureRecord {
@@ -208,7 +210,7 @@ pub(crate) struct Account {
     pub(crate) balance: i64,
 }
 
-impl LegacyCreatures<'_> {
+impl CreaturePorts<'_> {
     /// The creature's balance account, or `None` when the creature is absent.
     pub(crate) fn account(&self, creature_id: &str) -> anyhow::Result<Option<Account>> {
         match self.balance(creature_id) {
@@ -261,7 +263,7 @@ fn metadata_key(kind: MetadataKind, creature_id: &str) -> String {
     }
 }
 
-impl LegacyCreatures<'_> {
+impl CreaturePorts<'_> {
     /// The metadata object at `path`, as legacy `get_json(..).ok()` returned it.
     pub(crate) fn metadata_object(
         &self,
@@ -386,55 +388,212 @@ impl CreatureTypes for LegacyCreatures<'_> {
     }
 }
 
+/// The legacy balance is the `balance` column of the `Creature` object, and only that
+/// column: after cutover the identity lives on capsules while the balance stays with
+/// the legacy finance subsystem (ADR 0026), so no object marker is written.
+fn balance_key(creature_id: &str) -> String {
+    format!("obj::{}::{creature_id}::balance", Creature::type_())
+}
+
 impl CreatureBalances for LegacyCreatures<'_> {
     fn close(&self, creature_id: &str) -> PortResult<()> {
-        // The legacy record holds the balance as one of its columns.
-        self.trx.del_key(&format!(
-            "obj::{}::{creature_id}::balance",
-            Creature::type_()
-        ));
+        self.trx.del_key(&balance_key(creature_id));
         Ok(())
     }
 
     fn open(&self, creature_id: &str, opening_balance: i64) -> PortResult<()> {
-        if !self.exists(creature_id) {
-            return Err(PortError::NotFound);
-        }
-        if self
-            .trx
-            .get_obj(Creature::type_(), creature_id)
-            .contains_key("balance")
-        {
+        if !self.trx.get_bytes(&balance_key(creature_id)).is_empty() {
             return Err(PortError::Conflict);
         }
-        self.set_balance(creature_id, opening_balance)
+        self.trx.put_bytes(
+            &balance_key(creature_id),
+            (opening_balance as u64).to_le_bytes().to_vec(),
+        );
+        Ok(())
     }
 
     fn balance(&self, creature_id: &str) -> PortResult<i64> {
-        if !self.exists(creature_id) {
-            return Err(PortError::NotFound);
-        }
-        Ok(Creature {
-            id: creature_id.to_owned(),
-            ..Default::default()
-        }
-        .pull(self.trx)
-        .balance)
+        let bytes = self.trx.get_bytes(&balance_key(creature_id));
+        let bytes: [u8; 8] = bytes
+            .as_slice()
+            .try_into()
+            .map_err(|_| PortError::NotFound)?;
+        Ok(i64::from_le_bytes(bytes))
     }
 
     fn set_balance(&self, creature_id: &str, balance: i64) -> PortResult<()> {
-        if !self.exists(creature_id) {
-            return Err(PortError::NotFound);
-        }
-        self.trx.put_obj(
-            Creature::type_(),
-            creature_id,
-            HashMap::from([(
-                "balance".to_owned(),
-                (balance as u64).to_le_bytes().to_vec(),
-            )]),
+        // A missing balance stays missing: no ghost account (LD-13).
+        self.balance(creature_id)?;
+        self.trx.put_bytes(
+            &balance_key(creature_id),
+            (balance as u64).to_le_bytes().to_vec(),
         );
         Ok(())
+    }
+}
+
+/// The creature ports of one state action, routed per ADR 0026: the core families
+/// go to the action's PostgreSQL unit of work when the node runs on PostgreSQL, and
+/// to the legacy transaction otherwise; balances always stay with the legacy finance
+/// subsystem until P8.
+pub(crate) struct CreaturePorts<'a> {
+    pub(crate) trx: &'a dyn ITrx,
+}
+
+impl<'a> CreaturePorts<'a> {
+    fn legacy(&self) -> LegacyCreatures<'a> {
+        LegacyCreatures { trx: self.trx }
+    }
+}
+
+/// Run `$call` on the adapter for the current provider, bound as `$ports`.
+macro_rules! route {
+    ($self:ident, |$ports:ident| $call:expr) => {
+        match crate::shell::api::model::core_storage::current_unit() {
+            Some(unit) => {
+                let $ports = capsule_creatures(&*unit);
+                $call
+            }
+            None => {
+                let $ports = $self.legacy();
+                $call
+            }
+        }
+    };
+}
+
+impl CreatureDirectory for CreaturePorts<'_> {
+    fn creature(&self, creature_id: &str) -> PortResult<Option<CreatureRecord>> {
+        route!(self, |ports| ports.creature(creature_id))
+    }
+
+    fn creature_id_by_username(&self, username: &str) -> PortResult<Option<String>> {
+        route!(self, |ports| ports.creature_id_by_username(username))
+    }
+
+    fn find_by_username_fragment(&self, fragment: &str) -> PortResult<Option<CreatureRecord>> {
+        route!(self, |ports| ports.find_by_username_fragment(fragment))
+    }
+
+    fn creatures(
+        &self,
+        creature_type: Option<&str>,
+        offset: i64,
+        count: Option<i64>,
+    ) -> PortResult<Vec<CreatureRecord>> {
+        route!(self, |ports| ports.creatures(creature_type, offset, count))
+    }
+
+    /// On capsules, the balance opened next to the identity lives on legacy, so a
+    /// failed legacy commit deletes the identity again (ADR 0026 point 4).
+    fn create(&self, record: &CreatureRecord) -> PortResult<()> {
+        let Some(unit) = crate::shell::api::model::core_storage::current_unit() else {
+            return self.legacy().create(record);
+        };
+        capsule_creatures(&*unit).create(record)?;
+        let id = record.id.clone();
+        crate::shell::api::model::core_storage::register_compensation(Box::new(move |store| {
+            capsule_creatures(store)
+                .delete(&id)
+                .map_err(|error| anyhow::anyhow!("{error}"))
+        }));
+        Ok(())
+    }
+
+    fn update(&self, record: &CreatureRecord) -> PortResult<()> {
+        route!(self, |ports| ports.update(record))
+    }
+
+    /// On capsules, the balance closed next to the identity lives on legacy, so a
+    /// failed legacy commit revives the identity (ADR 0026 point 4).
+    fn delete(&self, creature_id: &str) -> PortResult<()> {
+        let Some(unit) = crate::shell::api::model::core_storage::current_unit() else {
+            return self.legacy().delete(creature_id);
+        };
+        let ports = capsule_creatures(&*unit);
+        let saved = ports.creature(creature_id)?;
+        ports.delete(creature_id)?;
+        if let Some(saved) = saved {
+            crate::shell::api::model::core_storage::register_compensation(Box::new(move |store| {
+                capsule_creatures(store)
+                    .create(&saved)
+                    .map_err(|error| anyhow::anyhow!("{error}"))
+            }));
+        }
+        Ok(())
+    }
+}
+
+/// The capsule creature adapter over one unit of work. Balances are not served from
+/// it (ADR 0026), so it carries no finance epoch.
+fn capsule_creatures(
+    store: &dyn aseman_capsule_repositories::CapsuleStore,
+) -> aseman_capsule_repositories::creature::CapsuleCreaturePorts<'_> {
+    aseman_capsule_repositories::creature::CapsuleCreaturePorts {
+        repository: store,
+        currency: "",
+        scale: 0,
+    }
+}
+
+impl CreatureMetadata for CreaturePorts<'_> {
+    fn metadata(
+        &self,
+        kind: MetadataKind,
+        creature_id: &str,
+        path: &str,
+    ) -> PortResult<Option<String>> {
+        route!(self, |ports| ports.metadata(kind, creature_id, path))
+    }
+
+    fn replace_metadata(
+        &self,
+        kind: MetadataKind,
+        creature_id: &str,
+        document: &str,
+    ) -> PortResult<()> {
+        route!(self, |ports| ports.replace_metadata(
+            kind,
+            creature_id,
+            document
+        ))
+    }
+
+    fn delete_metadata(&self, kind: MetadataKind, creature_id: &str) -> PortResult<()> {
+        route!(self, |ports| ports.delete_metadata(kind, creature_id))
+    }
+}
+
+impl CreatureTypes for CreaturePorts<'_> {
+    fn creature_type(&self, name: &str) -> PortResult<Option<String>> {
+        route!(self, |ports| ports.creature_type(name))
+    }
+
+    fn creature_types(&self) -> PortResult<Vec<(String, String)>> {
+        route!(self, |ports| ports.creature_types())
+    }
+
+    fn put_creature_type(&self, name: &str, spec: &str) -> PortResult<()> {
+        route!(self, |ports| ports.put_creature_type(name, spec))
+    }
+}
+
+/// Balances change with the legacy finance ledger, so they stay on legacy (ADR 0026).
+impl CreatureBalances for CreaturePorts<'_> {
+    fn open(&self, creature_id: &str, opening_balance: i64) -> PortResult<()> {
+        self.legacy().open(creature_id, opening_balance)
+    }
+
+    fn close(&self, creature_id: &str) -> PortResult<()> {
+        self.legacy().close(creature_id)
+    }
+
+    fn balance(&self, creature_id: &str) -> PortResult<i64> {
+        self.legacy().balance(creature_id)
+    }
+
+    fn set_balance(&self, creature_id: &str, balance: i64) -> PortResult<()> {
+        self.legacy().set_balance(creature_id, balance)
     }
 }
 
@@ -541,7 +700,7 @@ mod tests {
             storage,
             false,
         );
-        let creatures = LegacyCreatures { trx: &*trx };
+        let creatures = CreaturePorts { trx: &*trx };
         assert_eq!(creatures.account("9@global").unwrap(), None);
         let ghost = creatures.account_or_empty("9@global").unwrap();
         assert_eq!(ghost.balance, 0);

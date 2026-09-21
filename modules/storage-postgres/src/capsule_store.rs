@@ -44,3 +44,47 @@ fn capsule_store_error(
         other => aseman_capsule_repositories::CapsuleStoreError::Failed(other.to_string()),
     }
 }
+
+/// PostgreSQL behind the capsule seam with every write fenced at one binding
+/// generation (A309): once the fence is raised past it, the node's writes are refused
+/// with `Conflict` instead of landing in a provider it no longer owns.
+pub struct FencedCapsuleStore {
+    pub repository: PostgresCapsuleRepository,
+    pub generation: u64,
+}
+
+impl aseman_capsule_repositories::CapsuleStore for FencedCapsuleStore {
+    fn get(
+        &self,
+        kind: &CapsuleKind,
+        id: &CapsuleId,
+    ) -> aseman_capsule_repositories::CapsuleStoreResult<Option<CapsuleEnvelope>> {
+        self.repository.get(kind, id).map_err(capsule_store_error)
+    }
+
+    fn put(
+        &self,
+        capsule: &CapsuleEnvelope,
+        expected_revision: Option<u64>,
+    ) -> aseman_capsule_repositories::CapsuleStoreResult<()> {
+        self.repository
+            .put_fenced(capsule, expected_revision, Some(self.generation))
+            .map_err(capsule_store_error)
+    }
+
+    fn put_all(
+        &self,
+        writes: &[(CapsuleEnvelope, Option<u64>)],
+    ) -> aseman_capsule_repositories::CapsuleStoreResult<()> {
+        self.repository
+            .put_all_fenced(writes, Some(self.generation))
+            .map_err(capsule_store_error)
+    }
+
+    fn query(
+        &self,
+        query: &CapsuleQuery,
+    ) -> aseman_capsule_repositories::CapsuleStoreResult<Vec<CapsuleEnvelope>> {
+        self.repository.query(query).map_err(capsule_store_error)
+    }
+}

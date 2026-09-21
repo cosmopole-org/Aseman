@@ -2,7 +2,11 @@
 //! and memberships as core capsules, and signals as `realtime.event` streams encoded
 //! exactly like migrated history. Works with any provider behind [`CapsuleStore`].
 
+use crate::support::{
+    Capsules, DocumentFamily, MAX_CAS_ATTEMPTS, failed, legacy_identity, new_capsule, tombstone,
+};
 use crate::{CapsuleStore, CapsuleStoreError};
+use aseman_contracts::capsule::OwnerScope;
 use aseman_contracts::capsule::{
     CapsuleEnvelope, CapsuleId, CapsuleKind, CapsuleQuery, CapsuleRelationship, CapsuleValue,
     ComparisonOperator, MAX_QUERY_LIMIT, QueryPredicate, QuerySort, SortDirection, StorageClass,
@@ -14,10 +18,8 @@ use aseman_contracts::legacy_realtime::{
 use aseman_domain::signal_tags::LogQuery;
 use aseman_domain::store::{StoreRecord, StoreSignal};
 use aseman_domain::store_permissions::StorePermissions;
-use aseman_ports::{PortError, PortResult, SignalLog, StoreAccess, StoreDirectory};
+use aseman_ports::{PortError, PortResult, SignalLog, StoreAccess, StoreDirectory, StoreMetadata};
 use std::collections::{BTreeMap, BTreeSet};
-
-const MAX_CAS_ATTEMPTS: usize = 8;
 
 /// Resolves each store stream's authorization scope and retention (P7-04 rule).
 pub type StreamPolicyResolver = dyn Fn(&str) -> SignalStreamPolicy + Send + Sync;
@@ -49,7 +51,8 @@ pub(crate) fn body(capsule: &CapsuleEnvelope) -> Option<&BTreeMap<String, Capsul
     }
 }
 
-/// The next revision of `current` with `body`, chained and sealed.
+/// The next live revision of `current` with `body`, chained and sealed. A tombstone
+/// revived this way continues its revision chain.
 pub(crate) fn next_revision(
     current: &CapsuleEnvelope,
     body: BTreeMap<String, CapsuleValue>,
@@ -58,6 +61,8 @@ pub(crate) fn next_revision(
         revision: current.revision + 1,
         previous_integrity: Some(current.integrity_hash.clone()),
         updated_at_micros: now_micros().max(current.updated_at_micros),
+        // A revision with a body is live, which also revives a tombstone.
+        tombstone: false,
         body: Some(CapsuleValue::Object(body)),
         ..current.clone()
     }
@@ -107,6 +112,55 @@ impl CapsuleStorePorts<'_> {
     }
 }
 
+/// The body of a `core.store` capsule, as the A308 export writes it.
+fn store_fields(record: &StoreRecord) -> BTreeMap<String, CapsuleValue> {
+    BTreeMap::from([
+        ("is_public".to_owned(), CapsuleValue::Bool(record.is_public)),
+        (
+            "member_count".to_owned(),
+            CapsuleValue::Integer(record.member_count.max(1)),
+        ),
+        (
+            "persistent_history".to_owned(),
+            CapsuleValue::Bool(record.persistent_history),
+        ),
+        (
+            "signal_count".to_owned(),
+            CapsuleValue::Integer(record.signal_count),
+        ),
+        ("tag".to_owned(), CapsuleValue::Text(record.tag.clone())),
+    ])
+}
+
+/// The store's relationships: its creator, and its parent when it has one.
+fn store_relationships(record: &StoreRecord, creator: CapsuleId) -> Vec<CapsuleRelationship> {
+    let mut relationships = vec![CapsuleRelationship {
+        name: "creature".to_owned(),
+        target_kind: CapsuleKind("core.creature".to_owned()),
+        target_id: creator,
+    }];
+    if !record.parent_id.is_empty() {
+        relationships.push(CapsuleRelationship {
+            name: "parent".to_owned(),
+            target_kind: CapsuleKind("core.store".to_owned()),
+            target_id: CapsuleId(deterministic_legacy_capsule_id(
+                "Store",
+                record.parent_id.as_bytes(),
+            )),
+        });
+    }
+    relationships
+}
+
+const STORE_METADATA: DocumentFamily = DocumentFamily {
+    kind: "core.store_metadata",
+    family: "StoreMetadata",
+    key_prefix: "StoreMeta::",
+    subject_relationship: "store",
+    subject_kind: "core.store",
+    subject_family: "Store",
+};
+
 impl StoreDirectory for CapsuleStorePorts<'_> {
     fn store(&self, store_id: &str) -> PortResult<Option<StoreRecord>> {
         let Some(capsule) = self.get("core.store", "Store", store_id)? else {
@@ -115,13 +169,29 @@ impl StoreDirectory for CapsuleStorePorts<'_> {
         let Some(body) = body(&capsule) else {
             return Ok(None);
         };
+        let integer = |field: &str| match body.get(field) {
+            Some(CapsuleValue::Integer(value)) => *value,
+            _ => 0,
+        };
+        let parent_id = match capsule
+            .relationships
+            .iter()
+            .find(|relationship| relationship.name == "parent")
+        {
+            Some(parent) => self.legacy_id("core.store", parent.target_id.0)?,
+            None => String::new(),
+        };
         Ok(Some(StoreRecord {
             id: store_id.to_owned(),
             persistent_history: body.get("persistent_history") == Some(&CapsuleValue::Bool(true)),
-            signal_count: match body.get("signal_count") {
-                Some(CapsuleValue::Integer(count)) => *count,
-                _ => 0,
+            signal_count: integer("signal_count"),
+            tag: match body.get("tag") {
+                Some(CapsuleValue::Text(tag)) => tag.clone(),
+                _ => String::new(),
             },
+            parent_id,
+            is_public: body.get("is_public") == Some(&CapsuleValue::Bool(true)),
+            member_count: integer("member_count"),
         }))
     }
 
@@ -136,6 +206,136 @@ impl StoreDirectory for CapsuleStorePorts<'_> {
                 CapsuleValue::Integer(count.saturating_add(1)),
             );
         })
+    }
+
+    fn stores(&self, offset: i64, count: Option<i64>) -> PortResult<Vec<StoreRecord>> {
+        let mut identities = Capsules(self.repository)
+            .legacy_ids("Store")?
+            .into_values()
+            .collect::<Vec<_>>();
+        // Legacy lists objects in identity byte order.
+        identities.sort_by(|left, right| left.as_bytes().cmp(right.as_bytes()));
+        let mut records = Vec::new();
+        for legacy_id in identities {
+            if let Some(record) = self.store(&legacy_id)? {
+                records.push(record);
+            }
+        }
+        Ok(aseman_domain::creature::legacy_page(records, offset, count))
+    }
+
+    fn create_store(&self, record: &StoreRecord, creator_id: &str) -> PortResult<()> {
+        let id = CapsuleId(deterministic_legacy_capsule_id(
+            "Store",
+            record.id.as_bytes(),
+        ));
+        let existing = self
+            .repository
+            .get(&CapsuleKind("core.store".to_owned()), &id)
+            .map_err(port_error)?;
+        if existing.as_ref().is_some_and(|capsule| !capsule.tombstone) {
+            return Err(PortError::Conflict);
+        }
+        // The creator owns the store; it must be a live creature, as in the export.
+        let creator = deterministic_legacy_capsule_id("Creature", creator_id.as_bytes());
+        if self
+            .get("core.creature", "Creature", creator_id)?
+            .is_none_or(|capsule| capsule.tombstone)
+        {
+            return Err(failed(format!("store creator {creator_id} does not exist")));
+        }
+        let writes = match existing {
+            // Registering a deleted store again revives it, as legacy allows.
+            Some(tombstoned) => vec![(
+                CapsuleEnvelope {
+                    owner_scope: OwnerScope::Creature(creator),
+                    relationships: store_relationships(record, CapsuleId(creator)),
+                    ..next_revision(&tombstoned, store_fields(record))?
+                }
+                .seal()
+                .map_err(failed)?,
+                Some(tombstoned.revision),
+            )],
+            None => vec![
+                (
+                    new_capsule(
+                        id.0,
+                        "core.store",
+                        StorageClass::Core,
+                        OwnerScope::Creature(creator),
+                        store_relationships(record, CapsuleId(creator)),
+                        store_fields(record),
+                    )?,
+                    None,
+                ),
+                (legacy_identity("Store", &record.id, "core.store")?, None),
+            ],
+        };
+        self.repository.put_all(&writes).map_err(port_error)
+    }
+
+    fn update_store(&self, record: &StoreRecord) -> PortResult<()> {
+        for _ in 0..MAX_CAS_ATTEMPTS {
+            let current = self
+                .get("core.store", "Store", &record.id)?
+                .filter(|capsule| !capsule.tombstone)
+                .ok_or(PortError::NotFound)?;
+            let creator = current
+                .relationships
+                .iter()
+                .find(|relationship| relationship.name == "creature")
+                .map(|relationship| relationship.target_id.clone())
+                .ok_or_else(|| failed("store has no creator"))?;
+            let next = CapsuleEnvelope {
+                relationships: store_relationships(record, creator),
+                ..next_revision(&current, store_fields(record))?
+            }
+            .seal()
+            .map_err(failed)?;
+            match self.repository.put(&next, Some(current.revision)) {
+                Err(CapsuleStoreError::Conflict) => continue,
+                other => return other.map_err(port_error),
+            }
+        }
+        Err(PortError::Conflict)
+    }
+
+    fn delete_store(&self, store_id: &str) -> PortResult<()> {
+        for _ in 0..MAX_CAS_ATTEMPTS {
+            let Some(current) = self
+                .get("core.store", "Store", store_id)?
+                .filter(|capsule| !capsule.tombstone)
+            else {
+                return Ok(());
+            };
+            match self
+                .repository
+                .put(&tombstone(&current)?, Some(current.revision))
+            {
+                Err(CapsuleStoreError::Conflict) => continue,
+                other => return other.map_err(port_error),
+            }
+        }
+        Err(PortError::Conflict)
+    }
+
+    fn release_creator(&self, _store_id: &str, _creator_id: &str) -> PortResult<()> {
+        // The store keeps its creator relationship to the tombstoned creature.
+        Ok(())
+    }
+}
+
+impl StoreMetadata for CapsuleStorePorts<'_> {
+    fn store_metadata(&self, store_id: &str, path: &str) -> PortResult<Option<String>> {
+        Capsules(self.repository).document_at(&STORE_METADATA, store_id, path)
+    }
+
+    fn merge_store_metadata(&self, store_id: &str, document: &str) -> PortResult<()> {
+        Capsules(self.repository).merge_document(&STORE_METADATA, store_id, document)
+    }
+
+    fn delete_store_metadata(&self, store_id: &str) -> PortResult<()> {
+        Capsules(self.repository).delete_document(&STORE_METADATA, store_id)
     }
 }
 
@@ -217,7 +417,6 @@ impl StoreAccess for CapsuleStorePorts<'_> {
         // Re-joining after `leave` revives the tombstone as its next revision.
         if let Some(tombstone) = existing {
             let revived = CapsuleEnvelope {
-                tombstone: false,
                 relationships,
                 ..next_revision(&tombstone, body)?
             }

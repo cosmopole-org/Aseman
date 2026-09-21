@@ -506,7 +506,12 @@ impl LegacySnapshotGraph {
         capsules: &[CapsuleEnvelope],
         migration_time_micros: i64,
     ) -> LegacyMigrationResult<Vec<CapsuleEnvelope>> {
-        const MAPPED: [(&str, &str, &str); 7] = [
+        const MAPPED: [(&str, &str, &str); 8] = [
+            (
+                "VmResourceStore",
+                "VmResourceStore",
+                "core.vm_resource_store",
+            ),
             ("Creature", "Creature", "core.creature"),
             ("Creature", "User", "core.user"),
             ("Program", "Program", "core.program"),
@@ -519,8 +524,20 @@ impl LegacySnapshotGraph {
             .iter()
             .map(|capsule| (capsule.kind.0.as_str(), capsule.id.0))
             .collect::<BTreeSet<_>>();
+        // Object families, plus document families whose capsules do not carry their
+        // legacy key (VM resource stores are listed by legacy id after cutover).
+        let documents = self.documents.keys().filter_map(|key| {
+            key.strip_prefix(LEGACY_RESOURCE_STORE_PREFIX)
+                .map(|store| ("VmResourceStore".to_owned(), store.to_owned()))
+        });
+        let sources = self
+            .objects
+            .keys()
+            .cloned()
+            .chain(documents)
+            .collect::<Vec<_>>();
         let mut identities = Vec::new();
-        for (object_family, legacy_id) in self.objects.keys() {
+        for (object_family, legacy_id) in &sources {
             for (source, family, kind) in MAPPED {
                 if source != object_family {
                     continue;

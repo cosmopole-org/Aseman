@@ -249,11 +249,8 @@ impl Core {
             self.modify_state(
                 true,
                 Box::new(move |trx: &dyn ITrx| {
-                    let vm = Program {
-                        id: machine_id_owned.clone(),
-                        ..Default::default()
-                    }
-                    .pull(trx);
+                    let vm = (crate::shell::api::model::program_ports::ProgramPorts { trx })
+                        .program_or_empty(&machine_id_owned.clone());
                     *runtime_clone.lock().unwrap() = vm.runtime;
                     Ok(())
                 }),
@@ -647,19 +644,9 @@ impl ICore for Core {
     fn ip_addr(&self) -> String {
         self.ip.clone()
     }
-    fn modify_state(&self, readonly: bool, mut fn_: TrxClosure) {
-        let Some(tools) = self.tools.lock().unwrap().clone() else {
-            return;
-        };
-        let core_clone: Arc<dyn ICore> = self.weak_self();
-        let trx = TrxWrapper::new(core_clone, tools.storage(), readonly);
-        let res = fn_(&*trx);
-        if res.is_ok() {
-            if let Err(error) = trx.commit() {
-                eprintln!("modify_state: {error}");
-            }
-        } else {
-            trx.discard();
+    fn modify_state(&self, readonly: bool, fn_: TrxClosure) {
+        if let Some(trx) = self.checked_trx(readonly) {
+            run_trx_closure(&trx, fn_);
         }
     }
     fn modify_state_securly_with_source(
@@ -667,22 +654,12 @@ impl ICore for Core {
         readonly: bool,
         info: Arc<dyn IInfo>,
         src: &str,
-        mut fn_: StateClosure,
+        fn_: StateClosure,
     ) {
-        let Some(tools) = self.tools.lock().unwrap().clone() else {
-            return;
-        };
-        let core_clone: Arc<dyn ICore> = self.weak_self();
-        let trx = TrxWrapper::new(core_clone, tools.storage(), readonly);
-        let state: Arc<dyn crate::models::state::IState> =
-            Arc::new(ActorState::new(Some(info), Some(trx.clone()), src));
-        let res = fn_(state);
-        if res.is_ok() {
-            if let Err(error) = trx.commit() {
+        if let Some(trx) = self.checked_trx(readonly) {
+            if let Err(StateFailure::Storage(error)) = run_state_closure(&trx, info, src, fn_) {
                 eprintln!("modify_state_securly: {error}");
             }
-        } else {
-            trx.discard();
         }
     }
     fn modify_state_securly(&self, readonly: bool, info: Arc<dyn IInfo>, fn_: StateClosure) {
@@ -693,20 +670,12 @@ impl ICore for Core {
         readonly: bool,
         info: Arc<dyn IInfo>,
         src: &str,
-        mut fn_: StateClosure,
+        fn_: StateClosure,
     ) -> Result<()> {
         let Some(trx) = self.checked_trx(readonly) else {
             return Err(anyhow::anyhow!("state is not available"));
         };
-        let state: Arc<dyn crate::models::state::IState> =
-            Arc::new(ActorState::new(Some(info), Some(trx.clone()), src));
-        match fn_(state) {
-            Ok(()) => trx.commit(),
-            Err(error) => {
-                trx.discard();
-                Err(error)
-            }
-        }
+        run_state_closure(&trx, info, src, fn_).map_err(StateFailure::into_error)
     }
     fn sign_packet(&self, data: &[u8]) -> String {
         let key = self.priv_key.lock().unwrap().clone();
@@ -780,6 +749,30 @@ impl ICore for Core {
             }
         }
     }
+}
+
+use crate::shell::api::model::core_storage::{run_action, StateFailure};
+
+/// Run a transaction closure with ADR 0026 commit ordering; a storage failure is
+/// logged (LD-10), an action failure is the closure's own answer.
+fn run_trx_closure(trx: &Arc<TrxWrapper>, mut fn_: TrxClosure) {
+    if let Err(StateFailure::Storage(error)) =
+        run_action(|| fn_(&**trx), || trx.commit(), || trx.discard())
+    {
+        eprintln!("modify_state: {error}");
+    }
+}
+
+/// Run a secured state closure with ADR 0026 commit ordering.
+fn run_state_closure(
+    trx: &Arc<TrxWrapper>,
+    info: Arc<dyn IInfo>,
+    src: &str,
+    mut fn_: StateClosure,
+) -> Result<(), StateFailure> {
+    let state: Arc<dyn crate::models::state::IState> =
+        Arc::new(ActorState::new(Some(info), Some(trx.clone()), src));
+    run_action(|| fn_(state), || trx.commit(), || trx.discard())
 }
 
 impl Core {
@@ -1151,27 +1144,9 @@ impl ICore for WeakCoreView {
     fn ip_addr(&self) -> String {
         self.inner.ip.clone()
     }
-    fn modify_state(&self, readonly: bool, mut fn_: TrxClosure) {
-        let Some(tools) = self.inner.tools.clone() else {
-            return;
-        };
-        // Build a fresh weak-view-of-weak-view so the trx wrapper can hold
-        // a `Arc<dyn ICore>` of its own — finite recursion ends here
-        // because the resulting closures don't recurse back into
-        // modify_state.
-        let core_for_trx: Arc<dyn ICore> = Arc::new(WeakCoreView {
-            inner: CoreWeakHandles {
-                ..clone_handles(&self.inner)
-            },
-        });
-        let trx = TrxWrapper::new(core_for_trx, tools.storage(), readonly);
-        let res = fn_(&*trx);
-        if res.is_ok() {
-            if let Err(error) = trx.commit() {
-                eprintln!("modify_state: {error}");
-            }
-        } else {
-            trx.discard();
+    fn modify_state(&self, readonly: bool, fn_: TrxClosure) {
+        if let Some(trx) = self.checked_trx(readonly) {
+            run_trx_closure(&trx, fn_);
         }
     }
     fn modify_state_securly_with_source(
@@ -1179,26 +1154,12 @@ impl ICore for WeakCoreView {
         readonly: bool,
         info: Arc<dyn IInfo>,
         src: &str,
-        mut fn_: StateClosure,
+        fn_: StateClosure,
     ) {
-        let Some(tools) = self.inner.tools.clone() else {
-            return;
-        };
-        let core_for_trx: Arc<dyn ICore> = Arc::new(WeakCoreView {
-            inner: CoreWeakHandles {
-                ..clone_handles(&self.inner)
-            },
-        });
-        let trx = TrxWrapper::new(core_for_trx, tools.storage(), readonly);
-        let state: Arc<dyn crate::models::state::IState> =
-            Arc::new(ActorState::new(Some(info), Some(trx.clone()), src));
-        let res = fn_(state);
-        if res.is_ok() {
-            if let Err(error) = trx.commit() {
+        if let Some(trx) = self.checked_trx(readonly) {
+            if let Err(StateFailure::Storage(error)) = run_state_closure(&trx, info, src, fn_) {
                 eprintln!("modify_state_securly: {error}");
             }
-        } else {
-            trx.discard();
         }
     }
     fn modify_state_securly(&self, readonly: bool, info: Arc<dyn IInfo>, fn_: StateClosure) {
@@ -1209,20 +1170,12 @@ impl ICore for WeakCoreView {
         readonly: bool,
         info: Arc<dyn IInfo>,
         src: &str,
-        mut fn_: StateClosure,
+        fn_: StateClosure,
     ) -> Result<()> {
         let Some(trx) = self.checked_trx(readonly) else {
             return Err(anyhow::anyhow!("state is not available"));
         };
-        let state: Arc<dyn crate::models::state::IState> =
-            Arc::new(ActorState::new(Some(info), Some(trx.clone()), src));
-        match fn_(state) {
-            Ok(()) => trx.commit(),
-            Err(error) => {
-                trx.discard();
-                Err(error)
-            }
-        }
+        run_state_closure(&trx, info, src, fn_).map_err(StateFailure::into_error)
     }
     fn sign_packet(&self, data: &[u8]) -> String {
         match &self.inner.priv_key {

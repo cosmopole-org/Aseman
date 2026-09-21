@@ -138,13 +138,10 @@ impl Vmm {
         self.app.modify_state(
             true,
             Box::new(move |trx: &dyn ITrx| {
-                let s = Store {
-                    id: store_id_clone.clone(),
-                    ..Default::default()
-                }
-                .pull(trx);
+                let s = (crate::shell::api::model::store_ports::StorePorts { trx })
+                    .store_or_empty(&store_id_clone);
                 *store_clone.lock().unwrap() = s;
-                let ports = crate::shell::api::model::store_ports::LegacyMembership { trx };
+                let ports = crate::shell::api::model::store_ports::MembershipPorts { trx };
                 *member_clone.lock().unwrap() = aseman_ports::StoreAccess::is_member(
                     &ports,
                     &store_id_clone,
@@ -195,11 +192,8 @@ impl Vmm {
         self.app.modify_state(
             true,
             Box::new(move |trx: &dyn ITrx| {
-                let vm = Program {
-                    id: machine_id_owned.clone(),
-                    ..Default::default()
-                }
-                .pull(trx);
+                let vm = (crate::shell::api::model::program_ports::ProgramPorts { trx })
+                    .program_or_empty(&machine_id_owned.clone());
                 if !vm.path.is_empty() {
                     *path_clone.lock().unwrap() = vm.path.clone();
                 }
@@ -892,7 +886,7 @@ impl IVmm for Vmm {
                 // itself as the creature id. Routes are stored keyed by creature
                 // id, so both address forms converge on the same lookup.
                 let mut candidates: Vec<String> = Vec::new();
-                let creatures = crate::shell::api::model::creature_ports::LegacyCreatures { trx };
+                let creatures = crate::shell::api::model::creature_ports::CreaturePorts { trx };
                 if let Some(via_username) =
                     aseman_ports::CreatureDirectory::creature_id_by_username(
                         &creatures,
@@ -904,9 +898,14 @@ impl IVmm for Vmm {
                 }
                 // Bare username local part (e.g. `m-tool-github`) → creature id,
                 // via the alias link written when the route was registered.
-                let via_alias = trx.get_link(&http_route::route_alias_link_key(&username_owned));
-                if !via_alias.is_empty() && !candidates.iter().any(|c| c == &via_alias) {
-                    candidates.push(via_alias);
+                let routes = crate::shell::api::model::gateway_ports::GatewayPorts { trx };
+                if let Some(via_alias) =
+                    aseman_ports::GatewayRoutes::alias(&routes, &username_owned)
+                        .map_err(|error| anyhow::anyhow!("{error}"))?
+                {
+                    if !candidates.iter().any(|c| c == &via_alias) {
+                        candidates.push(via_alias);
+                    }
                 }
                 if !candidates.iter().any(|c| c == &username_owned) {
                     candidates.push(username_owned.clone());
@@ -915,24 +914,23 @@ impl IVmm for Vmm {
                 'outer: for creature_id in &candidates {
                     for take in (1..=max).rev() {
                         let prefix = segments_owned[..take].join("/");
-                        let stored =
-                            trx.get_link(&http_route::route_link_key(creature_id, &prefix));
-                        if stored.is_empty() {
+                        let Some(route) =
+                            aseman_ports::GatewayRoutes::route(&routes, creature_id, &prefix)
+                                .map_err(|error| anyhow::anyhow!("{error}"))?
+                        else {
                             continue;
-                        }
+                        };
                         let rest: Vec<&str> =
                             segments_owned[take..].iter().map(|s| s.as_str()).collect();
-                        if let Some(route) = http_route::decode_target(&stored, &rest) {
-                            *result_clone.lock().unwrap() = Some(json!({
-                                "creatureId": creature_id,
-                                "programId": route.program_id,
-                                "entityId": route.entity_id,
-                                "vmId": route.vm_id,
-                                "runtime": route.runtime,
-                                "path": route.rest_path,
-                            }));
-                            break 'outer;
-                        }
+                        *result_clone.lock().unwrap() = Some(json!({
+                            "creatureId": creature_id,
+                            "programId": route.program_id,
+                            "entityId": route.entity_id,
+                            "vmId": route.pinned_vm_id,
+                            "runtime": route.runtime,
+                            "path": format!("/{}", rest.join("/")),
+                        }));
+                        break 'outer;
                     }
                 }
                 Ok(())
@@ -980,13 +978,10 @@ impl VmmShim {
         self.app.modify_state(
             true,
             Box::new(move |trx: &dyn ITrx| {
-                let s = Store {
-                    id: store_id_clone.clone(),
-                    ..Default::default()
-                }
-                .pull(trx);
+                let s = (crate::shell::api::model::store_ports::StorePorts { trx })
+                    .store_or_empty(&store_id_clone);
                 *store_clone.lock().unwrap() = s;
-                let ports = crate::shell::api::model::store_ports::LegacyMembership { trx };
+                let ports = crate::shell::api::model::store_ports::MembershipPorts { trx };
                 *member_clone.lock().unwrap() = aseman_ports::StoreAccess::is_member(
                     &ports,
                     &store_id_clone,
@@ -1061,11 +1056,8 @@ fn resolve_vm_execution_target_inner(
     app.modify_state(
         true,
         Box::new(move |trx: &dyn ITrx| {
-            let vm = Program {
-                id: machine_id_owned.clone(),
-                ..Default::default()
-            }
-            .pull(trx);
+            let vm = (crate::shell::api::model::program_ports::ProgramPorts { trx })
+                .program_or_empty(&machine_id_owned.clone());
             if !vm.path.is_empty() {
                 *path_clone.lock().unwrap() = vm.path.clone();
             }
@@ -1126,11 +1118,8 @@ fn resolve_program_owner(app: &Arc<dyn ICore>, program_id: &str) -> String {
     app.modify_state(
         true,
         Box::new(move |trx: &dyn ITrx| {
-            let p = Program {
-                id: id_owned.clone(),
-                ..Default::default()
-            }
-            .pull(trx);
+            let p = (crate::shell::api::model::program_ports::ProgramPorts { trx })
+                .program_or_empty(&id_owned.clone());
             *slot_clone.lock().unwrap() = p.machine_id.clone();
             Ok(())
         }),

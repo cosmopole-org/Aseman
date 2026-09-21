@@ -31,6 +31,20 @@ pub enum LegacyMembershipDefect {
     /// A non-human creature without the `ownerof` link its `ownerId` derives. With an
     /// empty `ownerId` nothing can be derived, and an operator decides.
     MissingOwnerLink,
+    /// LD-17: a `machinePrograms` link to a program that no longer exists.
+    DanglingProgramLink,
+    /// LD-17: a `machinePrograms` link naming a machine other than the program's.
+    StaleProgramLink,
+    /// LD-17: a program without the `machinePrograms` link its `machineId` derives
+    /// (the legacy VM delete removed the link and kept the program).
+    MissingProgramLink,
+    /// LD-17: a program with no `machineId`, or whose machine does not exist (a bare
+    /// program from a legacy VM deploy). An operator deletes it or assigns a machine.
+    OrphanedProgram,
+    /// A store whose `parentId` names itself or a store that no longer exists. The
+    /// target relates a store to its parent by foreign key, so an operator clears the
+    /// parent or restores the parent store.
+    DanglingStoreParent,
 }
 
 impl LegacyMembershipDefect {
@@ -43,6 +57,11 @@ impl LegacyMembershipDefect {
             Self::DanglingOwnerLink => "dangling_owner_link",
             Self::StaleOwnerLink => "stale_owner_link",
             Self::MissingOwnerLink => "missing_owner_link",
+            Self::DanglingProgramLink => "dangling_program_link",
+            Self::StaleProgramLink => "stale_program_link",
+            Self::MissingProgramLink => "missing_program_link",
+            Self::OrphanedProgram => "orphaned_program",
+            Self::DanglingStoreParent => "dangling_store_parent",
         }
     }
 }
@@ -200,7 +219,113 @@ impl LegacySnapshotGraph {
             }
         }
         findings.extend(self.owner_link_findings()?);
+        findings.extend(self.program_link_findings()?);
+        for ((family, store), columns) in &self.objects {
+            if family != "Store" {
+                continue;
+            }
+            let parent = columns
+                .get("parentId")
+                .map(|value| String::from_utf8_lossy(value).into_owned())
+                .unwrap_or_default();
+            if !parent.is_empty()
+                && (parent == *store
+                    || !self
+                        .objects
+                        .contains_key(&("Store".to_owned(), parent.clone())))
+            {
+                findings.push(LegacyMembershipFinding {
+                    defect: LegacyMembershipDefect::DanglingStoreParent,
+                    store: store.clone(),
+                    principal: parent,
+                    removals: Vec::new(),
+                    additions: Vec::new(),
+                });
+            }
+        }
         Ok(LegacyMembershipAudit::new(findings))
+    }
+
+    /// LD-17: `machinePrograms` links derive from each program's `machineId`.
+    fn program_link_findings(&self) -> LegacyMigrationResult<Vec<LegacyMembershipFinding>> {
+        let machine_of = |program: &str| -> LegacyMigrationResult<Option<String>> {
+            self.objects
+                .get(&("Program".to_owned(), program.to_owned()))
+                .map(|columns| {
+                    columns
+                        .get("machineId")
+                        .map(|value| {
+                            String::from_utf8(value.clone()).map_err(|_| {
+                                LegacyMigrationError::Invalid(format!(
+                                    "legacy Program {program} machineId is not UTF-8"
+                                ))
+                            })
+                        })
+                        .transpose()
+                        .map(Option::unwrap_or_default)
+                })
+                .transpose()
+        };
+        let finding = |defect, principal: &str, removals, additions| LegacyMembershipFinding {
+            defect,
+            store: String::new(),
+            principal: principal.to_owned(),
+            removals,
+            additions,
+        };
+        let mut findings = Vec::new();
+        let mut linked = BTreeSet::new();
+        for link in self.links.keys() {
+            let Some((machine, program)) = link
+                .strip_prefix("machinePrograms::")
+                .and_then(|rest| rest.split_once("::"))
+            else {
+                continue;
+            };
+            match machine_of(program)? {
+                None => findings.push(finding(
+                    LegacyMembershipDefect::DanglingProgramLink,
+                    program,
+                    vec![format!("link::{link}")],
+                    Vec::new(),
+                )),
+                Some(machine_id) if machine_id != machine => findings.push(finding(
+                    LegacyMembershipDefect::StaleProgramLink,
+                    program,
+                    vec![format!("link::{link}")],
+                    Vec::new(),
+                )),
+                Some(_) => {
+                    linked.insert(program.to_owned());
+                }
+            }
+        }
+        for (family, program) in self.objects.keys() {
+            if family != "Program" {
+                continue;
+            }
+            let machine_id = machine_of(program)?.unwrap_or_default();
+            let machine_exists = !machine_id.is_empty()
+                && self
+                    .objects
+                    .contains_key(&("Creature".to_owned(), machine_id.clone()));
+            if !machine_exists {
+                findings.push(finding(
+                    LegacyMembershipDefect::OrphanedProgram,
+                    program,
+                    Vec::new(),
+                    Vec::new(),
+                ));
+            } else if !linked.contains(program) {
+                findings.push(finding(
+                    LegacyMembershipDefect::MissingProgramLink,
+                    program,
+                    Vec::new(),
+                    vec![format!("link::machinePrograms::{machine_id}::{program}")],
+                ));
+            }
+        }
+        Ok(findings)
     }
 
     /// LD-16: `ownerof` links derive from each non-human creature's `ownerId`.

@@ -394,15 +394,12 @@ impl IChain for Blockchain {
             self.app.modify_state(
                 true,
                 Box::new(move |trx: &dyn ITrx| {
-                    let vm = Program {
-                        id: machine_id_owned.clone(),
-                        ..Default::default()
-                    }
-                    .pull(trx);
+                    let vm = (crate::shell::api::model::program_ports::ProgramPorts { trx })
+                        .program_or_empty(&machine_id_owned.clone());
                     if vm.machine_id.is_empty() {
                         return Ok(());
                     }
-                    let app = (crate::shell::api::model::creature_ports::LegacyCreatures { trx })
+                    let app = (crate::shell::api::model::creature_ports::CreaturePorts { trx })
                         .creature_or_empty(&vm.machine_id.clone());
                     if app.chain_id == chain_id_owned && !app.subchain_id.is_empty() {
                         *target_clone.lock().unwrap() = app.subchain_id.clone();

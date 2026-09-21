@@ -5,11 +5,14 @@
 
 pub mod access;
 pub mod chain;
+pub mod core_storage;
 pub mod creature;
 pub mod creature_ports;
 pub mod entity;
 pub mod file;
+pub mod gateway_ports;
 pub mod machine_program;
+pub mod program_ports;
 pub mod session;
 pub mod store;
 pub mod store_ports;

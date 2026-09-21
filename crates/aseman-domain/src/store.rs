@@ -6,13 +6,19 @@
 
 use serde::{Deserialize, Serialize};
 
-/// What the store use cases need to know about one store.
-#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+/// One store, as legacy exposes it.
+#[derive(Clone, Debug, Default, Eq, PartialEq, Serialize, Deserialize)]
 pub struct StoreRecord {
     pub id: String,
     /// Legacy `persHist`: every signal sent into the store is recorded.
     pub persistent_history: bool,
     pub signal_count: i64,
+    pub tag: String,
+    /// The parent store, or empty for a top-level store.
+    pub parent_id: String,
+    pub is_public: bool,
+    /// Legacy stores at least 1.
+    pub member_count: i64,
 }
 
 /// One recorded store signal.

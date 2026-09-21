@@ -26,7 +26,7 @@ use crate::models::input::IInput;
 use crate::models::state::IState;
 use crate::models::transaction::object_to_map;
 use crate::models::transaction::ITrx;
-use crate::shell::api::model::creature_ports::{creature_view, LegacyCreatures};
+use crate::shell::api::model::creature_ports::{creature_view, CreaturePorts};
 use crate::shell::api::model::store_ports::legacy_error;
 use crate::shell::api::model::{Creature, Session, Store};
 use crate::shell::api::packets::creatures::{
@@ -104,7 +104,7 @@ const LEGACY_HUMAN_INITIAL_BALANCE: i64 = 1_000_000_000_000_000;
 
 /// The spec of a registered creature type, if present.
 fn get_creature_type(trx: &dyn ITrx, name: &str) -> Option<Map<String, Value>> {
-    let spec = aseman_ports::CreatureTypes::creature_type(&LegacyCreatures { trx }, name)
+    let spec = aseman_ports::CreatureTypes::creature_type(&CreaturePorts { trx }, name)
         .ok()
         .flatten()?;
     serde_json::from_str(&spec).ok()
@@ -113,7 +113,7 @@ fn get_creature_type(trx: &dyn ITrx, name: &str) -> Option<Map<String, Value>> {
 /// Store a creature type's spec through the registry port.
 fn put_creature_type(trx: &dyn ITrx, name: &str, spec: &Value) -> Result<()> {
     aseman_ports::CreatureTypes::put_creature_type(
-        &LegacyCreatures { trx },
+        &CreaturePorts { trx },
         name,
         &serde_json::to_string(spec)?,
     )
@@ -203,7 +203,7 @@ fn create(app: Arc<dyn ICore>) -> Arc<dyn ISecureAction> {
         anon_guard(),
         move |state: Arc<dyn IState>, input: CreatureCreateInput| -> Result<Value> {
             let trx = state.trx();
-            let creatures = LegacyCreatures { trx: &*trx };
+            let creatures = CreaturePorts { trx: &*trx };
             // Initial balance comes from the registered creature type.
             let opening_balance = resolve_initial_balance(&*trx, &input.typ)?;
             let created = CreateCreature {
@@ -254,7 +254,7 @@ fn get(app: Arc<dyn ICore>) -> Arc<dyn ISecureAction> {
         user_guard(),
         move |state: Arc<dyn IState>, input: GetInput| -> Result<Value> {
             let trx = state.trx();
-            let creatures = LegacyCreatures { trx: &*trx };
+            let creatures = CreaturePorts { trx: &*trx };
             let found = GetCreature {
                 directory: &creatures,
                 balances: &creatures,
@@ -273,7 +273,7 @@ fn list(app: Arc<dyn ICore>) -> Arc<dyn ISecureAction> {
         user_guard(),
         move |state: Arc<dyn IState>, input: ListInput| -> Result<Value> {
             let trx = state.trx();
-            let directory = LegacyCreatures { trx: &*trx };
+            let directory = CreaturePorts { trx: &*trx };
             let creatures = GetCreature {
                 directory: &directory,
                 balances: &directory,
@@ -298,8 +298,7 @@ fn transfer(app: Arc<dyn ICore>) -> Arc<dyn ISecureAction> {
             if input.amount <= 0 {
                 return Err(anyhow!("amount must be greater than zero"));
             }
-            let Some(mut from) =
-                (LegacyCreatures { trx: &*trx }).account(&state.info().user_id())?
+            let Some(mut from) = (CreaturePorts { trx: &*trx }).account(&state.info().user_id())?
             else {
                 return Err(anyhow!("sender creature not found"));
             };
@@ -307,7 +306,7 @@ fn transfer(app: Arc<dyn ICore>) -> Arc<dyn ISecureAction> {
                 return Err(anyhow!("your balance is not enough"));
             }
             let Some(to_id) = aseman_ports::CreatureDirectory::creature_id_by_username(
-                &LegacyCreatures { trx: &*trx },
+                &CreaturePorts { trx: &*trx },
                 &input.to_username,
             )
             .map_err(|error| anyhow!("{error}"))?
@@ -317,7 +316,7 @@ fn transfer(app: Arc<dyn ICore>) -> Arc<dyn ISecureAction> {
             if to_id == from.id {
                 return Err(anyhow!("cannot transfer to the same wallet"));
             }
-            let Some(mut to) = (LegacyCreatures { trx: &*trx }).account(&to_id)? else {
+            let Some(mut to) = (CreaturePorts { trx: &*trx }).account(&to_id)? else {
                 return Err(anyhow!("target creature not found"));
             };
             let from_id = from.id.clone();
@@ -357,8 +356,8 @@ fn transfer(app: Arc<dyn ICore>) -> Arc<dyn ISecureAction> {
                 .ok_or_else(|| anyhow!("target withdrawable overflow"))?;
             set_finance_debt_amount(&*trx, &to_id, debt - debt_repaid)?;
             set_finance_withdrawable_amount(&*trx, &to_id, to_withdrawable)?;
-            (LegacyCreatures { trx: &*trx }).store_account(&from)?;
-            (LegacyCreatures { trx: &*trx }).store_account(&to)?;
+            (CreaturePorts { trx: &*trx }).store_account(&from)?;
+            (CreaturePorts { trx: &*trx }).store_account(&to)?;
             let now = Utc::now().timestamp_millis();
             let journal_id = write_finance_journal(
                 &*trx,
@@ -398,7 +397,7 @@ fn signal(app: Arc<dyn ICore>) -> Arc<dyn ISecureAction> {
             let trx = state.trx();
             // A missing sender reads as an empty creature carrying its id, as before.
             let sender_creature = aseman_ports::CreatureDirectory::creature(
-                &LegacyCreatures { trx: &*trx },
+                &CreaturePorts { trx: &*trx },
                 &state.info().user_id(),
             )
             .map_err(|error| anyhow!("{error}"))?
@@ -418,7 +417,7 @@ fn signal(app: Arc<dyn ICore>) -> Arc<dyn ISecureAction> {
                 }
                 // Posting into a store is a permission, not mere membership:
                 // a viewer holds `read` without `signal` and is refused here.
-                let ports = crate::shell::api::model::store_ports::LegacyMembership { trx: &*trx };
+                let ports = crate::shell::api::model::store_ports::MembershipPorts { trx: &*trx };
                 let permissions = aseman_ports::StoreAccess::permissions(
                     &ports,
                     &store_id,
@@ -583,7 +582,7 @@ fn mint(app: Arc<dyn ICore>) -> Arc<dyn ISecureAction> {
             if to_user_id.is_empty() {
                 return Err(anyhow!("target user not found"));
             }
-            let Some(mut creature) = (LegacyCreatures { trx: &*trx }).account(&to_user_id)? else {
+            let Some(mut creature) = (CreaturePorts { trx: &*trx }).account(&to_user_id)? else {
                 return Err(anyhow!("target user not found"));
             };
             let debt = finance_debt_amount(&*trx, &creature.id)?;
@@ -596,7 +595,7 @@ fn mint(app: Arc<dyn ICore>) -> Arc<dyn ISecureAction> {
                 .balance
                 .checked_add(wallet_credit)
                 .ok_or_else(|| anyhow!("balance overflow"))?;
-            (LegacyCreatures { trx: &*trx }).store_account(&creature)?;
+            (CreaturePorts { trx: &*trx }).store_account(&creature)?;
             set_finance_debt_amount(&*trx, &creature.id, debt - debt_repaid)?;
             let target_id = creature.id.clone();
             let participants = vec![target_id.clone(), state.info().user_id()];
@@ -952,7 +951,7 @@ fn lock_token(app: Arc<dyn ICore>) -> Arc<dyn ISecureAction> {
             let trx = state.trx();
             // Balance authority is the Creature record (same as transfer/mint).
             let mut user =
-                (LegacyCreatures { trx: &*trx }).account_or_empty(&state.info().user_id())?;
+                (CreaturePorts { trx: &*trx }).account_or_empty(&state.info().user_id())?;
 
             let mut steps: Vec<Value> = Vec::with_capacity(input.steps.len().max(1));
             if !input.steps.is_empty() {
@@ -997,7 +996,7 @@ fn lock_token(app: Arc<dyn ICore>) -> Arc<dyn ISecureAction> {
             }
             let lock_id = secure_unique_string();
             if input.typ == "pay" {
-                if (LegacyCreatures { trx: &*trx })
+                if (CreaturePorts { trx: &*trx })
                     .account(&input.target)?
                     .is_none()
                 {
@@ -1007,7 +1006,7 @@ fn lock_token(app: Arc<dyn ICore>) -> Arc<dyn ISecureAction> {
                     .balance
                     .checked_sub(total_amount)
                     .ok_or_else(|| anyhow!("balance underflow"))?;
-                (LegacyCreatures { trx: &*trx }).store_account(&user)?;
+                (CreaturePorts { trx: &*trx }).store_account(&user)?;
                 let payload = json!({
                     "type": "pay",
                     "amount": total_amount,
@@ -1039,18 +1038,17 @@ fn consume_lock(app: Arc<dyn ICore>) -> Arc<dyn ISecureAction> {
             let trx = state.trx();
             // Balance authority is the Creature record (same as transfer/mint).
             let mut receiver =
-                (LegacyCreatures { trx: &*trx }).account_or_empty(&state.info().user_id())?;
+                (CreaturePorts { trx: &*trx }).account_or_empty(&state.info().user_id())?;
             if input.typ != "pay" {
                 return Err(anyhow!("unknown lock type"));
             }
-            if (LegacyCreatures { trx: &*trx })
+            if (CreaturePorts { trx: &*trx })
                 .account(&input.user_id)?
                 .is_none()
             {
                 return Err(anyhow!("payer user not found"));
             }
-            let sender =
-                (LegacyCreatures { trx: &*trx }).account_or_empty(&input.user_id.clone())?;
+            let sender = (CreaturePorts { trx: &*trx }).account_or_empty(&input.user_id.clone())?;
             let payment_map = match trx.get_json(
                 &format!("Json::Creature::{}", sender.id),
                 &format!("lockedTokens.{}", input.lock_id),
@@ -1139,7 +1137,7 @@ fn consume_lock(app: Arc<dyn ICore>) -> Arc<dyn ISecureAction> {
                 .balance
                 .checked_add(input.amount)
                 .ok_or_else(|| anyhow!("receiver balance overflow"))?;
-            (LegacyCreatures { trx: &*trx }).store_account(&receiver)?;
+            (CreaturePorts { trx: &*trx }).store_account(&receiver)?;
             let mut remaining_amount: i64 = 0;
             for (i, step_map) in parsed_steps.iter().enumerate() {
                 let consumed = step_map
@@ -1227,7 +1225,7 @@ fn login(app: Arc<dyn ICore>) -> Arc<dyn ISecureAction> {
 
             let user_id = trx.get_link(&format!("UserEmailToId::{}", email));
             if !user_id.is_empty() {
-                let creatures = LegacyCreatures { trx: &*trx };
+                let creatures = CreaturePorts { trx: &*trx };
                 // LD-13: the old `user.id.is_empty()` check never fired, so a stale
                 // email link was never dropped; the directory lookup makes it real.
                 let found = aseman_ports::CreatureDirectory::creature(&creatures, &user_id)
@@ -1253,7 +1251,7 @@ fn login(app: Arc<dyn ICore>) -> Arc<dyn ISecureAction> {
             }
             let expected_username = format!("{}@{}", input.username, app_for_handler.id());
             if aseman_ports::CreatureDirectory::creature_id_by_username(
-                &LegacyCreatures { trx: &*trx },
+                &CreaturePorts { trx: &*trx },
                 &expected_username,
             )
             .map_err(|error| anyhow!("{error}"))?
@@ -1311,7 +1309,7 @@ fn delete(app: Arc<dyn ICore>) -> Arc<dyn ISecureAction> {
         move |state: Arc<dyn IState>, input: DeleteInput| -> Result<Value> {
             let trx = state.trx();
             // LD-13: a missing creature is now "user not found", not a no-op delete.
-            let creatures = LegacyCreatures { trx: &*trx };
+            let creatures = CreaturePorts { trx: &*trx };
             DeleteCreature {
                 directory: &creatures,
                 balances: &creatures,
@@ -1324,7 +1322,7 @@ fn delete(app: Arc<dyn ICore>) -> Arc<dyn ISecureAction> {
             }
             // Memberships go through the store port; the legacy `Store::list(.., -1, -1)`
             // walk here always came back empty (LD-12).
-            let ports = crate::shell::api::model::store_ports::LegacyMembership { trx: &*trx };
+            let ports = crate::shell::api::model::store_ports::MembershipPorts { trx: &*trx };
             ports
                 .remove_member_everywhere(&input.user_id)
                 .map_err(|error| anyhow!("{error}"))?;
@@ -1349,7 +1347,7 @@ fn update(app: Arc<dyn ICore>) -> Arc<dyn ISecureAction> {
             // LD-13: a missing creature is now "user not found" instead of being
             // recreated as a partial record.
             UpdateCreature {
-                directory: &LegacyCreatures { trx: &*trx },
+                directory: &CreaturePorts { trx: &*trx },
             }
             .execute(
                 &state.info().user_id(),
@@ -1375,7 +1373,7 @@ fn meta(app: Arc<dyn ICore>) -> Arc<dyn ISecureAction> {
         move |state: Arc<dyn IState>, input: MetaInput| -> Result<Value> {
             let trx = state.trx();
             // LD-13: the existence check was dead code; a missing creature now fails.
-            let creatures = LegacyCreatures { trx: &*trx };
+            let creatures = CreaturePorts { trx: &*trx };
             if aseman_ports::CreatureDirectory::creature(&creatures, &input.user_id)
                 .map_err(|error| anyhow!("{error}"))?
                 .is_none()
@@ -1414,7 +1412,7 @@ fn apply_extender_fields(
                 continue;
             }
         }
-        let value = LegacyCreatures { trx }
+        let value = CreaturePorts { trx }
             .metadata_object(MetadataKind::User, user_id, &field.path)
             .and_then(|m| m.get(key).cloned())
             .unwrap_or_else(|| field.default.clone());
@@ -1433,7 +1431,7 @@ fn get_by_username(
         user_guard(),
         move |state: Arc<dyn IState>, input: GetByUsernameInput| -> Result<Value> {
             let trx = state.trx();
-            let creatures = LegacyCreatures { trx: &*trx };
+            let creatures = CreaturePorts { trx: &*trx };
             let found = GetCreature {
                 directory: &creatures,
                 balances: &creatures,
@@ -1460,7 +1458,7 @@ fn find(
         user_guard(),
         move |state: Arc<dyn IState>, input: FindInput| -> Result<Value> {
             let trx = state.trx();
-            let creatures = LegacyCreatures { trx: &*trx };
+            let creatures = CreaturePorts { trx: &*trx };
             let found = GetCreature {
                 directory: &creatures,
                 balances: &creatures,
@@ -1488,7 +1486,7 @@ fn types(app: Arc<dyn ICore>) -> Arc<dyn ISecureAction> {
             let trx = state.trx();
             let mut out: Vec<Value> = Vec::new();
             for (name, spec) in
-                aseman_ports::CreatureTypes::creature_types(&LegacyCreatures { trx: &*trx })
+                aseman_ports::CreatureTypes::creature_types(&CreaturePorts { trx: &*trx })
                     .map_err(|error| anyhow!("{error}"))?
             {
                 let mut spec: Map<String, Value> = serde_json::from_str(&spec)?;

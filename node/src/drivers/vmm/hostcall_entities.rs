@@ -65,7 +65,7 @@ impl Vmm {
                         // LD-14: an existing identity or username is refused instead
                         // of overwritten.
                         let creatures =
-                            crate::shell::api::model::creature_ports::LegacyCreatures { trx: t };
+                            crate::shell::api::model::creature_ports::CreaturePorts { trx: t };
                         match aseman_ports::CreatureDirectory::create(&creatures, &record) {
                             Err(aseman_ports::PortError::Conflict) => {
                                 *refused_slot.lock().unwrap() = true;
@@ -99,7 +99,7 @@ impl Vmm {
                     false,
                     Box::new(move |t: &dyn ITrx| {
                         let creatures =
-                            crate::shell::api::model::creature_ports::LegacyCreatures { trx: t };
+                            crate::shell::api::model::creature_ports::CreaturePorts { trx: t };
                         // LD-13: a missing creature is refused instead of being
                         // recreated as a partial record.
                         let Some(mut record) =
@@ -178,15 +178,12 @@ impl Vmm {
                         // Memberships go through the store port; the legacy
                         // `Store::list(.., -1, -1)` walk here was always empty (LD-12).
                         let ports =
-                            crate::shell::api::model::store_ports::LegacyMembership { trx: t };
-                        let deleted = ports
+                            crate::shell::api::model::store_ports::MembershipPorts { trx: t };
+                        ports
                             .remove_member_everywhere(&id_owned)
                             .map_err(|error| anyhow::anyhow!("{error}"))?;
-                        for store_id in deleted {
-                            t.del_key(&format!("Json::StoreMeta::{}::metadata", store_id));
-                        }
                         let creatures =
-                            crate::shell::api::model::creature_ports::LegacyCreatures { trx: t };
+                            crate::shell::api::model::creature_ports::CreaturePorts { trx: t };
                         aseman_ports::CreatureDirectory::delete(&creatures, &id_owned)
                             .map_err(|error| anyhow::anyhow!("{error}"))?;
                         aseman_ports::CreatureBalances::close(&creatures, &id_owned)
@@ -208,7 +205,7 @@ impl Vmm {
                     true,
                     Box::new(move |t: &dyn ITrx| {
                         let creatures =
-                            crate::shell::api::model::creature_ports::LegacyCreatures { trx: t };
+                            crate::shell::api::model::creature_ports::CreaturePorts { trx: t };
                         // Legacy answers a missing id with an empty creature; kept.
                         let found = aseman_application::creature::GetCreature {
                             directory: &creatures,
@@ -244,7 +241,7 @@ impl Vmm {
                     true,
                     Box::new(move |t: &dyn ITrx| {
                         let creatures =
-                            crate::shell::api::model::creature_ports::LegacyCreatures { trx: t };
+                            crate::shell::api::model::creature_ports::CreaturePorts { trx: t };
                         if let Ok(list) = (aseman_application::creature::GetCreature {
                             directory: &creatures,
                             balances: &creatures,
@@ -319,37 +316,27 @@ impl Vmm {
                 self.app.modify_state(
                     false,
                     Box::new(move |t: &dyn ITrx| {
-                        if t.has_obj("Program", &id_owned) {
-                            *create_error_for_state.lock().unwrap() =
-                                "program already exists".to_string();
-                            return Ok(());
-                        }
-                        let mut machine =
-                            (crate::shell::api::model::creature_ports::LegacyCreatures { trx: t })
-                                .creature_or_empty(&machine_id_owned.clone());
-                        if machine.id.is_empty() {
-                            machine.id = machine_id_owned.clone();
-                        }
-                        machine.machines_count += 1;
-                        machine.push(t);
-                        Program {
+                        let programs =
+                            crate::shell::api::model::program_ports::ProgramPorts { trx: t };
+                        let record = aseman_domain::program::ProgramRecord {
                             id: id_owned.clone(),
                             machine_id: machine_id_owned.clone(),
                             runtime: runtime.clone(),
                             path: path.clone(),
                             comment: comment.clone(),
+                        };
+                        // LD-17: no partial machine is written for a missing machine.
+                        match aseman_ports::ProgramDirectory::create_program(&programs, &record) {
+                            Err(aseman_ports::PortError::Conflict) => {
+                                *create_error_for_state.lock().unwrap() =
+                                    "program already exists".to_string();
+                                return Ok(());
+                            }
+                            other => other.map_err(|error| anyhow::anyhow!("{error}"))?,
                         }
-                        .push(t);
-                        let _ = t.put_json(
-                            &format!("ProgMeta::{}", id_owned),
-                            "metadata",
-                            &metadata,
-                            true,
-                        );
-                        t.put_link(
-                            &format!("machinePrograms::{}::{}", machine_id_owned, id_owned),
-                            "true",
-                        );
+                        programs
+                            .merge_metadata_value(&id_owned, &metadata)
+                            .map_err(|error| anyhow::anyhow!("{error}"))?;
                         Ok(())
                     }),
                 );
@@ -380,25 +367,15 @@ impl Vmm {
                 self.app.modify_state(
                     false,
                     Box::new(move |t: &dyn ITrx| {
-                        let program = Program {
-                            id: id_owned.clone(),
-                            ..Default::default()
-                        }
-                        .pull(t);
-                        if !program.machine_id.is_empty() {
-                            let mut machine =
-                                (crate::shell::api::model::creature_ports::LegacyCreatures {
-                                    trx: t,
-                                })
-                                .creature_or_empty(&program.machine_id.clone());
-                            machine.machines_count -= 1;
-                            machine.push(t);
-                            t.del_key(&format!(
-                                "link::machinePrograms::{}::{}",
-                                program.machine_id, id_owned
-                            ));
-                        }
-                        t.del_index("Program", "id", "programId", &id_owned);
+                        // LD-17: the program itself is removed, not only its relation.
+                        let programs =
+                            crate::shell::api::model::program_ports::ProgramPorts { trx: t };
+                        aseman_ports::ProgramDirectory::delete_program(&programs, &id_owned)
+                            .map_err(|error| anyhow::anyhow!("{error}"))?;
+                        aseman_ports::ProgramMetadata::delete_program_metadata(
+                            &programs, &id_owned,
+                        )
+                        .map_err(|error| anyhow::anyhow!("{error}"))?;
                         Ok(())
                     }),
                 );
@@ -423,13 +400,13 @@ impl Vmm {
                 self.app.modify_state(
                     true,
                     Box::new(move |t: &dyn ITrx| {
-                        let p = Program {
-                            id: id_owned.clone(),
-                            ..Default::default()
-                        }
-                        .pull(t);
+                        let p = (crate::shell::api::model::program_ports::ProgramPorts { trx: t })
+                            .program_or_empty(&id_owned.clone());
                         *ps.lock().unwrap() = p;
-                        if let Ok(m) = t.get_json(&format!("ProgMeta::{}", id_owned), "metadata") {
+                        if let Some(m) =
+                            (crate::shell::api::model::program_ports::ProgramPorts { trx: t })
+                                .metadata_object(&id_owned, "metadata")
+                        {
                             *ms.lock().unwrap() = m;
                         }
                         Ok(())
@@ -451,8 +428,15 @@ impl Vmm {
                 self.app.modify_state(
                     true,
                     Box::new(move |t: &dyn ITrx| {
-                        if let Ok(list) = Program::all(t, offset, count) {
-                            *sc.lock().unwrap() = list;
+                        if let Ok(list) = aseman_ports::ProgramDirectory::programs(
+                            &crate::shell::api::model::program_ports::ProgramPorts { trx: t },
+                            offset,
+                            Some(count),
+                        ) {
+                            *sc.lock().unwrap() = list
+                                .into_iter()
+                                .map(crate::shell::api::model::program_ports::program_view)
+                                .collect();
                         }
                         Ok(())
                     }),
@@ -481,9 +465,14 @@ impl Vmm {
                 self.app.modify_state(
                     true,
                     Box::new(move |t: &dyn ITrx| {
-                        let prefix = format!("machinePrograms::{}::", mid);
-                        if let Ok(list) = Program::list(t, &prefix) {
-                            *sc.lock().unwrap() = list;
+                        if let Ok(list) = aseman_ports::ProgramDirectory::programs_of_machine(
+                            &crate::shell::api::model::program_ports::ProgramPorts { trx: t },
+                            &mid,
+                        ) {
+                            *sc.lock().unwrap() = list
+                                .into_iter()
+                                .map(crate::shell::api::model::program_ports::program_view)
+                                .collect();
                         }
                         Ok(())
                     }),
@@ -508,17 +497,21 @@ impl Vmm {
                 }
                 let input_owned = input.clone();
                 let id_owned = id.clone();
+                let missing = Arc::new(Mutex::new(false));
+                let missing_slot = missing.clone();
                 self.app.modify_state(
                     false,
                     Box::new(move |t: &dyn ITrx| {
-                        let mut p = Program {
-                            id: id_owned.clone(),
-                            ..Default::default()
-                        }
-                        .pull(t);
-                        if p.id.is_empty() {
-                            p.id = id_owned.clone();
-                        }
+                        let programs =
+                            crate::shell::api::model::program_ports::ProgramPorts { trx: t };
+                        // LD-13: a missing program is refused instead of created partially.
+                        let Some(mut p) =
+                            aseman_ports::ProgramDirectory::program(&programs, &id_owned)
+                                .map_err(|error| anyhow::anyhow!("{error}"))?
+                        else {
+                            *missing_slot.lock().unwrap() = true;
+                            return Ok(());
+                        };
                         if let Some(v) = input_owned.get("comment").and_then(Value::as_str) {
                             p.comment = v.to_string();
                         }
@@ -528,18 +521,22 @@ impl Vmm {
                         if let Some(v) = input_owned.get("path").and_then(Value::as_str) {
                             p.path = v.to_string();
                         }
-                        p.push(t);
+                        aseman_ports::ProgramDirectory::update_program(&programs, &p)
+                            .map_err(|error| anyhow::anyhow!("{error}"))?;
                         if let Some(md) = input_owned.get("metadata") {
-                            let _ = t.put_json(
-                                &format!("ProgMeta::{}", id_owned),
-                                "metadata",
-                                md,
-                                true,
-                            );
+                            programs
+                                .merge_metadata_value(&id_owned, md)
+                                .map_err(|error| anyhow::anyhow!("{error}"))?;
                         }
                         Ok(())
                     }),
                 );
+                if *missing.lock().unwrap() {
+                    return (
+                        r#"{"ok":false,"error":"program does not exist"}"#.into(),
+                        req_id,
+                    );
+                }
                 (format!("{{\"ok\":true,\"id\":\"{}\"}}", id), req_id)
             }
             _ => (
@@ -575,6 +572,26 @@ impl Vmm {
                 r#"{"ok":false,"error":"entityId is required"}"#.into(),
                 req_id,
             );
+        }
+        // LD-17: deploying into a missing program used to create a bare program with no
+        // machine, which the A308 export cannot migrate. Refuse before writing files.
+        let exists = Arc::new(Mutex::new(false));
+        let exists_slot = exists.clone();
+        let lookup_id = program_id.clone();
+        self.app.modify_state(
+            true,
+            Box::new(move |t: &dyn ITrx| {
+                *exists_slot.lock().unwrap() = aseman_ports::ProgramDirectory::program(
+                    &crate::shell::api::model::program_ports::ProgramPorts { trx: t },
+                    &lookup_id,
+                )
+                .map_err(|error| anyhow::anyhow!("{error}"))?
+                .is_some();
+                Ok(())
+            }),
+        );
+        if !*exists.lock().unwrap() {
+            return (r#"{"ok":false,"error":"program not found"}"#.into(), req_id);
         }
         let entity_type = normalize_runtime(&check_str(input, "entityType", "wasm"));
         let payload_b64 = check_str(input, "payload", "");
@@ -633,15 +650,16 @@ impl Vmm {
                     // Make sure the program record exists so its signal
                     // listener resolves; a bare proxy program needs no
                     // runtime of its own.
-                    let mut program = Program {
-                        id: program_id_owned.clone(),
-                        ..Default::default()
+                    // LD-17: deploying never creates a bare program without a machine.
+                    if aseman_ports::ProgramDirectory::program(
+                        &crate::shell::api::model::program_ports::ProgramPorts { trx: t },
+                        &program_id_owned,
+                    )
+                    .map_err(|error| anyhow::anyhow!("{error}"))?
+                    .is_none()
+                    {
+                        return Err(anyhow::anyhow!("program not found"));
                     }
-                    .pull(t);
-                    if program.id.is_empty() {
-                        program.id = program_id_owned.clone();
-                    }
-                    program.push(t);
                     proxy::record_proxy_entity(
                         t,
                         &program_id_owned,
@@ -744,18 +762,19 @@ impl Vmm {
         self.app.modify_state(
             false,
             Box::new(move |t: &dyn ITrx| {
-                let mut program = Program {
-                    id: program_id_owned.clone(),
-                    ..Default::default()
-                }
-                .pull(t);
-                if program.id.is_empty() {
-                    program.id = program_id_owned.clone();
-                }
+                // LD-17: deploying never creates a bare program without a machine.
+                let programs = crate::shell::api::model::program_ports::ProgramPorts { trx: t };
+                let Some(mut program) =
+                    aseman_ports::ProgramDirectory::program(&programs, &program_id_owned)
+                        .map_err(|error| anyhow::anyhow!("{error}"))?
+                else {
+                    return Err(anyhow::anyhow!("program not found"));
+                };
                 if program.runtime.is_empty() {
                     program.runtime = entity_type_owned.clone();
+                    aseman_ports::ProgramDirectory::update_program(&programs, &program)
+                        .map_err(|error| anyhow::anyhow!("{error}"))?;
                 }
-                program.push(t);
                 Entity {
                     program_id: program_id_owned.clone(),
                     entity_id: entity_id_owned.clone(),
@@ -829,26 +848,37 @@ impl Vmm {
                 let store_id_owned = store_id.clone();
                 let machine_id_owned = machine_id.clone();
                 let name_owned = name.clone();
+                let refused = Arc::new(Mutex::new(String::new()));
+                let refused_slot = refused.clone();
                 self.app.modify_state(
                     false,
                     Box::new(move |t: &dyn ITrx| {
-                        let key = format!("Json::VmResourceStore::{}", store_id_owned);
-                        t.put_json(&key, "metadata", &metadata, true)?;
-                        let core_meta = json!({
-                            "id": store_id_owned.clone(),
-                            "name": name_owned.clone(),
-                            "machineId": machine_id_owned.clone(),
-                        });
-                        t.put_json(&key, "core", &core_meta, true)?;
-                        if !machine_id_owned.is_empty() {
-                            t.put_link(
-                                &format!("vmOwnedStore::{}::{}", machine_id_owned, store_id_owned),
-                                "true",
-                            );
+                        // LD-21: an update without a machine keeps the owner, and a new
+                        // store needs a machine to own it.
+                        let metadata = if metadata.is_object() {
+                            metadata.to_string()
+                        } else {
+                            "{}".to_owned()
+                        };
+                        match aseman_ports::VmResourceStores::put_resource_store(
+                            &crate::shell::api::model::program_ports::ProgramPorts { trx: t },
+                            &store_id_owned,
+                            &name_owned,
+                            &machine_id_owned,
+                            &metadata,
+                        ) {
+                            Err(aseman_ports::PortError::Failed(message)) => {
+                                *refused_slot.lock().unwrap() = message;
+                                Ok(())
+                            }
+                            other => other.map_err(|error| anyhow::anyhow!("{error}")),
                         }
-                        Ok(())
                     }),
                 );
+                let refusal = refused.lock().unwrap().clone();
+                if !refusal.is_empty() {
+                    return (json!({"ok": false, "error": refusal}).to_string(), req_id);
+                }
                 (
                     format!("{{\"ok\":true,\"storeId\":\"{}\"}}", store_id),
                     req_id,
@@ -862,24 +892,16 @@ impl Vmm {
                         req_id,
                     );
                 }
-                let machine_id = check_str(input, "machineId", "");
                 let store_id_owned = store_id.clone();
-                let machine_id_owned = machine_id.clone();
                 self.app.modify_state(
                     false,
                     Box::new(move |t: &dyn ITrx| {
-                        t.del_key(&format!(
-                            "Json::VmResourceStore::{}::metadata",
-                            store_id_owned
-                        ));
-                        t.del_key(&format!("Json::VmResourceStore::{}::core", store_id_owned));
-                        if !machine_id_owned.is_empty() {
-                            t.del_key(&format!(
-                                "link::vmOwnedStore::{}::{}",
-                                machine_id_owned, store_id_owned
-                            ));
-                        }
-                        Ok(())
+                        // LD-06: the documents and the ownership link are really removed.
+                        aseman_ports::VmResourceStores::delete_resource_store(
+                            &crate::shell::api::model::program_ports::ProgramPorts { trx: t },
+                            &store_id_owned,
+                        )
+                        .map_err(|error| anyhow::anyhow!("{error}"))
                     }),
                 );
                 (
@@ -899,15 +921,26 @@ impl Vmm {
                 let meta_slot: Arc<Mutex<Map<String, Value>>> = Arc::new(Mutex::new(Map::new()));
                 let core_clone = core_slot.clone();
                 let meta_clone = meta_slot.clone();
-                let key = format!("Json::VmResourceStore::{}", store_id);
+                let store_id_owned = store_id.clone();
                 self.app.modify_state(
                     true,
                     Box::new(move |t: &dyn ITrx| {
-                        if let Ok(c) = t.get_json(&key, "core") {
-                            *core_clone.lock().unwrap() = c;
-                        }
-                        if let Ok(m) = t.get_json(&key, "metadata") {
-                            *meta_clone.lock().unwrap() = m;
+                        if let Some(store) = aseman_ports::VmResourceStores::resource_store(
+                            &crate::shell::api::model::program_ports::ProgramPorts { trx: t },
+                            &store_id_owned,
+                        )
+                        .map_err(|error| anyhow::anyhow!("{error}"))?
+                        {
+                            *core_clone.lock().unwrap() = match json!({
+                                "id": store.id,
+                                "name": store.name,
+                                "machineId": store.machine_id,
+                            }) {
+                                Value::Object(core) => core,
+                                _ => Map::new(),
+                            };
+                            *meta_clone.lock().unwrap() =
+                                serde_json::from_str(&store.metadata).unwrap_or_default();
                         }
                         Ok(())
                     }),
@@ -919,17 +952,30 @@ impl Vmm {
             }
             "list" => {
                 let machine_id = check_str(input, "machineId", "");
-                let prefix = if machine_id.is_empty() {
-                    "Json::VmResourceStore::".to_string()
-                } else {
-                    format!("link::vmOwnedStore::{}::", machine_id)
-                };
                 let slot: Arc<Mutex<Vec<String>>> = Arc::new(Mutex::new(Vec::new()));
                 let slot_clone = slot.clone();
                 self.app.modify_state(
                     true,
                     Box::new(move |t: &dyn ITrx| {
-                        *slot_clone.lock().unwrap() = t.get_by_prefix(&prefix);
+                        let programs =
+                            crate::shell::api::model::program_ports::ProgramPorts { trx: t };
+                        let filter = (!machine_id.is_empty()).then_some(machine_id.as_str());
+                        let mut listed = Vec::new();
+                        for store_id in
+                            aseman_ports::VmResourceStores::resource_stores(&programs, filter)
+                                .map_err(|error| anyhow::anyhow!("{error}"))?
+                        {
+                            let owner = aseman_ports::VmResourceStores::resource_store(
+                                &programs, &store_id,
+                            )
+                            .map_err(|error| anyhow::anyhow!("{error}"))?
+                            .map(|store| store.machine_id)
+                            .unwrap_or_default();
+                            // Legacy returned the ownership link keys; the wire keeps
+                            // that format. Listing all stores used to return nothing.
+                            listed.push(["link::vmOwnedStore::", &owner, "::", &store_id].concat());
+                        }
+                        *slot_clone.lock().unwrap() = listed;
                         Ok(())
                     }),
                 );
@@ -1376,7 +1422,7 @@ impl Vmm {
                     false,
                     Box::new(move |t: &dyn ITrx| {
                         let ports =
-                            crate::shell::api::model::store_ports::LegacyMembership { trx: t };
+                            crate::shell::api::model::store_ports::MembershipPorts { trx: t };
                         aseman_ports::StoreAccess::join(
                             &ports,
                             &store_id_owned,
@@ -1410,7 +1456,7 @@ impl Vmm {
                     false,
                     Box::new(move |t: &dyn ITrx| {
                         let ports =
-                            crate::shell::api::model::store_ports::LegacyMembership { trx: t };
+                            crate::shell::api::model::store_ports::MembershipPorts { trx: t };
                         aseman_ports::StoreAccess::leave(&ports, &store_id_owned, &user_id_owned)
                             .map_err(|error| anyhow::anyhow!("{error}"))
                     }),
@@ -1622,47 +1668,62 @@ impl Vmm {
                 if store_id.is_empty() {
                     store_id = self.gen_id("store");
                 }
+                // A store must have a creator to own it (ADR 0018, ADR 0026 routing).
+                if creator_id.is_empty() {
+                    return (
+                        r#"{"ok":false,"error":"creatorId is required"}"#.into(),
+                        req_id,
+                    );
+                }
                 let store_id_owned = store_id.clone();
                 let creator_id_owned = creator_id.clone();
                 let metadata_owned = metadata.clone();
+                let refused = Arc::new(Mutex::new(""));
+                let refused_slot = refused.clone();
                 self.app.modify_state(
                     false,
                     Box::new(move |t: &dyn ITrx| {
-                        let store = Store {
+                        let stores = crate::shell::api::model::store_ports::StorePorts { trx: t };
+                        let record = aseman_domain::store::StoreRecord {
                             id: store_id_owned.clone(),
                             tag: tag.clone(),
                             parent_id: parent_id.clone(),
                             is_public,
-                            pers_hist,
+                            persistent_history: pers_hist,
                             member_count: 1,
-                            ..Default::default()
+                            signal_count: 0,
                         };
-                        store.push(t);
-                        let _ = t.put_json(
-                            &format!("StoreMeta::{}", store_id_owned),
-                            "metadata",
-                            &metadata_owned,
-                            true,
-                        );
-                        if !creator_id_owned.is_empty() {
-                            // The creator administers the store they just made.
-                            let ports =
-                                crate::shell::api::model::store_ports::LegacyMembership { trx: t };
-                            aseman_ports::StoreAccess::join(
-                                &ports,
-                                &store_id_owned,
-                                &creator_id_owned,
-                                StorePermissions::owner(),
-                            )
-                            .map_err(|error| anyhow::anyhow!("{error}"))?;
-                            t.put_link(
-                                &format!("creatorof::{}::{}", creator_id_owned, store_id_owned),
-                                "true",
-                            );
+                        match aseman_ports::StoreDirectory::create_store(
+                            &stores,
+                            &record,
+                            &creator_id_owned,
+                        ) {
+                            Err(aseman_ports::PortError::Conflict) => {
+                                *refused_slot.lock().unwrap() = "store already exists";
+                                return Ok(());
+                            }
+                            other => other.map_err(|error| anyhow::anyhow!("{error}"))?,
                         }
+                        stores
+                            .merge_metadata_value(&store_id_owned, &metadata_owned)
+                            .map_err(|error| anyhow::anyhow!("{error}"))?;
+                        // The creator administers the store they just made.
+                        let ports =
+                            crate::shell::api::model::store_ports::MembershipPorts { trx: t };
+                        aseman_ports::StoreAccess::join(
+                            &ports,
+                            &store_id_owned,
+                            &creator_id_owned,
+                            StorePermissions::owner(),
+                        )
+                        .map_err(|error| anyhow::anyhow!("{error}"))?;
                         Ok(())
                     }),
                 );
+                let refusal = *refused.lock().unwrap();
+                if !refusal.is_empty() {
+                    return (json!({"ok": false, "error": refusal}).to_string(), req_id);
+                }
                 let out = json!({"ok": true, "storeId": store_id});
                 (serde_json::to_string(&out).unwrap_or_default(), req_id)
             }
@@ -1679,31 +1740,29 @@ impl Vmm {
                 self.app.modify_state(
                     false,
                     Box::new(move |t: &dyn ITrx| {
-                        let mut store = Store {
-                            id: store_id_owned.clone(),
-                            ..Default::default()
-                        }
-                        .pull(t);
-                        if store.id.is_empty() {
+                        let stores = crate::shell::api::model::store_ports::StorePorts { trx: t };
+                        // A missing store stays a no-op, as before.
+                        let Some(mut store) =
+                            aseman_ports::StoreDirectory::store(&stores, &store_id_owned)
+                                .map_err(|error| anyhow::anyhow!("{error}"))?
+                        else {
                             return Ok(());
-                        }
+                        };
                         if let Some(v) = input_owned.get("isPublic").and_then(Value::as_bool) {
                             store.is_public = v;
                         }
                         if let Some(v) = input_owned.get("persHist").and_then(Value::as_bool) {
-                            store.pers_hist = v;
+                            store.persistent_history = v;
                         }
                         if let Some(v) = input_owned.get("tag").and_then(Value::as_str) {
                             store.tag = v.to_string();
                         }
-                        store.push(t);
+                        aseman_ports::StoreDirectory::update_store(&stores, &store)
+                            .map_err(|error| anyhow::anyhow!("{error}"))?;
                         if let Some(md) = input_owned.get("metadata") {
-                            let _ = t.put_json(
-                                &format!("StoreMeta::{}", store_id_owned),
-                                "metadata",
-                                md,
-                                true,
-                            );
+                            stores
+                                .merge_metadata_value(&store_id_owned, md)
+                                .map_err(|error| anyhow::anyhow!("{error}"))?;
                         }
                         Ok(())
                     }),
@@ -1725,30 +1784,26 @@ impl Vmm {
                 self.app.modify_state(
                     false,
                     Box::new(move |t: &dyn ITrx| {
-                        let store = Store {
-                            id: store_id_owned.clone(),
-                            ..Default::default()
-                        }
-                        .pull(t);
-                        if !store.id.is_empty() {
-                            store.delete(t);
-                        }
-                        t.del_key(&format!("Json::StoreMeta::{}::metadata", store_id_owned));
+                        // LD-06: the metadata document is really removed with the store.
+                        let stores = crate::shell::api::model::store_ports::StorePorts { trx: t };
+                        aseman_ports::StoreDirectory::delete_store(&stores, &store_id_owned)
+                            .map_err(|error| anyhow::anyhow!("{error}"))?;
+                        aseman_ports::StoreMetadata::delete_store_metadata(
+                            &stores,
+                            &store_id_owned,
+                        )
+                        .map_err(|error| anyhow::anyhow!("{error}"))?;
                         // Membership links outlive the object unless we drop them:
                         // listStores walks hasaccess, and a later getStore still
                         // echoes the requested id, which is how a deleted space
                         // came back as an untitled project.
                         let ports =
-                            crate::shell::api::model::store_ports::LegacyMembership { trx: t };
+                            crate::shell::api::model::store_ports::MembershipPorts { trx: t };
                         let members = aseman_ports::StoreAccess::members(&ports, &store_id_owned)
                             .map_err(|error| anyhow::anyhow!("{error}"))?;
                         for (member_id, _) in members {
                             aseman_ports::StoreAccess::leave(&ports, &store_id_owned, &member_id)
                                 .map_err(|error| anyhow::anyhow!("{error}"))?;
-                            t.del_key(&format!(
-                                "link::creatorof::{}::{}",
-                                member_id, store_id_owned
-                            ));
                         }
                         Ok(())
                     }),
@@ -1774,15 +1829,9 @@ impl Vmm {
                 self.app.modify_state(
                     true,
                     Box::new(move |t: &dyn ITrx| {
-                        let s = Store {
-                            id: store_id_owned.clone(),
-                            ..Default::default()
-                        }
-                        .pull(t);
-                        *store_clone.lock().unwrap() = s;
-                        if let Ok(m) =
-                            t.get_json(&format!("StoreMeta::{}", store_id_owned), "metadata")
-                        {
+                        let stores = crate::shell::api::model::store_ports::StorePorts { trx: t };
+                        *store_clone.lock().unwrap() = stores.store_or_empty(&store_id_owned);
+                        if let Some(m) = stores.metadata_object(&store_id_owned, "metadata") {
                             *meta_clone.lock().unwrap() = m;
                         }
                         Ok(())
@@ -1801,18 +1850,23 @@ impl Vmm {
                     true,
                     Box::new(move |t: &dyn ITrx| {
                         let list = if user_id.is_empty() {
-                            Store::list(
-                                t,
-                                "obj::Store::",
-                                false,
-                                &HashMap::new(),
-                                &HashMap::new(),
+                            // The legacy `Store::list("obj::Store::", ..)` searched links and
+                            // was always empty; list the first 50 stores instead.
+                            aseman_ports::StoreDirectory::stores(
+                                &crate::shell::api::model::store_ports::StorePorts { trx: t },
                                 0,
-                                50,
+                                Some(50),
                             )
+                            .map(|records| {
+                                records
+                                    .into_iter()
+                                    .map(crate::shell::api::model::store_ports::store_view)
+                                    .collect()
+                            })
+                            .map_err(|error| anyhow::anyhow!("{error}"))
                         } else {
                             let ports =
-                                crate::shell::api::model::store_ports::LegacyMembership { trx: t };
+                                crate::shell::api::model::store_ports::MembershipPorts { trx: t };
                             ports
                                 .member_stores(&user_id, 50)
                                 .map_err(|error| anyhow::anyhow!("{error}"))
@@ -1847,12 +1901,12 @@ impl Vmm {
                     true,
                     Box::new(move |t: &dyn ITrx| {
                         let ports =
-                            crate::shell::api::model::store_ports::LegacyMembership { trx: t };
+                            crate::shell::api::model::store_ports::MembershipPorts { trx: t };
                         let members = aseman_ports::StoreAccess::members(&ports, &sid)
                             .map_err(|error| anyhow::anyhow!("{error}"))?;
                         let mut out: Vec<Creature> = Vec::new();
                         for (member_id, _) in members {
-                            let c = (crate::shell::api::model::creature_ports::LegacyCreatures {
+                            let c = (crate::shell::api::model::creature_ports::CreaturePorts {
                                 trx: t,
                             })
                             .creature_or_empty(&member_id);
@@ -1977,23 +2031,22 @@ impl Vmm {
                 let entity_id_inner = entity_id_owned.clone();
                 let now_ms = super::driver::now_unix_ms();
                 let alarm_time = now_ms + count * 1000;
+                let alarm = aseman_domain::program::ProgramAlarm {
+                    store_id: store_id_inner,
+                    fire_at_millis: alarm_time,
+                    data: data_inner,
+                    entity: entity_id_inner,
+                };
+                let planted = alarm.clone();
                 app.modify_state(
                     false,
                     Box::new(move |t: &dyn ITrx| {
-                        t.put_link(
-                            &format!("vmAlarmStoreId::{}", machine_id_inner),
-                            &store_id_inner,
-                        );
-                        t.put_link(&format!("vmAlarmData::{}", machine_id_inner), &data_inner);
-                        t.put_link(
-                            &format!("vmAlarmEntity::{}", machine_id_inner),
-                            &entity_id_inner,
-                        );
-                        t.put_link(
-                            &format!("vmAlarmTime::{}", machine_id_inner),
-                            &format!("{}", alarm_time),
-                        );
-                        Ok(())
+                        aseman_ports::ProgramAlarms::set_alarm(
+                            &crate::shell::api::model::program_ports::ProgramPorts { trx: t },
+                            &machine_id_inner,
+                            &planted,
+                        )
+                        .map_err(|error| anyhow::anyhow!("{error}"))
                     }),
                 );
                 thread::sleep(Duration::from_secs(count.max(0) as u64));
@@ -2001,10 +2054,17 @@ impl Vmm {
                 app.modify_state(
                     false,
                     Box::new(move |t: &dyn ITrx| {
-                        t.del_key(&format!("link::vmAlarmStoreId::{}", machine_id_drain));
-                        t.del_key(&format!("link::vmAlarmData::{}", machine_id_drain));
-                        t.del_key(&format!("link::vmAlarmEntity::{}", machine_id_drain));
-                        t.del_key(&format!("link::vmAlarmTime::{}", machine_id_drain));
+                        // LD-19: clear only this alarm; a newer one planted while this
+                        // thread slept stays for its own thread and for restart replay.
+                        let programs =
+                            crate::shell::api::model::program_ports::ProgramPorts { trx: t };
+                        let current =
+                            aseman_ports::ProgramAlarms::alarm(&programs, &machine_id_drain)
+                                .map_err(|error| anyhow::anyhow!("{error}"))?;
+                        if current.as_ref() == Some(&alarm) {
+                            aseman_ports::ProgramAlarms::clear_alarm(&programs, &machine_id_drain)
+                                .map_err(|error| anyhow::anyhow!("{error}"))?;
+                        }
                         Ok(())
                     }),
                 );

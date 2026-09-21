@@ -2,6 +2,8 @@
 #![forbid(unsafe_code)]
 
 use aseman_domain::creature::{CreatureRecord, MetadataKind};
+use aseman_domain::gateway::GatewayRoute;
+use aseman_domain::program::{ProgramAlarm, ProgramRecord, VmResourceStore};
 use aseman_domain::signal_tags::LogQuery;
 use aseman_domain::storage_migration::{
     CanonicalWrite, MigrationPhase, MigrationRecord, StorageMigration,
@@ -170,11 +172,113 @@ pub trait CreatureBalances: Send + Sync {
     fn set_balance(&self, creature_id: &str, balance: i64) -> PortResult<()>;
 }
 
+/// Program records and the machine-to-program relation, keyed by legacy identity.
+pub trait ProgramDirectory: Send + Sync {
+    fn program(&self, program_id: &str) -> PortResult<Option<ProgramRecord>>;
+    /// Programs in identity order, paged with [`aseman_domain::creature::legacy_page`].
+    fn programs(&self, offset: i64, count: Option<i64>) -> PortResult<Vec<ProgramRecord>>;
+    /// The programs a machine owns, in identity order.
+    fn programs_of_machine(&self, machine_id: &str) -> PortResult<Vec<ProgramRecord>>;
+    /// Register a new program under its machine. `Conflict` when the identity is taken.
+    fn create_program(&self, record: &ProgramRecord) -> PortResult<()>;
+    /// Replace a program's fields; a changed machine moves the relation. `NotFound`
+    /// when absent.
+    fn update_program(&self, record: &ProgramRecord) -> PortResult<()>;
+    /// Remove a program and its relation. Removing an absent program succeeds.
+    fn delete_program(&self, program_id: &str) -> PortResult<()>;
+}
+
+/// Program metadata documents (ADR 0016, `ProgMeta` / `core.program_metadata`),
+/// crossing the port as JSON object text.
+pub trait ProgramMetadata: Send + Sync {
+    /// The object at a dotted legacy `path` under `metadata`, as JSON object text.
+    fn program_metadata(&self, program_id: &str, path: &str) -> PortResult<Option<String>>;
+    /// Deep-merge a JSON object into the document, creating it when absent, as legacy
+    /// `put_json(.., merge = true)` does. Any other JSON is `Failed`.
+    fn merge_program_metadata(&self, program_id: &str, document: &str) -> PortResult<()>;
+    /// Remove the document. Removing an absent document succeeds.
+    fn delete_program_metadata(&self, program_id: &str) -> PortResult<()>;
+}
+
+/// A program's pending alarm (legacy `vmAlarm*`, target `core.program_alarm`).
+pub trait ProgramAlarms: Send + Sync {
+    fn alarm(&self, program_id: &str) -> PortResult<Option<ProgramAlarm>>;
+    /// Replace the program's alarm.
+    fn set_alarm(&self, program_id: &str, alarm: &ProgramAlarm) -> PortResult<()>;
+    /// Remove the program's alarm. Removing an absent alarm succeeds.
+    fn clear_alarm(&self, program_id: &str) -> PortResult<()>;
+}
+
+/// Store metadata documents (ADR 0016, `StoreMeta` / `core.store_metadata`),
+/// crossing the port as JSON object text.
+pub trait StoreMetadata: Send + Sync {
+    /// The object at a dotted legacy `path` under `metadata`, as JSON object text.
+    fn store_metadata(&self, store_id: &str, path: &str) -> PortResult<Option<String>>;
+    /// Deep-merge a JSON object into the document, creating it when absent, as legacy
+    /// `put_json(.., merge = true)` does. Any other JSON is `Failed`.
+    fn merge_store_metadata(&self, store_id: &str, document: &str) -> PortResult<()>;
+    /// Remove the document. Removing an absent document succeeds.
+    fn delete_store_metadata(&self, store_id: &str) -> PortResult<()>;
+}
+
+/// Creature HTTP routes to program entities, their reverse index, and the
+/// username-local-part aliases that address them.
+pub trait GatewayRoutes: Send + Sync {
+    fn route(&self, creature_id: &str, path: &str) -> PortResult<Option<GatewayRoute>>;
+    /// The route an entity is exposed on, as `(creature_id, path)`.
+    fn route_of_entity(
+        &self,
+        program_id: &str,
+        entity_id: &str,
+    ) -> PortResult<Option<(String, String)>>;
+    /// Store a route and point its entity's reverse index at it.
+    fn put_route(&self, route: &GatewayRoute) -> PortResult<()>;
+    /// Remove a route, and its entity's reverse index when that still names it.
+    fn delete_route(&self, creature_id: &str, path: &str) -> PortResult<()>;
+    /// The creature a username local part addresses.
+    fn alias(&self, local_part: &str) -> PortResult<Option<String>>;
+    /// Record that a username local part addresses `creature_id`.
+    fn put_alias(&self, local_part: &str, creature_id: &str) -> PortResult<()>;
+}
+
+/// VM resource stores owned by machines.
+pub trait VmResourceStores: Send + Sync {
+    fn resource_store(&self, store_id: &str) -> PortResult<Option<VmResourceStore>>;
+    /// Resource store ids in id order, of one machine or of all machines.
+    fn resource_stores(&self, machine_id: Option<&str>) -> PortResult<Vec<String>>;
+    /// Create or update a store: `name` is replaced, an empty `machine_id` keeps the
+    /// current owner (LD-21), and `metadata` (a JSON object) is deep-merged.
+    /// Creating a store without a machine is `Failed`.
+    fn put_resource_store(
+        &self,
+        store_id: &str,
+        name: &str,
+        machine_id: &str,
+        metadata: &str,
+    ) -> PortResult<()>;
+    /// Remove a store and its ownership. Removing an absent store succeeds.
+    fn delete_resource_store(&self, store_id: &str) -> PortResult<()>;
+}
+
 /// Store records as the store use cases see them.
 pub trait StoreDirectory: Send + Sync {
     fn store(&self, store_id: &str) -> PortResult<Option<StoreRecord>>;
     /// Count one recorded signal against the store.
     fn record_signal(&self, store_id: &str) -> PortResult<()>;
+    /// Stores in identity order, paged with [`aseman_domain::creature::legacy_page`].
+    fn stores(&self, offset: i64, count: Option<i64>) -> PortResult<Vec<StoreRecord>>;
+    /// Register a new store created by `creator_id`. `Conflict` when the identity is
+    /// taken. Membership is granted separately through [`StoreAccess`].
+    fn create_store(&self, record: &StoreRecord, creator_id: &str) -> PortResult<()>;
+    /// Replace a store's fields. `NotFound` when absent.
+    fn update_store(&self, record: &StoreRecord) -> PortResult<()>;
+    /// Remove a store. Removing an absent store succeeds; memberships are left to
+    /// [`StoreAccess`].
+    fn delete_store(&self, store_id: &str) -> PortResult<()>;
+    /// Drop a deleted creator's claim on a store that outlives it. Legacy removes
+    /// the `creatorof` link; the capsule provider keeps the store's creator
+    /// relationship to the tombstoned creature.
+    fn release_creator(&self, store_id: &str, creator_id: &str) -> PortResult<()>;
 }
 
 /// Per-member store permissions. An absent grant is the empty (deny-all) set.

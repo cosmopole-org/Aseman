@@ -219,6 +219,7 @@
       "callers": [
         "anyhow",
         "aseman-application",
+        "aseman-capsule-repositories",
         "aseman-config",
         "aseman-contracts",
         "aseman-domain",
@@ -226,6 +227,7 @@
         "aseman-observability",
         "aseman-ports",
         "aseman-storage-legacy",
+        "aseman-storage-postgres",
         "base64",
         "caspar-vm-plugins",
         "caspar-vm-sdk",
@@ -534,7 +536,7 @@
     {
       "callers": [
         "contracts/config/legacy-aliases.json:36",
-        "crates/aseman-config/src/lib.rs:300"
+        "crates/aseman-config/src/lib.rs:317"
       ],
       "current_owner": "network",
       "disposition": "move",
@@ -1173,7 +1175,7 @@
     {
       "callers": [
         "contracts/config/legacy-aliases.json:856",
-        "crates/aseman-config/src/lib.rs:358"
+        "crates/aseman-config/src/lib.rs:375"
       ],
       "current_owner": "process-environment",
       "disposition": "move",
@@ -1461,7 +1463,7 @@
     {
       "callers": [
         "contracts/config/legacy-aliases.json:1264",
-        "crates/aseman-config/src/lib.rs:326"
+        "crates/aseman-config/src/lib.rs:343"
       ],
       "current_owner": "process-environment",
       "disposition": "move",
@@ -1785,7 +1787,7 @@
     {
       "callers": [
         "contracts/config/legacy-aliases.json:1723",
-        "crates/aseman-config/src/lib.rs:362"
+        "crates/aseman-config/src/lib.rs:379"
       ],
       "current_owner": "process-environment",
       "disposition": "move",
@@ -5067,11 +5069,10 @@
   "storage": [
     {
       "callers": [
-        "node/src/drivers/vmm/host/functions/vm_ownership.rs:124",
-        "node/src/drivers/vmm/host/functions/vm_ownership.rs:245",
+        "node/src/drivers/vmm/host/functions/vm_ownership.rs:127",
+        "node/src/drivers/vmm/host/functions/vm_ownership.rs:248",
         "node/src/drivers/vmm/hostcall_logs.rs:21",
-        "node/src/shell/api/actions/program.rs:1050",
-        "node/src/shell/api/actions/program.rs:72"
+        "node/src/shell/api/actions/program.rs:1014"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -5105,7 +5106,7 @@
     },
     {
       "callers": [
-        "node/src/shell/api/model/creature_ports.rs:259"
+        "node/src/shell/api/model/creature_ports.rs:261"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -5139,10 +5140,10 @@
     },
     {
       "callers": [
-        "node/src/shell/api/actions/creature/finance.rs:1574",
-        "node/src/shell/api/actions/creature/finance.rs:1959",
-        "node/src/shell/api/actions/creature/finance.rs:2841",
-        "node/src/shell/api/actions/creature/finance.rs:3190"
+        "node/src/shell/api/actions/creature/finance.rs:1584",
+        "node/src/shell/api/actions/creature/finance.rs:1969",
+        "node/src/shell/api/actions/creature/finance.rs:2851",
+        "node/src/shell/api/actions/creature/finance.rs:3200"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -5165,7 +5166,7 @@
     },
     {
       "callers": [
-        "node/src/shell/api/actions/creature/finance.rs:1334"
+        "node/src/shell/api/actions/creature/finance.rs:1344"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -5176,7 +5177,7 @@
     },
     {
       "callers": [
-        "node/src/shell/api/actions/creature/finance.rs:1923"
+        "node/src/shell/api/actions/creature/finance.rs:1933"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -5187,7 +5188,7 @@
     },
     {
       "callers": [
-        "node/src/shell/api/actions/creature/finance.rs:1210"
+        "node/src/shell/api/actions/creature/finance.rs:1220"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -5198,7 +5199,7 @@
     },
     {
       "callers": [
-        "node/src/shell/api/actions/creature/finance.rs:386"
+        "node/src/shell/api/actions/creature/finance.rs:390"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -5209,7 +5210,7 @@
     },
     {
       "callers": [
-        "node/src/shell/api/actions/creature/finance.rs:1908"
+        "node/src/shell/api/actions/creature/finance.rs:1918"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -5220,7 +5221,7 @@
     },
     {
       "callers": [
-        "node/src/shell/api/actions/creature/finance.rs:1887"
+        "node/src/shell/api/actions/creature/finance.rs:1897"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -5231,7 +5232,7 @@
     },
     {
       "callers": [
-        "node/src/shell/api/actions/creature/finance.rs:2090"
+        "node/src/shell/api/actions/creature/finance.rs:2100"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -5254,7 +5255,7 @@
     },
     {
       "callers": [
-        "node/src/shell/api/actions/creature/finance.rs:2026"
+        "node/src/shell/api/actions/creature/finance.rs:2036"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -5265,7 +5266,7 @@
     },
     {
       "callers": [
-        "node/src/shell/api/actions/creature/finance.rs:2136"
+        "node/src/shell/api/actions/creature/finance.rs:2146"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -5276,7 +5277,7 @@
     },
     {
       "callers": [
-        "node/src/shell/api/actions/creature/finance.rs:2392"
+        "node/src/shell/api/actions/creature/finance.rs:2402"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -5287,7 +5288,7 @@
     },
     {
       "callers": [
-        "node/src/shell/api/actions/creature/finance.rs:1940"
+        "node/src/shell/api/actions/creature/finance.rs:1950"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -5298,7 +5299,7 @@
     },
     {
       "callers": [
-        "node/src/shell/api/actions/creature/finance.rs:2544"
+        "node/src/shell/api/actions/creature/finance.rs:2554"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -5309,7 +5310,7 @@
     },
     {
       "callers": [
-        "node/src/shell/api/actions/creature/finance.rs:3080"
+        "node/src/shell/api/actions/creature/finance.rs:3090"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -5320,7 +5321,7 @@
     },
     {
       "callers": [
-        "node/src/shell/api/actions/creature/finance.rs:2326"
+        "node/src/shell/api/actions/creature/finance.rs:2336"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -5331,7 +5332,7 @@
     },
     {
       "callers": [
-        "node/src/shell/api/actions/creature/finance.rs:2423"
+        "node/src/shell/api/actions/creature/finance.rs:2433"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -5342,7 +5343,7 @@
     },
     {
       "callers": [
-        "node/src/shell/api/actions/creature/finance.rs:2739"
+        "node/src/shell/api/actions/creature/finance.rs:2749"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -5353,7 +5354,7 @@
     },
     {
       "callers": [
-        "node/src/shell/api/actions/creature/finance.rs:1719"
+        "node/src/shell/api/actions/creature/finance.rs:1729"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -5364,7 +5365,7 @@
     },
     {
       "callers": [
-        "node/src/shell/api/actions/creature/finance.rs:1381"
+        "node/src/shell/api/actions/creature/finance.rs:1391"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -5375,7 +5376,7 @@
     },
     {
       "callers": [
-        "node/src/shell/api/actions/creature/finance.rs:1463"
+        "node/src/shell/api/actions/creature/finance.rs:1473"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -5386,7 +5387,7 @@
     },
     {
       "callers": [
-        "node/src/shell/api/actions/creature/finance.rs:1960"
+        "node/src/shell/api/actions/creature/finance.rs:1970"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -5397,9 +5398,9 @@
     },
     {
       "callers": [
-        "node/src/shell/api/actions/creature/finance.rs:1567",
-        "node/src/shell/api/actions/creature/finance.rs:2880",
-        "node/src/shell/api/actions/creature/finance.rs:3225"
+        "node/src/shell/api/actions/creature/finance.rs:1577",
+        "node/src/shell/api/actions/creature/finance.rs:2890",
+        "node/src/shell/api/actions/creature/finance.rs:3235"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -5422,7 +5423,7 @@
     },
     {
       "callers": [
-        "node/src/shell/api/actions/creature/finance.rs:959"
+        "node/src/shell/api/actions/creature/finance.rs:963"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -5433,7 +5434,7 @@
     },
     {
       "callers": [
-        "node/src/shell/api/actions/creature/finance.rs:517"
+        "node/src/shell/api/actions/creature/finance.rs:521"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -5444,7 +5445,7 @@
     },
     {
       "callers": [
-        "node/src/shell/api/actions/creature/finance.rs:1095"
+        "node/src/shell/api/actions/creature/finance.rs:1099"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -5455,10 +5456,10 @@
     },
     {
       "callers": [
-        "node/src/shell/api/actions/creature/finance.rs:1168",
-        "node/src/shell/api/actions/creature/finance.rs:2666",
-        "node/src/shell/api/actions/creature/finance.rs:2778",
-        "node/src/shell/api/actions/creature/finance.rs:3110"
+        "node/src/shell/api/actions/creature/finance.rs:1172",
+        "node/src/shell/api/actions/creature/finance.rs:2676",
+        "node/src/shell/api/actions/creature/finance.rs:2788",
+        "node/src/shell/api/actions/creature/finance.rs:3120"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -5480,12 +5481,12 @@
     },
     {
       "callers": [
-        "node/src/drivers/vmm/hostcall_entities.rs:1927",
-        "node/src/shell/api/actions/creature.rs:1019",
-        "node/src/shell/api/actions/creature.rs:1055",
-        "node/src/shell/api/actions/creature.rs:1157",
-        "node/src/shell/api/actions/creature.rs:1178",
-        "node/src/shell/api/actions/program.rs:240"
+        "node/src/drivers/vmm/hostcall_entities.rs:1981",
+        "node/src/shell/api/actions/creature.rs:1018",
+        "node/src/shell/api/actions/creature.rs:1053",
+        "node/src/shell/api/actions/creature.rs:1155",
+        "node/src/shell/api/actions/creature.rs:1176",
+        "node/src/shell/api/actions/program.rs:216"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -5496,7 +5497,7 @@
     },
     {
       "callers": [
-        "node/src/shell/api/model/creature_ports.rs:340"
+        "node/src/shell/api/model/creature_ports.rs:342"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -5507,9 +5508,9 @@
     },
     {
       "callers": [
-        "node/src/drivers/vmm/host/vm_host_functions.rs:1463",
-        "node/src/drivers/vmm/host/vm_host_functions.rs:1550",
-        "node/src/drivers/vmm/host/vm_host_functions.rs:1639"
+        "node/src/drivers/vmm/host/vm_host_functions.rs:1460",
+        "node/src/drivers/vmm/host/vm_host_functions.rs:1547",
+        "node/src/drivers/vmm/host/vm_host_functions.rs:1636"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -5531,8 +5532,8 @@
     },
     {
       "callers": [
-        "node/src/shell/api/actions/creature/finance.rs:1916",
-        "node/src/shell/api/actions/creature/finance.rs:374"
+        "node/src/shell/api/actions/creature/finance.rs:1926",
+        "node/src/shell/api/actions/creature/finance.rs:378"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -5554,7 +5555,7 @@
     },
     {
       "callers": [
-        "node/src/shell/api/actions/creature/finance.rs:1877"
+        "node/src/shell/api/actions/creature/finance.rs:1887"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -5565,7 +5566,7 @@
     },
     {
       "callers": [
-        "node/src/drivers/vmm/host/vm_host_functions.rs:1744"
+        "node/src/drivers/vmm/host/vm_host_functions.rs:1741"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -5631,26 +5632,14 @@
     },
     {
       "callers": [
-        "node/src/drivers/vmm/hostcall_entities.rs:1736",
-        "node/src/drivers/vmm/hostcall_entities.rs:186"
-      ],
-      "current_owner": "legacy RocksDB/transaction key space",
-      "disposition": "rewrite",
-      "expiry": "Phase 3 cutover plus rollback window",
-      "id": "storage-key:Json::StoreMeta::{}::metadata",
-      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
-      "target_owner": "typed core capsule/table mapping"
-    },
-    {
-      "callers": [
-        "node/src/drivers/vmm/host/functions/vm_ownership.rs:243",
-        "node/src/shell/api/actions/program.rs:1020",
-        "node/src/shell/api/actions/program.rs:339",
-        "node/src/shell/api/actions/program.rs:459",
-        "node/src/shell/api/actions/program.rs:514",
-        "node/src/shell/api/actions/program.rs:520",
-        "node/src/shell/api/actions/program.rs:784",
-        "node/src/shell/api/actions/program.rs:895"
+        "node/src/drivers/vmm/host/functions/vm_ownership.rs:246",
+        "node/src/shell/api/actions/program.rs:315",
+        "node/src/shell/api/actions/program.rs:435",
+        "node/src/shell/api/actions/program.rs:490",
+        "node/src/shell/api/actions/program.rs:496",
+        "node/src/shell/api/actions/program.rs:742",
+        "node/src/shell/api/actions/program.rs:856",
+        "node/src/shell/api/actions/program.rs:984"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -5661,8 +5650,8 @@
     },
     {
       "callers": [
-        "node/src/drivers/vmm/hostcall_entities.rs:1037",
-        "node/src/drivers/vmm/hostcall_entities.rs:981"
+        "node/src/drivers/vmm/hostcall_entities.rs:1027",
+        "node/src/drivers/vmm/hostcall_entities.rs:1083"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -5673,35 +5662,12 @@
     },
     {
       "callers": [
-        "node/src/drivers/vmm/hostcall_entities.rs:835",
-        "node/src/drivers/vmm/hostcall_entities.rs:902"
+        "node/src/shell/api/model/program_ports.rs:276"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
       "expiry": "Phase 3 cutover plus rollback window",
-      "id": "storage-key:Json::VmResourceStore::{}",
-      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
-      "target_owner": "workload/program capsules and VMM observations"
-    },
-    {
-      "callers": [
-        "node/src/drivers/vmm/hostcall_entities.rs:875"
-      ],
-      "current_owner": "legacy RocksDB/transaction key space",
-      "disposition": "rewrite",
-      "expiry": "Phase 3 cutover plus rollback window",
-      "id": "storage-key:Json::VmResourceStore::{}::core",
-      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
-      "target_owner": "workload/program capsules and VMM observations"
-    },
-    {
-      "callers": [
-        "node/src/drivers/vmm/hostcall_entities.rs:871"
-      ],
-      "current_owner": "legacy RocksDB/transaction key space",
-      "disposition": "rewrite",
-      "expiry": "Phase 3 cutover plus rollback window",
-      "id": "storage-key:Json::VmResourceStore::{}::metadata",
+      "id": "storage-key:Json::VmResourceStore::{store_id}",
       "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
       "target_owner": "workload/program capsules and VMM observations"
     },
@@ -5718,7 +5684,7 @@
     },
     {
       "callers": [
-        "node/src/shell/api/actions/creature.rs:567"
+        "node/src/shell/api/actions/creature.rs:566"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -5807,7 +5773,7 @@
     },
     {
       "callers": [
-        "node/src/shell/api/actions/creature/finance.rs:4002"
+        "node/src/shell/api/actions/creature/finance.rs:4012"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -5818,18 +5784,14 @@
     },
     {
       "callers": [
-        "node/src/drivers/vmm/hostcall_entities.rs:344",
-        "node/src/drivers/vmm/hostcall_entities.rs:432",
-        "node/src/drivers/vmm/hostcall_entities.rs:534",
-        "node/src/shell/api/actions/program.rs:616",
-        "node/src/shell/api/actions/program.rs:682"
+        "node/src/shell/api/model/program_ports.rs:158"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
       "expiry": "Phase 3 cutover plus rollback window",
-      "id": "storage-key:ProgMeta::{}",
+      "id": "storage-key:ProgMeta::{program_id}",
       "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
-      "target_owner": "reviewed A308 legacy-to-capsule transform"
+      "target_owner": "workload/program capsules and VMM observations"
     },
     {
       "callers": [
@@ -5866,20 +5828,17 @@
     },
     {
       "callers": [
-        "node/src/shell/api/actions/creature/finance.rs:288"
+        "node/src/shell/api/model/store_ports.rs:196"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
       "expiry": "Phase 3 cutover plus rollback window",
-      "id": "storage-key:StoreMeta::{project_id}",
+      "id": "storage-key:StoreMeta::{store_id}",
       "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
       "target_owner": "typed core capsule/table mapping"
     },
     {
       "callers": [
-        "node/src/drivers/vmm/hostcall_entities.rs:1642",
-        "node/src/drivers/vmm/hostcall_entities.rs:1702",
-        "node/src/drivers/vmm/hostcall_entities.rs:1784",
         "node/src/shell/api/model/store.rs:73"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
@@ -5891,7 +5850,7 @@
     },
     {
       "callers": [
-        "node/src/drivers/vmm/hostcall_entities.rs:1919"
+        "node/src/drivers/vmm/hostcall_entities.rs:1973"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -5902,9 +5861,9 @@
     },
     {
       "callers": [
-        "node/src/shell/api/actions/creature.rs:1228",
-        "node/src/shell/api/actions/creature.rs:1295",
-        "node/src/shell/api/actions/creature.rs:582"
+        "node/src/shell/api/actions/creature.rs:1226",
+        "node/src/shell/api/actions/creature.rs:1293",
+        "node/src/shell/api/actions/creature.rs:581"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -5916,9 +5875,9 @@
     {
       "callers": [
         "node/src/drivers/vmm/hostcall_entities.rs:172",
-        "node/src/shell/api/actions/creature.rs:1296",
-        "node/src/shell/api/actions/creature.rs:1331",
-        "node/src/shell/api/actions/creature.rs:660"
+        "node/src/shell/api/actions/creature.rs:1294",
+        "node/src/shell/api/actions/creature.rs:1329",
+        "node/src/shell/api/actions/creature.rs:659"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -5929,7 +5888,7 @@
     },
     {
       "callers": [
-        "node/src/shell/api/model/creature_ports.rs:260"
+        "node/src/shell/api/model/creature_ports.rs:262"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -5940,8 +5899,8 @@
     },
     {
       "callers": [
-        "node/src/shell/api/actions/creature.rs:1243",
-        "node/src/shell/api/actions/creature.rs:1294"
+        "node/src/shell/api/actions/creature.rs:1241",
+        "node/src/shell/api/actions/creature.rs:1292"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -5952,7 +5911,7 @@
     },
     {
       "callers": [
-        "node/src/shell/api/actions/program.rs:782"
+        "node/src/shell/api/actions/program.rs:740"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -5963,7 +5922,7 @@
     },
     {
       "callers": [
-        "node/src/shell/api/actions/program.rs:1275"
+        "node/src/shell/api/actions/program.rs:1246"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -5974,7 +5933,7 @@
     },
     {
       "callers": [
-        "node/src/shell/api/actions/program.rs:1534"
+        "node/src/shell/api/actions/program.rs:1511"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -5985,7 +5944,7 @@
     },
     {
       "callers": [
-        "node/src/shell/api/actions/program.rs:1151",
+        "node/src/shell/api/actions/program.rs:1116",
         "vms/docker/src/controller.rs:1014",
         "vms/docker/src/controller.rs:993"
       ],
@@ -5998,8 +5957,8 @@
     },
     {
       "callers": [
-        "node/src/drivers/vmm/host/functions/vm_ownership.rs:123",
-        "node/src/drivers/vmm/host/functions/vm_ownership.rs:231"
+        "node/src/drivers/vmm/host/functions/vm_ownership.rs:126",
+        "node/src/drivers/vmm/host/functions/vm_ownership.rs:234"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -6010,7 +5969,7 @@
     },
     {
       "callers": [
-        "node/src/shell/api/actions/program.rs:1137"
+        "node/src/shell/api/actions/program.rs:1102"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -6021,8 +5980,8 @@
     },
     {
       "callers": [
-        "node/src/shell/api/actions/program.rs:803",
-        "node/src/shell/api/actions/program.rs:985"
+        "node/src/shell/api/actions/program.rs:761",
+        "node/src/shell/api/actions/program.rs:949"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -6044,8 +6003,8 @@
     },
     {
       "callers": [
-        "node/src/shell/api/actions/program.rs:1148",
-        "node/src/shell/api/actions/program.rs:733"
+        "node/src/shell/api/actions/program.rs:1113",
+        "node/src/shell/api/actions/program.rs:691"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -6056,9 +6015,9 @@
     },
     {
       "callers": [
-        "node/src/shell/api/actions/program.rs:1146",
-        "node/src/shell/api/actions/program.rs:336",
-        "node/src/shell/api/actions/program.rs:731"
+        "node/src/shell/api/actions/program.rs:1111",
+        "node/src/shell/api/actions/program.rs:312",
+        "node/src/shell/api/actions/program.rs:689"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -6069,8 +6028,8 @@
     },
     {
       "callers": [
-        "node/src/drivers/vmm/hostcall_logs.rs:81",
-        "node/src/shell/api/actions/program.rs:1226"
+        "node/src/drivers/vmm/hostcall_logs.rs:77",
+        "node/src/shell/api/actions/program.rs:1194"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -6081,7 +6040,7 @@
     },
     {
       "callers": [
-        "node/src/core/core_orchestrator.rs:606"
+        "node/src/core/core_orchestrator.rs:603"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -6092,12 +6051,12 @@
     },
     {
       "callers": [
-        "node/src/drivers/vmm/hostcall_entities.rs:1659"
+        "node/src/shell/api/model/store_ports.rs:152"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
       "expiry": "Phase 3 cutover plus rollback window",
-      "id": "storage-key:creatorof::{}::{}",
+      "id": "storage-key:creatorof::{creator_id}::{}",
       "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
       "target_owner": "typed core capsule/table mapping"
     },
@@ -6114,7 +6073,7 @@
     },
     {
       "callers": [
-        "node/src/shell/api/model/store_ports.rs:153"
+        "node/src/shell/api/model/store_ports.rs:279"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -6125,8 +6084,8 @@
     },
     {
       "callers": [
-        "node/src/shell/api/model/store_ports.rs:129",
-        "node/src/shell/api/model/store_ports.rs:175"
+        "node/src/shell/api/model/store_ports.rs:255",
+        "node/src/shell/api/model/store_ports.rs:301"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -6163,7 +6122,7 @@
     {
       "callers": [
         "node/src/drivers/vmm/host_bridge.rs:217",
-        "node/src/drivers/vmm/hostcall_entities.rs:1469"
+        "node/src/drivers/vmm/hostcall_entities.rs:1515"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -6210,8 +6169,8 @@
     {
       "callers": [
         "node/src/drivers/vmm/hostcall_entities.rs:174",
-        "node/src/shell/api/actions/creature.rs:1252",
-        "node/src/shell/api/actions/creature.rs:1334"
+        "node/src/shell/api/actions/creature.rs:1250",
+        "node/src/shell/api/actions/creature.rs:1332"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -6223,7 +6182,7 @@
     {
       "callers": [
         "node/src/drivers/vmm/hostcall_entities.rs:176",
-        "node/src/shell/api/actions/creature.rs:1332"
+        "node/src/shell/api/actions/creature.rs:1330"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -6235,7 +6194,7 @@
     {
       "callers": [
         "node/src/drivers/vmm/hostcall_entities.rs:177",
-        "node/src/shell/api/actions/creature.rs:1336"
+        "node/src/shell/api/actions/creature.rs:1334"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -6246,10 +6205,10 @@
     },
     {
       "callers": [
-        "node/src/drivers/vmm/host/functions/vm_ownership.rs:241",
-        "node/src/shell/api/actions/program.rs:1019",
-        "node/src/shell/api/actions/program.rs:457",
-        "node/src/shell/api/actions/program.rs:894"
+        "node/src/drivers/vmm/host/functions/vm_ownership.rs:244",
+        "node/src/shell/api/actions/program.rs:433",
+        "node/src/shell/api/actions/program.rs:855",
+        "node/src/shell/api/actions/program.rs:983"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -6260,8 +6219,8 @@
     },
     {
       "callers": [
-        "node/src/shell/api/actions/program.rs:1023",
-        "node/src/shell/api/actions/program.rs:915"
+        "node/src/shell/api/actions/program.rs:876",
+        "node/src/shell/api/actions/program.rs:987"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -6272,8 +6231,8 @@
     },
     {
       "callers": [
-        "node/src/shell/api/actions/program.rs:453",
-        "node/src/shell/api/actions/program.rs:890"
+        "node/src/shell/api/actions/program.rs:429",
+        "node/src/shell/api/actions/program.rs:851"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -6284,7 +6243,7 @@
     },
     {
       "callers": [
-        "node/src/shell/api/actions/program.rs:1022"
+        "node/src/shell/api/actions/program.rs:986"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -6295,9 +6254,9 @@
     },
     {
       "callers": [
-        "node/src/drivers/vmm/host/functions/vm_ownership.rs:240",
-        "node/src/shell/api/actions/program.rs:1017",
-        "node/src/shell/api/actions/program.rs:889"
+        "node/src/drivers/vmm/host/functions/vm_ownership.rs:243",
+        "node/src/shell/api/actions/program.rs:850",
+        "node/src/shell/api/actions/program.rs:981"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -6308,10 +6267,10 @@
     },
     {
       "callers": [
-        "node/src/drivers/vmm/host/functions/vm_ownership.rs:239",
-        "node/src/shell/api/actions/program.rs:1016",
-        "node/src/shell/api/actions/program.rs:452",
-        "node/src/shell/api/actions/program.rs:888"
+        "node/src/drivers/vmm/host/functions/vm_ownership.rs:242",
+        "node/src/shell/api/actions/program.rs:428",
+        "node/src/shell/api/actions/program.rs:849",
+        "node/src/shell/api/actions/program.rs:980"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -6322,7 +6281,7 @@
     },
     {
       "callers": [
-        "node/src/shell/api/actions/program.rs:1258"
+        "node/src/shell/api/actions/program.rs:1229"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -6333,29 +6292,29 @@
     },
     {
       "callers": [
-        "node/src/shell/api/model/store_ports.rs:215"
+        "node/src/shell/api/model/store_ports.rs:190"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
       "expiry": "Phase 3 cutover plus rollback window",
-      "id": "storage-key:link::creatorof::{member_id}::{store_id}",
+      "id": "storage-key:link::creatorof::{creator_id}::{store_id}",
       "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
       "target_owner": "typed core capsule/table mapping"
     },
     {
       "callers": [
-        "node/src/drivers/vmm/hostcall_entities.rs:1748"
+        "node/src/shell/api/model/store_ports.rs:182"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
       "expiry": "Phase 3 cutover plus rollback window",
-      "id": "storage-key:link::creatorof::{}::{}",
+      "id": "storage-key:link::creatorof::{creator}::{store_id}",
       "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
       "target_owner": "typed core capsule/table mapping"
     },
     {
       "callers": [
-        "node/src/shell/api/model/store_ports.rs:183"
+        "node/src/shell/api/model/store_ports.rs:309"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -6366,19 +6325,18 @@
     },
     {
       "callers": [
-        "node/src/drivers/vmm/hostcall_entities.rs:396",
-        "node/src/shell/api/actions/program.rs:647"
+        "node/src/shell/api/model/program_ports.rs:55"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
       "expiry": "Phase 3 cutover plus rollback window",
-      "id": "storage-key:link::machinePrograms::{}::{}",
+      "id": "storage-key:link::machinePrograms::{machine_id}::{program_id}",
       "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
       "target_owner": "workload/program capsules and VMM observations"
     },
     {
       "callers": [
-        "node/src/shell/api/model/store_ports.rs:181"
+        "node/src/shell/api/model/store_ports.rs:307"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -6389,7 +6347,7 @@
     },
     {
       "callers": [
-        "node/src/shell/api/model/creature_ports.rs:83"
+        "node/src/shell/api/model/creature_ports.rs:85"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -6400,52 +6358,52 @@
     },
     {
       "callers": [
-        "node/src/drivers/vmm/hostcall_entities.rs:2005"
+        "node/src/shell/api/model/program_ports.rs:266"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
       "expiry": "Phase 3 cutover plus rollback window",
-      "id": "storage-key:link::vmAlarmData::{}",
+      "id": "storage-key:link::vmAlarmData::{program_id}",
       "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
       "target_owner": "workload/program capsules and VMM observations"
     },
     {
       "callers": [
-        "node/src/drivers/vmm/hostcall_entities.rs:2006"
+        "node/src/shell/api/model/program_ports.rs:268"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
       "expiry": "Phase 3 cutover plus rollback window",
-      "id": "storage-key:link::vmAlarmEntity::{}",
+      "id": "storage-key:link::vmAlarmEntity::{program_id}",
       "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
       "target_owner": "workload/program capsules and VMM observations"
     },
     {
       "callers": [
-        "node/src/drivers/vmm/hostcall_entities.rs:2004"
+        "node/src/shell/api/model/program_ports.rs:264"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
       "expiry": "Phase 3 cutover plus rollback window",
-      "id": "storage-key:link::vmAlarmStoreId::{}",
+      "id": "storage-key:link::vmAlarmStoreId::{program_id}",
       "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
       "target_owner": "workload/program capsules and VMM observations"
     },
     {
       "callers": [
-        "node/src/drivers/vmm/hostcall_entities.rs:2007"
+        "node/src/shell/api/model/program_ports.rs:270"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
       "expiry": "Phase 3 cutover plus rollback window",
-      "id": "storage-key:link::vmAlarmTime::{}",
+      "id": "storage-key:link::vmAlarmTime::{program_id}",
       "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
       "target_owner": "workload/program capsules and VMM observations"
     },
     {
       "callers": [
-        "node/src/drivers/vmm/host/functions/vm_ownership.rs:242",
-        "node/src/shell/api/actions/program.rs:1021"
+        "node/src/drivers/vmm/host/functions/vm_ownership.rs:245",
+        "node/src/shell/api/actions/program.rs:985"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -6456,30 +6414,20 @@
     },
     {
       "callers": [
-        "node/src/drivers/vmm/hostcall_entities.rs:925"
+        "node/src/shell/api/model/program_ports.rs:360",
+        "node/src/shell/api/model/program_ports.rs:378"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
       "expiry": "Phase 3 cutover plus rollback window",
-      "id": "storage-key:link::vmOwnedStore::{}::",
+      "id": "storage-key:link::vmOwnedStore::{}::{store_id}",
       "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
       "target_owner": "workload/program capsules and VMM observations"
     },
     {
       "callers": [
-        "node/src/drivers/vmm/hostcall_entities.rs:877"
-      ],
-      "current_owner": "legacy RocksDB/transaction key space",
-      "disposition": "rewrite",
-      "expiry": "Phase 3 cutover plus rollback window",
-      "id": "storage-key:link::vmOwnedStore::{}::{}",
-      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
-      "target_owner": "workload/program capsules and VMM observations"
-    },
-    {
-      "callers": [
-        "node/src/shell/api/actions/program.rs:1031",
-        "node/src/shell/api/actions/program.rs:900"
+        "node/src/shell/api/actions/program.rs:861",
+        "node/src/shell/api/actions/program.rs:995"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -6490,8 +6438,8 @@
     },
     {
       "callers": [
-        "node/src/shell/api/actions/program.rs:1027",
-        "node/src/shell/api/actions/program.rs:896"
+        "node/src/shell/api/actions/program.rs:857",
+        "node/src/shell/api/actions/program.rs:991"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -6507,12 +6455,10 @@
         "node/src/core/actor/model/trx.rs:443",
         "node/src/core/actor/model/trx.rs:508",
         "node/src/drivers/vmm/host/functions/login_grant.rs:85",
-        "node/src/drivers/vmm/host/functions/vm_ownership.rs:238",
-        "node/src/drivers/vmm/host/functions/vm_ownership.rs:249",
+        "node/src/drivers/vmm/host/functions/vm_ownership.rs:241",
+        "node/src/drivers/vmm/host/functions/vm_ownership.rs:252",
         "node/src/drivers/vmm/host_bridge.rs:175",
-        "node/src/drivers/vmm/proxy.rs:90",
-        "node/src/shell/api/actions/program.rs:1308",
-        "node/src/shell/api/actions/program.rs:1313"
+        "node/src/drivers/vmm/proxy.rs:90"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -6523,25 +6469,23 @@
     },
     {
       "callers": [
-        "node/src/drivers/vmm/hostcall_entities.rs:484",
-        "node/src/shell/api/actions/program.rs:1713"
+        "node/src/shell/api/model/program_ports.rs:107"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
       "expiry": "Phase 3 cutover plus rollback window",
-      "id": "storage-key:machinePrograms::{}::",
+      "id": "storage-key:machinePrograms::{machine_id}::",
       "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
       "target_owner": "workload/program capsules and VMM observations"
     },
     {
       "callers": [
-        "node/src/drivers/vmm/hostcall_entities.rs:350",
-        "node/src/shell/api/actions/program.rs:622"
+        "node/src/shell/api/model/program_ports.rs:48"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
       "expiry": "Phase 3 cutover plus rollback window",
-      "id": "storage-key:machinePrograms::{}::{}",
+      "id": "storage-key:machinePrograms::{machine_id}::{program_id}",
       "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
       "target_owner": "workload/program capsules and VMM observations"
     },
@@ -6569,12 +6513,23 @@
     },
     {
       "callers": [
-        "node/src/drivers/network/federation/fednet.rs:278"
+        "node/src/shell/api/model/program_ports.rs:150"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
       "expiry": "Phase 3 cutover plus rollback window",
-      "id": "storage-key:obj::Store::{}",
+      "id": "storage-key:obj::Program::{program_id}::{column}",
+      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
+      "target_owner": "workload/program capsules and VMM observations"
+    },
+    {
+      "callers": [
+        "node/src/shell/api/model/store_ports.rs:167"
+      ],
+      "current_owner": "legacy RocksDB/transaction key space",
+      "disposition": "rewrite",
+      "expiry": "Phase 3 cutover plus rollback window",
+      "id": "storage-key:obj::Store::{store_id}::{column}",
       "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
       "target_owner": "typed core capsule/table mapping"
     },
@@ -6602,7 +6557,7 @@
     },
     {
       "callers": [
-        "node/src/shell/api/model/creature_ports.rs:392"
+        "node/src/shell/api/model/creature_ports.rs:395"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -6650,7 +6605,7 @@
     },
     {
       "callers": [
-        "node/src/shell/api/model/store_ports.rs:134"
+        "node/src/shell/api/model/store_ports.rs:260"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -6662,8 +6617,8 @@
     {
       "callers": [
         "node/src/shell/api/model/access.rs:18",
-        "node/src/shell/api/model/store_ports.rs:122",
-        "node/src/shell/api/model/store_ports.rs:173"
+        "node/src/shell/api/model/store_ports.rs:248",
+        "node/src/shell/api/model/store_ports.rs:299"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -6674,7 +6629,7 @@
     },
     {
       "callers": [
-        "node/src/shell/api/model/creature_ports.rs:78"
+        "node/src/shell/api/model/creature_ports.rs:80"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -6685,7 +6640,7 @@
     },
     {
       "callers": [
-        "node/src/drivers/vmm/proxy.rs:567"
+        "node/src/drivers/vmm/proxy.rs:564"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -6696,7 +6651,7 @@
     },
     {
       "callers": [
-        "node/src/drivers/vmm/proxy.rs:649"
+        "node/src/drivers/vmm/proxy.rs:646"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -6719,57 +6674,57 @@
     },
     {
       "callers": [
-        "node/src/drivers/vmm/hostcall_entities.rs:1987",
-        "node/src/shell/api/actions/program.rs:1767"
+        "node/src/shell/api/model/program_ports.rs:239",
+        "node/src/shell/api/model/program_ports.rs:252"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
       "expiry": "Phase 3 cutover plus rollback window",
-      "id": "storage-key:vmAlarmData::{}",
+      "id": "storage-key:vmAlarmData::{program_id}",
       "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
       "target_owner": "workload/program capsules and VMM observations"
     },
     {
       "callers": [
-        "node/src/drivers/vmm/hostcall_entities.rs:1989",
-        "node/src/shell/api/actions/program.rs:1772"
+        "node/src/shell/api/model/program_ports.rs:230",
+        "node/src/shell/api/model/program_ports.rs:254"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
       "expiry": "Phase 3 cutover plus rollback window",
-      "id": "storage-key:vmAlarmEntity::{}",
+      "id": "storage-key:vmAlarmEntity::{program_id}",
       "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
       "target_owner": "workload/program capsules and VMM observations"
     },
     {
       "callers": [
-        "node/src/drivers/vmm/hostcall_entities.rs:1984",
-        "node/src/shell/api/actions/program.rs:1761"
+        "node/src/shell/api/model/program_ports.rs:226",
+        "node/src/shell/api/model/program_ports.rs:250"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
       "expiry": "Phase 3 cutover plus rollback window",
-      "id": "storage-key:vmAlarmStoreId::{}",
+      "id": "storage-key:vmAlarmStoreId::{program_id}",
       "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
       "target_owner": "workload/program capsules and VMM observations"
     },
     {
       "callers": [
-        "node/src/drivers/vmm/hostcall_entities.rs:1993",
-        "node/src/shell/api/actions/program.rs:1766"
+        "node/src/shell/api/model/program_ports.rs:236",
+        "node/src/shell/api/model/program_ports.rs:256"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
       "expiry": "Phase 3 cutover plus rollback window",
-      "id": "storage-key:vmAlarmTime::{}",
+      "id": "storage-key:vmAlarmTime::{program_id}",
       "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
       "target_owner": "workload/program capsules and VMM observations"
     },
     {
       "callers": [
-        "node/src/core/core_orchestrator.rs:775",
-        "node/src/drivers/vmm/driver.rs:266",
-        "node/src/shell/api/actions/program.rs:761"
+        "node/src/core/core_orchestrator.rs:744",
+        "node/src/drivers/vmm/driver.rs:260",
+        "node/src/shell/api/actions/program.rs:719"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -6781,9 +6736,9 @@
     {
       "callers": [
         "node/src/drivers/cluster/mod.rs:467",
-        "node/src/drivers/vmm/driver.rs:269",
-        "node/src/shell/api/actions/program.rs:1558",
-        "node/src/shell/api/actions/program.rs:755"
+        "node/src/drivers/vmm/driver.rs:263",
+        "node/src/shell/api/actions/program.rs:1534",
+        "node/src/shell/api/actions/program.rs:713"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -6795,8 +6750,8 @@
     {
       "callers": [
         "node/src/drivers/cluster/mod.rs:469",
-        "node/src/shell/api/actions/program.rs:1562",
-        "node/src/shell/api/actions/program.rs:756"
+        "node/src/shell/api/actions/program.rs:1538",
+        "node/src/shell/api/actions/program.rs:714"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -6807,9 +6762,9 @@
     },
     {
       "callers": [
-        "node/src/drivers/vmm/hostcall_entities.rs:781",
-        "node/src/shell/api/actions/program.rs:1528",
-        "node/src/shell/api/actions/program.rs:1611"
+        "node/src/drivers/vmm/hostcall_entities.rs:800",
+        "node/src/shell/api/actions/program.rs:1505",
+        "node/src/shell/api/actions/program.rs:1587"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -6821,12 +6776,12 @@
     {
       "callers": [
         "node/src/drivers/cluster/mod.rs:459",
-        "node/src/drivers/vmm/driver.rs:1097",
-        "node/src/drivers/vmm/driver.rs:234",
-        "node/src/drivers/vmm/hostcall_entities.rs:768",
+        "node/src/drivers/vmm/driver.rs:1089",
+        "node/src/drivers/vmm/driver.rs:228",
+        "node/src/drivers/vmm/hostcall_entities.rs:787",
         "node/src/drivers/vmm/proxy.rs:305",
-        "node/src/drivers/vmm/proxy.rs:552",
-        "node/src/shell/api/actions/program.rs:1489",
+        "node/src/drivers/vmm/proxy.rs:549",
+        "node/src/shell/api/actions/program.rs:1466",
         "vms/javascript/src/controller.rs:298",
         "vms/wasm/src/controller.rs:272"
       ],
@@ -6840,12 +6795,12 @@
     {
       "callers": [
         "node/src/drivers/cluster/mod.rs:463",
-        "node/src/drivers/vmm/driver.rs:1090",
-        "node/src/drivers/vmm/driver.rs:227",
-        "node/src/drivers/vmm/hostcall_entities.rs:772",
+        "node/src/drivers/vmm/driver.rs:1082",
+        "node/src/drivers/vmm/driver.rs:221",
+        "node/src/drivers/vmm/hostcall_entities.rs:791",
         "node/src/drivers/vmm/proxy.rs:301",
-        "node/src/drivers/vmm/proxy.rs:545",
-        "node/src/shell/api/actions/program.rs:1493"
+        "node/src/drivers/vmm/proxy.rs:542",
+        "node/src/shell/api/actions/program.rs:1470"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -6856,18 +6811,29 @@
     },
     {
       "callers": [
-        "node/src/drivers/vmm/hostcall_entities.rs:845"
+        "node/src/shell/api/model/program_ports.rs:306"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
       "expiry": "Phase 3 cutover plus rollback window",
-      "id": "storage-key:vmOwnedStore::{}::{}",
+      "id": "storage-key:vmOwnedStore::{machine}::",
       "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
       "target_owner": "workload/program capsules and VMM observations"
     },
     {
       "callers": [
-        "node/src/shell/api/actions/creature.rs:698"
+        "node/src/shell/api/model/program_ports.rs:366"
+      ],
+      "current_owner": "legacy RocksDB/transaction key space",
+      "disposition": "rewrite",
+      "expiry": "Phase 3 cutover plus rollback window",
+      "id": "storage-key:vmOwnedStore::{machine}::{store_id}",
+      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
+      "target_owner": "workload/program capsules and VMM observations"
+    },
+    {
+      "callers": [
+        "node/src/shell/api/actions/creature.rs:697"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -6878,7 +6844,7 @@
     },
     {
       "callers": [
-        "node/src/shell/api/actions/creature.rs:687"
+        "node/src/shell/api/actions/creature.rs:686"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -6889,7 +6855,7 @@
     },
     {
       "callers": [
-        "node/src/shell/api/actions/creature.rs:683"
+        "node/src/shell/api/actions/creature.rs:682"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -6900,7 +6866,7 @@
     },
     {
       "callers": [
-        "node/src/shell/api/actions/creature.rs:877"
+        "node/src/shell/api/actions/creature.rs:876"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -6911,7 +6877,7 @@
     },
     {
       "callers": [
-        "node/src/shell/api/actions/creature.rs:680"
+        "node/src/shell/api/actions/creature.rs:679"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -6934,7 +6900,7 @@
     },
     {
       "callers": [
-        "node/src/drivers/vmm/hostcall_entities.rs:1042"
+        "node/src/drivers/vmm/hostcall_entities.rs:1088"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -6945,7 +6911,7 @@
     },
     {
       "callers": [
-        "node/src/drivers/vmm/hostcall_entities.rs:1041"
+        "node/src/drivers/vmm/hostcall_entities.rs:1087"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -6956,7 +6922,7 @@
     },
     {
       "callers": [
-        "node/src/core/core_orchestrator.rs:623"
+        "node/src/core/core_orchestrator.rs:620"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -6967,7 +6933,7 @@
     },
     {
       "callers": [
-        "node/src/core/core_orchestrator.rs:627"
+        "node/src/core/core_orchestrator.rs:624"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -6990,7 +6956,6 @@
         "node/src/drivers/vmm/network/gateway_registry.rs:17",
         "node/src/drivers/vmm/network/gateway_registry.rs:23",
         "node/src/drivers/vmm/network/gateway_types.rs:36",
-        "node/src/shell/api/actions/program.rs:1324",
         "node/src/shell/api/model/entity.rs:27",
         "vms/elpify/src/queue.rs:156",
         "vms/javascript/src/host_calls.rs:135",
@@ -7041,7 +7006,7 @@
     },
     {
       "callers": [
-        "node/src/core/core_orchestrator.rs:618"
+        "node/src/core/core_orchestrator.rs:615"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -7052,7 +7017,7 @@
     },
     {
       "callers": [
-        "node/src/core/core_orchestrator.rs:610"
+        "node/src/core/core_orchestrator.rs:607"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -7063,7 +7028,7 @@
     },
     {
       "callers": [
-        "node/src/core/core_orchestrator.rs:614"
+        "node/src/core/core_orchestrator.rs:611"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -7282,7 +7247,7 @@
     "artifacts": 29,
     "configuration": 116,
     "protocol_and_compatibility": 289,
-    "storage": 186,
-    "total": 620
+    "storage": 184,
+    "total": 618
   }
 }

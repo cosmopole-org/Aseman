@@ -42,7 +42,7 @@ Registered actions: 77; distinct guard expressions: 5.
 | `/creatures/closePool` | `node/src/shell/api/actions/creature/finance.rs::close_pool` | `finance_guard()` | `get_link`, `put_link` | — | — |
 | `/creatures/consumeLock` | `node/src/shell/api/actions/creature.rs::consume_lock` | `user_guard()` | `del_json`, `get_json`, `put_json` | `security` | — |
 | `/creatures/create` | `node/src/shell/api/actions/creature.rs::create` | `anon_guard()` | — | — | — |
-| `/creatures/createHold` | `node/src/shell/api/actions/creature/finance.rs::create_hold` | `finance_guard()` | `get_json`, `get_link`, `has_obj`, `put_link` | — | — |
+| `/creatures/createHold` | `node/src/shell/api/actions/creature/finance.rs::create_hold` | `finance_guard()` | `get_json`, `get_link`, `put_link` | — | — |
 | `/creatures/debitPool` | `node/src/shell/api/actions/creature/finance.rs::debit_pool` | `finance_guard()` | `get_json`, `get_link`, `put_json`, `put_link` | — | — |
 | `/creatures/delete` | `node/src/shell/api/actions/creature.rs::delete` | `user_guard()` | `del_key`, `get_link` | — | — |
 | `/creatures/find` | `node/src/shell/api/actions/creature.rs::find` | `user_guard()` | — | — | — |
@@ -88,26 +88,26 @@ Registered actions: 77; distinct guard expressions: 5.
 | `/gateway/signal` | `node/src/shell/api/actions/gateway.rs::signal` | `Guard::default()` | — | — | — |
 | `/gateway/subscribe` | `node/src/shell/api/actions/gateway.rs::subscribe` | `Guard::default()` | — | — | — |
 | `/gateway/unsubscribe` | `node/src/shell/api/actions/gateway.rs::unsubscribe` | `Guard::default()` | — | — | — |
-| `/machines/closeVmTerminal` | `node/src/shell/api/actions/program.rs::close_vm_terminal` | `user_guard()` | `del_key`, `has_obj` | — | — |
+| `/machines/closeVmTerminal` | `node/src/shell/api/actions/program.rs::close_vm_terminal` | `user_guard()` | `del_key` | — | — |
 | `/machines/list` | `node/src/shell/api/actions/program.rs::list_machines` | `user_guard()` | — | — | — |
-| `/machines/listEntityVms` | `node/src/shell/api/actions/program.rs::list_entity_vms` | `user_guard()` | `get_link`, `get_links_list`, `has_obj` | — | — |
+| `/machines/listEntityVms` | `node/src/shell/api/actions/program.rs::list_entity_vms` | `user_guard()` | `get_link`, `get_links_list` | — | — |
 | `/machines/listProgramMachines` | `node/src/shell/api/actions/program.rs::list_program_machines` | `user_guard()` | — | — | — |
-| `/machines/openVmTerminal` | `node/src/shell/api/actions/program.rs::open_vm_terminal` | `user_guard()` | `has_obj`, `put_link` | — | — |
+| `/machines/openVmTerminal` | `node/src/shell/api/actions/program.rs::open_vm_terminal` | `user_guard()` | `put_link` | — | — |
 | `/machines/readMachineBuilds` | `node/src/shell/api/actions/program.rs::read_machine_builds` | `user_guard()` | `get_links_list` | — | — |
 | `/machines/readVmLogs` | `node/src/shell/api/actions/program.rs::read_vm_logs` | `user_guard()` | `get_links_list` | `storage` | `read_vm_logs` |
-| `/programs/create` | `node/src/shell/api/actions/program.rs::create_program` | `user_guard()` | `put_json`, `put_link` | — | — |
-| `/programs/delete` | `node/src/shell/api/actions/program.rs::delete_program` | `user_guard()` | `del_index`, `del_key`, `get_index`, `has_obj` | — | — |
-| `/programs/deleteEntity` | `node/src/shell/api/actions/program.rs::delete_program_entity` | `user_guard()` | `del_json`, `del_key`, `get_link`, `has_obj` | — | `delete_vm_instance` |
-| `/programs/deploy` | `node/src/shell/api/actions/program.rs::deploy` | `user_guard()` | `has_obj`, `put_link` | `file`, `storage`, `vmm` | `build_vm_image` |
+| `/programs/create` | `node/src/shell/api/actions/program.rs::create_program` | `user_guard()` | — | — | — |
+| `/programs/delete` | `node/src/shell/api/actions/program.rs::delete_program` | `user_guard()` | — | — | — |
+| `/programs/deleteEntity` | `node/src/shell/api/actions/program.rs::delete_program_entity` | `user_guard()` | `del_json`, `del_key`, `get_link` | — | `delete_vm_instance` |
+| `/programs/deploy` | `node/src/shell/api/actions/program.rs::deploy` | `user_guard()` | `put_link` | `file`, `storage`, `vmm` | `build_vm_image` |
 | `/programs/downloadEntity` | `node/src/shell/api/actions/program.rs::download_entity` | `user_guard()` | `get_link` | — | — |
 | `/programs/list` | `node/src/shell/api/actions/program.rs::list_programs` | `user_guard()` | — | — | — |
-| `/programs/runEntity` | `node/src/shell/api/actions/program.rs::run_program_entity` | `user_guard()` | `get_link`, `has_obj`, `put_json`, `put_link` | `vmm` | — |
-| `/programs/stopEntity` | `node/src/shell/api/actions/program.rs::stop_program_entity` | `user_guard()` | `del_json`, `del_key`, `has_obj` | `vmm` | — |
-| `/programs/update` | `node/src/shell/api/actions/program.rs::update_program` | `user_guard()` | `has_obj`, `put_json` | — | — |
+| `/programs/runEntity` | `node/src/shell/api/actions/program.rs::run_program_entity` | `user_guard()` | `get_link`, `put_json`, `put_link` | `vmm` | — |
+| `/programs/stopEntity` | `node/src/shell/api/actions/program.rs::stop_program_entity` | `user_guard()` | `del_json`, `del_key` | `vmm` | — |
+| `/programs/update` | `node/src/shell/api/actions/program.rs::update_program` | `user_guard()` | — | — | — |
 | `/storage/upload` | `node/src/shell/api/actions/creature.rs::storage_upload` | `user_guard()` | — | `file`, `storage` | — |
-| `/stores/getAccess` | `node/src/shell/api/actions/store.rs::get_access` | `store_guard()` | — | `storage` | — |
+| `/stores/getAccess` | `node/src/shell/api/actions/store.rs::get_access` | `store_guard()` | — | — | — |
 | `/stores/history` | `node/src/shell/api/actions/store.rs::history` | `store_guard()` | — | `storage` | — |
-| `/stores/setAccess` | `node/src/shell/api/actions/store.rs::set_access` | `store_guard()` | — | `storage` | — |
+| `/stores/setAccess` | `node/src/shell/api/actions/store.rs::set_access` | `store_guard()` | — | — | — |
 | `/stores/signal` | `node/src/shell/api/actions/store.rs::signal` | `store_guard()` | — | `storage` | — |
 
 ## Limitations and required follow-up

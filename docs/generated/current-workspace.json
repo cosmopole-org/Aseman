@@ -40,7 +40,7 @@
       "client-cli/package-lock.json"
     ],
     "tracked_dist_file_count": 15,
-    "tracked_file_count": 714,
+    "tracked_file_count": 735,
     "tracked_files_by_top_level": {
       ".cargo": 1,
       ".claude": 1,
@@ -57,12 +57,12 @@
       "client-cli": 6,
       "clippy.toml": 1,
       "cmd": 7,
-      "contracts": 59,
-      "crates": 33,
+      "contracts": 60,
+      "crates": 45,
       "dist": 15,
-      "docs": 85,
-      "modules": 46,
-      "node": 284,
+      "docs": 87,
+      "modules": 50,
+      "node": 286,
       "plan": 18,
       "run-nodes.sh": 1,
       "rust-toolchain.toml": 1,
@@ -78,7 +78,7 @@
     },
     "tracked_source_files_by_extension": {
       ".py": 21,
-      ".rs": 394,
+      ".rs": 411,
       ".sh": 6,
       ".ts": 1
     }
@@ -760,6 +760,11 @@
             "scope": "normal"
           },
           {
+            "name": "aseman-capsule-repositories",
+            "path": "crates/aseman-capsule-repositories",
+            "scope": "normal"
+          },
+          {
             "name": "aseman-config",
             "path": "crates/aseman-config",
             "scope": "normal"
@@ -792,6 +797,11 @@
           {
             "name": "aseman-storage-legacy",
             "path": "modules/storage-legacy",
+            "scope": "normal"
+          },
+          {
+            "name": "aseman-storage-postgres",
+            "path": "modules/storage-postgres",
             "scope": "normal"
           },
           {

@@ -289,7 +289,7 @@ impl Ws {
             true,
             Box::new(move |trx: &dyn ITrx| {
                 // Membership goes through the store port (legacy adapter until cutover).
-                let ports = crate::shell::api::model::store_ports::LegacyMembership { trx };
+                let ports = crate::shell::api::model::store_ports::MembershipPorts { trx };
                 if let Ok(ids) = aseman_ports::StoreAccess::stores_of(&ports, &member) {
                     *store_clone.lock().unwrap() = ids;
                 }

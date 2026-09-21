@@ -51,7 +51,14 @@ and the capsule adapter is proven against the same use cases.
 | Creature metadata (`CreatMeta`, `UserMeta`) | `CreatureMetadata` port | `LegacyCreatures` (node conformance test) | `core.creature_metadata` / `core.user_metadata` (live conformance test) |
 | Creature type registry | `CreatureTypes` port | `LegacyCreatures` (node conformance test) | `core.creature_type` (live conformance test) |
 | Identity credentials (sessions, email login links, custodial keys, secrets, login grants) | P4 (ADRs 0019/0023/0026) | stays legacy-authoritative | revocations/verification only |
-| Program, gateway, entities, VM resource stores, chain, federation state | open | — | — |
+| Programs and program metadata (`Program`, `machinePrograms`, `ProgMeta`) | `aseman-application::program`, `ProgramDirectory`, `ProgramMetadata` | `LegacyPrograms` (node conformance test) | `core.program` / `core.program_metadata` (live conformance test) |
+| Program alarms (`vmAlarm*`) | `ProgramAlarms` port | `LegacyPrograms` (node conformance test) | `core.program_alarm` (live conformance test) |
+| Store records and metadata (`Store`, `creatorof`, `StoreMeta`) | `StoreDirectory`, `StoreMetadata` | `LegacyStores` (node conformance test) | `core.store` / `core.store_metadata` (live conformance test) |
+| Gateway routes (`vmHttpRoute*`) | `GatewayRoutes` port | `LegacyGatewayRoutes` (node conformance test) | `core.gateway_route` (live conformance test; pins not persisted, ADR 0022) |
+| VM resource stores (`Json::VmResourceStore`, `vmOwnedStore`) | `VmResourceStores` port | `LegacyPrograms` (node conformance test) | `core.vm_resource_store` (live conformance test) |
+| Legacy id allocation (`globalIdCounter`, `localIdCounter`) | P4 UUIDv7 identities (ADRs 0009/0020/0026) | stays legacy-authoritative | verified, not migrated |
+| Work chains and shards (`Chain`, `ChainShard`) | P8 with the consensus provider (ADRs 0025/0026; LD-22, LD-23) | stays legacy-authoritative | checkpoint only |
+| Entities, entity configs and artifacts, VM resource entities, files | blob-backed; ADR 0027 pending | — | — |
 
 No node code outside `store_ports.rs` and `model/access.rs` reads or writes an
 `onaccess`/`hasaccess` key; the grep in the P3-06 record checks this. The A004 scanner
@@ -60,13 +67,15 @@ the A308 manifest keeps zero blocked rows.
 
 ## Next steps
 
-1. Rewire the remaining action families onto application use cases with repository
-   ports, adding legacy and capsule adapters under the same characterization tests.
-   Stores, membership, and the creature family (identity, balances, metadata, types,
-   owner links) are done. The finance ledger stays on legacy until P8 and identity
-   credentials until P4 (ADR 0026). Program, gateway, entities, VM resource stores,
-   chain, and federation state remain. LD-14 (unauthorized VM
-   creature host calls) must be fixed before cutover.
-2. Add typed storage-provider selection and route authoritative reads and writes by
-   binding generation (A309 cutover), per-family as ADR 0026 routes them.
+1. Blob-backed families (entities, entity configs and artifacts, VM resource
+   entities, files) need the target blob store decided (ADR 0027, pending). Every
+   other core family already reads and writes through ports with both adapters, and
+   the families ADR 0026 routes to legacy (finance ledger and balances, identity
+   credentials, VMM observed runtime, work chains, legacy id allocation) stay there.
+   LD-14 (unauthorized VM creature host calls) and LD-24 (VM guests write arbitrary
+   node keys) must be fixed before cutover.
+2. Typed provider selection and per-action routing are in place (ADR 0026;
+   `ASEMAN_CORE_STORAGE_PROVIDER`, `ASEMAN_CORE_BINDING_GENERATION`). The cutover
+   itself is an operator switch after A309 verification, blocked by LD-14, LD-24, and
+   the blob-backed families.
 3. Re-evaluate this gate.

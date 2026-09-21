@@ -978,7 +978,6 @@ CREATE INDEX IF NOT EXISTS ix_creatures_updated_at ON aseman_core."creatures" (u
 
 ALTER TABLE aseman_core."programs" DROP CONSTRAINT IF EXISTS fk_programs_creature;
 ALTER TABLE aseman_core."programs" ADD CONSTRAINT fk_programs_creature FOREIGN KEY ("creature") REFERENCES aseman_core."creatures"(id) ON DELETE RESTRICT;
-CREATE UNIQUE INDEX IF NOT EXISTS uq_programs_machine_id ON aseman_core."programs" ("machine_id") WHERE NOT tombstone;
 CREATE INDEX IF NOT EXISTS ix_programs_updated_at ON aseman_core."programs" (updated_at_micros, id);
 
 ALTER TABLE aseman_core."stores" DROP CONSTRAINT IF EXISTS fk_stores_creature;

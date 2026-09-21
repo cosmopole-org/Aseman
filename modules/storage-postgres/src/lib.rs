@@ -7,7 +7,7 @@ use aseman_contracts::capsule::{
     QueryPredicate, StorageCapability, StorageClass,
 };
 use postgres::types::ToSql;
-use postgres::{Client, NoTls};
+use postgres::{Client, GenericClient, NoTls};
 use serde::Deserialize;
 use std::collections::{BTreeMap, BTreeSet};
 use std::sync::{Mutex, OnceLock};
@@ -19,6 +19,7 @@ pub use service::PostgresStorageService;
 pub mod capsule_store;
 pub mod guest;
 pub mod migration;
+pub mod unit_of_work;
 
 const MAPPING_JSON: &str = include_str!("../../../contracts/storage/postgres/core-mapping.json");
 #[cfg(test)]
@@ -27,7 +28,9 @@ const STORAGE_CLASS_MAPPING_JSON: &str =
 pub const CORE_MIGRATION: &str = include_str!("../migrations/0001_core.sql");
 pub const STORAGE_CLASS_MIGRATION: &str = include_str!("../migrations/0002_storage_classes.sql");
 pub const MIGRATION_FENCE_MIGRATION: &str = include_str!("../migrations/0003_migration_fence.sql");
-const SCHEMA: &str = "aseman_core";
+pub const PROGRAM_MACHINE_MIGRATION: &str =
+    include_str!("../migrations/0004_program_machine_not_unique.sql");
+pub(crate) const SCHEMA: &str = "aseman_core";
 /// The most capsules one [`PostgresCapsuleRepository::put_all`] transaction holds.
 pub const MAX_TRANSACTION_CAPSULES: usize = 64;
 
@@ -363,7 +366,8 @@ impl PostgresCapsuleRepository {
         self.with_client(|client| {
             client.batch_execute(CORE_MIGRATION)?;
             client.batch_execute(STORAGE_CLASS_MIGRATION)?;
-            client.batch_execute(MIGRATION_FENCE_MIGRATION)
+            client.batch_execute(MIGRATION_FENCE_MIGRATION)?;
+            client.batch_execute(PROGRAM_MACHINE_MIGRATION)
         })
     }
 
@@ -493,69 +497,19 @@ impl PostgresCapsuleRepository {
         kind: &CapsuleKind,
         id: &CapsuleId,
     ) -> StorageResult<Option<CapsuleEnvelope>> {
-        let mapping = table_mapping(kind)?;
-        let id = Uuid::from_bytes(id.0);
-        let statement = format!(
-            "SELECT capsule_cbor FROM {} WHERE id = $1",
-            qualified(mapping)
-        );
-        let row = self.with_client(|client| client.query_opt(&statement, &[&id]))?;
-        row.map(|row| {
-            let bytes: Vec<u8> = row.get(0);
-            CapsuleEnvelope::from_canonical_bytes(&bytes)
-                .map_err(|error| PostgresStorageError::Invalid(error.to_string()))
-        })
-        .transpose()
+        let mut guard = self
+            .client
+            .lock()
+            .map_err(|_| PostgresStorageError::Unavailable("client lock poisoned".to_owned()))?;
+        get_on(&mut *guard, kind, id)
     }
 
     pub fn query(&self, query: &CapsuleQuery) -> StorageResult<Vec<CapsuleEnvelope>> {
-        if query.limit == 0 || query.limit > MAX_QUERY_LIMIT {
-            return Err(PostgresStorageError::Invalid(
-                "query limit is outside provider bounds".to_owned(),
-            ));
-        }
-        if !query.aggregates.is_empty() || !query.traversals.is_empty() || query.cursor.is_some() {
-            return Err(PostgresStorageError::Unsupported(
-                "aggregates, traversal, and cursors are not advertised by postgres-core-v1"
-                    .to_owned(),
-            ));
-        }
-        let mapping = table_mapping(&query.kind)?;
-        for field in &query.projection {
-            require_query_field(mapping, field)?;
-        }
-        let mut values = Vec::new();
-        let mut filters = vec!["NOT tombstone".to_owned()];
-        if let Some(predicate) = &query.predicate {
-            filters.push(predicate_sql(predicate, mapping, &mut values, 1)?);
-        }
-        let mut order = Vec::new();
-        for sort in &query.sort {
-            let column = require_query_field(mapping, &sort.field)?;
-            let direction = match sort.direction {
-                aseman_contracts::capsule::SortDirection::Ascending => "ASC",
-                aseman_contracts::capsule::SortDirection::Descending => "DESC",
-            };
-            order.push(format!("{} {direction}", sql_identifier(column)));
-        }
-        order.push("id ASC".to_owned());
-        values.push(SqlParam::I64(Some(i64::from(query.limit))));
-        let limit_parameter = values.len();
-        let statement = format!(
-            "SELECT capsule_cbor FROM {} WHERE {} ORDER BY {} LIMIT ${limit_parameter}",
-            qualified(mapping),
-            filters.join(" AND "),
-            order.join(", ")
-        );
-        let parameters = sql_parameters(&values);
-        let rows = self.with_client(|client| client.query(&statement, &parameters))?;
-        rows.into_iter()
-            .map(|row| {
-                let bytes: Vec<u8> = row.get(0);
-                CapsuleEnvelope::from_canonical_bytes(&bytes)
-                    .map_err(|error| PostgresStorageError::Invalid(error.to_string()))
-            })
-            .collect()
+        let mut guard = self
+            .client
+            .lock()
+            .map_err(|_| PostgresStorageError::Unavailable("client lock poisoned".to_owned()))?;
+        query_on(&mut *guard, query)
     }
 
     fn with_client<T>(
@@ -570,8 +524,86 @@ impl PostgresCapsuleRepository {
     }
 }
 
+/// Read one capsule on `client` (a connection or an open transaction).
+pub(crate) fn get_on(
+    client: &mut impl GenericClient,
+    kind: &CapsuleKind,
+    id: &CapsuleId,
+) -> StorageResult<Option<CapsuleEnvelope>> {
+    let mapping = table_mapping(kind)?;
+    let id = Uuid::from_bytes(id.0);
+    let statement = format!(
+        "SELECT capsule_cbor FROM {} WHERE id = $1",
+        qualified(mapping)
+    );
+    let row = client
+        .query_opt(&statement, &[&id])
+        .map_err(map_postgres_error)?;
+    row.map(|row| {
+        let bytes: Vec<u8> = row.get(0);
+        CapsuleEnvelope::from_canonical_bytes(&bytes)
+            .map_err(|error| PostgresStorageError::Invalid(error.to_string()))
+    })
+    .transpose()
+}
+
+/// Run a capsule query on `client` (a connection or an open transaction).
+pub(crate) fn query_on(
+    client: &mut impl GenericClient,
+    query: &CapsuleQuery,
+) -> StorageResult<Vec<CapsuleEnvelope>> {
+    if query.limit == 0 || query.limit > MAX_QUERY_LIMIT {
+        return Err(PostgresStorageError::Invalid(
+            "query limit is outside provider bounds".to_owned(),
+        ));
+    }
+    if !query.aggregates.is_empty() || !query.traversals.is_empty() || query.cursor.is_some() {
+        return Err(PostgresStorageError::Unsupported(
+            "aggregates, traversal, and cursors are not advertised by postgres-core-v1".to_owned(),
+        ));
+    }
+    let mapping = table_mapping(&query.kind)?;
+    for field in &query.projection {
+        require_query_field(mapping, field)?;
+    }
+    let mut values = Vec::new();
+    let mut filters = vec!["NOT tombstone".to_owned()];
+    if let Some(predicate) = &query.predicate {
+        filters.push(predicate_sql(predicate, mapping, &mut values, 1)?);
+    }
+    let mut order = Vec::new();
+    for sort in &query.sort {
+        let column = require_query_field(mapping, &sort.field)?;
+        let direction = match sort.direction {
+            aseman_contracts::capsule::SortDirection::Ascending => "ASC",
+            aseman_contracts::capsule::SortDirection::Descending => "DESC",
+        };
+        order.push(format!("{} {direction}", sql_identifier(column)));
+    }
+    order.push("id ASC".to_owned());
+    values.push(SqlParam::I64(Some(i64::from(query.limit))));
+    let limit_parameter = values.len();
+    let statement = format!(
+        "SELECT capsule_cbor FROM {} WHERE {} ORDER BY {} LIMIT ${limit_parameter}",
+        qualified(mapping),
+        filters.join(" AND "),
+        order.join(", ")
+    );
+    let parameters = sql_parameters(&values);
+    let rows = client
+        .query(&statement, &parameters)
+        .map_err(map_postgres_error)?;
+    rows.into_iter()
+        .map(|row| {
+            let bytes: Vec<u8> = row.get(0);
+            CapsuleEnvelope::from_canonical_bytes(&bytes)
+                .map_err(|error| PostgresStorageError::Invalid(error.to_string()))
+        })
+        .collect()
+}
+
 /// A validated write, ready to run inside a transaction.
-struct PreparedWrite<'a> {
+pub(crate) struct PreparedWrite<'a> {
     mapping: &'static TableMapping,
     capsule: &'a CapsuleEnvelope,
     expected_revision: Option<u64>,
@@ -580,7 +612,7 @@ struct PreparedWrite<'a> {
     canonical: Vec<u8>,
 }
 
-fn prepare_write(
+pub(crate) fn prepare_write(
     capsule: &CapsuleEnvelope,
     expected_revision: Option<u64>,
 ) -> StorageResult<PreparedWrite<'_>> {
@@ -616,8 +648,8 @@ fn prepare_write(
 
 /// Insert or compare-and-swap one capsule inside `client`'s transaction. An identical
 /// replay of a stored revision succeeds; any other lost race is `Conflict`.
-fn write_prepared(
-    client: &mut postgres::Transaction<'_>,
+pub(crate) fn write_prepared(
+    client: &mut impl GenericClient,
     write: &PreparedWrite<'_>,
 ) -> StorageResult<()> {
     let PreparedWrite {
@@ -1015,7 +1047,7 @@ fn sql_parameters(values: &[SqlParam]) -> Vec<&(dyn ToSql + Sync)> {
     values.iter().map(SqlParam::as_sql).collect()
 }
 
-fn map_postgres_error(error: postgres::Error) -> PostgresStorageError {
+pub(crate) fn map_postgres_error(error: postgres::Error) -> PostgresStorageError {
     if let Some(database_error) = error.as_db_error() {
         match database_error.code().code() {
             "23505" => return PostgresStorageError::Conflict,

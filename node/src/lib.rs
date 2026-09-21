@@ -28,6 +28,32 @@ use crate::shell::api::main_api::plug_all;
 use crate::shell::kasper::new_configured_app;
 use aseman_config::{AllocatorConfig, AsemanConfig};
 
+/// Connections one node keeps for PostgreSQL units of work (one per concurrent
+/// action, plus nesting).
+const CORE_STORAGE_CONNECTIONS: u32 = 16;
+
+/// Select the provider of the core port families (ADR 0026). Legacy needs nothing;
+/// PostgreSQL is migrated and installed before any state action runs, with every
+/// write fenced at the configured binding generation (A309).
+fn install_core_storage(config: &AsemanConfig) -> anyhow::Result<()> {
+    use aseman_config::CoreStorageProvider;
+    if config.core_storage.provider == CoreStorageProvider::Legacy {
+        return Ok(());
+    }
+    let secret = config
+        .database_url_secret
+        .as_deref()
+        .ok_or_else(|| anyhow::anyhow!("ASEMAN_DATABASE_URL_SECRET is required"))?;
+    let url = aseman_config::read_secret_file(secret, 4096)?;
+    aseman_storage_postgres::PostgresCapsuleRepository::connect(&url)?.migrate()?;
+    let factory = aseman_storage_postgres::unit_of_work::PostgresUnitOfWorkFactory::connect(
+        &url,
+        CORE_STORAGE_CONNECTIONS,
+        Some(config.core_storage.binding_generation),
+    )?;
+    crate::shell::api::model::core_storage::install_postgres(factory)
+}
+
 /// Run the legacy node composition while use cases move behind Aseman ports.
 ///
 /// New binaries call this compatibility entry point; it expires after the node
@@ -61,6 +87,11 @@ pub fn run() {
 
     if let Err(e) = telemetry::start(&config) {
         eprintln!("telemetry server start failed: {}", e);
+    }
+
+    if let Err(error) = install_core_storage(&config) {
+        eprintln!("core storage could not start: {error}");
+        return;
     }
 
     let owner_priv = match parse_owner_key(&config.node.private_key_secret) {

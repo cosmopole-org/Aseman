@@ -33,6 +33,21 @@ pub struct SignalStreamPolicy {
     pub retention_class: String,
 }
 
+impl SignalStreamPolicy {
+    /// The default policy for a store's signal stream until P7-04 refines the rule:
+    /// the stream is authorized by its store, and its retention is persistent (only
+    /// stores with persistent history record signals). Live composition and the
+    /// migration runner use the same rule, so migrated and new events agree.
+    #[must_use]
+    pub fn for_store(store_id: &str) -> Self {
+        Self {
+            authorization_scope: deterministic_legacy_capsule_id("Store", store_id.as_bytes())
+                .to_vec(),
+            retention_class: "persistent".to_owned(),
+        }
+    }
+}
+
 /// One store signal as carried in a realtime event payload.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct StoreSignalPayload {

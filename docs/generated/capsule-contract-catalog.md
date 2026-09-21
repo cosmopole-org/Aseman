@@ -73,7 +73,7 @@ Encoding: `deterministic-cbor-v1`; integrity: `sha2-256`.
 | `contracts/capsule/guest/legacy-kv-table.json` | `sha256:7d2a86b730d74d34b6e30a4fe2a4394f9fc18fdfa14329f4c63c39c92fa7a079` |
 | `contracts/capsule/guest/schema-command.schema.json` | `sha256:e5d44dd58dcc6ae69bc5263d64b4e647f0083eb264c659bb89506f5fedb40f36` |
 | `contracts/capsule/guest/schema-mutation.schema.json` | `sha256:79cd855b2b4af54ba37345cdcc09c40325cfe2bd0a7e58028e85d8a728ba56fb` |
-| `contracts/capsule/kinds/core-logical-schemas.json` | `sha256:652506b8fc746677a5bedb8f0778b4e7f294532e3abf12d99be448b05fac5e80` |
+| `contracts/capsule/kinds/core-logical-schemas.json` | `sha256:7b419ab1e90c2186dae0135fb3ff23684554801ad4fd64c4f3d05f4826f97639` |
 | `contracts/capsule/kinds/core-logical-schemas.schema.json` | `sha256:f9761ccb6a3b07bdcd15dbc7f3b76128345b63cd6606a38c8802feb4ca8e4c7e` |
 | `contracts/capsule/kinds/core-registry.json` | `sha256:044b73923285af5bef1761bef803638e3536b6547f93073552a98e7c22898ddf` |
 | `contracts/capsule/kinds/core-registry.schema.json` | `sha256:3c6f29d9086fa764910bc02dda2866aada44cdccfd838f511fab1fbb24c085e8` |

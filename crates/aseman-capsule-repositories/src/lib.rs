@@ -7,7 +7,10 @@ use aseman_contracts::capsule::{CapsuleEnvelope, CapsuleId, CapsuleKind, Capsule
 use thiserror::Error;
 
 pub mod creature;
+pub mod gateway;
+pub mod program;
 pub mod store;
+mod support;
 
 #[derive(Clone, Debug, Eq, Error, PartialEq)]
 pub enum CapsuleStoreError {

@@ -792,28 +792,28 @@
     {
       "path": "/creatures/authenticate",
       "request_type": "AuthenticateInput",
-      "source": "node/src/shell/api/actions/creature.rs:501",
+      "source": "node/src/shell/api/actions/creature.rs:500",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/creatures/checkSign",
       "request_type": "CheckSignInput",
-      "source": "node/src/shell/api/actions/creature.rs:637",
+      "source": "node/src/shell/api/actions/creature.rs:636",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/creatures/closePool",
       "request_type": "ClosePoolInput",
-      "source": "node/src/shell/api/actions/creature/finance.rs:2516",
+      "source": "node/src/shell/api/actions/creature/finance.rs:2526",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/creatures/consumeLock",
       "request_type": "ConsumeLockInput",
-      "source": "node/src/shell/api/actions/creature.rs:1034",
+      "source": "node/src/shell/api/actions/creature.rs:1033",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
@@ -827,28 +827,28 @@
     {
       "path": "/creatures/createHold",
       "request_type": "CreateHoldInput",
-      "source": "node/src/shell/api/actions/creature/finance.rs:1117",
+      "source": "node/src/shell/api/actions/creature/finance.rs:1121",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/creatures/debitPool",
       "request_type": "DebitPoolInput",
-      "source": "node/src/shell/api/actions/creature/finance.rs:3061",
+      "source": "node/src/shell/api/actions/creature/finance.rs:3071",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/creatures/delete",
       "request_type": "DeleteInput",
-      "source": "node/src/shell/api/actions/creature.rs:1307",
+      "source": "node/src/shell/api/actions/creature.rs:1305",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/creatures/find",
       "request_type": "FindInput",
-      "source": "node/src/shell/api/actions/creature.rs:1457",
+      "source": "node/src/shell/api/actions/creature.rs:1455",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
@@ -862,21 +862,21 @@
     {
       "path": "/creatures/getByUsername",
       "request_type": "GetByUsernameInput",
-      "source": "node/src/shell/api/actions/creature.rs:1430",
+      "source": "node/src/shell/api/actions/creature.rs:1428",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/creatures/getFinancialAccount",
       "request_type": "GetFinancialAccountInput",
-      "source": "node/src/shell/api/actions/creature/finance.rs:1969",
+      "source": "node/src/shell/api/actions/creature/finance.rs:1979",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/creatures/getHold",
       "request_type": "GetHoldInput",
-      "source": "node/src/shell/api/actions/creature/finance.rs:1838",
+      "source": "node/src/shell/api/actions/creature/finance.rs:1848",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
@@ -890,217 +890,217 @@
     {
       "path": "/creatures/listPayouts",
       "request_type": "ListPayoutsInput",
-      "source": "node/src/shell/api/actions/creature/finance.rs:2237",
+      "source": "node/src/shell/api/actions/creature/finance.rs:2247",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/creatures/lockToken",
       "request_type": "LockTokenInput",
-      "source": "node/src/shell/api/actions/creature.rs:947",
+      "source": "node/src/shell/api/actions/creature.rs:946",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/creatures/login",
       "request_type": "LoginInput",
-      "source": "node/src/shell/api/actions/creature.rs:1195",
+      "source": "node/src/shell/api/actions/creature.rs:1193",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/creatures/meta",
       "request_type": "MetaInput",
-      "source": "node/src/shell/api/actions/creature.rs:1371",
+      "source": "node/src/shell/api/actions/creature.rs:1369",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/creatures/mint",
       "request_type": "MintInput",
-      "source": "node/src/shell/api/actions/creature.rs:541",
+      "source": "node/src/shell/api/actions/creature.rs:540",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/creatures/openPool",
       "request_type": "OpenPoolInput",
-      "source": "node/src/shell/api/actions/creature/finance.rs:2304",
+      "source": "node/src/shell/api/actions/creature/finance.rs:2314",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/creatures/paymentAdjustment",
       "request_type": "PaymentAdjustmentInput",
-      "source": "node/src/shell/api/actions/creature/finance.rs:3973",
+      "source": "node/src/shell/api/actions/creature/finance.rs:3983",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/creatures/publishFinanceCatalog",
       "request_type": "PublishFinanceCatalogInput",
-      "source": "node/src/shell/api/actions/creature/finance.rs:428",
+      "source": "node/src/shell/api/actions/creature/finance.rs:432",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/creatures/publishFinanceQuote",
       "request_type": "PublishFinanceQuoteInput",
-      "source": "node/src/shell/api/actions/creature/finance.rs:905",
+      "source": "node/src/shell/api/actions/creature/finance.rs:909",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/creatures/reconcileFinancialSystem",
       "request_type": "ReconcileFinancialSystemInput",
-      "source": "node/src/shell/api/actions/creature/finance.rs:3305",
+      "source": "node/src/shell/api/actions/creature/finance.rs:3315",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/creatures/refreshPool",
       "request_type": "RefreshPoolInput",
-      "source": "node/src/shell/api/actions/creature/finance.rs:2409",
+      "source": "node/src/shell/api/actions/creature/finance.rs:2419",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/creatures/registerFinanceNode",
       "request_type": "RegisterFinanceNodeInput",
-      "source": "node/src/shell/api/actions/creature/finance.rs:545",
+      "source": "node/src/shell/api/actions/creature/finance.rs:549",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/creatures/registerFinanceResource",
       "request_type": "RegisterFinanceResourceInput",
-      "source": "node/src/shell/api/actions/creature/finance.rs:664",
+      "source": "node/src/shell/api/actions/creature/finance.rs:668",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/creatures/releaseHold",
       "request_type": "ReleaseHoldInput",
-      "source": "node/src/shell/api/actions/creature/finance.rs:1703",
+      "source": "node/src/shell/api/actions/creature/finance.rs:1713",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/creatures/releasePool",
       "request_type": "ReleasePoolInput",
-      "source": "node/src/shell/api/actions/creature/finance.rs:2948",
+      "source": "node/src/shell/api/actions/creature/finance.rs:2958",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/creatures/requestPayout",
       "request_type": "RequestPayoutInput",
-      "source": "node/src/shell/api/actions/creature/finance.rs:2009",
+      "source": "node/src/shell/api/actions/creature/finance.rs:2019",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/creatures/reservePool",
       "request_type": "ReservePoolInput",
-      "source": "node/src/shell/api/actions/creature/finance.rs:2617",
+      "source": "node/src/shell/api/actions/creature/finance.rs:2627",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/creatures/resolvePayout",
       "request_type": "ResolvePayoutInput",
-      "source": "node/src/shell/api/actions/creature/finance.rs:2115",
+      "source": "node/src/shell/api/actions/creature/finance.rs:2125",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/creatures/retireFinanceNode",
       "request_type": "RetireFinanceNodeInput",
-      "source": "node/src/shell/api/actions/creature/finance.rs:625",
+      "source": "node/src/shell/api/actions/creature/finance.rs:629",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/creatures/retireFinanceResource",
       "request_type": "RetireFinanceResourceInput",
-      "source": "node/src/shell/api/actions/creature/finance.rs:815",
+      "source": "node/src/shell/api/actions/creature/finance.rs:819",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/creatures/reviewFinanceResource",
       "request_type": "ReviewFinanceResourceInput",
-      "source": "node/src/shell/api/actions/creature/finance.rs:777",
+      "source": "node/src/shell/api/actions/creature/finance.rs:781",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/creatures/secretGet",
       "request_type": "SecretGetInput",
-      "source": "node/src/shell/api/actions/creature.rs:747",
+      "source": "node/src/shell/api/actions/creature.rs:746",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/creatures/secretGrant",
       "request_type": "SecretGrantInput",
-      "source": "node/src/shell/api/actions/creature.rs:788",
+      "source": "node/src/shell/api/actions/creature.rs:787",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/creatures/secretList",
       "request_type": "SecretListInput",
-      "source": "node/src/shell/api/actions/creature.rs:868",
+      "source": "node/src/shell/api/actions/creature.rs:867",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/creatures/secretListGranted",
       "request_type": "SecretListGrantedInput",
-      "source": "node/src/shell/api/actions/creature.rs:852",
+      "source": "node/src/shell/api/actions/creature.rs:851",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/creatures/secretPut",
       "request_type": "SecretPutInput",
-      "source": "node/src/shell/api/actions/creature.rs:720",
+      "source": "node/src/shell/api/actions/creature.rs:719",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/creatures/secretRevoke",
       "request_type": "SecretRevokeInput",
-      "source": "node/src/shell/api/actions/creature.rs:827",
+      "source": "node/src/shell/api/actions/creature.rs:826",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/creatures/settleHold",
       "request_type": "SettleHoldInput",
-      "source": "node/src/shell/api/actions/creature/finance.rs:1445",
+      "source": "node/src/shell/api/actions/creature/finance.rs:1455",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/creatures/settlePool",
       "request_type": "SettlePoolInput",
-      "source": "node/src/shell/api/actions/creature/finance.rs:2722",
+      "source": "node/src/shell/api/actions/creature/finance.rs:2732",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/creatures/signal",
       "request_type": "CreatureSignalInput",
-      "source": "node/src/shell/api/actions/creature.rs:393",
+      "source": "node/src/shell/api/actions/creature.rs:392",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/creatures/startHold",
       "request_type": "StartHoldInput",
-      "source": "node/src/shell/api/actions/creature/finance.rs:1365",
+      "source": "node/src/shell/api/actions/creature/finance.rs:1375",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
@@ -1114,14 +1114,14 @@
     {
       "path": "/creatures/types",
       "request_type": "ListInput",
-      "source": "node/src/shell/api/actions/creature.rs:1483",
+      "source": "node/src/shell/api/actions/creature.rs:1481",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/creatures/update",
       "request_type": "UpdateInput",
-      "source": "node/src/shell/api/actions/creature.rs:1343",
+      "source": "node/src/shell/api/actions/creature.rs:1341",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
@@ -1149,133 +1149,133 @@
     {
       "path": "/machines/closeVmTerminal",
       "request_type": "VmTerminalInput",
-      "source": "node/src/shell/api/actions/program.rs:1240",
+      "source": "node/src/shell/api/actions/program.rs:1208",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/machines/list",
       "request_type": "ListInput",
-      "source": "node/src/shell/api/actions/program.rs:1637",
+      "source": "node/src/shell/api/actions/program.rs:1613",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/machines/listEntityVms",
       "request_type": "RunProgramEntityInput",
-      "source": "node/src/shell/api/actions/program.rs:1101",
+      "source": "node/src/shell/api/actions/program.rs:1063",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/machines/listProgramMachines",
       "request_type": "ListAppMachsInput",
-      "source": "node/src/shell/api/actions/program.rs:1707",
+      "source": "node/src/shell/api/actions/program.rs:1692",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/machines/openVmTerminal",
       "request_type": "VmTerminalInput",
-      "source": "node/src/shell/api/actions/program.rs:1207",
+      "source": "node/src/shell/api/actions/program.rs:1172",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/machines/readMachineBuilds",
       "request_type": "MachineBuildsInput",
-      "source": "node/src/shell/api/actions/program.rs:1270",
+      "source": "node/src/shell/api/actions/program.rs:1241",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/machines/readVmLogs",
       "request_type": "ReadVmLogsInput",
-      "source": "node/src/shell/api/actions/program.rs:1042",
+      "source": "node/src/shell/api/actions/program.rs:1006",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/programs/create",
       "request_type": "CreateMachineInput",
-      "source": "node/src/shell/api/actions/program.rs:582",
+      "source": "node/src/shell/api/actions/program.rs:558",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/programs/delete",
       "request_type": "DeleteProgramInput",
-      "source": "node/src/shell/api/actions/program.rs:631",
+      "source": "node/src/shell/api/actions/program.rs:594",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/programs/deleteEntity",
       "request_type": "RunProgramEntityInput",
-      "source": "node/src/shell/api/actions/program.rs:944",
+      "source": "node/src/shell/api/actions/program.rs:905",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/programs/deploy",
       "request_type": "DeployInput",
-      "source": "node/src/shell/api/actions/program.rs:1340",
+      "source": "node/src/shell/api/actions/program.rs:1315",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/programs/downloadEntity",
       "request_type": "DownloadEntityInput",
-      "source": "node/src/shell/api/actions/program.rs:1597",
+      "source": "node/src/shell/api/actions/program.rs:1573",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/programs/list",
       "request_type": "ListInput",
-      "source": "node/src/shell/api/actions/program.rs:1695",
+      "source": "node/src/shell/api/actions/program.rs:1670",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/programs/runEntity",
       "request_type": "RunProgramEntityInput",
-      "source": "node/src/shell/api/actions/program.rs:695",
+      "source": "node/src/shell/api/actions/program.rs:650",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/programs/stopEntity",
       "request_type": "RunProgramEntityInput",
-      "source": "node/src/shell/api/actions/program.rs:853",
+      "source": "node/src/shell/api/actions/program.rs:811",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/programs/update",
       "request_type": "UpdateProgramInput",
-      "source": "node/src/shell/api/actions/program.rs:657",
+      "source": "node/src/shell/api/actions/program.rs:617",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/storage/upload",
       "request_type": "StorageUploadInput",
-      "source": "node/src/shell/api/actions/creature.rs:896",
+      "source": "node/src/shell/api/actions/creature.rs:895",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/stores/getAccess",
       "request_type": "GetAccessInput",
-      "source": "node/src/shell/api/actions/store.rs:243",
+      "source": "node/src/shell/api/actions/store.rs:241",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/stores/history",
       "request_type": "HistoryInput",
-      "source": "node/src/shell/api/actions/store.rs:171",
+      "source": "node/src/shell/api/actions/store.rs:172",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },

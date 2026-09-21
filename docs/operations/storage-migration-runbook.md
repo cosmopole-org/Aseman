@@ -21,12 +21,14 @@ verification: ASEMAN_TEST_POSTGRES_URL=... cargo test -p aseman-migration-e2e
    - `path_artifacts` for every entity artifact and resource file, each either copy
      evidence or an attested absence
    - the `node-secret-key` contents
-4. Apply `0001_core.sql`, `0002_storage_classes.sql`, and `0003_migration_fence.sql`
+4. Apply `0001_core.sql`, `0002_storage_classes.sql`, `0003_migration_fence.sql`, and
+   `0004_program_machine_not_unique.sql`
    to a fresh database. Provision (disabled) guest databases for creatures that own
    guest KV.
 5. Take a backup of the legacy storage root: application RocksDB, `cluster/raft-db`,
    the Hashgraph store, and QuestDB.
-6. Reconcile memberships and owner links (ADR 0018 amendment, LD-12, LD-16). With the node stopped, run the
+6. Reconcile memberships, owner links, and program links (ADR 0018 amendment,
+   LD-12, LD-16, LD-17). With the node stopped, run the
    membership audit against the backup's source RocksDB, using the same declared local
    origins as the export.
    - Review every finding.
@@ -53,6 +55,13 @@ verification: ASEMAN_TEST_POSTGRES_URL=... cargo test -p aseman-migration-e2e
    the active generation, and require a clean comparison.
 7. **Cut over.** Switch the binding generation, then raise the target fence to the new
    generation. The legacy side keeps receiving shadow writes.
+   - Restart each node with `ASEMAN_CORE_STORAGE_PROVIDER=postgres`,
+     `ASEMAN_DATABASE_URL_SECRET`, and `ASEMAN_CORE_BINDING_GENERATION` set to the new
+     generation.
+   - The core families then run on PostgreSQL. The families ADR 0026 keeps on legacy
+     (finance and balances, identity credentials, VMM runtime, chains, id allocation)
+     stay on the legacy store.
+   - Do not cut over while LD-14 or LD-24 is open.
 8. **Observe the rollback window.** If rollback is needed, and only while
    `shadow_failures = 0`, run rollback, which raises the generation again. Never drop
    or truncate the target during rollback.

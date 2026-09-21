@@ -24,7 +24,7 @@ fn read_user_type(app: &Arc<dyn ICore>, user_id: &str) -> String {
         true,
         Box::new(move |trx: &dyn ITrx| {
             *slot_clone.lock().unwrap() = aseman_ports::CreatureDirectory::creature(
-                &crate::shell::api::model::creature_ports::LegacyCreatures { trx },
+                &crate::shell::api::model::creature_ports::CreaturePorts { trx },
                 &user_id_owned,
             )
             .ok()

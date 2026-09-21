@@ -41,6 +41,16 @@ impl Program {
         trx.put_obj(Self::type_(), &self.id, cols);
     }
 
+    /// A program filled from its object columns.
+    pub(crate) fn from_columns(id: String, columns: &HashMap<String, Vec<u8>>) -> Program {
+        let mut program = Program {
+            id,
+            ..Default::default()
+        };
+        Program::fill(&mut program, columns);
+        program
+    }
+
     fn fill(d: &mut Program, m: &HashMap<String, Vec<u8>>) {
         if let Some(v) = m.get("id") {
             d.id = String::from_utf8_lossy(v).into_owned();

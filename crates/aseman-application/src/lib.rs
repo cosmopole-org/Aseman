@@ -9,6 +9,7 @@ use aseman_ports::{
 use thiserror::Error;
 
 pub mod creature;
+pub mod program;
 pub mod storage_migration;
 pub mod store;
 

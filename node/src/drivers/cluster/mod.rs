@@ -480,15 +480,24 @@ fn apply_deploy_artifact(app: &Arc<dyn ICore>, artifact: &DeployArtifact) -> Res
                     &art.gateway_route,
                     &art.gateway_vm_id,
                     &art.entity_type,
-                );
-                crate::shell::api::model::Program {
+                )?;
+                // LD-17: the propagated program goes through the directory, so its
+                // `machinePrograms` link is written with it.
+                let programs = crate::shell::api::model::program_ports::ProgramPorts { trx };
+                let record = aseman_domain::program::ProgramRecord {
                     id: art.program_id.clone(),
                     machine_id: art.machine_id.clone(),
                     runtime: art.runtime.clone(),
                     path: art.path.clone(),
                     comment: art.comment.clone(),
+                };
+                match aseman_ports::ProgramDirectory::update_program(&programs, &record) {
+                    Err(aseman_ports::PortError::NotFound) => {
+                        aseman_ports::ProgramDirectory::create_program(&programs, &record)
+                    }
+                    other => other,
                 }
-                .push(trx);
+                .map_err(|error| anyhow!("{error}"))?;
                 crate::shell::api::model::Entity {
                     program_id: art.program_id.clone(),
                     entity_id: art.entity_id.clone(),

@@ -84,7 +84,7 @@ impl Signaler {
             true,
             Box::new(move |trx: &dyn ITrx| {
                 // Membership goes through the store port (legacy adapter until cutover).
-                let ports = crate::shell::api::model::store_ports::LegacyMembership { trx };
+                let ports = crate::shell::api::model::store_ports::MembershipPorts { trx };
                 *out_clone.lock().unwrap() = aseman_ports::StoreAccess::members(&ports, &store_id)
                     .unwrap_or_default()
                     .into_iter()
@@ -107,7 +107,7 @@ impl Signaler {
             true,
             Box::new(move |trx: &dyn ITrx| {
                 *slot_clone.lock().unwrap() = aseman_ports::CreatureDirectory::creature(
-                    &crate::shell::api::model::creature_ports::LegacyCreatures { trx },
+                    &crate::shell::api::model::creature_ports::CreaturePorts { trx },
                     &user_id_owned,
                 )
                 .ok()

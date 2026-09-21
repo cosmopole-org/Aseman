@@ -336,12 +336,9 @@ where
 fn proxy_identity(app: &Arc<dyn ICore>, program_id: &str) -> Creature {
     let program_id_owned = program_id.to_string();
     read_state(app, Creature::default(), move |trx| {
-        let program = Program {
-            id: program_id_owned.clone(),
-            ..Default::default()
-        }
-        .pull(trx);
-        let owner = (crate::shell::api::model::creature_ports::LegacyCreatures { trx })
+        let program = (crate::shell::api::model::program_ports::ProgramPorts { trx })
+            .program_or_empty(&program_id_owned.clone());
+        let owner = (crate::shell::api::model::creature_ports::CreaturePorts { trx })
             .creature_or_empty(&program.machine_id.clone());
         Creature {
             id: program_id_owned.clone(),

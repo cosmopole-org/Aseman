@@ -27,7 +27,24 @@ pub struct AsemanConfig {
     pub runtime: RuntimeConfig,
     pub vmm_endpoint: String,
     pub database_url_secret: Option<String>,
+    pub core_storage: CoreStorageConfig,
     pub legacy_aliases_used: Vec<String>,
+}
+
+/// Which provider is authoritative for the core port families (ADR 0026), and the
+/// binding generation its writes are fenced at (A309).
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct CoreStorageConfig {
+    pub provider: CoreStorageProvider,
+    pub binding_generation: u64,
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum CoreStorageProvider {
+    /// The wrapped legacy provider (RocksDB); the default until cutover.
+    Legacy,
+    /// PostgreSQL capsules through `ASEMAN_DATABASE_URL_SECRET`.
+    Postgres,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -579,7 +596,37 @@ impl AsemanConfig {
                 .cloned()
                 .unwrap_or_else(|| "http://127.0.0.1:8081".to_owned()),
             database_url_secret: values.get("ASEMAN_DATABASE_URL_SECRET").cloned(),
+            core_storage: CoreStorageConfig::from_canonical(&values)?,
             legacy_aliases_used,
+        })
+    }
+}
+
+impl CoreStorageConfig {
+    fn from_canonical(values: &BTreeMap<String, String>) -> Result<Self, ConfigError> {
+        let provider = match values
+            .get("ASEMAN_CORE_STORAGE_PROVIDER")
+            .map(String::as_str)
+        {
+            None | Some("legacy") => CoreStorageProvider::Legacy,
+            Some("postgres") => CoreStorageProvider::Postgres,
+            Some(_) => {
+                return Err(ConfigError::Invalid {
+                    key: "ASEMAN_CORE_STORAGE_PROVIDER",
+                    reason: "expected legacy or postgres",
+                });
+            }
+        };
+        if provider == CoreStorageProvider::Postgres
+            && values
+                .get("ASEMAN_DATABASE_URL_SECRET")
+                .is_none_or(String::is_empty)
+        {
+            return Err(ConfigError::Missing("ASEMAN_DATABASE_URL_SECRET"));
+        }
+        Ok(Self {
+            provider,
+            binding_generation: parse_or(values, "ASEMAN_CORE_BINDING_GENERATION", 0)?,
         })
     }
 }
@@ -774,6 +821,37 @@ mod tests {
         assert_eq!(config.network.docker_gateway_port, 8079);
         assert_eq!(config.allocator.trim_interval_seconds, 30);
         assert!(config.legacy_aliases_used.is_empty());
+    }
+
+    #[test]
+    fn core_storage_defaults_to_legacy_and_postgres_needs_its_secret() {
+        let config = AsemanConfig::from_map(&base()).unwrap();
+        assert_eq!(
+            config.core_storage,
+            CoreStorageConfig {
+                provider: CoreStorageProvider::Legacy,
+                binding_generation: 0,
+            }
+        );
+        let mut values = base();
+        values.insert("ASEMAN_CORE_STORAGE_PROVIDER".into(), "postgres".into());
+        assert_eq!(
+            AsemanConfig::from_map(&values),
+            Err(ConfigError::Missing("ASEMAN_DATABASE_URL_SECRET"))
+        );
+        values.insert(
+            "ASEMAN_DATABASE_URL_SECRET".into(),
+            "/run/secrets/database-url".into(),
+        );
+        values.insert("ASEMAN_CORE_BINDING_GENERATION".into(), "7".into());
+        let config = AsemanConfig::from_map(&values).unwrap();
+        assert_eq!(config.core_storage.provider, CoreStorageProvider::Postgres);
+        assert_eq!(config.core_storage.binding_generation, 7);
+        values.insert("ASEMAN_CORE_STORAGE_PROVIDER".into(), "sqlite".into());
+        assert!(matches!(
+            AsemanConfig::from_map(&values),
+            Err(ConfigError::Invalid { .. })
+        ));
     }
 
     #[test]

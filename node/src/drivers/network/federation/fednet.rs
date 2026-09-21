@@ -244,7 +244,7 @@ impl FedNet {
         self.app.modify_state(
             false,
             Box::new(move |trx: &dyn ITrx| {
-                let ports = crate::shell::api::model::store_ports::LegacyMembership { trx };
+                let ports = crate::shell::api::model::store_ports::MembershipPorts { trx };
                 let outcome = match grant {
                     Some(permissions) => {
                         aseman_ports::StoreAccess::join(&ports, &store_id, &member_id, permissions)
@@ -263,8 +263,22 @@ impl FedNet {
                     self.app.modify_state(
                         false,
                         Box::new(move |trx: &dyn ITrx| {
-                            tc.store.push(trx);
-                            Ok(())
+                            // A mirrored update of a store this node does not hold is
+                            // ignored rather than recreated without a creator.
+                            let stores = crate::shell::api::model::store_ports::StorePorts { trx };
+                            let record = aseman_domain::store::StoreRecord {
+                                id: tc.store.id.clone(),
+                                persistent_history: tc.store.pers_hist,
+                                signal_count: tc.store.signal_count,
+                                tag: tc.store.tag.clone(),
+                                parent_id: tc.store.parent_id.clone(),
+                                is_public: tc.store.is_public,
+                                member_count: i64::from(tc.store.member_count),
+                            };
+                            match aseman_ports::StoreDirectory::update_store(&stores, &record) {
+                                Err(aseman_ports::PortError::NotFound) => Ok(()),
+                                other => other.map_err(|error| anyhow::anyhow!("{error}")),
+                            }
                         }),
                     );
                 }
@@ -275,8 +289,12 @@ impl FedNet {
                     self.app.modify_state(
                         false,
                         Box::new(move |trx: &dyn ITrx| {
-                            trx.del_key(&format!("obj::Store::{}", id));
-                            Ok(())
+                            // LD-20: the store is really removed; the old key never existed.
+                            let stores = crate::shell::api::model::store_ports::StorePorts { trx };
+                            aseman_ports::StoreDirectory::delete_store(&stores, &id)
+                                .map_err(|error| anyhow::anyhow!("{error}"))?;
+                            aseman_ports::StoreMetadata::delete_store_metadata(&stores, &id)
+                                .map_err(|error| anyhow::anyhow!("{error}"))
                         }),
                     );
                 }

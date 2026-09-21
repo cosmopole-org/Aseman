@@ -17,14 +17,20 @@ verification: python3 scripts/generate_phase1_contracts.py --check
 | `CreatureDirectory` | `aseman-ports` |
 | `CreatureMetadata` | `aseman-ports` |
 | `CreatureTypes` | `aseman-ports` |
+| `GatewayRoutes` | `aseman-ports` |
 | `MigrationRecordSource` | `aseman-ports` |
 | `MigrationStateStore` | `aseman-ports` |
 | `PeerDirectoryPort` | `aseman-ports` |
 | `PolicyDecisionPort` | `aseman-ports` |
+| `ProgramAlarms` | `aseman-ports` |
+| `ProgramDirectory` | `aseman-ports` |
+| `ProgramMetadata` | `aseman-ports` |
 | `ServerIdentityPort` | `aseman-ports` |
 | `SignalLog` | `aseman-ports` |
 | `StoreAccess` | `aseman-ports` |
 | `StoreDirectory` | `aseman-ports` |
+| `StoreMetadata` | `aseman-ports` |
+| `VmResourceStores` | `aseman-ports` |
 | `VmmPort` | `aseman-ports` |
 | `WorkloadRepository` | `aseman-ports` |
 

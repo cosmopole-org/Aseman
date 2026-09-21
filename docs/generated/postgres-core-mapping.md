@@ -2,7 +2,7 @@
 status: GENERATED
 owner: storage/postgres
 source_of_truth: contracts/capsule/kinds, contracts/storage/postgres, and scripts/generate_postgres_core.py
-last_verified_commit: a3212a726506
+last_verified_commit: 736b958e96b9
 verification: python3 scripts/generate_postgres_core.py --check
 ---
 
@@ -16,7 +16,7 @@ indexes, and checks enforce the accepted logical schema. No guest payload table 
 |---|---|---:|---:|---:|
 | `core.user` | `aseman_core.users` | 4 | 0 | 3 |
 | `core.creature` | `aseman_core.creatures` | 6 | 1 | 2 |
-| `core.program` | `aseman_core.programs` | 4 | 1 | 1 |
+| `core.program` | `aseman_core.programs` | 4 | 1 | 0 |
 | `core.store` | `aseman_core.stores` | 5 | 2 | 0 |
 | `core.store_membership` | `aseman_core.store_memberships` | 4 | 3 | 1 |
 | `core.access_level` | `aseman_core.access_levels` | 2 | 1 | 1 |

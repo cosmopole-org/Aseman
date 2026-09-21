@@ -15,7 +15,7 @@ The complete dependency and feature data is in `current-workspace.json`.
 
 ## Repository summary
 
-- Tracked files: 714
+- Tracked files: 735
 - Tracked files under `dist/`: 15
 - Rust package manifests: 28
 - Declared Cargo workspace roots: 1
@@ -48,7 +48,7 @@ from separate manifests. This is current behavior, not the target topology.
 | `aseman-sample-provider` | `modules/sample-provider/Cargo.toml` | {'workspace': True} | bin:aseman-sample-provider, lib:aseman-sample-provider | 10 | 0 |
 | `aseman-storage-legacy` | `modules/storage-legacy/Cargo.toml` | {'workspace': True} | lib:aseman-storage-legacy | 13 | 0 |
 | `aseman-storage-postgres` | `modules/storage-postgres/Cargo.toml` | {'workspace': True} | bin:aseman-storage-postgres, lib:aseman-storage-postgres | 19 | 0 |
-| `caspar-node` | `node/Cargo.toml` | 2021 | bin:aseman-node, bin:caspar-keygen, bin:caspar-node, lib:caspar-node | 47 | 0 |
+| `caspar-node` | `node/Cargo.toml` | 2021 | bin:aseman-node, bin:caspar-keygen, bin:caspar-node, lib:caspar-node | 49 | 0 |
 | `caspar-vm-plugins` | `node/crates/caspar-vm-plugins/Cargo.toml` | 2021 | lib:caspar_vm_plugins | 8 | 0 |
 | `aseman-module-conformance` | `tests/contracts/module/Cargo.toml` | {'workspace': True} | lib:aseman-module-conformance | 2 | 0 |
 | `aseman-storage-conformance` | `tests/contracts/storage/Cargo.toml` | {'workspace': True} | lib:aseman-storage-conformance | 3 | 0 |
@@ -101,6 +101,7 @@ from separate manifests. This is current behavior, not the target topology.
 | `aseman-storage-postgres` | normal | `aseman-ports` | `crates/aseman-ports` |
 | `aseman-storage-postgres` | dev | `aseman-storage-conformance` | `tests/contracts/storage` |
 | `caspar-node` | normal | `aseman-application` | `crates/aseman-application` |
+| `caspar-node` | normal | `aseman-capsule-repositories` | `crates/aseman-capsule-repositories` |
 | `caspar-node` | normal | `aseman-config` | `crates/aseman-config` |
 | `caspar-node` | normal | `aseman-contracts` | `crates/aseman-contracts` |
 | `caspar-node` | normal | `aseman-domain` | `crates/aseman-domain` |
@@ -109,6 +110,7 @@ from separate manifests. This is current behavior, not the target topology.
 | `caspar-node` | dev | `aseman-ports` | `crates/aseman-ports` |
 | `caspar-node` | normal | `aseman-ports` | `crates/aseman-ports` |
 | `caspar-node` | normal | `aseman-storage-legacy` | `modules/storage-legacy` |
+| `caspar-node` | normal | `aseman-storage-postgres` | `modules/storage-postgres` |
 | `caspar-node` | normal | `caspar-vm-plugins` | `node/crates/caspar-vm-plugins` |
 | `caspar-node` | normal | `caspar-vm-sdk` | `vm-sdk` |
 | `caspar-vm-docker` | normal | `aseman-config` | `crates/aseman-config` |

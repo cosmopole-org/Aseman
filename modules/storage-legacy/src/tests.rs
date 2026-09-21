@@ -2229,6 +2229,15 @@ fn vm_resources_configs_and_artifacts_migrate_with_evidence() {
     };
     let owner = OwnerScope::Creature(deterministic_legacy_capsule_id("Creature", b"human-one"));
     let stores = of("core.vm_resource_store");
+    // Each resource store maps back to its legacy id, so it can be listed after cutover.
+    let store_identities = of("core.legacy_identity")
+        .into_iter()
+        .filter(|identity| {
+            matches!(&identity.body, Some(CapsuleValue::Object(body))
+                if body["family"] == CapsuleValue::Text("VmResourceStore".to_owned()))
+        })
+        .count();
+    assert_eq!(store_identities, stores.len());
     assert_eq!(stores.len(), 1);
     // A program-owned store belongs to the program's machine creature.
     assert_eq!(stores[0].owner_scope, owner);
@@ -2659,6 +2668,8 @@ fn membership_audit_repairs_ld12_residue_only_under_the_approved_digest() {
         // A store whose creator was deleted.
         ("link::creatorof::9@local.example::store-two", "true"),
         ("obj::Store::store-two::|", "\u{1}"),
+        // A store whose parent is gone.
+        ("obj::Store::store-two::parentId", "deleted-store"),
     ] {
         records.push(raw(key, value));
     }
@@ -2707,6 +2718,12 @@ fn membership_audit_repairs_ld12_residue_only_under_the_approved_digest() {
                 "9@local.example",
                 0
             ),
+            (
+                LegacyMembershipDefect::DanglingStoreParent,
+                "store-two",
+                "deleted-store",
+                0
+            ),
         ]
     );
 
@@ -2748,7 +2765,7 @@ fn membership_audit_repairs_ld12_residue_only_under_the_approved_digest() {
             "link::onaccess::store-one::9@local.example",
         ]
     );
-    assert_eq!(report.needs_decision.len(), 2);
+    assert_eq!(report.needs_decision.len(), 3);
     let remaining = audit_legacy_memberships(&store, &origins).unwrap();
     assert_eq!(remaining.findings, report.needs_decision);
 
@@ -2763,6 +2780,9 @@ fn membership_audit_repairs_ld12_residue_only_under_the_approved_digest() {
             },
             LegacyKvWrite::Delete {
                 key: b"obj::Store::store-two::|".to_vec(),
+            },
+            LegacyKvWrite::Delete {
+                key: b"obj::Store::store-two::parentId".to_vec(),
             },
         ])
         .unwrap();
@@ -2867,6 +2887,96 @@ fn owner_link_repair_rebuilds_links_from_owner_ids() {
     assert_eq!(remaining.findings, report.needs_decision);
     assert_eq!(remaining.findings.len(), 1);
     assert_eq!(remaining.findings[0].principal, "bot-two");
+    drop(store);
+    let _ = std::fs::remove_dir_all(&path);
+}
+
+/// LD-17: derived `machinePrograms` links are rebuilt from each program's `machineId`,
+/// and bare programs without a machine are left for an operator.
+#[test]
+fn program_link_repair_rebuilds_links_and_reports_bare_programs() {
+    let origins = ["global", "local.example"]
+        .into_iter()
+        .map(str::to_owned)
+        .collect::<BTreeSet<_>>();
+    let mut records = membership_fixture();
+    // The legacy VM delete removed this program's link and kept the program.
+    records.retain(|record| record.key != b"link::machinePrograms::human-one::program-one");
+    for (key, value) in [
+        // A link to a program that no longer exists.
+        ("link::machinePrograms::human-one::gone-program", "true"),
+        // A link naming another machine.
+        ("link::machinePrograms::someone-else::program-one", "true"),
+        // A bare program from a legacy VM deploy.
+        ("obj::Program::bare-program::|", "\u{1}"),
+        ("obj::Program::bare-program::machineId", ""),
+    ] {
+        records.push(raw(key, value));
+    }
+    let audit = LegacySnapshotGraph::assemble(records.clone())
+        .unwrap()
+        .membership_audit(&origins)
+        .unwrap();
+    let program_findings = audit
+        .findings
+        .iter()
+        .filter(|finding| {
+            matches!(
+                finding.defect,
+                LegacyMembershipDefect::DanglingProgramLink
+                    | LegacyMembershipDefect::StaleProgramLink
+                    | LegacyMembershipDefect::MissingProgramLink
+                    | LegacyMembershipDefect::OrphanedProgram
+            )
+        })
+        .map(|finding| (finding.defect, finding.principal.as_str()))
+        .collect::<Vec<_>>();
+    assert_eq!(
+        program_findings,
+        [
+            (LegacyMembershipDefect::DanglingProgramLink, "gone-program"),
+            (LegacyMembershipDefect::StaleProgramLink, "program-one"),
+            (LegacyMembershipDefect::MissingProgramLink, "program-one"),
+            (LegacyMembershipDefect::OrphanedProgram, "bare-program"),
+        ]
+    );
+
+    let path = std::env::temp_dir().join(format!(
+        "aseman-program-repair-{}-{}",
+        std::process::id(),
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_nanos()
+    ));
+    let store = RocksDbKvStore::open_default(&path).unwrap();
+    store
+        .write_batch(
+            &records
+                .iter()
+                .map(|record| LegacyKvWrite::Put {
+                    key: record.key.clone(),
+                    value: record.value.clone(),
+                })
+                .collect::<Vec<_>>(),
+        )
+        .unwrap();
+    let report = repair_legacy_memberships(&store, &origins, audit.digest).unwrap();
+    assert_eq!(
+        report.removed_keys,
+        [
+            "link::machinePrograms::human-one::gone-program",
+            "link::machinePrograms::someone-else::program-one",
+        ]
+    );
+    assert_eq!(
+        report.added_keys,
+        ["link::machinePrograms::human-one::program-one"]
+    );
+    let remaining = audit_legacy_memberships(&store, &origins).unwrap();
+    assert_eq!(remaining.findings, report.needs_decision);
+    assert_eq!(remaining.findings.len(), 1);
+    assert_eq!(remaining.findings[0].principal, "bare-program");
     drop(store);
     let _ = std::fs::remove_dir_all(&path);
 }

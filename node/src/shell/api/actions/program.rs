@@ -62,40 +62,16 @@ fn normalize_entity_type(s: &str) -> String {
 /// We deliberately fail closed when no linked owner exists or more than one
 /// linked machine is found.
 pub(crate) fn resolve_program_owner_machine(trx: &dyn ITrx, program: &Program) -> Creature {
-    let canonical = (crate::shell::api::model::creature_ports::LegacyCreatures { trx })
+    let canonical = (crate::shell::api::model::creature_ports::CreaturePorts { trx })
         .creature_or_empty(&program.machine_id.clone());
     if !canonical.owner_id.is_empty() {
         return canonical;
     }
 
-    let prefix = "machinePrograms::";
-    let suffix = format!("::{}", program.id);
-    let mut resolved: Option<Creature> = None;
-    let links = trx.get_links_list(prefix, -1, -1, &[]).unwrap_or_default();
-    for link in links {
-        let Some(machine_id) = link
-            .strip_prefix(prefix)
-            .and_then(|rest| rest.strip_suffix(&suffix))
-        else {
-            continue;
-        };
-        if machine_id.is_empty() {
-            continue;
-        }
-        let candidate = (crate::shell::api::model::creature_ports::LegacyCreatures { trx })
-            .creature_or_empty(&machine_id.to_string());
-        if candidate.owner_id.is_empty() {
-            continue;
-        }
-        if resolved
-            .as_ref()
-            .is_some_and(|existing| existing.id != candidate.id)
-        {
-            return Creature::default();
-        }
-        resolved = Some(candidate);
-    }
-    resolved.unwrap_or_default()
+    // The derived `machinePrograms` link always names `program.machine_id` (the
+    // legacy adapter maintains it, and the A308 export verifies it), so a reverse
+    // scan cannot find another owner.
+    Creature::default()
 }
 
 /// Execute a runtime plugin's stop plan against the current transaction:
@@ -585,43 +561,30 @@ fn create_program(app: Arc<dyn ICore>) -> Arc<dyn ISecureAction> {
         user_guard(),
         move |state: Arc<dyn IState>, input: CreateMachineInput| -> Result<Value> {
             let trx = state.trx();
-            if (crate::shell::api::model::creature_ports::LegacyCreatures { trx: &*trx })
-                .account(&input.app_id)?
-                .is_none()
-            {
-                return Err(anyhow!("machine not found"));
+            let creatures = crate::shell::api::model::creature_ports::CreaturePorts { trx: &*trx };
+            let programs = crate::shell::api::model::program_ports::ProgramPorts { trx: &*trx };
+            let created = aseman_application::program::CreateProgram {
+                creatures: &creatures,
+                programs: &programs,
             }
-            let mut machine =
-                (crate::shell::api::model::creature_ports::LegacyCreatures { trx: &*trx })
-                    .creature_or_empty(&input.app_id.clone());
-            if machine.owner_id != state.info().user_id() {
-                return Err(anyhow!("you are not owner of machine"));
-            }
-            let program = Program {
-                id: app_for_handler
-                    .tools()
-                    .storage()
-                    .gen_id(&*trx, &crate::models::input::IInput::origin(&input)),
-                machine_id: machine.id.clone(),
-                path: input.path.clone(),
-                runtime: input.runtime.clone(),
-                comment: input.comment.clone(),
-            };
-            machine.machines_count += 1;
-            machine.push(&*trx);
-            program.push(&*trx);
-            // The program stores `machine_id` = its owning Machine; ownership is
-            // resolved by loading that Machine (no app_id, no side ownership link).
-            let _ = trx.put_json(
-                &format!("ProgMeta::{}", program.id),
-                "metadata",
-                &json!({}),
-                true,
-            );
-            trx.put_link(
-                &format!("machinePrograms::{}::{}", machine.id, program.id),
-                "true",
-            );
+            .execute(
+                &state.info().user_id(),
+                aseman_application::program::NewProgram {
+                    id: app_for_handler
+                        .tools()
+                        .storage()
+                        .gen_id(&*trx, &crate::models::input::IInput::origin(&input)),
+                    machine_id: input.app_id.clone(),
+                    runtime: input.runtime.clone(),
+                    path: input.path.clone(),
+                    comment: input.comment.clone(),
+                },
+            )
+            .map_err(crate::shell::api::model::store_ports::legacy_error)?;
+            programs
+                .merge_metadata_value(&created.id, &json!({}))
+                .map_err(|error| anyhow!("{error}"))?;
+            let program = crate::shell::api::model::program_ports::program_view(created);
             Ok(json!({"program": program}))
         },
     )
@@ -634,20 +597,17 @@ fn delete_program(app: Arc<dyn ICore>) -> Arc<dyn ISecureAction> {
         user_guard(),
         move |state: Arc<dyn IState>, input: DeleteProgramInput| -> Result<Value> {
             let trx = state.trx();
-            if !trx.has_obj("Program", &input.program_id) {
-                return Err(anyhow!("program does not exist"));
+            let programs = crate::shell::api::model::program_ports::ProgramPorts { trx: &*trx };
+            // LD-17: the program and its relation are really removed; LD-18: only the
+            // owner of the program's machine may delete it.
+            aseman_application::program::DeleteProgram {
+                creatures: &crate::shell::api::model::creature_ports::CreaturePorts { trx: &*trx },
+                programs: &programs,
             }
-            let app_id = trx.get_index("Program", "id", "programId", &input.program_id);
-            let mut machine =
-                (crate::shell::api::model::creature_ports::LegacyCreatures { trx: &*trx })
-                    .creature_or_empty(&app_id);
-            machine.machines_count -= 1;
-            machine.push(&*trx);
-            trx.del_index("Program", "id", "programId", &input.program_id);
-            trx.del_key(&format!(
-                "link::machinePrograms::{}::{}",
-                machine.id, input.program_id
-            ));
+            .execute(&state.info().user_id(), &input.program_id)
+            .map_err(crate::shell::api::model::store_ports::legacy_error)?;
+            aseman_ports::ProgramMetadata::delete_program_metadata(&programs, &input.program_id)
+                .map_err(|error| anyhow!("{error}"))?;
             Ok(json!({}))
         },
     )
@@ -660,16 +620,14 @@ fn update_program(app: Arc<dyn ICore>) -> Arc<dyn ISecureAction> {
         user_guard(),
         move |state: Arc<dyn IState>, input: UpdateProgramInput| -> Result<Value> {
             let trx = state.trx();
-            if !trx.has_obj("Program", &input.program_id) {
-                return Err(anyhow!("program does not exist"));
+            let programs = crate::shell::api::model::program_ports::ProgramPorts { trx: &*trx };
+            // LD-18: only the owner of the program's machine may change it.
+            let program = aseman_application::program::UpdateProgramPath {
+                creatures: &crate::shell::api::model::creature_ports::CreaturePorts { trx: &*trx },
+                programs: &programs,
             }
-            let mut program = Program {
-                id: input.program_id.clone(),
-                ..Default::default()
-            }
-            .pull(&*trx);
-            program.path = input.path.clone();
-            program.push(&*trx);
+            .execute(&state.info().user_id(), &input.program_id, &input.path)
+            .map_err(crate::shell::api::model::store_ports::legacy_error)?;
             if !input.metadata.is_empty() {
                 let meta_value = Value::Object(
                     input
@@ -678,12 +636,9 @@ fn update_program(app: Arc<dyn ICore>) -> Arc<dyn ISecureAction> {
                         .map(|(k, v)| (k.clone(), v.clone()))
                         .collect(),
                 );
-                trx.put_json(
-                    &format!("ProgMeta::{}", program.id),
-                    "metadata",
-                    &meta_value,
-                    true,
-                )?;
+                programs
+                    .merge_metadata_value(&program.id, &meta_value)
+                    .map_err(|error| anyhow!("{error}"))?;
             }
             Ok(json!({}))
         },
@@ -703,14 +658,17 @@ fn run_program_entity(app: Arc<dyn ICore>) -> Arc<dyn ISecureAction> {
             } else {
                 input.program_id.clone()
             };
-            if !trx.has_obj("Program", &program_id) {
+            if aseman_ports::ProgramDirectory::program(
+                &crate::shell::api::model::program_ports::ProgramPorts { trx: &*trx },
+                &program_id,
+            )
+            .map_err(|error| anyhow!("{error}"))?
+            .is_none()
+            {
                 return Err(anyhow!("program does not exist"));
             }
-            let program = Program {
-                id: program_id.clone(),
-                ..Default::default()
-            }
-            .pull(&*trx);
+            let program = (crate::shell::api::model::program_ports::ProgramPorts { trx: &*trx })
+                .program_or_empty(&program_id.clone());
             let entity = Entity {
                 program_id: program.id.clone(),
                 entity_id: input.entity_id.clone(),
@@ -747,7 +705,7 @@ fn run_program_entity(app: Arc<dyn ICore>) -> Arc<dyn ISecureAction> {
                     &gateway_path,
                     &vm_id,
                     &entity_type,
-                );
+                )?;
             }
             // Tag VMs of cluster-distributed programs so their state commits
             // are propagated through the raft consensus (local-mode VMs are
@@ -861,14 +819,17 @@ fn stop_program_entity(app: Arc<dyn ICore>) -> Arc<dyn ISecureAction> {
             } else {
                 input.program_id.clone()
             };
-            if !trx.has_obj("Program", &program_id) {
+            if aseman_ports::ProgramDirectory::program(
+                &crate::shell::api::model::program_ports::ProgramPorts { trx: &*trx },
+                &program_id,
+            )
+            .map_err(|error| anyhow!("{error}"))?
+            .is_none()
+            {
                 return Err(anyhow!("program does not exist"));
             }
-            let program = Program {
-                id: program_id.clone(),
-                ..Default::default()
-            }
-            .pull(&*trx);
+            let program = (crate::shell::api::model::program_ports::ProgramPorts { trx: &*trx })
+                .program_or_empty(&program_id.clone());
             let entity = Entity {
                 program_id: program.id.clone(),
                 entity_id: input.entity_id.clone(),
@@ -952,14 +913,17 @@ fn delete_program_entity(app: Arc<dyn ICore>) -> Arc<dyn ISecureAction> {
             } else {
                 input.program_id.clone()
             };
-            if !trx.has_obj("Program", &program_id) {
+            if aseman_ports::ProgramDirectory::program(
+                &crate::shell::api::model::program_ports::ProgramPorts { trx: &*trx },
+                &program_id,
+            )
+            .map_err(|error| anyhow!("{error}"))?
+            .is_none()
+            {
                 return Err(anyhow!("program does not exist"));
             }
-            let program = Program {
-                id: program_id.clone(),
-                ..Default::default()
-            }
-            .pull(&*trx);
+            let program = (crate::shell::api::model::program_ports::ProgramPorts { trx: &*trx })
+                .program_or_empty(&program_id.clone());
             let entity = Entity {
                 program_id: program.id.clone(),
                 entity_id: input.entity_id.clone(),
@@ -1056,11 +1020,9 @@ fn read_vm_logs(app: Arc<dyn ICore>) -> Arc<dyn ISecureAction> {
                     if parts.len() < 4 {
                         continue;
                     }
-                    let program = Program {
-                        id: parts[1].to_string(),
-                        ..Default::default()
-                    }
-                    .pull(&*trx);
+                    let program =
+                        (crate::shell::api::model::program_ports::ProgramPorts { trx: &*trx })
+                            .program_or_empty(&parts[1].to_string());
                     if program.id.is_empty() {
                         break;
                     }
@@ -1109,14 +1071,17 @@ fn list_entity_vms(app: Arc<dyn ICore>) -> Arc<dyn ISecureAction> {
             } else {
                 input.program_id.clone()
             };
-            if !trx.has_obj("Program", &program_id) {
+            if aseman_ports::ProgramDirectory::program(
+                &crate::shell::api::model::program_ports::ProgramPorts { trx: &*trx },
+                &program_id,
+            )
+            .map_err(|error| anyhow!("{error}"))?
+            .is_none()
+            {
                 return Err(anyhow!("program does not exist"));
             }
-            let program = Program {
-                id: program_id.clone(),
-                ..Default::default()
-            }
-            .pull(&*trx);
+            let program = (crate::shell::api::model::program_ports::ProgramPorts { trx: &*trx })
+                .program_or_empty(&program_id.clone());
             let owner_machine = resolve_program_owner_machine(&*trx, &program);
             if owner_machine.owner_id != state.info().user_id() {
                 return Err(anyhow!("you are not owner of this program"));
@@ -1210,14 +1175,17 @@ fn open_vm_terminal(app: Arc<dyn ICore>) -> Arc<dyn ISecureAction> {
         user_guard(),
         move |state: Arc<dyn IState>, input: VmTerminalInput| -> Result<Value> {
             let trx = state.trx();
-            if !trx.has_obj("Program", &input.creature_id) {
+            if aseman_ports::ProgramDirectory::program(
+                &crate::shell::api::model::program_ports::ProgramPorts { trx: &*trx },
+                &input.creature_id,
+            )
+            .map_err(|error| anyhow!("{error}"))?
+            .is_none()
+            {
                 return Err(anyhow!("program does not exist"));
             }
-            let program = Program {
-                id: input.creature_id.clone(),
-                ..Default::default()
-            }
-            .pull(&*trx);
+            let program = (crate::shell::api::model::program_ports::ProgramPorts { trx: &*trx })
+                .program_or_empty(&input.creature_id.clone());
             let owner_machine = resolve_program_owner_machine(&*trx, &program);
             if owner_machine.owner_id != state.info().user_id() {
                 return Err(anyhow!("you are not owner of this creature"));
@@ -1243,14 +1211,17 @@ fn close_vm_terminal(app: Arc<dyn ICore>) -> Arc<dyn ISecureAction> {
         user_guard(),
         move |state: Arc<dyn IState>, input: VmTerminalInput| -> Result<Value> {
             let trx = state.trx();
-            if !trx.has_obj("Program", &input.creature_id) {
+            if aseman_ports::ProgramDirectory::program(
+                &crate::shell::api::model::program_ports::ProgramPorts { trx: &*trx },
+                &input.creature_id,
+            )
+            .map_err(|error| anyhow!("{error}"))?
+            .is_none()
+            {
                 return Err(anyhow!("program does not exist"));
             }
-            let program = Program {
-                id: input.creature_id.clone(),
-                ..Default::default()
-            }
-            .pull(&*trx);
+            let program = (crate::shell::api::model::program_ports::ProgramPorts { trx: &*trx })
+                .program_or_empty(&input.creature_id.clone());
             let owner_machine = resolve_program_owner_machine(&*trx, &program);
             if owner_machine.owner_id != state.info().user_id() {
                 return Err(anyhow!("you are not owner of this creature"));
@@ -1295,44 +1266,48 @@ pub(crate) fn register_gateway_route(
     gateway_path: &str,
     gateway_vm_id: &str,
     runtime: &str,
-) {
-    use crate::drivers::vmm::http_route;
-
-    let rev_key = http_route::route_rev_link_key(program_id, entity_id);
+) -> Result<()> {
+    use aseman_ports::GatewayRoutes;
+    let routes = crate::shell::api::model::gateway_ports::GatewayPorts { trx };
+    let failed = |error: aseman_ports::PortError| anyhow!("{error}");
     // Drop a stale route from a prior deploy whose path changed or was removed.
-    let previous = trx.get_link(&rev_key);
-    if let Some((prev_creature, prev_path)) = previous.split_once("::") {
+    if let Some((prev_creature, prev_path)) = routes
+        .route_of_entity(program_id, entity_id)
+        .map_err(failed)?
+    {
         let unchanged =
             !gateway_path.is_empty() && prev_creature == creature_id && prev_path == gateway_path;
         if !unchanged {
-            trx.del_key(&format!(
-                "link::{}",
-                http_route::route_link_key(prev_creature, prev_path)
-            ));
-            if gateway_path.is_empty() {
-                trx.del_key(&format!("link::{}", rev_key));
-            }
+            routes
+                .delete_route(&prev_creature, &prev_path)
+                .map_err(failed)?;
         }
     }
     if gateway_path.is_empty() || creature_id.is_empty() {
-        return;
+        return Ok(());
     }
-    trx.put_link(
-        &http_route::route_link_key(creature_id, gateway_path),
-        &http_route::encode_target(program_id, entity_id, gateway_vm_id, runtime),
-    );
-    trx.put_link(&rev_key, &format!("{}::{}", creature_id, gateway_path));
+    routes
+        .put_route(&aseman_domain::gateway::GatewayRoute {
+            creature_id: creature_id.to_owned(),
+            path: gateway_path.to_owned(),
+            program_id: program_id.to_owned(),
+            entity_id: entity_id.to_owned(),
+            runtime: runtime.to_owned(),
+            pinned_vm_id: gateway_vm_id.to_owned(),
+        })
+        .map_err(failed)?;
     // Alias the bare local part of the owning creature's username → its id, so a
     // request may address the route by the short name (`/m-tool-github/…`) as
     // well as by the full username or the numeric id. Best-effort: only when the
     // creature record + username resolve on this node.
-    let username = (crate::shell::api::model::creature_ports::LegacyCreatures { trx })
+    let username = (crate::shell::api::model::creature_ports::CreaturePorts { trx })
         .creature_or_empty(&creature_id.to_string())
         .username;
-    let local_part = http_route::username_local_part(&username);
+    let local_part = crate::drivers::vmm::http_route::username_local_part(&username);
     if !local_part.is_empty() && local_part != creature_id {
-        trx.put_link(&http_route::route_alias_link_key(local_part), creature_id);
+        routes.put_alias(local_part, creature_id).map_err(failed)?;
     }
+    Ok(())
 }
 
 fn deploy(app: Arc<dyn ICore>) -> Arc<dyn ISecureAction> {
@@ -1344,14 +1319,17 @@ fn deploy(app: Arc<dyn ICore>) -> Arc<dyn ISecureAction> {
         move |state: Arc<dyn IState>, input: DeployInput| -> Result<Value> {
             let trx = state.trx();
             let program_id = input.machine_id.clone();
-            if !trx.has_obj("Program", &program_id) {
+            if aseman_ports::ProgramDirectory::program(
+                &crate::shell::api::model::program_ports::ProgramPorts { trx: &*trx },
+                &program_id,
+            )
+            .map_err(|error| anyhow!("{error}"))?
+            .is_none()
+            {
                 return Err(anyhow!("program not found"));
             }
-            let program = Program {
-                id: program_id.clone(),
-                ..Default::default()
-            }
-            .pull(&*trx);
+            let program = (crate::shell::api::model::program_ports::ProgramPorts { trx: &*trx })
+                .program_or_empty(&program_id.clone());
             // Authorize against the recorded program owner (no app_id).
             let owner_machine = resolve_program_owner_machine(&*trx, &program);
             if owner_machine.owner_id != state.info().user_id() {
@@ -1393,7 +1371,6 @@ fn deploy(app: Arc<dyn ICore>) -> Arc<dyn ISecureAction> {
                 );
                 // Register the signal listener so the proxy entity actually
                 // receives (and forwards) signals addressed to this program.
-                program.push(&*trx);
                 app_for_handler.tools().vmm().assign(&program.id);
                 return Ok(json!({
                     "proxy": true,
@@ -1520,7 +1497,7 @@ fn deploy(app: Arc<dyn ICore>) -> Arc<dyn ISecureAction> {
                 &gateway_path,
                 &gateway_vm_id,
                 &entity_type,
-            );
+            )?;
             if input.downloadable {
                 // Downloadable entities (front-end scripts executed on the
                 // client) are served at any time via /programs/downloadEntity.
@@ -1548,7 +1525,6 @@ fn deploy(app: Arc<dyn ICore>) -> Arc<dyn ISecureAction> {
             // this, signals addressed to a creature's program are dropped (no
             // listener) and every creature-to-creature signal silently times
             // out.
-            program.push(&*trx);
             app_for_handler.tools().vmm().assign(&program.id);
             entity_model.entity_type = entity_type.clone();
             entity_model.push(&*trx);
@@ -1641,8 +1617,7 @@ fn list_machines(app: Arc<dyn ICore>) -> Arc<dyn ISecureAction> {
         move |state: Arc<dyn IState>, input: ListInput| -> Result<Value> {
             let trx = state.trx();
             // "Machines" are just creatures of type "machine".
-            let creatures =
-                crate::shell::api::model::creature_ports::LegacyCreatures { trx: &*trx };
+            let creatures = crate::shell::api::model::creature_ports::CreaturePorts { trx: &*trx };
             let machines = aseman_application::creature::GetCreature {
                 directory: &creatures,
                 balances: &creatures,
@@ -1697,7 +1672,17 @@ fn list_programs(app: Arc<dyn ICore>) -> Arc<dyn ISecureAction> {
         "/programs/list",
         user_guard(),
         move |state: Arc<dyn IState>, input: ListInput| -> Result<Value> {
-            let machines = Program::all(&*state.trx(), input.offset, input.count)?;
+            let trx = state.trx();
+            let count = (input.count != -1).then_some(input.count);
+            let machines = aseman_ports::ProgramDirectory::programs(
+                &crate::shell::api::model::program_ports::ProgramPorts { trx: &*trx },
+                input.offset,
+                count,
+            )
+            .map_err(|error| anyhow!("{error}"))?
+            .into_iter()
+            .map(crate::shell::api::model::program_ports::program_view)
+            .collect::<Vec<_>>();
             Ok(json!({"machines": machines}))
         },
     )
@@ -1710,9 +1695,27 @@ fn list_program_machines(app: Arc<dyn ICore>) -> Arc<dyn ISecureAction> {
         user_guard(),
         move |state: Arc<dyn IState>, input: ListAppMachsInput| -> Result<Value> {
             let trx = state.trx();
-            let prefix = format!("machinePrograms::{}::", input.app_id);
-            let users = Creature::list(&*trx, &prefix, &HashMap::new())?;
-            let programs = Program::list(&*trx, &prefix)?;
+            let programs = aseman_ports::ProgramDirectory::programs_of_machine(
+                &crate::shell::api::model::program_ports::ProgramPorts { trx: &*trx },
+                &input.app_id,
+            )
+            .map_err(|error| anyhow!("{error}"))?
+            .into_iter()
+            .map(crate::shell::api::model::program_ports::program_view)
+            .collect::<Vec<_>>();
+            // Legacy lists the creatures whose identity equals a linked program id.
+            let users = programs
+                .iter()
+                .filter_map(|program| {
+                    aseman_ports::CreatureDirectory::creature(
+                        &crate::shell::api::model::creature_ports::CreaturePorts { trx: &*trx },
+                        &program.id,
+                    )
+                    .ok()
+                    .flatten()
+                })
+                .map(|record| crate::shell::api::model::creature_ports::creature_view(record, 0))
+                .collect::<Vec<_>>();
             let mut program_by_machine_id: HashMap<String, Program> = HashMap::new();
             for program in programs {
                 program_by_machine_id.insert(program.id.clone(), program);
@@ -1743,7 +1746,15 @@ fn install_program_bootstrap(app: Arc<dyn ICore>) {
     app.modify_state(
         true,
         Box::new(move |trx: &dyn ITrx| {
-            let programs = Program::all(trx, -1, -1)?;
+            let programs = aseman_ports::ProgramDirectory::programs(
+                &crate::shell::api::model::program_ports::ProgramPorts { trx },
+                0,
+                None,
+            )
+            .map_err(|error| anyhow!("{error}"))?
+            .into_iter()
+            .map(crate::shell::api::model::program_ports::program_view)
+            .collect::<Vec<_>>();
             for program in programs {
                 let is_proxy = normalize_entity_type(&program.runtime)
                     == crate::drivers::vmm::proxy::PROXY_RUNTIME_KEY;
@@ -1758,23 +1769,21 @@ fn install_program_bootstrap(app: Arc<dyn ICore>) {
                     app_for_closure.tools().vmm().assign(&program.id);
                 }
                 if is_vm {
-                    let store_id = trx.get_link(&format!("vmAlarmStoreId::{}", program.id));
-                    if !store_id.is_empty() {
+                    let pending = aseman_ports::ProgramAlarms::alarm(
+                        &crate::shell::api::model::program_ports::ProgramPorts { trx },
+                        &program.id,
+                    )
+                    .map_err(|error| anyhow!("{error}"))?;
+                    if let Some(alarm) = pending {
                         let app_async = app_for_closure.clone();
                         let machine_id = program.id.clone();
-                        let store_id_clone = store_id.clone();
-                        let alarm_time_raw = trx.get_link(&format!("vmAlarmTime::{}", machine_id));
-                        let alarm_data = trx.get_link(&format!("vmAlarmData::{}", machine_id));
-                        // The entity to re-run ("main" for creatures); older alarms
-                        // without the link fall back to "main" so a wasm creature's
-                        // module still resolves after a restart.
-                        let mut alarm_entity =
-                            trx.get_link(&format!("vmAlarmEntity::{}", machine_id));
-                        if alarm_entity.is_empty() {
-                            alarm_entity = "main".to_string();
-                        }
+                        let store_id_clone = alarm.store_id.clone();
+                        let alarm_data = alarm.data.clone();
+                        // Older alarms without an entity replay "main" (the port's
+                        // legacy default), so a wasm creature's module still resolves.
+                        let alarm_entity = alarm.entity.clone();
                         let _ = async_once(move || {
-                            let t = alarm_time_raw.parse::<i64>().unwrap_or(0);
+                            let t = alarm.fire_at_millis;
                             let ct = chrono::Utc::now().timestamp_millis();
                             if t > ct {
                                 std::thread::sleep(std::time::Duration::from_millis(
@@ -1800,7 +1809,7 @@ fn install_program_bootstrap(app: Arc<dyn ICore>) {
                         });
                     }
                 }
-                let ports = crate::shell::api::model::store_ports::LegacyMembership { trx };
+                let ports = crate::shell::api::model::store_ports::MembershipPorts { trx };
                 let store_ids =
                     aseman_ports::StoreAccess::stores_of(&ports, &program.id).unwrap_or_default();
                 for bare in store_ids {

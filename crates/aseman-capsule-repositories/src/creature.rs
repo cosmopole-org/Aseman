@@ -8,12 +8,14 @@
 //!
 //! Every multi-capsule change is one `put_all` transaction.
 
-use crate::store::{body, next_revision, now_micros, port_error};
+use crate::store::{body, next_revision, port_error};
+use crate::support::{
+    Capsules, MAX_CAS_ATTEMPTS, equal, failed, legacy_identity, new_capsule, relationship, text,
+    tombstone,
+};
 use crate::{CapsuleStore, CapsuleStoreError};
 use aseman_contracts::capsule::{
-    CapsuleDigest, CapsuleEnvelope, CapsuleId, CapsuleKind, CapsuleQuery, CapsuleRelationship,
-    CapsuleValue, ComparisonOperator, MAX_QUERY_LIMIT, OwnerScope, QueryPredicate, QuerySort,
-    SortDirection, StorageClass,
+    CapsuleEnvelope, CapsuleValue, OwnerScope, QueryPredicate, StorageClass,
 };
 use aseman_contracts::legacy_documents::{
     capsule_value_to_json, legacy_document_fields, legacy_document_object_at,
@@ -26,13 +28,11 @@ use aseman_domain::creature::{
 use aseman_ports::{
     CreatureBalances, CreatureDirectory, CreatureMetadata, CreatureTypes, PortError, PortResult,
 };
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::BTreeMap;
 
 const CREATURE: &str = "core.creature";
 const USER: &str = "core.user";
 const WALLET: &str = "finance.wallet";
-const LEGACY_IDENTITY: &str = "core.legacy_identity";
-const MAX_CAS_ATTEMPTS: usize = 8;
 
 /// Creature ports over any [`CapsuleStore`]; balances live in wallets of `currency`.
 pub struct CapsuleCreaturePorts<'a> {
@@ -40,10 +40,6 @@ pub struct CapsuleCreaturePorts<'a> {
     /// The installation's finance epoch currency (ADR 0017).
     pub currency: &'a str,
     pub scale: u8,
-}
-
-fn kind(name: &str) -> CapsuleKind {
-    CapsuleKind(name.to_owned())
 }
 
 fn creature_id(legacy_id: &str) -> [u8; 16] {
@@ -54,121 +50,13 @@ fn user_id(legacy_id: &str) -> [u8; 16] {
     deterministic_legacy_capsule_id("User", legacy_id.as_bytes())
 }
 
-fn text(body: &BTreeMap<String, CapsuleValue>, field: &str) -> String {
-    match body.get(field) {
-        Some(CapsuleValue::Text(value)) => value.clone(),
-        _ => String::new(),
-    }
-}
-
-fn failed(error: impl ToString) -> PortError {
-    PortError::Failed(error.to_string())
-}
-
-/// A new revision-1 capsule, sealed.
-fn new_capsule(
-    id: [u8; 16],
-    kind_name: &str,
-    storage_class: StorageClass,
-    owner_scope: OwnerScope,
-    relationships: Vec<CapsuleRelationship>,
-    fields: BTreeMap<String, CapsuleValue>,
-) -> PortResult<CapsuleEnvelope> {
-    let now = now_micros();
-    CapsuleEnvelope {
-        encoding_version: 1,
-        id: CapsuleId(id),
-        kind: kind(kind_name),
-        storage_class,
-        owner_scope,
-        schema_version: 1,
-        revision: 1,
-        created_at_micros: now,
-        updated_at_micros: now,
-        previous_integrity: None,
-        integrity_hash: CapsuleDigest {
-            algorithm: "sha2-256".to_owned(),
-            bytes: vec![0; 32],
-        },
-        tombstone: false,
-        relationships,
-        body: Some(CapsuleValue::Object(fields)),
-    }
-    .seal()
-    .map_err(failed)
-}
-
-/// The tombstone revision of `current`.
-fn tombstone(current: &CapsuleEnvelope) -> PortResult<CapsuleEnvelope> {
-    CapsuleEnvelope {
-        revision: current.revision + 1,
-        previous_integrity: Some(current.integrity_hash.clone()),
-        updated_at_micros: now_micros().max(current.updated_at_micros),
-        tombstone: true,
-        body: None,
-        ..current.clone()
-    }
-    .seal()
-    .map_err(failed)
-}
-
-fn relationship(name: &str, target_kind: &str, target: [u8; 16]) -> CapsuleRelationship {
-    CapsuleRelationship {
-        name: name.to_owned(),
-        target_kind: kind(target_kind),
-        target_id: CapsuleId(target),
-    }
-}
-
-fn legacy_identity(
-    family: &str,
-    legacy_id: &str,
-    target_kind: &str,
-) -> PortResult<CapsuleEnvelope> {
-    let target = deterministic_legacy_capsule_id(family, legacy_id.as_bytes());
-    new_capsule(
-        deterministic_legacy_capsule_id(
-            "LegacyIdentity",
-            format!("{family}\0{legacy_id}").as_bytes(),
-        ),
-        LEGACY_IDENTITY,
-        StorageClass::Core,
-        OwnerScope::Global,
-        Vec::new(),
-        BTreeMap::from([
-            ("family".to_owned(), CapsuleValue::Text(family.to_owned())),
-            (
-                "legacy_id".to_owned(),
-                CapsuleValue::Text(legacy_id.to_owned()),
-            ),
-            (
-                "target_kind".to_owned(),
-                CapsuleValue::Text(target_kind.to_owned()),
-            ),
-            ("target_id".to_owned(), CapsuleValue::Bytes(target.to_vec())),
-        ]),
-    )
-}
-
-fn equal(field: &str, value: CapsuleValue) -> QueryPredicate {
-    QueryPredicate::Compare {
-        field: field.to_owned(),
-        operator: ComparisonOperator::Equal,
-        value,
-    }
-}
-
 impl CapsuleCreaturePorts<'_> {
     fn get(&self, kind_name: &str, id: [u8; 16]) -> PortResult<Option<CapsuleEnvelope>> {
-        self.repository
-            .get(&kind(kind_name), &CapsuleId(id))
-            .map_err(port_error)
+        Capsules(self.repository).get(kind_name, id)
     }
 
     fn live(&self, kind_name: &str, id: [u8; 16]) -> PortResult<Option<CapsuleEnvelope>> {
-        Ok(self
-            .get(kind_name, id)?
-            .filter(|capsule| !capsule.tombstone))
+        Capsules(self.repository).live(kind_name, id)
     }
 
     fn wallet_id(&self, legacy_id: &str) -> [u8; 16] {
@@ -178,106 +66,21 @@ impl CapsuleCreaturePorts<'_> {
         deterministic_legacy_capsule_id("Wallet", &source)
     }
 
-    /// Every live capsule of `kind_name` matching `predicates`, paged by keyset on
-    /// the unique text field `key`. The provider's collation orders the pages; callers
-    /// re-sort by bytes wherever legacy order matters.
     fn scan(
         &self,
         kind_name: &str,
         predicates: Vec<QueryPredicate>,
         key: &str,
     ) -> PortResult<Vec<CapsuleEnvelope>> {
-        let mut rows = Vec::new();
-        let mut after: Option<String> = None;
-        loop {
-            let mut page_predicates = predicates.clone();
-            if let Some(last) = &after {
-                page_predicates.push(QueryPredicate::Compare {
-                    field: key.to_owned(),
-                    operator: ComparisonOperator::GreaterThan,
-                    value: CapsuleValue::Text(last.clone()),
-                });
-            }
-            let page = self
-                .repository
-                .query(&CapsuleQuery {
-                    kind: kind(kind_name),
-                    predicate: match page_predicates.len() {
-                        0 => None,
-                        1 => page_predicates.pop(),
-                        _ => Some(QueryPredicate::And {
-                            predicates: page_predicates,
-                        }),
-                    },
-                    projection: BTreeSet::new(),
-                    sort: vec![QuerySort {
-                        field: key.to_owned(),
-                        direction: SortDirection::Ascending,
-                    }],
-                    aggregates: Vec::new(),
-                    traversals: Vec::new(),
-                    limit: MAX_QUERY_LIMIT,
-                    cursor: None,
-                })
-                .map_err(port_error)?;
-            let full = page.len() == MAX_QUERY_LIMIT as usize;
-            after = page
-                .iter()
-                .rev()
-                .find_map(|capsule| body(capsule).map(|fields| text(fields, key)));
-            rows.extend(page.into_iter().filter(|capsule| !capsule.tombstone));
-            if !full || after.is_none() {
-                return Ok(rows);
-            }
-        }
+        Capsules(self.repository).scan(kind_name, predicates, key)
     }
 
-    /// Canonical ID -> legacy identity, for every identity of `family`.
     fn legacy_ids(&self, family: &str) -> PortResult<BTreeMap<[u8; 16], String>> {
-        let mut map = BTreeMap::new();
-        for row in self.scan(
-            LEGACY_IDENTITY,
-            vec![equal("family", CapsuleValue::Text(family.to_owned()))],
-            "legacy_id",
-        )? {
-            let Some(fields) = body(&row) else { continue };
-            if let Some(CapsuleValue::Bytes(target)) = fields.get("target_id")
-                && let Ok(target) = <[u8; 16]>::try_from(target.as_slice())
-            {
-                map.insert(target, text(fields, "legacy_id"));
-            }
-        }
-        Ok(map)
+        Capsules(self.repository).legacy_ids(family)
     }
 
-    /// The legacy identity of one canonical ID, by the unique target index.
     fn legacy_id_of(&self, target_kind: &str, target: [u8; 16]) -> PortResult<String> {
-        let rows = self
-            .repository
-            .query(&CapsuleQuery {
-                kind: kind(LEGACY_IDENTITY),
-                predicate: Some(QueryPredicate::And {
-                    predicates: vec![
-                        equal("target_kind", CapsuleValue::Text(target_kind.to_owned())),
-                        equal("target_id", CapsuleValue::Bytes(target.to_vec())),
-                    ],
-                }),
-                projection: BTreeSet::new(),
-                sort: Vec::new(),
-                aggregates: Vec::new(),
-                traversals: Vec::new(),
-                limit: 1,
-                cursor: None,
-            })
-            .map_err(port_error)?;
-        match rows
-            .first()
-            .and_then(body)
-            .map(|fields| text(fields, "legacy_id"))
-        {
-            Some(legacy_id) if !legacy_id.is_empty() => Ok(legacy_id),
-            _ => Err(failed(format!("{target_kind} has no legacy identity"))),
-        }
+        Capsules(self.repository).legacy_id_of(target_kind, target)
     }
 
     fn owner_legacy_id(&self, capsule: &CapsuleEnvelope, legacy_id: &str) -> PortResult<String> {
@@ -451,7 +254,8 @@ impl CreatureDirectory for CapsuleCreaturePorts<'_> {
 
     fn create(&self, record: &CreatureRecord) -> PortResult<()> {
         let id = creature_id(&record.id);
-        if self.get(CREATURE, id)?.is_some()
+        let existing = self.get(CREATURE, id)?;
+        if existing.as_ref().is_some_and(|capsule| !capsule.tombstone)
             || self.creature_id_by_username(&record.username)?.is_some()
         {
             return Err(PortError::Conflict);
@@ -459,29 +263,55 @@ impl CreatureDirectory for CapsuleCreaturePorts<'_> {
         let owner = self.owning_user(record)?;
         let mut writes = Vec::new();
         if record.is_human() {
-            writes.push(new_capsule(
-                owner,
-                USER,
-                StorageClass::Core,
-                OwnerScope::Global,
-                Vec::new(),
-                Self::user_fields(record, None)?,
-            )?);
-            writes.push(legacy_identity("User", &record.id, USER)?);
+            // A deleted human's user is revived as its next revision.
+            match self.get(USER, owner)? {
+                Some(user) if user.tombstone => writes.push((
+                    next_revision(&user, Self::user_fields(record, None)?)?,
+                    Some(user.revision),
+                )),
+                Some(_) => return Err(PortError::Conflict),
+                None => {
+                    writes.push((
+                        new_capsule(
+                            owner,
+                            USER,
+                            StorageClass::Core,
+                            OwnerScope::Global,
+                            Vec::new(),
+                            Self::user_fields(record, None)?,
+                        )?,
+                        None,
+                    ));
+                    writes.push((legacy_identity("User", &record.id, USER)?, None));
+                }
+            }
         }
-        writes.push(new_capsule(
-            id,
-            CREATURE,
-            StorageClass::Core,
-            OwnerScope::Global,
-            vec![relationship("owner", USER, owner)],
-            Self::creature_fields(record)?,
-        )?);
-        writes.push(legacy_identity("Creature", &record.id, CREATURE)?);
-        let writes = writes
-            .into_iter()
-            .map(|capsule| (capsule, None))
-            .collect::<Vec<_>>();
+        match existing {
+            // Registering a deleted identity again revives it, as legacy allows.
+            Some(tombstoned) => writes.push((
+                CapsuleEnvelope {
+                    relationships: vec![relationship("owner", USER, owner)],
+                    ..next_revision(&tombstoned, Self::creature_fields(record)?)?
+                }
+                .seal()
+                .map_err(failed)?,
+                Some(tombstoned.revision),
+            )),
+            None => {
+                writes.push((
+                    new_capsule(
+                        id,
+                        CREATURE,
+                        StorageClass::Core,
+                        OwnerScope::Global,
+                        vec![relationship("owner", USER, owner)],
+                        Self::creature_fields(record)?,
+                    )?,
+                    None,
+                ));
+                writes.push((legacy_identity("Creature", &record.id, CREATURE)?, None));
+            }
+        }
         self.repository.put_all(&writes).map_err(Self::conflict)
     }
 
@@ -708,12 +538,7 @@ impl CreatureMetadata for CapsuleCreaturePorts<'_> {
             let written = match self.get(kind_name, id)? {
                 // A replaced or revived document is the next revision of its chain.
                 Some(current) => {
-                    let next = CapsuleEnvelope {
-                        tombstone: false,
-                        ..next_revision(&current, fields.clone())?
-                    }
-                    .seal()
-                    .map_err(failed)?;
+                    let next = next_revision(&current, fields.clone())?;
                     self.repository.put(&next, Some(current.revision))
                 }
                 None => {
@@ -816,12 +641,7 @@ impl CreatureTypes for CapsuleCreaturePorts<'_> {
         for _ in 0..MAX_CAS_ATTEMPTS {
             let written = match self.get(CREATURE_TYPE, id)? {
                 Some(current) => {
-                    let next = CapsuleEnvelope {
-                        tombstone: false,
-                        ..next_revision(&current, fields.clone())?
-                    }
-                    .seal()
-                    .map_err(failed)?;
+                    let next = next_revision(&current, fields.clone())?;
                     self.repository.put(&next, Some(current.revision))
                 }
                 None => self.repository.put(

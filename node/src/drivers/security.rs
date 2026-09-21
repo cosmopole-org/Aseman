@@ -207,7 +207,7 @@ impl ISecurity for Security {
             true,
             Box::new(move |trx: &dyn ITrx| {
                 *typ_clone.lock().unwrap() = aseman_ports::CreatureDirectory::creature(
-                    &crate::shell::api::model::creature_ports::LegacyCreatures { trx },
+                    &crate::shell::api::model::creature_ports::CreaturePorts { trx },
                     &user_id_owned,
                 )
                 .ok()
@@ -235,7 +235,7 @@ impl ISecurity for Security {
             true,
             Box::new(move |trx: &dyn ITrx| {
                 // Membership goes through the store port (legacy adapter until cutover).
-                let ports = crate::shell::api::model::store_ports::LegacyMembership { trx };
+                let ports = crate::shell::api::model::store_ports::MembershipPorts { trx };
                 let member = aseman_ports::StoreAccess::is_member(&ports, &store_id, &user_id)
                     .unwrap_or(false);
                 *found_clone.lock().unwrap() = member;

@@ -195,6 +195,31 @@ mod tests {
                 .signal_count += 1;
             Ok(())
         }
+        fn stores(&self, offset: i64, count: Option<i64>) -> PortResult<Vec<StoreRecord>> {
+            let stores = self.stores.lock().unwrap();
+            Ok(aseman_domain::creature::legacy_page(
+                stores.values().cloned(),
+                offset,
+                count,
+            ))
+        }
+        fn create_store(&self, record: &StoreRecord, _creator_id: &str) -> PortResult<()> {
+            self.stores
+                .lock()
+                .unwrap()
+                .insert(record.id.clone(), record.clone());
+            Ok(())
+        }
+        fn update_store(&self, record: &StoreRecord) -> PortResult<()> {
+            self.create_store(record, "")
+        }
+        fn delete_store(&self, store_id: &str) -> PortResult<()> {
+            self.stores.lock().unwrap().remove(store_id);
+            Ok(())
+        }
+        fn release_creator(&self, _store_id: &str, _creator_id: &str) -> PortResult<()> {
+            Ok(())
+        }
     }
 
     impl StoreAccess for Memory {
@@ -320,7 +345,7 @@ mod tests {
             StoreRecord {
                 id: "s1".to_owned(),
                 persistent_history: true,
-                signal_count: 0,
+                ..StoreRecord::default()
             },
         );
         memory

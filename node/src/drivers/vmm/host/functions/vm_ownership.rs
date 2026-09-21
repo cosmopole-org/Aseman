@@ -91,14 +91,17 @@ pub(crate) fn program_owner_user(program_id: &str) -> String {
         app.modify_state(
             true,
             Box::new(move |trx: &dyn ITrx| {
-                if !trx.has_obj("Program", &program_id) {
+                if aseman_ports::ProgramDirectory::program(
+                    &crate::shell::api::model::program_ports::ProgramPorts { trx: &*trx },
+                    &program_id,
+                )
+                .map_err(|error| anyhow::anyhow!("{error}"))?
+                .is_none()
+                {
                     return Ok(());
                 }
-                let program = crate::shell::api::model::Program {
-                    id: program_id.clone(),
-                    ..Default::default()
-                }
-                .pull(trx);
+                let program = (crate::shell::api::model::program_ports::ProgramPorts { trx })
+                    .program_or_empty(&program_id.clone());
                 let machine = crate::shell::api::actions::program::resolve_program_owner_machine(
                     trx, &program,
                 );

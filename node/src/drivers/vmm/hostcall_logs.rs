@@ -36,17 +36,13 @@ impl Vmm {
                     }
                     let creature_id = parts[1].to_string();
                     *creature_clone.lock().unwrap() = creature_id.clone();
-                    let program = Program {
-                        id: creature_id.clone(),
-                        ..Default::default()
-                    }
-                    .pull(trx);
+                    let program = (crate::shell::api::model::program_ports::ProgramPorts { trx })
+                        .program_or_empty(&creature_id.clone());
                     if program.id.is_empty() {
                         break;
                     }
-                    let machine =
-                        (crate::shell::api::model::creature_ports::LegacyCreatures { trx })
-                            .creature_or_empty(&program.machine_id.clone());
+                    let machine = (crate::shell::api::model::creature_ports::CreaturePorts { trx })
+                        .creature_or_empty(&program.machine_id.clone());
                     *owner_clone.lock().unwrap() = machine.owner_id;
                     break;
                 }

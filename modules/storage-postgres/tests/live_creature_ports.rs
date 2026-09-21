@@ -137,6 +137,109 @@ fn live_creature_ports_pass_conformance_on_capsules() {
         None
     );
 
+    let programs = aseman_capsule_repositories::program::CapsuleProgramPorts {
+        repository: &repository,
+    };
+    aseman_ports::conformance::program_directory(&programs, ["1@conformance", "7@conformance"]);
+    aseman_ports::conformance::program_metadata(&programs, "12@conformance");
+    let stream_policy = |_: &str| aseman_contracts::legacy_realtime::SignalStreamPolicy {
+        authorization_scope: vec![1],
+        retention_class: "persistent".to_owned(),
+    };
+    let stores = aseman_capsule_repositories::store::CapsuleStorePorts {
+        repository: &repository,
+        stream_policy: &stream_policy,
+    };
+    aseman_ports::conformance::store_directory(&stores, &stores, "1@conformance");
+    aseman_ports::conformance::store_access(
+        &stores,
+        "s-1@conformance",
+        ["1@conformance", "7@conformance"],
+    );
+    aseman_ports::conformance::gateway_routes(
+        &aseman_capsule_repositories::gateway::CapsuleGatewayRoutes {
+            repository: &repository,
+        },
+        "1@conformance",
+        "alice",
+        "12@conformance",
+    );
+
+    // A store for the alarm, with the legacy identity the adapter maps back through.
+    let sealed =
+        |id: [u8; 16], kind: &str, scope, relationships, fields: Vec<(&str, CapsuleValue)>| {
+            CapsuleEnvelope {
+                encoding_version: 1,
+                id: CapsuleId(id),
+                kind: CapsuleKind(kind.to_owned()),
+                storage_class: aseman_contracts::capsule::StorageClass::Core,
+                owner_scope: scope,
+                schema_version: 1,
+                revision: 1,
+                created_at_micros: 1,
+                updated_at_micros: 1,
+                previous_integrity: None,
+                integrity_hash: aseman_contracts::capsule::CapsuleDigest {
+                    algorithm: "sha2-256".to_owned(),
+                    bytes: vec![0; 32],
+                },
+                tombstone: false,
+                relationships,
+                body: Some(CapsuleValue::Object(
+                    fields
+                        .into_iter()
+                        .map(|(name, value)| (name.to_owned(), value))
+                        .collect(),
+                )),
+            }
+            .seal()
+            .unwrap()
+        };
+    let creature = deterministic_legacy_capsule_id("Creature", b"1@conformance");
+    let store = deterministic_legacy_capsule_id("Store", b"store-1");
+    CapsuleStore::put_all(
+        &repository,
+        &[
+            (
+                sealed(
+                    store,
+                    "core.store",
+                    aseman_contracts::capsule::OwnerScope::Creature(creature),
+                    vec![aseman_contracts::capsule::CapsuleRelationship {
+                        name: "creature".to_owned(),
+                        target_kind: CapsuleKind("core.creature".to_owned()),
+                        target_id: CapsuleId(creature),
+                    }],
+                    vec![
+                        ("is_public", CapsuleValue::Bool(false)),
+                        ("member_count", CapsuleValue::Integer(1)),
+                        ("persistent_history", CapsuleValue::Bool(true)),
+                        ("signal_count", CapsuleValue::Integer(0)),
+                    ],
+                ),
+                None,
+            ),
+            (
+                sealed(
+                    deterministic_legacy_capsule_id("LegacyIdentity", b"Store\x00store-1"),
+                    "core.legacy_identity",
+                    aseman_contracts::capsule::OwnerScope::Global,
+                    Vec::new(),
+                    vec![
+                        ("family", CapsuleValue::Text("Store".to_owned())),
+                        ("legacy_id", CapsuleValue::Text("store-1".to_owned())),
+                        ("target_kind", CapsuleValue::Text("core.store".to_owned())),
+                        ("target_id", CapsuleValue::Bytes(store.to_vec())),
+                    ],
+                ),
+                None,
+            ),
+        ],
+    )
+    .unwrap();
+    aseman_ports::conformance::program_alarms(&programs, "12@conformance", "store-1");
+    aseman_ports::conformance::vm_resource_stores(&programs, ["1@conformance", "7@conformance"]);
+
     drop(repository);
     admin
         .batch_execute(&format!("DROP DATABASE {database}"))

@@ -133,6 +133,22 @@ pub fn legacy_document_fields(
     ]))
 }
 
+/// Merge `source` into `target` as legacy `put_json(.., merge = true)` does: objects
+/// merge member by member, and any other value replaces what was there (`null`
+/// included).
+pub fn merge_legacy_objects(target: &mut Map<String, Value>, source: &Map<String, Value>) {
+    for (member, value) in source {
+        match (target.get_mut(member), value) {
+            (Some(Value::Object(existing)), Value::Object(incoming)) => {
+                merge_legacy_objects(existing, incoming);
+            }
+            _ => {
+                target.insert(member.clone(), value.clone());
+            }
+        }
+    }
+}
+
 /// The object at a legacy dotted `path` inside a document rooted at `root_path`, as
 /// legacy `get_json` answers it: only objects are returned.
 #[must_use]
@@ -177,6 +193,19 @@ mod tests {
         assert!(legacy_document_object_at("metadata", &document, "metadata.leaf").is_none());
         assert!(legacy_document_object_at("metadata", &document, "metadata.none").is_none());
         assert!(legacy_document_object_at("metadata", &document, "other").is_none());
+        let mut merged = serde_json::json!({"a": {"x": 1, "y": 2}, "b": 1});
+        let Value::Object(target) = &mut merged else {
+            unreachable!()
+        };
+        let Value::Object(source) = serde_json::json!({"a": {"y": 3}, "b": {"z": 1}, "c": null})
+        else {
+            unreachable!()
+        };
+        merge_legacy_objects(target, &source);
+        assert_eq!(
+            merged,
+            serde_json::json!({"a": {"x": 1, "y": 3}, "b": {"z": 1}, "c": null})
+        );
         let huge = serde_json::json!({"n": u64::MAX});
         assert!(legacy_json_to_capsule_value("k", &huge).is_err());
     }

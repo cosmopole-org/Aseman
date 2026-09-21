@@ -1118,16 +1118,13 @@ fn finance_program_binding(app: &Arc<dyn ICore>, program_id: &str) -> Option<(St
     app.modify_state(
         true,
         Box::new(move |trx: &dyn ITrx| {
-            let program = Program {
-                id: program_id.clone(),
-                ..Default::default()
-            }
-            .pull(trx);
+            let program = (crate::shell::api::model::program_ports::ProgramPorts { trx })
+                .program_or_empty(&program_id.clone());
             if program.machine_id.is_empty() {
                 return Ok(());
             }
             let machine_id = program.machine_id;
-            let machine = (crate::shell::api::model::creature_ports::LegacyCreatures { trx })
+            let machine = (crate::shell::api::model::creature_ports::CreaturePorts { trx })
                 .creature_or_empty(&machine_id.clone());
             if !machine.owner_id.is_empty() {
                 *slot_c.lock().unwrap() = Some((machine_id, machine.owner_id));
