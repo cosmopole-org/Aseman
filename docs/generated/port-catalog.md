@@ -10,8 +10,11 @@ verification: python3 scripts/generate_phase1_contracts.py --check
 
 | Behavioral port | Owning crate |
 |---|---|
+| `CanonicalRecordWriter` | `aseman-ports` |
 | `ClockPort` | `aseman-ports` |
 | `CreatureDatabaseBindings` | `aseman-ports` |
+| `MigrationRecordSource` | `aseman-ports` |
+| `MigrationStateStore` | `aseman-ports` |
 | `PeerDirectoryPort` | `aseman-ports` |
 | `PolicyDecisionPort` | `aseman-ports` |
 | `ServerIdentityPort` | `aseman-ports` |

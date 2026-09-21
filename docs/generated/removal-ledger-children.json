@@ -149,7 +149,11 @@
     {
       "callers": [
         "aseman-contracts",
+        "base64",
+        "chacha20poly1305",
         "rocksdb",
+        "rsa",
+        "serde_json",
         "sha2",
         "thiserror"
       ],
@@ -164,6 +168,8 @@
       "callers": [
         "aseman-config",
         "aseman-contracts",
+        "aseman-domain",
+        "aseman-ports",
         "postgres",
         "r2d2",
         "r2d2_postgres",
@@ -278,6 +284,27 @@
       "disposition": "move-or-wrap-per-parent-ledger",
       "expiry": "owning phase replacement/deletion gate",
       "id": "rust-package:aseman-storage-conformance",
+      "replacement_evidence": "A001 plus architecture dependency checks",
+      "target_owner": "root Aseman workspace or isolated legacy provider"
+    },
+    {
+      "callers": [
+        "aseman-application",
+        "aseman-config",
+        "aseman-contracts",
+        "aseman-domain",
+        "aseman-ports",
+        "aseman-storage-legacy",
+        "aseman-storage-postgres",
+        "postgres",
+        "rsa",
+        "serde_json",
+        "uuid"
+      ],
+      "current_owner": "tests/migration/Cargo.toml",
+      "disposition": "move-or-wrap-per-parent-ledger",
+      "expiry": "owning phase replacement/deletion gate",
+      "id": "rust-package:aseman-migration-e2e",
       "replacement_evidence": "A001 plus architecture dependency checks",
       "target_owner": "root Aseman workspace or isolated legacy provider"
     },
@@ -5074,6 +5101,348 @@
     },
     {
       "callers": [
+        "node/src/shell/api/actions/creature/finance.rs:183",
+        "node/src/shell/api/actions/creature/finance.rs:200"
+      ],
+      "current_owner": "legacy RocksDB/transaction key space",
+      "disposition": "rewrite",
+      "expiry": "Phase 3 cutover plus rollback window",
+      "id": "storage-key:FinanceDebt::{user_id}",
+      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
+      "target_owner": "finance capsule/table mapping"
+    },
+    {
+      "callers": [
+        "node/src/shell/api/actions/creature/finance.rs:1552",
+        "node/src/shell/api/actions/creature/finance.rs:1943",
+        "node/src/shell/api/actions/creature/finance.rs:2830",
+        "node/src/shell/api/actions/creature/finance.rs:3180"
+      ],
+      "current_owner": "legacy RocksDB/transaction key space",
+      "disposition": "rewrite",
+      "expiry": "Phase 3 cutover plus rollback window",
+      "id": "storage-key:FinanceEarned::{user_id}",
+      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
+      "target_owner": "finance capsule/table mapping"
+    },
+    {
+      "callers": [
+        "node/src/shell/api/actions/creature/finance.rs:161",
+        "node/src/shell/api/actions/creature/finance.rs:178"
+      ],
+      "current_owner": "legacy RocksDB/transaction key space",
+      "disposition": "rewrite",
+      "expiry": "Phase 3 cutover plus rollback window",
+      "id": "storage-key:FinanceHeld::{payer_id}",
+      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
+      "target_owner": "finance capsule/table mapping"
+    },
+    {
+      "callers": [
+        "node/src/shell/api/actions/creature/finance.rs:1312"
+      ],
+      "current_owner": "legacy RocksDB/transaction key space",
+      "disposition": "rewrite",
+      "expiry": "Phase 3 cutover plus rollback window",
+      "id": "storage-key:FinanceHoldByPayer::{payer_id}::{now:020}::{hold_id}",
+      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
+      "target_owner": "finance capsule/table mapping"
+    },
+    {
+      "callers": [
+        "node/src/shell/api/actions/creature/finance.rs:1907"
+      ],
+      "current_owner": "legacy RocksDB/transaction key space",
+      "disposition": "rewrite",
+      "expiry": "Phase 3 cutover plus rollback window",
+      "id": "storage-key:FinanceHoldByPayer::{user_id}::",
+      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
+      "target_owner": "finance capsule/table mapping"
+    },
+    {
+      "callers": [
+        "node/src/shell/api/actions/creature/finance.rs:1190"
+      ],
+      "current_owner": "legacy RocksDB/transaction key space",
+      "disposition": "rewrite",
+      "expiry": "Phase 3 cutover plus rollback window",
+      "id": "storage-key:FinanceHoldRequest::{payer_id}::{}",
+      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
+      "target_owner": "finance capsule/table mapping"
+    },
+    {
+      "callers": [
+        "node/src/shell/api/actions/creature/finance.rs:386"
+      ],
+      "current_owner": "legacy RocksDB/transaction key space",
+      "disposition": "rewrite",
+      "expiry": "Phase 3 cutover plus rollback window",
+      "id": "storage-key:FinanceJournalByUser::{participant}::{now:020}::{journal_id}",
+      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
+      "target_owner": "finance capsule/table mapping"
+    },
+    {
+      "callers": [
+        "node/src/shell/api/actions/creature/finance.rs:1892"
+      ],
+      "current_owner": "legacy RocksDB/transaction key space",
+      "disposition": "rewrite",
+      "expiry": "Phase 3 cutover plus rollback window",
+      "id": "storage-key:FinanceJournalByUser::{user_id}::",
+      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
+      "target_owner": "finance capsule/table mapping"
+    },
+    {
+      "callers": [
+        "node/src/shell/api/actions/creature/finance.rs:1868"
+      ],
+      "current_owner": "legacy RocksDB/transaction key space",
+      "disposition": "rewrite",
+      "expiry": "Phase 3 cutover plus rollback window",
+      "id": "storage-key:FinancePayoutByUser::{user_id}::",
+      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
+      "target_owner": "finance capsule/table mapping"
+    },
+    {
+      "callers": [
+        "node/src/shell/api/actions/creature/finance.rs:2075"
+      ],
+      "current_owner": "legacy RocksDB/transaction key space",
+      "disposition": "rewrite",
+      "expiry": "Phase 3 cutover plus rollback window",
+      "id": "storage-key:FinancePayoutByUser::{user_id}::{now:020}::{payout_id}",
+      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
+      "target_owner": "finance capsule/table mapping"
+    },
+    {
+      "callers": [
+        "node/src/shell/api/actions/creature/finance.rs:224",
+        "node/src/shell/api/actions/creature/finance.rs:232"
+      ],
+      "current_owner": "legacy RocksDB/transaction key space",
+      "disposition": "rewrite",
+      "expiry": "Phase 3 cutover plus rollback window",
+      "id": "storage-key:FinancePayoutHeld::{user_id}",
+      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
+      "target_owner": "finance capsule/table mapping"
+    },
+    {
+      "callers": [
+        "node/src/shell/api/actions/creature/finance.rs:2010"
+      ],
+      "current_owner": "legacy RocksDB/transaction key space",
+      "disposition": "rewrite",
+      "expiry": "Phase 3 cutover plus rollback window",
+      "id": "storage-key:FinancePayoutRequest::{user_id}::{}",
+      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
+      "target_owner": "finance capsule/table mapping"
+    },
+    {
+      "callers": [
+        "node/src/shell/api/actions/creature/finance.rs:2121"
+      ],
+      "current_owner": "legacy RocksDB/transaction key space",
+      "disposition": "rewrite",
+      "expiry": "Phase 3 cutover plus rollback window",
+      "id": "storage-key:FinancePayoutResolution::{}",
+      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
+      "target_owner": "finance capsule/table mapping"
+    },
+    {
+      "callers": [
+        "node/src/shell/api/actions/creature/finance.rs:2379"
+      ],
+      "current_owner": "legacy RocksDB/transaction key space",
+      "disposition": "rewrite",
+      "expiry": "Phase 3 cutover plus rollback window",
+      "id": "storage-key:FinancePoolByUser::{payer_id}",
+      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
+      "target_owner": "finance capsule/table mapping"
+    },
+    {
+      "callers": [
+        "node/src/shell/api/actions/creature/finance.rs:1924"
+      ],
+      "current_owner": "legacy RocksDB/transaction key space",
+      "disposition": "rewrite",
+      "expiry": "Phase 3 cutover plus rollback window",
+      "id": "storage-key:FinancePoolByUser::{user_id}",
+      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
+      "target_owner": "finance capsule/table mapping"
+    },
+    {
+      "callers": [
+        "node/src/shell/api/actions/creature/finance.rs:2532"
+      ],
+      "current_owner": "legacy RocksDB/transaction key space",
+      "disposition": "rewrite",
+      "expiry": "Phase 3 cutover plus rollback window",
+      "id": "storage-key:FinancePoolClose::{}",
+      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
+      "target_owner": "finance capsule/table mapping"
+    },
+    {
+      "callers": [
+        "node/src/shell/api/actions/creature/finance.rs:3070"
+      ],
+      "current_owner": "legacy RocksDB/transaction key space",
+      "disposition": "rewrite",
+      "expiry": "Phase 3 cutover plus rollback window",
+      "id": "storage-key:FinancePoolDebit::{authority_id}::{}",
+      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
+      "target_owner": "finance capsule/table mapping"
+    },
+    {
+      "callers": [
+        "node/src/shell/api/actions/creature/finance.rs:2312"
+      ],
+      "current_owner": "legacy RocksDB/transaction key space",
+      "disposition": "rewrite",
+      "expiry": "Phase 3 cutover plus rollback window",
+      "id": "storage-key:FinancePoolOpen::{payer_id}::{}",
+      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
+      "target_owner": "finance capsule/table mapping"
+    },
+    {
+      "callers": [
+        "node/src/shell/api/actions/creature/finance.rs:2410"
+      ],
+      "current_owner": "legacy RocksDB/transaction key space",
+      "disposition": "rewrite",
+      "expiry": "Phase 3 cutover plus rollback window",
+      "id": "storage-key:FinancePoolRefresh::{payer_id}::{}",
+      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
+      "target_owner": "finance capsule/table mapping"
+    },
+    {
+      "callers": [
+        "node/src/shell/api/actions/creature/finance.rs:2728"
+      ],
+      "current_owner": "legacy RocksDB/transaction key space",
+      "disposition": "rewrite",
+      "expiry": "Phase 3 cutover plus rollback window",
+      "id": "storage-key:FinancePoolSettlement::{authority_id}::{}",
+      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
+      "target_owner": "finance capsule/table mapping"
+    },
+    {
+      "callers": [
+        "node/src/shell/api/actions/creature/finance.rs:1699"
+      ],
+      "current_owner": "legacy RocksDB/transaction key space",
+      "disposition": "rewrite",
+      "expiry": "Phase 3 cutover plus rollback window",
+      "id": "storage-key:FinanceRelease::{caller_id}::{}",
+      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
+      "target_owner": "finance capsule/table mapping"
+    },
+    {
+      "callers": [
+        "node/src/shell/api/actions/creature/finance.rs:1359"
+      ],
+      "current_owner": "legacy RocksDB/transaction key space",
+      "disposition": "rewrite",
+      "expiry": "Phase 3 cutover plus rollback window",
+      "id": "storage-key:FinanceRun::{authority_id}::{}",
+      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
+      "target_owner": "finance capsule/table mapping"
+    },
+    {
+      "callers": [
+        "node/src/shell/api/actions/creature/finance.rs:1441"
+      ],
+      "current_owner": "legacy RocksDB/transaction key space",
+      "disposition": "rewrite",
+      "expiry": "Phase 3 cutover plus rollback window",
+      "id": "storage-key:FinanceSettlement::{authority_id}::{}",
+      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
+      "target_owner": "finance capsule/table mapping"
+    },
+    {
+      "callers": [
+        "node/src/shell/api/actions/creature/finance.rs:1944"
+      ],
+      "current_owner": "legacy RocksDB/transaction key space",
+      "disposition": "rewrite",
+      "expiry": "Phase 3 cutover plus rollback window",
+      "id": "storage-key:FinanceSpent::{user_id}",
+      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
+      "target_owner": "finance capsule/table mapping"
+    },
+    {
+      "callers": [
+        "node/src/shell/api/actions/creature/finance.rs:1545",
+        "node/src/shell/api/actions/creature/finance.rs:2870",
+        "node/src/shell/api/actions/creature/finance.rs:3216"
+      ],
+      "current_owner": "legacy RocksDB/transaction key space",
+      "disposition": "rewrite",
+      "expiry": "Phase 3 cutover plus rollback window",
+      "id": "storage-key:FinanceSpent::{}",
+      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
+      "target_owner": "finance capsule/table mapping"
+    },
+    {
+      "callers": [
+        "node/src/shell/api/actions/creature/finance.rs:205",
+        "node/src/shell/api/actions/creature/finance.rs:217"
+      ],
+      "current_owner": "legacy RocksDB/transaction key space",
+      "disposition": "rewrite",
+      "expiry": "Phase 3 cutover plus rollback window",
+      "id": "storage-key:FinanceWithdrawable::{user_id}",
+      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
+      "target_owner": "finance capsule/table mapping"
+    },
+    {
+      "callers": [
+        "node/src/shell/api/actions/creature/finance.rs:951"
+      ],
+      "current_owner": "legacy RocksDB/transaction key space",
+      "disposition": "rewrite",
+      "expiry": "Phase 3 cutover plus rollback window",
+      "id": "storage-key:Json::BillingCatalog::{pricing_version}",
+      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
+      "target_owner": "finance capsule/table mapping"
+    },
+    {
+      "callers": [
+        "node/src/shell/api/actions/creature/finance.rs:513"
+      ],
+      "current_owner": "legacy RocksDB/transaction key space",
+      "disposition": "rewrite",
+      "expiry": "Phase 3 cutover plus rollback window",
+      "id": "storage-key:Json::BillingCatalog::{version}",
+      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
+      "target_owner": "finance capsule/table mapping"
+    },
+    {
+      "callers": [
+        "node/src/shell/api/actions/creature/finance.rs:1078"
+      ],
+      "current_owner": "legacy RocksDB/transaction key space",
+      "disposition": "rewrite",
+      "expiry": "Phase 3 cutover plus rollback window",
+      "id": "storage-key:Json::BillingQuote::{quote_id}",
+      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
+      "target_owner": "finance capsule/table mapping"
+    },
+    {
+      "callers": [
+        "node/src/shell/api/actions/creature/finance.rs:1151",
+        "node/src/shell/api/actions/creature/finance.rs:2655",
+        "node/src/shell/api/actions/creature/finance.rs:2767",
+        "node/src/shell/api/actions/creature/finance.rs:3100"
+      ],
+      "current_owner": "legacy RocksDB/transaction key space",
+      "disposition": "rewrite",
+      "expiry": "Phase 3 cutover plus rollback window",
+      "id": "storage-key:Json::BillingQuote::{}",
+      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
+      "target_owner": "finance capsule/table mapping"
+    },
+    {
+      "callers": [
         "node/src/shell/api/actions/gateway.rs:44"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
@@ -5125,12 +5494,90 @@
     },
     {
       "callers": [
+        "node/src/shell/api/actions/creature/finance.rs:112"
+      ],
+      "current_owner": "legacy RocksDB/transaction key space",
+      "disposition": "rewrite",
+      "expiry": "Phase 3 cutover plus rollback window",
+      "id": "storage-key:Json::FinanceHold::{hold_id}",
+      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
+      "target_owner": "finance capsule/table mapping"
+    },
+    {
+      "callers": [
+        "node/src/shell/api/actions/creature/finance.rs:1900",
+        "node/src/shell/api/actions/creature/finance.rs:374"
+      ],
+      "current_owner": "legacy RocksDB/transaction key space",
+      "disposition": "rewrite",
+      "expiry": "Phase 3 cutover plus rollback window",
+      "id": "storage-key:Json::FinanceJournal::{journal_id}",
+      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
+      "target_owner": "finance capsule/table mapping"
+    },
+    {
+      "callers": [
+        "node/src/shell/api/actions/creature/finance.rs:157"
+      ],
+      "current_owner": "legacy RocksDB/transaction key space",
+      "disposition": "rewrite",
+      "expiry": "Phase 3 cutover plus rollback window",
+      "id": "storage-key:Json::FinanceLiveDebit::{run_id}",
+      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
+      "target_owner": "finance capsule/table mapping"
+    },
+    {
+      "callers": [
+        "node/src/shell/api/actions/creature/finance.rs:1858"
+      ],
+      "current_owner": "legacy RocksDB/transaction key space",
+      "disposition": "rewrite",
+      "expiry": "Phase 3 cutover plus rollback window",
+      "id": "storage-key:Json::FinancePayout::{payout_id}",
+      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
+      "target_owner": "finance capsule/table mapping"
+    },
+    {
+      "callers": [
         "node/src/drivers/vmm/host/vm_host_functions.rs:1747"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
       "expiry": "Phase 3 cutover plus rollback window",
       "id": "storage-key:Json::FinancePool::{pool_id_c}",
+      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
+      "target_owner": "finance capsule/table mapping"
+    },
+    {
+      "callers": [
+        "node/src/shell/api/actions/creature/finance.rs:130"
+      ],
+      "current_owner": "legacy RocksDB/transaction key space",
+      "disposition": "rewrite",
+      "expiry": "Phase 3 cutover plus rollback window",
+      "id": "storage-key:Json::FinancePool::{pool_id}",
+      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
+      "target_owner": "finance capsule/table mapping"
+    },
+    {
+      "callers": [
+        "node/src/shell/api/actions/creature/finance.rs:148"
+      ],
+      "current_owner": "legacy RocksDB/transaction key space",
+      "disposition": "rewrite",
+      "expiry": "Phase 3 cutover plus rollback window",
+      "id": "storage-key:Json::FinancePoolReservation::{run_id}",
+      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
+      "target_owner": "finance capsule/table mapping"
+    },
+    {
+      "callers": [
+        "node/src/shell/api/actions/creature/finance.rs:264"
+      ],
+      "current_owner": "legacy RocksDB/transaction key space",
+      "disposition": "rewrite",
+      "expiry": "Phase 3 cutover plus rollback window",
+      "id": "storage-key:Json::FinanceProjectBudget::{project_id}",
       "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
       "target_owner": "finance capsule/table mapping"
     },
@@ -5334,6 +5781,17 @@
     },
     {
       "callers": [
+        "node/src/shell/api/actions/creature/finance.rs:3992"
+      ],
+      "current_owner": "legacy RocksDB/transaction key space",
+      "disposition": "rewrite",
+      "expiry": "Phase 3 cutover plus rollback window",
+      "id": "storage-key:PaymentAdjustment::{}",
+      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
+      "target_owner": "reviewed A308 legacy-to-capsule transform"
+    },
+    {
+      "callers": [
         "node/src/drivers/vmm/hostcall_entities.rs:311",
         "node/src/drivers/vmm/hostcall_entities.rs:399",
         "node/src/drivers/vmm/hostcall_entities.rs:501",
@@ -5379,6 +5837,17 @@
       "id": "storage-key:SecretGrant::{}::{}::{}",
       "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
       "target_owner": "identity/policy/secret capsule mapping"
+    },
+    {
+      "callers": [
+        "node/src/shell/api/actions/creature/finance.rs:288"
+      ],
+      "current_owner": "legacy RocksDB/transaction key space",
+      "disposition": "rewrite",
+      "expiry": "Phase 3 cutover plus rollback window",
+      "id": "storage-key:StoreMeta::{project_id}",
+      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
+      "target_owner": "typed core capsule/table mapping"
     },
     {
       "callers": [
@@ -6507,19 +6976,19 @@
         "node/src/shell/api/actions/program.rs:1331",
         "node/src/shell/api/model/entity.rs:27",
         "vms/elpify/src/queue.rs:156",
-        "vms/javascript/src/host_calls.rs:133",
-        "vms/javascript/src/host_calls.rs:138",
-        "vms/javascript/src/host_calls.rs:143",
-        "vms/javascript/src/host_calls.rs:147",
+        "vms/javascript/src/host_calls.rs:135",
+        "vms/javascript/src/host_calls.rs:140",
+        "vms/javascript/src/host_calls.rs:145",
+        "vms/javascript/src/host_calls.rs:149",
         "vms/javascript/src/runtime.rs:69",
         "vms/wasm/src/host_calls.rs:116",
         "vms/wasm/src/host_calls.rs:120",
         "vms/wasm/src/host_calls.rs:124",
         "vms/wasm/src/host_calls.rs:129",
-        "vms/wasm/src/host_calls.rs:480",
-        "vms/wasm/src/host_calls.rs:492",
-        "vms/wasm/src/host_calls.rs:505",
-        "vms/wasm/src/host_calls.rs:520",
+        "vms/wasm/src/host_calls.rs:484",
+        "vms/wasm/src/host_calls.rs:496",
+        "vms/wasm/src/host_calls.rs:509",
+        "vms/wasm/src/host_calls.rs:524",
         "vms/wasm/src/runtime.rs:324"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
@@ -6793,10 +7262,10 @@
     }
   ],
   "summary": {
-    "artifacts": 27,
+    "artifacts": 28,
     "configuration": 116,
     "protocol_and_compatibility": 289,
-    "storage": 145,
-    "total": 577
+    "storage": 184,
+    "total": 617
   }
 }

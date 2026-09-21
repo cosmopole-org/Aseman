@@ -2,7 +2,7 @@
 status: GENERATED
 owner: storage/postgres
 source_of_truth: contracts/capsule/kinds, contracts/storage/postgres, and scripts/generate_postgres_core.py
-last_verified_commit: 800df24076c7
+last_verified_commit: f6be364d6761
 verification: python3 scripts/generate_postgres_core.py --check
 ---
 
@@ -18,7 +18,7 @@ indexes, and checks enforce the accepted logical schema. No guest payload table 
 | `core.creature` | `aseman_core.creatures` | 6 | 1 | 2 |
 | `core.program` | `aseman_core.programs` | 4 | 1 | 1 |
 | `core.store` | `aseman_core.stores` | 5 | 2 | 0 |
-| `core.store_membership` | `aseman_core.store_memberships` | 2 | 2 | 1 |
+| `core.store_membership` | `aseman_core.store_memberships` | 4 | 3 | 1 |
 | `core.access_level` | `aseman_core.access_levels` | 2 | 1 | 1 |
 | `core.capability_grant` | `aseman_core.capability_grants` | 5 | 2 | 0 |
 | `core.session` | `aseman_core.sessions` | 4 | 1 | 1 |
@@ -34,6 +34,21 @@ indexes, and checks enforce the accepted logical schema. No guest payload table 
 | `core.chain` | `aseman_core.chains` | 2 | 1 | 1 |
 | `core.chain_shard` | `aseman_core.chain_shards` | 2 | 1 | 1 |
 | `core.entity` | `aseman_core.entities` | 3 | 1 | 1 |
+| `core.user_metadata` | `aseman_core.user_metadata_documents` | 3 | 1 | 1 |
+| `core.creature_metadata` | `aseman_core.creature_metadata_documents` | 3 | 1 | 1 |
+| `core.store_metadata` | `aseman_core.store_metadata_documents` | 3 | 1 | 1 |
+| `core.program_metadata` | `aseman_core.program_metadata_documents` | 3 | 1 | 1 |
+| `core.creature_type` | `aseman_core.creature_types` | 4 | 0 | 1 |
+| `core.gateway_route` | `aseman_core.gateway_routes` | 3 | 2 | 1 |
+| `core.program_alarm` | `aseman_core.program_alarms` | 3 | 2 | 1 |
+| `core.vm_resource_store` | `aseman_core.vm_resource_stores` | 5 | 1 | 0 |
+| `core.vm_resource_entity` | `aseman_core.vm_resource_entities` | 10 | 1 | 1 |
+| `core.entity_config` | `aseman_core.entity_configs` | 3 | 1 | 1 |
+| `core.entity_artifact` | `aseman_core.entity_artifacts` | 6 | 1 | 1 |
+| `core.creature_secret` | `aseman_core.creature_secrets` | 4 | 1 | 1 |
+| `core.secret_grant` | `aseman_core.secret_grants` | 2 | 2 | 1 |
+| `core.bridge_grant` | `aseman_core.bridge_grants` | 6 | 0 | 1 |
+| `core.bridge_topic` | `aseman_core.bridge_topics` | 2 | 0 | 1 |
 
 The guest catalog tables contain only trusted bindings and schema definitions.
 Creature-owned rows are stored later in separate provider-native databases/namespaces

@@ -15,9 +15,9 @@ The complete dependency and feature data is in `current-workspace.json`.
 
 ## Repository summary
 
-- Tracked files: 428
+- Tracked files: 669
 - Tracked files under `dist/`: 15
-- Rust package manifests: 26
+- Rust package manifests: 27
 - Declared Cargo workspace roots: 1
 - npm package manifests: 1
 - Lockfiles: `Cargo.lock`, `client-cli/package-lock.json`
@@ -30,7 +30,7 @@ from separate manifests. This is current behavior, not the target topology.
 
 | Manifest | Resolver | Members | Excludes |
 |---|---:|---|---|
-| `Cargo.toml` | 2 | `cmd/casparctl`, `crates/*`, `modules/*`, `node`, `node/crates/*`, `tests/contracts/module`, `tests/contracts/storage`, `vm-sdk`, `vms/docker`, `vms/elpian`, `vms/elpian/crates/elpian-vm`, `vms/elpify`, `vms/elpify/crates/elpify-lang`, `vms/fire`, `vms/javascript`, `vms/modal`, `vms/wasm`, `xtask` | — |
+| `Cargo.toml` | 2 | `cmd/casparctl`, `crates/*`, `modules/*`, `node`, `node/crates/*`, `tests/contracts/module`, `tests/contracts/storage`, `tests/migration`, `vm-sdk`, `vms/docker`, `vms/elpian`, `vms/elpian/crates/elpian-vm`, `vms/elpify`, `vms/elpify/crates/elpify-lang`, `vms/fire`, `vms/javascript`, `vms/modal`, `vms/wasm`, `xtask` | — |
 
 ## Rust packages
 
@@ -45,12 +45,13 @@ from separate manifests. This is current behavior, not the target topology.
 | `aseman-observability` | `crates/aseman-observability/Cargo.toml` | {'workspace': True} | lib:aseman-observability | 1 | 0 |
 | `aseman-ports` | `crates/aseman-ports/Cargo.toml` | {'workspace': True} | lib:aseman-ports | 2 | 0 |
 | `aseman-sample-provider` | `modules/sample-provider/Cargo.toml` | {'workspace': True} | bin:aseman-sample-provider, lib:aseman-sample-provider | 10 | 0 |
-| `aseman-storage-legacy` | `modules/storage-legacy/Cargo.toml` | {'workspace': True} | lib:aseman-storage-legacy | 4 | 0 |
-| `aseman-storage-postgres` | `modules/storage-postgres/Cargo.toml` | {'workspace': True} | bin:aseman-storage-postgres, lib:aseman-storage-postgres | 13 | 0 |
+| `aseman-storage-legacy` | `modules/storage-legacy/Cargo.toml` | {'workspace': True} | lib:aseman-storage-legacy | 8 | 0 |
+| `aseman-storage-postgres` | `modules/storage-postgres/Cargo.toml` | {'workspace': True} | bin:aseman-storage-postgres, lib:aseman-storage-postgres | 15 | 0 |
 | `caspar-node` | `node/Cargo.toml` | 2021 | bin:aseman-node, bin:caspar-keygen, bin:caspar-node, lib:caspar-node | 45 | 0 |
 | `caspar-vm-plugins` | `node/crates/caspar-vm-plugins/Cargo.toml` | 2021 | lib:caspar_vm_plugins | 8 | 0 |
 | `aseman-module-conformance` | `tests/contracts/module/Cargo.toml` | {'workspace': True} | lib:aseman-module-conformance | 2 | 0 |
 | `aseman-storage-conformance` | `tests/contracts/storage/Cargo.toml` | {'workspace': True} | lib:aseman-storage-conformance | 3 | 0 |
+| `aseman-migration-e2e` | `tests/migration/Cargo.toml` | {'workspace': True} | lib:aseman-migration-e2e | 11 | 0 |
 | `caspar-vm-sdk` | `vm-sdk/Cargo.toml` | 2021 | lib:caspar_vm_sdk | 3 | 0 |
 | `caspar-vm-docker` | `vms/docker/Cargo.toml` | 2021 | lib:caspar_vm_docker | 11 | 0 |
 | `caspar-vm-elpian` | `vms/elpian/Cargo.toml` | 2021 | lib:caspar_vm_elpian | 3 | 0 |
@@ -69,6 +70,13 @@ from separate manifests. This is current behavior, not the target topology.
 |---|---|---|---|
 | `aseman-application` | normal | `aseman-domain` | `crates/aseman-domain` |
 | `aseman-application` | normal | `aseman-ports` | `crates/aseman-ports` |
+| `aseman-migration-e2e` | dev | `aseman-application` | `crates/aseman-application` |
+| `aseman-migration-e2e` | dev | `aseman-config` | `crates/aseman-config` |
+| `aseman-migration-e2e` | dev | `aseman-contracts` | `crates/aseman-contracts` |
+| `aseman-migration-e2e` | dev | `aseman-domain` | `crates/aseman-domain` |
+| `aseman-migration-e2e` | dev | `aseman-ports` | `crates/aseman-ports` |
+| `aseman-migration-e2e` | dev | `aseman-storage-legacy` | `modules/storage-legacy` |
+| `aseman-migration-e2e` | dev | `aseman-storage-postgres` | `modules/storage-postgres` |
 | `aseman-module-conformance` | normal | `aseman-contracts` | `crates/aseman-contracts` |
 | `aseman-module-conformance` | normal | `aseman-module-runtime` | `crates/aseman-module-runtime` |
 | `aseman-module-runtime` | normal | `aseman-contracts` | `crates/aseman-contracts` |
@@ -80,6 +88,8 @@ from separate manifests. This is current behavior, not the target topology.
 | `aseman-storage-legacy` | normal | `aseman-contracts` | `crates/aseman-contracts` |
 | `aseman-storage-postgres` | normal | `aseman-config` | `crates/aseman-config` |
 | `aseman-storage-postgres` | normal | `aseman-contracts` | `crates/aseman-contracts` |
+| `aseman-storage-postgres` | normal | `aseman-domain` | `crates/aseman-domain` |
+| `aseman-storage-postgres` | normal | `aseman-ports` | `crates/aseman-ports` |
 | `aseman-storage-postgres` | dev | `aseman-storage-conformance` | `tests/contracts/storage` |
 | `caspar-node` | normal | `aseman-application` | `crates/aseman-application` |
 | `caspar-node` | normal | `aseman-config` | `crates/aseman-config` |

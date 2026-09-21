@@ -10,6 +10,7 @@
   "tables": [
     {
       "consistency": "eventual",
+      "document_fields": [],
       "field_columns": {
         "labels": "labels",
         "metric": "metric",
@@ -59,6 +60,7 @@
     },
     {
       "consistency": "eventual",
+      "document_fields": [],
       "field_columns": {
         "cpu_millis": "cpu_millis",
         "details": "details",
@@ -107,6 +109,7 @@
     },
     {
       "consistency": "eventual",
+      "document_fields": [],
       "field_columns": {
         "build_id": "build_id",
         "legacy_id": "legacy_id",
@@ -162,6 +165,7 @@
     },
     {
       "consistency": "append_linearizable",
+      "document_fields": [],
       "field_columns": {
         "action": "action",
         "actor": "actor",
@@ -228,6 +232,7 @@
     },
     {
       "consistency": "serializable",
+      "document_fields": [],
       "field_columns": {
         "balance_minor": "balance_minor",
         "currency": "currency",
@@ -275,6 +280,7 @@
     },
     {
       "consistency": "serializable",
+      "document_fields": [],
       "field_columns": {
         "amount_minor": "amount_minor",
         "currency": "currency",
@@ -342,6 +348,7 @@
     },
     {
       "consistency": "serializable",
+      "document_fields": [],
       "field_columns": {
         "currency": "currency",
         "effective_at_micros": "effective_at_micros",
@@ -387,6 +394,7 @@
     },
     {
       "consistency": "serializable",
+      "document_fields": [],
       "field_columns": {
         "idempotency_key": "idempotency_key",
         "interval_end_micros": "interval_end_micros",
@@ -442,6 +450,7 @@
     },
     {
       "consistency": "serializable",
+      "document_fields": [],
       "field_columns": {
         "aggregate_id": "aggregate_id",
         "aggregate_kind": "aggregate_kind",
@@ -507,6 +516,7 @@
     },
     {
       "consistency": "append_linearizable",
+      "document_fields": [],
       "field_columns": {
         "authorization_scope": "authorization_scope",
         "correlation_id": "correlation_id",
@@ -580,6 +590,7 @@
     },
     {
       "consistency": "serializable",
+      "document_fields": [],
       "field_columns": {
         "authorization_scope": "authorization_scope",
         "created_at_micros": "body_created_at_micros",
@@ -625,6 +636,7 @@
     },
     {
       "consistency": "serializable",
+      "document_fields": [],
       "field_columns": {
         "checkpoint_digest": "checkpoint_digest",
         "checkpointed_at_micros": "checkpointed_at_micros",
@@ -670,6 +682,7 @@
     },
     {
       "consistency": "serializable",
+      "document_fields": [],
       "field_columns": {
         "attempts": "attempts",
         "consumer_id": "consumer_id",
@@ -720,6 +733,55 @@
         [
           "event",
           "consumer_id"
+        ]
+      ]
+    },
+    {
+      "consistency": "serializable",
+      "document_fields": [
+        "document"
+      ],
+      "field_columns": {
+        "content_digest": "content_digest",
+        "currency": "currency",
+        "entry_count": "entry_count",
+        "legacy_key": "legacy_key",
+        "record_family": "record_family",
+        "scale": "scale"
+      },
+      "fields": {
+        "content_digest": "bytes",
+        "currency": "text",
+        "entry_count": "integer",
+        "legacy_key": "text",
+        "record_family": "text",
+        "scale": "integer"
+      },
+      "kind": "finance.legacy_record",
+      "mutation_policy": "append_only",
+      "range_indexes": [],
+      "relationships": {},
+      "required_capabilities": [
+        "indexes.unique",
+        "append_only.verifiable"
+      ],
+      "required_fields": [
+        "record_family",
+        "legacy_key",
+        "document",
+        "entry_count",
+        "content_digest",
+        "currency",
+        "scale"
+      ],
+      "retention": "financial_permanent",
+      "schema": "aseman_finance",
+      "storage_class": "finance",
+      "table": "legacy_finance_records",
+      "unique_indexes": [
+        [
+          "record_family",
+          "legacy_key"
         ]
       ]
     }

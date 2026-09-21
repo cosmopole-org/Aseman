@@ -17,6 +17,7 @@ use uuid::Uuid;
 pub mod service;
 pub use service::PostgresStorageService;
 pub mod guest;
+pub mod migration;
 
 const MAPPING_JSON: &str = include_str!("../../../contracts/storage/postgres/core-mapping.json");
 #[cfg(test)]
@@ -24,6 +25,7 @@ const STORAGE_CLASS_MAPPING_JSON: &str =
     include_str!("../../../contracts/storage/postgres/storage-class-mapping.json");
 pub const CORE_MIGRATION: &str = include_str!("../migrations/0001_core.sql");
 pub const STORAGE_CLASS_MIGRATION: &str = include_str!("../migrations/0002_storage_classes.sql");
+pub const MIGRATION_FENCE_MIGRATION: &str = include_str!("../migrations/0003_migration_fence.sql");
 const SCHEMA: &str = "aseman_core";
 
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq)]
@@ -59,9 +61,21 @@ struct MappingCatalog {
 #[serde(deny_unknown_fields)]
 struct TableMapping {
     kind: String,
+    /// PostgreSQL schema; core rows omit it (`aseman_core`).
+    #[serde(default = "core_schema")]
+    schema: String,
+    /// Capsule storage class the table accepts.
+    #[serde(default = "core_class")]
+    storage_class: String,
+    /// Append-only kinds (A307) never accept a revision update.
+    #[serde(default)]
+    append_only: bool,
     table: String,
     fields: BTreeMap<String, String>,
     field_columns: BTreeMap<String, String>,
+    /// Schemaless document fields (ADR 0016). They carry a structured capsule
+    /// object in the canonical envelope and never receive a native column.
+    document_fields: BTreeSet<String>,
     required_fields: BTreeSet<String>,
     relationships: BTreeMap<String, RelationshipMapping>,
     unique_indexes: Vec<Vec<String>>,
@@ -71,9 +85,136 @@ struct TableMapping {
 #[serde(deny_unknown_fields)]
 struct RelationshipMapping {
     target_kind: String,
+    #[serde(default = "core_schema")]
+    target_schema: String,
     target_table: String,
     required: bool,
     on_delete: String,
+}
+
+fn core_schema() -> String {
+    SCHEMA.to_owned()
+}
+
+fn core_class() -> String {
+    "core".to_owned()
+}
+
+/// One row of the generated storage-class mapping (A307).
+#[derive(Clone, Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct ClassTableMapping {
+    kind: String,
+    schema: String,
+    table: String,
+    storage_class: String,
+    consistency: String,
+    required_capabilities: Vec<String>,
+    fields: BTreeMap<String, String>,
+    field_columns: BTreeMap<String, String>,
+    document_fields: BTreeSet<String>,
+    required_fields: BTreeSet<String>,
+    relationships: BTreeMap<String, RelationshipMapping>,
+    unique_indexes: Vec<Vec<String>>,
+    range_indexes: Vec<Vec<String>>,
+    retention: String,
+    mutation_policy: String,
+}
+
+#[derive(Clone, Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct ClassMappingCatalog {
+    schema_version: u32,
+    schemas: Vec<String>,
+    tables: Vec<ClassTableMapping>,
+}
+
+const CLASS_MAPPING_JSON: &str =
+    include_str!("../../../contracts/storage/postgres/storage-class-mapping.json");
+
+static ALL_TABLES: OnceLock<Result<Vec<TableMapping>, String>> = OnceLock::new();
+
+/// Every mapped table: the core catalog plus the storage-class catalog.
+fn all_tables() -> StorageResult<&'static [TableMapping]> {
+    match ALL_TABLES.get_or_init(|| {
+        let mut tables = mapping_catalog()
+            .map_err(|error| error.to_string())?
+            .tables
+            .clone();
+        let classes: ClassMappingCatalog = serde_json::from_str(CLASS_MAPPING_JSON)
+            .map_err(|error| format!("PostgreSQL storage-class mapping: {error}"))?;
+        if classes.schema_version != 1 || classes.schemas.is_empty() {
+            return Err("unsupported storage-class mapping".to_owned());
+        }
+        for row in classes.tables {
+            // Consistency, capabilities, range indexes, and retention are enforced by the
+            // generated DDL and activation negotiation; the writer needs only the fields below.
+            let _ = (
+                &row.consistency,
+                &row.required_capabilities,
+                &row.range_indexes,
+                &row.retention,
+            );
+            tables.push(TableMapping {
+                kind: row.kind,
+                schema: row.schema,
+                storage_class: row.storage_class,
+                append_only: row.mutation_policy == "append_only",
+                table: row.table,
+                fields: row.fields,
+                field_columns: row.field_columns,
+                document_fields: row.document_fields,
+                required_fields: row.required_fields,
+                relationships: row.relationships,
+                unique_indexes: row.unique_indexes,
+            });
+        }
+        let physical = tables
+            .iter()
+            .map(|mapping| (mapping.schema.as_str(), mapping.table.as_str()))
+            .collect::<BTreeSet<_>>();
+        for mapping in &tables {
+            if !safe_identifier(&mapping.schema) || !safe_identifier(&mapping.table) {
+                return Err(format!("unsafe identifier in {}", mapping.kind));
+            }
+            for relationship in mapping.relationships.values() {
+                if !physical.contains(&(
+                    relationship.target_schema.as_str(),
+                    relationship.target_table.as_str(),
+                )) {
+                    return Err(format!("relationship target missing in {}", mapping.kind));
+                }
+            }
+        }
+        if physical.len() != tables.len() {
+            return Err("mapped tables are not unique".to_owned());
+        }
+        Ok(tables)
+    }) {
+        Ok(tables) => Ok(tables),
+        Err(error) => Err(PostgresStorageError::Invalid(error.clone())),
+    }
+}
+
+fn storage_class_name(class: &StorageClass) -> &str {
+    match class {
+        StorageClass::Core => "core",
+        StorageClass::GuestData => "guest_data",
+        StorageClass::Telemetry => "telemetry",
+        StorageClass::Audit => "audit",
+        StorageClass::Finance => "finance",
+        StorageClass::Outbox => "outbox",
+        StorageClass::Realtime => "realtime",
+        StorageClass::Module(_) => "module",
+    }
+}
+
+fn qualified(mapping: &TableMapping) -> String {
+    format!(
+        "{}.{}",
+        sql_identifier(&mapping.schema),
+        sql_identifier(&mapping.table)
+    )
 }
 
 static MAPPING: OnceLock<Result<MappingCatalog, String>> = OnceLock::new();
@@ -111,11 +252,19 @@ fn validate_mapping(catalog: &MappingCatalog) -> Result<(), String> {
                 return Err(format!("unsafe PostgreSQL identifier: {identifier}"));
             }
         }
-        if !mapping
-            .required_fields
-            .is_subset(&mapping.fields.keys().cloned().collect())
-        {
+        let declared_fields = mapping
+            .fields
+            .keys()
+            .chain(mapping.document_fields.iter())
+            .cloned()
+            .collect::<BTreeSet<_>>();
+        if !mapping.required_fields.is_subset(&declared_fields) {
             return Err(format!("undeclared required field in {}", mapping.kind));
+        }
+        if mapping.document_fields.iter().any(|field| {
+            mapping.fields.contains_key(field) || mapping.relationships.contains_key(field)
+        }) {
+            return Err(format!("document field is also mapped in {}", mapping.kind));
         }
         if mapping.field_columns.keys().collect::<BTreeSet<_>>()
             != mapping.fields.keys().collect::<BTreeSet<_>>()
@@ -158,6 +307,9 @@ fn validate_mapping(catalog: &MappingCatalog) -> Result<(), String> {
                     !mapping.fields.contains_key(field)
                         && !mapping.relationships.contains_key(field)
                 })
+                || fields
+                    .iter()
+                    .any(|field| mapping.document_fields.contains(field))
             {
                 return Err(format!("invalid unique index in {}", mapping.kind));
             }
@@ -207,7 +359,8 @@ impl PostgresCapsuleRepository {
     pub fn migrate(&self) -> StorageResult<()> {
         self.with_client(|client| {
             client.batch_execute(CORE_MIGRATION)?;
-            client.batch_execute(STORAGE_CLASS_MIGRATION)
+            client.batch_execute(STORAGE_CLASS_MIGRATION)?;
+            client.batch_execute(MIGRATION_FENCE_MIGRATION)
         })
     }
 
@@ -234,25 +387,57 @@ impl PostgresCapsuleRepository {
         capsule: &CapsuleEnvelope,
         expected_revision: Option<u64>,
     ) -> StorageResult<()> {
+        self.put_fenced(capsule, expected_revision, None)
+    }
+
+    /// Put under a binding generation: inside the same transaction, a write whose
+    /// generation is below `aseman_core.migration_fence.min_generation` is refused
+    /// with `Conflict` (A309 fencing).
+    pub fn put_fenced(
+        &self,
+        capsule: &CapsuleEnvelope,
+        expected_revision: Option<u64>,
+        generation: Option<u64>,
+    ) -> StorageResult<()> {
         capsule
             .verify()
             .map_err(|error| PostgresStorageError::Invalid(error.to_string()))?;
-        if capsule.storage_class != StorageClass::Core {
-            return Err(PostgresStorageError::Unsupported(
-                "this provider slice accepts core storage only".to_owned(),
-            ));
-        }
         let mapping = table_mapping(&capsule.kind)?;
+        if storage_class_name(&capsule.storage_class) != mapping.storage_class {
+            return Err(PostgresStorageError::Invalid(format!(
+                "{} must use the {} storage class",
+                capsule.kind.0, mapping.storage_class
+            )));
+        }
+        if mapping.append_only && (expected_revision.is_some() || capsule.revision != 1) {
+            return Err(PostgresStorageError::Unsupported(format!(
+                "{} is append-only",
+                capsule.kind.0
+            )));
+        }
         let (columns, values) = capsule_values(mapping, capsule)?;
         let expected_canonical = capsule
             .canonical_bytes()
             .map_err(|error| PostgresStorageError::Invalid(error.to_string()))?;
         let capsule_id = Uuid::from_bytes(capsule.id.0);
         let parameters = sql_parameters(&values);
-        let mut client = self
+        let mut guard = self
             .client
             .lock()
             .map_err(|_| PostgresStorageError::Unavailable("client lock poisoned".to_owned()))?;
+        let mut client = guard.transaction().map_err(map_postgres_error)?;
+        if let Some(generation) = generation {
+            let minimum: i64 = client
+                .query_one(
+                    &format!("SELECT min_generation FROM {SCHEMA}.migration_fence FOR SHARE"),
+                    &[],
+                )
+                .map_err(map_postgres_error)?
+                .get(0);
+            if i64::try_from(generation).map_or(true, |generation| generation < minimum) {
+                return Err(PostgresStorageError::Conflict);
+            }
+        }
 
         let changed = match expected_revision {
             None => {
@@ -264,9 +449,9 @@ impl PostgresCapsuleRepository {
                     .collect::<Vec<_>>()
                     .join(", ");
                 let statement = format!(
-                    "INSERT INTO {SCHEMA}.{} ({}) VALUES ({placeholders}) \
+                    "INSERT INTO {} ({}) VALUES ({placeholders}) \
                      ON CONFLICT (id) DO NOTHING RETURNING revision",
-                    sql_identifier(&mapping.table),
+                    qualified(mapping),
                     columns
                         .iter()
                         .map(|column| sql_identifier(column))
@@ -293,10 +478,10 @@ impl PostgresCapsuleRepository {
                     .join(", ");
                 let expected_parameter = columns.len() + 1;
                 let statement = format!(
-                    "UPDATE {SCHEMA}.{} SET {assignments} WHERE id = $1 \
+                    "UPDATE {} SET {assignments} WHERE id = $1 \
                      AND revision = ${expected_parameter} AND $3 = revision + 1 \
                      AND $4 = created_at_micros AND $6 = integrity_hash RETURNING revision",
-                    sql_identifier(&mapping.table)
+                    qualified(mapping)
                 );
                 client.query_opt(&statement, &parameters)
             }
@@ -304,19 +489,59 @@ impl PostgresCapsuleRepository {
         .map_err(map_postgres_error)?;
         if changed.is_none() {
             let statement = format!(
-                "SELECT capsule_cbor FROM {SCHEMA}.{} WHERE id = $1",
-                sql_identifier(&mapping.table)
+                "SELECT capsule_cbor FROM {} WHERE id = $1",
+                qualified(mapping)
             );
             let existing = client
                 .query_opt(&statement, &[&capsule_id])
                 .map_err(map_postgres_error)?
                 .map(|row| row.get::<_, Vec<u8>>(0));
             if existing.as_deref() == Some(expected_canonical.as_slice()) {
+                client.commit().map_err(map_postgres_error)?;
                 return Ok(());
             }
             return Err(PostgresStorageError::Conflict);
         }
+        client.commit().map_err(map_postgres_error)?;
         Ok(())
+    }
+
+    /// Raise the fenced minimum generation; it never decreases.
+    pub fn raise_fence(&self, generation: u64) -> StorageResult<()> {
+        let generation = i64::try_from(generation)
+            .map_err(|_| PostgresStorageError::Invalid("generation overflow".to_owned()))?;
+        self.with_client(|client| {
+            client
+                .execute(
+                    &format!(
+                        "UPDATE {SCHEMA}.migration_fence SET min_generation = GREATEST(min_generation, $1)"
+                    ),
+                    &[&generation],
+                )
+                .map(|_| ())
+        })
+    }
+
+    /// Every capsule in every mapped table (core and storage classes), in
+    /// deterministic table/ID order, for A309 comparison.
+    pub fn snapshot_all(&self) -> StorageResult<Vec<CapsuleEnvelope>> {
+        let tables = all_tables()?.iter().map(qualified).collect::<Vec<_>>();
+        let rows = self.with_client(|client| {
+            let mut rows = Vec::new();
+            for table in &tables {
+                let statement = format!("SELECT capsule_cbor FROM {table} ORDER BY id");
+                for row in client.query(&statement, &[])? {
+                    rows.push(row.get::<_, Vec<u8>>(0));
+                }
+            }
+            Ok(rows)
+        })?;
+        rows.iter()
+            .map(|bytes| {
+                CapsuleEnvelope::from_canonical_bytes(bytes)
+                    .map_err(|error| PostgresStorageError::Invalid(error.to_string()))
+            })
+            .collect()
     }
 
     pub fn get(
@@ -327,8 +552,8 @@ impl PostgresCapsuleRepository {
         let mapping = table_mapping(kind)?;
         let id = Uuid::from_bytes(id.0);
         let statement = format!(
-            "SELECT capsule_cbor FROM {SCHEMA}.{} WHERE id = $1",
-            sql_identifier(&mapping.table)
+            "SELECT capsule_cbor FROM {} WHERE id = $1",
+            qualified(mapping)
         );
         let row = self.with_client(|client| client.query_opt(&statement, &[&id]))?;
         row.map(|row| {
@@ -373,8 +598,8 @@ impl PostgresCapsuleRepository {
         values.push(SqlParam::I64(Some(i64::from(query.limit))));
         let limit_parameter = values.len();
         let statement = format!(
-            "SELECT capsule_cbor FROM {SCHEMA}.{} WHERE {} ORDER BY {} LIMIT ${limit_parameter}",
-            sql_identifier(&mapping.table),
+            "SELECT capsule_cbor FROM {} WHERE {} ORDER BY {} LIMIT ${limit_parameter}",
+            qualified(mapping),
             filters.join(" AND "),
             order.join(", ")
         );
@@ -402,8 +627,7 @@ impl PostgresCapsuleRepository {
 }
 
 fn table_mapping(kind: &CapsuleKind) -> StorageResult<&'static TableMapping> {
-    mapping_catalog()?
-        .tables
+    all_tables()?
         .iter()
         .find(|mapping| mapping.kind == kind.0)
         .ok_or_else(|| PostgresStorageError::Unsupported(format!("unmapped kind {}", kind.0)))
@@ -469,9 +693,21 @@ fn capsule_values(
         None => None,
     };
     if let Some(body) = body {
-        if body.keys().any(|field| !mapping.fields.contains_key(field)) {
+        if body.keys().any(|field| {
+            !mapping.fields.contains_key(field) && !mapping.document_fields.contains(field)
+        }) {
             return Err(PostgresStorageError::Invalid(
                 "capsule body contains an undeclared field".to_owned(),
+            ));
+        }
+        if mapping
+            .document_fields
+            .iter()
+            .filter_map(|field| body.get(field))
+            .any(|value| !matches!(value, CapsuleValue::Object(_)))
+        {
+            return Err(PostgresStorageError::Invalid(
+                "document field must hold a capsule object".to_owned(),
             ));
         }
         if mapping
@@ -586,10 +822,8 @@ fn predicate_sql(
             operator,
             value,
         } => {
-            let field_type = mapping.fields.get(field).ok_or_else(|| {
-                PostgresStorageError::Invalid("query field is not declared".to_owned())
-            })?;
-            let column = &mapping.field_columns[field];
+            let column = require_query_field(mapping, field)?;
+            let field_type = &mapping.fields[field];
             if matches!(value, CapsuleValue::Null) {
                 return match operator {
                     ComparisonOperator::Equal => Ok(format!("{} IS NULL", sql_identifier(column))),
@@ -650,6 +884,11 @@ fn predicate_sql(
 }
 
 fn require_query_field<'a>(mapping: &'a TableMapping, field: &str) -> StorageResult<&'a str> {
+    if mapping.document_fields.contains(field) {
+        return Err(PostgresStorageError::Invalid(
+            "document fields are not natively filterable or sortable".to_owned(),
+        ));
+    }
     mapping
         .field_columns
         .get(field)
@@ -732,7 +971,7 @@ mod tests {
     #[test]
     fn generated_mapping_is_closed_safe_and_complete() {
         let catalog = mapping_catalog().unwrap();
-        assert_eq!(catalog.tables.len(), 20);
+        assert_eq!(catalog.tables.len(), 35);
         assert!(
             catalog
                 .tables
@@ -753,14 +992,20 @@ mod tests {
     fn generated_storage_class_mapping_is_native_and_policy_specific() {
         let mapping: serde_json::Value = serde_json::from_str(STORAGE_CLASS_MAPPING_JSON).unwrap();
         let tables = mapping["tables"].as_array().unwrap();
-        assert_eq!(tables.len(), 13);
+        assert_eq!(tables.len(), 14);
         assert_eq!(
             tables
                 .iter()
                 .filter(|row| row["mutation_policy"] == "append_only")
                 .count(),
-            5
+            6
         );
+        let legacy = tables
+            .iter()
+            .find(|row| row["kind"] == "finance.legacy_record")
+            .unwrap();
+        assert_eq!(legacy["document_fields"], serde_json::json!(["document"]));
+        assert!(legacy["fields"].get("document").is_none());
         assert!(tables.iter().all(|row| row["schema"] != "aseman_core"));
         assert!(STORAGE_CLASS_MIGRATION.contains("USING BRIN"));
         assert!(STORAGE_CLASS_MIGRATION.contains("reject_capsule_mutation"));
@@ -799,5 +1044,97 @@ mod tests {
             )
             .is_err()
         );
+    }
+
+    fn document_capsule(document: CapsuleValue) -> CapsuleEnvelope {
+        let capsule = CapsuleEnvelope {
+            encoding_version: 1,
+            id: CapsuleId([7; 16]),
+            kind: CapsuleKind("core.program_metadata".to_owned()),
+            storage_class: StorageClass::Core,
+            owner_scope: OwnerScope::Creature([3; 16]),
+            schema_version: 1,
+            revision: 1,
+            created_at_micros: 10,
+            updated_at_micros: 10,
+            previous_integrity: None,
+            integrity_hash: aseman_contracts::capsule::CapsuleDigest {
+                algorithm: "sha2-256".to_owned(),
+                bytes: vec![0; 32],
+            },
+            tombstone: false,
+            relationships: vec![aseman_contracts::capsule::CapsuleRelationship {
+                name: "program".to_owned(),
+                target_kind: CapsuleKind("core.program".to_owned()),
+                target_id: CapsuleId([5; 16]),
+            }],
+            body: Some(CapsuleValue::Object(BTreeMap::from([
+                ("document".to_owned(), document),
+                (
+                    "document_path".to_owned(),
+                    CapsuleValue::Text("metadata".to_owned()),
+                ),
+                ("entry_count".to_owned(), CapsuleValue::Integer(1)),
+                (
+                    "content_digest".to_owned(),
+                    CapsuleValue::Bytes(vec![9; 32]),
+                ),
+            ]))),
+        };
+        capsule.seal().unwrap()
+    }
+
+    #[test]
+    fn document_fields_have_no_native_column_and_reject_filtering() {
+        let mapping = table_mapping(&CapsuleKind("core.program_metadata".to_owned())).unwrap();
+        assert!(mapping.document_fields.contains("document"));
+        assert!(!mapping.fields.contains_key("document"));
+        assert!(!mapping.field_columns.contains_key("document"));
+        assert!(mapping.required_fields.contains("document"));
+        assert!(!CORE_MIGRATION.to_ascii_lowercase().contains("jsonb"));
+
+        assert!(require_query_field(mapping, "document").is_err());
+        let mut values = Vec::new();
+        assert!(
+            predicate_sql(
+                &QueryPredicate::Compare {
+                    field: "document".to_owned(),
+                    operator: ComparisonOperator::Equal,
+                    value: CapsuleValue::Text("x".to_owned()),
+                },
+                mapping,
+                &mut values,
+                1,
+            )
+            .is_err()
+        );
+        assert!(values.is_empty());
+    }
+
+    #[test]
+    fn document_body_is_structured_and_never_becomes_a_column() {
+        let mapping = table_mapping(&CapsuleKind("core.program_metadata".to_owned())).unwrap();
+        let structured = CapsuleValue::Object(BTreeMap::from([(
+            "manifest".to_owned(),
+            CapsuleValue::Text("mcp".to_owned()),
+        )]));
+        let (columns, values) =
+            capsule_values(mapping, &document_capsule(structured.clone())).unwrap();
+        assert!(!columns.iter().any(|column| column == "document"));
+        assert_eq!(columns.len(), values.len());
+        assert!(columns.iter().any(|column| column == "capsule_cbor"));
+
+        assert!(
+            capsule_values(
+                mapping,
+                &document_capsule(CapsuleValue::Bytes(vec![1, 2, 3])),
+            )
+            .is_err()
+        );
+        let mut undeclared = document_capsule(structured);
+        if let Some(CapsuleValue::Object(body)) = undeclared.body.as_mut() {
+            body.insert("stray".to_owned(), CapsuleValue::Integer(1));
+        }
+        assert!(capsule_values(mapping, &undeclared.seal().unwrap()).is_err());
     }
 }

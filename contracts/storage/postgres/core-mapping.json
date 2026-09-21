@@ -3,6 +3,7 @@
   "schema_version": 1,
   "tables": [
     {
+      "document_fields": [],
       "field_columns": {
         "email": "email",
         "public_key": "public_key",
@@ -36,6 +37,7 @@
       ]
     },
     {
+      "document_fields": [],
       "field_columns": {
         "chain_id": "chain_id",
         "creature_type": "creature_type",
@@ -78,6 +80,7 @@
       ]
     },
     {
+      "document_fields": [],
       "field_columns": {
         "comment": "comment",
         "machine_id": "machine_id",
@@ -112,6 +115,7 @@
       ]
     },
     {
+      "document_fields": [],
       "field_columns": {
         "is_public": "is_public",
         "member_count": "member_count",
@@ -151,42 +155,57 @@
       "unique_indexes": []
     },
     {
+      "document_fields": [],
       "field_columns": {
         "joined_at_micros": "joined_at_micros",
-        "role": "role"
+        "member_kind": "member_kind",
+        "member_ref": "member_ref",
+        "permissions": "permissions"
       },
       "fields": {
         "joined_at_micros": "timestamp_micros",
-        "role": "text"
+        "member_kind": "text",
+        "member_ref": "text",
+        "permissions": "text"
       },
       "kind": "core.store_membership",
       "relationships": {
+        "creature": {
+          "on_delete": "cascade",
+          "required": false,
+          "target_kind": "core.creature",
+          "target_table": "creatures"
+        },
+        "program": {
+          "on_delete": "cascade",
+          "required": false,
+          "target_kind": "core.program",
+          "target_table": "programs"
+        },
         "store": {
           "on_delete": "cascade",
           "required": true,
           "target_kind": "core.store",
           "target_table": "stores"
-        },
-        "user": {
-          "on_delete": "cascade",
-          "required": true,
-          "target_kind": "core.user",
-          "target_table": "users"
         }
       },
       "required_fields": [
-        "role",
+        "member_kind",
+        "member_ref",
+        "permissions",
         "joined_at_micros"
       ],
       "table": "store_memberships",
       "unique_indexes": [
         [
           "store",
-          "user"
+          "member_kind",
+          "member_ref"
         ]
       ]
     },
     {
+      "document_fields": [],
       "field_columns": {
         "level": "level",
         "permissions": "permissions"
@@ -217,6 +236,7 @@
       ]
     },
     {
+      "document_fields": [],
       "field_columns": {
         "action": "action",
         "expires_at_micros": "expires_at_micros",
@@ -255,6 +275,7 @@
       "unique_indexes": []
     },
     {
+      "document_fields": [],
       "field_columns": {
         "expires_at_micros": "expires_at_micros",
         "issued_at_micros": "issued_at_micros",
@@ -289,6 +310,7 @@
       ]
     },
     {
+      "document_fields": [],
       "field_columns": {
         "content_digest": "content_digest",
         "media_type": "media_type",
@@ -329,6 +351,7 @@
       ]
     },
     {
+      "document_fields": [],
       "field_columns": {
         "desired_generation": "desired_generation",
         "desired_state": "desired_state",
@@ -375,6 +398,7 @@
       ]
     },
     {
+      "document_fields": [],
       "field_columns": {
         "completed_at_micros": "completed_at_micros",
         "idempotency_key": "idempotency_key",
@@ -412,6 +436,7 @@
       ]
     },
     {
+      "document_fields": [],
       "field_columns": {
         "descriptor_digest": "descriptor_digest",
         "name": "name",
@@ -439,6 +464,7 @@
       ]
     },
     {
+      "document_fields": [],
       "field_columns": {
         "descriptor_digest": "descriptor_digest",
         "endpoint": "endpoint",
@@ -467,6 +493,7 @@
       ]
     },
     {
+      "document_fields": [],
       "field_columns": {
         "epoch": "epoch",
         "expires_at_micros": "expires_at_micros",
@@ -508,6 +535,7 @@
       ]
     },
     {
+      "document_fields": [],
       "field_columns": {
         "artifact_digest": "artifact_digest",
         "module_kind": "module_kind",
@@ -543,6 +571,7 @@
       ]
     },
     {
+      "document_fields": [],
       "field_columns": {
         "database_name": "database_name",
         "generation": "generation",
@@ -592,6 +621,7 @@
       ]
     },
     {
+      "document_fields": [],
       "field_columns": {
         "definition": "definition",
         "schema_name": "schema_name",
@@ -635,6 +665,7 @@
       ]
     },
     {
+      "document_fields": [],
       "field_columns": {
         "status": "status",
         "store_id": "store_id"
@@ -664,6 +695,7 @@
       ]
     },
     {
+      "document_fields": [],
       "field_columns": {
         "shard_name": "shard_name",
         "work_chain_id": "work_chain_id"
@@ -694,6 +726,7 @@
       ]
     },
     {
+      "document_fields": [],
       "field_columns": {
         "entity_name": "entity_name",
         "entity_type": "entity_type",
@@ -722,6 +755,564 @@
         [
           "program",
           "entity_name"
+        ]
+      ]
+    },
+    {
+      "document_fields": [
+        "document"
+      ],
+      "field_columns": {
+        "content_digest": "content_digest",
+        "document_path": "document_path",
+        "entry_count": "entry_count"
+      },
+      "fields": {
+        "content_digest": "bytes",
+        "document_path": "text",
+        "entry_count": "integer"
+      },
+      "kind": "core.user_metadata",
+      "relationships": {
+        "creature": {
+          "on_delete": "cascade",
+          "required": true,
+          "target_kind": "core.creature",
+          "target_table": "creatures"
+        }
+      },
+      "required_fields": [
+        "document",
+        "document_path",
+        "entry_count",
+        "content_digest"
+      ],
+      "table": "user_metadata_documents",
+      "unique_indexes": [
+        [
+          "creature"
+        ]
+      ]
+    },
+    {
+      "document_fields": [
+        "document"
+      ],
+      "field_columns": {
+        "content_digest": "content_digest",
+        "document_path": "document_path",
+        "entry_count": "entry_count"
+      },
+      "fields": {
+        "content_digest": "bytes",
+        "document_path": "text",
+        "entry_count": "integer"
+      },
+      "kind": "core.creature_metadata",
+      "relationships": {
+        "creature": {
+          "on_delete": "cascade",
+          "required": true,
+          "target_kind": "core.creature",
+          "target_table": "creatures"
+        }
+      },
+      "required_fields": [
+        "document",
+        "document_path",
+        "entry_count",
+        "content_digest"
+      ],
+      "table": "creature_metadata_documents",
+      "unique_indexes": [
+        [
+          "creature"
+        ]
+      ]
+    },
+    {
+      "document_fields": [
+        "document"
+      ],
+      "field_columns": {
+        "content_digest": "content_digest",
+        "document_path": "document_path",
+        "entry_count": "entry_count"
+      },
+      "fields": {
+        "content_digest": "bytes",
+        "document_path": "text",
+        "entry_count": "integer"
+      },
+      "kind": "core.store_metadata",
+      "relationships": {
+        "store": {
+          "on_delete": "cascade",
+          "required": true,
+          "target_kind": "core.store",
+          "target_table": "stores"
+        }
+      },
+      "required_fields": [
+        "document",
+        "document_path",
+        "entry_count",
+        "content_digest"
+      ],
+      "table": "store_metadata_documents",
+      "unique_indexes": [
+        [
+          "store"
+        ]
+      ]
+    },
+    {
+      "document_fields": [
+        "document"
+      ],
+      "field_columns": {
+        "content_digest": "content_digest",
+        "document_path": "document_path",
+        "entry_count": "entry_count"
+      },
+      "fields": {
+        "content_digest": "bytes",
+        "document_path": "text",
+        "entry_count": "integer"
+      },
+      "kind": "core.program_metadata",
+      "relationships": {
+        "program": {
+          "on_delete": "cascade",
+          "required": true,
+          "target_kind": "core.program",
+          "target_table": "programs"
+        }
+      },
+      "required_fields": [
+        "document",
+        "document_path",
+        "entry_count",
+        "content_digest"
+      ],
+      "table": "program_metadata_documents",
+      "unique_indexes": [
+        [
+          "program"
+        ]
+      ]
+    },
+    {
+      "document_fields": [
+        "document"
+      ],
+      "field_columns": {
+        "content_digest": "content_digest",
+        "document_path": "document_path",
+        "entry_count": "entry_count",
+        "type_name": "type_name"
+      },
+      "fields": {
+        "content_digest": "bytes",
+        "document_path": "text",
+        "entry_count": "integer",
+        "type_name": "text"
+      },
+      "kind": "core.creature_type",
+      "relationships": {},
+      "required_fields": [
+        "type_name",
+        "document",
+        "document_path",
+        "entry_count",
+        "content_digest"
+      ],
+      "table": "creature_types",
+      "unique_indexes": [
+        [
+          "type_name"
+        ]
+      ]
+    },
+    {
+      "document_fields": [],
+      "field_columns": {
+        "entity_name": "entity_name",
+        "path": "path",
+        "runtime": "runtime"
+      },
+      "fields": {
+        "entity_name": "text",
+        "path": "text",
+        "runtime": "text"
+      },
+      "kind": "core.gateway_route",
+      "relationships": {
+        "creature": {
+          "on_delete": "cascade",
+          "required": true,
+          "target_kind": "core.creature",
+          "target_table": "creatures"
+        },
+        "program": {
+          "on_delete": "cascade",
+          "required": true,
+          "target_kind": "core.program",
+          "target_table": "programs"
+        }
+      },
+      "required_fields": [
+        "path",
+        "entity_name",
+        "runtime"
+      ],
+      "table": "gateway_routes",
+      "unique_indexes": [
+        [
+          "creature",
+          "path"
+        ]
+      ]
+    },
+    {
+      "document_fields": [],
+      "field_columns": {
+        "data": "data",
+        "entity_name": "entity_name",
+        "fire_at_micros": "fire_at_micros"
+      },
+      "fields": {
+        "data": "text",
+        "entity_name": "text",
+        "fire_at_micros": "timestamp_micros"
+      },
+      "kind": "core.program_alarm",
+      "relationships": {
+        "program": {
+          "on_delete": "cascade",
+          "required": true,
+          "target_kind": "core.program",
+          "target_table": "programs"
+        },
+        "store": {
+          "on_delete": "cascade",
+          "required": true,
+          "target_kind": "core.store",
+          "target_table": "stores"
+        }
+      },
+      "required_fields": [
+        "fire_at_micros",
+        "entity_name",
+        "data"
+      ],
+      "table": "program_alarms",
+      "unique_indexes": [
+        [
+          "program"
+        ]
+      ]
+    },
+    {
+      "document_fields": [
+        "document"
+      ],
+      "field_columns": {
+        "content_digest": "content_digest",
+        "document_path": "document_path",
+        "entry_count": "entry_count",
+        "machine_ref": "machine_ref",
+        "name": "name"
+      },
+      "fields": {
+        "content_digest": "bytes",
+        "document_path": "text",
+        "entry_count": "integer",
+        "machine_ref": "text",
+        "name": "text"
+      },
+      "kind": "core.vm_resource_store",
+      "relationships": {
+        "creature": {
+          "on_delete": "cascade",
+          "required": true,
+          "target_kind": "core.creature",
+          "target_table": "creatures"
+        }
+      },
+      "required_fields": [
+        "name",
+        "machine_ref",
+        "document",
+        "document_path",
+        "entry_count",
+        "content_digest"
+      ],
+      "table": "vm_resource_stores",
+      "unique_indexes": []
+    },
+    {
+      "document_fields": [
+        "document"
+      ],
+      "field_columns": {
+        "artifact_digest": "artifact_digest",
+        "artifact_present": "artifact_present",
+        "content_digest": "content_digest",
+        "document_path": "document_path",
+        "entity_ref": "entity_ref",
+        "entity_type": "entity_type",
+        "entry_count": "entry_count",
+        "media_type": "media_type",
+        "size_bytes": "size_bytes",
+        "store_key": "store_key"
+      },
+      "fields": {
+        "artifact_digest": "bytes",
+        "artifact_present": "bool",
+        "content_digest": "bytes",
+        "document_path": "text",
+        "entity_ref": "text",
+        "entity_type": "text",
+        "entry_count": "integer",
+        "media_type": "text",
+        "size_bytes": "integer",
+        "store_key": "text"
+      },
+      "kind": "core.vm_resource_entity",
+      "relationships": {
+        "resource_store": {
+          "on_delete": "cascade",
+          "required": true,
+          "target_kind": "core.vm_resource_store",
+          "target_table": "vm_resource_stores"
+        }
+      },
+      "required_fields": [
+        "entity_type",
+        "entity_ref",
+        "document",
+        "document_path",
+        "entry_count",
+        "content_digest",
+        "artifact_present"
+      ],
+      "table": "vm_resource_entities",
+      "unique_indexes": [
+        [
+          "resource_store",
+          "entity_type",
+          "entity_ref"
+        ]
+      ]
+    },
+    {
+      "document_fields": [
+        "document"
+      ],
+      "field_columns": {
+        "content_digest": "content_digest",
+        "document_path": "document_path",
+        "entry_count": "entry_count"
+      },
+      "fields": {
+        "content_digest": "bytes",
+        "document_path": "text",
+        "entry_count": "integer"
+      },
+      "kind": "core.entity_config",
+      "relationships": {
+        "entity": {
+          "on_delete": "cascade",
+          "required": true,
+          "target_kind": "core.entity",
+          "target_table": "entities"
+        }
+      },
+      "required_fields": [
+        "document",
+        "document_path",
+        "entry_count",
+        "content_digest"
+      ],
+      "table": "entity_configs",
+      "unique_indexes": [
+        [
+          "entity"
+        ]
+      ]
+    },
+    {
+      "document_fields": [],
+      "field_columns": {
+        "artifact_digest": "artifact_digest",
+        "artifact_present": "artifact_present",
+        "artifact_role": "artifact_role",
+        "media_type": "media_type",
+        "size_bytes": "size_bytes",
+        "store_key": "store_key"
+      },
+      "fields": {
+        "artifact_digest": "bytes",
+        "artifact_present": "bool",
+        "artifact_role": "text",
+        "media_type": "text",
+        "size_bytes": "integer",
+        "store_key": "text"
+      },
+      "kind": "core.entity_artifact",
+      "relationships": {
+        "entity": {
+          "on_delete": "cascade",
+          "required": true,
+          "target_kind": "core.entity",
+          "target_table": "entities"
+        }
+      },
+      "required_fields": [
+        "artifact_role",
+        "artifact_present"
+      ],
+      "table": "entity_artifacts",
+      "unique_indexes": [
+        [
+          "entity",
+          "artifact_role"
+        ]
+      ]
+    },
+    {
+      "document_fields": [],
+      "field_columns": {
+        "algorithm": "algorithm",
+        "ciphertext": "ciphertext",
+        "key_fingerprint": "key_fingerprint",
+        "name": "name"
+      },
+      "fields": {
+        "algorithm": "text",
+        "ciphertext": "bytes",
+        "key_fingerprint": "bytes",
+        "name": "text"
+      },
+      "kind": "core.creature_secret",
+      "relationships": {
+        "creature": {
+          "on_delete": "cascade",
+          "required": true,
+          "target_kind": "core.creature",
+          "target_table": "creatures"
+        }
+      },
+      "required_fields": [
+        "name",
+        "algorithm",
+        "ciphertext",
+        "key_fingerprint"
+      ],
+      "table": "creature_secrets",
+      "unique_indexes": [
+        [
+          "creature",
+          "name"
+        ]
+      ]
+    },
+    {
+      "document_fields": [],
+      "field_columns": {
+        "expires_at_micros": "expires_at_micros",
+        "grantee_ref": "grantee_ref"
+      },
+      "fields": {
+        "expires_at_micros": "timestamp_micros",
+        "grantee_ref": "text"
+      },
+      "kind": "core.secret_grant",
+      "relationships": {
+        "grantee": {
+          "on_delete": "cascade",
+          "required": false,
+          "target_kind": "core.creature",
+          "target_table": "creatures"
+        },
+        "secret": {
+          "on_delete": "cascade",
+          "required": true,
+          "target_kind": "core.creature_secret",
+          "target_table": "creature_secrets"
+        }
+      },
+      "required_fields": [
+        "grantee_ref",
+        "expires_at_micros"
+      ],
+      "table": "secret_grants",
+      "unique_indexes": [
+        [
+          "secret",
+          "grantee_ref"
+        ]
+      ]
+    },
+    {
+      "document_fields": [
+        "document"
+      ],
+      "field_columns": {
+        "content_digest": "content_digest",
+        "document_path": "document_path",
+        "entry_count": "entry_count",
+        "expires_at_micros": "expires_at_micros",
+        "minted_by_ref": "minted_by_ref",
+        "token_digest": "token_digest"
+      },
+      "fields": {
+        "content_digest": "bytes",
+        "document_path": "text",
+        "entry_count": "integer",
+        "expires_at_micros": "timestamp_micros",
+        "minted_by_ref": "text",
+        "token_digest": "bytes"
+      },
+      "kind": "core.bridge_grant",
+      "relationships": {},
+      "required_fields": [
+        "token_digest",
+        "minted_by_ref",
+        "expires_at_micros",
+        "document",
+        "document_path",
+        "entry_count",
+        "content_digest"
+      ],
+      "table": "bridge_grants",
+      "unique_indexes": [
+        [
+          "token_digest"
+        ]
+      ]
+    },
+    {
+      "document_fields": [],
+      "field_columns": {
+        "owner_ref": "owner_ref",
+        "topic": "topic"
+      },
+      "fields": {
+        "owner_ref": "text",
+        "topic": "text"
+      },
+      "kind": "core.bridge_topic",
+      "relationships": {},
+      "required_fields": [
+        "topic",
+        "owner_ref"
+      ],
+      "table": "bridge_topics",
+      "unique_indexes": [
+        [
+          "topic"
         ]
       ]
     }

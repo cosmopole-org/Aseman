@@ -16,7 +16,7 @@
         "required": ["kind", "fields", "required", "unique_indexes", "relationships", "retention"],
         "properties": {
           "kind": {"type": "string"},
-          "fields": {"type": "object", "minProperties": 1, "additionalProperties": {"enum": ["bool", "integer", "bytes", "text", "timestamp_micros", "capsule_id"]}},
+          "fields": {"type": "object", "minProperties": 1, "additionalProperties": {"enum": ["bool", "integer", "bytes", "text", "timestamp_micros", "capsule_id", "document"]}},
           "required": {"type": "array", "uniqueItems": true, "items": {"type": "string"}},
           "unique_indexes": {"type": "array", "items": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string"}}},
           "relationships": {"type": "object", "additionalProperties": {"type": "string"}},

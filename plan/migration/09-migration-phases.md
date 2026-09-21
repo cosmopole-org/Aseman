@@ -69,7 +69,7 @@ Work:
 - Migrate core state only after consistency verification.
 - Generate capsule-kind, logical-schema, physical-mapping, query, and migration inventories.
 
-Gate: all persistent classes use capsules; PostgreSQL is the default; each creature's guest records and schemas live in its isolated database/namespace rather than a shared guest table; legacy and PostgreSQL providers pass conformance, role/catalog isolation, pool-contamination, schema, and migration/restart tests; node/application crates no longer import RocksDB or QuestDB types.
+Gate: all persistent classes use capsules, except VMM-owned observed runtime state, which ADR 0022 keeps in the wrapped legacy storage provider for the embedded/native-legacy VMM until RL-013; PostgreSQL is the default; each creature's guest records and schemas live in its isolated database/namespace rather than a shared guest table; legacy and PostgreSQL providers pass conformance, role/catalog isolation, pool-contamination, schema, and migration/restart tests; node/application crates no longer import RocksDB or QuestDB types.
 
 ## Phase 4: Identity, authority, and guest gateway
 
@@ -94,8 +94,9 @@ Work:
 - Replace every node-to-runtime call with VMM client operations.
 - Remove VMM access to node globals, raw storage, shell actions, and finance.
 - Implement lifecycle, logs, terminal, events, usage, operation state, and reconciliation.
+- Adopt legacy observed VM instances from the Phase 3 VMM handoff inventory into `core.workload` through reconciliation (desired/observed generations per A503), or stop them explicitly; legacy instance records are never treated as desired state (ADR 0022).
 
-Gate: the node binary has no runtime-engine dependency or competing in-process VMM path; obsolete runtime globals/code/configuration are deleted; the native provider passes parity plus VMM conformance tests.
+Gate: the node binary has no runtime-engine dependency or competing in-process VMM path; obsolete runtime globals/code/configuration are deleted; the native provider passes parity plus VMM conformance tests; every handoff-inventory instance is adopted or explicitly stopped.
 
 ## Phase 6: Nomad provider and worker topology
 
@@ -109,6 +110,7 @@ Work:
 - Implement Firecracker and runtime-specific pause/resume through the worker agent.
 - Integrate workload identity, logs, exec, events, and actual allocation statistics.
 - Add lost-worker and control-plane recovery.
+- Adopt or explicitly release legacy Modal handles, especially `ModalVolume` user data (ADR 0022).
 
 Gate: native and Nomad providers pass the same contract suite; adding/removing a worker or losing a control replica does not change Aseman federation identity; fenced singleton work does not execute twice; no second scheduler or ambiguous OpenRaft worker-management role remains.
 

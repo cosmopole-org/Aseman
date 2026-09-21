@@ -121,6 +121,7 @@ fn fast(root: &Path) -> Result<()> {
         "aseman-storage-conformance",
         "aseman-storage-postgres",
         "aseman-storage-legacy",
+        "aseman-migration-e2e",
         "xtask",
     ] {
         run(root, "cargo", &["fmt", "-p", package, "--", "--check"])?;
@@ -185,6 +186,8 @@ fn fast(root: &Path) -> Result<()> {
             "aseman-storage-postgres",
             "-p",
             "aseman-storage-legacy",
+            "-p",
+            "aseman-migration-e2e",
         ],
     )?;
     run(
@@ -216,6 +219,8 @@ fn fast(root: &Path) -> Result<()> {
             "aseman-storage-postgres",
             "-p",
             "aseman-storage-legacy",
+            "-p",
+            "aseman-migration-e2e",
             "--all-targets",
             "--",
             "-D",

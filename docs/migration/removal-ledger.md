@@ -38,6 +38,7 @@ Target release values are migration phases. Caspar compatibility expiry follows 
 | RL-016 | REWRITE | root scripts and combined node image | operators/CI | `xtask`, deploy profiles, separate images, bootstrap | A007/A008/A009 | stage idempotent workflows; scripts remain rollback path temporarily | giant installer/multi-process assumptions removed | Phase 9 |
 | RL-017 | ARCHIVE/GENERATE | root README and `wiki/*` duplicated current truth | users/agents | status-labelled `docs/` plus generated references | documentation link/inventory checks | archive legacy Caspar docs; restore from Git if needed | no contradictory authoritative inventory | Phase 9/10 |
 | RL-018 | DELETE | tracked `dist/*` binaries/runtime blobs | build/install scripts | signed release/OCI artifacts | A001/A007 plus artifact parity | publish and verify external artifacts before removal | builds/install no longer consume tracked blobs | Phase 9 |
+| RL-019 | DELETE | `/creatures/login` custodial RSA keys (`link::UserPrivateKey::*`) returned on email login | legacy login clients | ADR 0009 user-held Ed25519 keys with proof-of-possession enrollment (P4-01) | A308 custody verification (ADR 0019) | keys stay only in the immutable legacy source; never exported to Aseman | canonical enrollment or accepted verification-only status for every affected identity; login no longer returns key material | Phase 4/10 |
 
 ## Phase 2 evidence for RL-014
 
@@ -45,6 +46,18 @@ The signed out-of-process module replacement path now installs, validates, stage
 activates, drains, and rolls back the sample provider without rebuilding the node.
 RL-014 remains open: no embedded runtime or `caspar-vm-plugins` path is deletable until
 the Phase 5 runtime/VMM parity gates and the Phase 10 compatibility window pass.
+
+## ADR 0022 obligations (RL-005, RL-013)
+
+- The observed VM runtime link families (`VmInstance`, `VmStatus`, `VmStartedAt`,
+  `VmOwnerProgram`, `vmDistributed`, container, terminal, build, proxy-correlation, and
+  `Modal*` handles) are the native-legacy VMM backend's runtime state. They are not
+  exported as Aseman capsules. RL-005 cutover and deletion must not remove them from the
+  legacy RocksDB before RL-013 passes its replacement and deletion gates.
+- P5 reconciliation must adopt every instance in the export's VMM handoff inventory into
+  `core.workload`, or explicitly stop it. `ModalVolume` handles must be adopted by the P6
+  runtime module or explicitly released by an operator; they must never be orphaned.
+- `vmDistribution` is deleted with RL-012 (ADR 0012); placement moves to the P6 scheduler.
 
 ## ADR 0001 obligations
 

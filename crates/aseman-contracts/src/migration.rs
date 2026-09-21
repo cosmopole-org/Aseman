@@ -248,3 +248,264 @@ mod tests {
         assert!(reordered.validate().is_err());
     }
 }
+
+/// A309 semantic digest: what a record means, independent of the revision chain.
+///
+/// It covers kind, identity, storage class, owner, tombstone, relationships, and body.
+/// It excludes revision, timestamps, and integrity links, so a record re-applied as a
+/// new revision still compares equal to its source (ADR 0005: read-compare uses domain
+/// semantics, not physical bytes).
+pub fn semantic_digest(capsule: &CapsuleEnvelope) -> MigrationContractResult<[u8; 32]> {
+    use crate::capsule::{CapsuleValue, encode_value};
+    use std::collections::BTreeMap;
+    let owner = match &capsule.owner_scope {
+        crate::capsule::OwnerScope::Global => CapsuleValue::Text("global".to_owned()),
+        crate::capsule::OwnerScope::Node(id) => CapsuleValue::Array(vec![
+            CapsuleValue::Text("node".to_owned()),
+            CapsuleValue::Bytes(id.to_vec()),
+        ]),
+        crate::capsule::OwnerScope::Creature(id) => CapsuleValue::Array(vec![
+            CapsuleValue::Text("creature".to_owned()),
+            CapsuleValue::Bytes(id.to_vec()),
+        ]),
+        crate::capsule::OwnerScope::Module(name) => CapsuleValue::Array(vec![
+            CapsuleValue::Text("module".to_owned()),
+            CapsuleValue::Text(name.clone()),
+        ]),
+    };
+    let mut relationships = capsule
+        .relationships
+        .iter()
+        .map(|relationship| {
+            CapsuleValue::Array(vec![
+                CapsuleValue::Text(relationship.name.clone()),
+                CapsuleValue::Text(relationship.target_kind.0.clone()),
+                CapsuleValue::Bytes(relationship.target_id.0.to_vec()),
+            ])
+        })
+        .collect::<Vec<_>>();
+    relationships.sort_by_key(|value| format!("{value:?}"));
+    let semantic = CapsuleValue::Object(BTreeMap::from([
+        (
+            "kind".to_owned(),
+            CapsuleValue::Text(capsule.kind.0.clone()),
+        ),
+        ("id".to_owned(), CapsuleValue::Bytes(capsule.id.0.to_vec())),
+        (
+            "storage_class".to_owned(),
+            CapsuleValue::Text(format!("{:?}", capsule.storage_class)),
+        ),
+        ("owner".to_owned(), owner),
+        (
+            "tombstone".to_owned(),
+            CapsuleValue::Bool(capsule.tombstone),
+        ),
+        (
+            "relationships".to_owned(),
+            CapsuleValue::Array(relationships),
+        ),
+        (
+            "body".to_owned(),
+            capsule.body.clone().unwrap_or(CapsuleValue::Null),
+        ),
+    ]));
+    let encoded = encode_value(&semantic)?;
+    let mut hasher = Sha256::new();
+    hasher.update(b"ASEMAN-CAPSULE-SEMANTIC-DIGEST-V1\0");
+    hasher.update((encoded.len() as u64).to_be_bytes());
+    hasher.update(&encoded);
+    Ok(hasher.finalize().into())
+}
+
+/// One target write produced by delta planning, with its optimistic revision.
+#[derive(Clone, Debug, PartialEq)]
+pub struct DeltaWrite {
+    pub capsule: CapsuleEnvelope,
+    /// `None` inserts revision 1; `Some(r)` replaces revision `r`.
+    pub expected_revision: Option<u64>,
+}
+
+/// Plan the target writes that make `target` semantically equal to `source`.
+///
+/// Missing records are inserted as-is. A changed record becomes the next revision of
+/// the target record, chained to its integrity hash with its creation time preserved.
+/// A record the source no longer has becomes a tombstone revision. Output order is
+/// deterministic (kind, then ID).
+pub fn plan_delta(
+    source: &[CapsuleEnvelope],
+    target: &[CapsuleEnvelope],
+    now_micros: i64,
+) -> MigrationContractResult<Vec<DeltaWrite>> {
+    use std::collections::BTreeMap;
+    let key = |capsule: &CapsuleEnvelope| (capsule.kind.0.clone(), capsule.id.0);
+    let targets = target
+        .iter()
+        .map(|capsule| (key(capsule), capsule))
+        .collect::<BTreeMap<_, _>>();
+    let sources = source
+        .iter()
+        .map(|capsule| (key(capsule), capsule))
+        .collect::<BTreeMap<_, _>>();
+    let next = |current: &CapsuleEnvelope,
+                mut next: CapsuleEnvelope|
+     -> MigrationContractResult<DeltaWrite> {
+        next.revision = current
+            .revision
+            .checked_add(1)
+            .ok_or_else(|| MigrationContractError::Invalid("revision overflow".to_owned()))?;
+        next.created_at_micros = current.created_at_micros;
+        next.updated_at_micros = now_micros.max(current.updated_at_micros);
+        next.previous_integrity = Some(current.integrity_hash.clone());
+        Ok(DeltaWrite {
+            capsule: next.seal()?,
+            expected_revision: Some(current.revision),
+        })
+    };
+    let mut writes = Vec::new();
+    for (identity, source) in &sources {
+        match targets.get(identity) {
+            None => writes.push(DeltaWrite {
+                capsule: (*source).clone(),
+                expected_revision: None,
+            }),
+            Some(current) if semantic_digest(current)? != semantic_digest(source)? => {
+                writes.push(next(current, (*source).clone())?);
+            }
+            Some(_) => {}
+        }
+    }
+    for (identity, current) in &targets {
+        if !sources.contains_key(identity) && !current.tombstone {
+            let tombstone = CapsuleEnvelope {
+                tombstone: true,
+                body: None,
+                ..(*current).clone()
+            };
+            writes.push(next(current, tombstone)?);
+        }
+    }
+    Ok(writes)
+}
+
+#[cfg(test)]
+mod delta_tests {
+    use super::*;
+    use crate::capsule::{
+        CapsuleDigest, CapsuleId, CapsuleKind, CapsuleValue, OwnerScope, StorageClass,
+    };
+    use std::collections::BTreeMap;
+
+    fn user(id: u8, name: &str, at: i64) -> CapsuleEnvelope {
+        CapsuleEnvelope {
+            encoding_version: 1,
+            id: CapsuleId([id; 16]),
+            kind: CapsuleKind("core.user".to_owned()),
+            storage_class: StorageClass::Core,
+            owner_scope: OwnerScope::Global,
+            schema_version: 1,
+            revision: 1,
+            created_at_micros: at,
+            updated_at_micros: at,
+            previous_integrity: None,
+            integrity_hash: CapsuleDigest {
+                algorithm: "sha2-256".to_owned(),
+                bytes: vec![0; 32],
+            },
+            tombstone: false,
+            relationships: Vec::new(),
+            body: Some(CapsuleValue::Object(BTreeMap::from([(
+                "username".to_owned(),
+                CapsuleValue::Text(name.to_owned()),
+            )]))),
+        }
+        .seal()
+        .unwrap()
+    }
+
+    #[test]
+    fn semantic_digest_ignores_the_revision_chain_but_not_meaning() {
+        let original = user(1, "alice", 10);
+        let reissued = user(1, "alice", 99);
+        assert_ne!(
+            original.canonical_bytes().unwrap(),
+            reissued.canonical_bytes().unwrap()
+        );
+        assert_eq!(
+            semantic_digest(&original).unwrap(),
+            semantic_digest(&reissued).unwrap()
+        );
+        assert_ne!(
+            semantic_digest(&original).unwrap(),
+            semantic_digest(&user(1, "bob", 10)).unwrap()
+        );
+    }
+
+    #[test]
+    fn delta_inserts_chains_replacements_and_tombstones_removed_records() {
+        // Target state imported at t=10; the legacy source changed afterwards.
+        let target = [
+            user(1, "alice", 10),
+            user(2, "bob", 10),
+            user(3, "carol", 10),
+        ];
+        let source = [
+            user(1, "alice", 50),
+            user(2, "robert", 50),
+            user(4, "dave", 50),
+        ];
+        let writes = plan_delta(&source, &target, 60).unwrap();
+        assert_eq!(writes.len(), 3);
+
+        let replaced = writes
+            .iter()
+            .find(|write| write.capsule.id.0 == [2; 16])
+            .unwrap();
+        assert_eq!(replaced.expected_revision, Some(1));
+        assert_eq!(replaced.capsule.revision, 2);
+        assert_eq!(replaced.capsule.created_at_micros, 10);
+        assert_eq!(
+            replaced.capsule.previous_integrity.as_ref(),
+            Some(&target[1].integrity_hash)
+        );
+        replaced.capsule.verify().unwrap();
+
+        let inserted = writes
+            .iter()
+            .find(|write| write.capsule.id.0 == [4; 16])
+            .unwrap();
+        assert_eq!(inserted.expected_revision, None);
+
+        let tombstone = writes
+            .iter()
+            .find(|write| write.capsule.id.0 == [3; 16])
+            .unwrap();
+        assert!(tombstone.capsule.tombstone && tombstone.capsule.body.is_none());
+        tombstone.capsule.verify().unwrap();
+
+        // Applying the plan makes the live sets semantically equal, and a re-plan is empty.
+        let mut applied: BTreeMap<[u8; 16], CapsuleEnvelope> = target
+            .iter()
+            .map(|capsule| (capsule.id.0, capsule.clone()))
+            .collect();
+        for write in &writes {
+            applied.insert(write.capsule.id.0, write.capsule.clone());
+        }
+        let live = applied
+            .values()
+            .filter(|capsule| !capsule.tombstone)
+            .cloned()
+            .collect::<Vec<_>>();
+        for capsule in &source {
+            let target = live
+                .iter()
+                .find(|candidate| candidate.id == capsule.id)
+                .unwrap();
+            assert_eq!(
+                semantic_digest(target).unwrap(),
+                semantic_digest(capsule).unwrap()
+            );
+        }
+        let all = applied.values().cloned().collect::<Vec<_>>();
+        assert!(plan_delta(&source, &all, 70).unwrap().is_empty());
+    }
+}

@@ -295,8 +295,19 @@ class PhaseThreeCapsuleContractTests(unittest.TestCase):
             {row["family"] for row in manifest["hashgraph_families"]},
         )
         self.assertEqual(manifest["unknown_record_policy"], "fail_closed")
-        self.assertEqual(manifest["_meta"]["status"], "IN_PROGRESS")
-        self.assertGreater(manifest["summary"]["blocked_rows"], 0)
+        # A308 acceptance: every A004 row carries a reviewed, non-blocked disposition.
+        self.assertEqual(manifest["_meta"]["status"], "ACCEPTED")
+        self.assertEqual(manifest["summary"]["blocked_rows"], 0)
+        rows = [
+            *manifest["application_accesses"],
+            *manifest["candidate_key_templates"],
+            *manifest["core_objects"],
+            *manifest["questdb_tables"],
+            *manifest["hashgraph_families"],
+            manifest["cluster_rocksdb"],
+        ]
+        self.assertTrue(all(row["disposition"] for row in rows))
+        self.assertFalse([row for row in rows if row["disposition"].startswith("blocked")])
 
     def test_capsule_export_contract_binds_source_manifest_order_and_digest(self) -> None:
         schema = json.loads(

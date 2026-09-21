@@ -26,6 +26,8 @@ SCHEMAS = {
     "outbox": "aseman_outbox",
     "realtime": "aseman_realtime",
 }
+# ADR 0016: document fields travel in `capsule_cbor` and never receive a column.
+DOCUMENT_TYPE = "document"
 SQL_TYPES = {
     "bool": "BOOLEAN",
     "integer": "BIGINT",
@@ -91,11 +93,21 @@ def load() -> dict[str, object]:
             "storage_class": registered["storage_class"],
             "consistency": registered["consistency"],
             "required_capabilities": registered["required_capabilities"],
-            "fields": definition["fields"],
+            "fields": {
+                name: field_type
+                for name, field_type in definition["fields"].items()
+                if field_type != DOCUMENT_TYPE
+            },
             "field_columns": {
                 name: (f"body_{name}" if name in ENVELOPE_COLUMNS else name)
-                for name in definition["fields"]
+                for name, field_type in definition["fields"].items()
+                if field_type != DOCUMENT_TYPE
             },
+            "document_fields": sorted(
+                name
+                for name, field_type in definition["fields"].items()
+                if field_type == DOCUMENT_TYPE
+            ),
             "required_fields": definition["required"],
             "relationships": relationships,
             "unique_indexes": definition["unique_indexes"],
@@ -123,7 +135,7 @@ def validate(mapping: dict[str, object]) -> None:
         physical = set(row["field_columns"].values())
         if len(physical) != len(row["fields"]) or physical & ENVELOPE_COLUMNS:
             raise ValueError(f"physical column collision in {row['kind']}")
-        if not set(row["required_fields"]) <= set(row["fields"]):
+        if not set(row["required_fields"]) <= set(row["fields"]) | set(row["document_fields"]):
             raise ValueError(f"undeclared required field in {row['kind']}")
         declared = set(row["fields"]) | set(row["relationships"])
         for index in [*row["unique_indexes"], *row["range_indexes"]]:
@@ -182,6 +194,7 @@ def ddl(mapping: dict[str, object]) -> str:
         checks.extend(
             f"  CONSTRAINT {bounded_name('ck_live', table, [name])} CHECK (tombstone OR {quoted(row['field_columns'][name])} IS NOT NULL)"
             for name in row["required_fields"]
+            if name in row["field_columns"]
         )
         if row["mutation_policy"] == "append_only":
             checks.append("  CONSTRAINT ck_append_envelope CHECK (revision = 1 AND previous_integrity IS NULL AND NOT tombstone)")

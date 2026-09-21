@@ -409,14 +409,19 @@ impl CommandApplier for NodeApplier {
 
 fn apply_kv_batch(app: &Arc<dyn ICore>, ops: &[KvOp]) -> command::ClusterResponse {
     let db = app.tools().storage().kv_db();
-    let mut batch = rocksdb::WriteBatchWithTransaction::<true>::default();
-    for op in ops {
-        match op {
-            KvOp::Put { key, .. } => batch.put(key.as_bytes(), op.decoded_value()),
-            KvOp::Del { key } => batch.delete(key.as_bytes()),
-        }
-    }
-    match db.write(batch) {
+    let batch = ops
+        .iter()
+        .map(|op| match op {
+            KvOp::Put { key, .. } => aseman_storage_legacy::LegacyKvWrite::Put {
+                key: key.as_bytes().to_vec(),
+                value: op.decoded_value(),
+            },
+            KvOp::Del { key } => aseman_storage_legacy::LegacyKvWrite::Delete {
+                key: key.as_bytes().to_vec(),
+            },
+        })
+        .collect::<Vec<_>>();
+    match db.write_batch(&batch) {
         Ok(()) => command::ClusterResponse::ok(),
         Err(e) => command::ClusterResponse::err(format!("kv batch: {}", e)),
     }

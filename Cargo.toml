@@ -8,6 +8,7 @@ members = [
   "modules/*",
   "tests/contracts/module",
   "tests/contracts/storage",
+  "tests/migration",
   "vm-sdk",
   "vms/docker",
   "vms/elpian",

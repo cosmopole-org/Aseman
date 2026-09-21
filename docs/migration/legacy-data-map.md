@@ -55,8 +55,8 @@ Application commits may also be proposed to the embedded OpenRaft cluster.
 
 ## Access evidence
 
-- Direct transaction accesses with a recoverable literal/template: 243
-- Additional formatted key-template candidates requiring semantic review: 306
+- Direct transaction accesses with a recoverable literal/template: 292
+- Additional formatted key-template candidates requiring semantic review: 358
 - Every row includes its reader/writer method and source location in the JSON artifact.
 
 ## Unresolved before capsule mapping

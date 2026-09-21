@@ -18,10 +18,21 @@ the current RocksDB/QuestDB authority.
 1. Take a PostgreSQL backup and verify the target database/owner before execution.
 2. Run the provider migration with an owner role; keep `PUBLIC` schema access revoked.
 3. Run `ASEMAN_TEST_POSTGRES_URL=... cargo test -p aseman-storage-postgres --test live_postgres`.
-4. Verify all twenty registered core tables and their constraints against
+4. Verify all thirty-five registered core tables and their constraints against
    `contracts/storage/postgres/core-mapping.json`.
 5. Do not route authoritative writes until P3-05/P3-06 export, dual-write, semantic
    comparison, cutover, and rollback evidence passes.
+
+## Pre-cutover schema revisions
+
+Until P3-06 cutover, `0001_core.sql` is a pre-cutover contract. ADRs 0016 and 0018 revised
+it; for example, ADR 0018 replaced the `store_memberships` user/role columns with typed
+member principals. `CREATE TABLE IF NOT EXISTS` does not alter an existing table, so on a
+database that applied an earlier revision, the migration fails transactionally when it
+adds a constraint over a missing column. It never leaves a half-migrated schema. Before
+cutover such a database holds only non-authoritative test data, so drop and recreate it,
+then re-run the migration. After cutover, every schema change must ship as a new
+numbered forward migration.
 
 ## Rollback
 

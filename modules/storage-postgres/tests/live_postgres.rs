@@ -150,7 +150,42 @@ fn live_postgres_passes_storage_and_grpc_conformance() {
         )
         .unwrap()
         .get(0);
-    assert_eq!(class_tables, 13);
+    assert_eq!(class_tables, 14);
+
+    // ADR 0017: the legacy finance epoch is immutable and unique per family/key.
+    let legacy_insert = |id: &str| {
+        format!(
+            "INSERT INTO aseman_finance.legacy_finance_records (\
+               id, schema_version, revision, created_at_micros, updated_at_micros, \
+               previous_integrity, integrity_hash, owner_type, owner_id, owner_name, \
+               tombstone, capsule_cbor, record_family, legacy_key, entry_count, \
+               content_digest, currency, scale\
+             ) VALUES (\
+               '{id}', 1, 1, 10, 10, NULL, decode(repeat('00', 32), 'hex'), 'global', \
+               NULL, NULL, FALSE, decode('a0', 'hex'), 'hold', 'hold-1', 1, \
+               decode(repeat('22', 32), 'hex'), 'ASE', 2\
+             )"
+        )
+    };
+    client
+        .batch_execute(&format!(
+            "TRUNCATE TABLE aseman_finance.legacy_finance_records; {}",
+            legacy_insert("cccccccc-cccc-cccc-cccc-cccccccccccc")
+        ))
+        .unwrap();
+    let mutated = client.execute(
+        "UPDATE aseman_finance.legacy_finance_records SET entry_count = 2",
+        &[],
+    );
+    assert_eq!(
+        mutated.unwrap_err().as_db_error().unwrap().code().code(),
+        "55000"
+    );
+    let duplicate = client.batch_execute(&legacy_insert("dddddddd-dddd-dddd-dddd-dddddddddddd"));
+    assert_eq!(
+        duplicate.unwrap_err().as_db_error().unwrap().code().code(),
+        "23505"
+    );
 
     client
         .batch_execute(

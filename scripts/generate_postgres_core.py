@@ -20,6 +20,7 @@ SQL_OUT = ROOT / "modules/storage-postgres/migrations/0001_core.sql"
 MD_OUT = ROOT / "docs/generated/postgres-core-mapping.md"
 GENERATOR = "scripts/generate_postgres_core.py"
 SCHEMA = "aseman_core"
+DOCUMENT_TYPE = "document"
 SQL_TYPES = {
     "bool": "BOOLEAN",
     "integer": "BIGINT",
@@ -80,15 +81,26 @@ def load() -> tuple[dict[str, object], list[dict[str, object]]]:
                 "required": row["required"],
                 "on_delete": row["on_delete"],
             }
+        document_fields = sorted(
+            name
+            for name, field_type in definition["fields"].items()
+            if field_type == DOCUMENT_TYPE
+        )
+        columnar = {
+            name: field_type
+            for name, field_type in definition["fields"].items()
+            if field_type != DOCUMENT_TYPE
+        }
         tables.append(
             {
                 "kind": kind,
                 "table": registered["table"],
-                "fields": definition["fields"],
+                "fields": columnar,
                 "field_columns": {
                     name: (f"body_{name}" if name in ENVELOPE_COLUMNS else name)
-                    for name in definition["fields"]
+                    for name in columnar
                 },
+                "document_fields": document_fields,
                 "required_fields": definition["required"],
                 "relationships": relationships,
                 "unique_indexes": definition["unique_indexes"],
@@ -124,7 +136,9 @@ def validate(mapping: dict[str, object]) -> None:
         for field_type in row["fields"].values():
             if field_type not in SQL_TYPES:
                 raise ValueError(f"unsupported field type: {field_type}")
-        if not set(row["required_fields"]) <= set(row["fields"]):
+        if set(row["document_fields"]) & set(row["fields"]):
+            raise ValueError(f"document field also has a column in {row['kind']}")
+        if not set(row["required_fields"]) <= set(row["fields"]) | set(row["document_fields"]):
             raise ValueError(f"required field is undeclared in {row['kind']}")
         declared = set(row["fields"]) | set(row["relationships"])
         for index in row["unique_indexes"]:

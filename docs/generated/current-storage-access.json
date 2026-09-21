@@ -127,6 +127,54 @@
       "logical_template": "Creature",
       "method": "has_obj",
       "mode": "read",
+      "source": "node/src/shell/api/actions/creature/finance.rs:1068"
+    },
+    {
+      "logical_template": "Creature",
+      "method": "has_obj",
+      "mode": "read",
+      "source": "node/src/shell/api/actions/creature/finance.rs:1177"
+    },
+    {
+      "logical_template": "Creature",
+      "method": "has_obj",
+      "mode": "read",
+      "source": "node/src/shell/api/actions/creature/finance.rs:1226"
+    },
+    {
+      "logical_template": "Creature",
+      "method": "has_obj",
+      "mode": "read",
+      "source": "node/src/shell/api/actions/creature/finance.rs:507"
+    },
+    {
+      "logical_template": "Creature",
+      "method": "has_obj",
+      "mode": "read",
+      "source": "node/src/shell/api/actions/creature/finance.rs:600"
+    },
+    {
+      "logical_template": "Creature",
+      "method": "has_obj",
+      "mode": "read",
+      "source": "node/src/shell/api/actions/creature/finance.rs:695"
+    },
+    {
+      "logical_template": "Creature",
+      "method": "has_obj",
+      "mode": "read",
+      "source": "node/src/shell/api/actions/creature/finance.rs:997"
+    },
+    {
+      "logical_template": "Creature",
+      "method": "has_obj",
+      "mode": "read",
+      "source": "node/src/shell/api/actions/creature/finance.rs:998"
+    },
+    {
+      "logical_template": "Creature",
+      "method": "has_obj",
+      "mode": "read",
       "source": "node/src/shell/api/actions/program.rs:594"
     },
     {
@@ -172,6 +220,138 @@
       "source": "node/src/shell/api/actions/creature.rs:118"
     },
     {
+      "logical_template": "FinanceDebt::{user_id}",
+      "method": "get_link",
+      "mode": "read",
+      "source": "node/src/shell/api/actions/creature/finance.rs:183"
+    },
+    {
+      "logical_template": "FinanceDebt::{user_id}",
+      "method": "put_link",
+      "mode": "write",
+      "source": "node/src/shell/api/actions/creature/finance.rs:200"
+    },
+    {
+      "logical_template": "FinanceHeld::",
+      "method": "get_links_list",
+      "mode": "read",
+      "source": "node/src/shell/api/actions/creature/finance.rs:3725"
+    },
+    {
+      "logical_template": "FinanceHeld::{payer_id}",
+      "method": "get_link",
+      "mode": "read",
+      "source": "node/src/shell/api/actions/creature/finance.rs:161"
+    },
+    {
+      "logical_template": "FinanceHeld::{payer_id}",
+      "method": "put_link",
+      "mode": "write",
+      "source": "node/src/shell/api/actions/creature/finance.rs:178"
+    },
+    {
+      "logical_template": "FinanceHoldByPayer::{payer_id}::{now:020}::{hold_id}",
+      "method": "put_link",
+      "mode": "write",
+      "source": "node/src/shell/api/actions/creature/finance.rs:1311"
+    },
+    {
+      "logical_template": "FinanceHoldByPayer::{user_id}::",
+      "method": "get_links_list",
+      "mode": "read",
+      "source": "node/src/shell/api/actions/creature/finance.rs:1907"
+    },
+    {
+      "logical_template": "FinanceJournalByUser::{participant}::{now:020}::{journal_id}",
+      "method": "put_link",
+      "mode": "write",
+      "source": "node/src/shell/api/actions/creature/finance.rs:385"
+    },
+    {
+      "logical_template": "FinanceJournalByUser::{user_id}::",
+      "method": "get_links_list",
+      "mode": "read",
+      "source": "node/src/shell/api/actions/creature/finance.rs:1892"
+    },
+    {
+      "logical_template": "FinancePayoutByUser::{user_id}::",
+      "method": "get_links_list",
+      "mode": "read",
+      "source": "node/src/shell/api/actions/creature/finance.rs:1868"
+    },
+    {
+      "logical_template": "FinancePayoutByUser::{user_id}::{now:020}::{payout_id}",
+      "method": "put_link",
+      "mode": "write",
+      "source": "node/src/shell/api/actions/creature/finance.rs:2074"
+    },
+    {
+      "logical_template": "FinancePayoutHeld::",
+      "method": "get_links_list",
+      "mode": "read",
+      "source": "node/src/shell/api/actions/creature/finance.rs:3791"
+    },
+    {
+      "logical_template": "FinancePayoutHeld::{user_id}",
+      "method": "put_link",
+      "mode": "write",
+      "source": "node/src/shell/api/actions/creature/finance.rs:231"
+    },
+    {
+      "logical_template": "FinancePoolByUser::{payer_id}",
+      "method": "put_link",
+      "mode": "write",
+      "source": "node/src/shell/api/actions/creature/finance.rs:2379"
+    },
+    {
+      "logical_template": "FinancePoolByUser::{user_id}",
+      "method": "get_link",
+      "mode": "read",
+      "source": "node/src/shell/api/actions/creature/finance.rs:1924"
+    },
+    {
+      "logical_template": "FinanceWithdrawable::",
+      "method": "get_links_list",
+      "mode": "read",
+      "source": "node/src/shell/api/actions/creature/finance.rs:3826"
+    },
+    {
+      "logical_template": "FinanceWithdrawable::{user_id}",
+      "method": "put_link",
+      "mode": "write",
+      "source": "node/src/shell/api/actions/creature/finance.rs:216"
+    },
+    {
+      "logical_template": "Json::BillingCatalog::{pricing_version}",
+      "method": "get_json",
+      "mode": "read",
+      "source": "node/src/shell/api/actions/creature/finance.rs:950"
+    },
+    {
+      "logical_template": "Json::BillingQuote::{}",
+      "method": "get_json",
+      "mode": "read",
+      "source": "node/src/shell/api/actions/creature/finance.rs:1151"
+    },
+    {
+      "logical_template": "Json::BillingQuote::{}",
+      "method": "get_json",
+      "mode": "read",
+      "source": "node/src/shell/api/actions/creature/finance.rs:2655"
+    },
+    {
+      "logical_template": "Json::BillingQuote::{}",
+      "method": "get_json",
+      "mode": "read",
+      "source": "node/src/shell/api/actions/creature/finance.rs:2767"
+    },
+    {
+      "logical_template": "Json::BillingQuote::{}",
+      "method": "get_json",
+      "mode": "read",
+      "source": "node/src/shell/api/actions/creature/finance.rs:3100"
+    },
+    {
       "logical_template": "Json::Creature::{}",
       "method": "get_json",
       "mode": "read",
@@ -214,6 +394,96 @@
       "source": "node/src/drivers/vmm/host/vm_host_functions.rs:1173"
     },
     {
+      "logical_template": "Json::CreatureNamespace::billing",
+      "method": "put_json",
+      "mode": "write",
+      "source": "node/src/shell/api/actions/creature/finance.rs:524"
+    },
+    {
+      "logical_template": "Json::CreatureNamespace::billing",
+      "method": "put_json",
+      "mode": "write",
+      "source": "node/src/shell/api/actions/creature/finance.rs:607"
+    },
+    {
+      "logical_template": "Json::CreatureNamespace::billing",
+      "method": "get_json",
+      "mode": "read",
+      "source": "node/src/shell/api/actions/creature/finance.rs:630"
+    },
+    {
+      "logical_template": "Json::CreatureNamespace::billing",
+      "method": "put_json",
+      "mode": "write",
+      "source": "node/src/shell/api/actions/creature/finance.rs:646"
+    },
+    {
+      "logical_template": "Json::CreatureNamespace::billing",
+      "method": "get_json",
+      "mode": "read",
+      "source": "node/src/shell/api/actions/creature/finance.rs:701"
+    },
+    {
+      "logical_template": "Json::CreatureNamespace::billing",
+      "method": "get_json",
+      "mode": "read",
+      "source": "node/src/shell/api/actions/creature/finance.rs:867"
+    },
+    {
+      "logical_template": "Json::CreatureNamespace::billing",
+      "method": "get_json",
+      "mode": "read",
+      "source": "node/src/shell/api/actions/creature/finance.rs:946"
+    },
+    {
+      "logical_template": "Json::CreatureNamespace::billing",
+      "method": "get_json",
+      "mode": "read",
+      "source": "node/src/shell/api/actions/creature/finance.rs:957"
+    },
+    {
+      "logical_template": "Json::CreatureNamespace::market",
+      "method": "get_json",
+      "mode": "read",
+      "source": "node/src/shell/api/actions/creature/finance.rs:732"
+    },
+    {
+      "logical_template": "Json::CreatureNamespace::market",
+      "method": "put_json",
+      "mode": "write",
+      "source": "node/src/shell/api/actions/creature/finance.rs:757"
+    },
+    {
+      "logical_template": "Json::CreatureNamespace::market",
+      "method": "get_json",
+      "mode": "read",
+      "source": "node/src/shell/api/actions/creature/finance.rs:782"
+    },
+    {
+      "logical_template": "Json::CreatureNamespace::market",
+      "method": "put_json",
+      "mode": "write",
+      "source": "node/src/shell/api/actions/creature/finance.rs:795"
+    },
+    {
+      "logical_template": "Json::CreatureNamespace::market",
+      "method": "get_json",
+      "mode": "read",
+      "source": "node/src/shell/api/actions/creature/finance.rs:817"
+    },
+    {
+      "logical_template": "Json::CreatureNamespace::market",
+      "method": "put_json",
+      "mode": "write",
+      "source": "node/src/shell/api/actions/creature/finance.rs:830"
+    },
+    {
+      "logical_template": "Json::CreatureNamespace::market",
+      "method": "get_json",
+      "mode": "read",
+      "source": "node/src/shell/api/actions/creature/finance.rs:853"
+    },
+    {
       "logical_template": "Json::FinanceHold::{hold_id_c}",
       "method": "get_json",
       "mode": "read",
@@ -230,6 +500,18 @@
       "method": "get_json",
       "mode": "read",
       "source": "node/src/drivers/vmm/host/vm_host_functions.rs:1642"
+    },
+    {
+      "logical_template": "Json::FinanceJournal::{journal_id}",
+      "method": "get_json",
+      "mode": "read",
+      "source": "node/src/shell/api/actions/creature/finance.rs:1900"
+    },
+    {
+      "logical_template": "Json::FinanceJournal::{journal_id}",
+      "method": "put_json",
+      "mode": "write",
+      "source": "node/src/shell/api/actions/creature/finance.rs:373"
     },
     {
       "logical_template": "Json::FinancePool::{pool_id_c}",
@@ -361,6 +643,12 @@
       "logical_template": "Program",
       "method": "has_obj",
       "mode": "read",
+      "source": "node/src/shell/api/actions/creature/finance.rs:1180"
+    },
+    {
+      "logical_template": "Program",
+      "method": "has_obj",
+      "mode": "read",
       "source": "node/src/shell/api/actions/program.rs:1119"
     },
     {
@@ -470,6 +758,12 @@
       "method": "get_obj_list",
       "mode": "read",
       "source": "node/src/shell/api/model/store.rs:180"
+    },
+    {
+      "logical_template": "StoreMeta::{project_id}",
+      "method": "get_json",
+      "mode": "read",
+      "source": "node/src/shell/api/actions/creature/finance.rs:288"
     },
     {
       "logical_template": "StoreMeta::{}",
@@ -1423,7 +1717,7 @@
       "logical_template": "{}::{}",
       "method": "get_by_prefix",
       "mode": "read",
-      "source": "vms/javascript/src/host_calls.rs:147"
+      "source": "vms/javascript/src/host_calls.rs:149"
     },
     {
       "logical_template": "{}::{}",
@@ -1435,7 +1729,7 @@
       "logical_template": "{}::{}",
       "method": "get_by_prefix",
       "mode": "read",
-      "source": "vms/wasm/src/host_calls.rs:520"
+      "source": "vms/wasm/src/host_calls.rs:524"
     },
     {
       "logical_template": "{}|>",
@@ -1530,6 +1824,216 @@
       "source": "node/src/shell/api/actions/creature.rs:118"
     },
     {
+      "logical_template": "FinanceDebt::{user_id}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/shell/api/actions/creature/finance.rs:183"
+    },
+    {
+      "logical_template": "FinanceDebt::{user_id}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/shell/api/actions/creature/finance.rs:200"
+    },
+    {
+      "logical_template": "FinanceEarned::{user_id}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/shell/api/actions/creature/finance.rs:1552"
+    },
+    {
+      "logical_template": "FinanceEarned::{user_id}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/shell/api/actions/creature/finance.rs:1943"
+    },
+    {
+      "logical_template": "FinanceEarned::{user_id}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/shell/api/actions/creature/finance.rs:2830"
+    },
+    {
+      "logical_template": "FinanceEarned::{user_id}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/shell/api/actions/creature/finance.rs:3180"
+    },
+    {
+      "logical_template": "FinanceHeld::{payer_id}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/shell/api/actions/creature/finance.rs:161"
+    },
+    {
+      "logical_template": "FinanceHeld::{payer_id}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/shell/api/actions/creature/finance.rs:178"
+    },
+    {
+      "logical_template": "FinanceHoldByPayer::{payer_id}::{now:020}::{hold_id}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/shell/api/actions/creature/finance.rs:1312"
+    },
+    {
+      "logical_template": "FinanceHoldByPayer::{user_id}::",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/shell/api/actions/creature/finance.rs:1907"
+    },
+    {
+      "logical_template": "FinanceHoldRequest::{payer_id}::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/shell/api/actions/creature/finance.rs:1190"
+    },
+    {
+      "logical_template": "FinanceJournalByUser::{participant}::{now:020}::{journal_id}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/shell/api/actions/creature/finance.rs:386"
+    },
+    {
+      "logical_template": "FinanceJournalByUser::{user_id}::",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/shell/api/actions/creature/finance.rs:1892"
+    },
+    {
+      "logical_template": "FinancePayoutByUser::{user_id}::",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/shell/api/actions/creature/finance.rs:1868"
+    },
+    {
+      "logical_template": "FinancePayoutByUser::{user_id}::{now:020}::{payout_id}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/shell/api/actions/creature/finance.rs:2075"
+    },
+    {
+      "logical_template": "FinancePayoutHeld::{user_id}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/shell/api/actions/creature/finance.rs:224"
+    },
+    {
+      "logical_template": "FinancePayoutHeld::{user_id}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/shell/api/actions/creature/finance.rs:232"
+    },
+    {
+      "logical_template": "FinancePayoutRequest::{user_id}::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/shell/api/actions/creature/finance.rs:2010"
+    },
+    {
+      "logical_template": "FinancePayoutResolution::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/shell/api/actions/creature/finance.rs:2121"
+    },
+    {
+      "logical_template": "FinancePoolByUser::{payer_id}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/shell/api/actions/creature/finance.rs:2379"
+    },
+    {
+      "logical_template": "FinancePoolByUser::{user_id}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/shell/api/actions/creature/finance.rs:1924"
+    },
+    {
+      "logical_template": "FinancePoolClose::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/shell/api/actions/creature/finance.rs:2532"
+    },
+    {
+      "logical_template": "FinancePoolDebit::{authority_id}::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/shell/api/actions/creature/finance.rs:3070"
+    },
+    {
+      "logical_template": "FinancePoolOpen::{payer_id}::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/shell/api/actions/creature/finance.rs:2312"
+    },
+    {
+      "logical_template": "FinancePoolRefresh::{payer_id}::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/shell/api/actions/creature/finance.rs:2410"
+    },
+    {
+      "logical_template": "FinancePoolSettlement::{authority_id}::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/shell/api/actions/creature/finance.rs:2728"
+    },
+    {
+      "logical_template": "FinanceRelease::{caller_id}::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/shell/api/actions/creature/finance.rs:1699"
+    },
+    {
+      "logical_template": "FinanceRun::{authority_id}::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/shell/api/actions/creature/finance.rs:1359"
+    },
+    {
+      "logical_template": "FinanceSettlement::{authority_id}::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/shell/api/actions/creature/finance.rs:1441"
+    },
+    {
+      "logical_template": "FinanceSpent::{user_id}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/shell/api/actions/creature/finance.rs:1944"
+    },
+    {
+      "logical_template": "FinanceSpent::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/shell/api/actions/creature/finance.rs:1545"
+    },
+    {
+      "logical_template": "FinanceSpent::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/shell/api/actions/creature/finance.rs:2870"
+    },
+    {
+      "logical_template": "FinanceSpent::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/shell/api/actions/creature/finance.rs:3216"
+    },
+    {
+      "logical_template": "FinanceWithdrawable::{user_id}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/shell/api/actions/creature/finance.rs:205"
+    },
+    {
+      "logical_template": "FinanceWithdrawable::{user_id}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/shell/api/actions/creature/finance.rs:217"
+    },
+    {
+      "logical_template": "Json::BillingCatalog::{pricing_version}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/shell/api/actions/creature/finance.rs:951"
+    },
+    {
+      "logical_template": "Json::BillingCatalog::{version}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/shell/api/actions/creature/finance.rs:513"
+    },
+    {
+      "logical_template": "Json::BillingQuote::{quote_id}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/shell/api/actions/creature/finance.rs:1078"
+    },
+    {
+      "logical_template": "Json::BillingQuote::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/shell/api/actions/creature/finance.rs:1151"
+    },
+    {
+      "logical_template": "Json::BillingQuote::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/shell/api/actions/creature/finance.rs:2655"
+    },
+    {
+      "logical_template": "Json::BillingQuote::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/shell/api/actions/creature/finance.rs:2767"
+    },
+    {
+      "logical_template": "Json::BillingQuote::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/shell/api/actions/creature/finance.rs:3100"
+    },
+    {
       "logical_template": "Json::BridgeGrant::{}",
       "review_status": "candidate; caller association may be indirect",
       "source": "node/src/shell/api/actions/gateway.rs:44"
@@ -1585,9 +2089,49 @@
       "source": "node/src/drivers/vmm/host/vm_host_functions.rs:1642"
     },
     {
+      "logical_template": "Json::FinanceHold::{hold_id}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/shell/api/actions/creature/finance.rs:112"
+    },
+    {
+      "logical_template": "Json::FinanceJournal::{journal_id}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/shell/api/actions/creature/finance.rs:1900"
+    },
+    {
+      "logical_template": "Json::FinanceJournal::{journal_id}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/shell/api/actions/creature/finance.rs:374"
+    },
+    {
+      "logical_template": "Json::FinanceLiveDebit::{run_id}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/shell/api/actions/creature/finance.rs:157"
+    },
+    {
+      "logical_template": "Json::FinancePayout::{payout_id}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/shell/api/actions/creature/finance.rs:1858"
+    },
+    {
       "logical_template": "Json::FinancePool::{pool_id_c}",
       "review_status": "candidate; caller association may be indirect",
       "source": "node/src/drivers/vmm/host/vm_host_functions.rs:1747"
+    },
+    {
+      "logical_template": "Json::FinancePool::{pool_id}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/shell/api/actions/creature/finance.rs:130"
+    },
+    {
+      "logical_template": "Json::FinancePoolReservation::{run_id}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/shell/api/actions/creature/finance.rs:148"
+    },
+    {
+      "logical_template": "Json::FinanceProjectBudget::{project_id}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/shell/api/actions/creature/finance.rs:264"
     },
     {
       "logical_template": "Json::ProxyCorrelation::{}",
@@ -1730,6 +2274,11 @@
       "source": "node/src/drivers/network/federation/fednet.rs:145"
     },
     {
+      "logical_template": "PaymentAdjustment::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/shell/api/actions/creature/finance.rs:3992"
+    },
+    {
       "logical_template": "ProgMeta::{}",
       "review_status": "candidate; caller association may be indirect",
       "source": "node/src/drivers/vmm/hostcall_entities.rs:311"
@@ -1768,6 +2317,11 @@
       "logical_template": "SecretGrant::{}::{}::{}",
       "review_status": "candidate; caller association may be indirect",
       "source": "node/src/drivers/vmm/host/vm_host_functions.rs:847"
+    },
+    {
+      "logical_template": "StoreMeta::{project_id}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/shell/api/actions/creature/finance.rs:288"
     },
     {
       "logical_template": "StoreMeta::{}",
@@ -2897,22 +3451,22 @@
     {
       "logical_template": "{}::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "vms/javascript/src/host_calls.rs:133"
+      "source": "vms/javascript/src/host_calls.rs:135"
     },
     {
       "logical_template": "{}::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "vms/javascript/src/host_calls.rs:138"
+      "source": "vms/javascript/src/host_calls.rs:140"
     },
     {
       "logical_template": "{}::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "vms/javascript/src/host_calls.rs:143"
+      "source": "vms/javascript/src/host_calls.rs:145"
     },
     {
       "logical_template": "{}::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "vms/javascript/src/host_calls.rs:147"
+      "source": "vms/javascript/src/host_calls.rs:149"
     },
     {
       "logical_template": "{}::{}",
@@ -2942,22 +3496,22 @@
     {
       "logical_template": "{}::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "vms/wasm/src/host_calls.rs:480"
+      "source": "vms/wasm/src/host_calls.rs:484"
     },
     {
       "logical_template": "{}::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "vms/wasm/src/host_calls.rs:492"
+      "source": "vms/wasm/src/host_calls.rs:496"
     },
     {
       "logical_template": "{}::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "vms/wasm/src/host_calls.rs:505"
+      "source": "vms/wasm/src/host_calls.rs:509"
     },
     {
       "logical_template": "{}::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "vms/wasm/src/host_calls.rs:520"
+      "source": "vms/wasm/src/host_calls.rs:524"
     },
     {
       "logical_template": "{}::{}",
@@ -3308,9 +3862,9 @@
     }
   ],
   "summary": {
-    "candidate_key_templates": 306,
+    "candidate_key_templates": 358,
     "core_object_types": 8,
-    "direct_application_accesses": 243,
+    "direct_application_accesses": 292,
     "hashgraph_key_families": 8,
     "questdb_tables": 2
   },

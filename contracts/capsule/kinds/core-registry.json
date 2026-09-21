@@ -24,6 +24,22 @@
     {"kind":"core.guest_schema_definition","table":"guest_schema_definitions","storage_class":"core","consistency":"serializable","owner_scope":"creature","required_capabilities":["indexes.unique"]},
     {"kind":"core.chain","table":"chains","storage_class":"core","consistency":"serializable","owner_scope":"creature","required_capabilities":["indexes.unique"]},
     {"kind":"core.chain_shard","table":"chain_shards","storage_class":"core","consistency":"serializable","owner_scope":"creature","required_capabilities":["relationships.foreign_keys"]},
-    {"kind":"core.entity","table":"entities","storage_class":"core","consistency":"snapshot","owner_scope":"creature","required_capabilities":["relationships.foreign_keys"]}
+    {"kind":"core.entity","table":"entities","storage_class":"core","consistency":"snapshot","owner_scope":"creature","required_capabilities":["relationships.foreign_keys"]},
+    {"kind":"core.user_metadata","table":"user_metadata_documents","storage_class":"core","consistency":"serializable","owner_scope":"global","required_capabilities":["relationships.foreign_keys","indexes.unique"]},
+    {"kind":"core.creature_metadata","table":"creature_metadata_documents","storage_class":"core","consistency":"serializable","owner_scope":"global","required_capabilities":["relationships.foreign_keys","indexes.unique"]},
+    {"kind":"core.store_metadata","table":"store_metadata_documents","storage_class":"core","consistency":"serializable","owner_scope":"creature","required_capabilities":["relationships.foreign_keys","indexes.unique"]},
+    {"kind":"core.program_metadata","table":"program_metadata_documents","storage_class":"core","consistency":"serializable","owner_scope":"creature","required_capabilities":["relationships.foreign_keys","indexes.unique"]},
+    {"kind":"finance.legacy_record","table":"legacy_finance_records","storage_class":"finance","consistency":"serializable","owner_scope":"global","required_capabilities":["indexes.unique","append_only.verifiable"]},
+    {"kind":"core.creature_type","table":"creature_types","storage_class":"core","consistency":"serializable","owner_scope":"global","required_capabilities":["indexes.unique"]},
+    {"kind":"core.gateway_route","table":"gateway_routes","storage_class":"core","consistency":"serializable","owner_scope":"creature","required_capabilities":["relationships.foreign_keys","indexes.unique"]},
+    {"kind":"core.program_alarm","table":"program_alarms","storage_class":"core","consistency":"serializable","owner_scope":"creature","required_capabilities":["relationships.foreign_keys","indexes.unique"]},
+    {"kind":"core.vm_resource_store","table":"vm_resource_stores","storage_class":"core","consistency":"serializable","owner_scope":"creature","required_capabilities":["relationships.foreign_keys","indexes.unique"]},
+    {"kind":"core.vm_resource_entity","table":"vm_resource_entities","storage_class":"core","consistency":"serializable","owner_scope":"creature","required_capabilities":["relationships.foreign_keys","indexes.unique"]},
+    {"kind":"core.entity_config","table":"entity_configs","storage_class":"core","consistency":"serializable","owner_scope":"creature","required_capabilities":["relationships.foreign_keys","indexes.unique"]},
+    {"kind":"core.entity_artifact","table":"entity_artifacts","storage_class":"core","consistency":"serializable","owner_scope":"creature","required_capabilities":["relationships.foreign_keys","indexes.unique"]},
+    {"kind":"core.creature_secret","table":"creature_secrets","storage_class":"core","consistency":"serializable","owner_scope":"creature","required_capabilities":["relationships.foreign_keys","indexes.unique"]},
+    {"kind":"core.secret_grant","table":"secret_grants","storage_class":"core","consistency":"serializable","owner_scope":"creature","required_capabilities":["relationships.foreign_keys","indexes.unique"]},
+    {"kind":"core.bridge_grant","table":"bridge_grants","storage_class":"core","consistency":"serializable","owner_scope":"creature","required_capabilities":["indexes.unique"]},
+    {"kind":"core.bridge_topic","table":"bridge_topics","storage_class":"core","consistency":"serializable","owner_scope":"creature","required_capabilities":["indexes.unique"]}
   ]
 }

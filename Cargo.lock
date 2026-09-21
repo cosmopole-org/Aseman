@@ -186,6 +186,23 @@ dependencies = [
 ]
 
 [[package]]
+name = "aseman-migration-e2e"
+version = "0.1.0"
+dependencies = [
+ "aseman-application",
+ "aseman-config",
+ "aseman-contracts",
+ "aseman-domain",
+ "aseman-ports",
+ "aseman-storage-legacy",
+ "aseman-storage-postgres",
+ "postgres",
+ "rsa",
+ "serde_json",
+ "uuid",
+]
+
+[[package]]
 name = "aseman-module-conformance"
 version = "0.1.0"
 dependencies = [
@@ -253,9 +270,13 @@ dependencies = [
 name = "aseman-storage-legacy"
 version = "0.1.0"
 dependencies = [
+ "aseman-config",
  "aseman-contracts",
+ "base64 0.22.1",
+ "chacha20poly1305",
  "rocksdb",
  "rsa",
+ "serde_json",
  "sha2 0.10.9",
  "thiserror 2.0.20",
 ]
@@ -266,6 +287,8 @@ version = "0.1.0"
 dependencies = [
  "aseman-config",
  "aseman-contracts",
+ "aseman-domain",
+ "aseman-ports",
  "aseman-storage-conformance",
  "postgres",
  "r2d2",
@@ -673,6 +696,7 @@ dependencies = [
  "aseman-module-runtime",
  "aseman-observability",
  "aseman-ports",
+ "aseman-storage-legacy",
  "base64 0.22.1",
  "caspar-vm-plugins",
  "caspar-vm-sdk",

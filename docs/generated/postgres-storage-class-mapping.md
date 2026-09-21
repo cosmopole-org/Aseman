@@ -2,7 +2,7 @@
 status: GENERATED
 owner: storage/postgres
 source_of_truth: contracts/capsule/kinds and scripts/generate_postgres_storage_classes.py
-last_verified_commit: 800df24076c7
+last_verified_commit: f6be364d6761
 verification: python3 scripts/generate_postgres_storage_classes.py --check
 ---
 
@@ -27,6 +27,7 @@ universal payload table or JSONB entity bucket is used.
 | `realtime.subscription` | `aseman_realtime.subscriptions` | `serializable` | `mutable_cas` | `realtime_subscription` |
 | `realtime.consumer_offset` | `aseman_realtime.consumer_offsets` | `serializable` | `mutable_cas` | `realtime_subscription` |
 | `realtime.dead_letter` | `aseman_realtime.dead_letters` | `serializable` | `mutable_cas` | `realtime_by_class` |
+| `finance.legacy_record` | `aseman_finance.legacy_finance_records` | `serializable` | `append_only` | `financial_permanent` |
 
 Detailed finance, realtime, and retention behavior remains governed by their
 later application/provider contracts; this mapping cannot weaken A307 guarantees.

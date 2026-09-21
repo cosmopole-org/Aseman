@@ -1,7 +1,8 @@
 //! Storage port — the persistence driver interface.
 //!
-//! The node uses RocksDB (transactional) for its key/value store and an
-//! `r2d2`-pooled QuestDB (PostgreSQL-wire) client for its time-series store.
+//! The key/value store is the legacy storage provider's `LegacyKvStore` seam
+//! (RocksDB types stay inside `aseman-storage-legacy`). The time-series store is a
+//! driver-private detail behind the log methods below.
 
 use std::sync::Arc;
 
@@ -10,17 +11,13 @@ use anyhow::Result;
 use crate::models::packet::{BuildPacket, LogPacket, LogQuery};
 use crate::models::transaction::ITrx;
 
-/// Key/value database handle — RocksDB transactional DB.
-pub type KvDb = Arc<rocksdb::TransactionDB>;
-
-/// Time-series database handle — pooled QuestDB (PostgreSQL-wire) client.
-pub type TsDb = r2d2::Pool<r2d2_postgres::PostgresConnectionManager<postgres::tls::NoTls>>;
+/// Key/value database handle — the legacy provider's store seam.
+pub type KvDb = Arc<dyn aseman_storage_legacy::LegacyKvStore>;
 
 /// The storage driver interface.
 pub trait IStorage: Send + Sync {
     fn storage_root(&self) -> String;
     fn kv_db(&self) -> KvDb;
-    fn ts_db(&self) -> TsDb;
     fn gen_id(&self, t: &dyn ITrx, origin: &str) -> String;
     /// Append one signal packet to the store's time-series log. `tags` are the
     /// sender's labels, already validated by the caller; they are stored with

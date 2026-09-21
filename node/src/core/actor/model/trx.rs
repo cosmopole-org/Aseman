@@ -25,7 +25,7 @@ use std::collections::{BTreeMap, BTreeSet, HashMap};
 use std::sync::{Arc, Mutex};
 
 use anyhow::{anyhow, Result};
-use rocksdb::{IteratorMode, WriteBatchWithTransaction};
+use aseman_storage_legacy::LegacyKvWrite;
 use rsa::{RsaPrivateKey, RsaPublicKey};
 use serde_json::{Map, Value};
 
@@ -131,13 +131,8 @@ impl TrxWrapper {
 
         // 1. Pull every matching key from the underlying DB.
         let mut merged: BTreeMap<Vec<u8>, Option<Vec<u8>>> = BTreeMap::new();
-        let it = self.db.prefix_iterator(prefix);
-        for item in it {
-            let Ok((k, v)) = item else { continue };
-            if !k.starts_with(prefix) {
-                continue;
-            }
-            merged.insert(k.to_vec(), Some(v.to_vec()));
+        for (k, v) in self.db.scan_prefix(prefix).unwrap_or_default() {
+            merged.insert(k, Some(v));
         }
         // 2. Apply overlay: writes overwrite, tombstones delete.
         for (k, v) in inner.overlay.range(prefix.to_vec()..) {
@@ -207,11 +202,14 @@ impl ITrx for TrxWrapper {
         // local-only (non-distributed VMs).
         let replicate = crate::drivers::cluster::should_replicate();
         let mut replicated_ops: Vec<crate::drivers::cluster::command::KvOp> = Vec::new();
-        let mut batch = WriteBatchWithTransaction::<true>::default();
+        let mut batch: Vec<LegacyKvWrite> = Vec::with_capacity(inner.overlay.len());
         for (k, v) in &inner.overlay {
             match v {
                 Some(val) => {
-                    batch.put(k, val);
+                    batch.push(LegacyKvWrite::Put {
+                        key: k.clone(),
+                        value: val.clone(),
+                    });
                     if replicate {
                         replicated_ops.push(crate::drivers::cluster::command::KvOp::put(
                             String::from_utf8_lossy(k).into_owned(),
@@ -220,7 +218,7 @@ impl ITrx for TrxWrapper {
                     }
                 }
                 None => {
-                    batch.delete(k);
+                    batch.push(LegacyKvWrite::Delete { key: k.clone() });
                     if replicate {
                         replicated_ops.push(crate::drivers::cluster::command::KvOp::del(
                             String::from_utf8_lossy(k).into_owned(),
@@ -229,7 +227,8 @@ impl ITrx for TrxWrapper {
                 }
             }
         }
-        let _ = self.db.write(batch);
+        // Legacy behavior (LD-10): a failed commit is not reported to the caller.
+        let _ = self.db.write_batch(&batch);
         inner.overlay.clear();
         inner.finalized = true;
         drop(inner);
@@ -737,13 +736,7 @@ impl TrxWrapper {
     /// Iterator-only access to the underlying DB for callers that need raw
     /// key/value pairs without overlay filtering (e.g. recovery / debug).
     pub fn raw_db_iterator(&self) -> Vec<(Vec<u8>, Vec<u8>)> {
-        let mut out = Vec::new();
-        for item in self.db.iterator(IteratorMode::Start) {
-            if let Ok((k, v)) = item {
-                out.push((k.to_vec(), v.to_vec()));
-            }
-        }
-        out
+        self.db.scan_all().unwrap_or_default()
     }
 }
 
@@ -868,7 +861,6 @@ mod tests {
     struct StubStorage {
         root: String,
         kv: crate::models::ports::storage::KvDb,
-        ts: crate::models::ports::storage::TsDb,
     }
 
     impl StubStorage {
@@ -882,16 +874,11 @@ mod tests {
                     .as_nanos()
             );
             std::fs::create_dir_all(&dir).unwrap();
-            let kv: crate::models::ports::storage::KvDb =
-                Arc::new(rocksdb::TransactionDB::open_default(&dir).expect("rocksdb"));
-            // The tests never touch ts_db, but the trait requires a value.
-            // Build an unconnected pool — get() will fail but no test calls it.
-            let manager = r2d2_postgres::PostgresConnectionManager::new(
-                "host=127.0.0.1 port=1 user=x dbname=x".parse().unwrap(),
-                postgres::tls::NoTls,
+            let kv: crate::models::ports::storage::KvDb = Arc::new(
+                aseman_storage_legacy::RocksDbKvStore::open_default(std::path::Path::new(&dir))
+                    .expect("rocksdb"),
             );
-            let ts = r2d2::Builder::new().build_unchecked(manager);
-            Arc::new(StubStorage { root: dir, kv, ts })
+            Arc::new(StubStorage { root: dir, kv })
         }
     }
 
@@ -901,9 +888,6 @@ mod tests {
         }
         fn kv_db(&self) -> crate::models::ports::storage::KvDb {
             self.kv.clone()
-        }
-        fn ts_db(&self) -> crate::models::ports::storage::TsDb {
-            self.ts.clone()
         }
         fn gen_id(&self, _t: &dyn ITrx, _: &str) -> String {
             String::new()

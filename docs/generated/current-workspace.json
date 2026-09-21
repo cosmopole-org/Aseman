@@ -40,31 +40,45 @@
       "client-cli/package-lock.json"
     ],
     "tracked_dist_file_count": 15,
-    "tracked_file_count": 428,
+    "tracked_file_count": 669,
     "tracked_files_by_top_level": {
+      ".cargo": 1,
       ".claude": 1,
       ".gitattributes": 1,
       ".github": 1,
       ".gitignore": 1,
+      "AGENTS.md": 1,
       "CREW_METER_AUTHORITY_NOTE.md": 1,
+      "Cargo.lock": 1,
+      "Cargo.toml": 1,
       "README.md": 1,
       "bench-all.sh": 1,
       "build-dist.sh": 1,
       "client-cli": 6,
+      "clippy.toml": 1,
       "cmd": 7,
+      "contracts": 57,
+      "crates": 31,
       "dist": 15,
-      "node": 280,
+      "docs": 72,
+      "modules": 21,
+      "node": 284,
+      "plan": 18,
       "run-nodes.sh": 1,
-      "scripts": 1,
+      "rust-toolchain.toml": 1,
+      "rustfmt.toml": 1,
+      "scripts": 16,
       "sdk": 10,
       "stop-nodes.sh": 1,
+      "tests": 13,
       "vm-sdk": 8,
       "vms": 80,
-      "wiki": 11
+      "wiki": 11,
+      "xtask": 3
     },
     "tracked_source_files_by_extension": {
-      ".py": 2,
-      ".rs": 330,
+      ".py": 21,
+      ".rs": 366,
       ".sh": 6,
       ".ts": 1
     }
@@ -494,7 +508,24 @@
             "scope": "normal"
           },
           {
+            "name": "base64",
+            "scope": "normal"
+          },
+          {
+            "name": "chacha20poly1305",
+            "scope": "normal",
+            "version": "0.10.1"
+          },
+          {
             "name": "rocksdb",
+            "scope": "normal"
+          },
+          {
+            "name": "rsa",
+            "scope": "normal"
+          },
+          {
+            "name": "serde_json",
             "scope": "normal"
           },
           {
@@ -534,6 +565,16 @@
           {
             "name": "aseman-contracts",
             "path": "crates/aseman-contracts",
+            "scope": "normal"
+          },
+          {
+            "name": "aseman-domain",
+            "path": "crates/aseman-domain",
+            "scope": "normal"
+          },
+          {
+            "name": "aseman-ports",
+            "path": "crates/aseman-ports",
             "scope": "normal"
           },
           {
@@ -788,12 +829,8 @@
             "scope": "normal"
           },
           {
-            "features": [
-              "sha2"
-            ],
             "name": "rsa",
-            "scope": "normal",
-            "version": "0.9.10"
+            "scope": "normal"
           },
           {
             "default-features": false,
@@ -1029,6 +1066,78 @@
           {
             "kind": "lib",
             "name": "aseman-storage-conformance",
+            "path": "src/lib.rs"
+          }
+        ],
+        "version": {
+          "workspace": true
+        }
+      },
+      {
+        "dependencies": [
+          {
+            "name": "aseman-application",
+            "path": "crates/aseman-application",
+            "scope": "dev"
+          },
+          {
+            "name": "aseman-config",
+            "path": "crates/aseman-config",
+            "scope": "dev"
+          },
+          {
+            "name": "aseman-contracts",
+            "path": "crates/aseman-contracts",
+            "scope": "dev"
+          },
+          {
+            "name": "aseman-domain",
+            "path": "crates/aseman-domain",
+            "scope": "dev"
+          },
+          {
+            "name": "aseman-ports",
+            "path": "crates/aseman-ports",
+            "scope": "dev"
+          },
+          {
+            "name": "aseman-storage-legacy",
+            "path": "modules/storage-legacy",
+            "scope": "dev"
+          },
+          {
+            "name": "aseman-storage-postgres",
+            "path": "modules/storage-postgres",
+            "scope": "dev"
+          },
+          {
+            "name": "postgres",
+            "scope": "dev"
+          },
+          {
+            "name": "rsa",
+            "scope": "dev"
+          },
+          {
+            "name": "serde_json",
+            "scope": "dev"
+          },
+          {
+            "name": "uuid",
+            "scope": "dev"
+          }
+        ],
+        "description": "A309 end-to-end legacy-to-PostgreSQL migration protocol tests.",
+        "edition": {
+          "workspace": true
+        },
+        "features": {},
+        "manifest": "tests/migration/Cargo.toml",
+        "name": "aseman-migration-e2e",
+        "targets": [
+          {
+            "kind": "lib",
+            "name": "aseman-migration-e2e",
             "path": "src/lib.rs"
           }
         ],
@@ -1573,6 +1682,7 @@
           "node/crates/*",
           "tests/contracts/module",
           "tests/contracts/storage",
+          "tests/migration",
           "vm-sdk",
           "vms/docker",
           "vms/elpian",

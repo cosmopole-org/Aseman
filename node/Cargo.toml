@@ -24,6 +24,7 @@ aseman-domain = { path = "../crates/aseman-domain" }
 aseman-module-runtime = { path = "../crates/aseman-module-runtime" }
 aseman-observability = { path = "../crates/aseman-observability" }
 aseman-ports = { path = "../crates/aseman-ports" }
+aseman-storage-legacy = { path = "../modules/storage-legacy" }
 anyhow = "1.0.102"
 base64 = "0.22.1"
 chacha20poly1305 = "0.10.1"

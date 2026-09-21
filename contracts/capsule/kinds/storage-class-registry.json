@@ -13,6 +13,7 @@
     {"kind":"realtime.event","table":"events","storage_class":"realtime","consistency":"append_linearizable","owner_scope":"global","required_capabilities":["append_only.verifiable","indexes.unique","events.change_stream"]},
     {"kind":"realtime.subscription","table":"subscriptions","storage_class":"realtime","consistency":"serializable","owner_scope":"creature","required_capabilities":["indexes.unique"]},
     {"kind":"realtime.consumer_offset","table":"consumer_offsets","storage_class":"realtime","consistency":"serializable","owner_scope":"creature","required_capabilities":["indexes.unique"]},
-    {"kind":"realtime.dead_letter","table":"dead_letters","storage_class":"realtime","consistency":"serializable","owner_scope":"creature","required_capabilities":["indexes.unique"]}
+    {"kind":"realtime.dead_letter","table":"dead_letters","storage_class":"realtime","consistency":"serializable","owner_scope":"creature","required_capabilities":["indexes.unique"]},
+    {"kind":"finance.legacy_record","table":"legacy_finance_records","storage_class":"finance","consistency":"serializable","owner_scope":"global","required_capabilities":["indexes.unique","append_only.verifiable"]}
   ]
 }

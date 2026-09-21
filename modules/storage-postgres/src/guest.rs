@@ -980,3 +980,143 @@ mod tests {
         );
     }
 }
+
+/// ADR 0021 reserved, migration-owned table for legacy guest `dbOp` pairs.
+pub const LEGACY_KV_TABLE: &str = "_aseman_legacy_kv";
+/// The reserved name, pre-quoted. It deliberately bypasses `quoted`, whose user-identifier
+/// validation rejects the reserved `_aseman_` prefix that guests may never create.
+const LEGACY_KV_TABLE_SQL: &str = "\"_aseman_legacy_kv\"";
+
+/// Outcome of importing legacy guest KV capsules into one creature database.
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
+pub struct LegacyKvImport {
+    pub inserted: u64,
+    pub already_present: u64,
+}
+
+impl GuestPoolRouter {
+    /// Import `guest.legacy_kv` capsules into the binding's own database (ADR 0021).
+    ///
+    /// Every capsule must be `GuestData` owned by the binding's creature, so one
+    /// creature's pairs can never land in another creature's database. Replays of an
+    /// identical capsule are idempotent; a different capsule at the same identity or
+    /// `(namespace, key)` is a conflict.
+    pub fn import_legacy_kv(
+        &self,
+        binding: &ProvisionedGuestDatabase,
+        capsules: &[aseman_contracts::capsule::CapsuleEnvelope],
+    ) -> GuestPostgresResult<LegacyKvImport> {
+        use aseman_contracts::capsule::{CapsuleValue, OwnerScope, StorageClass};
+        let mut rows = Vec::with_capacity(capsules.len());
+        for capsule in capsules {
+            capsule
+                .verify()
+                .map_err(|error| GuestPostgresError::Invalid(error.to_string()))?;
+            if capsule.kind.0 != "guest.legacy_kv"
+                || capsule.storage_class != StorageClass::GuestData
+                || capsule.owner_scope != OwnerScope::Creature(binding.binding.creature_id)
+                || capsule.tombstone
+            {
+                return Err(GuestPostgresError::Invalid(
+                    "legacy KV capsule does not belong to this creature database".to_owned(),
+                ));
+            }
+            let Some(CapsuleValue::Object(body)) = &capsule.body else {
+                return Err(GuestPostgresError::Invalid(
+                    "legacy KV capsule has no body".to_owned(),
+                ));
+            };
+            let text = |name: &str| match body.get(name) {
+                Some(CapsuleValue::Text(value)) => Ok(value.clone()),
+                _ => Err(GuestPostgresError::Invalid(format!(
+                    "legacy KV capsule lacks {name}"
+                ))),
+            };
+            let namespace = text("namespace")?;
+            if !matches!(namespace.as_str(), "dbop" | "applet_db") || body.len() != 3 {
+                return Err(GuestPostgresError::Invalid(
+                    "legacy KV capsule has an unreviewed shape".to_owned(),
+                ));
+            }
+            let canonical = capsule
+                .canonical_bytes()
+                .map_err(|error| GuestPostgresError::Invalid(error.to_string()))?;
+            rows.push((
+                capsule.clone(),
+                namespace,
+                text("key")?,
+                text("value")?,
+                canonical,
+            ));
+        }
+        self.with_transaction(binding, |transaction| {
+            transaction
+                .batch_execute(&format!(
+                    "CREATE TABLE IF NOT EXISTS {GUEST_SCHEMA}.{table} (\
+                       _aseman_id UUID PRIMARY KEY, \
+                       _aseman_revision BIGINT NOT NULL CHECK (_aseman_revision > 0), \
+                       _aseman_created_at_micros BIGINT NOT NULL, \
+                       _aseman_updated_at_micros BIGINT NOT NULL, \
+                       _aseman_integrity BYTEA NOT NULL CHECK (octet_length(_aseman_integrity) = 32), \
+                       _aseman_tombstone BOOLEAN NOT NULL DEFAULT FALSE, \
+                       _aseman_capsule_cbor BYTEA NOT NULL, \
+                       namespace TEXT NOT NULL CHECK (namespace IN ('dbop', 'applet_db')), \
+                       key TEXT NOT NULL, \
+                       value TEXT NOT NULL, \
+                       UNIQUE (namespace, key))",
+                    table = LEGACY_KV_TABLE_SQL
+                ))
+                .map_err(database_error)?;
+            let mut report = LegacyKvImport::default();
+            for (capsule, namespace, key, value, canonical) in &rows {
+                let id = uuid::Uuid::from_bytes(capsule.id.0);
+                let revision = i64::try_from(capsule.revision)
+                    .map_err(|_| GuestPostgresError::Invalid("revision overflow".to_owned()))?;
+                let inserted = transaction
+                    .execute(
+                        &format!(
+                            "INSERT INTO {GUEST_SCHEMA}.{} (_aseman_id, _aseman_revision, \
+                             _aseman_created_at_micros, _aseman_updated_at_micros, _aseman_integrity, \
+                             _aseman_capsule_cbor, namespace, key, value) \
+                             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) ON CONFLICT DO NOTHING",
+                            LEGACY_KV_TABLE_SQL
+                        ),
+                        &[
+                            &id,
+                            &revision,
+                            &capsule.created_at_micros,
+                            &capsule.updated_at_micros,
+                            &capsule.integrity_hash.bytes,
+                            canonical,
+                            namespace,
+                            key,
+                            value,
+                        ],
+                    )
+                    .map_err(database_error)?;
+                if inserted == 1 {
+                    report.inserted += 1;
+                    continue;
+                }
+                let existing = transaction
+                    .query_opt(
+                        &format!(
+                            "SELECT _aseman_capsule_cbor FROM {GUEST_SCHEMA}.{} \
+                             WHERE _aseman_id = $1 AND namespace = $2 AND key = $3",
+                            LEGACY_KV_TABLE_SQL
+                        ),
+                        &[&id, namespace, key],
+                    )
+                    .map_err(database_error)?
+                    .map(|row| row.get::<_, Vec<u8>>(0));
+                if existing.as_deref() != Some(canonical.as_slice()) {
+                    return Err(GuestPostgresError::Invalid(
+                        "legacy KV import conflicts with an existing record".to_owned(),
+                    ));
+                }
+                report.already_present += 1;
+            }
+            Ok(report)
+        })
+    }
+}

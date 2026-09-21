@@ -1,0 +1,25 @@
+[package]
+name = "aseman-migration-e2e"
+description = "A309 end-to-end legacy-to-PostgreSQL migration protocol tests."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+publish = false
+
+[dev-dependencies]
+aseman-application = { path = "../../crates/aseman-application" }
+aseman-config = { path = "../../crates/aseman-config" }
+aseman-contracts = { path = "../../crates/aseman-contracts" }
+aseman-domain = { path = "../../crates/aseman-domain" }
+aseman-ports = { path = "../../crates/aseman-ports" }
+aseman-storage-legacy = { path = "../../modules/storage-legacy" }
+aseman-storage-postgres = { path = "../../modules/storage-postgres" }
+postgres.workspace = true
+rsa.workspace = true
+serde_json.workspace = true
+uuid.workspace = true
+
+[lints]
+workspace = true

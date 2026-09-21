@@ -30,6 +30,16 @@
 26. OpenRaft is removed after its responsibilities migrate to capsule storage and fenced coordination (ADR 0012).
 27. Production defaults to three stateless Aseman control replicas behind one endpoint with PostgreSQL fenced leases; compact mode uses one replica (ADR 0013/A014).
 28. PostgreSQL durable realtime/outbox is the default; the in-memory provider is development-only (ADR 0014).
+29. Schemaless legacy JSON documents migrate as subject-bound document capsules whose structured `document` field has no native column; derived splats are rebuilt and compared, never migrated (ADR 0016).
+30. Legacy finance migrates as one reconciled, immutable `finance.legacy_record` epoch; P8 converts it to double-entry, and derived counters are verified, never migrated (ADR 0017).
+31. Store membership records a typed principal (local creature, local program, or remote principal) and the exact legacy permission set; dangling local members fail closed (ADR 0018).
+32. Legacy custodial private keys are verified against their creature and never exported; cutover requires ADR 0009 proof-of-possession enrollment (ADR 0019, RL-019).
+33. Legacy ID counters are verified and never migrated, dead chain-callback state is dropped, and superuser flags fail closed for review (ADR 0020).
+34. Legacy guest `dbOp` pairs migrate into each machine creature's isolated guest database in the reserved `_aseman_legacy_kv` table (ADR 0021).
+35. Legacy observed VM runtime is not exported; the native-legacy VMM keeps it and P5 reconciliation rebuilds `core.workload`. Durable VM intent (gateway routes, alarms, resource stores/entities, entity configuration and artifacts) migrates as core capsules (ADR 0022).
+36. Legacy secrets migrate as authenticated ciphertext and are re-wrapped with AAD in P4; login grants are dropped (ADR 0023).
+37. Legacy bridge grants migrate by token digest with topic claims (ADR 0024).
+38. The legacy Hashgraph store remains consensus-provider state with a block-digest checkpoint (ADR 0025).
 
 ## Resolved blocking ADR set
 

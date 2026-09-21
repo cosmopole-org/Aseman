@@ -55,6 +55,10 @@
       "path": "contracts/capsule/guest/isolation-rules.json"
     },
     {
+      "digest": "sha256:7d2a86b730d74d34b6e30a4fe2a4394f9fc18fdfa14329f4c63c39c92fa7a079",
+      "path": "contracts/capsule/guest/legacy-kv-table.json"
+    },
+    {
       "digest": "sha256:e5d44dd58dcc6ae69bc5263d64b4e647f0083eb264c659bb89506f5fedb40f36",
       "path": "contracts/capsule/guest/schema-command.schema.json"
     },
@@ -63,15 +67,15 @@
       "path": "contracts/capsule/guest/schema-mutation.schema.json"
     },
     {
-      "digest": "sha256:5b5fb8a8b3187f382f285182e1f0f2ced01e0229e96bf0b3f484a10f60b8df89",
+      "digest": "sha256:4ab858ca47bb205dd7868f654419da010ac6ab52d0b51a791aa3132ed2ac1b4d",
       "path": "contracts/capsule/kinds/core-logical-schemas.json"
     },
     {
-      "digest": "sha256:f4e4be9f9698e4737dadbde7bec3be5967d7e618597ef31f508982d1ea55d6b6",
+      "digest": "sha256:f9761ccb6a3b07bdcd15dbc7f3b76128345b63cd6606a38c8802feb4ca8e4c7e",
       "path": "contracts/capsule/kinds/core-logical-schemas.schema.json"
     },
     {
-      "digest": "sha256:6f72e6cc4792e9dc1eb49454e49efd8334da329ed40d7b4024a8ca85094c9cc0",
+      "digest": "sha256:e9922ed1e0adb04bed15f1d62a601b07f6219dc181f02b8b7662a7e525947d06",
       "path": "contracts/capsule/kinds/core-registry.json"
     },
     {
@@ -79,15 +83,15 @@
       "path": "contracts/capsule/kinds/core-registry.schema.json"
     },
     {
-      "digest": "sha256:cf0a1c9a05ca99c192286d912f195d7a34211ce82210fb95c36796d89c4b0009",
+      "digest": "sha256:7ec3875517611d016fc014b78ecd22069be10a1a3803400b487efe9d7abcd4e1",
       "path": "contracts/capsule/kinds/storage-class-logical-schemas.json"
     },
     {
-      "digest": "sha256:6878352fa5f8306eaf7d5e16ad889b5fd6ae1ebabb3c446b432d4208840a5df8",
+      "digest": "sha256:2c3a7e3e9a8d92addeb090bcf3aa487c344a3535c8f8e9f8d4804b4b6fd10cef",
       "path": "contracts/capsule/kinds/storage-class-logical-schemas.schema.json"
     },
     {
-      "digest": "sha256:8384efeb5d729afb4c660966b47ace68c8b34a658a3bfca5e861fcee2ff476de",
+      "digest": "sha256:1bc523adbf58aaa7cf4a4b89a7b8c4667f33bdbeb880f695154d4d3e9ea79787",
       "path": "contracts/capsule/kinds/storage-class-registry.json"
     },
     {
@@ -373,6 +377,179 @@
       ],
       "storage_class": "core",
       "table": "entities"
+    },
+    {
+      "consistency": "serializable",
+      "kind": "core.user_metadata",
+      "owner_scope": "global",
+      "required_capabilities": [
+        "relationships.foreign_keys",
+        "indexes.unique"
+      ],
+      "storage_class": "core",
+      "table": "user_metadata_documents"
+    },
+    {
+      "consistency": "serializable",
+      "kind": "core.creature_metadata",
+      "owner_scope": "global",
+      "required_capabilities": [
+        "relationships.foreign_keys",
+        "indexes.unique"
+      ],
+      "storage_class": "core",
+      "table": "creature_metadata_documents"
+    },
+    {
+      "consistency": "serializable",
+      "kind": "core.store_metadata",
+      "owner_scope": "creature",
+      "required_capabilities": [
+        "relationships.foreign_keys",
+        "indexes.unique"
+      ],
+      "storage_class": "core",
+      "table": "store_metadata_documents"
+    },
+    {
+      "consistency": "serializable",
+      "kind": "core.program_metadata",
+      "owner_scope": "creature",
+      "required_capabilities": [
+        "relationships.foreign_keys",
+        "indexes.unique"
+      ],
+      "storage_class": "core",
+      "table": "program_metadata_documents"
+    },
+    {
+      "consistency": "serializable",
+      "kind": "finance.legacy_record",
+      "owner_scope": "global",
+      "required_capabilities": [
+        "indexes.unique",
+        "append_only.verifiable"
+      ],
+      "storage_class": "finance",
+      "table": "legacy_finance_records"
+    },
+    {
+      "consistency": "serializable",
+      "kind": "core.creature_type",
+      "owner_scope": "global",
+      "required_capabilities": [
+        "indexes.unique"
+      ],
+      "storage_class": "core",
+      "table": "creature_types"
+    },
+    {
+      "consistency": "serializable",
+      "kind": "core.gateway_route",
+      "owner_scope": "creature",
+      "required_capabilities": [
+        "relationships.foreign_keys",
+        "indexes.unique"
+      ],
+      "storage_class": "core",
+      "table": "gateway_routes"
+    },
+    {
+      "consistency": "serializable",
+      "kind": "core.program_alarm",
+      "owner_scope": "creature",
+      "required_capabilities": [
+        "relationships.foreign_keys",
+        "indexes.unique"
+      ],
+      "storage_class": "core",
+      "table": "program_alarms"
+    },
+    {
+      "consistency": "serializable",
+      "kind": "core.vm_resource_store",
+      "owner_scope": "creature",
+      "required_capabilities": [
+        "relationships.foreign_keys",
+        "indexes.unique"
+      ],
+      "storage_class": "core",
+      "table": "vm_resource_stores"
+    },
+    {
+      "consistency": "serializable",
+      "kind": "core.vm_resource_entity",
+      "owner_scope": "creature",
+      "required_capabilities": [
+        "relationships.foreign_keys",
+        "indexes.unique"
+      ],
+      "storage_class": "core",
+      "table": "vm_resource_entities"
+    },
+    {
+      "consistency": "serializable",
+      "kind": "core.entity_config",
+      "owner_scope": "creature",
+      "required_capabilities": [
+        "relationships.foreign_keys",
+        "indexes.unique"
+      ],
+      "storage_class": "core",
+      "table": "entity_configs"
+    },
+    {
+      "consistency": "serializable",
+      "kind": "core.entity_artifact",
+      "owner_scope": "creature",
+      "required_capabilities": [
+        "relationships.foreign_keys",
+        "indexes.unique"
+      ],
+      "storage_class": "core",
+      "table": "entity_artifacts"
+    },
+    {
+      "consistency": "serializable",
+      "kind": "core.creature_secret",
+      "owner_scope": "creature",
+      "required_capabilities": [
+        "relationships.foreign_keys",
+        "indexes.unique"
+      ],
+      "storage_class": "core",
+      "table": "creature_secrets"
+    },
+    {
+      "consistency": "serializable",
+      "kind": "core.secret_grant",
+      "owner_scope": "creature",
+      "required_capabilities": [
+        "relationships.foreign_keys",
+        "indexes.unique"
+      ],
+      "storage_class": "core",
+      "table": "secret_grants"
+    },
+    {
+      "consistency": "serializable",
+      "kind": "core.bridge_grant",
+      "owner_scope": "creature",
+      "required_capabilities": [
+        "indexes.unique"
+      ],
+      "storage_class": "core",
+      "table": "bridge_grants"
+    },
+    {
+      "consistency": "serializable",
+      "kind": "core.bridge_topic",
+      "owner_scope": "creature",
+      "required_capabilities": [
+        "indexes.unique"
+      ],
+      "storage_class": "core",
+      "table": "bridge_topics"
     }
   ],
   "digest": "sha2-256",

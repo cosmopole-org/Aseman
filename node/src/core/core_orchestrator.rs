@@ -581,7 +581,7 @@ impl ICore for Core {
     fn close(&self) {
         if let Some(tools) = self.tools.lock().unwrap().clone() {
             tools.network().chain().close();
-            // KvDb / TsDb close on drop via their Arc owners.
+            // The key/value store and the private QuestDB pool close on drop via their Arc owners.
             tools.vmm().close_kvdb();
         }
     }

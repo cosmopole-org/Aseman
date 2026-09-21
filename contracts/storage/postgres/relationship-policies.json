@@ -6,7 +6,8 @@
     {"kind":"core.store","name":"creature","required":true,"on_delete":"restrict"},
     {"kind":"core.store","name":"parent","required":false,"on_delete":"restrict"},
     {"kind":"core.store_membership","name":"store","required":true,"on_delete":"cascade"},
-    {"kind":"core.store_membership","name":"user","required":true,"on_delete":"cascade"},
+    {"kind":"core.store_membership","name":"creature","required":false,"on_delete":"cascade"},
+    {"kind":"core.store_membership","name":"program","required":false,"on_delete":"cascade"},
     {"kind":"core.access_level","name":"store","required":true,"on_delete":"cascade"},
     {"kind":"core.capability_grant","name":"subject","required":true,"on_delete":"restrict"},
     {"kind":"core.capability_grant","name":"issuer","required":true,"on_delete":"restrict"},
@@ -22,6 +23,21 @@
     {"kind":"core.guest_schema_definition","name":"binding","required":true,"on_delete":"cascade"},
     {"kind":"core.chain","name":"store","required":true,"on_delete":"restrict"},
     {"kind":"core.chain_shard","name":"chain","required":true,"on_delete":"cascade"},
-    {"kind":"core.entity","name":"program","required":true,"on_delete":"cascade"}
+    {"kind":"core.entity","name":"program","required":true,"on_delete":"cascade"},
+    {"kind":"core.user_metadata","name":"creature","required":true,"on_delete":"cascade"},
+    {"kind":"core.creature_metadata","name":"creature","required":true,"on_delete":"cascade"},
+    {"kind":"core.store_metadata","name":"store","required":true,"on_delete":"cascade"},
+    {"kind":"core.program_metadata","name":"program","required":true,"on_delete":"cascade"},
+    {"kind":"core.gateway_route","name":"creature","required":true,"on_delete":"cascade"},
+    {"kind":"core.gateway_route","name":"program","required":true,"on_delete":"cascade"},
+    {"kind":"core.program_alarm","name":"program","required":true,"on_delete":"cascade"},
+    {"kind":"core.program_alarm","name":"store","required":true,"on_delete":"cascade"},
+    {"kind":"core.vm_resource_store","name":"creature","required":true,"on_delete":"cascade"},
+    {"kind":"core.vm_resource_entity","name":"resource_store","required":true,"on_delete":"cascade"},
+    {"kind":"core.entity_config","name":"entity","required":true,"on_delete":"cascade"},
+    {"kind":"core.entity_artifact","name":"entity","required":true,"on_delete":"cascade"},
+    {"kind":"core.creature_secret","name":"creature","required":true,"on_delete":"cascade"},
+    {"kind":"core.secret_grant","name":"secret","required":true,"on_delete":"cascade"},
+    {"kind":"core.secret_grant","name":"grantee","required":false,"on_delete":"cascade"}
   ]
 }

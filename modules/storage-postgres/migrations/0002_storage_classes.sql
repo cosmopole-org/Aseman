@@ -430,6 +430,37 @@ CREATE TABLE IF NOT EXISTS aseman_realtime."dead_letters" (
   CONSTRAINT ck_live_dead_letters_failed_at_micros CHECK (tombstone OR "failed_at_micros" IS NOT NULL)
 );
 
+CREATE TABLE IF NOT EXISTS aseman_finance."legacy_finance_records" (
+  id UUID PRIMARY KEY,
+  schema_version INTEGER NOT NULL CHECK (schema_version > 0),
+  revision BIGINT NOT NULL CHECK (revision > 0),
+  created_at_micros BIGINT NOT NULL,
+  updated_at_micros BIGINT NOT NULL CHECK (updated_at_micros >= created_at_micros),
+  previous_integrity BYTEA,
+  integrity_hash BYTEA NOT NULL CHECK (octet_length(integrity_hash) = 32),
+  owner_type TEXT NOT NULL,
+  owner_id UUID,
+  owner_name TEXT,
+  tombstone BOOLEAN NOT NULL DEFAULT FALSE,
+  capsule_cbor BYTEA NOT NULL,
+  "record_family" TEXT,
+  "legacy_key" TEXT,
+  "entry_count" BIGINT,
+  "content_digest" BYTEA,
+  "currency" TEXT,
+  "scale" BIGINT,
+  CONSTRAINT ck_revision_chain CHECK ((revision = 1) = (previous_integrity IS NULL)),
+  CONSTRAINT ck_previous_integrity CHECK (previous_integrity IS NULL OR octet_length(previous_integrity) = 32),
+  CONSTRAINT ck_owner_scope CHECK ((owner_type = 'global' AND owner_id IS NULL AND owner_name IS NULL) OR (owner_type IN ('node', 'creature') AND owner_id IS NOT NULL AND owner_name IS NULL) OR (owner_type = 'module' AND owner_id IS NULL AND owner_name IS NOT NULL)),
+  CONSTRAINT ck_live_legacy_finance_records_record_family CHECK (tombstone OR "record_family" IS NOT NULL),
+  CONSTRAINT ck_live_legacy_finance_records_legacy_key CHECK (tombstone OR "legacy_key" IS NOT NULL),
+  CONSTRAINT ck_live_legacy_finance_records_entry_count CHECK (tombstone OR "entry_count" IS NOT NULL),
+  CONSTRAINT ck_live_legacy_finance_records_content_digest CHECK (tombstone OR "content_digest" IS NOT NULL),
+  CONSTRAINT ck_live_legacy_finance_records_currency CHECK (tombstone OR "currency" IS NOT NULL),
+  CONSTRAINT ck_live_legacy_finance_records_scale CHECK (tombstone OR "scale" IS NOT NULL),
+  CONSTRAINT ck_append_envelope CHECK (revision = 1 AND previous_integrity IS NULL AND NOT tombstone)
+);
+
 ALTER TABLE aseman_telemetry."workload_samples" DROP CONSTRAINT IF EXISTS fk_workload_samples_workload;
 ALTER TABLE aseman_telemetry."workload_samples" ADD CONSTRAINT fk_workload_samples_workload FOREIGN KEY ("workload") REFERENCES aseman_core."workloads"(id) ON DELETE RESTRICT;
 CREATE INDEX IF NOT EXISTS ix_workload_samples_observed_at_micros ON aseman_telemetry."workload_samples" ("observed_at_micros", id) WHERE NOT tombstone;
@@ -505,5 +536,9 @@ ALTER TABLE aseman_realtime."dead_letters" ADD CONSTRAINT fk_dead_letters_event 
 CREATE UNIQUE INDEX IF NOT EXISTS uq_dead_letters_event_consumer_id ON aseman_realtime."dead_letters" ("event", "consumer_id") WHERE NOT tombstone;
 CREATE INDEX IF NOT EXISTS ix_dead_letters_failed_at_micros ON aseman_realtime."dead_letters" ("failed_at_micros", id) WHERE NOT tombstone;
 CREATE INDEX IF NOT EXISTS brin_dead_letters_failed_at_micros ON aseman_realtime."dead_letters" USING BRIN ("failed_at_micros");
+
+CREATE UNIQUE INDEX IF NOT EXISTS uq_legacy_finance_records_record_family_legacy_key ON aseman_finance."legacy_finance_records" ("record_family", "legacy_key") WHERE NOT tombstone;
+DROP TRIGGER IF EXISTS trg_immutable_legacy_finance_records ON aseman_finance."legacy_finance_records";
+CREATE TRIGGER trg_immutable_legacy_finance_records BEFORE UPDATE OR DELETE ON aseman_finance."legacy_finance_records" FOR EACH ROW EXECUTE FUNCTION aseman_storage.reject_capsule_mutation();
 
 COMMIT;

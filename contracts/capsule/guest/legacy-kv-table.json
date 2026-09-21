@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "decision": "docs/decisions/0021-legacy-guest-kv.md",
+  "capsule_kind": "guest.legacy_kv",
+  "reserved_table": {
+    "name": "_aseman_legacy_kv",
+    "columns": {
+      "namespace": {"field_type": "text", "required": true, "default": null},
+      "key": {"field_type": "text", "required": true, "default": null},
+      "value": {"field_type": "text", "required": true, "default": null}
+    },
+    "namespace_values": ["dbop", "applet_db"],
+    "primary_key": ["namespace", "key"],
+    "indexes": [],
+    "foreign_keys": []
+  },
+  "caller_selectable": [],
+  "created_by": "guest provider at import, never by guest schema mutation"
+}

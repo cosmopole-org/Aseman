@@ -40,23 +40,18 @@ use super::config::ClusterConfig;
 struct StubStorage {
     root: String,
     kv: crate::models::ports::storage::KvDb,
-    ts: crate::models::ports::storage::TsDb,
 }
 
 impl StubStorage {
     fn new(dir: &str) -> Arc<Self> {
         std::fs::create_dir_all(dir).unwrap();
-        let kv: crate::models::ports::storage::KvDb =
-            Arc::new(rocksdb::TransactionDB::open_default(dir).expect("stub kvdb"));
-        let manager = r2d2_postgres::PostgresConnectionManager::new(
-            "host=127.0.0.1 port=1 user=x dbname=x".parse().unwrap(),
-            postgres::tls::NoTls,
+        let kv: crate::models::ports::storage::KvDb = Arc::new(
+            aseman_storage_legacy::RocksDbKvStore::open_default(std::path::Path::new(dir))
+                .expect("stub kvdb"),
         );
-        let ts = r2d2::Builder::new().build_unchecked(manager);
         Arc::new(StubStorage {
             root: dir.to_string(),
             kv,
-            ts,
         })
     }
 }
@@ -67,9 +62,6 @@ impl IStorage for StubStorage {
     }
     fn kv_db(&self) -> crate::models::ports::storage::KvDb {
         self.kv.clone()
-    }
-    fn ts_db(&self) -> crate::models::ports::storage::TsDb {
-        self.ts.clone()
     }
     fn gen_id(&self, _t: &dyn ITrx, _: &str) -> String {
         String::new()
@@ -400,9 +392,6 @@ impl IStorage for RootedStorage {
     }
     fn kv_db(&self) -> crate::models::ports::storage::KvDb {
         self.inner.kv_db()
-    }
-    fn ts_db(&self) -> crate::models::ports::storage::TsDb {
-        self.inner.ts_db()
     }
     fn gen_id(&self, t: &dyn ITrx, o: &str) -> String {
         self.inner.gen_id(t, o)

@@ -36,6 +36,22 @@ Encoding: `deterministic-cbor-v1`; integrity: `sha2-256`.
 | `core.chain` | `chains` | `core` | `serializable` | `creature` |
 | `core.chain_shard` | `chain_shards` | `core` | `serializable` | `creature` |
 | `core.entity` | `entities` | `core` | `snapshot` | `creature` |
+| `core.user_metadata` | `user_metadata_documents` | `core` | `serializable` | `global` |
+| `core.creature_metadata` | `creature_metadata_documents` | `core` | `serializable` | `global` |
+| `core.store_metadata` | `store_metadata_documents` | `core` | `serializable` | `creature` |
+| `core.program_metadata` | `program_metadata_documents` | `core` | `serializable` | `creature` |
+| `finance.legacy_record` | `legacy_finance_records` | `finance` | `serializable` | `global` |
+| `core.creature_type` | `creature_types` | `core` | `serializable` | `global` |
+| `core.gateway_route` | `gateway_routes` | `core` | `serializable` | `creature` |
+| `core.program_alarm` | `program_alarms` | `core` | `serializable` | `creature` |
+| `core.vm_resource_store` | `vm_resource_stores` | `core` | `serializable` | `creature` |
+| `core.vm_resource_entity` | `vm_resource_entities` | `core` | `serializable` | `creature` |
+| `core.entity_config` | `entity_configs` | `core` | `serializable` | `creature` |
+| `core.entity_artifact` | `entity_artifacts` | `core` | `serializable` | `creature` |
+| `core.creature_secret` | `creature_secrets` | `core` | `serializable` | `creature` |
+| `core.secret_grant` | `secret_grants` | `core` | `serializable` | `creature` |
+| `core.bridge_grant` | `bridge_grants` | `core` | `serializable` | `creature` |
+| `core.bridge_topic` | `bridge_topics` | `core` | `serializable` | `creature` |
 
 ## Contract inputs
 
@@ -53,15 +69,16 @@ Encoding: `deterministic-cbor-v1`; integrity: `sha2-256`.
 | `contracts/capsule/guest/fixtures/invalid-caller-routing.json` | `sha256:b48d583e43a34d0b5f06897c0aa6769442d665955759679bcb1a4757b1ede051` |
 | `contracts/capsule/guest/fixtures/valid-multi-table.json` | `sha256:f2e19c02e568e81a0d71f78cc3f893e42691cfab52f5073d85183dc4912ea365` |
 | `contracts/capsule/guest/isolation-rules.json` | `sha256:e15bfcf11512f7089651362eb6c3452cd8234930006a7aafc0b7b95590b832ec` |
+| `contracts/capsule/guest/legacy-kv-table.json` | `sha256:7d2a86b730d74d34b6e30a4fe2a4394f9fc18fdfa14329f4c63c39c92fa7a079` |
 | `contracts/capsule/guest/schema-command.schema.json` | `sha256:e5d44dd58dcc6ae69bc5263d64b4e647f0083eb264c659bb89506f5fedb40f36` |
 | `contracts/capsule/guest/schema-mutation.schema.json` | `sha256:79cd855b2b4af54ba37345cdcc09c40325cfe2bd0a7e58028e85d8a728ba56fb` |
-| `contracts/capsule/kinds/core-logical-schemas.json` | `sha256:5b5fb8a8b3187f382f285182e1f0f2ced01e0229e96bf0b3f484a10f60b8df89` |
-| `contracts/capsule/kinds/core-logical-schemas.schema.json` | `sha256:f4e4be9f9698e4737dadbde7bec3be5967d7e618597ef31f508982d1ea55d6b6` |
-| `contracts/capsule/kinds/core-registry.json` | `sha256:6f72e6cc4792e9dc1eb49454e49efd8334da329ed40d7b4024a8ca85094c9cc0` |
+| `contracts/capsule/kinds/core-logical-schemas.json` | `sha256:4ab858ca47bb205dd7868f654419da010ac6ab52d0b51a791aa3132ed2ac1b4d` |
+| `contracts/capsule/kinds/core-logical-schemas.schema.json` | `sha256:f9761ccb6a3b07bdcd15dbc7f3b76128345b63cd6606a38c8802feb4ca8e4c7e` |
+| `contracts/capsule/kinds/core-registry.json` | `sha256:e9922ed1e0adb04bed15f1d62a601b07f6219dc181f02b8b7662a7e525947d06` |
 | `contracts/capsule/kinds/core-registry.schema.json` | `sha256:3c6f29d9086fa764910bc02dda2866aada44cdccfd838f511fab1fbb24c085e8` |
-| `contracts/capsule/kinds/storage-class-logical-schemas.json` | `sha256:cf0a1c9a05ca99c192286d912f195d7a34211ce82210fb95c36796d89c4b0009` |
-| `contracts/capsule/kinds/storage-class-logical-schemas.schema.json` | `sha256:6878352fa5f8306eaf7d5e16ad889b5fd6ae1ebabb3c446b432d4208840a5df8` |
-| `contracts/capsule/kinds/storage-class-registry.json` | `sha256:8384efeb5d729afb4c660966b47ace68c8b34a658a3bfca5e861fcee2ff476de` |
+| `contracts/capsule/kinds/storage-class-logical-schemas.json` | `sha256:7ec3875517611d016fc014b78ecd22069be10a1a3803400b487efe9d7abcd4e1` |
+| `contracts/capsule/kinds/storage-class-logical-schemas.schema.json` | `sha256:2c3a7e3e9a8d92addeb090bcf3aa487c344a3535c8f8e9f8d4804b4b6fd10cef` |
+| `contracts/capsule/kinds/storage-class-registry.json` | `sha256:1bc523adbf58aaa7cf4a4b89a7b8c4667f33bdbeb880f695154d4d3e9ea79787` |
 | `contracts/capsule/kinds/storage-class-registry.schema.json` | `sha256:380038c8213588416846a566bd3ba120b6100ca173a45fb6948ed8cdde01e59e` |
 | `contracts/capsule/provider/v1/protocol-compatibility.json` | `sha256:56bc068fa9a26dc28438a6861ec0036f97eca5534a3dbea1f27a48b9c7cb0603` |
 | `contracts/capsule/provider/v1/storage.proto` | `sha256:614cd75d3972303c79785300692b11ba1a4dee5a742df56f6aa851f16838a85a` |

@@ -45,10 +45,51 @@ def loc(path: Path, value: str, offset: int) -> str:
     return f"{rel(path)}:{line_number(value, offset)}"
 
 
+def strip_test_items(value: str) -> str:
+    """Blank every `#[cfg(test)]` item while keeping production code after it.
+
+    Truncating at the first test attribute hid production code that follows a small
+    test module (for example most of `creature/finance.rs`). Blanking preserves line
+    numbers so source locations stay stable.
+    """
+    output = list(value)
+    search = 0
+    while (start := value.find("#[cfg(test)]", search)) >= 0:
+        brace = value.find("{", start)
+        semicolon = value.find(";", start)
+        if brace < 0 or (0 <= semicolon < brace):
+            end = semicolon + 1 if semicolon >= 0 else len(value)
+        else:
+            depth = 0
+            end = len(value)
+            index = brace
+            while index < len(value):
+                char = value[index]
+                if char == "/" and value.startswith("//", index):
+                    index = value.find("\n", index)
+                    index = len(value) if index < 0 else index
+                    continue
+                if char == '"':
+                    index += 1
+                    while index < len(value) and value[index] != '"':
+                        index += 2 if value[index] == "\\" else 1
+                elif char == "{":
+                    depth += 1
+                elif char == "}":
+                    depth -= 1
+                    if depth == 0:
+                        end = index + 1
+                        break
+                index += 1
+        for index in range(start, end):
+            if output[index] != "\n":
+                output[index] = " "
+        search = end
+    return "".join(output)
+
+
 def production_source(path: Path) -> str:
-    value = path.read_text(encoding="utf-8")
-    test_at = value.find("#[cfg(test)]")
-    return value if test_at < 0 else value[:test_at]
+    return strip_test_items(path.read_text(encoding="utf-8"))
 
 
 def rust_sources() -> list[Path]:
