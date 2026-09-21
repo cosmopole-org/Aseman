@@ -82,7 +82,7 @@
       "request_type": "AuthenticateInput",
       "routes_via_chain": false,
       "services": [],
-      "source": "node/src/shell/api/actions/creature.rs:513",
+      "source": "node/src/shell/api/actions/creature.rs:498",
       "spawns_background_work": false,
       "transaction_operations": [],
       "vmm_operations": []
@@ -97,7 +97,7 @@
       "services": [
         "security"
       ],
-      "source": "node/src/shell/api/actions/creature.rs:654",
+      "source": "node/src/shell/api/actions/creature.rs:634",
       "spawns_background_work": false,
       "transaction_operations": [
         "get_link"
@@ -107,14 +107,12 @@
     {
       "guard_expression": "finance_guard()",
       "handler": "node/src/shell/api/actions/creature/finance.rs::close_pool",
-      "models": [
-        "Creature"
-      ],
+      "models": [],
       "path": "/creatures/closePool",
       "request_type": "ClosePoolInput",
       "routes_via_chain": false,
       "services": [],
-      "source": "node/src/shell/api/actions/creature/finance.rs:2502",
+      "source": "node/src/shell/api/actions/creature/finance.rs:2514",
       "spawns_background_work": false,
       "transaction_operations": [
         "get_link",
@@ -134,12 +132,11 @@
       "services": [
         "security"
       ],
-      "source": "node/src/shell/api/actions/creature.rs:1051",
+      "source": "node/src/shell/api/actions/creature.rs:1031",
       "spawns_background_work": false,
       "transaction_operations": [
         "del_json",
         "get_json",
-        "has_obj",
         "put_json"
       ],
       "vmm_operations": []
@@ -148,33 +145,26 @@
       "guard_expression": "anon_guard()",
       "handler": "node/src/shell/api/actions/creature.rs::create",
       "models": [
-        "Creature",
         "Session"
       ],
       "path": "/creatures/create",
       "request_type": "CreatureCreateInput",
       "routes_via_chain": false,
       "services": [],
-      "source": "node/src/shell/api/actions/creature.rs:191",
+      "source": "node/src/shell/api/actions/creature.rs:197",
       "spawns_background_work": false,
-      "transaction_operations": [
-        "has_index",
-        "put_json",
-        "put_link"
-      ],
+      "transaction_operations": [],
       "vmm_operations": []
     },
     {
       "guard_expression": "finance_guard()",
       "handler": "node/src/shell/api/actions/creature/finance.rs::create_hold",
-      "models": [
-        "Creature"
-      ],
+      "models": [],
       "path": "/creatures/createHold",
       "request_type": "CreateHoldInput",
       "routes_via_chain": false,
       "services": [],
-      "source": "node/src/shell/api/actions/creature/finance.rs:1097",
+      "source": "node/src/shell/api/actions/creature/finance.rs:1114",
       "spawns_background_work": false,
       "transaction_operations": [
         "get_json",
@@ -187,14 +177,12 @@
     {
       "guard_expression": "finance_guard()",
       "handler": "node/src/shell/api/actions/creature/finance.rs::debit_pool",
-      "models": [
-        "Creature"
-      ],
+      "models": [],
       "path": "/creatures/debitPool",
       "request_type": "DebitPoolInput",
       "routes_via_chain": false,
       "services": [],
-      "source": "node/src/shell/api/actions/creature/finance.rs:3050",
+      "source": "node/src/shell/api/actions/creature/finance.rs:3060",
       "spawns_background_work": false,
       "transaction_operations": [
         "get_json",
@@ -208,34 +196,29 @@
       "guard_expression": "user_guard()",
       "handler": "node/src/shell/api/actions/creature.rs::delete",
       "models": [
-        "Creature",
         "Store"
       ],
       "path": "/creatures/delete",
       "request_type": "DeleteInput",
       "routes_via_chain": false,
       "services": [],
-      "source": "node/src/shell/api/actions/creature.rs:1321",
+      "source": "node/src/shell/api/actions/creature.rs:1305",
       "spawns_background_work": false,
       "transaction_operations": [
-        "del_json",
         "del_key",
-        "get_link",
-        "get_links_list"
+        "get_link"
       ],
       "vmm_operations": []
     },
     {
       "guard_expression": "user_guard()",
       "handler": "node/src/shell/api/actions/creature.rs::find",
-      "models": [
-        "Creature"
-      ],
+      "models": [],
       "path": "/creatures/find",
       "request_type": "FindInput",
       "routes_via_chain": false,
       "services": [],
-      "source": "node/src/shell/api/actions/creature.rs:1507",
+      "source": "node/src/shell/api/actions/creature.rs:1452",
       "spawns_background_work": false,
       "transaction_operations": [],
       "vmm_operations": []
@@ -243,35 +226,27 @@
     {
       "guard_expression": "user_guard()",
       "handler": "node/src/shell/api/actions/creature.rs::get",
-      "models": [
-        "Creature"
-      ],
+      "models": [],
       "path": "/creatures/get",
       "request_type": "GetInput",
       "routes_via_chain": false,
       "services": [],
-      "source": "node/src/shell/api/actions/creature.rs:276",
+      "source": "node/src/shell/api/actions/creature.rs:249",
       "spawns_background_work": false,
-      "transaction_operations": [
-        "has_obj"
-      ],
+      "transaction_operations": [],
       "vmm_operations": []
     },
     {
       "guard_expression": "user_guard()",
       "handler": "node/src/shell/api/actions/creature.rs::get_by_username",
-      "models": [
-        "Creature"
-      ],
+      "models": [],
       "path": "/creatures/getByUsername",
       "request_type": "GetByUsernameInput",
       "routes_via_chain": false,
       "services": [],
-      "source": "node/src/shell/api/actions/creature.rs:1479",
+      "source": "node/src/shell/api/actions/creature.rs:1425",
       "spawns_background_work": false,
-      "transaction_operations": [
-        "get_index"
-      ],
+      "transaction_operations": [],
       "vmm_operations": []
     },
     {
@@ -282,7 +257,7 @@
       "request_type": "GetFinancialAccountInput",
       "routes_via_chain": false,
       "services": [],
-      "source": "node/src/shell/api/actions/creature/finance.rs:1951",
+      "source": "node/src/shell/api/actions/creature/finance.rs:1967",
       "spawns_background_work": false,
       "transaction_operations": [],
       "vmm_operations": []
@@ -295,7 +270,7 @@
       "request_type": "GetHoldInput",
       "routes_via_chain": false,
       "services": [],
-      "source": "node/src/shell/api/actions/creature/finance.rs:1817",
+      "source": "node/src/shell/api/actions/creature/finance.rs:1836",
       "spawns_background_work": false,
       "transaction_operations": [],
       "vmm_operations": []
@@ -303,14 +278,12 @@
     {
       "guard_expression": "user_guard()",
       "handler": "node/src/shell/api/actions/creature.rs::list",
-      "models": [
-        "Creature"
-      ],
+      "models": [],
       "path": "/creatures/list",
       "request_type": "ListInput",
       "routes_via_chain": false,
       "services": [],
-      "source": "node/src/shell/api/actions/creature.rs:296",
+      "source": "node/src/shell/api/actions/creature.rs:268",
       "spawns_background_work": false,
       "transaction_operations": [],
       "vmm_operations": []
@@ -323,7 +296,7 @@
       "request_type": "ListPayoutsInput",
       "routes_via_chain": false,
       "services": [],
-      "source": "node/src/shell/api/actions/creature/finance.rs:2221",
+      "source": "node/src/shell/api/actions/creature/finance.rs:2235",
       "spawns_background_work": false,
       "transaction_operations": [
         "get_by_prefix"
@@ -340,10 +313,9 @@
       "request_type": "LockTokenInput",
       "routes_via_chain": false,
       "services": [],
-      "source": "node/src/shell/api/actions/creature.rs:965",
+      "source": "node/src/shell/api/actions/creature.rs:945",
       "spawns_background_work": false,
       "transaction_operations": [
-        "has_obj",
         "put_json"
       ],
       "vmm_operations": []
@@ -352,20 +324,18 @@
       "guard_expression": "anon_guard()",
       "handler": "node/src/shell/api/actions/creature.rs::login",
       "models": [
-        "Creature",
         "Session"
       ],
       "path": "/creatures/login",
       "request_type": "LoginInput",
       "routes_via_chain": false,
       "services": [],
-      "source": "node/src/shell/api/actions/creature.rs:1215",
+      "source": "node/src/shell/api/actions/creature.rs:1192",
       "spawns_background_work": false,
       "transaction_operations": [
         "del_key",
         "get_index",
         "get_link",
-        "has_index",
         "put_link"
       ],
       "vmm_operations": []
@@ -373,31 +343,25 @@
     {
       "guard_expression": "user_guard()",
       "handler": "node/src/shell/api/actions/creature.rs::meta",
-      "models": [
-        "Creature"
-      ],
+      "models": [],
       "path": "/creatures/meta",
       "request_type": "MetaInput",
       "routes_via_chain": false,
       "services": [],
-      "source": "node/src/shell/api/actions/creature.rs:1422",
+      "source": "node/src/shell/api/actions/creature.rs:1369",
       "spawns_background_work": false,
-      "transaction_operations": [
-        "get_json"
-      ],
+      "transaction_operations": [],
       "vmm_operations": []
     },
     {
       "guard_expression": "user_guard()",
       "handler": "node/src/shell/api/actions/creature.rs::mint",
-      "models": [
-        "Creature"
-      ],
+      "models": [],
       "path": "/creatures/mint",
       "request_type": "MintInput",
       "routes_via_chain": false,
       "services": [],
-      "source": "node/src/shell/api/actions/creature.rs:554",
+      "source": "node/src/shell/api/actions/creature.rs:539",
       "spawns_background_work": false,
       "transaction_operations": [
         "get_link",
@@ -408,14 +372,12 @@
     {
       "guard_expression": "finance_guard()",
       "handler": "node/src/shell/api/actions/creature/finance.rs::open_pool",
-      "models": [
-        "Creature"
-      ],
+      "models": [],
       "path": "/creatures/openPool",
       "request_type": "OpenPoolInput",
       "routes_via_chain": false,
       "services": [],
-      "source": "node/src/shell/api/actions/creature/finance.rs:2288",
+      "source": "node/src/shell/api/actions/creature/finance.rs:2302",
       "spawns_background_work": false,
       "transaction_operations": [
         "get_link",
@@ -426,14 +388,12 @@
     {
       "guard_expression": "finance_guard()",
       "handler": "node/src/shell/api/actions/creature/finance.rs::payment_adjustment",
-      "models": [
-        "Creature"
-      ],
+      "models": [],
       "path": "/creatures/paymentAdjustment",
       "request_type": "PaymentAdjustmentInput",
       "routes_via_chain": false,
       "services": [],
-      "source": "node/src/shell/api/actions/creature/finance.rs:3961",
+      "source": "node/src/shell/api/actions/creature/finance.rs:3971",
       "spawns_background_work": false,
       "transaction_operations": [
         "get_link",
@@ -453,7 +413,6 @@
       "spawns_background_work": false,
       "transaction_operations": [
         "get_json",
-        "has_obj",
         "put_json"
       ],
       "vmm_operations": []
@@ -466,11 +425,10 @@
       "request_type": "PublishFinanceQuoteInput",
       "routes_via_chain": false,
       "services": [],
-      "source": "node/src/shell/api/actions/creature/finance.rs:895",
+      "source": "node/src/shell/api/actions/creature/finance.rs:903",
       "spawns_background_work": false,
       "transaction_operations": [
         "get_json",
-        "has_obj",
         "put_json"
       ],
       "vmm_operations": []
@@ -478,14 +436,12 @@
     {
       "guard_expression": "finance_guard()",
       "handler": "node/src/shell/api/actions/creature/finance.rs::reconcile_financial_system",
-      "models": [
-        "Creature"
-      ],
+      "models": [],
       "path": "/creatures/reconcileFinancialSystem",
       "request_type": "ReconcileFinancialSystemInput",
       "routes_via_chain": false,
       "services": [],
-      "source": "node/src/shell/api/actions/creature/finance.rs:3294",
+      "source": "node/src/shell/api/actions/creature/finance.rs:3303",
       "spawns_background_work": false,
       "transaction_operations": [
         "get_by_prefix",
@@ -498,14 +454,12 @@
     {
       "guard_expression": "finance_guard()",
       "handler": "node/src/shell/api/actions/creature/finance.rs::refresh_pool",
-      "models": [
-        "Creature"
-      ],
+      "models": [],
       "path": "/creatures/refreshPool",
       "request_type": "RefreshPoolInput",
       "routes_via_chain": false,
       "services": [],
-      "source": "node/src/shell/api/actions/creature/finance.rs:2394",
+      "source": "node/src/shell/api/actions/creature/finance.rs:2407",
       "spawns_background_work": false,
       "transaction_operations": [
         "get_link",
@@ -521,10 +475,9 @@
       "request_type": "RegisterFinanceNodeInput",
       "routes_via_chain": false,
       "services": [],
-      "source": "node/src/shell/api/actions/creature/finance.rs:539",
+      "source": "node/src/shell/api/actions/creature/finance.rs:543",
       "spawns_background_work": false,
       "transaction_operations": [
-        "has_obj",
         "put_json"
       ],
       "vmm_operations": []
@@ -537,11 +490,10 @@
       "request_type": "RegisterFinanceResourceInput",
       "routes_via_chain": false,
       "services": [],
-      "source": "node/src/shell/api/actions/creature/finance.rs:656",
+      "source": "node/src/shell/api/actions/creature/finance.rs:662",
       "spawns_background_work": false,
       "transaction_operations": [
         "get_json",
-        "has_obj",
         "put_json"
       ],
       "vmm_operations": []
@@ -549,14 +501,12 @@
     {
       "guard_expression": "finance_guard()",
       "handler": "node/src/shell/api/actions/creature/finance.rs::release_hold",
-      "models": [
-        "Creature"
-      ],
+      "models": [],
       "path": "/creatures/releaseHold",
       "request_type": "ReleaseHoldInput",
       "routes_via_chain": false,
       "services": [],
-      "source": "node/src/shell/api/actions/creature/finance.rs:1681",
+      "source": "node/src/shell/api/actions/creature/finance.rs:1701",
       "spawns_background_work": false,
       "transaction_operations": [
         "get_link",
@@ -572,7 +522,7 @@
       "request_type": "ReleasePoolInput",
       "routes_via_chain": false,
       "services": [],
-      "source": "node/src/shell/api/actions/creature/finance.rs:2936",
+      "source": "node/src/shell/api/actions/creature/finance.rs:2946",
       "spawns_background_work": false,
       "transaction_operations": [
         "get_json",
@@ -583,14 +533,12 @@
     {
       "guard_expression": "finance_guard()",
       "handler": "node/src/shell/api/actions/creature/finance.rs::request_payout",
-      "models": [
-        "Creature"
-      ],
+      "models": [],
       "path": "/creatures/requestPayout",
       "request_type": "RequestPayoutInput",
       "routes_via_chain": false,
       "services": [],
-      "source": "node/src/shell/api/actions/creature/finance.rs:1991",
+      "source": "node/src/shell/api/actions/creature/finance.rs:2007",
       "spawns_background_work": false,
       "transaction_operations": [
         "get_link",
@@ -607,7 +555,7 @@
       "request_type": "ReservePoolInput",
       "routes_via_chain": false,
       "services": [],
-      "source": "node/src/shell/api/actions/creature/finance.rs:2604",
+      "source": "node/src/shell/api/actions/creature/finance.rs:2615",
       "spawns_background_work": false,
       "transaction_operations": [
         "get_json",
@@ -618,14 +566,12 @@
     {
       "guard_expression": "finance_guard()",
       "handler": "node/src/shell/api/actions/creature/finance.rs::resolve_payout",
-      "models": [
-        "Creature"
-      ],
+      "models": [],
       "path": "/creatures/resolvePayout",
       "request_type": "ResolvePayoutInput",
       "routes_via_chain": false,
       "services": [],
-      "source": "node/src/shell/api/actions/creature/finance.rs:2098",
+      "source": "node/src/shell/api/actions/creature/finance.rs:2113",
       "spawns_background_work": false,
       "transaction_operations": [
         "get_link",
@@ -642,7 +588,7 @@
       "request_type": "RetireFinanceNodeInput",
       "routes_via_chain": false,
       "services": [],
-      "source": "node/src/shell/api/actions/creature/finance.rs:617",
+      "source": "node/src/shell/api/actions/creature/finance.rs:623",
       "spawns_background_work": false,
       "transaction_operations": [
         "get_json",
@@ -658,7 +604,7 @@
       "request_type": "RetireFinanceResourceInput",
       "routes_via_chain": false,
       "services": [],
-      "source": "node/src/shell/api/actions/creature/finance.rs:805",
+      "source": "node/src/shell/api/actions/creature/finance.rs:813",
       "spawns_background_work": false,
       "transaction_operations": [
         "get_json",
@@ -674,7 +620,7 @@
       "request_type": "ReviewFinanceResourceInput",
       "routes_via_chain": false,
       "services": [],
-      "source": "node/src/shell/api/actions/creature/finance.rs:767",
+      "source": "node/src/shell/api/actions/creature/finance.rs:775",
       "spawns_background_work": false,
       "transaction_operations": [
         "get_json",
@@ -692,7 +638,7 @@
       "services": [
         "storage"
       ],
-      "source": "node/src/shell/api/actions/creature.rs:764",
+      "source": "node/src/shell/api/actions/creature.rs:744",
       "spawns_background_work": false,
       "transaction_operations": [
         "get_link"
@@ -707,7 +653,7 @@
       "request_type": "SecretGrantInput",
       "routes_via_chain": false,
       "services": [],
-      "source": "node/src/shell/api/actions/creature.rs:806",
+      "source": "node/src/shell/api/actions/creature.rs:786",
       "spawns_background_work": false,
       "transaction_operations": [
         "get_link",
@@ -723,7 +669,7 @@
       "request_type": "SecretListInput",
       "routes_via_chain": false,
       "services": [],
-      "source": "node/src/shell/api/actions/creature.rs:886",
+      "source": "node/src/shell/api/actions/creature.rs:866",
       "spawns_background_work": false,
       "transaction_operations": [
         "get_by_prefix"
@@ -738,7 +684,7 @@
       "request_type": "SecretListGrantedInput",
       "routes_via_chain": false,
       "services": [],
-      "source": "node/src/shell/api/actions/creature.rs:871",
+      "source": "node/src/shell/api/actions/creature.rs:851",
       "spawns_background_work": false,
       "transaction_operations": [],
       "vmm_operations": []
@@ -753,7 +699,7 @@
       "services": [
         "storage"
       ],
-      "source": "node/src/shell/api/actions/creature.rs:737",
+      "source": "node/src/shell/api/actions/creature.rs:717",
       "spawns_background_work": false,
       "transaction_operations": [
         "put_link"
@@ -768,7 +714,7 @@
       "request_type": "SecretRevokeInput",
       "routes_via_chain": false,
       "services": [],
-      "source": "node/src/shell/api/actions/creature.rs:845",
+      "source": "node/src/shell/api/actions/creature.rs:825",
       "spawns_background_work": false,
       "transaction_operations": [
         "del_key"
@@ -778,14 +724,12 @@
     {
       "guard_expression": "finance_guard()",
       "handler": "node/src/shell/api/actions/creature/finance.rs::settle_hold",
-      "models": [
-        "Creature"
-      ],
+      "models": [],
       "path": "/creatures/settleHold",
       "request_type": "SettleHoldInput",
       "routes_via_chain": false,
       "services": [],
-      "source": "node/src/shell/api/actions/creature/finance.rs:1421",
+      "source": "node/src/shell/api/actions/creature/finance.rs:1443",
       "spawns_background_work": false,
       "transaction_operations": [
         "get_link",
@@ -796,14 +740,12 @@
     {
       "guard_expression": "finance_guard()",
       "handler": "node/src/shell/api/actions/creature/finance.rs::settle_pool",
-      "models": [
-        "Creature"
-      ],
+      "models": [],
       "path": "/creatures/settlePool",
       "request_type": "SettlePoolInput",
       "routes_via_chain": false,
       "services": [],
-      "source": "node/src/shell/api/actions/creature/finance.rs:2709",
+      "source": "node/src/shell/api/actions/creature/finance.rs:2720",
       "spawns_background_work": false,
       "transaction_operations": [
         "get_json",
@@ -826,7 +768,7 @@
       "services": [
         "signaler"
       ],
-      "source": "node/src/shell/api/actions/creature.rs:412",
+      "source": "node/src/shell/api/actions/creature.rs:390",
       "spawns_background_work": true,
       "transaction_operations": [],
       "vmm_operations": []
@@ -839,7 +781,7 @@
       "request_type": "StartHoldInput",
       "routes_via_chain": false,
       "services": [],
-      "source": "node/src/shell/api/actions/creature/finance.rs:1341",
+      "source": "node/src/shell/api/actions/creature/finance.rs:1363",
       "spawns_background_work": false,
       "transaction_operations": [
         "get_link",
@@ -850,18 +792,14 @@
     {
       "guard_expression": "finance_guard()",
       "handler": "node/src/shell/api/actions/creature.rs::transfer",
-      "models": [
-        "Creature"
-      ],
+      "models": [],
       "path": "/creatures/transfer",
       "request_type": "TransferInput",
       "routes_via_chain": false,
       "services": [],
-      "source": "node/src/shell/api/actions/creature.rs:308",
+      "source": "node/src/shell/api/actions/creature.rs:290",
       "spawns_background_work": false,
-      "transaction_operations": [
-        "get_index"
-      ],
+      "transaction_operations": [],
       "vmm_operations": []
     },
     {
@@ -872,29 +810,22 @@
       "request_type": "ListInput",
       "routes_via_chain": false,
       "services": [],
-      "source": "node/src/shell/api/actions/creature.rs:1535",
+      "source": "node/src/shell/api/actions/creature.rs:1482",
       "spawns_background_work": false,
-      "transaction_operations": [
-        "get_links_list"
-      ],
+      "transaction_operations": [],
       "vmm_operations": []
     },
     {
       "guard_expression": "user_guard()",
       "handler": "node/src/shell/api/actions/creature.rs::update",
-      "models": [
-        "Creature"
-      ],
+      "models": [],
       "path": "/creatures/update",
       "request_type": "UpdateInput",
       "routes_via_chain": false,
       "services": [],
-      "source": "node/src/shell/api/actions/creature.rs:1376",
+      "source": "node/src/shell/api/actions/creature.rs:1341",
       "spawns_background_work": false,
-      "transaction_operations": [
-        "del_index",
-        "has_index"
-      ],
+      "transaction_operations": [],
       "vmm_operations": []
     },
     {
@@ -946,7 +877,7 @@
       "request_type": "VmTerminalInput",
       "routes_via_chain": false,
       "services": [],
-      "source": "node/src/shell/api/actions/program.rs:1245",
+      "source": "node/src/shell/api/actions/program.rs:1238",
       "spawns_background_work": false,
       "transaction_operations": [
         "del_key",
@@ -957,18 +888,14 @@
     {
       "guard_expression": "user_guard()",
       "handler": "node/src/shell/api/actions/program.rs::list_machines",
-      "models": [
-        "Creature"
-      ],
+      "models": [],
       "path": "/machines/list",
       "request_type": "ListInput",
       "routes_via_chain": false,
       "services": [],
-      "source": "node/src/shell/api/actions/program.rs:1645",
+      "source": "node/src/shell/api/actions/program.rs:1635",
       "spawns_background_work": false,
-      "transaction_operations": [
-        "get_json"
-      ],
+      "transaction_operations": [],
       "vmm_operations": []
     },
     {
@@ -982,7 +909,7 @@
       "request_type": "RunProgramEntityInput",
       "routes_via_chain": false,
       "services": [],
-      "source": "node/src/shell/api/actions/program.rs:1107",
+      "source": "node/src/shell/api/actions/program.rs:1100",
       "spawns_background_work": false,
       "transaction_operations": [
         "get_link",
@@ -1002,7 +929,7 @@
       "request_type": "ListAppMachsInput",
       "routes_via_chain": false,
       "services": [],
-      "source": "node/src/shell/api/actions/program.rs:1707",
+      "source": "node/src/shell/api/actions/program.rs:1705",
       "spawns_background_work": false,
       "transaction_operations": [],
       "vmm_operations": []
@@ -1017,7 +944,7 @@
       "request_type": "VmTerminalInput",
       "routes_via_chain": false,
       "services": [],
-      "source": "node/src/shell/api/actions/program.rs:1212",
+      "source": "node/src/shell/api/actions/program.rs:1205",
       "spawns_background_work": false,
       "transaction_operations": [
         "has_obj",
@@ -1033,7 +960,7 @@
       "request_type": "MachineBuildsInput",
       "routes_via_chain": false,
       "services": [],
-      "source": "node/src/shell/api/actions/program.rs:1275",
+      "source": "node/src/shell/api/actions/program.rs:1268",
       "spawns_background_work": false,
       "transaction_operations": [
         "get_links_list"
@@ -1052,7 +979,7 @@
       "services": [
         "storage"
       ],
-      "source": "node/src/shell/api/actions/program.rs:1046",
+      "source": "node/src/shell/api/actions/program.rs:1039",
       "spawns_background_work": false,
       "transaction_operations": [
         "get_links_list"
@@ -1065,17 +992,15 @@
       "guard_expression": "user_guard()",
       "handler": "node/src/shell/api/actions/program.rs::create_program",
       "models": [
-        "Creature",
         "Program"
       ],
       "path": "/programs/create",
       "request_type": "CreateMachineInput",
       "routes_via_chain": false,
       "services": [],
-      "source": "node/src/shell/api/actions/program.rs:585",
+      "source": "node/src/shell/api/actions/program.rs:579",
       "spawns_background_work": false,
       "transaction_operations": [
-        "has_obj",
         "put_json",
         "put_link"
       ],
@@ -1084,14 +1009,12 @@
     {
       "guard_expression": "user_guard()",
       "handler": "node/src/shell/api/actions/program.rs::delete_program",
-      "models": [
-        "Creature"
-      ],
+      "models": [],
       "path": "/programs/delete",
       "request_type": "DeleteProgramInput",
       "routes_via_chain": false,
       "services": [],
-      "source": "node/src/shell/api/actions/program.rs:634",
+      "source": "node/src/shell/api/actions/program.rs:629",
       "spawns_background_work": false,
       "transaction_operations": [
         "del_index",
@@ -1112,7 +1035,7 @@
       "request_type": "RunProgramEntityInput",
       "routes_via_chain": false,
       "services": [],
-      "source": "node/src/shell/api/actions/program.rs:949",
+      "source": "node/src/shell/api/actions/program.rs:942",
       "spawns_background_work": false,
       "transaction_operations": [
         "del_json",
@@ -1139,7 +1062,7 @@
         "storage",
         "vmm"
       ],
-      "source": "node/src/shell/api/actions/program.rs:1347",
+      "source": "node/src/shell/api/actions/program.rs:1337",
       "spawns_background_work": true,
       "transaction_operations": [
         "has_obj",
@@ -1159,7 +1082,7 @@
       "request_type": "DownloadEntityInput",
       "routes_via_chain": false,
       "services": [],
-      "source": "node/src/shell/api/actions/program.rs:1606",
+      "source": "node/src/shell/api/actions/program.rs:1596",
       "spawns_background_work": false,
       "transaction_operations": [
         "get_link"
@@ -1176,7 +1099,7 @@
       "request_type": "ListInput",
       "routes_via_chain": false,
       "services": [],
-      "source": "node/src/shell/api/actions/program.rs:1695",
+      "source": "node/src/shell/api/actions/program.rs:1693",
       "spawns_background_work": false,
       "transaction_operations": [],
       "vmm_operations": []
@@ -1194,7 +1117,7 @@
       "services": [
         "vmm"
       ],
-      "source": "node/src/shell/api/actions/program.rs:699",
+      "source": "node/src/shell/api/actions/program.rs:692",
       "spawns_background_work": true,
       "transaction_operations": [
         "get_link",
@@ -1217,7 +1140,7 @@
       "services": [
         "vmm"
       ],
-      "source": "node/src/shell/api/actions/program.rs:857",
+      "source": "node/src/shell/api/actions/program.rs:850",
       "spawns_background_work": false,
       "transaction_operations": [
         "del_json",
@@ -1236,7 +1159,7 @@
       "request_type": "UpdateProgramInput",
       "routes_via_chain": false,
       "services": [],
-      "source": "node/src/shell/api/actions/program.rs:662",
+      "source": "node/src/shell/api/actions/program.rs:655",
       "spawns_background_work": false,
       "transaction_operations": [
         "has_obj",
@@ -1255,7 +1178,7 @@
         "file",
         "storage"
       ],
-      "source": "node/src/shell/api/actions/creature.rs:914",
+      "source": "node/src/shell/api/actions/creature.rs:894",
       "spawns_background_work": false,
       "transaction_operations": [],
       "vmm_operations": []
@@ -1267,8 +1190,10 @@
       "path": "/stores/getAccess",
       "request_type": "GetAccessInput",
       "routes_via_chain": false,
-      "services": [],
-      "source": "node/src/shell/api/actions/store.rs:264",
+      "services": [
+        "storage"
+      ],
+      "source": "node/src/shell/api/actions/store.rs:241",
       "spawns_background_work": false,
       "transaction_operations": [],
       "vmm_operations": []
@@ -1280,8 +1205,10 @@
       "path": "/stores/history",
       "request_type": "HistoryInput",
       "routes_via_chain": false,
-      "services": [],
-      "source": "node/src/shell/api/actions/store.rs:185",
+      "services": [
+        "storage"
+      ],
+      "source": "node/src/shell/api/actions/store.rs:169",
       "spawns_background_work": false,
       "transaction_operations": [],
       "vmm_operations": []
@@ -1293,19 +1220,18 @@
       "path": "/stores/setAccess",
       "request_type": "SetAccessInput",
       "routes_via_chain": false,
-      "services": [],
-      "source": "node/src/shell/api/actions/store.rs:230",
-      "spawns_background_work": false,
-      "transaction_operations": [
-        "put_link"
+      "services": [
+        "storage"
       ],
+      "source": "node/src/shell/api/actions/store.rs:210",
+      "spawns_background_work": false,
+      "transaction_operations": [],
       "vmm_operations": []
     },
     {
       "guard_expression": "store_guard()",
       "handler": "node/src/shell/api/actions/store.rs::signal",
       "models": [
-        "Creature",
         "Store"
       ],
       "path": "/stores/signal",
@@ -1314,11 +1240,9 @@
       "services": [
         "storage"
       ],
-      "source": "node/src/shell/api/actions/store.rs:88",
+      "source": "node/src/shell/api/actions/store.rs:93",
       "spawns_background_work": false,
-      "transaction_operations": [
-        "get_obj"
-      ],
+      "transaction_operations": [],
       "vmm_operations": []
     }
   ],
@@ -1340,7 +1264,7 @@
   "summary": {
     "action_count": 77,
     "actions_spawning_background_work": 5,
-    "actions_with_storage_operations": 58,
+    "actions_with_storage_operations": 52,
     "actions_with_vmm_operations": 5,
     "guard_expression_counts": {
       "Guard::default()": 8,
@@ -1353,7 +1277,7 @@
       "file": 2,
       "security": 2,
       "signaler": 1,
-      "storage": 6,
+      "storage": 9,
       "vmm": 3
     },
     "unique_guard_expressions": 5

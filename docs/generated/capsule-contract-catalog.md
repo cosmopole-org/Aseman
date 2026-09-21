@@ -52,6 +52,7 @@ Encoding: `deterministic-cbor-v1`; integrity: `sha2-256`.
 | `core.secret_grant` | `secret_grants` | `core` | `serializable` | `creature` |
 | `core.bridge_grant` | `bridge_grants` | `core` | `serializable` | `creature` |
 | `core.bridge_topic` | `bridge_topics` | `core` | `serializable` | `creature` |
+| `core.legacy_identity` | `legacy_identities` | `core` | `serializable` | `global` |
 
 ## Contract inputs
 
@@ -72,9 +73,9 @@ Encoding: `deterministic-cbor-v1`; integrity: `sha2-256`.
 | `contracts/capsule/guest/legacy-kv-table.json` | `sha256:7d2a86b730d74d34b6e30a4fe2a4394f9fc18fdfa14329f4c63c39c92fa7a079` |
 | `contracts/capsule/guest/schema-command.schema.json` | `sha256:e5d44dd58dcc6ae69bc5263d64b4e647f0083eb264c659bb89506f5fedb40f36` |
 | `contracts/capsule/guest/schema-mutation.schema.json` | `sha256:79cd855b2b4af54ba37345cdcc09c40325cfe2bd0a7e58028e85d8a728ba56fb` |
-| `contracts/capsule/kinds/core-logical-schemas.json` | `sha256:4ab858ca47bb205dd7868f654419da010ac6ab52d0b51a791aa3132ed2ac1b4d` |
+| `contracts/capsule/kinds/core-logical-schemas.json` | `sha256:652506b8fc746677a5bedb8f0778b4e7f294532e3abf12d99be448b05fac5e80` |
 | `contracts/capsule/kinds/core-logical-schemas.schema.json` | `sha256:f9761ccb6a3b07bdcd15dbc7f3b76128345b63cd6606a38c8802feb4ca8e4c7e` |
-| `contracts/capsule/kinds/core-registry.json` | `sha256:e9922ed1e0adb04bed15f1d62a601b07f6219dc181f02b8b7662a7e525947d06` |
+| `contracts/capsule/kinds/core-registry.json` | `sha256:044b73923285af5bef1761bef803638e3536b6547f93073552a98e7c22898ddf` |
 | `contracts/capsule/kinds/core-registry.schema.json` | `sha256:3c6f29d9086fa764910bc02dda2866aada44cdccfd838f511fab1fbb24c085e8` |
 | `contracts/capsule/kinds/storage-class-logical-schemas.json` | `sha256:7ec3875517611d016fc014b78ecd22069be10a1a3803400b487efe9d7abcd4e1` |
 | `contracts/capsule/kinds/storage-class-logical-schemas.schema.json` | `sha256:2c3a7e3e9a8d92addeb090bcf3aa487c344a3535c8f8e9f8d4804b4b6fd10cef` |
@@ -82,6 +83,7 @@ Encoding: `deterministic-cbor-v1`; integrity: `sha2-256`.
 | `contracts/capsule/kinds/storage-class-registry.schema.json` | `sha256:380038c8213588416846a566bd3ba120b6100ca173a45fb6948ed8cdde01e59e` |
 | `contracts/capsule/provider/v1/protocol-compatibility.json` | `sha256:56bc068fa9a26dc28438a6861ec0036f97eca5534a3dbea1f27a48b9c7cb0603` |
 | `contracts/capsule/provider/v1/storage.proto` | `sha256:614cd75d3972303c79785300692b11ba1a4dee5a742df56f6aa851f16838a85a` |
+| `contracts/capsule/query/README.md` | `sha256:7a3694153c1230b4cfcff409058c1dd2e69f26b227529ebd342b7ef7e4d224c6` |
 | `contracts/capsule/query/errors.schema.json` | `sha256:491728865aa3abd21626358268e04ff1bd84cbb219c9ddbda1047319effce7b6` |
 | `contracts/capsule/query/fixtures/errors.json` | `sha256:7a1b9d0b63f525dbbcd9c9e3fbc3a51b8871bad79561aa82b3fe0d545f80c0d4` |
 | `contracts/capsule/query/fixtures/invalid-raw-provider-query.json` | `sha256:8c0ab663dff2d491130175a0ad45923a572f7d4bd56bfecf6e3f42956efe7d36` |

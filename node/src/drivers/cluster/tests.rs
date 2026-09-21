@@ -477,7 +477,7 @@ impl ICore for StubCore {
         let trx = TrxWrapper::new(core, self.storage.clone(), readonly);
         let res = fn_(&*trx);
         if res.is_ok() {
-            trx.commit();
+            trx.commit().unwrap();
         } else {
             trx.discard();
         }

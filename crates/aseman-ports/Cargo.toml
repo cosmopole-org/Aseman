@@ -11,5 +11,9 @@ repository.workspace = true
 aseman-domain = { path = "../aseman-domain" }
 thiserror.workspace = true
 
+[features]
+# Behavioral suites every adapter of a port must pass; enabled by adapter tests.
+conformance = []
+
 [lints]
 workspace = true

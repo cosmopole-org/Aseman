@@ -70,6 +70,16 @@ impl Creature {
         }
     }
 
+    /// A creature filled from its object columns.
+    pub(crate) fn from_columns(id: String, columns: &HashMap<String, Vec<u8>>) -> Creature {
+        let mut creature = Creature {
+            id,
+            ..Default::default()
+        };
+        Creature::fill(&mut creature, columns);
+        creature
+    }
+
     fn fill(d: &mut Creature, m: &HashMap<String, Vec<u8>>) {
         if let Some(v) = m.get("type") {
             d.type_name = String::from_utf8_lossy(v).into_owned();

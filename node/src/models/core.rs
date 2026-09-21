@@ -64,6 +64,18 @@ pub trait ICore: Send + Sync {
         fn_: StateClosure,
     );
     fn modify_state_securly(&self, readonly: bool, info: Arc<dyn IInfo>, fn_: StateClosure);
+    /// [`Self::modify_state_securly_with_source`] that reports its outcome: the
+    /// closure's error (its writes are discarded) or a failed commit (LD-10/LD-15).
+    fn modify_state_securly_checked(
+        &self,
+        readonly: bool,
+        info: Arc<dyn IInfo>,
+        src: &str,
+        fn_: StateClosure,
+    ) -> Result<()> {
+        self.modify_state_securly_with_source(readonly, info, src, fn_);
+        Ok(())
+    }
     fn sign_packet(&self, data: &[u8]) -> String;
     fn sign_packet_as_owner(&self, data: &[u8]) -> String;
     fn execution_cost_per_second(&self) -> i64;

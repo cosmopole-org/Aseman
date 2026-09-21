@@ -26,6 +26,15 @@ verification: ASEMAN_TEST_POSTGRES_URL=... cargo test -p aseman-migration-e2e
    guest KV.
 5. Take a backup of the legacy storage root: application RocksDB, `cluster/raft-db`,
    the Hashgraph store, and QuestDB.
+6. Reconcile memberships and owner links (ADR 0018 amendment, LD-12, LD-16). With the node stopped, run the
+   membership audit against the backup's source RocksDB, using the same declared local
+   origins as the export.
+   - Review every finding.
+   - Approve the unambiguous removals by passing the audit digest to the repair.
+   - Resolve each one-sided pair and orphaned-creator store by hand, then re-run the
+     audit.
+   - Continue only when the audit is clean. Keep the audit and the repair report with
+     the migration record.
 
 ## Procedure
 

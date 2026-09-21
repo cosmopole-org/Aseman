@@ -939,6 +939,32 @@ CREATE TABLE IF NOT EXISTS aseman_core."bridge_topics" (
   CONSTRAINT ck_live_bridge_topics_owner_ref CHECK (tombstone OR "owner_ref" IS NOT NULL)
 );
 
+CREATE TABLE IF NOT EXISTS aseman_core."legacy_identities" (
+  id UUID PRIMARY KEY,
+  schema_version INTEGER NOT NULL CHECK (schema_version > 0),
+  revision BIGINT NOT NULL CHECK (revision > 0),
+  created_at_micros BIGINT NOT NULL,
+  updated_at_micros BIGINT NOT NULL CHECK (updated_at_micros >= created_at_micros),
+  previous_integrity BYTEA,
+  integrity_hash BYTEA NOT NULL CHECK (octet_length(integrity_hash) = 32),
+  owner_type TEXT NOT NULL,
+  owner_id UUID,
+  owner_name TEXT,
+  tombstone BOOLEAN NOT NULL DEFAULT FALSE,
+  capsule_cbor BYTEA NOT NULL,
+  "family" TEXT,
+  "legacy_id" TEXT,
+  "target_kind" TEXT,
+  "target_id" UUID,
+  CONSTRAINT ck_revision_chain CHECK ((revision = 1) = (previous_integrity IS NULL)),
+  CONSTRAINT ck_previous_integrity CHECK (previous_integrity IS NULL OR octet_length(previous_integrity) = 32),
+  CONSTRAINT ck_owner_scope CHECK ((owner_type = 'global' AND owner_id IS NULL AND owner_name IS NULL) OR (owner_type IN ('node', 'creature') AND owner_id IS NOT NULL AND owner_name IS NULL) OR (owner_type = 'module' AND owner_id IS NULL AND owner_name IS NOT NULL)),
+  CONSTRAINT ck_live_legacy_identities_family CHECK (tombstone OR "family" IS NOT NULL),
+  CONSTRAINT ck_live_legacy_identities_legacy_id CHECK (tombstone OR "legacy_id" IS NOT NULL),
+  CONSTRAINT ck_live_legacy_identities_target_kind CHECK (tombstone OR "target_kind" IS NOT NULL),
+  CONSTRAINT ck_live_legacy_identities_target_id CHECK (tombstone OR "target_id" IS NOT NULL)
+);
+
 CREATE UNIQUE INDEX IF NOT EXISTS uq_users_username ON aseman_core."users" ("username") WHERE NOT tombstone;
 CREATE UNIQUE INDEX IF NOT EXISTS uq_users_email ON aseman_core."users" ("email") WHERE NOT tombstone;
 CREATE UNIQUE INDEX IF NOT EXISTS uq_users_public_key ON aseman_core."users" ("public_key") WHERE NOT tombstone;
@@ -1121,5 +1147,9 @@ CREATE INDEX IF NOT EXISTS ix_bridge_grants_updated_at ON aseman_core."bridge_gr
 
 CREATE UNIQUE INDEX IF NOT EXISTS uq_bridge_topics_topic ON aseman_core."bridge_topics" ("topic") WHERE NOT tombstone;
 CREATE INDEX IF NOT EXISTS ix_bridge_topics_updated_at ON aseman_core."bridge_topics" (updated_at_micros, id);
+
+CREATE UNIQUE INDEX IF NOT EXISTS uq_legacy_identities_family_legacy_id ON aseman_core."legacy_identities" ("family", "legacy_id") WHERE NOT tombstone;
+CREATE UNIQUE INDEX IF NOT EXISTS uq_legacy_identities_target_kind_target_id ON aseman_core."legacy_identities" ("target_kind", "target_id") WHERE NOT tombstone;
+CREATE INDEX IF NOT EXISTS ix_legacy_identities_updated_at ON aseman_core."legacy_identities" (updated_at_micros, id);
 
 COMMIT;

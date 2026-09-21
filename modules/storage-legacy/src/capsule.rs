@@ -2,18 +2,7 @@
 
 use super::*;
 
-#[must_use]
-pub fn deterministic_legacy_capsule_id(family: &str, legacy_id: &[u8]) -> [u8; 16] {
-    let mut hasher = Sha256::new();
-    hasher.update(b"ASEMAN-LEGACY-CAPSULE-ID-V1\0");
-    hasher.update((family.len() as u64).to_be_bytes());
-    hasher.update(family.as_bytes());
-    hasher.update((legacy_id.len() as u64).to_be_bytes());
-    hasher.update(legacy_id);
-    hasher.finalize()[..16]
-        .try_into()
-        .expect("fixed digest slice")
-}
+pub use aseman_contracts::legacy_realtime::deterministic_legacy_capsule_id;
 
 pub(crate) struct LegacyCapsuleSpec<'a> {
     pub(crate) family: &'a str,

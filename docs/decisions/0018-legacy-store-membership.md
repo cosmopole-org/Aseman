@@ -3,7 +3,7 @@ status: DECISION
 owner: storage/security
 source_of_truth: this ADR
 last_verified_commit: f6be364d6761
-verification: A304 core mapping plus A308 membership transforms and tests
+verification: A304 core mapping plus A308 membership transforms and tests; membership_audit_repairs_ld12_residue_only_under_the_approved_digest
 ---
 
 # ADR 0018: Store membership principals and legacy permission sets
@@ -66,6 +66,29 @@ Every `onaccess` link needs its matching `hasaccess = "true"` and the reverse, a
 must name an existing store. A one-sided pair means legacy guards and signal delivery
 already disagree, so it must be reconciled before export.
 
+## Amendment 2026-09-21: audited pre-export repair (LD-12)
+
+Legacy creature deletion never removed memberships (LD-12), so real installations hold
+links the rules above refuse. The export stays strict. Instead, a separate step run by
+an operator reconciles the data before export
+(`audit_legacy_memberships` / `repair_legacy_memberships` in `aseman-storage-legacy`).
+The audit applies this ADR's resolution rules and the export's derived-link checks. It reports:
+
+| Defect | Repair |
+|---|---|
+| Membership in a store whose object is gone | Remove both links; the legacy store delete intends this |
+| Dangling local member | Remove both links; the fixed legacy creature delete does this |
+| One-sided pair (LD-11) | None. Deleting or completing it changes who can read or signal, so an operator decides |
+| Store with no creator, or a dangling local creator | None. An operator reassigns or deletes the store |
+| `ownerof` link to a missing creature, or naming an owner other than `ownerId` (LD-16) | Remove the link |
+| Non-human creature without its derived `ownerof` link (LD-16) | Rebuild it from `ownerId`. With no `ownerId`, an operator decides |
+
+The audit's digest is the approval token. The repair recomputes the audit from the
+stopped node's keys and writes nothing unless the digest matches. It then deletes the approved links and rebuilds the approved derived links, in one
+atomic batch, and reports what it removed and what still
+needs a decision. The repair never runs automatically, and never guesses whether a
+member is local.
+
 ## Rejected alternatives
 
 - Mapping permission sets to owner/member/viewer roles: this loses the non-canonical sets
@@ -74,3 +97,6 @@ already disagree, so it must be reconciled before export.
   today.
 - Treating every unresolved member as remote: this launders dangling local references
   into external trust.
+- Letting the export drop dangling memberships: this hides the data change from the
+  operator. A separate step, approved by digest, makes the change explicit and
+  auditable.

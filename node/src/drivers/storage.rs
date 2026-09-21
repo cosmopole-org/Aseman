@@ -1,11 +1,10 @@
 //! Translation of `drivers/storage/storage.go`.
 //!
-//! `Storage` implements [`IStorage`]: the key/value database is RocksDB
-//! (via `rocksdb::TransactionDB`, the same family used by the hashgraph
-//! store); the time-series database is QuestDB exposed through its PG-wire
-//! interface, accessed via an `r2d2`-pooled `postgres` client. The Go
-//! original spun on connect for QuestDB until the schema was available; the
-//! translation preserves that behaviour for the `storage` table.
+//! `Storage` implements [`IStorage`] over the legacy storage provider
+//! (`aseman-storage-legacy`): the key/value store is its `LegacyKvStore` seam and the
+//! time-series store is its `QuestDbTimeSeries` client, which preserves the legacy
+//! connect-and-repair startup for the `storage` table. This driver names no RocksDB or
+//! QuestDB types (Phase 3 gate).
 
 use std::fs;
 use std::sync::{Arc, Mutex};
@@ -74,7 +73,6 @@ impl IStorage for Storage {
         self.kvdb.clone()
     }
 
-
     fn gen_id(&self, t: &dyn ITrx, origin: &str) -> String {
         // This mutex exists ONLY to make the id-counter read-modify-write below
         // atomic across concurrent callers. It must NOT be taken by the QuestDB
@@ -105,10 +103,12 @@ impl IStorage for Storage {
                     0
                 };
                 counter += 1;
-                let _ = self.kvdb.write_batch(&[aseman_storage_legacy::LegacyKvWrite::Put {
-                    key: key.to_vec(),
-                    value: counter.to_be_bytes().to_vec(),
-                }]);
+                let _ = self
+                    .kvdb
+                    .write_batch(&[aseman_storage_legacy::LegacyKvWrite::Put {
+                        key: key.to_vec(),
+                        value: counter.to_be_bytes().to_vec(),
+                    }]);
                 counter
             };
             format!("{}@{}", counter, origin)

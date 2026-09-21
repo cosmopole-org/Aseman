@@ -154,6 +154,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "aseman-capsule-repositories"
+version = "0.1.0"
+dependencies = [
+ "aseman-contracts",
+ "aseman-domain",
+ "aseman-ports",
+ "serde_json",
+ "thiserror 2.0.20",
+ "uuid",
+]
+
+[[package]]
 name = "aseman-config"
 version = "0.1.0"
 dependencies = [
@@ -168,6 +180,7 @@ version = "0.1.0"
 dependencies = [
  "prost",
  "protox",
+ "rsa",
  "serde",
  "serde_json",
  "sha2 0.10.9",
@@ -272,8 +285,12 @@ version = "0.1.0"
 dependencies = [
  "aseman-config",
  "aseman-contracts",
+ "aseman-domain",
  "base64 0.22.1",
  "chacha20poly1305",
+ "postgres",
+ "r2d2",
+ "r2d2_postgres",
  "rocksdb",
  "rsa",
  "serde_json",
@@ -285,6 +302,8 @@ dependencies = [
 name = "aseman-storage-postgres"
 version = "0.1.0"
 dependencies = [
+ "aseman-application",
+ "aseman-capsule-repositories",
  "aseman-config",
  "aseman-contracts",
  "aseman-domain",
@@ -293,6 +312,7 @@ dependencies = [
  "postgres",
  "r2d2",
  "r2d2_postgres",
+ "rsa",
  "serde",
  "serde_json",
  "sha2 0.10.9",

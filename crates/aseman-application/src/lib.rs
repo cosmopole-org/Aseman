@@ -8,7 +8,9 @@ use aseman_ports::{
 };
 use thiserror::Error;
 
+pub mod creature;
 pub mod storage_migration;
+pub mod store;
 
 #[derive(Clone, Debug, Eq, Error, PartialEq)]
 pub enum ApplicationError {

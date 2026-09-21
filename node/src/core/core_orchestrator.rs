@@ -655,7 +655,9 @@ impl ICore for Core {
         let trx = TrxWrapper::new(core_clone, tools.storage(), readonly);
         let res = fn_(&*trx);
         if res.is_ok() {
-            trx.commit();
+            if let Err(error) = trx.commit() {
+                eprintln!("modify_state: {error}");
+            }
         } else {
             trx.discard();
         }
@@ -676,13 +678,35 @@ impl ICore for Core {
             Arc::new(ActorState::new(Some(info), Some(trx.clone()), src));
         let res = fn_(state);
         if res.is_ok() {
-            trx.commit();
+            if let Err(error) = trx.commit() {
+                eprintln!("modify_state_securly: {error}");
+            }
         } else {
             trx.discard();
         }
     }
     fn modify_state_securly(&self, readonly: bool, info: Arc<dyn IInfo>, fn_: StateClosure) {
         self.modify_state_securly_with_source(readonly, info, "", fn_);
+    }
+    fn modify_state_securly_checked(
+        &self,
+        readonly: bool,
+        info: Arc<dyn IInfo>,
+        src: &str,
+        mut fn_: StateClosure,
+    ) -> Result<()> {
+        let Some(trx) = self.checked_trx(readonly) else {
+            return Err(anyhow::anyhow!("state is not available"));
+        };
+        let state: Arc<dyn crate::models::state::IState> =
+            Arc::new(ActorState::new(Some(info), Some(trx.clone()), src));
+        match fn_(state) {
+            Ok(()) => trx.commit(),
+            Err(error) => {
+                trx.discard();
+                Err(error)
+            }
+        }
     }
     fn sign_packet(&self, data: &[u8]) -> String {
         let key = self.priv_key.lock().unwrap().clone();
@@ -749,12 +773,22 @@ impl ICore for Core {
             // distribution marker belongs to the VM itself.
             let base_vm_id = caspar_vm_sdk::util::trx_key_vm_id(vm_id);
             let distributed = t.get_link(&format!("vmDistributed::{}", base_vm_id)) == "true";
-            crate::drivers::cluster::with_replication_scope(distributed, || t.commit());
+            if let Err(error) =
+                crate::drivers::cluster::with_replication_scope(distributed, || t.commit())
+            {
+                eprintln!("end_vm_trx {vm_id}: {error}");
+            }
         }
     }
 }
 
 impl Core {
+    /// A transaction over this core's storage, when the tools are loaded.
+    fn checked_trx(&self, readonly: bool) -> Option<Arc<TrxWrapper>> {
+        let tools = self.tools.lock().unwrap().clone()?;
+        Some(TrxWrapper::new(self.weak_self(), tools.storage(), readonly))
+    }
+
     /// Build a fresh `Arc<dyn ICore>` pointing at the same underlying
     /// `Core` state. Used by paths that need to hand an `Arc<dyn ICore>`
     /// to drivers / closures.
@@ -1076,6 +1110,19 @@ struct WeakCoreView {
     inner: CoreWeakHandles,
 }
 
+impl WeakCoreView {
+    /// A transaction over this view's storage, when the tools are loaded.
+    fn checked_trx(&self, readonly: bool) -> Option<Arc<TrxWrapper>> {
+        let tools = self.inner.tools.clone()?;
+        let core_for_trx: Arc<dyn ICore> = Arc::new(WeakCoreView {
+            inner: CoreWeakHandles {
+                ..clone_handles(&self.inner)
+            },
+        });
+        Some(TrxWrapper::new(core_for_trx, tools.storage(), readonly))
+    }
+}
+
 impl ICore for WeakCoreView {
     fn owner_id(&self) -> String {
         self.inner.owner_id.clone()
@@ -1120,7 +1167,9 @@ impl ICore for WeakCoreView {
         let trx = TrxWrapper::new(core_for_trx, tools.storage(), readonly);
         let res = fn_(&*trx);
         if res.is_ok() {
-            trx.commit();
+            if let Err(error) = trx.commit() {
+                eprintln!("modify_state: {error}");
+            }
         } else {
             trx.discard();
         }
@@ -1145,13 +1194,35 @@ impl ICore for WeakCoreView {
             Arc::new(ActorState::new(Some(info), Some(trx.clone()), src));
         let res = fn_(state);
         if res.is_ok() {
-            trx.commit();
+            if let Err(error) = trx.commit() {
+                eprintln!("modify_state_securly: {error}");
+            }
         } else {
             trx.discard();
         }
     }
     fn modify_state_securly(&self, readonly: bool, info: Arc<dyn IInfo>, fn_: StateClosure) {
         self.modify_state_securly_with_source(readonly, info, "", fn_);
+    }
+    fn modify_state_securly_checked(
+        &self,
+        readonly: bool,
+        info: Arc<dyn IInfo>,
+        src: &str,
+        mut fn_: StateClosure,
+    ) -> Result<()> {
+        let Some(trx) = self.checked_trx(readonly) else {
+            return Err(anyhow::anyhow!("state is not available"));
+        };
+        let state: Arc<dyn crate::models::state::IState> =
+            Arc::new(ActorState::new(Some(info), Some(trx.clone()), src));
+        match fn_(state) {
+            Ok(()) => trx.commit(),
+            Err(error) => {
+                trx.discard();
+                Err(error)
+            }
+        }
     }
     fn sign_packet(&self, data: &[u8]) -> String {
         match &self.inner.priv_key {

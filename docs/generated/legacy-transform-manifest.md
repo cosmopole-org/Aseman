@@ -17,10 +17,10 @@ closed; a blocked or heuristic row is never copied as an opaque authoritative ca
 | Disposition | Rows |
 |---|---:|
 | `aggregate_with_document_family` | 3 |
-| `aggregate_with_object_family` | 45 |
-| `covered_by_reviewed_family` | 7 |
-| `derived_index_or_relationship` | 64 |
-| `fixture_backed_transform` | 106 |
+| `aggregate_with_object_family` | 30 |
+| `covered_by_reviewed_family` | 9 |
+| `derived_index_or_relationship` | 54 |
+| `fixture_backed_transform` | 85 |
 | `intentional_removal` | 20 |
 | `reviewed_no_persisted_record` | 14 |
 | `vmm_observed_runtime` | 33 |

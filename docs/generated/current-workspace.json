@@ -40,7 +40,7 @@
       "client-cli/package-lock.json"
     ],
     "tracked_dist_file_count": 15,
-    "tracked_file_count": 669,
+    "tracked_file_count": 714,
     "tracked_files_by_top_level": {
       ".cargo": 1,
       ".claude": 1,
@@ -57,11 +57,11 @@
       "client-cli": 6,
       "clippy.toml": 1,
       "cmd": 7,
-      "contracts": 57,
-      "crates": 31,
+      "contracts": 59,
+      "crates": 33,
       "dist": 15,
-      "docs": 72,
-      "modules": 21,
+      "docs": 85,
+      "modules": 46,
       "node": 284,
       "plan": 18,
       "run-nodes.sh": 1,
@@ -70,7 +70,7 @@
       "scripts": 16,
       "sdk": 10,
       "stop-nodes.sh": 1,
-      "tests": 13,
+      "tests": 16,
       "vm-sdk": 8,
       "vms": 80,
       "wiki": 11,
@@ -78,7 +78,7 @@
     },
     "tracked_source_files_by_extension": {
       ".py": 21,
-      ".rs": 366,
+      ".rs": 394,
       ".sh": 6,
       ".ts": 1
     }
@@ -196,6 +196,54 @@
       {
         "dependencies": [
           {
+            "name": "aseman-contracts",
+            "path": "crates/aseman-contracts",
+            "scope": "normal"
+          },
+          {
+            "name": "aseman-domain",
+            "path": "crates/aseman-domain",
+            "scope": "normal"
+          },
+          {
+            "name": "aseman-ports",
+            "path": "crates/aseman-ports",
+            "scope": "normal"
+          },
+          {
+            "name": "serde_json",
+            "scope": "normal"
+          },
+          {
+            "name": "thiserror",
+            "scope": "normal"
+          },
+          {
+            "name": "uuid",
+            "scope": "normal"
+          }
+        ],
+        "description": "Typed domain repositories on the capsule protocol, independent of any provider.",
+        "edition": {
+          "workspace": true
+        },
+        "features": {},
+        "manifest": "crates/aseman-capsule-repositories/Cargo.toml",
+        "name": "aseman-capsule-repositories",
+        "targets": [
+          {
+            "kind": "lib",
+            "name": "aseman-capsule-repositories",
+            "path": "src/lib.rs"
+          }
+        ],
+        "version": {
+          "workspace": true
+        }
+      },
+      {
+        "dependencies": [
+          {
             "name": "serde",
             "scope": "normal"
           },
@@ -230,6 +278,10 @@
         "dependencies": [
           {
             "name": "prost",
+            "scope": "normal"
+          },
+          {
+            "name": "rsa",
             "scope": "normal"
           },
           {
@@ -417,7 +469,9 @@
         "edition": {
           "workspace": true
         },
-        "features": {},
+        "features": {
+          "conformance": []
+        },
         "manifest": "crates/aseman-ports/Cargo.toml",
         "name": "aseman-ports",
         "targets": [
@@ -503,8 +557,18 @@
       {
         "dependencies": [
           {
+            "name": "aseman-config",
+            "path": "crates/aseman-config",
+            "scope": "normal"
+          },
+          {
             "name": "aseman-contracts",
             "path": "crates/aseman-contracts",
+            "scope": "normal"
+          },
+          {
+            "name": "aseman-domain",
+            "path": "crates/aseman-domain",
             "scope": "normal"
           },
           {
@@ -515,6 +579,18 @@
             "name": "chacha20poly1305",
             "scope": "normal",
             "version": "0.10.1"
+          },
+          {
+            "name": "postgres",
+            "scope": "normal"
+          },
+          {
+            "name": "r2d2",
+            "scope": "normal"
+          },
+          {
+            "name": "r2d2_postgres",
+            "scope": "normal"
           },
           {
             "name": "rocksdb",
@@ -557,6 +633,11 @@
       },
       {
         "dependencies": [
+          {
+            "name": "aseman-capsule-repositories",
+            "path": "crates/aseman-capsule-repositories",
+            "scope": "normal"
+          },
           {
             "name": "aseman-config",
             "path": "crates/aseman-config",
@@ -621,8 +702,25 @@
             "scope": "normal"
           },
           {
+            "name": "aseman-application",
+            "path": "crates/aseman-application",
+            "scope": "dev"
+          },
+          {
+            "features": [
+              "conformance"
+            ],
+            "name": "aseman-ports",
+            "path": "crates/aseman-ports",
+            "scope": "dev"
+          },
+          {
             "name": "aseman-storage-conformance",
             "path": "tests/contracts/storage",
+            "scope": "dev"
+          },
+          {
+            "name": "rsa",
             "scope": "dev"
           }
         ],
@@ -689,6 +787,11 @@
           {
             "name": "aseman-ports",
             "path": "crates/aseman-ports",
+            "scope": "normal"
+          },
+          {
+            "name": "aseman-storage-legacy",
+            "path": "modules/storage-legacy",
             "scope": "normal"
           },
           {
@@ -920,6 +1023,14 @@
             "name": "uuid",
             "scope": "normal",
             "version": "1.23.1"
+          },
+          {
+            "features": [
+              "conformance"
+            ],
+            "name": "aseman-ports",
+            "path": "crates/aseman-ports",
+            "scope": "dev"
           }
         ],
         "description": "Caspar node \u2014 Rust translation of the Caspar (kasper) Go node",

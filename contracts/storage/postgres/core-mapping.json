@@ -1315,6 +1315,40 @@
           "topic"
         ]
       ]
+    },
+    {
+      "document_fields": [],
+      "field_columns": {
+        "family": "family",
+        "legacy_id": "legacy_id",
+        "target_id": "target_id",
+        "target_kind": "target_kind"
+      },
+      "fields": {
+        "family": "text",
+        "legacy_id": "text",
+        "target_id": "capsule_id",
+        "target_kind": "text"
+      },
+      "kind": "core.legacy_identity",
+      "relationships": {},
+      "required_fields": [
+        "family",
+        "legacy_id",
+        "target_kind",
+        "target_id"
+      ],
+      "table": "legacy_identities",
+      "unique_indexes": [
+        [
+          "family",
+          "legacy_id"
+        ],
+        [
+          "target_kind",
+          "target_id"
+        ]
+      ]
     }
   ]
 }

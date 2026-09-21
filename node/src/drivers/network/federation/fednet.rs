@@ -195,22 +195,7 @@ impl FedNet {
                         .unwrap_or_default()
                 };
                 if !store_id.is_empty() {
-                    let user_id = cb.user_id.clone();
-                    let store_id_clone = store_id.clone();
-                    self.app.modify_state(
-                        false,
-                        Box::new(move |trx: &dyn ITrx| {
-                            trx.put_link(
-                                &format!("onaccess::{}::{}", store_id_clone, user_id),
-                                &StorePermissions::member().encode(),
-                            );
-                            trx.put_link(
-                                &format!("hasaccess::{}::{}", user_id, store_id_clone),
-                                "true",
-                            );
-                            Ok(())
-                        }),
-                    );
+                    self.apply_membership(&store_id, &cb.user_id, Some(StorePermissions::member()));
                     if let Some(sig) = self.signaler.lock().unwrap().clone() {
                         sig.join_group(&store_id, &cb.user_id);
                     }
@@ -218,21 +203,11 @@ impl FedNet {
             }
             "/stores/create" => {
                 if let Ok(out) = serde_json::from_slice::<stores::CreateOutput>(&pack.binary) {
-                    let user_id = cb.user_id.clone();
-                    let store = out.store.store.clone();
-                    let store_id = store.id.clone();
-                    self.app.modify_state(
-                        false,
-                        Box::new(move |trx: &dyn ITrx| {
-                            store.clone().pull(trx);
-                            trx.put_link(
-                                &format!("onaccess::{}::{}", store_id, user_id),
-                                // The creator of a store administers it.
-                                &StorePermissions::owner().encode(),
-                            );
-                            trx.put_link(&format!("hasaccess::{}::{}", user_id, store_id), "true");
-                            Ok(())
-                        }),
+                    // The creator of a store administers it.
+                    self.apply_membership(
+                        &out.store.store.id,
+                        &cb.user_id,
+                        Some(StorePermissions::owner()),
                     );
                     if let Some(sig) = self.signaler.lock().unwrap().clone() {
                         sig.join_group(&out.store.store.id, &cb.user_id);
@@ -259,6 +234,26 @@ impl FedNet {
                 sig.signal_store(&pack.key, &pack.store_id, value, pack.exceptions, false);
             }
         }
+    }
+
+    /// Mirrors a remote membership change through the store port: `Some` grants
+    /// the permissions, `None` removes the member (RL-004 strangler).
+    fn apply_membership(&self, store_id: &str, member_id: &str, grant: Option<StorePermissions>) {
+        let store_id = store_id.to_string();
+        let member_id = member_id.to_string();
+        self.app.modify_state(
+            false,
+            Box::new(move |trx: &dyn ITrx| {
+                let ports = crate::shell::api::model::store_ports::LegacyMembership { trx };
+                let outcome = match grant {
+                    Some(permissions) => {
+                        aseman_ports::StoreAccess::join(&ports, &store_id, &member_id, permissions)
+                    }
+                    None => aseman_ports::StoreAccess::leave(&ports, &store_id, &member_id),
+                };
+                outcome.map_err(|error| anyhow::anyhow!("{error}"))
+            }),
+        );
     }
 
     fn react_to_update(&self, key: &str, data: &[u8]) {
@@ -288,33 +283,16 @@ impl FedNet {
             }
             "stores/addMember" | "stores/join" => {
                 if let Ok(tc) = serde_json::from_slice::<stores::AddMember>(data) {
-                    let store_id = tc.store_id;
-                    let user_id = tc.user.id;
-                    self.app.modify_state(
-                        false,
-                        Box::new(move |trx: &dyn ITrx| {
-                            trx.put_link(
-                                &format!("onaccess::{}::{}", store_id, user_id),
-                                &StorePermissions::member().encode(),
-                            );
-                            trx.put_link(&format!("hasaccess::{}::{}", user_id, store_id), "true");
-                            Ok(())
-                        }),
+                    self.apply_membership(
+                        &tc.store_id,
+                        &tc.user.id,
+                        Some(StorePermissions::member()),
                     );
                 }
             }
             "stores/removeMember" => {
                 if let Ok(tc) = serde_json::from_slice::<stores::AddMember>(data) {
-                    let store_id = tc.store_id;
-                    let user_id = tc.user.id;
-                    self.app.modify_state(
-                        false,
-                        Box::new(move |trx: &dyn ITrx| {
-                            trx.del_key(&format!("link::onaccess::{}::{}", store_id, user_id));
-                            trx.del_key(&format!("link::hasaccess::{}::{}", user_id, store_id));
-                            Ok(())
-                        }),
-                    );
+                    self.apply_membership(&tc.store_id, &tc.user.id, None);
                 }
             }
             "stores/updateMember" => {

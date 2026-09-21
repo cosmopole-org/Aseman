@@ -100,6 +100,12 @@ def rust_sources() -> list[Path]:
         if "tests.rs" not in path.name and "/target/" not in path.as_posix()
     )
 
+# Key builders shared through `aseman-domain`, so a transaction call that passes
+# one still names its legacy key family (RL-004 adapters build keys this way).
+KEY_HELPERS = {
+    "access_link_key": "onaccess::{store_id}::{member_id}",
+}
+
 
 def access_mode(method: str) -> str:
     if method.startswith(("put", "del")):
@@ -115,8 +121,34 @@ def logical_accesses() -> tuple[list[dict[str, str]], list[dict[str, str]]]:
         re.S,
     )
     format_pattern = re.compile(r'format!\(\s*"([^\"]*::[^\"]*)"')
+    helper_pattern = re.compile(
+        rf"\.(?P<method>{TRX_METHODS})\(\s*&\s*"
+        r'(?:format!\(\s*"(?P<prefix>[^"{]*)\{\}"\s*,\s*)?'
+        rf"(?P<helper>{'|'.join(KEY_HELPERS)})\(",
+        re.S,
+    )
+    helper_wrap = re.compile(rf"\s*,\s*(?:{'|'.join(KEY_HELPERS)})\(")
     for path in rust_sources():
         value = production_source(path)
+        for found in helper_pattern.finditer(value):
+            method = found.group("method")
+            template = (found.group("prefix") or "") + KEY_HELPERS[found.group("helper")]
+            source = loc(path, value, found.start())
+            direct.append(
+                {
+                    "method": method,
+                    "mode": access_mode(method),
+                    "logical_template": template,
+                    "source": source,
+                }
+            )
+            candidates.append(
+                {
+                    "logical_template": template,
+                    "source": source,
+                    "review_status": "candidate; caller association may be indirect",
+                }
+            )
         for found in direct_pattern.finditer(value):
             key = found.group("key")
             method = found.group("method")
@@ -129,6 +161,9 @@ def logical_accesses() -> tuple[list[dict[str, str]], list[dict[str, str]]]:
                 }
             )
         for found in format_pattern.finditer(value):
+            # `format!("link::{}", access_link_key(..))` is named by the helper row.
+            if helper_wrap.match(value, found.end()):
+                continue
             candidates.append(
                 {
                     "logical_template": found.group(1),
@@ -176,7 +211,9 @@ def core_objects() -> list[dict[str, Any]]:
 
 
 def questdb_tables() -> list[dict[str, Any]]:
-    path = ROOT / "node/src/drivers/storage.rs"
+    # The legacy QuestDB client moved into the legacy storage provider (P3-06); the
+    # physical tables it creates are unchanged.
+    path = ROOT / "modules/storage-legacy/src/questdb.rs"
     value = production_source(path)
     creates: dict[str, dict[str, Any]] = {}
     for found in re.finditer(

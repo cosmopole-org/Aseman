@@ -2,7 +2,7 @@
 status: GENERATED
 owner: storage/postgres
 source_of_truth: contracts/capsule/kinds, contracts/storage/postgres, and scripts/generate_postgres_core.py
-last_verified_commit: f6be364d6761
+last_verified_commit: a3212a726506
 verification: python3 scripts/generate_postgres_core.py --check
 ---
 
@@ -49,6 +49,7 @@ indexes, and checks enforce the accepted logical schema. No guest payload table 
 | `core.secret_grant` | `aseman_core.secret_grants` | 2 | 2 | 1 |
 | `core.bridge_grant` | `aseman_core.bridge_grants` | 6 | 0 | 1 |
 | `core.bridge_topic` | `aseman_core.bridge_topics` | 2 | 0 | 1 |
+| `core.legacy_identity` | `aseman_core.legacy_identities` | 4 | 0 | 2 |
 
 The guest catalog tables contain only trusted bindings and schema definitions.
 Creature-owned rows are stored later in separate provider-native databases/namespaces

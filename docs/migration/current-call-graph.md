@@ -40,30 +40,30 @@ Registered actions: 77; distinct guard expressions: 5.
 | `/creatures/authenticate` | `node/src/shell/api/actions/creature.rs::authenticate` | `user_guard()` | — | — | — |
 | `/creatures/checkSign` | `node/src/shell/api/actions/creature.rs::check_sign` | `user_guard()` | `get_link` | `security` | — |
 | `/creatures/closePool` | `node/src/shell/api/actions/creature/finance.rs::close_pool` | `finance_guard()` | `get_link`, `put_link` | — | — |
-| `/creatures/consumeLock` | `node/src/shell/api/actions/creature.rs::consume_lock` | `user_guard()` | `del_json`, `get_json`, `has_obj`, `put_json` | `security` | — |
-| `/creatures/create` | `node/src/shell/api/actions/creature.rs::create` | `anon_guard()` | `has_index`, `put_json`, `put_link` | — | — |
+| `/creatures/consumeLock` | `node/src/shell/api/actions/creature.rs::consume_lock` | `user_guard()` | `del_json`, `get_json`, `put_json` | `security` | — |
+| `/creatures/create` | `node/src/shell/api/actions/creature.rs::create` | `anon_guard()` | — | — | — |
 | `/creatures/createHold` | `node/src/shell/api/actions/creature/finance.rs::create_hold` | `finance_guard()` | `get_json`, `get_link`, `has_obj`, `put_link` | — | — |
 | `/creatures/debitPool` | `node/src/shell/api/actions/creature/finance.rs::debit_pool` | `finance_guard()` | `get_json`, `get_link`, `put_json`, `put_link` | — | — |
-| `/creatures/delete` | `node/src/shell/api/actions/creature.rs::delete` | `user_guard()` | `del_json`, `del_key`, `get_link`, `get_links_list` | — | — |
+| `/creatures/delete` | `node/src/shell/api/actions/creature.rs::delete` | `user_guard()` | `del_key`, `get_link` | — | — |
 | `/creatures/find` | `node/src/shell/api/actions/creature.rs::find` | `user_guard()` | — | — | — |
-| `/creatures/get` | `node/src/shell/api/actions/creature.rs::get` | `user_guard()` | `has_obj` | — | — |
-| `/creatures/getByUsername` | `node/src/shell/api/actions/creature.rs::get_by_username` | `user_guard()` | `get_index` | — | — |
+| `/creatures/get` | `node/src/shell/api/actions/creature.rs::get` | `user_guard()` | — | — | — |
+| `/creatures/getByUsername` | `node/src/shell/api/actions/creature.rs::get_by_username` | `user_guard()` | — | — | — |
 | `/creatures/getFinancialAccount` | `node/src/shell/api/actions/creature/finance.rs::get_financial_account` | `finance_guard()` | — | — | — |
 | `/creatures/getHold` | `node/src/shell/api/actions/creature/finance.rs::get_hold` | `finance_guard()` | — | — | — |
 | `/creatures/list` | `node/src/shell/api/actions/creature.rs::list` | `user_guard()` | — | — | — |
 | `/creatures/listPayouts` | `node/src/shell/api/actions/creature/finance.rs::list_payouts` | `finance_guard()` | `get_by_prefix` | — | — |
-| `/creatures/lockToken` | `node/src/shell/api/actions/creature.rs::lock_token` | `user_guard()` | `has_obj`, `put_json` | — | — |
-| `/creatures/login` | `node/src/shell/api/actions/creature.rs::login` | `anon_guard()` | `del_key`, `get_index`, `get_link`, `has_index`, `put_link` | — | — |
-| `/creatures/meta` | `node/src/shell/api/actions/creature.rs::meta` | `user_guard()` | `get_json` | — | — |
+| `/creatures/lockToken` | `node/src/shell/api/actions/creature.rs::lock_token` | `user_guard()` | `put_json` | — | — |
+| `/creatures/login` | `node/src/shell/api/actions/creature.rs::login` | `anon_guard()` | `del_key`, `get_index`, `get_link`, `put_link` | — | — |
+| `/creatures/meta` | `node/src/shell/api/actions/creature.rs::meta` | `user_guard()` | — | — | — |
 | `/creatures/mint` | `node/src/shell/api/actions/creature.rs::mint` | `user_guard()` | `get_link`, `put_link` | — | — |
 | `/creatures/openPool` | `node/src/shell/api/actions/creature/finance.rs::open_pool` | `finance_guard()` | `get_link`, `put_link` | — | — |
 | `/creatures/paymentAdjustment` | `node/src/shell/api/actions/creature/finance.rs::payment_adjustment` | `finance_guard()` | `get_link`, `put_link` | — | — |
-| `/creatures/publishFinanceCatalog` | `node/src/shell/api/actions/creature/finance.rs::publish_finance_catalog` | `finance_guard()` | `get_json`, `has_obj`, `put_json` | — | — |
-| `/creatures/publishFinanceQuote` | `node/src/shell/api/actions/creature/finance.rs::publish_finance_quote` | `finance_guard()` | `get_json`, `has_obj`, `put_json` | — | — |
+| `/creatures/publishFinanceCatalog` | `node/src/shell/api/actions/creature/finance.rs::publish_finance_catalog` | `finance_guard()` | `get_json`, `put_json` | — | — |
+| `/creatures/publishFinanceQuote` | `node/src/shell/api/actions/creature/finance.rs::publish_finance_quote` | `finance_guard()` | `get_json`, `put_json` | — | — |
 | `/creatures/reconcileFinancialSystem` | `node/src/shell/api/actions/creature/finance.rs::reconcile_financial_system` | `finance_guard()` | `get_by_prefix`, `get_json`, `get_link`, `get_links_list` | — | — |
 | `/creatures/refreshPool` | `node/src/shell/api/actions/creature/finance.rs::refresh_pool` | `finance_guard()` | `get_link`, `put_link` | — | — |
-| `/creatures/registerFinanceNode` | `node/src/shell/api/actions/creature/finance.rs::register_finance_node` | `finance_guard()` | `has_obj`, `put_json` | — | — |
-| `/creatures/registerFinanceResource` | `node/src/shell/api/actions/creature/finance.rs::register_finance_resource` | `finance_guard()` | `get_json`, `has_obj`, `put_json` | — | — |
+| `/creatures/registerFinanceNode` | `node/src/shell/api/actions/creature/finance.rs::register_finance_node` | `finance_guard()` | `put_json` | — | — |
+| `/creatures/registerFinanceResource` | `node/src/shell/api/actions/creature/finance.rs::register_finance_resource` | `finance_guard()` | `get_json`, `put_json` | — | — |
 | `/creatures/releaseHold` | `node/src/shell/api/actions/creature/finance.rs::release_hold` | `finance_guard()` | `get_link`, `put_link` | — | — |
 | `/creatures/releasePool` | `node/src/shell/api/actions/creature/finance.rs::release_pool` | `finance_guard()` | `get_json`, `put_json` | — | — |
 | `/creatures/requestPayout` | `node/src/shell/api/actions/creature/finance.rs::request_payout` | `finance_guard()` | `get_link`, `put_json`, `put_link` | — | — |
@@ -82,20 +82,20 @@ Registered actions: 77; distinct guard expressions: 5.
 | `/creatures/settlePool` | `node/src/shell/api/actions/creature/finance.rs::settle_pool` | `finance_guard()` | `get_json`, `get_link`, `put_json`, `put_link` | — | — |
 | `/creatures/signal` | `node/src/shell/api/actions/creature.rs::signal` | `user_guard()` | — | `signaler` | — |
 | `/creatures/startHold` | `node/src/shell/api/actions/creature/finance.rs::start_hold` | `finance_guard()` | `get_link`, `put_link` | — | — |
-| `/creatures/transfer` | `node/src/shell/api/actions/creature.rs::transfer` | `finance_guard()` | `get_index` | — | — |
-| `/creatures/types` | `node/src/shell/api/actions/creature.rs::types` | `user_guard()` | `get_links_list` | — | — |
-| `/creatures/update` | `node/src/shell/api/actions/creature.rs::update` | `user_guard()` | `del_index`, `has_index` | — | — |
+| `/creatures/transfer` | `node/src/shell/api/actions/creature.rs::transfer` | `finance_guard()` | — | — | — |
+| `/creatures/types` | `node/src/shell/api/actions/creature.rs::types` | `user_guard()` | — | — | — |
+| `/creatures/update` | `node/src/shell/api/actions/creature.rs::update` | `user_guard()` | — | — | — |
 | `/gateway/signal` | `node/src/shell/api/actions/gateway.rs::signal` | `Guard::default()` | — | — | — |
 | `/gateway/subscribe` | `node/src/shell/api/actions/gateway.rs::subscribe` | `Guard::default()` | — | — | — |
 | `/gateway/unsubscribe` | `node/src/shell/api/actions/gateway.rs::unsubscribe` | `Guard::default()` | — | — | — |
 | `/machines/closeVmTerminal` | `node/src/shell/api/actions/program.rs::close_vm_terminal` | `user_guard()` | `del_key`, `has_obj` | — | — |
-| `/machines/list` | `node/src/shell/api/actions/program.rs::list_machines` | `user_guard()` | `get_json` | — | — |
+| `/machines/list` | `node/src/shell/api/actions/program.rs::list_machines` | `user_guard()` | — | — | — |
 | `/machines/listEntityVms` | `node/src/shell/api/actions/program.rs::list_entity_vms` | `user_guard()` | `get_link`, `get_links_list`, `has_obj` | — | — |
 | `/machines/listProgramMachines` | `node/src/shell/api/actions/program.rs::list_program_machines` | `user_guard()` | — | — | — |
 | `/machines/openVmTerminal` | `node/src/shell/api/actions/program.rs::open_vm_terminal` | `user_guard()` | `has_obj`, `put_link` | — | — |
 | `/machines/readMachineBuilds` | `node/src/shell/api/actions/program.rs::read_machine_builds` | `user_guard()` | `get_links_list` | — | — |
 | `/machines/readVmLogs` | `node/src/shell/api/actions/program.rs::read_vm_logs` | `user_guard()` | `get_links_list` | `storage` | `read_vm_logs` |
-| `/programs/create` | `node/src/shell/api/actions/program.rs::create_program` | `user_guard()` | `has_obj`, `put_json`, `put_link` | — | — |
+| `/programs/create` | `node/src/shell/api/actions/program.rs::create_program` | `user_guard()` | `put_json`, `put_link` | — | — |
 | `/programs/delete` | `node/src/shell/api/actions/program.rs::delete_program` | `user_guard()` | `del_index`, `del_key`, `get_index`, `has_obj` | — | — |
 | `/programs/deleteEntity` | `node/src/shell/api/actions/program.rs::delete_program_entity` | `user_guard()` | `del_json`, `del_key`, `get_link`, `has_obj` | — | `delete_vm_instance` |
 | `/programs/deploy` | `node/src/shell/api/actions/program.rs::deploy` | `user_guard()` | `has_obj`, `put_link` | `file`, `storage`, `vmm` | `build_vm_image` |
@@ -105,10 +105,10 @@ Registered actions: 77; distinct guard expressions: 5.
 | `/programs/stopEntity` | `node/src/shell/api/actions/program.rs::stop_program_entity` | `user_guard()` | `del_json`, `del_key`, `has_obj` | `vmm` | — |
 | `/programs/update` | `node/src/shell/api/actions/program.rs::update_program` | `user_guard()` | `has_obj`, `put_json` | — | — |
 | `/storage/upload` | `node/src/shell/api/actions/creature.rs::storage_upload` | `user_guard()` | — | `file`, `storage` | — |
-| `/stores/getAccess` | `node/src/shell/api/actions/store.rs::get_access` | `store_guard()` | — | — | — |
-| `/stores/history` | `node/src/shell/api/actions/store.rs::history` | `store_guard()` | — | — | — |
-| `/stores/setAccess` | `node/src/shell/api/actions/store.rs::set_access` | `store_guard()` | `put_link` | — | — |
-| `/stores/signal` | `node/src/shell/api/actions/store.rs::signal` | `store_guard()` | `get_obj` | `storage` | — |
+| `/stores/getAccess` | `node/src/shell/api/actions/store.rs::get_access` | `store_guard()` | — | `storage` | — |
+| `/stores/history` | `node/src/shell/api/actions/store.rs::history` | `store_guard()` | — | `storage` | — |
+| `/stores/setAccess` | `node/src/shell/api/actions/store.rs::set_access` | `store_guard()` | — | `storage` | — |
+| `/stores/signal` | `node/src/shell/api/actions/store.rs::signal` | `store_guard()` | — | `storage` | — |
 
 ## Limitations and required follow-up
 

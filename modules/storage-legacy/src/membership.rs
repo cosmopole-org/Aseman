@@ -43,6 +43,16 @@ pub fn canonical_legacy_permissions(raw: &str) -> LegacyMigrationResult<String> 
         .join(","))
 }
 
+/// How ADR 0018 resolves a legacy member identity.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub(crate) enum LegacyMemberClass {
+    Creature,
+    Program,
+    Remote,
+    /// Origin-qualified with a local origin, but no local creature or program exists.
+    DanglingLocal,
+}
+
 impl LegacySnapshotGraph {
     /// Export every paired legacy membership (ADR 0018).
     pub(crate) fn transform_legacy_memberships(
@@ -50,33 +60,7 @@ impl LegacySnapshotGraph {
         migration_time_micros: i64,
         local_origins: &BTreeSet<String>,
     ) -> LegacyMigrationResult<Vec<CapsuleEnvelope>> {
-        let mut permissions = BTreeMap::new();
-        let mut flags = BTreeSet::new();
-        for (key, value) in &self.links {
-            let pair = |prefix: &str| {
-                key.strip_prefix(prefix).and_then(|rest| {
-                    rest.split_once("::")
-                        .filter(|(left, right)| !left.is_empty() && !right.is_empty())
-                })
-            };
-            if let Some((store, member)) = pair("onaccess::") {
-                let raw = String::from_utf8(value.clone()).map_err(|_| {
-                    LegacyMigrationError::Invalid(format!("legacy link {key} is not UTF-8"))
-                })?;
-                permissions.insert((store.to_owned(), member.to_owned()), raw);
-            } else if let Some((member, store)) = pair("hasaccess::") {
-                if value != b"true" {
-                    return Err(LegacyMigrationError::Invalid(format!(
-                        "legacy link {key} does not hold the literal flag `true`"
-                    )));
-                }
-                flags.insert((store.to_owned(), member.to_owned()));
-            } else if key.starts_with("onaccess::") || key.starts_with("hasaccess::") {
-                return Err(LegacyMigrationError::Invalid(format!(
-                    "malformed legacy membership link {key}"
-                )));
-            }
-        }
+        let (permissions, flags) = self.legacy_membership_links()?;
         if let Some((store, member)) = flags.iter().find(|pair| !permissions.contains_key(*pair)) {
             return Err(LegacyMigrationError::Invalid(format!(
                 "legacy membership {store}::{member} has hasaccess without onaccess"
@@ -129,30 +113,23 @@ impl LegacySnapshotGraph {
         Ok(capsules)
     }
 
-    fn resolve_member(
+    /// Classifies a legacy member identity with the ADR 0018 resolution order.
+    pub(crate) fn classify_member(
         &self,
         member: &str,
         local_origins: &BTreeSet<String>,
-    ) -> LegacyMigrationResult<(&'static str, Option<CapsuleRelationship>)> {
-        let local = |family: &str, name: &str, kind: &str| CapsuleRelationship {
-            name: name.to_owned(),
-            target_kind: CapsuleKind(kind.to_owned()),
-            target_id: CapsuleId(deterministic_legacy_capsule_id(family, member.as_bytes())),
-        };
+    ) -> LegacyMigrationResult<LegacyMemberClass> {
         if self
             .objects
             .contains_key(&("Creature".to_owned(), member.to_owned()))
         {
-            return Ok((
-                "creature",
-                Some(local("Creature", "creature", "core.creature")),
-            ));
+            return Ok(LegacyMemberClass::Creature);
         }
         if self
             .objects
             .contains_key(&("Program".to_owned(), member.to_owned()))
         {
-            return Ok(("program", Some(local("Program", "program", "core.program"))));
+            return Ok(LegacyMemberClass::Program);
         }
         let origin = member
             .rsplit_once('@')
@@ -170,10 +147,72 @@ impl LegacySnapshotGraph {
             });
         }
         if local_origins.contains(origin) {
-            return Err(LegacyMigrationError::Invalid(format!(
-                "legacy store member {member} has a local origin but no local creature or program"
-            )));
+            return Ok(LegacyMemberClass::DanglingLocal);
         }
-        Ok(("remote_principal", None))
+        Ok(LegacyMemberClass::Remote)
+    }
+
+    fn resolve_member(
+        &self,
+        member: &str,
+        local_origins: &BTreeSet<String>,
+    ) -> LegacyMigrationResult<(&'static str, Option<CapsuleRelationship>)> {
+        let local = |family: &str, name: &str, kind: &str| CapsuleRelationship {
+            name: name.to_owned(),
+            target_kind: CapsuleKind(kind.to_owned()),
+            target_id: CapsuleId(deterministic_legacy_capsule_id(family, member.as_bytes())),
+        };
+        match self.classify_member(member, local_origins)? {
+            LegacyMemberClass::Creature => Ok((
+                "creature",
+                Some(local("Creature", "creature", "core.creature")),
+            )),
+            LegacyMemberClass::Program => {
+                Ok(("program", Some(local("Program", "program", "core.program"))))
+            }
+            LegacyMemberClass::Remote => Ok(("remote_principal", None)),
+            LegacyMemberClass::DanglingLocal => Err(LegacyMigrationError::Invalid(format!(
+                "legacy store member {member} has a local origin but no local creature or program"
+            ))),
+        }
+    }
+
+    /// Every legacy membership link, parsed exactly as the export reads it:
+    /// `onaccess` permission sets and `hasaccess` flags, keyed by `(store, member)`.
+    #[allow(clippy::type_complexity)]
+    pub(crate) fn legacy_membership_links(
+        &self,
+    ) -> LegacyMigrationResult<(
+        BTreeMap<(String, String), String>,
+        BTreeSet<(String, String)>,
+    )> {
+        let mut permissions = BTreeMap::new();
+        let mut flags = BTreeSet::new();
+        for (key, value) in &self.links {
+            let pair = |prefix: &str| {
+                key.strip_prefix(prefix).and_then(|rest| {
+                    rest.split_once("::")
+                        .filter(|(left, right)| !left.is_empty() && !right.is_empty())
+                })
+            };
+            if let Some((store, member)) = pair("onaccess::") {
+                let raw = String::from_utf8(value.clone()).map_err(|_| {
+                    LegacyMigrationError::Invalid(format!("legacy link {key} is not UTF-8"))
+                })?;
+                permissions.insert((store.to_owned(), member.to_owned()), raw);
+            } else if let Some((member, store)) = pair("hasaccess::") {
+                if value != b"true" {
+                    return Err(LegacyMigrationError::Invalid(format!(
+                        "legacy link {key} does not hold the literal flag `true`"
+                    )));
+                }
+                flags.insert((store.to_owned(), member.to_owned()));
+            } else if key.starts_with("onaccess::") || key.starts_with("hasaccess::") {
+                return Err(LegacyMigrationError::Invalid(format!(
+                    "malformed legacy membership link {key}"
+                )));
+            }
+        }
+        Ok((permissions, flags))
     }
 }

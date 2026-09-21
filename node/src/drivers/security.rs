@@ -206,8 +206,14 @@ impl ISecurity for Security {
         self.app.modify_state(
             true,
             Box::new(move |trx: &dyn ITrx| {
-                let typ = trx.get_column("Creature", &user_id_owned, "type");
-                *typ_clone.lock().unwrap() = String::from_utf8_lossy(&typ).into_owned();
+                *typ_clone.lock().unwrap() = aseman_ports::CreatureDirectory::creature(
+                    &crate::shell::api::model::creature_ports::LegacyCreatures { trx },
+                    &user_id_owned,
+                )
+                .ok()
+                .flatten()
+                .map(|record| record.creature_type)
+                .unwrap_or_default();
                 *god_clone.lock().unwrap() =
                     trx.get_string(&format!("god::{}", user_id_owned)) == "true";
                 Ok(())
@@ -224,13 +230,15 @@ impl ISecurity for Security {
         }
         let found = Arc::new(Mutex::new(false));
         let found_clone = found.clone();
-        let key = format!("hasaccess::{}::{}", user_id, store_id);
+        let (user_id, store_id) = (user_id.to_string(), store_id.to_string());
         self.app.modify_state(
             true,
             Box::new(move |trx: &dyn ITrx| {
-                if trx.get_link(&key) == "true" {
-                    *found_clone.lock().unwrap() = true;
-                }
+                // Membership goes through the store port (legacy adapter until cutover).
+                let ports = crate::shell::api::model::store_ports::LegacyMembership { trx };
+                let member = aseman_ports::StoreAccess::is_member(&ports, &store_id, &user_id)
+                    .unwrap_or(false);
+                *found_clone.lock().unwrap() = member;
                 Ok(())
             }),
         );

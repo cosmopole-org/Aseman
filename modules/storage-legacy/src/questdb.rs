@@ -32,7 +32,9 @@ impl QuestDbTimeSeries {
             "host=localhost port={port} user=admin password=quest dbname=qdb sslmode=disable"
         );
         let manager = PostgresConnectionManager::new(
-            config.parse().map_err(|error| unavailable("parse QuestDB config", error))?,
+            config
+                .parse()
+                .map_err(|error| unavailable("parse QuestDB config", error))?,
             NoTls,
         );
         // Signal persistence runs inside a state modification, so a sick QuestDB
@@ -56,21 +58,29 @@ impl QuestDbTimeSeries {
         }
         let mut client = pool.get().map_err(|error| unavailable("pool get", error))?;
         // A node created before signal tags existed lacks the column.
-        let _ = client.execute("alter table storage add column if not exists tags text;", &[]);
+        let _ = client.execute(
+            "alter table storage add column if not exists tags text;",
+            &[],
+        );
         // QuestDB may report success for a ghost table that SELECT cannot see.
-        if client.query("select tags from storage limit 1", &[]).is_err() {
+        if client
+            .query("select tags from storage limit 1", &[])
+            .is_err()
+        {
             let _ = client.execute("drop table if exists storage;", &[]);
             client
                 .execute(CREATE_STORAGE_FRESH, &[])
                 .map_err(|error| unavailable("recreate storage table", error))?;
         }
-        client.query("select tags from storage limit 1", &[]).map_err(|error| {
-            unavailable(
-                "storage table has no usable `tags` column; signal persistence would \
+        client
+            .query("select tags from storage limit 1", &[])
+            .map_err(|error| {
+                unavailable(
+                    "storage table has no usable `tags` column; signal persistence would \
                  silently drop every message, so the node will not start",
-                error,
-            )
-        })?;
+                    error,
+                )
+            })?;
         client
             .execute(
                 "create table if not exists buildlogs(id text, build_id text, machine_id text, vm_id text, log_type text, data text, time bigint);",
@@ -87,8 +97,12 @@ impl QuestDbTimeSeries {
         Ok(Self { pool })
     }
 
-    fn client(&self) -> LegacyMigrationResult<r2d2::PooledConnection<PostgresConnectionManager<NoTls>>> {
-        self.pool.get().map_err(|error| unavailable("signal log unavailable", error))
+    fn client(
+        &self,
+    ) -> LegacyMigrationResult<r2d2::PooledConnection<PostgresConnectionManager<NoTls>>> {
+        self.pool
+            .get()
+            .map_err(|error| unavailable("signal log unavailable", error))
     }
 
     /// Insert one signal; a failed write is an error (the row is the message).
@@ -127,9 +141,17 @@ impl QuestDbTimeSeries {
     }
 
     /// A store's signals, newest first, filtered by validated tags and time bounds.
-    pub fn read_signals(&self, store_id: &str, query: &LogQuery) -> LegacyMigrationResult<Vec<LegacySignalRow>> {
+    pub fn read_signals(
+        &self,
+        store_id: &str,
+        query: &LogQuery,
+    ) -> LegacyMigrationResult<Vec<LegacySignalRow>> {
         let mut client = self.client()?;
-        let count = if query.count <= 0 || query.count > MAX_SIGNAL_ROWS { MAX_SIGNAL_ROWS } else { query.count };
+        let count = if query.count <= 0 || query.count > MAX_SIGNAL_ROWS {
+            MAX_SIGNAL_ROWS
+        } else {
+            query.count
+        };
         // Tag predicates are inlined, which is injection-safe only because every
         // tag is validated first (no quote, separator, or wildcard).
         let invalid = |error: aseman_domain::signal_tags::SignalTagError| {
@@ -199,7 +221,13 @@ impl QuestDbTimeSeries {
     }
 
     /// A VM's logs, newest first, using QuestDB's `LIMIT lo, hi` range form.
-    pub fn read_build_logs(&self, vm_id: &str, log_type: &str, offset: i64, count: i64) -> Vec<LegacyBuildLogRow> {
+    pub fn read_build_logs(
+        &self,
+        vm_id: &str,
+        log_type: &str,
+        offset: i64,
+        count: i64,
+    ) -> Vec<LegacyBuildLogRow> {
         let count = if count <= 0 { 100 } else { count };
         let lo = offset.max(0);
         let hi = lo + count;

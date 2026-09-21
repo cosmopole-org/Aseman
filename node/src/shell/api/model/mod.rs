@@ -6,11 +6,13 @@
 pub mod access;
 pub mod chain;
 pub mod creature;
+pub mod creature_ports;
 pub mod entity;
 pub mod file;
 pub mod machine_program;
 pub mod session;
 pub mod store;
+pub mod store_ports;
 
 pub use access::{access_link_key, read_permissions, StorePermissions};
 pub use chain::{Chain, ChainShard};

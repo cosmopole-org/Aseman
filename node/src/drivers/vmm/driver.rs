@@ -144,10 +144,13 @@ impl Vmm {
                 }
                 .pull(trx);
                 *store_clone.lock().unwrap() = s;
-                *member_clone.lock().unwrap() = trx.get_link(&format!(
-                    "hasaccess::{}::{}",
-                    machine_id_clone, store_id_clone
-                )) == "true";
+                let ports = crate::shell::api::model::store_ports::LegacyMembership { trx };
+                *member_clone.lock().unwrap() = aseman_ports::StoreAccess::is_member(
+                    &ports,
+                    &store_id_clone,
+                    &machine_id_clone,
+                )
+                .unwrap_or(false);
                 Ok(())
             }),
         );
@@ -889,8 +892,14 @@ impl IVmm for Vmm {
                 // itself as the creature id. Routes are stored keyed by creature
                 // id, so both address forms converge on the same lookup.
                 let mut candidates: Vec<String> = Vec::new();
-                let via_username = trx.get_index("Creature", "username", "id", &username_owned);
-                if !via_username.is_empty() {
+                let creatures = crate::shell::api::model::creature_ports::LegacyCreatures { trx };
+                if let Some(via_username) =
+                    aseman_ports::CreatureDirectory::creature_id_by_username(
+                        &creatures,
+                        &username_owned,
+                    )
+                    .map_err(|error| anyhow::anyhow!("{error}"))?
+                {
                     candidates.push(via_username);
                 }
                 // Bare username local part (e.g. `m-tool-github`) → creature id,
@@ -977,10 +986,13 @@ impl VmmShim {
                 }
                 .pull(trx);
                 *store_clone.lock().unwrap() = s;
-                *member_clone.lock().unwrap() = trx.get_link(&format!(
-                    "hasaccess::{}::{}",
-                    machine_id_clone, store_id_clone
-                )) == "true";
+                let ports = crate::shell::api::model::store_ports::LegacyMembership { trx };
+                *member_clone.lock().unwrap() = aseman_ports::StoreAccess::is_member(
+                    &ports,
+                    &store_id_clone,
+                    &machine_id_clone,
+                )
+                .unwrap_or(false);
                 Ok(())
             }),
         );

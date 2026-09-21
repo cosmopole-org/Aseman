@@ -47,11 +47,8 @@ pub(crate) fn machine_owner_user(machine_id: &str) -> String {
         app.modify_state(
             true,
             Box::new(move |trx: &dyn ITrx| {
-                let machine = Creature {
-                    id: machine_id.clone(),
-                    ..Default::default()
-                }
-                .pull(trx);
+                let machine = (crate::shell::api::model::creature_ports::LegacyCreatures { trx })
+                    .creature_or_empty(&machine_id.clone());
                 *slot_c.lock().unwrap() = machine.owner_id;
                 Ok(())
             }),

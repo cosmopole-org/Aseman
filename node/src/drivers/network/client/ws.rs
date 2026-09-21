@@ -282,22 +282,22 @@ impl Ws {
         socket.set_user_id(user_id);
         self.app.tools().signaler().listen_to_single(listener);
 
-        let prefix = format!("hasaccess::{}::", user_id);
         let store_ids = Arc::new(Mutex::new(Vec::<String>::new()));
         let store_clone = store_ids.clone();
-        let prefix_owned = prefix.clone();
+        let member = user_id.to_string();
         self.app.modify_state(
             true,
             Box::new(move |trx: &dyn ITrx| {
-                if let Ok(ids) = trx.get_links_list(&prefix_owned, -1, -1, &[]) {
+                // Membership goes through the store port (legacy adapter until cutover).
+                let ports = crate::shell::api::model::store_ports::LegacyMembership { trx };
+                if let Ok(ids) = aseman_ports::StoreAccess::stores_of(&ports, &member) {
                     *store_clone.lock().unwrap() = ids;
                 }
                 Ok(())
             }),
         );
         let ids = store_ids.lock().unwrap().clone();
-        for id in ids {
-            let store_id = id.strip_prefix(&prefix).unwrap_or(&id).to_string();
+        for store_id in ids {
             self.app.tools().signaler().join_group(&store_id, user_id);
         }
     }

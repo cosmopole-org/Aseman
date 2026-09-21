@@ -472,19 +472,10 @@ pub fn transform_legacy_file(
     )
 }
 
-/// Convert a legacy RSA SubjectPublicKeyInfo PEM into tagged multicodec bytes.
+/// The canonical capsule encoding of a legacy public key, owned by the contracts.
 pub fn encode_legacy_rsa_public_key(public_key_pem: &str) -> LegacyMigrationResult<Vec<u8>> {
-    let key = RsaPublicKey::from_public_key_pem(public_key_pem).map_err(|_| {
-        LegacyMigrationError::Invalid("legacy Creature publicKey is not RSA SPKI PEM".to_owned())
-    })?;
-    let der = key.to_public_key_der().map_err(|_| {
-        LegacyMigrationError::Invalid("legacy Creature RSA key cannot encode as SPKI".to_owned())
-    })?;
-    // Multicodec rsa-pub (0x1205), unsigned-varint encoded as 0x85 0x24.
-    let mut encoded = Vec::with_capacity(2 + der.as_bytes().len());
-    encoded.extend_from_slice(&[0x85, 0x24]);
-    encoded.extend_from_slice(der.as_bytes());
-    Ok(encoded)
+    aseman_contracts::legacy_keys::encode_legacy_rsa_public_key(public_key_pem)
+        .map_err(|error| LegacyMigrationError::Invalid(error.to_string()))
 }
 
 /// Split one legacy unified Creature into target identity, boundary, and wallet records.
@@ -554,18 +545,22 @@ pub fn transform_legacy_creature(
             },
             legacy_id,
             Vec::new(),
-            BTreeMap::from([
-                ("username".to_owned(), CapsuleValue::Text(username.clone())),
-                (
-                    "email".to_owned(),
-                    CapsuleValue::Text(email.unwrap_or_default().to_owned()),
-                ),
-                (
-                    "public_key".to_owned(),
-                    CapsuleValue::Bytes(public_key.clone()),
-                ),
-                ("status".to_owned(), CapsuleValue::Text("active".to_owned())),
-            ]),
+            {
+                let mut body = BTreeMap::from([
+                    ("username".to_owned(), CapsuleValue::Text(username.clone())),
+                    (
+                        "public_key".to_owned(),
+                        CapsuleValue::Bytes(public_key.clone()),
+                    ),
+                    ("status".to_owned(), CapsuleValue::Text("active".to_owned())),
+                ]);
+                // An absent email stays absent (NULL): `email` is unique, and most
+                // legacy humans never logged in by email.
+                if let Some(email) = email.filter(|email| !email.is_empty()) {
+                    body.insert("email".to_owned(), CapsuleValue::Text(email.to_owned()));
+                }
+                body
+            },
         )?);
     }
     capsules.push(seal_legacy_capsule(

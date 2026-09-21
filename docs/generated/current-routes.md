@@ -27,78 +27,78 @@ This records current legacy surfaces. It is not the target HTTP/VMM contract.
 | `/api/time` | `HelloInput` | `node/src/shell/api/actions/dummy.rs:45` |
 | `/auths/getServerPublicKey` | `GetServerKeyInput` | `node/src/shell/api/actions/auth.rs:41` |
 | `/auths/getServersMap` | `GetServersMapInput` | `node/src/shell/api/actions/auth.rs:57` |
-| `/creatures/authenticate` | `AuthenticateInput` | `node/src/shell/api/actions/creature.rs:516` |
-| `/creatures/checkSign` | `CheckSignInput` | `node/src/shell/api/actions/creature.rs:657` |
-| `/creatures/closePool` | `ClosePoolInput` | `node/src/shell/api/actions/creature/finance.rs:2504` |
-| `/creatures/consumeLock` | `ConsumeLockInput` | `node/src/shell/api/actions/creature.rs:1054` |
-| `/creatures/create` | `CreatureCreateInput` | `node/src/shell/api/actions/creature.rs:194` |
-| `/creatures/createHold` | `CreateHoldInput` | `node/src/shell/api/actions/creature/finance.rs:1100` |
-| `/creatures/debitPool` | `DebitPoolInput` | `node/src/shell/api/actions/creature/finance.rs:3051` |
-| `/creatures/delete` | `DeleteInput` | `node/src/shell/api/actions/creature.rs:1323` |
-| `/creatures/find` | `FindInput` | `node/src/shell/api/actions/creature.rs:1512` |
-| `/creatures/get` | `GetInput` | `node/src/shell/api/actions/creature.rs:278` |
-| `/creatures/getByUsername` | `GetByUsernameInput` | `node/src/shell/api/actions/creature.rs:1484` |
-| `/creatures/getFinancialAccount` | `GetFinancialAccountInput` | `node/src/shell/api/actions/creature/finance.rs:1953` |
-| `/creatures/getHold` | `GetHoldInput` | `node/src/shell/api/actions/creature/finance.rs:1819` |
-| `/creatures/list` | `ListInput` | `node/src/shell/api/actions/creature.rs:298` |
-| `/creatures/listPayouts` | `ListPayoutsInput` | `node/src/shell/api/actions/creature/finance.rs:2223` |
-| `/creatures/lockToken` | `LockTokenInput` | `node/src/shell/api/actions/creature.rs:967` |
-| `/creatures/login` | `LoginInput` | `node/src/shell/api/actions/creature.rs:1218` |
-| `/creatures/meta` | `MetaInput` | `node/src/shell/api/actions/creature.rs:1424` |
-| `/creatures/mint` | `MintInput` | `node/src/shell/api/actions/creature.rs:556` |
-| `/creatures/openPool` | `OpenPoolInput` | `node/src/shell/api/actions/creature/finance.rs:2290` |
-| `/creatures/paymentAdjustment` | `PaymentAdjustmentInput` | `node/src/shell/api/actions/creature/finance.rs:3963` |
+| `/creatures/authenticate` | `AuthenticateInput` | `node/src/shell/api/actions/creature.rs:501` |
+| `/creatures/checkSign` | `CheckSignInput` | `node/src/shell/api/actions/creature.rs:637` |
+| `/creatures/closePool` | `ClosePoolInput` | `node/src/shell/api/actions/creature/finance.rs:2516` |
+| `/creatures/consumeLock` | `ConsumeLockInput` | `node/src/shell/api/actions/creature.rs:1034` |
+| `/creatures/create` | `CreatureCreateInput` | `node/src/shell/api/actions/creature.rs:200` |
+| `/creatures/createHold` | `CreateHoldInput` | `node/src/shell/api/actions/creature/finance.rs:1117` |
+| `/creatures/debitPool` | `DebitPoolInput` | `node/src/shell/api/actions/creature/finance.rs:3061` |
+| `/creatures/delete` | `DeleteInput` | `node/src/shell/api/actions/creature.rs:1307` |
+| `/creatures/find` | `FindInput` | `node/src/shell/api/actions/creature.rs:1457` |
+| `/creatures/get` | `GetInput` | `node/src/shell/api/actions/creature.rs:251` |
+| `/creatures/getByUsername` | `GetByUsernameInput` | `node/src/shell/api/actions/creature.rs:1430` |
+| `/creatures/getFinancialAccount` | `GetFinancialAccountInput` | `node/src/shell/api/actions/creature/finance.rs:1969` |
+| `/creatures/getHold` | `GetHoldInput` | `node/src/shell/api/actions/creature/finance.rs:1838` |
+| `/creatures/list` | `ListInput` | `node/src/shell/api/actions/creature.rs:270` |
+| `/creatures/listPayouts` | `ListPayoutsInput` | `node/src/shell/api/actions/creature/finance.rs:2237` |
+| `/creatures/lockToken` | `LockTokenInput` | `node/src/shell/api/actions/creature.rs:947` |
+| `/creatures/login` | `LoginInput` | `node/src/shell/api/actions/creature.rs:1195` |
+| `/creatures/meta` | `MetaInput` | `node/src/shell/api/actions/creature.rs:1371` |
+| `/creatures/mint` | `MintInput` | `node/src/shell/api/actions/creature.rs:541` |
+| `/creatures/openPool` | `OpenPoolInput` | `node/src/shell/api/actions/creature/finance.rs:2304` |
+| `/creatures/paymentAdjustment` | `PaymentAdjustmentInput` | `node/src/shell/api/actions/creature/finance.rs:3973` |
 | `/creatures/publishFinanceCatalog` | `PublishFinanceCatalogInput` | `node/src/shell/api/actions/creature/finance.rs:428` |
-| `/creatures/publishFinanceQuote` | `PublishFinanceQuoteInput` | `node/src/shell/api/actions/creature/finance.rs:897` |
-| `/creatures/reconcileFinancialSystem` | `ReconcileFinancialSystemInput` | `node/src/shell/api/actions/creature/finance.rs:3296` |
-| `/creatures/refreshPool` | `RefreshPoolInput` | `node/src/shell/api/actions/creature/finance.rs:2396` |
-| `/creatures/registerFinanceNode` | `RegisterFinanceNodeInput` | `node/src/shell/api/actions/creature/finance.rs:541` |
-| `/creatures/registerFinanceResource` | `RegisterFinanceResourceInput` | `node/src/shell/api/actions/creature/finance.rs:658` |
-| `/creatures/releaseHold` | `ReleaseHoldInput` | `node/src/shell/api/actions/creature/finance.rs:1683` |
-| `/creatures/releasePool` | `ReleasePoolInput` | `node/src/shell/api/actions/creature/finance.rs:2938` |
-| `/creatures/requestPayout` | `RequestPayoutInput` | `node/src/shell/api/actions/creature/finance.rs:1993` |
-| `/creatures/reservePool` | `ReservePoolInput` | `node/src/shell/api/actions/creature/finance.rs:2606` |
-| `/creatures/resolvePayout` | `ResolvePayoutInput` | `node/src/shell/api/actions/creature/finance.rs:2100` |
-| `/creatures/retireFinanceNode` | `RetireFinanceNodeInput` | `node/src/shell/api/actions/creature/finance.rs:619` |
-| `/creatures/retireFinanceResource` | `RetireFinanceResourceInput` | `node/src/shell/api/actions/creature/finance.rs:807` |
-| `/creatures/reviewFinanceResource` | `ReviewFinanceResourceInput` | `node/src/shell/api/actions/creature/finance.rs:769` |
-| `/creatures/secretGet` | `SecretGetInput` | `node/src/shell/api/actions/creature.rs:767` |
-| `/creatures/secretGrant` | `SecretGrantInput` | `node/src/shell/api/actions/creature.rs:808` |
-| `/creatures/secretList` | `SecretListInput` | `node/src/shell/api/actions/creature.rs:888` |
-| `/creatures/secretListGranted` | `SecretListGrantedInput` | `node/src/shell/api/actions/creature.rs:872` |
-| `/creatures/secretPut` | `SecretPutInput` | `node/src/shell/api/actions/creature.rs:740` |
-| `/creatures/secretRevoke` | `SecretRevokeInput` | `node/src/shell/api/actions/creature.rs:847` |
-| `/creatures/settleHold` | `SettleHoldInput` | `node/src/shell/api/actions/creature/finance.rs:1423` |
-| `/creatures/settlePool` | `SettlePoolInput` | `node/src/shell/api/actions/creature/finance.rs:2711` |
-| `/creatures/signal` | `CreatureSignalInput` | `node/src/shell/api/actions/creature.rs:415` |
-| `/creatures/startHold` | `StartHoldInput` | `node/src/shell/api/actions/creature/finance.rs:1343` |
-| `/creatures/transfer` | `TransferInput` | `node/src/shell/api/actions/creature.rs:310` |
-| `/creatures/types` | `ListInput` | `node/src/shell/api/actions/creature.rs:1536` |
-| `/creatures/update` | `UpdateInput` | `node/src/shell/api/actions/creature.rs:1378` |
+| `/creatures/publishFinanceQuote` | `PublishFinanceQuoteInput` | `node/src/shell/api/actions/creature/finance.rs:905` |
+| `/creatures/reconcileFinancialSystem` | `ReconcileFinancialSystemInput` | `node/src/shell/api/actions/creature/finance.rs:3305` |
+| `/creatures/refreshPool` | `RefreshPoolInput` | `node/src/shell/api/actions/creature/finance.rs:2409` |
+| `/creatures/registerFinanceNode` | `RegisterFinanceNodeInput` | `node/src/shell/api/actions/creature/finance.rs:545` |
+| `/creatures/registerFinanceResource` | `RegisterFinanceResourceInput` | `node/src/shell/api/actions/creature/finance.rs:664` |
+| `/creatures/releaseHold` | `ReleaseHoldInput` | `node/src/shell/api/actions/creature/finance.rs:1703` |
+| `/creatures/releasePool` | `ReleasePoolInput` | `node/src/shell/api/actions/creature/finance.rs:2948` |
+| `/creatures/requestPayout` | `RequestPayoutInput` | `node/src/shell/api/actions/creature/finance.rs:2009` |
+| `/creatures/reservePool` | `ReservePoolInput` | `node/src/shell/api/actions/creature/finance.rs:2617` |
+| `/creatures/resolvePayout` | `ResolvePayoutInput` | `node/src/shell/api/actions/creature/finance.rs:2115` |
+| `/creatures/retireFinanceNode` | `RetireFinanceNodeInput` | `node/src/shell/api/actions/creature/finance.rs:625` |
+| `/creatures/retireFinanceResource` | `RetireFinanceResourceInput` | `node/src/shell/api/actions/creature/finance.rs:815` |
+| `/creatures/reviewFinanceResource` | `ReviewFinanceResourceInput` | `node/src/shell/api/actions/creature/finance.rs:777` |
+| `/creatures/secretGet` | `SecretGetInput` | `node/src/shell/api/actions/creature.rs:747` |
+| `/creatures/secretGrant` | `SecretGrantInput` | `node/src/shell/api/actions/creature.rs:788` |
+| `/creatures/secretList` | `SecretListInput` | `node/src/shell/api/actions/creature.rs:868` |
+| `/creatures/secretListGranted` | `SecretListGrantedInput` | `node/src/shell/api/actions/creature.rs:852` |
+| `/creatures/secretPut` | `SecretPutInput` | `node/src/shell/api/actions/creature.rs:720` |
+| `/creatures/secretRevoke` | `SecretRevokeInput` | `node/src/shell/api/actions/creature.rs:827` |
+| `/creatures/settleHold` | `SettleHoldInput` | `node/src/shell/api/actions/creature/finance.rs:1445` |
+| `/creatures/settlePool` | `SettlePoolInput` | `node/src/shell/api/actions/creature/finance.rs:2722` |
+| `/creatures/signal` | `CreatureSignalInput` | `node/src/shell/api/actions/creature.rs:393` |
+| `/creatures/startHold` | `StartHoldInput` | `node/src/shell/api/actions/creature/finance.rs:1365` |
+| `/creatures/transfer` | `TransferInput` | `node/src/shell/api/actions/creature.rs:292` |
+| `/creatures/types` | `ListInput` | `node/src/shell/api/actions/creature.rs:1483` |
+| `/creatures/update` | `UpdateInput` | `node/src/shell/api/actions/creature.rs:1343` |
 | `/gateway/signal` | `GatewaySignalInput` | `node/src/shell/api/actions/gateway.rs:249` |
 | `/gateway/subscribe` | `GatewaySubscribeInput` | `node/src/shell/api/actions/gateway.rs:178` |
 | `/gateway/unsubscribe` | `GatewayUnsubscribeInput` | `node/src/shell/api/actions/gateway.rs:224` |
-| `/machines/closeVmTerminal` | `VmTerminalInput` | `node/src/shell/api/actions/program.rs:1247` |
-| `/machines/list` | `ListInput` | `node/src/shell/api/actions/program.rs:1647` |
-| `/machines/listEntityVms` | `RunProgramEntityInput` | `node/src/shell/api/actions/program.rs:1108` |
-| `/machines/listProgramMachines` | `ListAppMachsInput` | `node/src/shell/api/actions/program.rs:1709` |
-| `/machines/openVmTerminal` | `VmTerminalInput` | `node/src/shell/api/actions/program.rs:1214` |
-| `/machines/readMachineBuilds` | `MachineBuildsInput` | `node/src/shell/api/actions/program.rs:1277` |
-| `/machines/readVmLogs` | `ReadVmLogsInput` | `node/src/shell/api/actions/program.rs:1049` |
-| `/programs/create` | `CreateMachineInput` | `node/src/shell/api/actions/program.rs:588` |
-| `/programs/delete` | `DeleteProgramInput` | `node/src/shell/api/actions/program.rs:636` |
-| `/programs/deleteEntity` | `RunProgramEntityInput` | `node/src/shell/api/actions/program.rs:951` |
-| `/programs/deploy` | `DeployInput` | `node/src/shell/api/actions/program.rs:1350` |
-| `/programs/downloadEntity` | `DownloadEntityInput` | `node/src/shell/api/actions/program.rs:1607` |
-| `/programs/list` | `ListInput` | `node/src/shell/api/actions/program.rs:1697` |
-| `/programs/runEntity` | `RunProgramEntityInput` | `node/src/shell/api/actions/program.rs:702` |
-| `/programs/stopEntity` | `RunProgramEntityInput` | `node/src/shell/api/actions/program.rs:860` |
-| `/programs/update` | `UpdateProgramInput` | `node/src/shell/api/actions/program.rs:664` |
-| `/storage/upload` | `StorageUploadInput` | `node/src/shell/api/actions/creature.rs:916` |
-| `/stores/getAccess` | `GetAccessInput` | `node/src/shell/api/actions/store.rs:265` |
-| `/stores/history` | `HistoryInput` | `node/src/shell/api/actions/store.rs:187` |
-| `/stores/setAccess` | `SetAccessInput` | `node/src/shell/api/actions/store.rs:231` |
-| `/stores/signal` | `SignalInput` | `node/src/shell/api/actions/store.rs:90` |
+| `/machines/closeVmTerminal` | `VmTerminalInput` | `node/src/shell/api/actions/program.rs:1240` |
+| `/machines/list` | `ListInput` | `node/src/shell/api/actions/program.rs:1637` |
+| `/machines/listEntityVms` | `RunProgramEntityInput` | `node/src/shell/api/actions/program.rs:1101` |
+| `/machines/listProgramMachines` | `ListAppMachsInput` | `node/src/shell/api/actions/program.rs:1707` |
+| `/machines/openVmTerminal` | `VmTerminalInput` | `node/src/shell/api/actions/program.rs:1207` |
+| `/machines/readMachineBuilds` | `MachineBuildsInput` | `node/src/shell/api/actions/program.rs:1270` |
+| `/machines/readVmLogs` | `ReadVmLogsInput` | `node/src/shell/api/actions/program.rs:1042` |
+| `/programs/create` | `CreateMachineInput` | `node/src/shell/api/actions/program.rs:582` |
+| `/programs/delete` | `DeleteProgramInput` | `node/src/shell/api/actions/program.rs:631` |
+| `/programs/deleteEntity` | `RunProgramEntityInput` | `node/src/shell/api/actions/program.rs:944` |
+| `/programs/deploy` | `DeployInput` | `node/src/shell/api/actions/program.rs:1340` |
+| `/programs/downloadEntity` | `DownloadEntityInput` | `node/src/shell/api/actions/program.rs:1597` |
+| `/programs/list` | `ListInput` | `node/src/shell/api/actions/program.rs:1695` |
+| `/programs/runEntity` | `RunProgramEntityInput` | `node/src/shell/api/actions/program.rs:695` |
+| `/programs/stopEntity` | `RunProgramEntityInput` | `node/src/shell/api/actions/program.rs:853` |
+| `/programs/update` | `UpdateProgramInput` | `node/src/shell/api/actions/program.rs:657` |
+| `/storage/upload` | `StorageUploadInput` | `node/src/shell/api/actions/creature.rs:896` |
+| `/stores/getAccess` | `GetAccessInput` | `node/src/shell/api/actions/store.rs:243` |
+| `/stores/history` | `HistoryInput` | `node/src/shell/api/actions/store.rs:171` |
+| `/stores/setAccess` | `SetAccessInput` | `node/src/shell/api/actions/store.rs:212` |
+| `/stores/signal` | `SignalInput` | `node/src/shell/api/actions/store.rs:95` |
 
 ## HTTP routes
 
@@ -131,8 +131,8 @@ This records current legacy surfaces. It is not the target HTTP/VMM contract.
 | public-storage-http | GET | `/storage/health` | `node/src/shell/storage_http.rs:112` |
 | public-storage-http | POST | `/storage/upload` | `node/src/shell/storage_http.rs:115` |
 | public-storage-http | PUT | `/storage/upload` | `node/src/shell/storage_http.rs:115` |
-| telemetry-http | GET | `/telemetry/health` | `node/src/telemetry/server.rs:128` |
-| telemetry-http | GET | `/telemetry/snapshot` | `node/src/telemetry/server.rs:129` |
+| telemetry-http | GET | `/telemetry/health` | `node/src/telemetry/server.rs:131` |
+| telemetry-http | GET | `/telemetry/snapshot` | `node/src/telemetry/server.rs:132` |
 | vm-http-ingress | ANY | `/{creatureId}/{programId}/{entityId}/{vmId}/{path...}` | `node/src/drivers/vmm/network/ingress.rs:1` |
 | vm-http-ingress | ANY | `/{creatureUsername}/{customPath...}` | `node/src/drivers/vmm/http_route.rs:1` |
 

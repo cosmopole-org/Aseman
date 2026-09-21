@@ -99,65 +99,19 @@ pub(crate) fn rebuild_derived_records(
     }
 }
 
-/// Convert decoded legacy JSON into a canonical capsule value without widening,
-/// truncating, or reordering any member.
+/// The shared contracts conversion (`legacy_documents`), with export errors.
 pub(crate) fn legacy_json_to_capsule_value(
     key: &str,
     value: &Value,
 ) -> LegacyMigrationResult<CapsuleValue> {
-    Ok(match value {
-        Value::Null => CapsuleValue::Null,
-        Value::Bool(value) => CapsuleValue::Bool(*value),
-        Value::Number(number) => {
-            if let Some(value) = number.as_i64() {
-                CapsuleValue::Integer(value)
-            } else if let Some(value) = number
-                .is_f64()
-                .then(|| number.as_f64())
-                .flatten()
-                .filter(|value| value.is_finite())
-            {
-                // A `u64` above `i64::MAX` would round silently as a float; reject it.
-                CapsuleValue::Float(value)
-            } else {
-                return Err(LegacyMigrationError::Invalid(format!(
-                    "legacy document {key} contains a number outside the capsule range"
-                )));
-            }
-        }
-        Value::String(value) => CapsuleValue::Text(value.clone()),
-        Value::Array(items) => CapsuleValue::Array(
-            items
-                .iter()
-                .map(|item| legacy_json_to_capsule_value(key, item))
-                .collect::<LegacyMigrationResult<Vec<_>>>()?,
-        ),
-        Value::Object(members) => {
-            let mut converted = BTreeMap::new();
-            for (member, value) in members {
-                if converted
-                    .insert(member.clone(), legacy_json_to_capsule_value(key, value)?)
-                    .is_some()
-                {
-                    return Err(LegacyMigrationError::Invalid(format!(
-                        "legacy document {key} repeats member {member}"
-                    )));
-                }
-            }
-            CapsuleValue::Object(converted)
-        }
-    })
+    aseman_contracts::legacy_documents::legacy_json_to_capsule_value(key, value)
+        .map_err(|error| LegacyMigrationError::Invalid(error.to_string()))
 }
 
-/// Domain-separated digest over the canonical encoding of a document value.
+/// The shared contracts document digest (`legacy_documents`).
 pub(crate) fn legacy_document_digest(document: &CapsuleValue) -> LegacyMigrationResult<Vec<u8>> {
-    let encoded = encode_value(document)
-        .map_err(|error| LegacyMigrationError::Contract(error.to_string()))?;
-    let mut hasher = Sha256::new();
-    hasher.update(b"ASEMAN-LEGACY-DOCUMENT-DIGEST-V1\0");
-    hasher.update((encoded.len() as u64).to_be_bytes());
-    hasher.update(&encoded);
-    Ok(hasher.finalize().to_vec())
+    aseman_contracts::legacy_documents::legacy_document_digest(document)
+        .map_err(|error| LegacyMigrationError::Contract(error.to_string()))
 }
 
 /// Verify one legacy JSON document root against every record stored under it.

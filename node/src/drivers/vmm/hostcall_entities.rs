@@ -48,27 +48,42 @@ impl Vmm {
                 let balance = number_from_input(input, "balance", 0);
                 let id_owned = id.clone();
                 let owner_owned = owner_id.clone();
+                let refused = Arc::new(Mutex::new(false));
+                let refused_slot = refused.clone();
                 self.app.modify_state(
                     false,
                     Box::new(move |t: &dyn ITrx| {
-                        let c = Creature {
+                        let record = aseman_domain::creature::CreatureRecord {
                             id: id_owned.clone(),
-                            type_name: typ.clone(),
+                            creature_type: typ.clone(),
                             username: username.clone(),
                             public_key: public_key.clone(),
                             chain_id: chain_id.clone(),
                             subchain_id: subchain_id.clone(),
                             owner_id: owner_owned.clone(),
-                            balance,
-                            ..Default::default()
                         };
-                        c.push(t);
-                        if !owner_owned.is_empty() {
-                            t.put_link(&format!("ownerof::{}::{}", owner_owned, id_owned), "true");
+                        // LD-14: an existing identity or username is refused instead
+                        // of overwritten.
+                        let creatures =
+                            crate::shell::api::model::creature_ports::LegacyCreatures { trx: t };
+                        match aseman_ports::CreatureDirectory::create(&creatures, &record) {
+                            Err(aseman_ports::PortError::Conflict) => {
+                                *refused_slot.lock().unwrap() = true;
+                                return Ok(());
+                            }
+                            other => other.map_err(|error| anyhow::anyhow!("{error}"))?,
                         }
+                        aseman_ports::CreatureBalances::open(&creatures, &id_owned, balance)
+                            .map_err(|error| anyhow::anyhow!("{error}"))?;
                         Ok(())
                     }),
                 );
+                if *refused.lock().unwrap() {
+                    return (
+                        r#"{"ok":false,"error":"creature id or username already exists"}"#.into(),
+                        req_id,
+                    );
+                }
                 (format!("{{\"ok\":true,\"id\":\"{}\"}}", id), req_id)
             }
             "update" => {
@@ -78,42 +93,65 @@ impl Vmm {
                 }
                 let input_owned = input.clone();
                 let id_owned = id.clone();
+                let outcome = Arc::new(Mutex::new(Ok(())));
+                let outcome_slot = outcome.clone();
                 self.app.modify_state(
                     false,
                     Box::new(move |t: &dyn ITrx| {
-                        let mut c = Creature {
-                            id: id_owned.clone(),
-                            ..Default::default()
+                        let creatures =
+                            crate::shell::api::model::creature_ports::LegacyCreatures { trx: t };
+                        // LD-13: a missing creature is refused instead of being
+                        // recreated as a partial record.
+                        let Some(mut record) =
+                            aseman_ports::CreatureDirectory::creature(&creatures, &id_owned)
+                                .map_err(|error| anyhow::anyhow!("{error}"))?
+                        else {
+                            *outcome_slot.lock().unwrap() = Err("creature not found");
+                            return Ok(());
+                        };
+                        let field = |name: &str| {
+                            input_owned
+                                .get(name)
+                                .and_then(Value::as_str)
+                                .map(str::to_string)
+                        };
+                        if let Some(v) = field("type") {
+                            record.creature_type = v;
                         }
-                        .pull(t);
-                        if c.id.is_empty() {
-                            c.id = id_owned.clone();
+                        if let Some(v) = field("username") {
+                            record.username = v;
                         }
-                        if let Some(v) = input_owned.get("type").and_then(Value::as_str) {
-                            c.type_name = v.to_string();
+                        if let Some(v) = field("publicKey") {
+                            record.public_key = v;
                         }
-                        if let Some(v) = input_owned.get("username").and_then(Value::as_str) {
-                            c.username = v.to_string();
+                        if let Some(v) = field("chainId") {
+                            record.chain_id = v;
                         }
-                        if let Some(v) = input_owned.get("publicKey").and_then(Value::as_str) {
-                            c.public_key = v.to_string();
+                        if let Some(v) = field("subchainId") {
+                            record.subchain_id = v;
                         }
-                        if let Some(v) = input_owned.get("chainId").and_then(Value::as_str) {
-                            c.chain_id = v.to_string();
+                        if let Some(v) = field("ownerId") {
+                            record.owner_id = v;
                         }
-                        if let Some(v) = input_owned.get("subchainId").and_then(Value::as_str) {
-                            c.subchain_id = v.to_string();
-                        }
-                        if let Some(v) = input_owned.get("ownerId").and_then(Value::as_str) {
-                            c.owner_id = v.to_string();
+                        match aseman_ports::CreatureDirectory::update(&creatures, &record) {
+                            Err(aseman_ports::PortError::Conflict) => {
+                                *outcome_slot.lock().unwrap() = Err("username already exists");
+                                return Ok(());
+                            }
+                            other => other.map_err(|error| anyhow::anyhow!("{error}"))?,
                         }
                         if let Some(v) = input_owned.get("balance").and_then(Value::as_f64) {
-                            c.balance = v as i64;
+                            aseman_ports::CreatureBalances::set_balance(
+                                &creatures, &id_owned, v as i64,
+                            )
+                            .map_err(|error| anyhow::anyhow!("{error}"))?;
                         }
-                        c.push(t);
                         Ok(())
                     }),
                 );
+                if let Err(message) = *outcome.lock().unwrap() {
+                    return (json!({"ok": false, "error": message}).to_string(), req_id);
+                }
                 (format!("{{\"ok\":true,\"id\":\"{}\"}}", id), req_id)
             }
             "delete" => {
@@ -131,58 +169,28 @@ impl Vmm {
                 self.app.modify_state(
                     false,
                     Box::new(move |t: &dyn ITrx| {
-                        let c = Creature {
-                            id: id_owned.clone(),
-                            ..Default::default()
-                        }
-                        .pull(t);
-                        if !c.username.is_empty() {
-                            t.del_index("Creature", "username", "id", &c.username);
-                        }
                         let email = t.get_link(&format!("UserIdToEmail::{}", id_owned));
                         if !email.is_empty() {
                             t.del_key(&format!("link::UserEmailToId::{}", email));
                         }
                         t.del_key(&format!("link::UserIdToEmail::{}", id_owned));
                         t.del_key(&format!("link::UserPrivateKey::{}", id_owned));
-                        let stores = Store::list(
-                            t,
-                            &format!("hasaccess::{}::", id_owned),
-                            false,
-                            &HashMap::new(),
-                            &HashMap::new(),
-                            -1,
-                            -1,
-                        )
-                        .unwrap_or_default();
-                        for store in stores {
-                            t.del_key(&format!("link::onaccess::{}::{}", store.id, id_owned));
-                            t.del_key(&format!("link::hasaccess::{}::{}", id_owned, store.id));
-                            t.del_key(&format!("link::creatorof::{}::{}", id_owned, store.id));
-                            let prefix = format!("onaccess::{}::", store.id);
-                            let remaining =
-                                t.get_links_list(&prefix, -1, -1, &[]).unwrap_or_default();
-                            let others = remaining.iter().any(|k| {
-                                let member = k.strip_prefix(&prefix).unwrap_or(k);
-                                !member.is_empty() && member != id_owned
-                            });
-                            if !others {
-                                store.delete(t);
-                                t.del_key(&format!("Json::StoreMeta::{}::metadata", store.id));
-                            }
+                        // Memberships go through the store port; the legacy
+                        // `Store::list(.., -1, -1)` walk here was always empty (LD-12).
+                        let ports =
+                            crate::shell::api::model::store_ports::LegacyMembership { trx: t };
+                        let deleted = ports
+                            .remove_member_everywhere(&id_owned)
+                            .map_err(|error| anyhow::anyhow!("{error}"))?;
+                        for store_id in deleted {
+                            t.del_key(&format!("Json::StoreMeta::{}::metadata", store_id));
                         }
-                        for col in [
-                            "|",
-                            "type",
-                            "username",
-                            "publicKey",
-                            "chainId",
-                            "subchainId",
-                            "ownerId",
-                            "balance",
-                        ] {
-                            t.del_key(&format!("obj::Creature::{}::{}", id_owned, col));
-                        }
+                        let creatures =
+                            crate::shell::api::model::creature_ports::LegacyCreatures { trx: t };
+                        aseman_ports::CreatureDirectory::delete(&creatures, &id_owned)
+                            .map_err(|error| anyhow::anyhow!("{error}"))?;
+                        aseman_ports::CreatureBalances::close(&creatures, &id_owned)
+                            .map_err(|error| anyhow::anyhow!("{error}"))?;
                         Ok(())
                     }),
                 );
@@ -199,12 +207,24 @@ impl Vmm {
                 self.app.modify_state(
                     true,
                     Box::new(move |t: &dyn ITrx| {
-                        let c = Creature {
-                            id: id_owned.clone(),
-                            ..Default::default()
+                        let creatures =
+                            crate::shell::api::model::creature_ports::LegacyCreatures { trx: t };
+                        // Legacy answers a missing id with an empty creature; kept.
+                        let found = aseman_application::creature::GetCreature {
+                            directory: &creatures,
+                            balances: &creatures,
                         }
-                        .pull(t);
-                        *slot_clone.lock().unwrap() = c;
+                        .by_id(&id_owned);
+                        *slot_clone.lock().unwrap() = match found {
+                            Ok(found) => crate::shell::api::model::creature_ports::creature_view(
+                                found.record,
+                                found.balance,
+                            ),
+                            Err(_) => Creature {
+                                id: id_owned.clone(),
+                                ..Default::default()
+                            },
+                        };
                         Ok(())
                     }),
                 );
@@ -223,8 +243,23 @@ impl Vmm {
                 self.app.modify_state(
                     true,
                     Box::new(move |t: &dyn ITrx| {
-                        if let Ok(list) = Creature::all(t, offset, count) {
-                            *slot_clone.lock().unwrap() = list;
+                        let creatures =
+                            crate::shell::api::model::creature_ports::LegacyCreatures { trx: t };
+                        if let Ok(list) = (aseman_application::creature::GetCreature {
+                            directory: &creatures,
+                            balances: &creatures,
+                        })
+                        .list(None, offset, Some(count))
+                        {
+                            *slot_clone.lock().unwrap() = list
+                                .into_iter()
+                                .map(|found| {
+                                    crate::shell::api::model::creature_ports::creature_view(
+                                        found.record,
+                                        found.balance,
+                                    )
+                                })
+                                .collect();
                         }
                         Ok(())
                     }),
@@ -289,11 +324,9 @@ impl Vmm {
                                 "program already exists".to_string();
                             return Ok(());
                         }
-                        let mut machine = Creature {
-                            id: machine_id_owned.clone(),
-                            ..Default::default()
-                        }
-                        .pull(t);
+                        let mut machine =
+                            (crate::shell::api::model::creature_ports::LegacyCreatures { trx: t })
+                                .creature_or_empty(&machine_id_owned.clone());
                         if machine.id.is_empty() {
                             machine.id = machine_id_owned.clone();
                         }
@@ -353,11 +386,11 @@ impl Vmm {
                         }
                         .pull(t);
                         if !program.machine_id.is_empty() {
-                            let mut machine = Creature {
-                                id: program.machine_id.clone(),
-                                ..Default::default()
-                            }
-                            .pull(t);
+                            let mut machine =
+                                (crate::shell::api::model::creature_ports::LegacyCreatures {
+                                    trx: t,
+                                })
+                                .creature_or_empty(&program.machine_id.clone());
                             machine.machines_count -= 1;
                             machine.push(t);
                             t.del_key(&format!(
@@ -1339,19 +1372,18 @@ impl Vmm {
                 }
                 let user_id_owned = user_id.clone();
                 let store_id_owned = store_id.clone();
-                let encoded = perms.encode();
                 self.app.modify_state(
                     false,
                     Box::new(move |t: &dyn ITrx| {
-                        t.put_link(
-                            &format!("onaccess::{}::{}", store_id_owned, user_id_owned),
-                            &encoded,
-                        );
-                        t.put_link(
-                            &format!("hasaccess::{}::{}", user_id_owned, store_id_owned),
-                            "true",
-                        );
-                        Ok(())
+                        let ports =
+                            crate::shell::api::model::store_ports::LegacyMembership { trx: t };
+                        aseman_ports::StoreAccess::join(
+                            &ports,
+                            &store_id_owned,
+                            &user_id_owned,
+                            perms,
+                        )
+                        .map_err(|error| anyhow::anyhow!("{error}"))
                     }),
                 );
                 let out = json!({"ok": true, "permissions": perms});
@@ -1377,15 +1409,10 @@ impl Vmm {
                 self.app.modify_state(
                     false,
                     Box::new(move |t: &dyn ITrx| {
-                        t.del_key(&format!(
-                            "link::onaccess::{}::{}",
-                            store_id_owned, user_id_owned
-                        ));
-                        t.del_key(&format!(
-                            "link::hasaccess::{}::{}",
-                            user_id_owned, store_id_owned
-                        ));
-                        Ok(())
+                        let ports =
+                            crate::shell::api::model::store_ports::LegacyMembership { trx: t };
+                        aseman_ports::StoreAccess::leave(&ports, &store_id_owned, &user_id_owned)
+                            .map_err(|error| anyhow::anyhow!("{error}"))
                     }),
                 );
                 (r#"{"ok":true}"#.into(), req_id)
@@ -1618,18 +1645,19 @@ impl Vmm {
                             true,
                         );
                         if !creator_id_owned.is_empty() {
-                            t.put_link(
-                                &format!("hasaccess::{}::{}", creator_id_owned, store_id_owned),
-                                "true",
-                            );
+                            // The creator administers the store they just made.
+                            let ports =
+                                crate::shell::api::model::store_ports::LegacyMembership { trx: t };
+                            aseman_ports::StoreAccess::join(
+                                &ports,
+                                &store_id_owned,
+                                &creator_id_owned,
+                                StorePermissions::owner(),
+                            )
+                            .map_err(|error| anyhow::anyhow!("{error}"))?;
                             t.put_link(
                                 &format!("creatorof::{}::{}", creator_id_owned, store_id_owned),
                                 "true",
-                            );
-                            // The creator administers the store they just made.
-                            t.put_link(
-                                &format!("onaccess::{}::{}", store_id_owned, creator_id_owned),
-                                &StorePermissions::owner().encode(),
                             );
                         }
                         Ok(())
@@ -1710,21 +1738,13 @@ impl Vmm {
                         // listStores walks hasaccess, and a later getStore still
                         // echoes the requested id, which is how a deleted space
                         // came back as an untitled project.
-                        let prefix = format!("onaccess::{}::", store_id_owned);
-                        let members = t.get_links_list(&prefix, -1, -1, &[]).unwrap_or_default();
-                        for k in members {
-                            let member_id = k.strip_prefix(&prefix).unwrap_or(&k).to_string();
-                            if member_id.is_empty() {
-                                continue;
-                            }
-                            t.del_key(&format!(
-                                "link::onaccess::{}::{}",
-                                store_id_owned, member_id
-                            ));
-                            t.del_key(&format!(
-                                "link::hasaccess::{}::{}",
-                                member_id, store_id_owned
-                            ));
+                        let ports =
+                            crate::shell::api::model::store_ports::LegacyMembership { trx: t };
+                        let members = aseman_ports::StoreAccess::members(&ports, &store_id_owned)
+                            .map_err(|error| anyhow::anyhow!("{error}"))?;
+                        for (member_id, _) in members {
+                            aseman_ports::StoreAccess::leave(&ports, &store_id_owned, &member_id)
+                                .map_err(|error| anyhow::anyhow!("{error}"))?;
                             t.del_key(&format!(
                                 "link::creatorof::{}::{}",
                                 member_id, store_id_owned
@@ -1775,19 +1795,29 @@ impl Vmm {
             }
             "list" => {
                 let user_id = check_str(input, "userId", "");
-                let prefix = if user_id.is_empty() {
-                    "obj::Store::".to_string()
-                } else {
-                    format!("hasaccess::{}::", user_id)
-                };
                 let slot: Arc<Mutex<Vec<Store>>> = Arc::new(Mutex::new(Vec::new()));
                 let slot_clone = slot.clone();
                 self.app.modify_state(
                     true,
                     Box::new(move |t: &dyn ITrx| {
-                        if let Ok(list) =
-                            Store::list(t, &prefix, false, &HashMap::new(), &HashMap::new(), 0, 50)
-                        {
+                        let list = if user_id.is_empty() {
+                            Store::list(
+                                t,
+                                "obj::Store::",
+                                false,
+                                &HashMap::new(),
+                                &HashMap::new(),
+                                0,
+                                50,
+                            )
+                        } else {
+                            let ports =
+                                crate::shell::api::model::store_ports::LegacyMembership { trx: t };
+                            ports
+                                .member_stores(&user_id, 50)
+                                .map_err(|error| anyhow::anyhow!("{error}"))
+                        };
+                        if let Ok(list) = list {
                             *slot_clone.lock().unwrap() = list;
                         }
                         Ok(())
@@ -1816,19 +1846,16 @@ impl Vmm {
                 self.app.modify_state(
                     true,
                     Box::new(move |t: &dyn ITrx| {
-                        let prefix = format!("onaccess::{}::", sid);
-                        let keys = t.get_links_list(&prefix, -1, -1, &[]).unwrap_or_default();
+                        let ports =
+                            crate::shell::api::model::store_ports::LegacyMembership { trx: t };
+                        let members = aseman_ports::StoreAccess::members(&ports, &sid)
+                            .map_err(|error| anyhow::anyhow!("{error}"))?;
                         let mut out: Vec<Creature> = Vec::new();
-                        for k in keys {
-                            let member_id = k.strip_prefix(&prefix).unwrap_or(&k).to_string();
-                            if member_id.is_empty() {
-                                continue;
-                            }
-                            let c = Creature {
-                                id: member_id,
-                                ..Default::default()
-                            }
-                            .pull(t);
+                        for (member_id, _) in members {
+                            let c = (crate::shell::api::model::creature_ports::LegacyCreatures {
+                                trx: t,
+                            })
+                            .creature_or_empty(&member_id);
                             if c.id.is_empty() {
                                 continue;
                             }
@@ -2080,16 +2107,26 @@ impl Vmm {
         let outcome_clone = outcome.clone();
         let closure: StateClosure = Box::new(move |state: Arc<dyn IState>| {
             if let Some(action) = app_for_closure.actor().fetch_action("/stores/signal") {
-                *outcome_clone.lock().unwrap() =
-                    match action.act(state, Arc::new(signal_input.clone())) {
-                        Ok((_code, v)) => Ok(v),
-                        Err(e) => Err(format!("{}", e)),
-                    };
+                let acted = match action.act(state, Arc::new(signal_input.clone())) {
+                    Ok((_code, v)) => Ok(v),
+                    Err(e) => Err(format!("{}", e)),
+                };
+                // LD-15: a refused signal's writes are discarded.
+                let failed = acted.as_ref().err().map(|error| anyhow::anyhow!("{error}"));
+                *outcome_clone.lock().unwrap() = acted;
+                if let Some(error) = failed {
+                    return Err(error);
+                }
             }
             Ok(())
         });
-        self.app.modify_state_securly(false, info, closure);
-        let settled = outcome.lock().unwrap().clone();
+        let committed = self
+            .app
+            .modify_state_securly_checked(false, info, "", closure);
+        let mut settled = outcome.lock().unwrap().clone();
+        if let (Ok(_), Err(error)) = (&settled, committed) {
+            settled = Err(error.to_string());
+        }
         match settled {
             Ok(value) => {
                 let mut out = match value {

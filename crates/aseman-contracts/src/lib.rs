@@ -5,7 +5,10 @@ use serde::{Deserialize, Serialize};
 
 pub mod capsule;
 pub mod guest;
+pub mod legacy_documents;
 pub mod legacy_gateway;
+pub mod legacy_keys;
+pub mod legacy_realtime;
 pub mod legacy_storage_http;
 pub mod migration;
 pub mod module;

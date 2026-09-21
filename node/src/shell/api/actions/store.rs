@@ -24,10 +24,16 @@ use std::sync::Arc;
 use anyhow::{anyhow, Result};
 use serde_json::{json, Value};
 
+use crate::shell::api::model::store_ports::{
+    legacy_error, log_packet, LegacyStorePorts, SystemClock,
+};
+use aseman_application::store::{GetStoreAccess, ReadStoreHistory, SetStoreAccess, SignalStore};
+
 use crate::core::actor::model::secured::guard::Guard;
 use crate::models::action::ISecureAction;
 use crate::models::core::ICore;
-use crate::models::packet::{validate_tags, LogPacket, LogQuery};
+use crate::models::packet::{LogPacket, LogQuery};
+use crate::models::ports::storage::IStorage;
 use crate::models::state::IState;
 use crate::models::transaction::ITrx;
 use crate::shell::api::model::access::{access_link_key, read_permissions, StorePermissions};
@@ -51,8 +57,7 @@ fn store_guard() -> Guard {
     }
 }
 
-/// Default page size for a history read when the caller names none.
-const DEFAULT_HISTORY_COUNT: i64 = 100;
+use aseman_application::store::DEFAULT_HISTORY_COUNT;
 
 /// Fan a store signal out to every member of the store except the sender.
 ///
@@ -92,63 +97,37 @@ fn signal(app: Arc<dyn ICore>) -> Arc<dyn ISecureAction> {
         "/stores/signal",
         store_guard(),
         move |state: Arc<dyn IState>, input: SignalInput| -> Result<Value> {
-            let store_id = input.store_id.clone();
-            if store_id.is_empty() {
-                return Err(anyhow!("storeId is required"));
-            }
             let sender_id = state.info().user_id();
             let trx = state.trx();
-            let perms = read_permissions(&*trx, &store_id, &sender_id);
-            if !perms.signal {
-                return Err(anyhow!("not allowed to signal in this store"));
+            let ports = LegacyStorePorts {
+                trx: &*trx,
+                storage: app_for_handler.tools().storage(),
+            };
+            let outcome = SignalStore {
+                stores: &ports,
+                access: &ports,
+                log: &ports,
+                clock: &SystemClock,
             }
-            let tags = validate_tags(&input.tags)?;
+            .execute(
+                &sender_id,
+                &input.store_id,
+                &input.data,
+                &input.tags,
+                input.temp,
+            )
+            .map_err(legacy_error)?;
 
-            // `Store::pull` keeps the id it was handed whether or not the object
-            // exists, so absence has to be read off the columns themselves — an
-            // unknown store would otherwise look like a store that simply does
-            // not keep history, and its messages would be dropped in silence.
-            if trx.get_obj(Store::type_(), &store_id).is_empty() {
-                return Err(anyhow!("store not found"));
-            }
-            let store = Store {
-                id: store_id.clone(),
-                ..Default::default()
-            }
-            .pull(&*trx);
-
-            let mut sender = Creature {
-                id: sender_id.clone(),
-                ..Default::default()
-            }
-            .pull(&*trx);
+            let mut sender =
+                (crate::shell::api::model::creature_ports::LegacyCreatures { trx: &*trx })
+                    .creature_or_empty(&sender_id.clone());
             // Balance is never leaked over the signalling channel.
             sender.balance = 0;
-
-            let now = chrono::Utc::now().timestamp_millis();
-            let persist = store.pers_hist && !input.temp;
-            // Recording comes FIRST, and its failure fails the whole call. A
-            // signal fanned out to everyone's screen but missing from the log is
-            // the worst outcome available: it looks delivered, and it is gone by
-            // the next read. Better to tell the sender it did not send.
-            let logged: Option<LogPacket> = if persist {
-                let packet = app_for_handler.tools().storage().log_time_sieries(
-                    &store_id,
-                    &sender_id,
-                    &input.data,
-                    &tags,
-                    now,
-                )?;
-                // Keep the store's own counter true to the log so a reader can
-                // tell an empty store from an unreachable one.
-                let mut counted = store.clone();
-                counted.signal_count += 1;
-                counted.push(&*trx);
-                Some(packet)
-            } else {
-                None
-            };
-
+            let signal_id = outcome
+                .signal
+                .as_ref()
+                .map(|signal| signal.id.clone())
+                .unwrap_or_default();
             let out = StoresSend {
                 action: if input.typ.is_empty() {
                     "broadcast".to_string()
@@ -157,24 +136,29 @@ fn signal(app: Arc<dyn ICore>) -> Arc<dyn ISecureAction> {
                 },
                 user: sender,
                 store: Store {
-                    id: store_id.clone(),
+                    id: input.store_id.clone(),
                     ..Default::default()
                 },
                 data: input.data.clone(),
                 is_temp: input.temp,
-                tags: tags.clone(),
-                signal_id: logged.as_ref().map(|p| p.id.clone()).unwrap_or_default(),
-                time: now,
+                tags: outcome.tags.clone(),
+                signal_id: signal_id.clone(),
+                time: outcome.time_millis,
                 ..Default::default()
             };
-            fan_out(app_for_handler.clone(), store_id, sender_id, out);
+            fan_out(
+                app_for_handler.clone(),
+                input.store_id.clone(),
+                sender_id,
+                out,
+            );
 
             Ok(json!({
                 "passed": true,
-                "persisted": persist,
-                "signalId": logged.as_ref().map(|p| p.id.clone()).unwrap_or_default(),
-                "time": now,
-                "tags": tags,
+                "persisted": outcome.persisted,
+                "signalId": signal_id,
+                "time": outcome.time_millis,
+                "tags": outcome.tags,
             }))
         },
     )
@@ -189,34 +173,30 @@ fn history(app: Arc<dyn ICore>) -> Arc<dyn ISecureAction> {
         "/stores/history",
         store_guard(),
         move |state: Arc<dyn IState>, input: HistoryInput| -> Result<Value> {
-            let store_id = input.store_id.clone();
-            if store_id.is_empty() {
-                return Err(anyhow!("storeId is required"));
+            let trx = state.trx();
+            let ports = LegacyStorePorts {
+                trx: &*trx,
+                storage: app_for_handler.tools().storage(),
+            };
+            let signals = ReadStoreHistory {
+                access: &ports,
+                log: &ports,
             }
-            let reader_id = state.info().user_id();
-            let perms = read_permissions(&*state.trx(), &store_id, &reader_id);
-            if !perms.read {
-                return Err(anyhow!("not allowed to read this store"));
-            }
-            let query = LogQuery {
-                tags_all: input.tags_all.clone(),
-                tags_any: input.tags_any.clone(),
-                before_time: input.before_time,
-                after_time: input.after_time,
-                count: if input.count > 0 {
-                    input.count
-                } else {
-                    DEFAULT_HISTORY_COUNT
+            .execute(
+                &state.info().user_id(),
+                &input.store_id,
+                LogQuery {
+                    tags_all: input.tags_all.clone(),
+                    tags_any: input.tags_any.clone(),
+                    before_time: input.before_time,
+                    after_time: input.after_time,
+                    count: input.count,
                 },
-            }
-            .validated()?;
-            let packets = app_for_handler
-                .tools()
-                .storage()
-                .read_store_logs(&store_id, &query)?;
+            )
+            .map_err(legacy_error)?;
             Ok(json!({
-                "storeId": store_id,
-                "signals": packets,
+                "storeId": input.store_id,
+                "signals": signals.into_iter().map(log_packet).collect::<Vec<_>>(),
             }))
         },
     )
@@ -228,30 +208,27 @@ fn history(app: Arc<dyn ICore>) -> Arc<dyn ISecureAction> {
 /// granted `read` alone, an ordinary member `read,signal`, an administrator
 /// `read,signal,manage`.
 fn set_access(app: Arc<dyn ICore>) -> Arc<dyn ISecureAction> {
+    let app_for_handler = app.clone();
     build_secure_action::<SetAccessInput, _>(
         app,
         "/stores/setAccess",
         store_guard(),
         move |state: Arc<dyn IState>, input: SetAccessInput| -> Result<Value> {
-            let store_id = input.store_id.clone();
-            if store_id.is_empty() {
-                return Err(anyhow!("storeId is required"));
-            }
-            if input.member_id.is_empty() {
-                return Err(anyhow!("memberId is required"));
-            }
-            let caller = state.info().user_id();
             let trx = state.trx();
-            if !read_permissions(&*trx, &store_id, &caller).manage {
-                return Err(anyhow!("not allowed to manage access in this store"));
-            }
-            let perms = StorePermissions::from_list(&input.permissions);
-            trx.put_link(
-                &access_link_key(&store_id, &input.member_id),
-                &perms.encode(),
-            );
+            let ports = LegacyStorePorts {
+                trx: &*trx,
+                storage: app_for_handler.tools().storage(),
+            };
+            let perms = SetStoreAccess { access: &ports }
+                .execute(
+                    &state.info().user_id(),
+                    &input.store_id,
+                    &input.member_id,
+                    &input.permissions,
+                )
+                .map_err(legacy_error)?;
             Ok(json!({
-                "storeId": store_id,
+                "storeId": input.store_id,
                 "memberId": input.member_id,
                 "permissions": perms,
             }))
@@ -262,34 +239,23 @@ fn set_access(app: Arc<dyn ICore>) -> Arc<dyn ISecureAction> {
 /// `/stores/getAccess` — read a member's permissions. A member may always read
 /// their own; reading somebody else's requires `manage`.
 fn get_access(app: Arc<dyn ICore>) -> Arc<dyn ISecureAction> {
+    let app_for_handler = app.clone();
     build_secure_action::<GetAccessInput, _>(
         app,
         "/stores/getAccess",
         store_guard(),
         move |state: Arc<dyn IState>, input: GetAccessInput| -> Result<Value> {
-            let store_id = input.store_id.clone();
-            if store_id.is_empty() {
-                return Err(anyhow!("storeId is required"));
-            }
-            let caller = state.info().user_id();
-            let target = if input.member_id.is_empty() {
-                caller.clone()
-            } else {
-                input.member_id.clone()
-            };
             let trx = state.trx();
-            let caller_perms = read_permissions(&*trx, &store_id, &caller);
-            if target != caller && !caller_perms.manage {
-                return Err(anyhow!("not allowed to read another member's access"));
-            }
-            let perms = if target == caller {
-                caller_perms
-            } else {
-                read_permissions(&*trx, &store_id, &target)
+            let ports = LegacyStorePorts {
+                trx: &*trx,
+                storage: app_for_handler.tools().storage(),
             };
+            let (member, perms) = GetStoreAccess { access: &ports }
+                .execute(&state.info().user_id(), &input.store_id, &input.member_id)
+                .map_err(legacy_error)?;
             Ok(json!({
-                "storeId": store_id,
-                "memberId": target,
+                "storeId": input.store_id,
+                "memberId": member,
                 "permissions": perms,
             }))
         },
@@ -364,5 +330,241 @@ mod tests {
             DEFAULT_HISTORY_COUNT
         };
         assert_eq!(count, DEFAULT_HISTORY_COUNT);
+    }
+
+    /// Characterization of the rewired path: the store use cases running through
+    /// `LegacyStorePorts` on a real transaction keep the legacy key encodings.
+    mod legacy_ports {
+        use super::super::*;
+        use crate::core::actor::model::trx::tests::StubCore;
+        use crate::core::actor::model::trx::TrxWrapper;
+        use crate::models::packet::{BuildPacket, LogPacket, LogQuery};
+        use crate::models::ports::storage::{IStorage, KvDb};
+        use std::sync::Mutex;
+
+        struct RecordingStorage {
+            kv: KvDb,
+            signals: Mutex<Vec<LogPacket>>,
+        }
+
+        impl IStorage for RecordingStorage {
+            fn storage_root(&self) -> String {
+                String::new()
+            }
+            fn kv_db(&self) -> KvDb {
+                self.kv.clone()
+            }
+            fn gen_id(&self, _: &dyn ITrx, _: &str) -> String {
+                String::new()
+            }
+            fn log_time_sieries(
+                &self,
+                store_id: &str,
+                user_id: &str,
+                data: &str,
+                tags: &[String],
+                time_val: i64,
+            ) -> Result<LogPacket> {
+                let mut signals = self.signals.lock().unwrap();
+                let packet = LogPacket {
+                    id: format!("sig-{}", signals.len()),
+                    user_id: user_id.to_string(),
+                    data: data.to_string(),
+                    store_id: store_id.to_string(),
+                    tags: tags.to_vec(),
+                    time: time_val,
+                    edited: false,
+                };
+                signals.push(packet.clone());
+                Ok(packet)
+            }
+            fn update_log(&self, _: &str, _: &str, _: &str, _: &str, _: i64) -> LogPacket {
+                LogPacket::default()
+            }
+            fn read_store_logs(&self, store_id: &str, query: &LogQuery) -> Result<Vec<LogPacket>> {
+                let mut rows = self
+                    .signals
+                    .lock()
+                    .unwrap()
+                    .iter()
+                    .filter(|packet| packet.store_id == store_id)
+                    .filter(|packet| query.tags_all.iter().all(|tag| packet.tags.contains(tag)))
+                    .cloned()
+                    .collect::<Vec<_>>();
+                rows.reverse();
+                Ok(rows)
+            }
+            fn pick_store_logs(&self, _: &str, _: Vec<String>) -> Vec<LogPacket> {
+                Vec::new()
+            }
+            fn log_vm(&self, _: &str, _: &str, _: &str, _: i64) -> BuildPacket {
+                BuildPacket::default()
+            }
+            fn read_vm_logs(&self, _: &str, _: &str, _: i64, _: i64) -> Vec<BuildPacket> {
+                Vec::new()
+            }
+        }
+
+        #[test]
+        fn store_use_cases_keep_legacy_encodings_through_the_adapter() {
+            let dir = std::env::temp_dir().join(format!(
+                "aseman-store-ports-{}-{}",
+                std::process::id(),
+                std::time::SystemTime::now()
+                    .duration_since(std::time::UNIX_EPOCH)
+                    .unwrap()
+                    .as_nanos()
+            ));
+            let storage: Arc<RecordingStorage> = Arc::new(RecordingStorage {
+                kv: Arc::new(aseman_storage_legacy::RocksDbKvStore::open_default(&dir).unwrap()),
+                signals: Mutex::new(Vec::new()),
+            });
+            let dyn_storage: Arc<dyn IStorage> = storage.clone();
+            let trx = TrxWrapper::new(
+                Arc::new(StubCore {
+                    storage: dyn_storage.clone(),
+                }),
+                dyn_storage.clone(),
+                false,
+            );
+            Store {
+                id: "s1".into(),
+                pers_hist: true,
+                member_count: 1,
+                ..Default::default()
+            }
+            .push(&*trx);
+            trx.put_link(
+                &access_link_key("s1", "alice"),
+                &StorePermissions::owner().encode(),
+            );
+            let ports = LegacyStorePorts {
+                trx: &*trx,
+                storage: dyn_storage,
+            };
+
+            let outcome = SignalStore {
+                stores: &ports,
+                access: &ports,
+                log: &ports,
+                clock: &SystemClock,
+            }
+            .execute("alice", "s1", "hello", &["kind=message".to_string()], false)
+            .unwrap();
+            assert!(outcome.persisted);
+            assert_eq!(outcome.signal.unwrap().id, "sig-0");
+            let counted = Store {
+                id: "s1".into(),
+                ..Default::default()
+            }
+            .pull(&*trx);
+            assert_eq!(counted.signal_count, 1);
+
+            let history = ReadStoreHistory {
+                access: &ports,
+                log: &ports,
+            }
+            .execute("alice", "s1", LogQuery::default())
+            .unwrap();
+            assert_eq!(history.len(), 1);
+
+            // Legacy `onaccess` link encoding is preserved exactly.
+            SetStoreAccess { access: &ports }
+                .execute(
+                    "alice",
+                    "s1",
+                    "bob",
+                    &["signal".to_string(), "read".to_string()],
+                )
+                .unwrap();
+            assert_eq!(trx.get_link(&access_link_key("s1", "bob")), "read,signal");
+            let (member, perms) = GetStoreAccess { access: &ports }
+                .execute("bob", "s1", "")
+                .unwrap();
+            assert_eq!(
+                (member.as_str(), perms),
+                ("bob", StorePermissions::member())
+            );
+            let denied = SignalStore {
+                stores: &ports,
+                access: &ports,
+                log: &ports,
+                clock: &SystemClock,
+            }
+            .execute("mallory", "s1", "x", &[], false)
+            .unwrap_err();
+            assert_eq!(
+                legacy_error(denied).to_string(),
+                "not allowed to signal in this store"
+            );
+            drop(trx);
+            let _ = std::fs::remove_dir_all(&dir);
+        }
+
+        /// LD-12: the legacy creature-deletion walk, `Store::list(.., -1, -1)`, is
+        /// always empty, so a deleted creature kept every membership. The port
+        /// helpers remove them and delete stores left with no member.
+        #[test]
+        fn removing_a_member_everywhere_fixes_the_empty_legacy_walk() {
+            let dir = std::env::temp_dir().join(format!(
+                "aseman-store-members-{}-{}",
+                std::process::id(),
+                std::time::SystemTime::now()
+                    .duration_since(std::time::UNIX_EPOCH)
+                    .unwrap()
+                    .as_nanos()
+            ));
+            let storage: Arc<dyn IStorage> = Arc::new(RecordingStorage {
+                kv: Arc::new(aseman_storage_legacy::RocksDbKvStore::open_default(&dir).unwrap()),
+                signals: Mutex::new(Vec::new()),
+            });
+            let trx = TrxWrapper::new(
+                Arc::new(StubCore {
+                    storage: storage.clone(),
+                }),
+                storage,
+                false,
+            );
+            for id in ["s1", "s2"] {
+                Store {
+                    id: id.into(),
+                    ..Default::default()
+                }
+                .push(&*trx);
+            }
+            let ports = crate::shell::api::model::store_ports::LegacyMembership { trx: &*trx };
+            let member = StorePermissions::member();
+            aseman_ports::StoreAccess::join(&ports, "s1", "alice", member).unwrap();
+            aseman_ports::StoreAccess::join(&ports, "s1", "bob", member).unwrap();
+            aseman_ports::StoreAccess::join(&ports, "s2", "alice", member).unwrap();
+            // A membership whose store object is gone.
+            aseman_ports::StoreAccess::join(&ports, "gone", "alice", member).unwrap();
+
+            let legacy_walk = Store::list(
+                &*trx,
+                "hasaccess::alice::",
+                false,
+                &std::collections::HashMap::new(),
+                &std::collections::HashMap::new(),
+                -1,
+                -1,
+            )
+            .unwrap();
+            assert!(legacy_walk.is_empty());
+            let ids = |stores: Vec<Store>| stores.into_iter().map(|s| s.id).collect::<Vec<_>>();
+            assert_eq!(ids(ports.member_stores("alice", 50).unwrap()), ["s1", "s2"]);
+            // The window is taken over membership links, then dangling ones drop.
+            assert!(ports.member_stores("alice", 1).unwrap().is_empty());
+
+            assert_eq!(ports.remove_member_everywhere("alice").unwrap(), ["s2"]);
+            assert!(aseman_ports::StoreAccess::stores_of(&ports, "alice")
+                .unwrap()
+                .is_empty());
+            assert!(aseman_ports::StoreAccess::is_member(&ports, "s1", "bob").unwrap());
+            assert!(!trx.get_obj(Store::type_(), "s1").is_empty());
+            assert!(trx.get_obj(Store::type_(), "s2").is_empty());
+            drop(trx);
+            let _ = std::fs::remove_dir_all(&dir);
+        }
     }
 }

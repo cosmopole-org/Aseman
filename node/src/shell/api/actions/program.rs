@@ -62,11 +62,8 @@ fn normalize_entity_type(s: &str) -> String {
 /// We deliberately fail closed when no linked owner exists or more than one
 /// linked machine is found.
 pub(crate) fn resolve_program_owner_machine(trx: &dyn ITrx, program: &Program) -> Creature {
-    let canonical = Creature {
-        id: program.machine_id.clone(),
-        ..Default::default()
-    }
-    .pull(trx);
+    let canonical = (crate::shell::api::model::creature_ports::LegacyCreatures { trx })
+        .creature_or_empty(&program.machine_id.clone());
     if !canonical.owner_id.is_empty() {
         return canonical;
     }
@@ -85,11 +82,8 @@ pub(crate) fn resolve_program_owner_machine(trx: &dyn ITrx, program: &Program) -
         if machine_id.is_empty() {
             continue;
         }
-        let candidate = Creature {
-            id: machine_id.to_string(),
-            ..Default::default()
-        }
-        .pull(trx);
+        let candidate = (crate::shell::api::model::creature_ports::LegacyCreatures { trx })
+            .creature_or_empty(&machine_id.to_string());
         if candidate.owner_id.is_empty() {
             continue;
         }
@@ -591,14 +585,15 @@ fn create_program(app: Arc<dyn ICore>) -> Arc<dyn ISecureAction> {
         user_guard(),
         move |state: Arc<dyn IState>, input: CreateMachineInput| -> Result<Value> {
             let trx = state.trx();
-            if !trx.has_obj("Creature", &input.app_id) {
+            if (crate::shell::api::model::creature_ports::LegacyCreatures { trx: &*trx })
+                .account(&input.app_id)?
+                .is_none()
+            {
                 return Err(anyhow!("machine not found"));
             }
-            let mut machine = Creature {
-                id: input.app_id.clone(),
-                ..Default::default()
-            }
-            .pull(&*trx);
+            let mut machine =
+                (crate::shell::api::model::creature_ports::LegacyCreatures { trx: &*trx })
+                    .creature_or_empty(&input.app_id.clone());
             if machine.owner_id != state.info().user_id() {
                 return Err(anyhow!("you are not owner of machine"));
             }
@@ -643,11 +638,9 @@ fn delete_program(app: Arc<dyn ICore>) -> Arc<dyn ISecureAction> {
                 return Err(anyhow!("program does not exist"));
             }
             let app_id = trx.get_index("Program", "id", "programId", &input.program_id);
-            let mut machine = Creature {
-                id: app_id,
-                ..Default::default()
-            }
-            .pull(&*trx);
+            let mut machine =
+                (crate::shell::api::model::creature_ports::LegacyCreatures { trx: &*trx })
+                    .creature_or_empty(&app_id);
             machine.machines_count -= 1;
             machine.push(&*trx);
             trx.del_index("Program", "id", "programId", &input.program_id);
@@ -1333,12 +1326,9 @@ pub(crate) fn register_gateway_route(
     // request may address the route by the short name (`/m-tool-github/…`) as
     // well as by the full username or the numeric id. Best-effort: only when the
     // creature record + username resolve on this node.
-    let username = Creature {
-        id: creature_id.to_string(),
-        ..Default::default()
-    }
-    .pull(trx)
-    .username;
+    let username = (crate::shell::api::model::creature_ports::LegacyCreatures { trx })
+        .creature_or_empty(&creature_id.to_string())
+        .username;
     let local_part = http_route::username_local_part(&username);
     if !local_part.is_empty() && local_part != creature_id {
         trx.put_link(&http_route::route_alias_link_key(local_part), creature_id);
@@ -1651,17 +1641,25 @@ fn list_machines(app: Arc<dyn ICore>) -> Arc<dyn ISecureAction> {
         move |state: Arc<dyn IState>, input: ListInput| -> Result<Value> {
             let trx = state.trx();
             // "Machines" are just creatures of type "machine".
-            let mut type_filter: HashMap<String, String> = HashMap::new();
-            type_filter.insert("type".to_string(), "machine".to_string());
-            let machines = Creature::all_query(&*trx, input.offset, input.count, &type_filter)?;
+            let creatures =
+                crate::shell::api::model::creature_ports::LegacyCreatures { trx: &*trx };
+            let machines = aseman_application::creature::GetCreature {
+                directory: &creatures,
+                balances: &creatures,
+            }
+            .list(Some("machine"), input.offset, Some(input.count))
+            .map_err(crate::shell::api::model::store_ports::legacy_error)?
+            .into_iter()
+            .map(|found| {
+                crate::shell::api::model::creature_ports::creature_view(found.record, found.balance)
+            });
             let mut result: Vec<Map<String, Value>> = Vec::new();
             for machine in machines {
-                let profile = trx
-                    .get_json(
-                        &format!("CreatMeta::{}", machine.id),
-                        "metadata.public.profile",
-                    )
-                    .ok();
+                let profile = creatures.metadata_object(
+                    aseman_domain::creature::MetadataKind::Creature,
+                    &machine.id,
+                    "metadata.public.profile",
+                );
                 let mut row: Map<String, Value> = Map::new();
                 row.insert("id".into(), json!(machine.id));
                 row.insert("chainId".into(), json!(machine.chain_id));
@@ -1802,13 +1800,10 @@ fn install_program_bootstrap(app: Arc<dyn ICore>) {
                         });
                     }
                 }
-                let prefix = format!("hasaccess::{}::", program.id);
-                let store_ids = trx.get_links_list(&prefix, -1, -1, &[]).unwrap_or_default();
-                for store_id in store_ids {
-                    let bare = store_id
-                        .strip_prefix(&prefix)
-                        .unwrap_or(&store_id)
-                        .to_string();
+                let ports = crate::shell::api::model::store_ports::LegacyMembership { trx };
+                let store_ids =
+                    aseman_ports::StoreAccess::stores_of(&ports, &program.id).unwrap_or_default();
+                for bare in store_ids {
                     app_for_closure
                         .tools()
                         .signaler()

@@ -102,14 +102,17 @@ impl ISecureAction for SecureAction {
         let input_clone = input.clone();
         let closure: StateClosure = Box::new(move |state: Arc<dyn IState>| {
             let res = action.act(state, input_clone.clone());
+            // LD-15: a failed action's writes are discarded, as in the Go original.
+            let failed = res.as_ref().err().map(|error| anyhow!("{error}"));
             *slot_clone.lock().unwrap() = Some(res);
-            Ok(())
+            failed.map_or(Ok(()), Err)
         });
-        self.core
-            .modify_state_securly_with_source(false, Arc::new(info), origin, closure);
+        let committed =
+            self.core
+                .modify_state_securly_checked(false, Arc::new(info), origin, closure);
         let taken = slot.lock().unwrap().take();
         match taken {
-            Some(Ok(v)) => Ok(v),
+            Some(Ok(v)) => committed.map(|()| v),
             Some(Err(e)) => Err(e),
             None => Err(anyhow!("action produced no result")),
         }
@@ -156,14 +159,17 @@ impl ISecureAction for SecureAction {
             let closure: StateClosure = Box::new(move |state: Arc<dyn IState>| {
                 state.set_source(&origin_owned);
                 let res = action.act(state, input_clone.clone());
+                // LD-15: a failed action's writes are discarded, as in the Go original.
+                let failed = res.as_ref().err().map(|error| anyhow!("{error}"));
                 *slot_clone.lock().unwrap() = Some(res);
-                Ok(())
+                failed.map_or(Ok(()), Err)
             });
-            self.core
-                .modify_state_securly(false, Arc::new(info), closure);
+            let committed =
+                self.core
+                    .modify_state_securly_checked(false, Arc::new(info), "", closure);
             let taken = slot.lock().unwrap().take();
             return match taken {
-                Some(Ok(v)) => Ok(v),
+                Some(Ok(v)) => committed.map(|()| v),
                 Some(Err(e)) => Err(e),
                 None => Err(anyhow!("action produced no result")),
             };
@@ -205,14 +211,17 @@ impl ISecureAction for SecureAction {
         let closure: StateClosure = Box::new(move |state: Arc<dyn IState>| {
             state.set_source(&input_clone.origin());
             let res = action.act(state, input_clone.clone());
+            // LD-15: a failed action's writes are discarded, as in the Go original.
+            let failed = res.as_ref().err().map(|error| anyhow!("{error}"));
             *slot_clone.lock().unwrap() = Some(res);
-            Ok(())
+            failed.map_or(Ok(()), Err)
         });
-        self.core
-            .modify_state_securly(false, Arc::new(info), closure);
+        let committed = self
+            .core
+            .modify_state_securly_checked(false, Arc::new(info), "", closure);
         let taken = slot.lock().unwrap().take();
         match taken {
-            Some(Ok(v)) => Ok(v),
+            Some(Ok(v)) => committed.map(|()| v),
             Some(Err(e)) => Err(e),
             None => Err(anyhow!("action produced no result")),
         }

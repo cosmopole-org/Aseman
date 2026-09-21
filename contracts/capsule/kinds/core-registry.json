@@ -40,6 +40,7 @@
     {"kind":"core.creature_secret","table":"creature_secrets","storage_class":"core","consistency":"serializable","owner_scope":"creature","required_capabilities":["relationships.foreign_keys","indexes.unique"]},
     {"kind":"core.secret_grant","table":"secret_grants","storage_class":"core","consistency":"serializable","owner_scope":"creature","required_capabilities":["relationships.foreign_keys","indexes.unique"]},
     {"kind":"core.bridge_grant","table":"bridge_grants","storage_class":"core","consistency":"serializable","owner_scope":"creature","required_capabilities":["indexes.unique"]},
-    {"kind":"core.bridge_topic","table":"bridge_topics","storage_class":"core","consistency":"serializable","owner_scope":"creature","required_capabilities":["indexes.unique"]}
+    {"kind":"core.bridge_topic","table":"bridge_topics","storage_class":"core","consistency":"serializable","owner_scope":"creature","required_capabilities":["indexes.unique"]},
+    {"kind":"core.legacy_identity","table":"legacy_identities","storage_class":"core","consistency":"serializable","owner_scope":"global","required_capabilities":["indexes.unique"]}
   ]
 }

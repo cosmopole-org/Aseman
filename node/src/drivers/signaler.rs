@@ -77,30 +77,20 @@ impl Signaler {
     /// returned: that is the same flag `stores/history` demands, so a member is
     /// never pushed live what they could not replay.
     fn store_members(&self, store_id: &str) -> Vec<String> {
-        let prefix = format!("onaccess::{}::", store_id);
         let out = Arc::new(Mutex::new(Vec::<String>::new()));
         let out_clone = out.clone();
-        let prefix_owned = prefix.clone();
+        let store_id = store_id.to_string();
         self.app.modify_state(
             true,
             Box::new(move |trx: &dyn ITrx| {
-                let keys = trx
-                    .get_links_list(&prefix_owned, -1, -1, &[])
-                    .unwrap_or_default();
-                let mut members = Vec::with_capacity(keys.len());
-                for key in keys {
-                    let member = key
-                        .strip_prefix(&prefix_owned)
-                        .unwrap_or(key.as_str())
-                        .to_string();
-                    if member.is_empty() {
-                        continue;
-                    }
-                    if StorePermissions::parse(&trx.get_link(&key)).read {
-                        members.push(member);
-                    }
-                }
-                *out_clone.lock().unwrap() = members;
+                // Membership goes through the store port (legacy adapter until cutover).
+                let ports = crate::shell::api::model::store_ports::LegacyMembership { trx };
+                *out_clone.lock().unwrap() = aseman_ports::StoreAccess::members(&ports, &store_id)
+                    .unwrap_or_default()
+                    .into_iter()
+                    .filter(|(_, permissions)| permissions.read)
+                    .map(|(member, _)| member)
+                    .collect();
                 Ok(())
             }),
         );
@@ -116,8 +106,14 @@ impl Signaler {
         self.app.modify_state(
             true,
             Box::new(move |trx: &dyn ITrx| {
-                let v = trx.get_column("Creature", &user_id_owned, "username");
-                *slot_clone.lock().unwrap() = String::from_utf8_lossy(&v).into_owned();
+                *slot_clone.lock().unwrap() = aseman_ports::CreatureDirectory::creature(
+                    &crate::shell::api::model::creature_ports::LegacyCreatures { trx },
+                    &user_id_owned,
+                )
+                .ok()
+                .flatten()
+                .map(|record| record.username)
+                .unwrap_or_default();
                 Ok(())
             }),
         );

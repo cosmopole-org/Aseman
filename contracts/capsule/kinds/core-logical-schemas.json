@@ -40,6 +40,7 @@
     {"kind":"core.creature_secret","fields":{"name":"text","algorithm":"text","ciphertext":"bytes","key_fingerprint":"bytes"},"required":["name","algorithm","ciphertext","key_fingerprint"],"unique_indexes":[["creature","name"]],"relationships":{"creature":"core.creature"},"retention":"authority"},
     {"kind":"core.secret_grant","fields":{"grantee_ref":"text","expires_at_micros":"timestamp_micros"},"required":["grantee_ref","expires_at_micros"],"unique_indexes":[["secret","grantee_ref"]],"relationships":{"secret":"core.creature_secret","grantee":"core.creature"},"retention":"revocation"},
     {"kind":"core.bridge_grant","fields":{"token_digest":"bytes","minted_by_ref":"text","expires_at_micros":"timestamp_micros","document":"document","document_path":"text","entry_count":"integer","content_digest":"bytes"},"required":["token_digest","minted_by_ref","expires_at_micros","document","document_path","entry_count","content_digest"],"unique_indexes":[["token_digest"]],"relationships":{},"retention":"revocation"},
-    {"kind":"core.bridge_topic","fields":{"topic":"text","owner_ref":"text"},"required":["topic","owner_ref"],"unique_indexes":[["topic"]],"relationships":{},"retention":"authority"}
+    {"kind":"core.bridge_topic","fields":{"topic":"text","owner_ref":"text"},"required":["topic","owner_ref"],"unique_indexes":[["topic"]],"relationships":{},"retention":"authority"},
+    {"kind":"core.legacy_identity","fields":{"family":"text","legacy_id":"text","target_kind":"text","target_id":"capsule_id"},"required":["family","legacy_id","target_kind","target_id"],"unique_indexes":[["family","legacy_id"],["target_kind","target_id"]],"relationships":{},"retention":"authority"}
   ]
 }

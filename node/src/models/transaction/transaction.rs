@@ -94,6 +94,7 @@ pub trait ITrx: Send + Sync {
     fn get_pri_key(&self, tag: &str) -> Option<RsaPrivateKey>;
     fn get_pub_key(&self, tag: &str) -> Option<RsaPublicKey>;
     fn updates(&self) -> Vec<Update>;
-    fn commit(&self);
+    /// Write the transaction atomically. A failed write is reported (LD-10).
+    fn commit(&self) -> Result<()>;
     fn discard(&self);
 }

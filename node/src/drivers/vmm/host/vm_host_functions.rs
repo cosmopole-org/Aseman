@@ -1127,11 +1127,8 @@ fn finance_program_binding(app: &Arc<dyn ICore>, program_id: &str) -> Option<(St
                 return Ok(());
             }
             let machine_id = program.machine_id;
-            let machine = Creature {
-                id: machine_id.clone(),
-                ..Default::default()
-            }
-            .pull(trx);
+            let machine = (crate::shell::api::model::creature_ports::LegacyCreatures { trx })
+                .creature_or_empty(&machine_id.clone());
             if !machine.owner_id.is_empty() {
                 *slot_c.lock().unwrap() = Some((machine_id, machine.owner_id));
             }

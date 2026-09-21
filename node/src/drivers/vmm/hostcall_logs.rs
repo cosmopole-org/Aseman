@@ -44,11 +44,9 @@ impl Vmm {
                     if program.id.is_empty() {
                         break;
                     }
-                    let machine = Creature {
-                        id: program.machine_id.clone(),
-                        ..Default::default()
-                    }
-                    .pull(trx);
+                    let machine =
+                        (crate::shell::api::model::creature_ports::LegacyCreatures { trx })
+                            .creature_or_empty(&program.machine_id.clone());
                     *owner_clone.lock().unwrap() = machine.owner_id;
                     break;
                 }

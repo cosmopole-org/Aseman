@@ -511,7 +511,12 @@ fn snapshot_graph_resolves_owners_independent_of_physical_order() {
 
     let graph = LegacySnapshotGraph::assemble(records).unwrap();
     let capsules = graph.transform_reviewed(90).unwrap();
-    assert_eq!(capsules.len(), 5);
+    // Five entities, each with its legacy identity record (ADR 0009 legacy-ID map).
+    let identities = capsules
+        .iter()
+        .filter(|capsule| capsule.kind.0 == "core.legacy_identity")
+        .count();
+    assert_eq!((capsules.len() - identities, identities), (5, 5));
     assert!(capsules.windows(2).all(|pair| {
         (pair[0].kind.0.as_str(), pair[0].id.0) <= (pair[1].kind.0.as_str(), pair[1].id.0)
     }));
@@ -617,6 +622,24 @@ fn legacy_creature_splits_human_boundary_and_configured_wallet() {
     assert_eq!(capsules.len(), 3);
     assert_eq!(capsules[0].kind.0, "core.user");
     assert_eq!(capsules[1].kind.0, "core.creature");
+    // A human who never logged in by email has no email at all: `email` is unique,
+    // so an empty string would collide between such users at import.
+    let without_email = transform_legacy_creature(
+        "human-one",
+        &columns,
+        "human-one",
+        None,
+        &LegacyFinanceConfig {
+            currency: "ASE".to_owned(),
+            scale: 2,
+        },
+        130,
+    )
+    .unwrap();
+    assert!(matches!(
+        &without_email[0].body,
+        Some(CapsuleValue::Object(body)) if !body.contains_key("email")
+    ));
     assert_eq!(capsules[2].kind.0, "finance.wallet");
     assert!(capsules.iter().all(|capsule| capsule.verify().is_ok()));
     assert!(matches!(
@@ -2569,4 +2592,281 @@ fn legacy_kv_store_scans_exact_prefixes_and_writes_atomically() {
         assert!(store.scan_prefix(b"zzz").unwrap().is_empty());
     }
     DB::destroy(&Options::default(), &path).unwrap();
+}
+
+#[test]
+fn legacy_identity_map_covers_entities_but_never_sessions() {
+    let mut records = metadata_fixture_subjects();
+    for (column, value) in [("|", vec![1]), ("userId", b"human-one".to_vec())] {
+        records.push(raw_bytes(
+            &format!("obj::Session::secret-token::{column}"),
+            value,
+        ));
+    }
+    records.push(raw("index::Session::userId::id::human-one", "secret-token"));
+    let capsules = transform_metadata_fixture(records).unwrap();
+    let identities = capsules
+        .iter()
+        .filter(|capsule| capsule.kind.0 == "core.legacy_identity")
+        .filter_map(|capsule| match &capsule.body {
+            Some(CapsuleValue::Object(body)) => {
+                Some((body["family"].clone(), body["legacy_id"].clone()))
+            }
+            _ => None,
+        })
+        .collect::<Vec<_>>();
+    let text = |value: &str| CapsuleValue::Text(value.to_owned());
+    for expected in [
+        ("Creature", "human-one"),
+        ("User", "human-one"),
+        ("Program", "program-one"),
+        ("Store", "store-one"),
+    ] {
+        assert!(
+            identities.contains(&(text(expected.0), text(expected.1))),
+            "missing {expected:?}"
+        );
+    }
+    assert!(
+        !identities
+            .iter()
+            .any(|(_, legacy)| legacy == &text("secret-token"))
+    );
+    for capsule in &capsules {
+        let encoded = capsule.canonical_bytes().unwrap();
+        assert!(!encoded.windows(12).any(|window| window == b"secret-token"));
+    }
+}
+
+/// LD-12: the audit finds exactly the membership links the ADR 0018 export refuses.
+/// The repair removes only the unambiguous ones, and only under the approved digest.
+#[test]
+fn membership_audit_repairs_ld12_residue_only_under_the_approved_digest() {
+    let origins = ["global", "local.example"]
+        .into_iter()
+        .map(str::to_owned)
+        .collect::<BTreeSet<_>>();
+    let mut records = membership_fixture();
+    for (key, value) in [
+        // A deleted local creature kept its membership (LD-12).
+        ("link::onaccess::store-one::9@local.example", "read"),
+        ("link::hasaccess::9@local.example::store-one", "true"),
+        // A membership in a store whose object is gone.
+        ("link::onaccess::gone-store::human-one", "read"),
+        ("link::hasaccess::human-one::gone-store", "true"),
+        // LD-11: a grant without the member flag.
+        ("link::onaccess::store-one::8@remote.example", "read"),
+        // A store whose creator was deleted.
+        ("link::creatorof::9@local.example::store-two", "true"),
+        ("obj::Store::store-two::|", "\u{1}"),
+    ] {
+        records.push(raw(key, value));
+    }
+    assert!(membership_capsules(records.clone(), &["global", "local.example"]).is_err());
+
+    let audit = LegacySnapshotGraph::assemble(records.clone())
+        .unwrap()
+        .membership_audit(&origins)
+        .unwrap();
+    let summary = audit
+        .findings
+        .iter()
+        .map(|finding| {
+            (
+                finding.defect,
+                finding.store.as_str(),
+                finding.principal.as_str(),
+                finding.removals.len(),
+            )
+        })
+        .collect::<Vec<_>>();
+    assert_eq!(
+        summary,
+        [
+            (
+                LegacyMembershipDefect::MissingStore,
+                "gone-store",
+                "human-one",
+                2
+            ),
+            (
+                LegacyMembershipDefect::DanglingLocalMember,
+                "store-one",
+                "9@local.example",
+                2
+            ),
+            (
+                LegacyMembershipDefect::OneSidedPair,
+                "store-one",
+                "8@remote.example",
+                0
+            ),
+            (
+                LegacyMembershipDefect::OrphanedCreator,
+                "store-two",
+                "9@local.example",
+                0
+            ),
+        ]
+    );
+
+    let path = std::env::temp_dir().join(format!(
+        "aseman-membership-repair-{}-{}",
+        std::process::id(),
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_nanos()
+    ));
+    let store = RocksDbKvStore::open_default(&path).unwrap();
+    store
+        .write_batch(
+            &records
+                .iter()
+                .map(|record| LegacyKvWrite::Put {
+                    key: record.key.clone(),
+                    value: record.value.clone(),
+                })
+                .collect::<Vec<_>>(),
+        )
+        .unwrap();
+    assert_eq!(audit_legacy_memberships(&store, &origins).unwrap(), audit);
+
+    // A stale approval writes nothing.
+    let mut stale = audit.digest;
+    stale[0] ^= 1;
+    assert!(repair_legacy_memberships(&store, &origins, stale).is_err());
+    assert_eq!(audit_legacy_memberships(&store, &origins).unwrap(), audit);
+
+    let report = repair_legacy_memberships(&store, &origins, audit.digest).unwrap();
+    assert_eq!(
+        report.removed_keys,
+        [
+            "link::hasaccess::9@local.example::store-one",
+            "link::hasaccess::human-one::gone-store",
+            "link::onaccess::gone-store::human-one",
+            "link::onaccess::store-one::9@local.example",
+        ]
+    );
+    assert_eq!(report.needs_decision.len(), 2);
+    let remaining = audit_legacy_memberships(&store, &origins).unwrap();
+    assert_eq!(remaining.findings, report.needs_decision);
+
+    // Once an operator resolves the two decisions, the export accepts every link.
+    store
+        .write_batch(&[
+            LegacyKvWrite::Delete {
+                key: b"link::onaccess::store-one::8@remote.example".to_vec(),
+            },
+            LegacyKvWrite::Delete {
+                key: b"link::creatorof::9@local.example::store-two".to_vec(),
+            },
+            LegacyKvWrite::Delete {
+                key: b"obj::Store::store-two::|".to_vec(),
+            },
+        ])
+        .unwrap();
+    assert!(
+        audit_legacy_memberships(&store, &origins)
+            .unwrap()
+            .is_clean()
+    );
+    let repaired = store
+        .scan_all()
+        .unwrap()
+        .into_iter()
+        .map(|(key, value)| LegacyPhysicalRecord {
+            family: "application-rocksdb-default".to_owned(),
+            key,
+            value,
+        })
+        .collect::<Vec<_>>();
+    assert_eq!(
+        membership_capsules(repaired, &["global", "local.example"])
+            .unwrap()
+            .len(),
+        3
+    );
+    drop(store);
+    let _ = std::fs::remove_dir_all(&path);
+}
+
+/// LD-16: derived `ownerof` links are rebuilt from each creature's `ownerId`.
+#[test]
+fn owner_link_repair_rebuilds_links_from_owner_ids() {
+    let origins = ["global", "local.example"]
+        .into_iter()
+        .map(str::to_owned)
+        .collect::<BTreeSet<_>>();
+    let mut records = membership_fixture();
+    for (key, value) in [
+        // A machine whose link names a previous owner.
+        ("obj::Creature::bot-one::|", "\u{1}"),
+        ("obj::Creature::bot-one::type", "machine"),
+        ("obj::Creature::bot-one::ownerId", "human-one"),
+        ("link::ownerof::someone-else::bot-one", "true"),
+        // A machine with no owner at all: nothing can be derived.
+        ("obj::Creature::bot-two::|", "\u{1}"),
+        ("obj::Creature::bot-two::type", "machine"),
+        ("obj::Creature::bot-two::ownerId", ""),
+        // A link left behind by a deleted machine.
+        ("link::ownerof::human-one::deleted-bot", "true"),
+    ] {
+        records.push(raw(key, value));
+    }
+    let audit = LegacySnapshotGraph::assemble(records.clone())
+        .unwrap()
+        .membership_audit(&origins)
+        .unwrap();
+    let owner_findings = audit
+        .findings
+        .iter()
+        .filter(|finding| finding.store.is_empty())
+        .map(|finding| (finding.defect, finding.principal.as_str()))
+        .collect::<Vec<_>>();
+    assert_eq!(
+        owner_findings,
+        [
+            (LegacyMembershipDefect::DanglingOwnerLink, "deleted-bot"),
+            (LegacyMembershipDefect::StaleOwnerLink, "bot-one"),
+            (LegacyMembershipDefect::MissingOwnerLink, "bot-one"),
+            (LegacyMembershipDefect::MissingOwnerLink, "bot-two"),
+        ]
+    );
+
+    let path = std::env::temp_dir().join(format!(
+        "aseman-owner-repair-{}-{}",
+        std::process::id(),
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_nanos()
+    ));
+    let store = RocksDbKvStore::open_default(&path).unwrap();
+    store
+        .write_batch(
+            &records
+                .iter()
+                .map(|record| LegacyKvWrite::Put {
+                    key: record.key.clone(),
+                    value: record.value.clone(),
+                })
+                .collect::<Vec<_>>(),
+        )
+        .unwrap();
+    let report = repair_legacy_memberships(&store, &origins, audit.digest).unwrap();
+    assert_eq!(
+        report.removed_keys,
+        [
+            "link::ownerof::human-one::deleted-bot",
+            "link::ownerof::someone-else::bot-one",
+        ]
+    );
+    assert_eq!(report.added_keys, ["link::ownerof::human-one::bot-one"]);
+    let remaining = audit_legacy_memberships(&store, &origins).unwrap();
+    assert_eq!(remaining.findings, report.needs_decision);
+    assert_eq!(remaining.findings.len(), 1);
+    assert_eq!(remaining.findings[0].principal, "bot-two");
+    drop(store);
+    let _ = std::fs::remove_dir_all(&path);
 }

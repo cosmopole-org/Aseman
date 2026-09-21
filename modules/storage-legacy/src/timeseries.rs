@@ -82,81 +82,22 @@ pub fn transform_legacy_signal_rows(
         *sequence = sequence.checked_add(1).ok_or_else(|| {
             LegacyMigrationError::Invalid("legacy signal sequence overflow".to_owned())
         })?;
-        let payload = encode_value(&CapsuleValue::Object(BTreeMap::from([
-            ("legacy_id".to_owned(), CapsuleValue::Text(row.id.clone())),
-            (
-                "store_id".to_owned(),
-                CapsuleValue::Text(row.store_id.clone()),
-            ),
-            (
-                "user_id".to_owned(),
-                CapsuleValue::Text(row.user_id.clone()),
-            ),
-            ("data".to_owned(), CapsuleValue::Text(row.data)),
-            (
-                "tags".to_owned(),
-                CapsuleValue::Array(tags.into_iter().map(CapsuleValue::Text).collect()),
-            ),
-            ("edited".to_owned(), CapsuleValue::Bool(row.edited)),
-        ])))
-        .map_err(|error| LegacyMigrationError::Contract(error.to_string()))?;
-        let payload_digest = Sha256::digest(&payload).to_vec();
-        let trace_id = digest_hex(b"ASEMAN-LEGACY-SIGNAL-TRACE-V1\0", row.id.as_bytes());
-        let stream_id = format!("store:{}", row.store_id);
-        let capsule = CapsuleEnvelope {
-            encoding_version: 1,
-            id: CapsuleId(deterministic_legacy_capsule_id(
-                "QuestDB.storage",
-                row.id.as_bytes(),
-            )),
-            kind: CapsuleKind("realtime.event".to_owned()),
-            storage_class: StorageClass::Realtime,
-            owner_scope: OwnerScope::Global,
-            schema_version: 1,
-            revision: 1,
-            created_at_micros: occurred_at_micros,
-            updated_at_micros: occurred_at_micros,
-            previous_integrity: None,
-            integrity_hash: CapsuleDigest {
-                algorithm: "sha2-256".to_owned(),
-                bytes: vec![0; 32],
+        let capsule = aseman_contracts::legacy_realtime::store_signal_event(
+            &aseman_contracts::legacy_realtime::StoreSignalPayload {
+                signal_id: row.id,
+                store_id: row.store_id,
+                sender_id: row.user_id,
+                data: row.data,
+                tags,
+                edited: row.edited,
             },
-            tombstone: false,
-            relationships: Vec::new(),
-            body: Some(CapsuleValue::Object(BTreeMap::from([
-                ("stream_id".to_owned(), CapsuleValue::Text(stream_id)),
-                ("sequence".to_owned(), CapsuleValue::Integer(*sequence)),
-                (
-                    "event_type".to_owned(),
-                    CapsuleValue::Text("legacy.store.signal".to_owned()),
-                ),
-                (
-                    "authorization_scope".to_owned(),
-                    CapsuleValue::Bytes(policy.authorization_scope.clone()),
-                ),
-                ("producer".to_owned(), CapsuleValue::Text(row.user_id)),
-                ("trace_id".to_owned(), CapsuleValue::Text(trace_id)),
-                (
-                    "correlation_id".to_owned(),
-                    CapsuleValue::Text(String::new()),
-                ),
-                ("payload".to_owned(), CapsuleValue::Bytes(payload)),
-                (
-                    "payload_digest".to_owned(),
-                    CapsuleValue::Bytes(payload_digest),
-                ),
-                (
-                    "retention_class".to_owned(),
-                    CapsuleValue::Text(policy.retention_class.clone()),
-                ),
-                ("idempotency_key".to_owned(), CapsuleValue::Text(row.id)),
-                (
-                    "occurred_at_micros".to_owned(),
-                    CapsuleValue::Integer(occurred_at_micros),
-                ),
-            ]))),
-        }
-        .seal()
+            *sequence,
+            occurred_at_micros,
+            &aseman_contracts::legacy_realtime::SignalStreamPolicy {
+                authorization_scope: policy.authorization_scope.clone(),
+                retention_class: policy.retention_class.clone(),
+            },
+        )
         .map_err(|error| LegacyMigrationError::Contract(error.to_string()))?;
         capsules.push(capsule);
     }
@@ -191,24 +132,6 @@ pub(crate) fn decode_legacy_tags(encoded: &str) -> LegacyMigrationResult<Vec<Str
         ));
     }
     Ok(tags)
-}
-
-pub(crate) fn digest_hex(domain: &[u8], value: &[u8]) -> String {
-    const HEX: &[u8; 16] = b"0123456789abcdef";
-    let mut digest = Sha256::new();
-    digest.update(domain);
-    digest.update((value.len() as u64).to_be_bytes());
-    digest.update(value);
-    digest
-        .finalize()
-        .iter()
-        .flat_map(|byte| {
-            [
-                char::from(HEX[usize::from(byte >> 4)]),
-                char::from(HEX[usize::from(byte & 0x0f)]),
-            ]
-        })
-        .collect()
 }
 
 /// Transform a legacy build-log row after the exporter resolves its VM to a creature.

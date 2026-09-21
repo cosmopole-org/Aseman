@@ -1,25 +1,21 @@
 //! Translation of `core/module/actor/model/trx/trx.go`.
 //!
-//! `TrxWrapper` implements [`ITrx`] on top of the RocksDB key/value store.
+//! `TrxWrapper` implements [`ITrx`] on top of the legacy key/value store, reached only
+//! through the provider seam `aseman_storage_legacy::LegacyKvStore` (RocksDB types stay
+//! inside that provider).
 //!
-//! Go's original used Badger's `*badger.Txn` for MVCC isolation. Rust's
-//! `rocksdb::Transaction` borrows from its `TransactionDB` via a lifetime,
-//! which doesn't compose with the long-lived per-call transaction object the
-//! `ITrx` trait demands. The translation therefore models the transaction as
-//! a write-back overlay over the underlying DB:
+//! The transaction is a write-back overlay over the underlying store:
 //!
-//!   * Reads consult the in-memory `overlay` first, then fall back to the DB.
+//!   * Reads consult the in-memory `overlay` first, then fall back to the store.
 //!   * Writes / deletes update the overlay and append an `Update` entry to
 //!     `changes` (same shape as Go's `tw.Changes`).
-//!   * `commit()` flushes the overlay through a single RocksDB `WriteBatch`,
-//!     producing atomicity comparable to a transaction commit.
+//!   * `commit()` flushes the overlay through one atomic `write_batch`.
 //!   * `discard()` simply drops the overlay (and `changes`).
 //!
 //! This matches the externally-visible semantics of the Go wrapper (callers
 //! see their own writes inside the same `ModifyState` block; concurrent
 //! callers in `core.ModifyState` already serialise via the higher-level
-//! Mutex) without the lifetime gymnastics required to embed a real RocksDB
-//! transaction in a self-referential struct.
+//! Mutex).
 
 use std::collections::{BTreeMap, BTreeSet, HashMap};
 use std::sync::{Arc, Mutex};
@@ -180,12 +176,12 @@ impl Drop for TrxWrapper {
 // -- ITrx implementation ---------------------------------------------------
 
 impl ITrx for TrxWrapper {
-    fn commit(&self) {
+    fn commit(&self) -> Result<()> {
         {
             let mut inner = self.inner.lock().unwrap();
             if inner.finalized || self.readonly {
                 inner.finalized = true;
-                return;
+                return Ok(());
             }
         }
         // Serialised, so a JSON replay reads exactly the state it writes over.
@@ -193,7 +189,7 @@ impl ITrx for TrxWrapper {
         self.rebase_json_writes();
         let mut inner = self.inner.lock().unwrap();
         if inner.finalized {
-            return;
+            return Ok(());
         }
         // When this instance is part of a geo-distributed cluster, the
         // committed write-set is proposed to the OpenRaft log so every other
@@ -227,14 +223,16 @@ impl ITrx for TrxWrapper {
                 }
             }
         }
-        // Legacy behavior (LD-10): a failed commit is not reported to the caller.
-        let _ = self.db.write_batch(&batch);
+        // LD-10: a failed batch is reported, and nothing is replicated for it.
+        let written = self.db.write_batch(&batch);
         inner.overlay.clear();
         inner.finalized = true;
         drop(inner);
+        written.map_err(|error| anyhow!("state commit failed: {error}"))?;
         if !replicated_ops.is_empty() {
             crate::drivers::cluster::on_local_commit(replicated_ops);
         }
+        Ok(())
     }
 
     fn discard(&self) {
@@ -761,7 +759,7 @@ fn merge_objects(dst: &mut Map<String, Value>, src: &Map<String, Value>) {
 }
 
 #[cfg(test)]
-mod tests {
+pub(crate) mod tests {
     use super::*;
     use crate::models::ports::file::IFile;
     use crate::models::ports::network::INetwork;
@@ -773,8 +771,8 @@ mod tests {
 
     // ---- minimal `ICore` stub for unit tests -------------------------------
 
-    struct StubCore {
-        storage: Arc<dyn IStorage>,
+    pub(crate) struct StubCore {
+        pub(crate) storage: Arc<dyn IStorage>,
     }
 
     impl ICore for StubCore {
@@ -858,13 +856,13 @@ mod tests {
         fn end_vm_trx(&self, _vm_id: &str) {}
     }
 
-    struct StubStorage {
+    pub(crate) struct StubStorage {
         root: String,
         kv: crate::models::ports::storage::KvDb,
     }
 
     impl StubStorage {
-        fn new() -> Arc<Self> {
+        pub(crate) fn new() -> Arc<Self> {
             let dir = format!(
                 "/tmp/caspar-trx-{}-{}",
                 std::process::id(),
@@ -974,8 +972,8 @@ mod tests {
             true,
         )
         .unwrap();
-        a.commit();
-        b.commit();
+        a.commit().unwrap();
+        b.commit().unwrap();
         let read = TrxWrapper::new(core, storage, true);
         let runs = read.get_json("Json::Runs", "runs").unwrap();
         assert_eq!(
@@ -1001,7 +999,7 @@ mod tests {
         .unwrap();
         tw.put_json("Json::Doc", "doc", &serde_json::json!({"n": 2}), true)
             .unwrap();
-        tw.commit();
+        tw.commit().unwrap();
         let read = TrxWrapper::new(
             Arc::new(StubCore {
                 storage: storage.clone(),
@@ -1027,10 +1025,10 @@ mod tests {
             false,
         )
         .unwrap();
-        tw.commit();
+        tw.commit().unwrap();
         let del = TrxWrapper::new(core.clone(), storage.clone(), false);
         del.del_json("Json::DvFrame::f1", "doc");
-        del.commit();
+        del.commit().unwrap();
         let read = TrxWrapper::new(core, storage, true);
         assert!(
             read.get_json("Json::DvFrame::f1", "doc").is_err(),
@@ -1056,7 +1054,7 @@ mod tests {
     fn commit_persists() {
         let (storage, tw) = fresh_trx(false);
         tw.put_string("persist", "yes");
-        tw.commit();
+        tw.commit().unwrap();
         let tw2 = TrxWrapper::new(
             Arc::new(StubCore {
                 storage: storage.clone(),
@@ -1148,13 +1146,62 @@ mod tests {
         assert!(!tw.has_index("User", "id", "email", "1"));
     }
 
+    /// A store whose batch writes always fail, as a full disk would.
+    struct FailingKv;
+
+    impl aseman_storage_legacy::LegacyKvStore for FailingKv {
+        fn get(&self, _: &[u8]) -> aseman_storage_legacy::LegacyMigrationResult<Option<Vec<u8>>> {
+            Ok(None)
+        }
+        fn scan_prefix(
+            &self,
+            _: &[u8],
+        ) -> aseman_storage_legacy::LegacyMigrationResult<Vec<(Vec<u8>, Vec<u8>)>> {
+            Ok(Vec::new())
+        }
+        fn scan_all(
+            &self,
+        ) -> aseman_storage_legacy::LegacyMigrationResult<Vec<(Vec<u8>, Vec<u8>)>> {
+            Ok(Vec::new())
+        }
+        fn write_batch(
+            &self,
+            _: &[LegacyKvWrite],
+        ) -> aseman_storage_legacy::LegacyMigrationResult<()> {
+            Err(aseman_storage_legacy::LegacyMigrationError::Invalid(
+                "disk full".to_owned(),
+            ))
+        }
+    }
+
+    /// LD-10: a failed batch write is reported to the committer instead of being lost.
+    #[test]
+    fn a_failed_commit_is_reported() {
+        let storage: Arc<dyn IStorage> = Arc::new(StubStorage {
+            root: String::new(),
+            kv: Arc::new(FailingKv),
+        });
+        let tw = TrxWrapper::new(
+            Arc::new(StubCore {
+                storage: storage.clone(),
+            }),
+            storage,
+            false,
+        );
+        tw.put_string("x", "1");
+        let error = tw.commit().unwrap_err();
+        assert!(error.to_string().contains("disk full"), "{error}");
+        // The transaction is finished either way; a retry is a new transaction.
+        tw.commit().unwrap();
+    }
+
     #[test]
     fn second_commit_is_noop() {
         let (storage, tw) = fresh_trx(false);
         tw.put_string("x", "1");
-        tw.commit();
+        tw.commit().unwrap();
         // A second commit on the same wrapper must not double-apply nor panic.
-        tw.commit();
+        tw.commit().unwrap();
         let tw2 = TrxWrapper::new(
             Arc::new(StubCore {
                 storage: storage.clone(),

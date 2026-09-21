@@ -69,7 +69,7 @@ Work:
 - Migrate core state only after consistency verification.
 - Generate capsule-kind, logical-schema, physical-mapping, query, and migration inventories.
 
-Gate: all persistent classes use capsules, except VMM-owned observed runtime state, which ADR 0022 keeps in the wrapped legacy storage provider for the embedded/native-legacy VMM until RL-013; PostgreSQL is the default; each creature's guest records and schemas live in its isolated database/namespace rather than a shared guest table; legacy and PostgreSQL providers pass conformance, role/catalog isolation, pool-contamination, schema, and migration/restart tests; node/application crates no longer import RocksDB or QuestDB types.
+Gate: all persistent classes use capsules, except VMM-owned observed runtime state, which ADR 0022 keeps in the wrapped legacy storage provider for the embedded/native-legacy VMM until RL-013; PostgreSQL is the default and authoritative provider for every port family except creature balances and the finance ledger, which ADR 0017 keeps legacy-authoritative until P8 (routing per ADR 0026); each creature's guest records and schemas live in its isolated database/namespace rather than a shared guest table; legacy and PostgreSQL providers pass conformance, role/catalog isolation, pool-contamination, schema, and migration/restart tests; node/application crates no longer import RocksDB or QuestDB types.
 
 ## Phase 4: Identity, authority, and guest gateway
 

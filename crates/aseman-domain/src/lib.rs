@@ -7,8 +7,10 @@ use serde::{Deserialize, Serialize};
 use thiserror::Error;
 use uuid::Uuid;
 
+pub mod creature;
 pub mod signal_tags;
 pub mod storage_migration;
+pub mod store;
 pub mod store_permissions;
 
 macro_rules! typed_id {

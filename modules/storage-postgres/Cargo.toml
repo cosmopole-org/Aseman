@@ -8,6 +8,7 @@ license.workspace = true
 repository.workspace = true
 
 [dependencies]
+aseman-capsule-repositories = { path = "../../crates/aseman-capsule-repositories" }
 aseman-config = { path = "../../crates/aseman-config" }
 aseman-contracts = { path = "../../crates/aseman-contracts" }
 aseman-domain = { path = "../../crates/aseman-domain" }
@@ -24,6 +25,9 @@ tonic.workspace = true
 uuid.workspace = true
 
 [dev-dependencies]
+aseman-ports = { path = "../../crates/aseman-ports", features = ["conformance"] }
+rsa.workspace = true
+aseman-application = { path = "../../crates/aseman-application" }
 aseman-storage-conformance = { path = "../../tests/contracts/storage" }
 
 [lints]

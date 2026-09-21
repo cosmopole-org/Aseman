@@ -16,6 +16,7 @@ use uuid::Uuid;
 
 pub mod service;
 pub use service::PostgresStorageService;
+pub mod capsule_store;
 pub mod guest;
 pub mod migration;
 
@@ -27,6 +28,8 @@ pub const CORE_MIGRATION: &str = include_str!("../migrations/0001_core.sql");
 pub const STORAGE_CLASS_MIGRATION: &str = include_str!("../migrations/0002_storage_classes.sql");
 pub const MIGRATION_FENCE_MIGRATION: &str = include_str!("../migrations/0003_migration_fence.sql");
 const SCHEMA: &str = "aseman_core";
+/// The most capsules one [`PostgresCapsuleRepository::put_all`] transaction holds.
+pub const MAX_TRANSACTION_CAPSULES: usize = 64;
 
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq)]
 #[serde(deny_unknown_fields)]
@@ -370,6 +373,7 @@ impl PostgresCapsuleRepository {
             provider_id: "postgres-core-v1".to_owned(),
             capabilities: BTreeSet::from([
                 StorageCapability::TransactionsSingleCapsule,
+                StorageCapability::TransactionsMultiCapsule,
                 StorageCapability::RelationshipsForeignKeys,
                 StorageCapability::QueriesRange,
                 StorageCapability::IndexesUnique,
@@ -378,7 +382,7 @@ impl PostgresCapsuleRepository {
                 StorageCapability::ConsistencyReadCommitted,
             ]),
             max_query_limit: MAX_QUERY_LIMIT,
-            max_transaction_capsules: 1,
+            max_transaction_capsules: MAX_TRANSACTION_CAPSULES as u32,
         }
     }
 
@@ -399,28 +403,30 @@ impl PostgresCapsuleRepository {
         expected_revision: Option<u64>,
         generation: Option<u64>,
     ) -> StorageResult<()> {
-        capsule
-            .verify()
-            .map_err(|error| PostgresStorageError::Invalid(error.to_string()))?;
-        let mapping = table_mapping(&capsule.kind)?;
-        if storage_class_name(&capsule.storage_class) != mapping.storage_class {
-            return Err(PostgresStorageError::Invalid(format!(
-                "{} must use the {} storage class",
-                capsule.kind.0, mapping.storage_class
-            )));
-        }
-        if mapping.append_only && (expected_revision.is_some() || capsule.revision != 1) {
+        self.put_all_fenced(&[(capsule.clone(), expected_revision)], generation)
+    }
+
+    /// Put several capsules in one transaction: every write applies, or none does.
+    pub fn put_all(&self, writes: &[(CapsuleEnvelope, Option<u64>)]) -> StorageResult<()> {
+        self.put_all_fenced(writes, None)
+    }
+
+    /// [`Self::put_all`] under a binding generation, checked once for the whole
+    /// transaction (A309 fencing).
+    pub fn put_all_fenced(
+        &self,
+        writes: &[(CapsuleEnvelope, Option<u64>)],
+        generation: Option<u64>,
+    ) -> StorageResult<()> {
+        if writes.len() > MAX_TRANSACTION_CAPSULES {
             return Err(PostgresStorageError::Unsupported(format!(
-                "{} is append-only",
-                capsule.kind.0
+                "a transaction holds at most {MAX_TRANSACTION_CAPSULES} capsules"
             )));
         }
-        let (columns, values) = capsule_values(mapping, capsule)?;
-        let expected_canonical = capsule
-            .canonical_bytes()
-            .map_err(|error| PostgresStorageError::Invalid(error.to_string()))?;
-        let capsule_id = Uuid::from_bytes(capsule.id.0);
-        let parameters = sql_parameters(&values);
+        let mut prepared = Vec::with_capacity(writes.len());
+        for (capsule, expected_revision) in writes {
+            prepared.push(prepare_write(capsule, *expected_revision)?);
+        }
         let mut guard = self
             .client
             .lock()
@@ -438,72 +444,10 @@ impl PostgresCapsuleRepository {
                 return Err(PostgresStorageError::Conflict);
             }
         }
-
-        let changed = match expected_revision {
-            None => {
-                if capsule.revision != 1 {
-                    return Err(PostgresStorageError::Conflict);
-                }
-                let placeholders = (1..=columns.len())
-                    .map(|index| format!("${index}"))
-                    .collect::<Vec<_>>()
-                    .join(", ");
-                let statement = format!(
-                    "INSERT INTO {} ({}) VALUES ({placeholders}) \
-                     ON CONFLICT (id) DO NOTHING RETURNING revision",
-                    qualified(mapping),
-                    columns
-                        .iter()
-                        .map(|column| sql_identifier(column))
-                        .collect::<Vec<_>>()
-                        .join(", ")
-                );
-                client.query_opt(&statement, &parameters)
-            }
-            Some(expected) => {
-                if capsule.revision != expected.saturating_add(1) {
-                    return Err(PostgresStorageError::Conflict);
-                }
-                let expected = i64::try_from(expected)
-                    .map_err(|_| PostgresStorageError::Invalid("revision overflow".to_owned()))?;
-                let mut update_values = values;
-                update_values.push(SqlParam::I64(Some(expected)));
-                let parameters = sql_parameters(&update_values);
-                let assignments = columns
-                    .iter()
-                    .enumerate()
-                    .skip(1)
-                    .map(|(index, column)| format!("{} = ${}", sql_identifier(column), index + 1))
-                    .collect::<Vec<_>>()
-                    .join(", ");
-                let expected_parameter = columns.len() + 1;
-                let statement = format!(
-                    "UPDATE {} SET {assignments} WHERE id = $1 \
-                     AND revision = ${expected_parameter} AND $3 = revision + 1 \
-                     AND $4 = created_at_micros AND $6 = integrity_hash RETURNING revision",
-                    qualified(mapping)
-                );
-                client.query_opt(&statement, &parameters)
-            }
+        for write in &prepared {
+            write_prepared(&mut client, write)?;
         }
-        .map_err(map_postgres_error)?;
-        if changed.is_none() {
-            let statement = format!(
-                "SELECT capsule_cbor FROM {} WHERE id = $1",
-                qualified(mapping)
-            );
-            let existing = client
-                .query_opt(&statement, &[&capsule_id])
-                .map_err(map_postgres_error)?
-                .map(|row| row.get::<_, Vec<u8>>(0));
-            if existing.as_deref() == Some(expected_canonical.as_slice()) {
-                client.commit().map_err(map_postgres_error)?;
-                return Ok(());
-            }
-            return Err(PostgresStorageError::Conflict);
-        }
-        client.commit().map_err(map_postgres_error)?;
-        Ok(())
+        client.commit().map_err(map_postgres_error)
     }
 
     /// Raise the fenced minimum generation; it never decreases.
@@ -624,6 +568,129 @@ impl PostgresCapsuleRepository {
             .map_err(|_| PostgresStorageError::Unavailable("client lock poisoned".to_owned()))?;
         operation(&mut client).map_err(map_postgres_error)
     }
+}
+
+/// A validated write, ready to run inside a transaction.
+struct PreparedWrite<'a> {
+    mapping: &'static TableMapping,
+    capsule: &'a CapsuleEnvelope,
+    expected_revision: Option<u64>,
+    columns: Vec<String>,
+    values: Vec<SqlParam>,
+    canonical: Vec<u8>,
+}
+
+fn prepare_write(
+    capsule: &CapsuleEnvelope,
+    expected_revision: Option<u64>,
+) -> StorageResult<PreparedWrite<'_>> {
+    capsule
+        .verify()
+        .map_err(|error| PostgresStorageError::Invalid(error.to_string()))?;
+    let mapping = table_mapping(&capsule.kind)?;
+    if storage_class_name(&capsule.storage_class) != mapping.storage_class {
+        return Err(PostgresStorageError::Invalid(format!(
+            "{} must use the {} storage class",
+            capsule.kind.0, mapping.storage_class
+        )));
+    }
+    if mapping.append_only && (expected_revision.is_some() || capsule.revision != 1) {
+        return Err(PostgresStorageError::Unsupported(format!(
+            "{} is append-only",
+            capsule.kind.0
+        )));
+    }
+    let (columns, values) = capsule_values(mapping, capsule)?;
+    let canonical = capsule
+        .canonical_bytes()
+        .map_err(|error| PostgresStorageError::Invalid(error.to_string()))?;
+    Ok(PreparedWrite {
+        mapping,
+        capsule,
+        expected_revision,
+        columns,
+        values,
+        canonical,
+    })
+}
+
+/// Insert or compare-and-swap one capsule inside `client`'s transaction. An identical
+/// replay of a stored revision succeeds; any other lost race is `Conflict`.
+fn write_prepared(
+    client: &mut postgres::Transaction<'_>,
+    write: &PreparedWrite<'_>,
+) -> StorageResult<()> {
+    let PreparedWrite {
+        mapping,
+        capsule,
+        expected_revision,
+        columns,
+        values,
+        canonical,
+    } = write;
+    let capsule_id = Uuid::from_bytes(capsule.id.0);
+    let changed = match expected_revision {
+        None => {
+            if capsule.revision != 1 {
+                return Err(PostgresStorageError::Conflict);
+            }
+            let placeholders = (1..=columns.len())
+                .map(|index| format!("${index}"))
+                .collect::<Vec<_>>()
+                .join(", ");
+            let statement = format!(
+                "INSERT INTO {} ({}) VALUES ({placeholders}) \
+                 ON CONFLICT (id) DO NOTHING RETURNING revision",
+                qualified(mapping),
+                columns
+                    .iter()
+                    .map(|column| sql_identifier(column))
+                    .collect::<Vec<_>>()
+                    .join(", ")
+            );
+            client.query_opt(&statement, &sql_parameters(values))
+        }
+        Some(expected) => {
+            if capsule.revision != expected.saturating_add(1) {
+                return Err(PostgresStorageError::Conflict);
+            }
+            let expected = i64::try_from(*expected)
+                .map_err(|_| PostgresStorageError::Invalid("revision overflow".to_owned()))?;
+            let mut update_values = values.clone();
+            update_values.push(SqlParam::I64(Some(expected)));
+            let assignments = columns
+                .iter()
+                .enumerate()
+                .skip(1)
+                .map(|(index, column)| format!("{} = ${}", sql_identifier(column), index + 1))
+                .collect::<Vec<_>>()
+                .join(", ");
+            let expected_parameter = columns.len() + 1;
+            let statement = format!(
+                "UPDATE {} SET {assignments} WHERE id = $1 \
+                 AND revision = ${expected_parameter} AND $3 = revision + 1 \
+                 AND $4 = created_at_micros AND $6 = integrity_hash RETURNING revision",
+                qualified(mapping)
+            );
+            client.query_opt(&statement, &sql_parameters(&update_values))
+        }
+    }
+    .map_err(map_postgres_error)?;
+    if changed.is_some() {
+        return Ok(());
+    }
+    let statement = format!(
+        "SELECT capsule_cbor FROM {} WHERE id = $1",
+        qualified(mapping)
+    );
+    let existing = client
+        .query_opt(&statement, &[&capsule_id])
+        .map_err(map_postgres_error)?
+        .map(|row| row.get::<_, Vec<u8>>(0));
+    if existing.as_deref() == Some(canonical.as_slice()) {
+        return Ok(());
+    }
+    Err(PostgresStorageError::Conflict)
 }
 
 fn table_mapping(kind: &CapsuleKind) -> StorageResult<&'static TableMapping> {
@@ -822,6 +889,24 @@ fn predicate_sql(
             operator,
             value,
         } => {
+            // A302 extension: a declared relationship may be compared to one capsule ID
+            // with equality only (for example "the memberships of this store").
+            if mapping.relationships.contains_key(field) {
+                let (ComparisonOperator::Equal, CapsuleValue::Bytes(bytes)) = (operator, value)
+                else {
+                    return Err(PostgresStorageError::Invalid(
+                        "relationship predicates support only equality with a capsule ID"
+                            .to_owned(),
+                    ));
+                };
+                let id: [u8; 16] = bytes.as_slice().try_into().map_err(|_| {
+                    PostgresStorageError::Invalid(
+                        "relationship predicate needs a 16-byte capsule ID".to_owned(),
+                    )
+                })?;
+                values.push(SqlParam::Uuid(Some(Uuid::from_bytes(id))));
+                return Ok(format!("{} = ${}", sql_identifier(field), values.len()));
+            }
             let column = require_query_field(mapping, field)?;
             let field_type = &mapping.fields[field];
             if matches!(value, CapsuleValue::Null) {
@@ -901,6 +986,7 @@ fn sql_identifier(value: &str) -> String {
     format!("\"{value}\"")
 }
 
+#[derive(Clone)]
 enum SqlParam {
     Bool(Option<bool>),
     I32(Option<i32>),
@@ -971,7 +1057,7 @@ mod tests {
     #[test]
     fn generated_mapping_is_closed_safe_and_complete() {
         let catalog = mapping_catalog().unwrap();
-        assert_eq!(catalog.tables.len(), 35);
+        assert_eq!(catalog.tables.len(), 36);
         assert!(
             catalog
                 .tables
@@ -1082,6 +1168,39 @@ mod tests {
             ]))),
         };
         capsule.seal().unwrap()
+    }
+
+    #[test]
+    fn relationship_predicates_allow_only_capsule_id_equality() {
+        let mapping = table_mapping(&CapsuleKind("core.store_membership".to_owned())).unwrap();
+        let mut values = Vec::new();
+        let equal = QueryPredicate::Compare {
+            field: "store".to_owned(),
+            operator: ComparisonOperator::Equal,
+            value: CapsuleValue::Bytes(vec![7; 16]),
+        };
+        assert_eq!(
+            predicate_sql(&equal, mapping, &mut values, 1).unwrap(),
+            "\"store\" = $1"
+        );
+        for (operator, value) in [
+            (
+                ComparisonOperator::GreaterThan,
+                CapsuleValue::Bytes(vec![7; 16]),
+            ),
+            (ComparisonOperator::Equal, CapsuleValue::Bytes(vec![7; 3])),
+            (
+                ComparisonOperator::Equal,
+                CapsuleValue::Text("x".to_owned()),
+            ),
+        ] {
+            let predicate = QueryPredicate::Compare {
+                field: "store".to_owned(),
+                operator,
+                value,
+            };
+            assert!(predicate_sql(&predicate, mapping, &mut values, 1).is_err());
+        }
     }
 
     #[test]

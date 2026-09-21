@@ -259,6 +259,7 @@ impl LegacySnapshotGraph {
             evidence.secret_master_key.as_ref(),
         )?);
         capsules.extend(self.transform_legacy_bridges(migration_time_micros)?);
+        capsules.extend(self.legacy_identity_map(&capsules, migration_time_micros)?);
         capsules.sort_by(|left, right| {
             left.kind
                 .0
@@ -494,6 +495,66 @@ impl LegacySnapshotGraph {
             }
         }
         Ok(())
+    }
+
+    /// The legacy-ID map (ADR 0009: legacy identities map to typed IDs). One record per
+    /// legacy-identified entity present in `capsules`, so adapters that still speak
+    /// legacy IDs can resolve both directions. Session IDs are bearer credentials and
+    /// are never mapped.
+    fn legacy_identity_map(
+        &self,
+        capsules: &[CapsuleEnvelope],
+        migration_time_micros: i64,
+    ) -> LegacyMigrationResult<Vec<CapsuleEnvelope>> {
+        const MAPPED: [(&str, &str, &str); 7] = [
+            ("Creature", "Creature", "core.creature"),
+            ("Creature", "User", "core.user"),
+            ("Program", "Program", "core.program"),
+            ("Store", "Store", "core.store"),
+            ("Entity", "Entity", "core.entity"),
+            ("Chain", "Chain", "core.chain"),
+            ("ChainShard", "ChainShard", "core.chain_shard"),
+        ];
+        let present = capsules
+            .iter()
+            .map(|capsule| (capsule.kind.0.as_str(), capsule.id.0))
+            .collect::<BTreeSet<_>>();
+        let mut identities = Vec::new();
+        for (object_family, legacy_id) in self.objects.keys() {
+            for (source, family, kind) in MAPPED {
+                if source != object_family {
+                    continue;
+                }
+                let target = deterministic_legacy_capsule_id(family, legacy_id.as_bytes());
+                if !present.contains(&(kind, target)) {
+                    continue;
+                }
+                identities.push(seal_legacy_capsule(
+                    LegacyCapsuleSpec {
+                        family: "LegacyIdentity",
+                        kind: "core.legacy_identity",
+                        storage_class: StorageClass::Core,
+                        owner_scope: OwnerScope::Global,
+                        migration_time_micros,
+                    },
+                    &format!("{family}\0{legacy_id}"),
+                    Vec::new(),
+                    BTreeMap::from([
+                        ("family".to_owned(), CapsuleValue::Text(family.to_owned())),
+                        (
+                            "legacy_id".to_owned(),
+                            CapsuleValue::Text(legacy_id.clone()),
+                        ),
+                        (
+                            "target_kind".to_owned(),
+                            CapsuleValue::Text(kind.to_owned()),
+                        ),
+                        ("target_id".to_owned(), CapsuleValue::Bytes(target.to_vec())),
+                    ]),
+                )?);
+            }
+        }
+        Ok(identities)
     }
 
     pub(crate) fn object(

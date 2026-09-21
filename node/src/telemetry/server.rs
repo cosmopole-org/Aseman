@@ -11,8 +11,8 @@ use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 use anyhow::{anyhow, Result};
 use aseman_config::AsemanConfig;
+use aseman_storage_legacy::{LegacyKvStore, LegacyKvWrite, RocksDbKvStore};
 use chrono::Utc;
-use rocksdb::DB;
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 
@@ -46,7 +46,7 @@ pub struct Snapshot {
 
 /// Telemetry server state.
 pub struct TelemetryServer {
-    db: Arc<DB>,
+    db: Arc<RocksDbKvStore>,
     started_at: SystemTime,
     origin: String,
     chain_port: u16,
@@ -76,7 +76,10 @@ pub fn start(config: &AsemanConfig) -> Result<()> {
             .into_owned();
     }
     fs::create_dir_all(&db_path).map_err(|e| anyhow!("mkdir telemetry db: {}", e))?;
-    let db = Arc::new(DB::open_default(&db_path).map_err(|e| anyhow!("open telemetry db: {}", e))?);
+    let db = Arc::new(
+        RocksDbKvStore::open_default(std::path::Path::new(&db_path))
+            .map_err(|e| anyhow!("open telemetry db: {}", e))?,
+    );
 
     let server = Arc::new(TelemetryServer {
         db,
@@ -155,7 +158,10 @@ impl TelemetryServer {
         }
         let snap = self.collect();
         if let Ok(bytes) = serde_json::to_vec(&snap) {
-            let _ = self.db.put(b"latest_snapshot", bytes);
+            let _ = self.db.write_batch(&[LegacyKvWrite::Put {
+                key: b"latest_snapshot".to_vec(),
+                value: bytes,
+            }]);
         }
         Ok(snap)
     }

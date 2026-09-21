@@ -40,6 +40,7 @@
 36. Legacy secrets migrate as authenticated ciphertext and are re-wrapped with AAD in P4; login grants are dropped (ADR 0023).
 37. Legacy bridge grants migrate by token digest with topic claims (ADR 0024).
 38. The legacy Hashgraph store remains consensus-provider state with a block-digest checkpoint (ADR 0025).
+39. The Phase 3 cutover routes whole port families to one authoritative provider. Balances and the finance ledger stay on the legacy provider until P8, VMM observed runtime until RL-013, and cross-provider actions write capsules first and compensate on a failed legacy commit (ADR 0026).
 
 ## Resolved blocking ADR set
 

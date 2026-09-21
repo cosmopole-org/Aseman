@@ -67,7 +67,7 @@
       "path": "contracts/capsule/guest/schema-mutation.schema.json"
     },
     {
-      "digest": "sha256:4ab858ca47bb205dd7868f654419da010ac6ab52d0b51a791aa3132ed2ac1b4d",
+      "digest": "sha256:652506b8fc746677a5bedb8f0778b4e7f294532e3abf12d99be448b05fac5e80",
       "path": "contracts/capsule/kinds/core-logical-schemas.json"
     },
     {
@@ -75,7 +75,7 @@
       "path": "contracts/capsule/kinds/core-logical-schemas.schema.json"
     },
     {
-      "digest": "sha256:e9922ed1e0adb04bed15f1d62a601b07f6219dc181f02b8b7662a7e525947d06",
+      "digest": "sha256:044b73923285af5bef1761bef803638e3536b6547f93073552a98e7c22898ddf",
       "path": "contracts/capsule/kinds/core-registry.json"
     },
     {
@@ -105,6 +105,10 @@
     {
       "digest": "sha256:614cd75d3972303c79785300692b11ba1a4dee5a742df56f6aa851f16838a85a",
       "path": "contracts/capsule/provider/v1/storage.proto"
+    },
+    {
+      "digest": "sha256:7a3694153c1230b4cfcff409058c1dd2e69f26b227529ebd342b7ef7e4d224c6",
+      "path": "contracts/capsule/query/README.md"
     },
     {
       "digest": "sha256:491728865aa3abd21626358268e04ff1bd84cbb219c9ddbda1047319effce7b6",
@@ -550,6 +554,16 @@
       ],
       "storage_class": "core",
       "table": "bridge_topics"
+    },
+    {
+      "consistency": "serializable",
+      "kind": "core.legacy_identity",
+      "owner_scope": "global",
+      "required_capabilities": [
+        "indexes.unique"
+      ],
+      "storage_class": "core",
+      "table": "legacy_identities"
     }
   ],
   "digest": "sha2-256",

@@ -23,8 +23,14 @@ fn read_user_type(app: &Arc<dyn ICore>, user_id: &str) -> String {
     app.modify_state(
         true,
         Box::new(move |trx: &dyn ITrx| {
-            let v = trx.get_column("Creature", &user_id_owned, "type");
-            *slot_clone.lock().unwrap() = String::from_utf8_lossy(&v).into_owned();
+            *slot_clone.lock().unwrap() = aseman_ports::CreatureDirectory::creature(
+                &crate::shell::api::model::creature_ports::LegacyCreatures { trx },
+                &user_id_owned,
+            )
+            .ok()
+            .flatten()
+            .map(|record| record.creature_type)
+            .unwrap_or_default();
             Ok(())
         }),
     );
