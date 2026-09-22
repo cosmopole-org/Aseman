@@ -19,17 +19,21 @@ pub use service::PostgresStorageService;
 pub mod capsule_store;
 pub mod guest;
 pub mod migration;
+mod replay;
 pub mod unit_of_work;
+pub mod vmm;
 
 const MAPPING_JSON: &str = include_str!("../../../contracts/storage/postgres/core-mapping.json");
 #[cfg(test)]
 const STORAGE_CLASS_MAPPING_JSON: &str =
     include_str!("../../../contracts/storage/postgres/storage-class-mapping.json");
+pub const RETIRE_MIGRATION: &str = include_str!("../migrations/0000_retire_obsolete.sql");
 pub const CORE_MIGRATION: &str = include_str!("../migrations/0001_core.sql");
 pub const STORAGE_CLASS_MIGRATION: &str = include_str!("../migrations/0002_storage_classes.sql");
 pub const MIGRATION_FENCE_MIGRATION: &str = include_str!("../migrations/0003_migration_fence.sql");
 pub const PROGRAM_MACHINE_MIGRATION: &str =
     include_str!("../migrations/0004_program_machine_not_unique.sql");
+pub const IDENTITY_KEYS_MIGRATION: &str = include_str!("../migrations/0005_identity_keys.sql");
 pub(crate) const SCHEMA: &str = "aseman_core";
 /// The most capsules one [`PostgresCapsuleRepository::put_all`] transaction holds.
 pub const MAX_TRANSACTION_CAPSULES: usize = 64;
@@ -364,10 +368,12 @@ impl PostgresCapsuleRepository {
 
     pub fn migrate(&self) -> StorageResult<()> {
         self.with_client(|client| {
+            client.batch_execute(RETIRE_MIGRATION)?;
             client.batch_execute(CORE_MIGRATION)?;
             client.batch_execute(STORAGE_CLASS_MIGRATION)?;
             client.batch_execute(MIGRATION_FENCE_MIGRATION)?;
-            client.batch_execute(PROGRAM_MACHINE_MIGRATION)
+            client.batch_execute(PROGRAM_MACHINE_MIGRATION)?;
+            client.batch_execute(IDENTITY_KEYS_MIGRATION)
         })
     }
 

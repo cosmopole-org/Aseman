@@ -18,19 +18,20 @@ pub(crate) struct CachedVmHierarchy {
     pub(crate) program_id: String,
 }
 
-fn resolve_cached_vm_hierarchy(packet: &JsonValue, input: &JsonValue) -> CachedVmHierarchy {
-    // The vmId used to resolve the out-of-band VM context must be the
-    // authoritative one the runtime stamped on the *packet* (the guest cannot
-    // reach it). Only fall back to `input.vmId` for runtimes that stamp their
-    // verified identity into the input envelope (e.g. the docker gateway),
-    // never letting an in-process guest pick which VM context it resolves to.
-    let vm_id = packet["vmId"]
+/// The calling VM, as the runtime or the docker gateway stamped it on the *packet*.
+/// The guest controls only `input`, so identity is never read from it (LD-14: an input
+/// `vmId` used to select another VM's context, and with it another creature's secrets).
+fn packet_vm_id(packet: &JsonValue) -> String {
+    packet["vmId"]
         .as_str()
-        .filter(|v| !v.trim().is_empty())
-        .or_else(|| input["vmId"].as_str().filter(|v| !v.trim().is_empty()))
+        .map(str::trim)
+        .filter(|v| !v.is_empty())
         .unwrap_or("")
-        .trim()
-        .to_string();
+        .to_string()
+}
+
+fn resolve_cached_vm_hierarchy(packet: &JsonValue, _input: &JsonValue) -> CachedVmHierarchy {
+    let vm_id = packet_vm_id(packet);
     if vm_id.is_empty() {
         return CachedVmHierarchy::default();
     }
@@ -60,15 +61,8 @@ fn value_from_packet_or_input<'a>(
 }
 
 pub(crate) fn resolve_host_hierarchy(packet: &JsonValue, input: &JsonValue) -> HostHierarchy {
-    // Prefer the authoritative, runtime-stamped packet vmId over anything the
-    // guest may have placed in `input`.
-    let vm_id = packet["vmId"]
-        .as_str()
-        .filter(|v| !v.trim().is_empty())
-        .or_else(|| input["vmId"].as_str())
-        .unwrap_or("")
-        .trim()
-        .to_string();
+    // Only the runtime- or gateway-stamped packet names the caller.
+    let vm_id = packet_vm_id(packet);
     let cached = resolve_cached_vm_hierarchy(packet, input);
 
     // Identity (creature + program) comes ONLY from node-authoritative sources —
@@ -164,6 +158,19 @@ pub(crate) fn run_db_op(ctx: &HostHierarchy, input: &JsonValue) -> Result<String
 
     let namespaced_key = format!("AppletDb::{}::{}", db_prefix, key);
     let ns_prefix = format!("AppletDb::{}::{}", db_prefix, prefix);
+
+    // On PostgreSQL the creature's own guest database serves it (ADR 0021): the
+    // `applet_db` key is the remainder after `AppletDb::`.
+    if let Some(result) = crate::shell::api::model::guest_data::route_db_op(
+        &ctx.creature_id,
+        aseman_domain::guest::LegacyKvNamespace::AppletDb,
+        op,
+        &format!("{}::{}", db_prefix, key),
+        val,
+        &format!("{}::{}", db_prefix, prefix),
+    ) {
+        return result;
+    }
 
     match with_global_app(|app| {
         app.tools()
@@ -528,6 +535,47 @@ fn aggregate_sse_stream(raw: &str) -> (JsonValue, usize) {
     (assembled, events)
 }
 
+/// Decide a guest host call against the node's current state; returns the input as
+/// the handler must see it.
+fn authorize_guest(op: &str, ctx: &HostHierarchy, input: JsonValue) -> Result<JsonValue, String> {
+    let outcome = std::sync::Arc::new(std::sync::Mutex::new(Err(
+        "the node is not initialised".to_owned()
+    )));
+    let slot = outcome.clone();
+    let (op, vm_id, program_id, creature_id) = (
+        op.to_owned(),
+        ctx.vm_id.clone(),
+        ctx.program_id.clone(),
+        ctx.creature_id.clone(),
+    );
+    let _ = with_global_app(move |app| {
+        app.modify_state(
+            true,
+            Box::new(move |trx| {
+                let lookups = crate::shell::authority::TrxLookups { trx };
+                let caller = crate::shell::authority::host_caller(
+                    &lookups,
+                    &vm_id,
+                    &program_id,
+                    &creature_id,
+                );
+                let mut shaped = input.clone();
+                *slot.lock().unwrap() = crate::shell::authority::authorize_host_call(
+                    &lookups,
+                    &op,
+                    &caller,
+                    &mut shaped,
+                    chrono::Utc::now().timestamp_millis(),
+                )
+                .map(|()| shaped);
+                Ok(())
+            }),
+        );
+    });
+    let outcome = outcome.lock().unwrap().clone();
+    outcome
+}
+
 pub(crate) fn handle_unified_host_call(packet: &JsonValue) -> String {
     let op = packet["op"]
         .as_str()
@@ -573,6 +621,11 @@ pub(crate) fn handle_unified_host_call(packet: &JsonValue) -> String {
     }
     if let Err(denied) = apply_program_target(op, &ctx.program_id, &mut input) {
         return denied;
+    }
+    // Every host call is authorized as its registered action (P4-05, LD-14).
+    match authorize_guest(op, &ctx, input) {
+        Ok(shaped) => input = shaped,
+        Err(denied) => return json!({"ok": false, "error": denied}).to_string(),
     }
     match op {
         "commitTrx" => {
@@ -623,7 +676,11 @@ pub(crate) fn handle_unified_host_call(packet: &JsonValue) -> String {
         "buildVmImage" | "buildDockerImage" => host_fn_build_vm_image(&input),
         "httpPost" | "httpRequest" => host_fn_http_request(&input),
         "elpifyProof" | "verifyProgramExecution" => host_fn_verify_program(&input),
-        "protocolApi" | "callProtocolApi" => host_fn_protocol_api(&input),
+        // It forwarded a guest-chosen operation to the identity-less callback
+        // protocol (LD-14); `node.protocol.call` is `never`.
+        "protocolApi" | "callProtocolApi" => {
+            json!({"ok": false, "error": "the protocol API is not available to guests"}).to_string()
+        }
         "signal" => host_fn_signal(&input),
         // A JavaScript creature reaches this unified dispatcher directly. Do
         // not send its alarm through the legacy wasm callback transport: that
@@ -763,8 +820,11 @@ pub(crate) fn handle_unified_host_call(packet: &JsonValue) -> String {
         "vmLog" | "consoleLog" => host_fn_vm_log(&input),
         // Micro ops backed by `Vmm::handle_micro_host_action` (the real DB /
         // signaler / access-control implementations).
-        "genId" | "getLink" | "delKey" | "getJson" | "putJson" | "getByPrefix"
-        | "hasAccessToStore" | "joinGroup" => host_fn_micro(op, &input),
+        // Guest document state, confined to the packet-identified creature (LD-24).
+        "getLink" | "delKey" | "getJson" | "putJson" | "getByPrefix" => {
+            host_fn_guest_state(&ctx.creature_id, op, &input)
+        }
+        "genId" | "hasAccessToStore" | "joinGroup" => host_fn_micro(op, &input),
         // Resource (vm-scoped) store CRUD.
         "createResourceStore" | "createVmOwnedStore" => {
             host_fn_resource_store(&"create".to_string(), &input)
@@ -784,13 +844,9 @@ pub(crate) fn handle_unified_host_call(packet: &JsonValue) -> String {
         // Resource entities (file blobs etc.).
         "createResourceEntity" => host_fn_resource_entity_create(&input),
         "deleteResourceEntity" => host_fn_resource_entity_delete(&input),
-        _ => {
-            let packet = json!({
-                "key": op,
-                "input": input
-            });
-            wasm_send(packet)
-        }
+        // An unknown operation is refused, never forwarded: the callback protocol
+        // behind `wasm_send` carries no caller identity (LD-14).
+        other => json!({"ok": false, "error": format!("unknown host call {other}")}).to_string(),
     }
 }
 
@@ -800,6 +856,35 @@ pub(crate) fn host_fn_exec_shell_action(caller: &str, input: &JsonValue) -> Stri
     match with_global_app(|app| app.tools().vmm().exec_shell_action(caller, input)) {
         Some(out) => out,
         None => json!({"ok": false, "error": "vmm not initialised"}).to_string(),
+    }
+}
+
+/// Guest document state for the creature the packet identifies (ADR 0028).
+fn host_fn_guest_state(creature: &str, op: &str, input: &JsonValue) -> String {
+    let creature = creature.to_owned();
+    let op = op.to_owned();
+    let input = input.clone();
+    let result = std::sync::Arc::new(std::sync::Mutex::new(Err("vmm not initialised".to_owned())));
+    let slot = result.clone();
+    let _ = with_global_app(move |app| {
+        app.modify_state(
+            op == "getJson" || op == "getByPrefix" || op == "getLink",
+            Box::new(move |trx| {
+                let outcome = crate::drivers::vmm::guest_state::run(trx, &creature, &op, &input);
+                let failed = outcome.is_err();
+                *slot.lock().unwrap() = outcome;
+                if failed {
+                    // Nothing a refused call wrote may commit.
+                    return Err(anyhow::anyhow!("guest state refused"));
+                }
+                Ok(())
+            }),
+        );
+    });
+    let outcome = result.lock().unwrap().clone();
+    match outcome {
+        Ok(value) => value.to_string(),
+        Err(error) => json!({"ok": false, "error": error}).to_string(),
     }
 }
 
@@ -1780,6 +1865,29 @@ pub(crate) fn host_fn_pool_authority_call(
             json!({"ok": false, "statusCode": status, "error": error}).to_string()
         }
         Err(_) => json!({"ok": false, "error": format!("{op_label} timed out")}).to_string(),
+    }
+}
+
+#[cfg(test)]
+mod identity_tests {
+    use super::*;
+
+    #[test]
+    fn a_guest_cannot_name_its_caller_identity_in_the_input() {
+        // A guest-controlled input naming a victim VM and creature resolves nothing.
+        let packet = json!({"op": "secretGet"});
+        let input = json!({"vmId": "victim-vm", "creatureId": "7@global", "programId": "9@global"});
+        let hierarchy = resolve_host_hierarchy(&packet, &input);
+        assert_eq!(hierarchy.vm_id, "");
+        assert_eq!(hierarchy.creature_id, "");
+        assert_eq!(hierarchy.program_id, "");
+        assert_eq!(resolve_cached_vm_hierarchy(&packet, &input).creature_id, "");
+        // The packet the runtime or gateway stamped is the identity.
+        let stamped = json!({"op": "dbOp", "vmId": "own-vm", "creatureId": "8@global", "programId": "10@global"});
+        let hierarchy = resolve_host_hierarchy(&stamped, &input);
+        assert_eq!(hierarchy.vm_id, "own-vm");
+        assert_eq!(hierarchy.creature_id, "8@global");
+        assert_eq!(hierarchy.program_id, "10@global");
     }
 }
 

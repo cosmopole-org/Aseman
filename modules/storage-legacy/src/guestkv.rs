@@ -4,6 +4,8 @@
 use super::*;
 
 pub const LEGACY_GUEST_KV_KIND: &str = "guest.legacy_kv";
+/// ADR 0028: confined guest documents, `json::GuestDoc::{creatureId}::{key}::{path}`.
+pub const LEGACY_GUEST_DOC_PREFIX: &str = "GuestDoc::";
 
 impl LegacySnapshotGraph {
     /// A link family is guest KV when it is exactly a local legacy creature ID.
@@ -76,6 +78,61 @@ impl LegacySnapshotGraph {
                     ("value".to_owned(), CapsuleValue::Text(value)),
                 ]),
             )?);
+        }
+        capsules.extend(self.transform_legacy_guest_documents(migration_time_micros)?);
+        Ok(capsules)
+    }
+
+    /// ADR 0028: every record of a confined guest document becomes one `json` row of
+    /// its creature's guest database, keyed by the record's remainder
+    /// (`{key}::{path}`), so the gateway serves the legacy JSON operations unchanged.
+    fn transform_legacy_guest_documents(
+        &self,
+        migration_time_micros: i64,
+    ) -> LegacyMigrationResult<Vec<CapsuleEnvelope>> {
+        let mut capsules = Vec::new();
+        for (document, records) in &self.documents {
+            let Some(rest) = document.strip_prefix(LEGACY_GUEST_DOC_PREFIX) else {
+                continue;
+            };
+            let (creature, guest_key) = rest.split_once("::").ok_or_else(|| {
+                LegacyMigrationError::Invalid(format!("legacy json::{document} names no key"))
+            })?;
+            if !self.is_legacy_guest_kv_family(creature) {
+                return Err(LegacyMigrationError::Invalid(format!(
+                    "legacy json::{document} names no local creature"
+                )));
+            }
+            for (path, value) in records {
+                let row_key = [guest_key, "::", path].concat();
+                let value = String::from_utf8(value.clone()).map_err(|_| {
+                    LegacyMigrationError::Invalid(format!(
+                        "legacy json::{document}::{path} is not UTF-8"
+                    ))
+                })?;
+                capsules.push(seal_legacy_capsule(
+                    LegacyCapsuleSpec {
+                        family: "GuestLegacyKv",
+                        kind: LEGACY_GUEST_KV_KIND,
+                        storage_class: StorageClass::GuestData,
+                        owner_scope: OwnerScope::Creature(deterministic_legacy_capsule_id(
+                            "Creature",
+                            creature.as_bytes(),
+                        )),
+                        migration_time_micros,
+                    },
+                    &format!("json\0{creature}\0{row_key}"),
+                    Vec::new(),
+                    BTreeMap::from([
+                        (
+                            "namespace".to_owned(),
+                            CapsuleValue::Text("json".to_owned()),
+                        ),
+                        ("key".to_owned(), CapsuleValue::Text(row_key)),
+                        ("value".to_owned(), CapsuleValue::Text(value)),
+                    ]),
+                )?);
+            }
         }
         Ok(capsules)
     }

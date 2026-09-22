@@ -18,7 +18,6 @@ use serde_json::Value;
 
 use crate::models::core::ICore;
 use crate::models::packet::{build_error_json, OriginPacket};
-use crate::models::ports::file::IFile;
 use crate::models::ports::network::federation::{FedRequestCallback, IFederation};
 use crate::models::ports::network::TlsConfig;
 use crate::models::ports::signaler::ISignaler;
@@ -47,7 +46,6 @@ struct FedPacketCallback {
 pub struct FedNet {
     app: Arc<dyn ICore>,
     storage: Mutex<Option<Arc<dyn IStorage>>>,
-    file: Mutex<Option<Arc<dyn IFile>>>,
     signaler: Mutex<Option<Arc<dyn ISignaler>>>,
     gateway: Mutex<Option<Arc<Tcp>>>,
     packet_callbacks: Arc<DashMap<String, Arc<FedPacketCallback>>>,
@@ -64,7 +62,6 @@ impl FedNet {
         Arc::new(FedNet {
             app,
             storage: Mutex::new(None),
-            file: Mutex::new(None),
             signaler: Mutex::new(None),
             gateway: Mutex::new(None),
             packet_callbacks: Arc::new(DashMap::new()),
@@ -73,17 +70,15 @@ impl FedNet {
         })
     }
 
-    /// Stage two — `SecondStageForFill(storage, file, signaler)`. Wires the
+    /// Stage two — `SecondStageForFill(storage, signaler)`. Wires the
     /// driver to the rest of the runtime and installs the inbound bridge on
     /// the federation TCP gateway.
     pub fn second_stage(
         self: &Arc<Self>,
         storage: Arc<dyn IStorage>,
-        file: Arc<dyn IFile>,
         signaler: Arc<dyn ISignaler>,
     ) {
         *self.storage.lock().unwrap() = Some(storage);
-        *self.file.lock().unwrap() = Some(file);
         *self.signaler.lock().unwrap() = Some(signaler);
 
         let gateway = Tcp::new(self.app.clone());

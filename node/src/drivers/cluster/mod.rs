@@ -438,32 +438,26 @@ fn apply_deploy_artifact(app: &Arc<dyn ICore>, artifact: &DeployArtifact) -> Res
         artifact.program_id,
         artifact.entity_id
     );
+    let blobs = crate::drivers::blob_store::node_blobs(&*app.tools().storage());
+    let mut primary = None;
     for (name, data_b64) in &artifact.files {
         let data = B64
             .decode(data_b64)
             .map_err(|e| anyhow!("artifact file {}: {}", name, e))?;
-        app.tools()
-            .file()
-            .save_data_to_global_storage(&build_folder_path, &data, name, true)?;
+        let evidence =
+            blobs.put_entity_file(&artifact.program_id, &artifact.entity_id, name, &data)?;
+        if *name == artifact.primary_file_name {
+            primary = Some(evidence);
+        }
     }
+    let primary = primary.ok_or_else(|| anyhow!("artifact has no primary file"))?;
 
     let artifact_owned = artifact.clone();
-    let folder = build_folder_path.clone();
     with_applying_guard(|| {
         app.modify_state(
             false,
             Box::new(move |trx: &dyn ITrx| {
                 let art = &artifact_owned;
-                if art.set_entity_links {
-                    trx.put_link(
-                        &format!("vmEntityPath::{}::{}", art.program_id, art.entity_id),
-                        &format!("{}/{}", folder, art.primary_file_name),
-                    );
-                    trx.put_link(
-                        &format!("vmEntityType::{}::{}", art.program_id, art.entity_id),
-                        &art.entity_type,
-                    );
-                }
                 trx.put_link(&format!("vmDistribution::{}", art.program_id), "cluster");
                 trx.put_link(
                     &format!("vmDistribution::{}::{}", art.program_id, art.entity_id),
@@ -498,13 +492,25 @@ fn apply_deploy_artifact(app: &Arc<dyn ICore>, artifact: &DeployArtifact) -> Res
                     other => other,
                 }
                 .map_err(|error| anyhow!("{error}"))?;
-                crate::shell::api::model::Entity {
-                    program_id: art.program_id.clone(),
-                    entity_id: art.entity_id.clone(),
-                    entity_type: art.entity_type.clone(),
-                    image_name: art.entity_id.clone(),
+                aseman_application::program::RecordEntityDeployment {
+                    entities: &crate::shell::api::model::entity_ports::EntityPorts {
+                        trx,
+                        blobs: &blobs,
+                    },
                 }
-                .push(trx);
+                .execute(&aseman_application::program::EntityDeployment {
+                    entity: aseman_domain::program::EntityRecord {
+                        program_id: art.program_id.clone(),
+                        entity_id: art.entity_id.clone(),
+                        entity_type: art.entity_type.clone(),
+                        image_name: art.entity_id.clone(),
+                    },
+                    primary: primary.clone(),
+                    runtime_file: art.set_entity_links,
+                    downloadable: false,
+                    config: None,
+                })
+                .map_err(|error| anyhow!("{error}"))?;
                 Ok(())
             }),
         );

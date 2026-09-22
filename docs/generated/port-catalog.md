@@ -10,14 +10,22 @@ verification: python3 scripts/generate_phase1_contracts.py --check
 
 | Behavioral port | Owning crate |
 |---|---|
+| `BlobStore` | `aseman-ports` |
 | `CanonicalRecordWriter` | `aseman-ports` |
+| `ChallengeStore` | `aseman-ports` |
 | `ClockPort` | `aseman-ports` |
 | `CreatureBalances` | `aseman-ports` |
 | `CreatureDatabaseBindings` | `aseman-ports` |
 | `CreatureDirectory` | `aseman-ports` |
 | `CreatureMetadata` | `aseman-ports` |
 | `CreatureTypes` | `aseman-ports` |
+| `DecisionAudit` | `aseman-ports` |
+| `EntityDirectory` | `aseman-ports` |
 | `GatewayRoutes` | `aseman-ports` |
+| `GrantStore` | `aseman-ports` |
+| `GuestKv` | `aseman-ports` |
+| `IdentityVerifier` | `aseman-ports` |
+| `KeyDirectory` | `aseman-ports` |
 | `MigrationRecordSource` | `aseman-ports` |
 | `MigrationStateStore` | `aseman-ports` |
 | `PeerDirectoryPort` | `aseman-ports` |
@@ -25,13 +33,14 @@ verification: python3 scripts/generate_phase1_contracts.py --check
 | `ProgramAlarms` | `aseman-ports` |
 | `ProgramDirectory` | `aseman-ports` |
 | `ProgramMetadata` | `aseman-ports` |
+| `ReplayGuard` | `aseman-ports` |
 | `ServerIdentityPort` | `aseman-ports` |
 | `SignalLog` | `aseman-ports` |
 | `StoreAccess` | `aseman-ports` |
 | `StoreDirectory` | `aseman-ports` |
 | `StoreMetadata` | `aseman-ports` |
+| `VmResourceEntities` | `aseman-ports` |
 | `VmResourceStores` | `aseman-ports` |
-| `VmmPort` | `aseman-ports` |
 | `WorkloadRepository` | `aseman-ports` |
 
 This catalog is generated from public declarations. Semantic guarantees remain

@@ -14,10 +14,10 @@ expiry, and replacement evidence for every generated child row.
 | Class | Rows |
 |---|---:|
 | Configuration keys | 116 |
-| Storage layouts/key families | 184 |
+| Storage layouts/key families | 175 |
 | Protocols, operations, runtimes, CLI, compatibility | 289 |
-| Package/artifact owners | 29 |
-| **Total** | **618** |
+| Package/artifact owners | 33 |
+| **Total** | **613** |
 
 No child row authorizes deletion. The parent ledger's replacement and deletion
 gates apply, and rows are retired only with phase-specific evidence.

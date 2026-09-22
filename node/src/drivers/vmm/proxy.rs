@@ -32,16 +32,20 @@
 //! trajectory (thoughts, tool steps) plus the final result back through the
 //! proxy to the requester on one correlation.
 
-use std::fs;
 use std::sync::{Arc, Mutex};
 
 use serde_json::{json, Map, Value};
 use uuid::Uuid;
 
+use crate::drivers::blob_store::StorageRootBlobStore;
 use crate::models::core::ICore;
 use crate::models::transaction::ITrx;
+use crate::shell::api::model::entity_ports::EntityPorts;
 use crate::shell::api::model::{Creature, Program};
 use crate::shell::api::packets::stores::Send as StoresSend;
+use aseman_domain::blob::BlobEvidence;
+use aseman_domain::program::{ArtifactRole, EntityRecord};
+use aseman_ports::{BlobStore, EntityDirectory};
 
 /// The pseudo-runtime key a proxy entity is deployed under. It is not a VM
 /// runtime: nothing ever runs for a proxy entity.
@@ -74,10 +78,6 @@ fn correlation_expiry_link(correlation_id: &str) -> String {
 }
 
 const CORRELATION_EXPIRY_PREFIX: &str = "ProxyCorrExpiry::";
-
-fn config_key(program_id: &str, entity_id: &str) -> String {
-    format!("Json::ProxyEntity::{}::{}", program_id, entity_id)
-}
 
 fn now_ms() -> i64 {
     chrono::Utc::now().timestamp_millis()
@@ -280,37 +280,33 @@ fn deep_merge(dst: &mut Value, src: &Value) {
     }
 }
 
-/// Record a deployed proxy entity inside an open state transaction: the
-/// entity record itself, the `vmEntityType`/`vmEntityPath` links (path points
-/// at the stored data file) and the proxy target configuration.
+/// Record a deployed proxy entity inside an open state transaction: the entity
+/// itself, its stored data file as the primary file, and the proxy target
+/// configuration.
 pub fn record_proxy_entity(
     trx: &dyn ITrx,
+    blobs: &StorageRootBlobStore,
     program_id: &str,
     entity_id: &str,
-    data_path: &str,
+    data: &BlobEvidence,
     config: &ProxyConfig,
-) {
-    crate::shell::api::model::Entity {
-        program_id: program_id.to_string(),
-        entity_id: entity_id.to_string(),
-        entity_type: PROXY_RUNTIME_KEY.to_string(),
-        image_name: entity_id.to_string(),
+) -> anyhow::Result<()> {
+    aseman_application::program::RecordEntityDeployment {
+        entities: &EntityPorts { trx, blobs },
     }
-    .push(trx);
-    trx.put_link(
-        &format!("vmEntityType::{}::{}", program_id, entity_id),
-        PROXY_RUNTIME_KEY,
-    );
-    trx.put_link(
-        &format!("vmEntityPath::{}::{}", program_id, entity_id),
-        data_path,
-    );
-    let _ = trx.put_json(
-        &config_key(program_id, entity_id),
-        "config",
-        &config.to_value(),
-        true,
-    );
+    .execute(&aseman_application::program::EntityDeployment {
+        entity: EntityRecord {
+            program_id: program_id.to_string(),
+            entity_id: entity_id.to_string(),
+            entity_type: PROXY_RUNTIME_KEY.to_string(),
+            image_name: entity_id.to_string(),
+        },
+        primary: data.clone(),
+        runtime_file: true,
+        downloadable: false,
+        config: Some(config.to_value().to_string()),
+    })
+    .map_err(|error| anyhow::anyhow!("{error}"))
 }
 
 fn read_state<T, F>(app: &Arc<dyn ICore>, default: T, f: F) -> T
@@ -535,28 +531,30 @@ pub fn try_forward_through_proxy(
     }
     let machine_owned = machine_id.to_string();
     let entity_owned = entity_id.to_string();
-    let (entity_type, data_path, config_raw) = read_state(
-        app,
-        (String::new(), String::new(), Map::new()),
-        move |trx| {
-            let etype = trx.get_link(&format!(
-                "vmEntityType::{}::{}",
-                machine_owned, entity_owned
-            ));
-            if etype != PROXY_RUNTIME_KEY {
-                return (etype, String::new(), Map::new());
-            }
-            let path = trx.get_link(&format!(
-                "vmEntityPath::{}::{}",
-                machine_owned, entity_owned
-            ));
-            let cfg = trx
-                .get_json(&config_key(&machine_owned, &entity_owned), "config")
-                .unwrap_or_default();
-            (etype, path, cfg)
-        },
-    );
-    if entity_type != PROXY_RUNTIME_KEY {
+    let blobs = crate::drivers::blob_store::node_blobs(&*app.tools().storage());
+    let (is_proxy, data_key, config_raw) = read_state(app, (false, None, Map::new()), move |trx| {
+        let entities = EntityPorts { trx, blobs: &blobs };
+        let proxy = entities
+            .entity(&machine_owned, &entity_owned)
+            .ok()
+            .flatten()
+            .is_some_and(|entity| entity.entity_type == PROXY_RUNTIME_KEY);
+        let primary = entities
+            .artifact(&machine_owned, &entity_owned, ArtifactRole::Primary)
+            .ok()
+            .flatten();
+        let Some(primary) = primary.filter(|_| proxy) else {
+            return (false, None, Map::new());
+        };
+        let config = entities
+            .entity_config(&machine_owned, &entity_owned)
+            .ok()
+            .flatten()
+            .and_then(|text| serde_json::from_str(&text).ok())
+            .unwrap_or_default();
+        (true, primary.store_key, config)
+    });
+    if !is_proxy {
         return false;
     }
     let config = ProxyConfig::from_value(&Value::Object(config_raw));
@@ -580,11 +578,15 @@ pub fn try_forward_through_proxy(
             embedded
         }
     };
-    let attachment = if data_path.is_empty() {
-        String::new()
-    } else {
-        fs::read_to_string(&data_path).unwrap_or_default()
-    };
+    let attachment = data_key
+        .and_then(|key| {
+            crate::drivers::blob_store::node_blobs(&*app.tools().storage())
+                .blob(&key)
+                .ok()
+                .flatten()
+        })
+        .map(|bytes| String::from_utf8(bytes).unwrap_or_default())
+        .unwrap_or_default();
     // Attach the proxy's data file and routing envelope to the payload.
     let mut payload: Map<String, Value> = match serde_json::from_str::<Value>(&send.data) {
         Ok(Value::Object(o)) => o,

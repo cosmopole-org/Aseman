@@ -1,0 +1,139 @@
+{
+  "_meta": {
+    "artifact": "A505",
+    "generator": "scripts/generate_vmm_parity.py",
+    "source_of_truth": "contracts/vmm/native-parity.json, A006, contracts/vmm/openapi.json",
+    "verification": "python3 scripts/generate_vmm_parity.py --check"
+  },
+  "runtimes": {
+    "docker": {
+      "invocation": true,
+      "long_running": true,
+      "pause": false,
+      "snapshot": false,
+      "exec": true,
+      "terminal": false,
+      "http_ingress": true,
+      "files": true,
+      "build": true,
+      "chain_transactions": false,
+      "execution_proofs": false,
+      "deploy": {
+        "entity_file_name": "Dockerfile",
+        "accepts_extra_files": true,
+        "build_on_deploy": true
+      }
+    },
+    "elpian": {
+      "invocation": true,
+      "long_running": false,
+      "pause": false,
+      "snapshot": false,
+      "exec": false,
+      "terminal": false,
+      "http_ingress": false,
+      "files": false,
+      "build": false,
+      "chain_transactions": false,
+      "execution_proofs": false,
+      "deploy": {
+        "entity_file_name": "module.elpian.json",
+        "accepts_extra_files": false,
+        "build_on_deploy": false
+      }
+    },
+    "elpify": {
+      "invocation": true,
+      "long_running": false,
+      "pause": false,
+      "snapshot": false,
+      "exec": false,
+      "terminal": false,
+      "http_ingress": false,
+      "files": false,
+      "build": true,
+      "chain_transactions": false,
+      "execution_proofs": true,
+      "deploy": {
+        "entity_file_name": "module.elpify.js",
+        "accepts_extra_files": false,
+        "build_on_deploy": true
+      }
+    },
+    "fire": {
+      "invocation": true,
+      "long_running": true,
+      "pause": false,
+      "snapshot": false,
+      "exec": true,
+      "terminal": false,
+      "http_ingress": false,
+      "files": true,
+      "build": true,
+      "chain_transactions": false,
+      "execution_proofs": false,
+      "deploy": {
+        "entity_file_name": "module.wasm",
+        "accepts_extra_files": false,
+        "build_on_deploy": false
+      }
+    },
+    "javascript": {
+      "invocation": true,
+      "long_running": true,
+      "pause": false,
+      "snapshot": false,
+      "exec": false,
+      "terminal": false,
+      "http_ingress": false,
+      "files": false,
+      "build": true,
+      "chain_transactions": true,
+      "execution_proofs": false,
+      "deploy": {
+        "entity_file_name": "module.js",
+        "accepts_extra_files": false,
+        "build_on_deploy": false
+      }
+    },
+    "modal": {
+      "invocation": true,
+      "long_running": true,
+      "pause": false,
+      "snapshot": true,
+      "exec": true,
+      "terminal": false,
+      "http_ingress": true,
+      "files": true,
+      "build": true,
+      "chain_transactions": false,
+      "execution_proofs": false,
+      "deploy": {
+        "entity_file_name": "Modalfile",
+        "accepts_extra_files": true,
+        "build_on_deploy": false
+      }
+    },
+    "wasm": {
+      "invocation": true,
+      "long_running": false,
+      "pause": false,
+      "snapshot": false,
+      "exec": false,
+      "terminal": false,
+      "http_ingress": false,
+      "files": false,
+      "build": true,
+      "chain_transactions": true,
+      "execution_proofs": false,
+      "deploy": {
+        "entity_file_name": "module.wasm",
+        "accepts_extra_files": true,
+        "build_on_deploy": false
+      }
+    }
+  },
+  "status_counts": {
+    "open": 73
+  }
+}

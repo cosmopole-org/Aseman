@@ -75,6 +75,17 @@ Phase 2 gate evidence is recorded in `docs/migration/phase-2-gate.md`; Phase 3 m
 | A309 | ACCEPTED | `contracts/migration/protocol.md`, `docs/operations/storage-migration-runbook.md`, `aseman-domain::storage_migration`, `aseman-application::storage_migration`, `tests/migration` (live) | Export/import/verify/dual-write/delta/fenced cutover/rollback/retire protocol with semantic comparison; proven end to end on PostgreSQL 16. |
 | A310 | VERIFIED | `tests/contracts/storage` | Reusable vector and behavioral harness; every provider must pass it before activation. |
 
+## Phase 4
+
+| ID | Status | Evidence | Note |
+|---|---|---|---|
+| A401 | ACCEPTED | `contracts/security/identity-v1.md`, `contracts/security/vectors/identity-v1.json`, `aseman-contracts::identity`, `aseman-domain::identity` | This artifact fixes the exact ADR 0009 formats and rules: versioned multicodec keys with multibase text, multihash key IDs, the domain-separated signed bytes, the signed-request proof, validation order, freshness, replay, epochs and rotation, revocation, trust roots, and legacy RSA verification. The vectors are generated from the code and checked byte for byte. The key directory, the replay store, and the verifier use case follow in P4-01. |
+| A402 | ACCEPTED | `contracts/security/actions.json`, `contracts/security/policy-v1.md`, `docs/generated/security-action-registry.md`, `scripts/generate_security_registry.py` | 121 actions over 33 resource types. Every one of the 224 inventoried surfaces (A002 plus the module admin API) maps to exactly one action, checked in the gate. Rules replace the legacy guards with least privilege, and the LD-24 raw key access and custodial email login are `never`. |
+| A403 | ACCEPTED | `contracts/security/policy-v1.md` (A403), `aseman-domain::capability`, `aseman-application::capability`, `CapsuleGrantStore` (live PostgreSQL conformance), grant fixtures in `tests/contracts/policy/decisions-v1.json` | The grant state machine covers issuance, delegation by intersection only, chain validity, descendant revocation, and explanation. A 2,000-round randomized property test shows no delegation amplifies authority. `core.capability_grant` is redefined for the full grant model (the retirement migration drops the writerless first shape). |
+| A404 | ACCEPTED | `contracts/security/policy-v1.md`, `tests/contracts/policy/decisions-v1.json`, `aseman-domain::authority`, `aseman-policy-native` | The decision contract (request with caller-established facts, fixed evaluation order, reason codes, explanation, versions), with 24 normative hand-written cases. The reference provider reproduces them, and `PolicyDecisionPort` is typed on it. |
+| A405 | ACCEPTED | `contracts/security/guest-v1.md`, `aseman-application::guest`, `aseman-capsule-repositories::workload`, `PostgresGuestKv`, live `live_guest_gateway` | Authenticated workload (A401 proof or node-registered VM handle), then server-side workload, program, creature, and active binding, with fail-closed chain checks. Policy authorizes with `same_creature`. The legacy KV operations run as sealed capsule revisions in the creature's role, and deletes and prefix listing are now correct. Live: two creatures' workloads write the same key and each reads only its own, a tampered catalog record cannot route, and a crossed program fails closed. |
+| A406 | ACCEPTED | `contracts/security/runtime-matrix-v1.md`, `node/src/shell/authority.rs` | This is the per-runtime matrix. Every runtime's host calls reach one identified and authorized entry point. Host-mediated egress needs a destination grant (shadow on the legacy provider until grants exist), secrets and guest data are deny-by-default, and raw node keys are `never`. Direct network access by container and microVM workloads is owned by the P6 runtime providers. |
+
 P3-01 evidence is recorded in `docs/migration/work-units/P3-01.md`; RL-005 and RL-006 remain open.
 P3-02 evidence and rollback are recorded in `docs/migration/work-units/P3-02.md` and
 `docs/operations/postgres-core-migration.md`.
@@ -83,3 +94,13 @@ P3-03 provider/isolation evidence and rollback are recorded in
 RL-006 remains open and no guest gateway is activated before P4-04.
 P3-04 storage-class evidence is recorded in `docs/migration/work-units/P3-04.md` and
 `docs/operations/postgres-storage-classes.md`; RL-005, RL-008, and RL-011 remain open.
+
+## Phase 5
+
+| ID | Status | Evidence | Note |
+|---|---|---|---|
+| A501 | ACCEPTED | `contracts/vmm/openapi.json`, `aseman-contracts::vmm`, ADR 0029 | OpenAPI 3.1 contract with idempotency, resource versions, RFC 9457 problems, cursor pagination, SSE, terminal, capability negotiation, and the invocation, forwarding, file, build, snapshot, and proof operations the legacy runtimes need. Contract tests tie the Rust wire types to every schema. |
+| A502 | ACCEPTED | `contracts/vmm/states.json`, `aseman-domain::vmm` | Desired and operation state machines; the table is tested against the domain functions. |
+| A503 | ACCEPTED | `contracts/vmm/states.json`, `aseman-domain::vmm` | Node-owned desired generations with compare-and-set, command freshness (apply, replay, stale), forward-only observations, one-step reconciliation, and adoption of undesired instances (ADR 0022). |
+| A505 | ACCEPTED | `contracts/vmm/native-parity.json`, `docs/generated/vmm-native-parity.{json,md}`, `scripts/generate_vmm_parity.py` | Every A006 runtime operation and `IVmm` method has a destination, and the native capabilities are derived per runtime. Entries become `verified` with P5-05 parity tests and `deleted` with P5-06. |
+

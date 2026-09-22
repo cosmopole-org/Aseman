@@ -6,6 +6,8 @@
 //! the source-comment-driven `extractor` / `doc` helpers wait for Phase 5.
 
 pub mod api;
+pub(crate) mod audit;
+pub(crate) mod authority;
 pub mod kasper;
 pub mod storage_http;
 pub mod utils;

@@ -1882,6 +1882,62 @@ fn applet_db_guest_storage_resolves_creature_or_program_owner() {
 }
 
 #[test]
+fn confined_guest_documents_become_json_rows_of_their_creature() {
+    // ADR 0028: `putJson` stores `json::GuestDoc::{creature}::{key}::{path}` records.
+    let mut records = metadata_fixture_subjects();
+    legacy_put_json(
+        &mut records,
+        "GuestDoc::human-one::counter::1",
+        "doc",
+        &serde_json::json!({"n": 3}),
+    );
+    let capsules = transform_metadata_fixture(records)
+        .unwrap()
+        .into_iter()
+        .filter(|capsule| capsule.kind.0 == LEGACY_GUEST_KV_KIND)
+        .collect::<Vec<_>>();
+    let owner = deterministic_legacy_capsule_id("Creature", b"human-one");
+    let text = |value: &str| CapsuleValue::Text(value.to_owned());
+    let mut rows = capsules
+        .iter()
+        .map(|capsule| {
+            assert!(capsule.verify().is_ok());
+            assert_eq!(capsule.storage_class, StorageClass::GuestData);
+            assert_eq!(capsule.owner_scope, OwnerScope::Creature(owner));
+            let Some(CapsuleValue::Object(body)) = &capsule.body else {
+                panic!("guest capsule has no body");
+            };
+            (
+                body["namespace"].clone(),
+                body["key"].clone(),
+                body["value"].clone(),
+            )
+        })
+        .collect::<Vec<_>>();
+    rows.sort_by_key(|(_, key, _)| format!("{key:?}"));
+    // One row per physical record, keyed exactly as `getByPrefix` lists it.
+    assert_eq!(
+        rows,
+        vec![
+            (text("json"), text("counter::1::doc"), text("{\"n\":3}")),
+            (text("json"), text("counter::1::doc.n"), text("3")),
+        ]
+    );
+
+    let mut foreign = metadata_fixture_subjects();
+    legacy_put_json(
+        &mut foreign,
+        "GuestDoc::someone@else::k",
+        "doc",
+        &serde_json::json!({}),
+    );
+    assert!(matches!(
+        transform_metadata_fixture(foreign),
+        Err(LegacyMigrationError::Invalid(message)) if message.contains("names no local creature")
+    ));
+}
+
+#[test]
 fn openraft_checkpoint_is_read_only_digested_and_replica_checked() {
     let state = br#"{"last_applied":{"leader_id":{"term":3,"node_id":1},"index":42},
         "membership":{"log_id":null,"membership":{"configs":[[1,2,3]],"nodes":{}}},

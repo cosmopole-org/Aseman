@@ -21,8 +21,6 @@ use rsa::{RsaPrivateKey, RsaPublicKey};
 
 use crate::models::core::ICore;
 use crate::models::ports::security::ISecurity;
-use crate::models::ports::signaler::ISignaler;
-use crate::models::ports::storage::IStorage;
 use crate::models::transaction::ITrx;
 use crate::shell::utils::crypto as cryp;
 
@@ -31,24 +29,15 @@ const KEYS_FOLDER: &str = "keys";
 /// Concrete [`ISecurity`] implementation.
 pub struct Security {
     app: Arc<dyn ICore>,
-    _storage: Arc<dyn IStorage>,
-    _signaler: Arc<dyn ISignaler>,
     storage_root: String,
     keys: Mutex<HashMap<String, Vec<Vec<u8>>>>,
 }
 
 impl Security {
     /// `New(core, storageRoot, storage, signaler)`.
-    pub fn new(
-        app: Arc<dyn ICore>,
-        storage_root: &str,
-        storage: Arc<dyn IStorage>,
-        signaler: Arc<dyn ISignaler>,
-    ) -> Arc<Security> {
+    pub fn new(app: Arc<dyn ICore>, storage_root: &str) -> Arc<Security> {
         let s = Arc::new(Security {
             app,
-            _storage: storage,
-            _signaler: signaler,
             storage_root: storage_root.to_string(),
             keys: Mutex::new(HashMap::new()),
         });
@@ -154,20 +143,29 @@ impl ISecurity for Security {
         packet: &[u8],
         signature_base64: &str,
     ) -> (bool, String, bool) {
-        // Look up the user's public key.
-        let pub_key_slot: Arc<Mutex<Option<RsaPublicKey>>> = Arc::new(Mutex::new(None));
-        let slot_clone = pub_key_slot.clone();
+        // The creature record is the single authoritative identity: its public key
+        // verifies the signature and its type is returned on success.
+        let creature_slot = Arc::new(Mutex::new(None));
+        let slot_clone = creature_slot.clone();
         let user_id_owned = user_id.to_string();
         self.app.modify_state(
             true,
             Box::new(move |trx: &dyn ITrx| {
-                *slot_clone.lock().unwrap() = trx.get_pub_key(&user_id_owned);
+                *slot_clone.lock().unwrap() = aseman_ports::CreatureDirectory::creature(
+                    &crate::shell::api::model::creature_ports::CreaturePorts { trx },
+                    &user_id_owned,
+                )
+                .ok()
+                .flatten();
                 Ok(())
             }),
         );
-        let pub_key = match pub_key_slot.lock().unwrap().clone() {
-            Some(k) => k,
-            None => return (false, String::new(), false),
+        let Some(creature) = creature_slot.lock().unwrap().take() else {
+            return (false, String::new(), false);
+        };
+        let pub_key = match cryp::parse_public_key(creature.public_key.as_bytes()) {
+            Ok(key) => key,
+            Err(_) => return (false, String::new(), false),
         };
 
         let signature = match B64.decode(signature_base64) {
@@ -197,29 +195,19 @@ impl ISecurity for Security {
             }
         }
 
-        // Successful — fetch user type / god flag.
-        let typ_slot = Arc::new(Mutex::new(String::new()));
+        // Successful: the god flag is a node-local runtime record.
         let god_slot = Arc::new(Mutex::new(false));
-        let typ_clone = typ_slot.clone();
         let god_clone = god_slot.clone();
         let user_id_owned = user_id.to_string();
         self.app.modify_state(
             true,
             Box::new(move |trx: &dyn ITrx| {
-                *typ_clone.lock().unwrap() = aseman_ports::CreatureDirectory::creature(
-                    &crate::shell::api::model::creature_ports::CreaturePorts { trx },
-                    &user_id_owned,
-                )
-                .ok()
-                .flatten()
-                .map(|record| record.creature_type)
-                .unwrap_or_default();
                 *god_clone.lock().unwrap() =
                     trx.get_string(&format!("god::{}", user_id_owned)) == "true";
                 Ok(())
             }),
         );
-        let typ = typ_slot.lock().unwrap().clone();
+        let typ = creature.creature_type;
         let is_god = *god_slot.lock().unwrap();
         (true, typ, is_god)
     }
@@ -244,5 +232,63 @@ impl ISecurity for Security {
         );
         let res = *found.lock().unwrap();
         res
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::core::actor::model::trx::tests::{StubCore, StubStorage};
+    use crate::core::actor::model::trx::TrxWrapper;
+    use crate::models::ports::storage::IStorage;
+    use rsa::pkcs8::{EncodePublicKey, LineEnding};
+    use rsa::pss::BlindedSigningKey;
+    use rsa::signature::{RandomizedSigner, SignatureEncoding};
+
+    #[test]
+    fn signatures_verify_against_the_creature_directory_key() {
+        let storage: Arc<dyn IStorage> = StubStorage::new();
+        let app: Arc<dyn ICore> = Arc::new(StubCore {
+            storage: storage.clone(),
+        });
+        let key = RsaPrivateKey::new(&mut OsRng, 1024).unwrap();
+        let trx = TrxWrapper::new(app.clone(), storage.clone(), false);
+        aseman_ports::CreatureDirectory::create(
+            &crate::shell::api::model::creature_ports::CreaturePorts { trx: &*trx },
+            &aseman_domain::creature::CreatureRecord {
+                id: "5@global".to_owned(),
+                creature_type: "human".to_owned(),
+                username: "signer@global".to_owned(),
+                public_key: key
+                    .to_public_key()
+                    .to_public_key_pem(LineEnding::LF)
+                    .unwrap(),
+                chain_id: "main".to_owned(),
+                subchain_id: String::new(),
+                owner_id: aseman_domain::creature::HUMAN_OWNER.to_owned(),
+            },
+        )
+        .unwrap();
+        trx.commit().unwrap();
+
+        let security = Security::new(app, "/nonexistent-aseman-root");
+        let packet = b"{\"path\":\"/stores/signal\"}";
+        let signature = B64.encode(
+            BlindedSigningKey::<Sha256>::new(key)
+                .sign_with_rng(&mut OsRng, packet)
+                .to_vec(),
+        );
+        assert_eq!(
+            security.auth_with_signature("5@global", packet, &signature),
+            (true, "human".to_owned(), false)
+        );
+        assert_eq!(
+            security.auth_with_signature("5@global", b"tampered", &signature),
+            (false, String::new(), false)
+        );
+        assert_eq!(
+            security.auth_with_signature("6@global", packet, &signature),
+            (false, String::new(), false)
+        );
     }
 }

@@ -26,6 +26,20 @@ pub fn init_vm_plugins() {
     });
 }
 
+/// A runtime `dbOp` key (`{creature}::{guestKey}`) served by the creature's guest
+/// database when the node runs on PostgreSQL (ADR 0021); `None` otherwise.
+fn runtime_guest_op(op: &str, key: &str, value: &str) -> Option<Result<String, String>> {
+    let (creature, guest_key) = crate::shell::api::model::guest_data::split_runtime_key(key)?;
+    crate::shell::api::model::guest_data::route_db_op(
+        creature,
+        aseman_domain::guest::LegacyKvNamespace::DbOp,
+        op,
+        guest_key,
+        value,
+        guest_key,
+    )
+}
+
 /// `VmHost` served by the Caspar VMM.
 pub struct VmmHostBridge;
 
@@ -119,6 +133,13 @@ impl VmHost for VmmHostBridge {
     }
 
     fn state_get(&self, key: &str) -> String {
+        if let Some(value) = runtime_guest_op("get", key, "") {
+            return value
+                .ok()
+                .and_then(|text| serde_json::from_str::<JsonValue>(&text).ok())
+                .and_then(|value| value["data"].as_str().map(str::to_owned))
+                .unwrap_or_default();
+        }
         let key = key.to_string();
         with_global_app(move |app| {
             let slot = Arc::new(std::sync::Mutex::new(String::new()));
@@ -137,6 +158,20 @@ impl VmHost for VmmHostBridge {
     }
 
     fn state_get_by_prefix(&self, prefix: &str) -> Vec<String> {
+        if let Some(values) = runtime_guest_op("getByPrefix", prefix, "") {
+            return values
+                .ok()
+                .and_then(|text| serde_json::from_str::<JsonValue>(&text).ok())
+                .and_then(|value| {
+                    value["data"].as_array().map(|values| {
+                        values
+                            .iter()
+                            .filter_map(|value| value.as_str().map(str::to_owned))
+                            .collect()
+                    })
+                })
+                .unwrap_or_default();
+        }
         let prefix = prefix.to_string();
         with_global_app(move |app| {
             let slot = Arc::new(std::sync::Mutex::new(Vec::<String>::new()));
@@ -158,7 +193,21 @@ impl VmHost for VmmHostBridge {
         if ops.is_empty() {
             return Ok(());
         }
-        let ops: Vec<KvOp> = ops.to_vec();
+        // Runtime `dbOp` pairs go to their creature's guest database on PostgreSQL;
+        // plugin state keeps its legacy home.
+        let mut legacy = Vec::with_capacity(ops.len());
+        for op in ops {
+            match runtime_guest_op(&op.op, &op.key, &op.val) {
+                Some(result) => {
+                    result?;
+                }
+                None => legacy.push(op.clone()),
+            }
+        }
+        if legacy.is_empty() {
+            return Ok(());
+        }
+        let ops = legacy;
         match with_global_app(move |app| {
             app.modify_state(
                 false,
@@ -190,54 +239,16 @@ impl VmHost for VmmHostBridge {
         op: &str,
         input: &JsonValue,
     ) -> Result<JsonValue, String> {
+        // The creature is the one the node registered for this VM when it started
+        // it; `vm_id` is the runtime's own transaction key, never guest input.
+        let base_vm_id = caspar_vm_sdk::util::trx_key_vm_id(vm_id);
+        let creature = with_global_app(|app| app.tools().vmm().get_vm_context(base_vm_id))
+            .flatten()
+            .map(|(creature, _)| creature)
+            .unwrap_or_default();
         let trx = with_global_app(|app| app.begin_vm_trx(vm_id))
             .ok_or_else(|| "ICore not initialised".to_string())?;
-        match op {
-            "putJson" => {
-                let key = input["key"].as_str().unwrap_or("");
-                let path = input["path"].as_str().unwrap_or("");
-                let merge = input["merge"].as_bool().unwrap_or(true);
-                let obj = input["data"].clone();
-                let _ = trx.put_json(key, path, &obj, merge);
-                Ok(json!({"ok": true}))
-            }
-            "getJson" => {
-                let key = input["key"].as_str().unwrap_or("");
-                let path = input["path"].as_str().unwrap_or("");
-                match trx.get_json(key, path) {
-                    Ok(m) => Ok(json!({"ok": true, "data": JsonValue::Object(m)})),
-                    Err(_) => Ok(json!({"ok": true, "data": {}})),
-                }
-            }
-            "getByPrefix" => {
-                // putJson stores keys as "json::key::path"; search within that
-                // namespace and strip the prefix so callers see the same key
-                // space they wrote to.
-                let prefix = input["prefix"].as_str().unwrap_or("");
-                let json_prefix = format!("json::{}", prefix);
-                let keys = trx.get_by_prefix(&json_prefix);
-                let stripped: Vec<String> = keys
-                    .into_iter()
-                    .map(|k| k.strip_prefix("json::").unwrap_or(&k).to_string())
-                    .collect();
-                Ok(json!({"ok": true, "data": stripped}))
-            }
-            "delKey" => {
-                let key = input["key"].as_str().unwrap_or("");
-                let path = input["path"].as_str().unwrap_or("");
-                // A document written with putJson lives at `json::<key>::<path>`.
-                // Deleting only the raw key tombstoned a key nothing reads and left
-                // the document in place, so "deleted" continuations, questions and
-                // index rows all survived their deletion.
-                if path.is_empty() {
-                    trx.del_key(key);
-                } else {
-                    trx.del_json(key, path);
-                }
-                Ok(json!({"ok": true}))
-            }
-            _ => Err(format!("unsupported vm json trx op: {}", op)),
-        }
+        crate::drivers::vmm::guest_state::run(&*trx, &creature, op, input)
     }
 
     fn end_vm_json_trx(&self, vm_id: &str) {

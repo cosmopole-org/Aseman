@@ -177,19 +177,29 @@ CREATE TABLE IF NOT EXISTS aseman_core."capability_grants" (
   owner_name TEXT,
   tombstone BOOLEAN NOT NULL DEFAULT FALSE,
   capsule_cbor BYTEA NOT NULL,
-  "action" TEXT,
-  "resource" TEXT,
-  "issued_at_micros" BIGINT,
+  "subject_kind" TEXT,
+  "subject_id" UUID,
+  "issuer_kind" TEXT,
+  "issuer_id" UUID,
+  "resource_kind" TEXT,
+  "resource_id" TEXT,
+  "max_depth" BIGINT,
+  "parent_id" UUID,
+  "not_before_micros" BIGINT,
   "expires_at_micros" BIGINT,
   "revoked_at_micros" BIGINT,
-  "subject" UUID NOT NULL,
-  "issuer" UUID NOT NULL,
+  "policy_version" TEXT,
   CONSTRAINT ck_revision_chain CHECK ((revision = 1) = (previous_integrity IS NULL)),
   CONSTRAINT ck_previous_integrity CHECK (previous_integrity IS NULL OR octet_length(previous_integrity) = 32),
   CONSTRAINT ck_owner_scope CHECK ((owner_type = 'global' AND owner_id IS NULL AND owner_name IS NULL) OR (owner_type IN ('node', 'creature') AND owner_id IS NOT NULL AND owner_name IS NULL) OR (owner_type = 'module' AND owner_id IS NULL AND owner_name IS NOT NULL)),
-  CONSTRAINT ck_live_capability_grants_action CHECK (tombstone OR "action" IS NOT NULL),
-  CONSTRAINT ck_live_capability_grants_resource CHECK (tombstone OR "resource" IS NOT NULL),
-  CONSTRAINT ck_live_capability_grants_issued_at_micros CHECK (tombstone OR "issued_at_micros" IS NOT NULL)
+  CONSTRAINT ck_live_capability_grants_subject_kind CHECK (tombstone OR "subject_kind" IS NOT NULL),
+  CONSTRAINT ck_live_capability_grants_subject_id CHECK (tombstone OR "subject_id" IS NOT NULL),
+  CONSTRAINT ck_live_capability_grants_issuer_kind CHECK (tombstone OR "issuer_kind" IS NOT NULL),
+  CONSTRAINT ck_live_capability_grants_issuer_id CHECK (tombstone OR "issuer_id" IS NOT NULL),
+  CONSTRAINT ck_live_capability_grants_resource_kind CHECK (tombstone OR "resource_kind" IS NOT NULL),
+  CONSTRAINT ck_live_capability_grants_max_depth CHECK (tombstone OR "max_depth" IS NOT NULL),
+  CONSTRAINT ck_live_capability_grants_not_before_micros CHECK (tombstone OR "not_before_micros" IS NOT NULL),
+  CONSTRAINT ck_live_capability_grants_policy_version CHECK (tombstone OR "policy_version" IS NOT NULL)
 );
 
 CREATE TABLE IF NOT EXISTS aseman_core."sessions" (
@@ -354,7 +364,7 @@ CREATE TABLE IF NOT EXISTS aseman_core."federation_peers" (
   CONSTRAINT ck_live_federation_peers_descriptor_digest CHECK (tombstone OR "descriptor_digest" IS NOT NULL)
 );
 
-CREATE TABLE IF NOT EXISTS aseman_core."node_keys" (
+CREATE TABLE IF NOT EXISTS aseman_core."identity_keys" (
   id UUID PRIMARY KEY,
   schema_version INTEGER NOT NULL CHECK (schema_version > 0),
   revision BIGINT NOT NULL CHECK (revision > 0),
@@ -367,20 +377,28 @@ CREATE TABLE IF NOT EXISTS aseman_core."node_keys" (
   owner_name TEXT,
   tombstone BOOLEAN NOT NULL DEFAULT FALSE,
   capsule_cbor BYTEA NOT NULL,
+  "subject_kind" TEXT,
+  "subject_id" UUID,
   "purpose" TEXT,
   "epoch" BIGINT,
+  "key_id" TEXT,
   "public_key" BYTEA,
   "not_before_micros" BIGINT,
   "expires_at_micros" BIGINT,
+  "retired_at_micros" BIGINT,
   "revoked_at_micros" BIGINT,
-  "node" UUID NOT NULL,
+  "legacy" BOOLEAN,
   CONSTRAINT ck_revision_chain CHECK ((revision = 1) = (previous_integrity IS NULL)),
   CONSTRAINT ck_previous_integrity CHECK (previous_integrity IS NULL OR octet_length(previous_integrity) = 32),
   CONSTRAINT ck_owner_scope CHECK ((owner_type = 'global' AND owner_id IS NULL AND owner_name IS NULL) OR (owner_type IN ('node', 'creature') AND owner_id IS NOT NULL AND owner_name IS NULL) OR (owner_type = 'module' AND owner_id IS NULL AND owner_name IS NOT NULL)),
-  CONSTRAINT ck_live_node_keys_purpose CHECK (tombstone OR "purpose" IS NOT NULL),
-  CONSTRAINT ck_live_node_keys_epoch CHECK (tombstone OR "epoch" IS NOT NULL),
-  CONSTRAINT ck_live_node_keys_public_key CHECK (tombstone OR "public_key" IS NOT NULL),
-  CONSTRAINT ck_live_node_keys_not_before_micros CHECK (tombstone OR "not_before_micros" IS NOT NULL)
+  CONSTRAINT ck_live_identity_keys_subject_kind CHECK (tombstone OR "subject_kind" IS NOT NULL),
+  CONSTRAINT ck_live_identity_keys_subject_id CHECK (tombstone OR "subject_id" IS NOT NULL),
+  CONSTRAINT ck_live_identity_keys_purpose CHECK (tombstone OR "purpose" IS NOT NULL),
+  CONSTRAINT ck_live_identity_keys_epoch CHECK (tombstone OR "epoch" IS NOT NULL),
+  CONSTRAINT ck_live_identity_keys_key_id CHECK (tombstone OR "key_id" IS NOT NULL),
+  CONSTRAINT ck_live_identity_keys_public_key CHECK (tombstone OR "public_key" IS NOT NULL),
+  CONSTRAINT ck_live_identity_keys_not_before_micros CHECK (tombstone OR "not_before_micros" IS NOT NULL),
+  CONSTRAINT ck_live_identity_keys_legacy CHECK (tombstone OR "legacy" IS NOT NULL)
 );
 
 CREATE TABLE IF NOT EXISTS aseman_core."module_installations" (
@@ -1000,10 +1018,6 @@ ALTER TABLE aseman_core."access_levels" ADD CONSTRAINT fk_access_levels_store FO
 CREATE UNIQUE INDEX IF NOT EXISTS uq_access_levels_store_level ON aseman_core."access_levels" ("store", "level") WHERE NOT tombstone;
 CREATE INDEX IF NOT EXISTS ix_access_levels_updated_at ON aseman_core."access_levels" (updated_at_micros, id);
 
-ALTER TABLE aseman_core."capability_grants" DROP CONSTRAINT IF EXISTS fk_capability_grants_subject;
-ALTER TABLE aseman_core."capability_grants" ADD CONSTRAINT fk_capability_grants_subject FOREIGN KEY ("subject") REFERENCES aseman_core."users"(id) ON DELETE RESTRICT;
-ALTER TABLE aseman_core."capability_grants" DROP CONSTRAINT IF EXISTS fk_capability_grants_issuer;
-ALTER TABLE aseman_core."capability_grants" ADD CONSTRAINT fk_capability_grants_issuer FOREIGN KEY ("issuer") REFERENCES aseman_core."users"(id) ON DELETE RESTRICT;
 CREATE INDEX IF NOT EXISTS ix_capability_grants_updated_at ON aseman_core."capability_grants" (updated_at_micros, id);
 
 ALTER TABLE aseman_core."sessions" DROP CONSTRAINT IF EXISTS fk_sessions_user;
@@ -1036,10 +1050,9 @@ CREATE INDEX IF NOT EXISTS ix_nodes_updated_at ON aseman_core."nodes" (updated_a
 CREATE UNIQUE INDEX IF NOT EXISTS uq_federation_peers_origin ON aseman_core."federation_peers" ("origin") WHERE NOT tombstone;
 CREATE INDEX IF NOT EXISTS ix_federation_peers_updated_at ON aseman_core."federation_peers" (updated_at_micros, id);
 
-ALTER TABLE aseman_core."node_keys" DROP CONSTRAINT IF EXISTS fk_node_keys_node;
-ALTER TABLE aseman_core."node_keys" ADD CONSTRAINT fk_node_keys_node FOREIGN KEY ("node") REFERENCES aseman_core."nodes"(id) ON DELETE CASCADE;
-CREATE UNIQUE INDEX IF NOT EXISTS uq_node_keys_node_purpose_epoch ON aseman_core."node_keys" ("node", "purpose", "epoch") WHERE NOT tombstone;
-CREATE INDEX IF NOT EXISTS ix_node_keys_updated_at ON aseman_core."node_keys" (updated_at_micros, id);
+CREATE UNIQUE INDEX IF NOT EXISTS uq_identity_keys_key_id ON aseman_core."identity_keys" ("key_id") WHERE NOT tombstone;
+CREATE UNIQUE INDEX IF NOT EXISTS uq_identity_keys_subject_kind_subject_id_purpose_epoch ON aseman_core."identity_keys" ("subject_kind", "subject_id", "purpose", "epoch") WHERE NOT tombstone;
+CREATE INDEX IF NOT EXISTS ix_identity_keys_updated_at ON aseman_core."identity_keys" (updated_at_micros, id);
 
 CREATE UNIQUE INDEX IF NOT EXISTS uq_module_installations_module_name_version ON aseman_core."module_installations" ("module_name", "version") WHERE NOT tombstone;
 CREATE INDEX IF NOT EXISTS ix_module_installations_updated_at ON aseman_core."module_installations" (updated_at_micros, id);

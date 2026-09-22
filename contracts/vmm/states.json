@@ -1,0 +1,369 @@
+{
+  "version": "1",
+  "source_of_truth": "aseman-domain::vmm; the contract test fails when this file and the domain disagree",
+  "desired": {
+    "states": [
+      "stopped",
+      "running",
+      "paused",
+      "deleted"
+    ],
+    "initial": [
+      "stopped",
+      "running"
+    ],
+    "terminal": [
+      "deleted"
+    ],
+    "transitions": [
+      [
+        "stopped",
+        "running"
+      ],
+      [
+        "stopped",
+        "deleted"
+      ],
+      [
+        "running",
+        "stopped"
+      ],
+      [
+        "running",
+        "paused"
+      ],
+      [
+        "running",
+        "deleted"
+      ],
+      [
+        "paused",
+        "stopped"
+      ],
+      [
+        "paused",
+        "running"
+      ],
+      [
+        "paused",
+        "deleted"
+      ]
+    ],
+    "same_state": "no-op, accepted without a new operation",
+    "rules": [
+      "The node owns desired state. Every accepted desired change, state or spec, advances the generation by exactly one (compare-and-set on the generation the caller read).",
+      "`paused` is reachable only from `running`; any state may go to `stopped` or `deleted`; `deleted` never changes."
+    ]
+  },
+  "observed": {
+    "states": [
+      "unknown",
+      "pending",
+      "running",
+      "paused",
+      "stopped",
+      "failed",
+      "lost"
+    ],
+    "rules": [
+      "The VMM owns observed state. An observation carries the desired generation it acted on and a provider sequence.",
+      "An observation is accepted only when (generation, sequence) is greater than the recorded one and its generation is not newer than desired (`stale_observation` otherwise).",
+      "`lost` means the provider no longer reports an instance it had; `unknown` means it has not reported yet."
+    ]
+  },
+  "operation": {
+    "states": [
+      "pending",
+      "running",
+      "succeeded",
+      "failed",
+      "cancelled"
+    ],
+    "terminal": [
+      "succeeded",
+      "failed",
+      "cancelled"
+    ],
+    "transitions": [
+      [
+        "pending",
+        "cancelled"
+      ],
+      [
+        "pending",
+        "failed"
+      ],
+      [
+        "pending",
+        "running"
+      ],
+      [
+        "running",
+        "cancelled"
+      ],
+      [
+        "running",
+        "failed"
+      ],
+      [
+        "running",
+        "succeeded"
+      ]
+    ],
+    "rules": [
+      "Terminal states never change (`operation_finished`). Only unfinished operations can be cancelled."
+    ]
+  },
+  "commands": {
+    "rules": [
+      "A lifecycle command carries the node's desired generation.",
+      "Greater than the applied generation: apply. Equal: idempotent replay returning the same operation. Smaller: `stale_generation` (409) with `current_generation`.",
+      "`If-Match` additionally pins the resource version (412 `resource_version_mismatch`).",
+      "`Idempotency-Key` deduplicates every mutation for 24 hours; the same key with another body is `idempotency_key_reused` (422)."
+    ],
+    "cases": [
+      {
+        "applied": null,
+        "incoming": 1,
+        "result": "apply"
+      },
+      {
+        "applied": 2,
+        "incoming": 3,
+        "result": "apply"
+      },
+      {
+        "applied": 2,
+        "incoming": 2,
+        "result": "replay"
+      },
+      {
+        "applied": 2,
+        "incoming": 1,
+        "result": "stale"
+      }
+    ]
+  },
+  "reconcile": {
+    "rules": [
+      "Reconciliation takes one step at a time toward the desired state of the current generation and runs after every restart, observation, and period.",
+      "An observed instance with no desired record is adopted as desired `stopped` for operator review; it is never run or deleted silently (ADR 0022).",
+      "An instance observed `failed` or `lost` while desired `running` is restarted.",
+      "A deleted workload is done when its instance is gone, or observed stopped, lost, or failed at the deleted generation."
+    ],
+    "cases": [
+      {
+        "desired": [
+          "running",
+          2
+        ],
+        "observed": [
+          "running",
+          2
+        ],
+        "action": "none"
+      },
+      {
+        "desired": [
+          "running",
+          2
+        ],
+        "observed": [
+          "running",
+          1
+        ],
+        "action": "start"
+      },
+      {
+        "desired": [
+          "running",
+          2
+        ],
+        "observed": null,
+        "action": "start"
+      },
+      {
+        "desired": [
+          "running",
+          2
+        ],
+        "observed": [
+          "pending",
+          2
+        ],
+        "action": "none"
+      },
+      {
+        "desired": [
+          "running",
+          2
+        ],
+        "observed": [
+          "lost",
+          2
+        ],
+        "action": "restart"
+      },
+      {
+        "desired": [
+          "running",
+          2
+        ],
+        "observed": [
+          "failed",
+          1
+        ],
+        "action": "restart"
+      },
+      {
+        "desired": [
+          "running",
+          2
+        ],
+        "observed": [
+          "paused",
+          2
+        ],
+        "action": "resume"
+      },
+      {
+        "desired": [
+          "paused",
+          3
+        ],
+        "observed": [
+          "running",
+          2
+        ],
+        "action": "pause"
+      },
+      {
+        "desired": [
+          "paused",
+          3
+        ],
+        "observed": [
+          "paused",
+          3
+        ],
+        "action": "none"
+      },
+      {
+        "desired": [
+          "paused",
+          3
+        ],
+        "observed": [
+          "stopped",
+          2
+        ],
+        "action": "start"
+      },
+      {
+        "desired": [
+          "stopped",
+          4
+        ],
+        "observed": [
+          "running",
+          3
+        ],
+        "action": "stop"
+      },
+      {
+        "desired": [
+          "stopped",
+          4
+        ],
+        "observed": [
+          "failed",
+          3
+        ],
+        "action": "none"
+      },
+      {
+        "desired": [
+          "stopped",
+          4
+        ],
+        "observed": null,
+        "action": "none"
+      },
+      {
+        "desired": [
+          "deleted",
+          5
+        ],
+        "observed": [
+          "stopped",
+          4
+        ],
+        "action": "delete"
+      },
+      {
+        "desired": [
+          "deleted",
+          5
+        ],
+        "observed": [
+          "stopped",
+          5
+        ],
+        "action": "none"
+      },
+      {
+        "desired": [
+          "deleted",
+          5
+        ],
+        "observed": [
+          "running",
+          5
+        ],
+        "action": "delete"
+      },
+      {
+        "desired": [
+          "deleted",
+          5
+        ],
+        "observed": null,
+        "action": "none"
+      },
+      {
+        "desired": null,
+        "observed": [
+          "running",
+          1
+        ],
+        "action": "adopt"
+      },
+      {
+        "desired": null,
+        "observed": null,
+        "action": "none"
+      }
+    ]
+  },
+  "problems": {
+    "invalid_transition": 409,
+    "workload_deleted": 409,
+    "stale_generation": 409,
+    "already_exists": 409,
+    "stale_observation": 409,
+    "operation_finished": 409,
+    "resource_version_mismatch": 412,
+    "unsupported_operation": 422,
+    "idempotency_key_reused": 422,
+    "idempotency_in_progress": 409,
+    "invalid_request": 400,
+    "unauthenticated": 401,
+    "forbidden": 403,
+    "not_found": 404,
+    "payload_too_large": 413,
+    "rate_limited": 429,
+    "deadline_exceeded": 504,
+    "unavailable": 503,
+    "backend_failure": 502
+  }
+}

@@ -232,40 +232,51 @@
       ]
     },
     {
-      "document_fields": [],
+      "document_fields": [
+        "actions",
+        "delegable_actions"
+      ],
       "field_columns": {
-        "action": "action",
         "expires_at_micros": "expires_at_micros",
-        "issued_at_micros": "issued_at_micros",
-        "resource": "resource",
-        "revoked_at_micros": "revoked_at_micros"
+        "issuer_id": "issuer_id",
+        "issuer_kind": "issuer_kind",
+        "max_depth": "max_depth",
+        "not_before_micros": "not_before_micros",
+        "parent_id": "parent_id",
+        "policy_version": "policy_version",
+        "resource_id": "resource_id",
+        "resource_kind": "resource_kind",
+        "revoked_at_micros": "revoked_at_micros",
+        "subject_id": "subject_id",
+        "subject_kind": "subject_kind"
       },
       "fields": {
-        "action": "text",
         "expires_at_micros": "timestamp_micros",
-        "issued_at_micros": "timestamp_micros",
-        "resource": "text",
-        "revoked_at_micros": "timestamp_micros"
+        "issuer_id": "capsule_id",
+        "issuer_kind": "text",
+        "max_depth": "integer",
+        "not_before_micros": "timestamp_micros",
+        "parent_id": "capsule_id",
+        "policy_version": "text",
+        "resource_id": "text",
+        "resource_kind": "text",
+        "revoked_at_micros": "timestamp_micros",
+        "subject_id": "capsule_id",
+        "subject_kind": "text"
       },
       "kind": "core.capability_grant",
-      "relationships": {
-        "issuer": {
-          "on_delete": "restrict",
-          "required": true,
-          "target_kind": "core.user",
-          "target_table": "users"
-        },
-        "subject": {
-          "on_delete": "restrict",
-          "required": true,
-          "target_kind": "core.user",
-          "target_table": "users"
-        }
-      },
+      "relationships": {},
       "required_fields": [
-        "action",
-        "resource",
-        "issued_at_micros"
+        "subject_kind",
+        "subject_id",
+        "issuer_kind",
+        "issuer_id",
+        "actions",
+        "resource_kind",
+        "delegable_actions",
+        "max_depth",
+        "not_before_micros",
+        "policy_version"
       ],
       "table": "capability_grants",
       "unique_indexes": []
@@ -493,38 +504,49 @@
       "field_columns": {
         "epoch": "epoch",
         "expires_at_micros": "expires_at_micros",
+        "key_id": "key_id",
+        "legacy": "legacy",
         "not_before_micros": "not_before_micros",
         "public_key": "public_key",
         "purpose": "purpose",
-        "revoked_at_micros": "revoked_at_micros"
+        "retired_at_micros": "retired_at_micros",
+        "revoked_at_micros": "revoked_at_micros",
+        "subject_id": "subject_id",
+        "subject_kind": "subject_kind"
       },
       "fields": {
         "epoch": "integer",
         "expires_at_micros": "timestamp_micros",
+        "key_id": "text",
+        "legacy": "bool",
         "not_before_micros": "timestamp_micros",
         "public_key": "bytes",
         "purpose": "text",
-        "revoked_at_micros": "timestamp_micros"
+        "retired_at_micros": "timestamp_micros",
+        "revoked_at_micros": "timestamp_micros",
+        "subject_id": "capsule_id",
+        "subject_kind": "text"
       },
-      "kind": "core.node_key",
-      "relationships": {
-        "node": {
-          "on_delete": "cascade",
-          "required": true,
-          "target_kind": "core.node",
-          "target_table": "nodes"
-        }
-      },
+      "kind": "core.identity_key",
+      "relationships": {},
       "required_fields": [
+        "subject_kind",
+        "subject_id",
         "purpose",
         "epoch",
+        "key_id",
         "public_key",
-        "not_before_micros"
+        "not_before_micros",
+        "legacy"
       ],
-      "table": "node_keys",
+      "table": "identity_keys",
       "unique_indexes": [
         [
-          "node",
+          "key_id"
+        ],
+        [
+          "subject_kind",
+          "subject_id",
           "purpose",
           "epoch"
         ]

@@ -16,6 +16,9 @@ use std::sync::Mutex;
 use std::time::Duration;
 use thiserror::Error;
 
+mod kv;
+pub use kv::PostgresGuestKv;
+
 const PROVIDER_ID: &str = "postgres-guest-v1";
 const GUEST_SCHEMA: &str = "aseman_guest";
 const GUARD_SCHEMA: &str = "aseman_guard";
@@ -987,6 +990,39 @@ pub const LEGACY_KV_TABLE: &str = "_aseman_legacy_kv";
 /// validation rejects the reserved `_aseman_` prefix that guests may never create.
 const LEGACY_KV_TABLE_SQL: &str = "\"_aseman_legacy_kv\"";
 
+/// The reserved legacy KV table (`contracts/capsule/guest/legacy-kv-table.json`), created
+/// by the first import or the first gateway write, whichever comes first.
+fn legacy_kv_table_ddl() -> String {
+    format!(
+        "CREATE TABLE IF NOT EXISTS {GUEST_SCHEMA}.{table} (\
+                       _aseman_id UUID PRIMARY KEY, \
+                       _aseman_revision BIGINT NOT NULL CHECK (_aseman_revision > 0), \
+                       _aseman_created_at_micros BIGINT NOT NULL, \
+                       _aseman_updated_at_micros BIGINT NOT NULL, \
+                       _aseman_integrity BYTEA NOT NULL CHECK (octet_length(_aseman_integrity) = 32), \
+                       _aseman_tombstone BOOLEAN NOT NULL DEFAULT FALSE, \
+                       _aseman_capsule_cbor BYTEA NOT NULL, \
+                       namespace TEXT NOT NULL CONSTRAINT _aseman_legacy_kv_namespace_check \
+                       CHECK (namespace IN ('dbop', 'applet_db', 'json')), \
+                       key TEXT NOT NULL, \
+                       value TEXT NOT NULL, \
+                       UNIQUE (namespace, key))",
+        table = LEGACY_KV_TABLE_SQL
+    ) + &format!(
+        "; DO $$ BEGIN \
+           IF NOT EXISTS (SELECT 1 FROM pg_constraint \
+             WHERE conname = '_aseman_legacy_kv_namespace_check' \
+               AND conrelid = '{GUEST_SCHEMA}.{LEGACY_KV_TABLE_SQL}'::regclass \
+               AND pg_get_constraintdef(oid) LIKE '%json%') THEN \
+             ALTER TABLE {GUEST_SCHEMA}.{LEGACY_KV_TABLE_SQL} \
+               DROP CONSTRAINT IF EXISTS _aseman_legacy_kv_namespace_check, \
+               ADD CONSTRAINT _aseman_legacy_kv_namespace_check \
+                 CHECK (namespace IN ('dbop', 'applet_db', 'json')); \
+           END IF; \
+         END $$"
+    )
+}
+
 /// Outcome of importing legacy guest KV capsules into one creature database.
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
 pub struct LegacyKvImport {
@@ -1033,7 +1069,7 @@ impl GuestPoolRouter {
                 ))),
             };
             let namespace = text("namespace")?;
-            if !matches!(namespace.as_str(), "dbop" | "applet_db") || body.len() != 3 {
+            if !matches!(namespace.as_str(), "dbop" | "applet_db" | "json") || body.len() != 3 {
                 return Err(GuestPostgresError::Invalid(
                     "legacy KV capsule has an unreviewed shape".to_owned(),
                 ));
@@ -1051,21 +1087,7 @@ impl GuestPoolRouter {
         }
         self.with_transaction(binding, |transaction| {
             transaction
-                .batch_execute(&format!(
-                    "CREATE TABLE IF NOT EXISTS {GUEST_SCHEMA}.{table} (\
-                       _aseman_id UUID PRIMARY KEY, \
-                       _aseman_revision BIGINT NOT NULL CHECK (_aseman_revision > 0), \
-                       _aseman_created_at_micros BIGINT NOT NULL, \
-                       _aseman_updated_at_micros BIGINT NOT NULL, \
-                       _aseman_integrity BYTEA NOT NULL CHECK (octet_length(_aseman_integrity) = 32), \
-                       _aseman_tombstone BOOLEAN NOT NULL DEFAULT FALSE, \
-                       _aseman_capsule_cbor BYTEA NOT NULL, \
-                       namespace TEXT NOT NULL CHECK (namespace IN ('dbop', 'applet_db')), \
-                       key TEXT NOT NULL, \
-                       value TEXT NOT NULL, \
-                       UNIQUE (namespace, key))",
-                    table = LEGACY_KV_TABLE_SQL
-                ))
+                .batch_execute(&legacy_kv_table_ddl())
                 .map_err(database_error)?;
             let mut report = LegacyKvImport::default();
             for (capsule, namespace, key, value, canonical) in &rows {

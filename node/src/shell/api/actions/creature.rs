@@ -11,6 +11,7 @@ use std::collections::HashMap;
 use std::sync::Arc;
 
 use anyhow::{anyhow, Result};
+use aseman_ports::BlobStore;
 use base64::Engine;
 use chrono::Utc;
 use serde_json::{json, Map, Value};
@@ -919,22 +920,23 @@ fn storage_upload(app: Arc<dyn ICore>) -> Arc<dyn ISecureAction> {
                     c.to_string()
                 }
             };
-            let root = format!("{}/public-files", app_h.tools().storage().storage_root());
             let id = uuid::Uuid::new_v4().to_string();
-            let file = app_h.tools().file();
-            file.save_data_to_global_storage(&root, &data, &id, true)
+            let blobs = crate::drivers::blob_store::node_blobs(&*app_h.tools().storage());
+            let folder = crate::drivers::blob_store::PUBLIC_FILES;
+            blobs
+                .put_blob(&[folder, "/", &id].concat(), &data, &ctype, true)
                 .map_err(|e| anyhow!("storage write failed: {e}"))?;
             // Sidecars: content type (so the download round-trips it) + owner.
-            let _ = file.save_data_to_global_storage(
-                &root,
+            let _ = blobs.put_blob(
+                &[folder, "/", &id, ".type"].concat(),
                 ctype.as_bytes(),
-                &format!("{id}.type"),
+                "text/plain",
                 true,
             );
-            let _ = file.save_data_to_global_storage(
-                &root,
+            let _ = blobs.put_blob(
+                &[folder, "/", &id, ".owner"].concat(),
                 owner.as_bytes(),
-                &format!("{id}.owner"),
+                "text/plain",
                 true,
             );
             Ok(json!({ "ok": true, "id": id, "contentType": ctype }))

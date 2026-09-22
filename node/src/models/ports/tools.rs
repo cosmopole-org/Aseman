@@ -1,6 +1,5 @@
 use std::sync::Arc;
 
-use crate::models::ports::file::IFile;
 use crate::models::ports::network::INetwork;
 use crate::models::ports::ratelimit::IRateLimiter;
 use crate::models::ports::security::ISecurity;
@@ -14,7 +13,6 @@ pub trait ITools: Send + Sync {
     fn signaler(&self) -> Arc<dyn ISignaler>;
     fn storage(&self) -> Arc<dyn IStorage>;
     fn network(&self) -> Arc<dyn INetwork>;
-    fn file(&self) -> Arc<dyn IFile>;
     fn vmm(&self) -> Arc<dyn IVmm>;
     /// The shared, protocol-agnostic client-request rate limiter. Every
     /// client-facing transport consults this single instance so a client's

@@ -847,9 +847,7 @@
     {
       "guard_expression": "user_guard()",
       "handler": "node/src/shell/api/actions/program.rs::list_entity_vms",
-      "models": [
-        "Entity"
-      ],
+      "models": [],
       "path": "/machines/listEntityVms",
       "request_type": "RunProgramEntityInput",
       "routes_via_chain": false,
@@ -946,9 +944,7 @@
     {
       "guard_expression": "user_guard()",
       "handler": "node/src/shell/api/actions/program.rs::delete_program_entity",
-      "models": [
-        "Entity"
-      ],
+      "models": [],
       "path": "/programs/deleteEntity",
       "request_type": "RunProgramEntityInput",
       "routes_via_chain": false,
@@ -966,14 +962,11 @@
     {
       "guard_expression": "user_guard()",
       "handler": "node/src/shell/api/actions/program.rs::deploy",
-      "models": [
-        "Entity"
-      ],
+      "models": [],
       "path": "/programs/deploy",
       "request_type": "DeployInput",
       "routes_via_chain": false,
       "services": [
-        "file",
         "storage",
         "vmm"
       ],
@@ -988,17 +981,15 @@
     {
       "guard_expression": "user_guard()",
       "handler": "node/src/shell/api/actions/program.rs::download_entity",
-      "models": [
-        "Entity"
-      ],
+      "models": [],
       "path": "/programs/downloadEntity",
       "request_type": "DownloadEntityInput",
       "routes_via_chain": false,
-      "services": [],
-      "spawns_background_work": false,
-      "transaction_operations": [
-        "get_link"
+      "services": [
+        "storage"
       ],
+      "spawns_background_work": false,
+      "transaction_operations": [],
       "vmm_operations": []
     },
     {
@@ -1016,9 +1007,7 @@
     {
       "guard_expression": "user_guard()",
       "handler": "node/src/shell/api/actions/program.rs::run_program_entity",
-      "models": [
-        "Entity"
-      ],
+      "models": [],
       "path": "/programs/runEntity",
       "request_type": "RunProgramEntityInput",
       "routes_via_chain": false,
@@ -1036,9 +1025,7 @@
     {
       "guard_expression": "user_guard()",
       "handler": "node/src/shell/api/actions/program.rs::stop_program_entity",
-      "models": [
-        "Entity"
-      ],
+      "models": [],
       "path": "/programs/stopEntity",
       "request_type": "RunProgramEntityInput",
       "routes_via_chain": false,
@@ -1072,7 +1059,6 @@
       "request_type": "StorageUploadInput",
       "routes_via_chain": false,
       "services": [
-        "file",
         "storage"
       ],
       "spawns_background_work": false,

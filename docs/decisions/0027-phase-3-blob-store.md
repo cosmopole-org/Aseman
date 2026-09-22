@@ -3,7 +3,7 @@ status: DECISION
 owner: storage/migration
 source_of_truth: this ADR
 last_verified_commit: a3212a7
-verification: blob-store conformance on the local provider; file-backed family conformance on both adapters
+verification: blob-store conformance on the local provider (node test); entity family conformance on both adapters (node test, live PostgreSQL)
 ---
 
 # ADR 0027: File bytes stay in the node storage root behind a `BlobStore` port

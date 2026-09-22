@@ -1,0 +1,626 @@
+{
+  "description": "A404 normative decision fixtures over the A402 registry. Hand-written: every policy provider must reproduce each expected decision (ADR 0008). Facts are the relations the caller established. `granted` holds only for a grant chain (grant first, root last) that authorizes the request at 1800000000000; `grant_chain` is the expected explanation.",
+  "subjects": {
+    "user": "user:0190f1a2-0000-7000-8000-00000000a001",
+    "creature": "creature:0190f1a2-0000-7000-8000-00000000a002",
+    "workload": "workload:0190f1a2-0000-7000-8000-00000000a003",
+    "node": "node:0190f1a2-0000-7000-8000-00000000a004",
+    "module_publisher": "module_publisher:0190f1a2-0000-7000-8000-00000000a005"
+  },
+  "cases": [
+    {
+      "name": "anonymous diagnostics are public",
+      "subject": null,
+      "action": "node.diagnostics.read",
+      "resource": "node",
+      "facts": [],
+      "allowed": true,
+      "reason": "allowed",
+      "matched": "public"
+    },
+    {
+      "name": "anonymous creature reads need authentication",
+      "subject": null,
+      "action": "creature.read",
+      "resource": "creature",
+      "facts": [],
+      "allowed": false,
+      "reason": "authentication_required",
+      "matched": null
+    },
+    {
+      "name": "anonymous telemetry needs authentication",
+      "subject": null,
+      "action": "node.telemetry.read",
+      "resource": "node",
+      "facts": [],
+      "allowed": false,
+      "reason": "authentication_required",
+      "matched": null
+    },
+    {
+      "name": "anonymous registration stays open as in legacy",
+      "subject": null,
+      "action": "creature.create",
+      "resource": "creature",
+      "facts": [],
+      "allowed": true,
+      "reason": "allowed",
+      "matched": "public"
+    },
+    {
+      "name": "a member with signal permission signals",
+      "subject": "user",
+      "action": "store.signal",
+      "resource": "store",
+      "facts": [
+        "store_signal"
+      ],
+      "allowed": true,
+      "reason": "allowed",
+      "matched": "store_signal"
+    },
+    {
+      "name": "read permission does not signal",
+      "subject": "user",
+      "action": "store.signal",
+      "resource": "store",
+      "facts": [
+        "store_read"
+      ],
+      "allowed": false,
+      "reason": "condition_not_met",
+      "matched": null
+    },
+    {
+      "name": "the store owner changes membership without manage permission",
+      "subject": "user",
+      "action": "store.access.write",
+      "resource": "store",
+      "facts": [
+        "owner"
+      ],
+      "allowed": true,
+      "reason": "allowed",
+      "matched": "owner"
+    },
+    {
+      "name": "unknown actions deny",
+      "subject": "user",
+      "action": "store.teleport",
+      "resource": "store",
+      "facts": [
+        "owner"
+      ],
+      "allowed": false,
+      "reason": "unknown_action",
+      "matched": null
+    },
+    {
+      "name": "the resource type must match the action",
+      "subject": "user",
+      "action": "store.signal",
+      "resource": "program",
+      "facts": [
+        "store_signal"
+      ],
+      "allowed": false,
+      "reason": "resource_mismatch",
+      "matched": null
+    },
+    {
+      "name": "nodes are not store principals",
+      "subject": "node",
+      "action": "store.signal",
+      "resource": "store",
+      "facts": [
+        "store_signal"
+      ],
+      "allowed": false,
+      "reason": "subject_not_allowed",
+      "matched": null
+    },
+    {
+      "name": "raw node keys are forbidden whatever the facts",
+      "subject": "workload",
+      "action": "raw_state.write",
+      "resource": "raw_state",
+      "facts": [
+        "owner",
+        "same_creature",
+        "node_admin"
+      ],
+      "allowed": false,
+      "reason": "forbidden",
+      "matched": null
+    },
+    {
+      "name": "custodial email login is forbidden",
+      "subject": "user",
+      "action": "identity.session.login_by_email",
+      "resource": "session",
+      "facts": [
+        "self"
+      ],
+      "allowed": false,
+      "reason": "forbidden",
+      "matched": null
+    },
+    {
+      "name": "minting needs the node administrator",
+      "subject": "user",
+      "action": "finance.mint",
+      "resource": "account",
+      "facts": [
+        "node_admin"
+      ],
+      "allowed": true,
+      "reason": "allowed",
+      "matched": "node_admin"
+    },
+    {
+      "name": "minting is denied to everyone else",
+      "subject": "user",
+      "action": "finance.mint",
+      "resource": "account",
+      "facts": [
+        "owner",
+        "self"
+      ],
+      "allowed": false,
+      "reason": "condition_not_met",
+      "matched": null
+    },
+    {
+      "name": "a creature starts its own workload",
+      "subject": "creature",
+      "action": "workload.start",
+      "resource": "workload",
+      "facts": [
+        "owner"
+      ],
+      "allowed": true,
+      "reason": "allowed",
+      "matched": "owner"
+    },
+    {
+      "name": "a stranger cannot start a workload",
+      "subject": "user",
+      "action": "workload.start",
+      "resource": "workload",
+      "facts": [],
+      "allowed": false,
+      "reason": "condition_not_met",
+      "matched": null
+    },
+    {
+      "name": "network egress is denied without a grant",
+      "subject": "workload",
+      "action": "network.egress",
+      "resource": "network",
+      "facts": [
+        "same_creature",
+        "owner"
+      ],
+      "allowed": false,
+      "reason": "condition_not_met",
+      "matched": null
+    },
+    {
+      "name": "a caller cannot assert a grant as a fact",
+      "subject": "workload",
+      "action": "network.egress",
+      "resource": "network",
+      "facts": [
+        "granted"
+      ],
+      "allowed": false,
+      "reason": "condition_not_met",
+      "matched": null
+    },
+    {
+      "name": "a grantee reads a granted secret",
+      "subject": "workload",
+      "action": "secret.read",
+      "resource": "secret",
+      "facts": [
+        "secret_grantee"
+      ],
+      "allowed": true,
+      "reason": "allowed",
+      "matched": "secret_grantee"
+    },
+    {
+      "name": "secrets are not readable by default",
+      "subject": "user",
+      "action": "secret.read",
+      "resource": "secret",
+      "facts": [],
+      "allowed": false,
+      "reason": "condition_not_met",
+      "matched": null
+    },
+    {
+      "name": "module publishers do not install modules",
+      "subject": "module_publisher",
+      "action": "module.install",
+      "resource": "module",
+      "facts": [
+        "node_admin"
+      ],
+      "allowed": false,
+      "reason": "subject_not_allowed",
+      "matched": null
+    },
+    {
+      "name": "a workload reaches only its own guest database",
+      "subject": "workload",
+      "action": "guest_data.access",
+      "resource": "guest_data",
+      "facts": [
+        "same_creature"
+      ],
+      "allowed": true,
+      "reason": "allowed",
+      "matched": "same_creature"
+    },
+    {
+      "name": "users never reach guest databases directly",
+      "subject": "user",
+      "action": "guest_data.access",
+      "resource": "guest_data",
+      "facts": [
+        "owner"
+      ],
+      "allowed": false,
+      "reason": "subject_not_allowed",
+      "matched": null
+    },
+    {
+      "name": "the first holding condition is the explanation",
+      "subject": "creature",
+      "action": "creature.update",
+      "resource": "creature",
+      "facts": [
+        "owner",
+        "self"
+      ],
+      "allowed": true,
+      "reason": "allowed",
+      "matched": "self"
+    },
+    {
+      "subject": "workload",
+      "action": "network.egress",
+      "resource": "network",
+      "resource_id": "api.example",
+      "facts": [],
+      "name": "a live delegated grant allows egress",
+      "grants": [
+        [
+          {
+            "id": "00000000-0000-0000-0000-00000000a0a2",
+            "subject": "workload",
+            "issuer": "user",
+            "actions": [
+              "network.egress"
+            ],
+            "resource": {
+              "scope": "exact",
+              "kind": "network",
+              "id": "api.example"
+            },
+            "delegable_actions": [],
+            "max_depth": 0,
+            "parent": "00000000-0000-0000-0000-00000000a0a1",
+            "not_before_millis": 1799999990000,
+            "expires_at_millis": 1800000060000,
+            "revoked_at_millis": null
+          },
+          {
+            "id": "00000000-0000-0000-0000-00000000a0a1",
+            "subject": "user",
+            "issuer": "user",
+            "actions": [
+              "network.egress"
+            ],
+            "resource": {
+              "scope": "exact",
+              "kind": "network",
+              "id": "api.example"
+            },
+            "delegable_actions": [
+              "network.egress"
+            ],
+            "max_depth": 1,
+            "parent": null,
+            "not_before_millis": 1799999990000,
+            "expires_at_millis": 1800000600000,
+            "revoked_at_millis": null
+          }
+        ]
+      ],
+      "allowed": true,
+      "reason": "allowed",
+      "matched": "granted",
+      "grant_chain": [
+        "00000000-0000-0000-0000-00000000a0a2",
+        "00000000-0000-0000-0000-00000000a0a1"
+      ]
+    },
+    {
+      "subject": "workload",
+      "action": "network.egress",
+      "resource": "network",
+      "resource_id": "api.example",
+      "facts": [],
+      "name": "a revoked root voids its delegate",
+      "grants": [
+        [
+          {
+            "id": "00000000-0000-0000-0000-00000000a0a2",
+            "subject": "workload",
+            "issuer": "user",
+            "actions": [
+              "network.egress"
+            ],
+            "resource": {
+              "scope": "exact",
+              "kind": "network",
+              "id": "api.example"
+            },
+            "delegable_actions": [],
+            "max_depth": 0,
+            "parent": "00000000-0000-0000-0000-00000000a0a1",
+            "not_before_millis": 1799999990000,
+            "expires_at_millis": 1800000060000,
+            "revoked_at_millis": null
+          },
+          {
+            "id": "00000000-0000-0000-0000-00000000a0a1",
+            "subject": "user",
+            "issuer": "user",
+            "actions": [
+              "network.egress"
+            ],
+            "resource": {
+              "scope": "exact",
+              "kind": "network",
+              "id": "api.example"
+            },
+            "delegable_actions": [
+              "network.egress"
+            ],
+            "max_depth": 1,
+            "parent": null,
+            "not_before_millis": 1799999990000,
+            "expires_at_millis": 1800000600000,
+            "revoked_at_millis": 1799999999000
+          }
+        ]
+      ],
+      "allowed": false,
+      "reason": "condition_not_met",
+      "matched": null
+    },
+    {
+      "subject": "workload",
+      "action": "network.egress",
+      "resource": "network",
+      "resource_id": "api.example",
+      "facts": [],
+      "name": "an expired grant allows nothing",
+      "grants": [
+        [
+          {
+            "id": "00000000-0000-0000-0000-00000000a0a2",
+            "subject": "workload",
+            "issuer": "user",
+            "actions": [
+              "network.egress"
+            ],
+            "resource": {
+              "scope": "exact",
+              "kind": "network",
+              "id": "api.example"
+            },
+            "delegable_actions": [],
+            "max_depth": 0,
+            "parent": "00000000-0000-0000-0000-00000000a0a1",
+            "not_before_millis": 1799999990000,
+            "expires_at_millis": 1800000000000,
+            "revoked_at_millis": null
+          },
+          {
+            "id": "00000000-0000-0000-0000-00000000a0a1",
+            "subject": "user",
+            "issuer": "user",
+            "actions": [
+              "network.egress"
+            ],
+            "resource": {
+              "scope": "exact",
+              "kind": "network",
+              "id": "api.example"
+            },
+            "delegable_actions": [
+              "network.egress"
+            ],
+            "max_depth": 1,
+            "parent": null,
+            "not_before_millis": 1799999990000,
+            "expires_at_millis": 1800000600000,
+            "revoked_at_millis": null
+          }
+        ]
+      ],
+      "allowed": false,
+      "reason": "condition_not_met",
+      "matched": null
+    },
+    {
+      "subject": "workload",
+      "action": "network.egress",
+      "resource": "network",
+      "resource_id": "evil.example",
+      "facts": [],
+      "name": "a grant covers only its resource",
+      "grants": [
+        [
+          {
+            "id": "00000000-0000-0000-0000-00000000a0a2",
+            "subject": "workload",
+            "issuer": "user",
+            "actions": [
+              "network.egress"
+            ],
+            "resource": {
+              "scope": "exact",
+              "kind": "network",
+              "id": "api.example"
+            },
+            "delegable_actions": [],
+            "max_depth": 0,
+            "parent": "00000000-0000-0000-0000-00000000a0a1",
+            "not_before_millis": 1799999990000,
+            "expires_at_millis": 1800000060000,
+            "revoked_at_millis": null
+          },
+          {
+            "id": "00000000-0000-0000-0000-00000000a0a1",
+            "subject": "user",
+            "issuer": "user",
+            "actions": [
+              "network.egress"
+            ],
+            "resource": {
+              "scope": "exact",
+              "kind": "network",
+              "id": "api.example"
+            },
+            "delegable_actions": [
+              "network.egress"
+            ],
+            "max_depth": 1,
+            "parent": null,
+            "not_before_millis": 1799999990000,
+            "expires_at_millis": 1800000600000,
+            "revoked_at_millis": null
+          }
+        ]
+      ],
+      "allowed": false,
+      "reason": "condition_not_met",
+      "matched": null
+    },
+    {
+      "subject": "workload",
+      "action": "network.egress",
+      "resource": "network",
+      "resource_id": "api.example",
+      "facts": [],
+      "name": "a chain widening its parent allows nothing",
+      "grants": [
+        [
+          {
+            "id": "00000000-0000-0000-0000-00000000a0a2",
+            "subject": "workload",
+            "issuer": "user",
+            "actions": [
+              "network.egress"
+            ],
+            "resource": {
+              "scope": "any_of_kind",
+              "kind": "network"
+            },
+            "delegable_actions": [],
+            "max_depth": 0,
+            "parent": "00000000-0000-0000-0000-00000000a0a1",
+            "not_before_millis": 1799999990000,
+            "expires_at_millis": 1800000060000,
+            "revoked_at_millis": null
+          },
+          {
+            "id": "00000000-0000-0000-0000-00000000a0a1",
+            "subject": "user",
+            "issuer": "user",
+            "actions": [
+              "network.egress"
+            ],
+            "resource": {
+              "scope": "exact",
+              "kind": "network",
+              "id": "api.example"
+            },
+            "delegable_actions": [
+              "network.egress"
+            ],
+            "max_depth": 1,
+            "parent": null,
+            "not_before_millis": 1799999990000,
+            "expires_at_millis": 1800000600000,
+            "revoked_at_millis": null
+          }
+        ]
+      ],
+      "allowed": false,
+      "reason": "condition_not_met",
+      "matched": null
+    },
+    {
+      "subject": "creature",
+      "action": "network.egress",
+      "resource": "network",
+      "resource_id": "api.example",
+      "facts": [],
+      "name": "another subject's grant allows nothing",
+      "grants": [
+        [
+          {
+            "id": "00000000-0000-0000-0000-00000000a0a2",
+            "subject": "workload",
+            "issuer": "user",
+            "actions": [
+              "network.egress"
+            ],
+            "resource": {
+              "scope": "exact",
+              "kind": "network",
+              "id": "api.example"
+            },
+            "delegable_actions": [],
+            "max_depth": 0,
+            "parent": "00000000-0000-0000-0000-00000000a0a1",
+            "not_before_millis": 1799999990000,
+            "expires_at_millis": 1800000060000,
+            "revoked_at_millis": null
+          },
+          {
+            "id": "00000000-0000-0000-0000-00000000a0a1",
+            "subject": "user",
+            "issuer": "user",
+            "actions": [
+              "network.egress"
+            ],
+            "resource": {
+              "scope": "exact",
+              "kind": "network",
+              "id": "api.example"
+            },
+            "delegable_actions": [
+              "network.egress"
+            ],
+            "max_depth": 1,
+            "parent": null,
+            "not_before_millis": 1799999990000,
+            "expires_at_millis": 1800000600000,
+            "revoked_at_millis": null
+          }
+        ]
+      ],
+      "allowed": false,
+      "reason": "subject_not_allowed",
+      "matched": null
+    }
+  ]
+}

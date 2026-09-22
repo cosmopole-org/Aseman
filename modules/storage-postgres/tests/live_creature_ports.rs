@@ -238,7 +238,20 @@ fn live_creature_ports_pass_conformance_on_capsules() {
     )
     .unwrap();
     aseman_ports::conformance::program_alarms(&programs, "12@conformance", "store-1");
+    let entities = aseman_capsule_repositories::entity::CapsuleEntityPorts {
+        repository: &repository,
+    };
+    aseman_ports::conformance::entity_directory(&entities, "12@conformance");
     aseman_ports::conformance::vm_resource_stores(&programs, ["1@conformance", "7@conformance"]);
+    aseman_ports::VmResourceStores::put_resource_store(
+        &programs,
+        "vs-conformance",
+        "s",
+        "1@conformance",
+        "{}",
+    )
+    .unwrap();
+    aseman_ports::conformance::vm_resource_entities(&entities, "vs-conformance");
 
     drop(repository);
     admin

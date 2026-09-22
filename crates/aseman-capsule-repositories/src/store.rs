@@ -159,6 +159,7 @@ const STORE_METADATA: DocumentFamily = DocumentFamily {
     subject_relationship: "store",
     subject_kind: "core.store",
     subject_family: "Store",
+    root: "metadata",
 };
 
 impl StoreDirectory for CapsuleStorePorts<'_> {

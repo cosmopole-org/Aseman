@@ -10,6 +10,7 @@ verification: python3 scripts/generate_phase1_contracts.py --check
 
 | Domain type/state machine | Owning crate |
 |---|---|
+| `BindingStatus` | `aseman-domain` |
 | `CreatureDatabaseBinding` | `aseman-domain` |
 | `DesiredWorkload` | `aseman-domain` |
 | `DesiredWorkloadState` | `aseman-domain` |

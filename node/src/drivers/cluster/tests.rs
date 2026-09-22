@@ -110,75 +110,6 @@ impl IStorage for StubStorage {
     }
 }
 
-/// Filesystem-backed stub of the parts of `IFile` the cluster applier uses.
-struct StubFile;
-
-impl crate::models::ports::file::IFile for StubFile {
-    fn check_file_from_storage(&self, _: &str, _: &str, _: &str) -> bool {
-        false
-    }
-    fn save_file_to_storage(
-        &self,
-        _: &str,
-        _: &crate::compat::multipart::FileHeader,
-        _: &str,
-        _: &str,
-    ) -> Result<()> {
-        unimplemented!()
-    }
-    fn save_data_to_storage(&self, _: &str, _: &[u8], _: &str, _: &str, _: &[bool]) -> Result<()> {
-        unimplemented!()
-    }
-    fn save_tar_file_item_to_storage(
-        &self,
-        _: &str,
-        _: &mut dyn std::io::Read,
-        _: &str,
-        _: &str,
-    ) -> Result<()> {
-        unimplemented!()
-    }
-    fn read_file_from_storage(&self, _: &str, _: &str, _: &str) -> Result<Vec<u8>> {
-        unimplemented!()
-    }
-    fn check_file_from_global_storage(&self, _: &str, _: &str) -> bool {
-        false
-    }
-    fn read_file_from_global_storage(&self, _: &str, _: &str) -> Result<String> {
-        unimplemented!()
-    }
-    fn save_file_to_global_storage(
-        &self,
-        _: &str,
-        _: &crate::compat::multipart::FileHeader,
-        _: &str,
-        _: bool,
-    ) -> Result<()> {
-        unimplemented!()
-    }
-    // The one call the deploy applier makes: `storage_root` here is the
-    // target folder (same contract as the production driver's deploy path).
-    fn save_data_to_global_storage(
-        &self,
-        folder: &str,
-        data: &[u8],
-        key: &str,
-        _overwrite: bool,
-    ) -> Result<()> {
-        std::fs::create_dir_all(folder)?;
-        std::fs::write(PathBuf::from(folder).join(key), data)?;
-        Ok(())
-    }
-    fn delete_file_from_global_storage(&self, _: &str, _: &str, _: bool) -> Result<()> {
-        unimplemented!()
-    }
-    fn read_file_by_path(&self, path: &str) -> Result<Vec<u8>> {
-        let mut buf = Vec::new();
-        std::fs::File::open(path)?.read_to_end(&mut buf)?;
-        Ok(buf)
-    }
-}
-
 /// Records `assign` / `build_vm_image` calls; everything else is unreachable
 /// from the cluster paths under test.
 #[derive(Default)]
@@ -312,7 +243,6 @@ impl crate::models::ports::vmm::IVmm for StubVmm {
 
 struct StubTools {
     storage: Arc<dyn IStorage>,
-    file: Arc<dyn crate::models::ports::file::IFile>,
     vmm: Arc<StubVmm>,
 }
 
@@ -328,9 +258,6 @@ impl ITools for StubTools {
     }
     fn network(&self) -> Arc<dyn crate::models::ports::network::INetwork> {
         unimplemented!("network unused by cluster tests")
-    }
-    fn file(&self) -> Arc<dyn crate::models::ports::file::IFile> {
-        self.file.clone()
     }
     fn vmm(&self) -> Arc<dyn crate::models::ports::vmm::IVmm> {
         self.vmm.clone()
@@ -356,7 +283,6 @@ impl StubCore {
         let vmm = Arc::new(StubVmm::default());
         let tools: Arc<dyn ITools> = Arc::new(StubTools {
             storage: StubStorage::new_with_root(storage.clone(), dir),
-            file: Arc::new(StubFile),
             vmm: vmm.clone(),
         });
         (

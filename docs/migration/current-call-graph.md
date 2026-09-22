@@ -98,13 +98,13 @@ Registered actions: 77; distinct guard expressions: 5.
 | `/programs/create` | `node/src/shell/api/actions/program.rs::create_program` | `user_guard()` | — | — | — |
 | `/programs/delete` | `node/src/shell/api/actions/program.rs::delete_program` | `user_guard()` | — | — | — |
 | `/programs/deleteEntity` | `node/src/shell/api/actions/program.rs::delete_program_entity` | `user_guard()` | `del_json`, `del_key`, `get_link` | — | `delete_vm_instance` |
-| `/programs/deploy` | `node/src/shell/api/actions/program.rs::deploy` | `user_guard()` | `put_link` | `file`, `storage`, `vmm` | `build_vm_image` |
-| `/programs/downloadEntity` | `node/src/shell/api/actions/program.rs::download_entity` | `user_guard()` | `get_link` | — | — |
+| `/programs/deploy` | `node/src/shell/api/actions/program.rs::deploy` | `user_guard()` | `put_link` | `storage`, `vmm` | `build_vm_image` |
+| `/programs/downloadEntity` | `node/src/shell/api/actions/program.rs::download_entity` | `user_guard()` | — | `storage` | — |
 | `/programs/list` | `node/src/shell/api/actions/program.rs::list_programs` | `user_guard()` | — | — | — |
 | `/programs/runEntity` | `node/src/shell/api/actions/program.rs::run_program_entity` | `user_guard()` | `get_link`, `put_json`, `put_link` | `vmm` | — |
 | `/programs/stopEntity` | `node/src/shell/api/actions/program.rs::stop_program_entity` | `user_guard()` | `del_json`, `del_key` | `vmm` | — |
 | `/programs/update` | `node/src/shell/api/actions/program.rs::update_program` | `user_guard()` | — | — | — |
-| `/storage/upload` | `node/src/shell/api/actions/creature.rs::storage_upload` | `user_guard()` | — | `file`, `storage` | — |
+| `/storage/upload` | `node/src/shell/api/actions/creature.rs::storage_upload` | `user_guard()` | — | `storage` | — |
 | `/stores/getAccess` | `node/src/shell/api/actions/store.rs::get_access` | `store_guard()` | — | — | — |
 | `/stores/history` | `node/src/shell/api/actions/store.rs::history` | `store_guard()` | — | `storage` | — |
 | `/stores/setAccess` | `node/src/shell/api/actions/store.rs::set_access` | `store_guard()` | — | — | — |

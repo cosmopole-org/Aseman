@@ -25,7 +25,9 @@ pub struct AsemanConfig {
     pub rate_limit: RateLimitConfig,
     pub legacy_adapters: LegacyAdapterConfig,
     pub runtime: RuntimeConfig,
-    pub vmm_endpoint: String,
+    /// The VMM the node commands over A501; `None` keeps the embedded VMM until the
+    /// P5-03 extraction completes.
+    pub vmm: Option<VmmClientConfig>,
     pub database_url_secret: Option<String>,
     pub core_storage: CoreStorageConfig,
     pub legacy_aliases_used: Vec<String>,
@@ -33,10 +35,23 @@ pub struct AsemanConfig {
 
 /// Which provider is authoritative for the core port families (ADR 0026), and the
 /// binding generation its writes are fenced at (A309).
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub struct CoreStorageConfig {
     pub provider: CoreStorageProvider,
     pub binding_generation: u64,
+    /// The trusted guest proxy (A306/A405), required on PostgreSQL: guest data is
+    /// served from each creature's own database once the node runs there.
+    pub guest_proxy: Option<GuestProxyConfig>,
+}
+
+/// The guest proxy login that assumes creature roles (A306).
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct GuestProxyConfig {
+    /// A secret file holding the proxy's connection URL.
+    pub url_secret: String,
+    pub role: String,
+    pub max_pools: usize,
+    pub max_pool_size: u32,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -591,13 +606,126 @@ impl AsemanConfig {
                 user_profile_dir: nonempty(&values, "ASEMAN_LEGACY_USERPROFILE"),
             },
             runtime: RuntimeConfig::from_canonical(&values)?,
-            vmm_endpoint: values
-                .get("ASEMAN_VMM_ENDPOINT")
-                .cloned()
-                .unwrap_or_else(|| "http://127.0.0.1:8081".to_owned()),
+            vmm: VmmClientConfig::from_canonical(&values)?,
             database_url_secret: values.get("ASEMAN_DATABASE_URL_SECRET").cloned(),
             core_storage: CoreStorageConfig::from_canonical(&values)?,
             legacy_aliases_used,
+        })
+    }
+}
+
+/// How the node reaches its VMM (A501): mutual TLS only.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct VmmClientConfig {
+    /// `https://…` without a trailing slash.
+    pub endpoint: String,
+    /// A PEM file of the roots the VMM's server certificate chains to.
+    pub server_ca: String,
+    /// A secret file holding this node's client certificate chain and private key.
+    pub identity_secret: String,
+    /// How long one VMM request may take.
+    pub deadline_millis: u64,
+}
+
+impl VmmClientConfig {
+    fn from_canonical(values: &BTreeMap<String, String>) -> Result<Option<Self>, ConfigError> {
+        let Some(endpoint) = nonempty(values, "ASEMAN_VMM_ENDPOINT") else {
+            return Ok(None);
+        };
+        if !endpoint.starts_with("https://") {
+            return Err(ConfigError::Invalid {
+                key: "ASEMAN_VMM_ENDPOINT",
+                reason: "the VMM is reached over https with mutual TLS only",
+            });
+        }
+        Ok(Some(Self {
+            endpoint: endpoint.trim_end_matches('/').to_owned(),
+            server_ca: required(values, "ASEMAN_VMM_SERVER_CA")?,
+            identity_secret: required(values, "ASEMAN_VMM_CLIENT_IDENTITY_SECRET")?,
+            deadline_millis: parse_or(values, "ASEMAN_VMM_DEADLINE_MILLIS", 30_000)?,
+        }))
+    }
+}
+
+/// The `aseman-vmm` service (plan 04, ADR 0029).
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct VmmServiceConfig {
+    /// The mutual-TLS A501 listener.
+    pub listen: String,
+    /// An optional plain listener serving only `/health/*`.
+    pub health_listen: Option<String>,
+    /// PEM file: the server certificate chain.
+    pub tls_certificate: String,
+    /// Secret file: the server private key (PEM).
+    pub tls_key_secret: String,
+    /// PEM file: the roots client certificates must chain to.
+    pub client_ca: String,
+    /// Admitted clients: node identity to the SHA-256 of its leaf certificate.
+    pub clients: BTreeMap<String, [u8; 32]>,
+    /// Secret file: the VMM database URL.
+    pub database_url_secret: String,
+    pub database_pool_size: u32,
+    /// The A504 backend endpoint.
+    pub backend_endpoint: String,
+    pub max_request_bytes: usize,
+    /// How often the executor, observer, and reconciler run.
+    pub reconcile_interval_millis: u64,
+}
+
+impl VmmServiceConfig {
+    /// Read the service configuration from the process environment.
+    ///
+    /// # Errors
+    ///
+    /// Missing or invalid keys.
+    pub fn from_process() -> Result<Self, ConfigError> {
+        Self::from_map(&std::env::vars().collect())
+    }
+
+    /// # Errors
+    ///
+    /// Missing or invalid keys.
+    pub fn from_map(values: &BTreeMap<String, String>) -> Result<Self, ConfigError> {
+        let clients = required(values, "ASEMAN_VMM_CLIENTS")?
+            .split(',')
+            .map(|entry| {
+                let invalid = ConfigError::Invalid {
+                    key: "ASEMAN_VMM_CLIENTS",
+                    reason: "expected node=sha256hex entries separated by commas",
+                };
+                let (node, fingerprint) = entry.trim().split_once('=').ok_or(invalid.clone())?;
+                let bytes: Vec<u8> = (0..fingerprint.len())
+                    .step_by(2)
+                    .map(|index| {
+                        fingerprint
+                            .get(index..index + 2)
+                            .and_then(|pair| u8::from_str_radix(pair, 16).ok())
+                    })
+                    .collect::<Option<_>>()
+                    .ok_or(invalid.clone())?;
+                let fingerprint: [u8; 32] = bytes.try_into().map_err(|_| invalid.clone())?;
+                if node.trim().is_empty() {
+                    return Err(invalid);
+                }
+                Ok((node.trim().to_owned(), fingerprint))
+            })
+            .collect::<Result<BTreeMap<_, _>, _>>()?;
+        Ok(Self {
+            listen: value_or(values, "ASEMAN_VMM_LISTEN", "0.0.0.0:8443"),
+            health_listen: nonempty(values, "ASEMAN_VMM_HEALTH_LISTEN"),
+            tls_certificate: required(values, "ASEMAN_VMM_TLS_CERTIFICATE")?,
+            tls_key_secret: required(values, "ASEMAN_VMM_TLS_KEY_SECRET")?,
+            client_ca: required(values, "ASEMAN_VMM_CLIENT_CA")?,
+            clients,
+            database_url_secret: required(values, "ASEMAN_VMM_DATABASE_URL_SECRET")?,
+            database_pool_size: parse_or(values, "ASEMAN_VMM_DATABASE_POOL_SIZE", 8)?,
+            backend_endpoint: required(values, "ASEMAN_VMM_BACKEND_ENDPOINT")?,
+            max_request_bytes: parse_or(values, "ASEMAN_VMM_MAX_REQUEST_BYTES", 8 * 1024 * 1024)?,
+            reconcile_interval_millis: parse_or(
+                values,
+                "ASEMAN_VMM_RECONCILE_INTERVAL_MILLIS",
+                1_000,
+            )?,
         })
     }
 }
@@ -624,9 +752,20 @@ impl CoreStorageConfig {
         {
             return Err(ConfigError::Missing("ASEMAN_DATABASE_URL_SECRET"));
         }
+        let guest_proxy = if provider == CoreStorageProvider::Postgres {
+            Some(GuestProxyConfig {
+                url_secret: required(values, "ASEMAN_GUEST_PROXY_URL_SECRET")?,
+                role: required(values, "ASEMAN_GUEST_PROXY_ROLE")?,
+                max_pools: parse_or(values, "ASEMAN_GUEST_PROXY_MAX_POOLS", 64)?,
+                max_pool_size: parse_or(values, "ASEMAN_GUEST_PROXY_POOL_SIZE", 4)?,
+            })
+        } else {
+            None
+        };
         Ok(Self {
             provider,
             binding_generation: parse_or(values, "ASEMAN_CORE_BINDING_GENERATION", 0)?,
+            guest_proxy,
         })
     }
 }
@@ -831,6 +970,7 @@ mod tests {
             CoreStorageConfig {
                 provider: CoreStorageProvider::Legacy,
                 binding_generation: 0,
+                guest_proxy: None,
             }
         );
         let mut values = base();
@@ -844,7 +984,29 @@ mod tests {
             "/run/secrets/database-url".into(),
         );
         values.insert("ASEMAN_CORE_BINDING_GENERATION".into(), "7".into());
+        // PostgreSQL also needs the guest proxy that serves creature databases.
+        assert_eq!(
+            AsemanConfig::from_map(&values),
+            Err(ConfigError::Missing("ASEMAN_GUEST_PROXY_URL_SECRET"))
+        );
+        values.insert(
+            "ASEMAN_GUEST_PROXY_URL_SECRET".into(),
+            "/run/secrets/guest-proxy-url".into(),
+        );
+        values.insert(
+            "ASEMAN_GUEST_PROXY_ROLE".into(),
+            "aseman_guest_proxy".into(),
+        );
         let config = AsemanConfig::from_map(&values).unwrap();
+        assert_eq!(
+            config.core_storage.guest_proxy,
+            Some(GuestProxyConfig {
+                url_secret: "/run/secrets/guest-proxy-url".to_owned(),
+                role: "aseman_guest_proxy".to_owned(),
+                max_pools: 64,
+                max_pool_size: 4,
+            })
+        );
         assert_eq!(config.core_storage.provider, CoreStorageProvider::Postgres);
         assert_eq!(config.core_storage.binding_generation, 7);
         values.insert("ASEMAN_CORE_STORAGE_PROVIDER".into(), "sqlite".into());
@@ -935,5 +1097,91 @@ mod tests {
         assert_eq!(read_secret_file(&secret, 64).unwrap(), "postgres://opaque");
         assert!(read_secret_file(&secret, 4).is_err());
         fs::remove_dir_all(root).unwrap();
+    }
+
+    #[test]
+    fn the_vmm_is_reached_over_mutual_tls_only() {
+        let mut values = BTreeMap::from([
+            ("ASEMAN_NODE_ID".to_owned(), "node-1".to_owned()),
+            (
+                "ASEMAN_NODE_PRIVATE_KEY_SECRET".to_owned(),
+                "/run/secrets/key".to_owned(),
+            ),
+        ]);
+        assert_eq!(AsemanConfig::from_map(&values).unwrap().vmm, None);
+        values.insert(
+            "ASEMAN_VMM_ENDPOINT".to_owned(),
+            "http://vmm:8443".to_owned(),
+        );
+        assert!(matches!(
+            AsemanConfig::from_map(&values),
+            Err(ConfigError::Invalid {
+                key: "ASEMAN_VMM_ENDPOINT",
+                ..
+            })
+        ));
+        values.insert(
+            "ASEMAN_VMM_ENDPOINT".to_owned(),
+            "https://vmm:8443/".to_owned(),
+        );
+        assert_eq!(
+            AsemanConfig::from_map(&values),
+            Err(ConfigError::Missing("ASEMAN_VMM_SERVER_CA"))
+        );
+        values.insert(
+            "ASEMAN_VMM_SERVER_CA".to_owned(),
+            "/etc/aseman/vmm-ca.pem".to_owned(),
+        );
+        values.insert(
+            "ASEMAN_VMM_CLIENT_IDENTITY_SECRET".to_owned(),
+            "/run/secrets/vmm-client".to_owned(),
+        );
+        assert_eq!(
+            AsemanConfig::from_map(&values).unwrap().vmm,
+            Some(VmmClientConfig {
+                endpoint: "https://vmm:8443".to_owned(),
+                server_ca: "/etc/aseman/vmm-ca.pem".to_owned(),
+                identity_secret: "/run/secrets/vmm-client".to_owned(),
+                deadline_millis: 30_000,
+            })
+        );
+    }
+
+    #[test]
+    fn the_vmm_service_admits_listed_client_fingerprints() {
+        let fingerprint = "ab".repeat(32);
+        let mut values = BTreeMap::from([
+            (
+                "ASEMAN_VMM_TLS_CERTIFICATE".to_owned(),
+                "/etc/vmm/cert.pem".to_owned(),
+            ),
+            (
+                "ASEMAN_VMM_TLS_KEY_SECRET".to_owned(),
+                "/run/secrets/vmm-key".to_owned(),
+            ),
+            (
+                "ASEMAN_VMM_CLIENT_CA".to_owned(),
+                "/etc/vmm/ca.pem".to_owned(),
+            ),
+            (
+                "ASEMAN_VMM_DATABASE_URL_SECRET".to_owned(),
+                "/run/secrets/vmm-db".to_owned(),
+            ),
+            (
+                "ASEMAN_VMM_BACKEND_ENDPOINT".to_owned(),
+                "unix:/run/aseman/backend.sock".to_owned(),
+            ),
+            (
+                "ASEMAN_VMM_CLIENTS".to_owned(),
+                format!("node-1={fingerprint}"),
+            ),
+        ]);
+        let config = VmmServiceConfig::from_map(&values).unwrap();
+        assert_eq!(config.clients["node-1"], [0xab; 32]);
+        assert_eq!(config.listen, "0.0.0.0:8443");
+        for bad in ["node-1", "node-1=abc", "=abab", "node-1=zz"] {
+            values.insert("ASEMAN_VMM_CLIENTS".to_owned(), bad.to_owned());
+            assert!(VmmServiceConfig::from_map(&values).is_err(), "{bad}");
+        }
     }
 }

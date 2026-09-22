@@ -123,6 +123,9 @@ fn fast(root: &Path) -> Result<()> {
         "aseman-storage-legacy",
         "aseman-migration-e2e",
         "aseman-capsule-repositories",
+        "aseman-identity-native",
+        "aseman-policy-native",
+        "aseman-policy-conformance",
         "xtask",
     ] {
         run(root, "cargo", &["fmt", "-p", package, "--", "--check"])?;
@@ -142,6 +145,8 @@ fn fast(root: &Path) -> Result<()> {
         "generate_postgres_core.py",
         "generate_postgres_storage_classes.py",
         "generate_legacy_transform_manifest.py",
+        "generate_security_registry.py",
+        "generate_vmm_parity.py",
     ] {
         run(root, "python3", &[&format!("scripts/{script}"), "--check"])?;
     }
@@ -191,6 +196,12 @@ fn fast(root: &Path) -> Result<()> {
             "aseman-migration-e2e",
             "-p",
             "aseman-capsule-repositories",
+            "-p",
+            "aseman-identity-native",
+            "-p",
+            "aseman-policy-native",
+            "-p",
+            "aseman-policy-conformance",
         ],
     )?;
     run(
@@ -226,6 +237,12 @@ fn fast(root: &Path) -> Result<()> {
             "aseman-migration-e2e",
             "-p",
             "aseman-capsule-repositories",
+            "-p",
+            "aseman-identity-native",
+            "-p",
+            "aseman-policy-native",
+            "-p",
+            "aseman-policy-conformance",
             "--all-targets",
             "--",
             "-D",

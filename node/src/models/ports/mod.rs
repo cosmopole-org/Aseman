@@ -4,7 +4,6 @@
 //! under `crate::drivers`. `tools` bundles every port into a single
 //! container handed to the core orchestrator.
 
-pub mod file;
 pub mod network;
 pub mod ratelimit;
 pub mod security;

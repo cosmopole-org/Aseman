@@ -5,15 +5,21 @@ use core::fmt;
 use core::str::FromStr;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
-use uuid::Uuid;
+pub use uuid::Uuid;
 
+pub mod authority;
+pub mod blob;
+pub mod capability;
 pub mod creature;
 pub mod gateway;
+pub mod guest;
+pub mod identity;
 pub mod program;
 pub mod signal_tags;
 pub mod storage_migration;
 pub mod store;
 pub mod store_permissions;
+pub mod vmm;
 
 macro_rules! typed_id {
     ($name:ident) => {
@@ -96,8 +102,24 @@ pub enum OperationState {
     Cancelled,
 }
 
+/// A desired-state generation; it starts at 1, so 0 never deserializes.
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(try_from = "u64", into = "u64")]
 pub struct Generation(u64);
+
+impl TryFrom<u64> for Generation {
+    type Error = DomainError;
+
+    fn try_from(value: u64) -> Result<Self, Self::Error> {
+        Self::from_stored(value)
+    }
+}
+
+impl From<Generation> for u64 {
+    fn from(generation: Generation) -> Self {
+        generation.0
+    }
+}
 
 impl Generation {
     pub const INITIAL: Self = Self(1);
@@ -111,6 +133,12 @@ impl Generation {
             .map(Self)
             .ok_or(DomainError::GenerationOverflow)
     }
+    /// A stored generation; generations start at 1.
+    pub fn from_stored(value: u64) -> Result<Self, DomainError> {
+        (value >= 1)
+            .then_some(Self(value))
+            .ok_or(DomainError::InvalidGeneration)
+    }
 }
 
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
@@ -122,6 +150,14 @@ pub struct DesiredWorkload {
     pub state: DesiredWorkloadState,
 }
 
+/// Whether a guest database binding may serve requests (A306: disabled-first).
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum BindingStatus {
+    Disabled,
+    Active,
+}
+
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub struct CreatureDatabaseBinding {
     pub creature_id: CreatureId,
@@ -129,6 +165,7 @@ pub struct CreatureDatabaseBinding {
     pub database: String,
     pub role: String,
     pub generation: Generation,
+    pub status: BindingStatus,
 }
 
 impl CreatureDatabaseBinding {
@@ -158,6 +195,7 @@ impl CreatureDatabaseBinding {
             database,
             role,
             generation: Generation::INITIAL,
+            status: BindingStatus::Disabled,
         })
     }
 }
@@ -202,6 +240,8 @@ impl Money {
 pub enum DomainError {
     #[error("generation overflow")]
     GenerationOverflow,
+    #[error("generations start at 1")]
+    InvalidGeneration,
     #[error("invalid creature database binding field: {0}")]
     InvalidBindingField(&'static str),
     #[error("money scale {0} exceeds 18")]

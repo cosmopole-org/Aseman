@@ -281,6 +281,7 @@ impl LegacySnapshotGraph {
                 || key.starts_with(LEGACY_PROXY_CORRELATION_PREFIX)
                 || is_legacy_vm_resource_document_key(key)
                 || key.starts_with(LEGACY_BRIDGE_GRANT_PREFIX)
+                || key.starts_with(crate::guestkv::LEGACY_GUEST_DOC_PREFIX)
             {
                 continue;
             }

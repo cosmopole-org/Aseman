@@ -40,7 +40,7 @@
       "client-cli/package-lock.json"
     ],
     "tracked_dist_file_count": 15,
-    "tracked_file_count": 735,
+    "tracked_file_count": 746,
     "tracked_files_by_top_level": {
       ".cargo": 1,
       ".claude": 1,
@@ -58,11 +58,11 @@
       "clippy.toml": 1,
       "cmd": 7,
       "contracts": 60,
-      "crates": 45,
+      "crates": 51,
       "dist": 15,
-      "docs": 87,
-      "modules": 50,
-      "node": 286,
+      "docs": 88,
+      "modules": 53,
+      "node": 287,
       "plan": 18,
       "run-nodes.sh": 1,
       "rust-toolchain.toml": 1,
@@ -78,7 +78,7 @@
     },
     "tracked_source_files_by_extension": {
       ".py": 21,
-      ".rs": 411,
+      ".rs": 420,
       ".sh": 6,
       ".ts": 1
     }
@@ -173,6 +173,14 @@
           {
             "name": "thiserror",
             "scope": "normal"
+          },
+          {
+            "features": [
+              "conformance"
+            ],
+            "name": "aseman-ports",
+            "path": "crates/aseman-ports",
+            "scope": "dev"
           }
         ],
         "description": "Transport- and driver-independent Aseman use cases.",
@@ -277,7 +285,24 @@
       {
         "dependencies": [
           {
+            "name": "aseman-domain",
+            "path": "crates/aseman-domain",
+            "scope": "normal"
+          },
+          {
+            "name": "base64",
+            "scope": "normal"
+          },
+          {
+            "name": "bs58",
+            "scope": "normal"
+          },
+          {
             "name": "prost",
+            "scope": "normal"
+          },
+          {
+            "name": "ring",
             "scope": "normal"
           },
           {
@@ -302,6 +327,10 @@
           },
           {
             "name": "tonic",
+            "scope": "normal"
+          },
+          {
+            "name": "uuid",
             "scope": "normal"
           },
           {
@@ -493,6 +522,92 @@
             "scope": "normal"
           },
           {
+            "name": "aseman-domain",
+            "path": "crates/aseman-domain",
+            "scope": "normal"
+          },
+          {
+            "name": "aseman-ports",
+            "path": "crates/aseman-ports",
+            "scope": "normal"
+          },
+          {
+            "name": "aseman-application",
+            "path": "crates/aseman-application",
+            "scope": "dev"
+          },
+          {
+            "name": "serde_json",
+            "scope": "dev"
+          }
+        ],
+        "description": "A401 identity verification: Ed25519 and legacy RSA proofs over the canonical signed structure.",
+        "edition": {
+          "workspace": true
+        },
+        "features": {},
+        "manifest": "modules/identity-native/Cargo.toml",
+        "name": "aseman-identity-native",
+        "targets": [
+          {
+            "kind": "lib",
+            "name": "aseman-identity-native",
+            "path": "src/lib.rs"
+          }
+        ],
+        "version": {
+          "workspace": true
+        }
+      },
+      {
+        "dependencies": [
+          {
+            "name": "aseman-contracts",
+            "path": "crates/aseman-contracts",
+            "scope": "normal"
+          },
+          {
+            "name": "aseman-domain",
+            "path": "crates/aseman-domain",
+            "scope": "normal"
+          },
+          {
+            "name": "aseman-ports",
+            "path": "crates/aseman-ports",
+            "scope": "normal"
+          },
+          {
+            "name": "aseman-policy-conformance",
+            "path": "tests/contracts/policy",
+            "scope": "dev"
+          }
+        ],
+        "description": "The ADR 0008 reference policy provider: the typed evaluator over the A402 registry.",
+        "edition": {
+          "workspace": true
+        },
+        "features": {},
+        "manifest": "modules/policy-native/Cargo.toml",
+        "name": "aseman-policy-native",
+        "targets": [
+          {
+            "kind": "lib",
+            "name": "aseman-policy-native",
+            "path": "src/lib.rs"
+          }
+        ],
+        "version": {
+          "workspace": true
+        }
+      },
+      {
+        "dependencies": [
+          {
+            "name": "aseman-contracts",
+            "path": "crates/aseman-contracts",
+            "scope": "normal"
+          },
+          {
             "name": "tokio",
             "scope": "normal"
           },
@@ -660,6 +775,7 @@
           },
           {
             "features": [
+              "with-serde_json-1",
               "with-uuid-1"
             ],
             "name": "postgres",
@@ -671,6 +787,10 @@
           },
           {
             "name": "r2d2_postgres",
+            "scope": "normal"
+          },
+          {
+            "name": "ring",
             "scope": "normal"
           },
           {
@@ -707,6 +827,11 @@
             "scope": "dev"
           },
           {
+            "name": "aseman-policy-native",
+            "path": "modules/policy-native",
+            "scope": "dev"
+          },
+          {
             "features": [
               "conformance"
             ],
@@ -740,6 +865,176 @@
           {
             "kind": "lib",
             "name": "aseman-storage-postgres",
+            "path": "src/lib.rs"
+          }
+        ],
+        "version": {
+          "workspace": true
+        }
+      },
+      {
+        "dependencies": [
+          {
+            "name": "aseman-application",
+            "path": "crates/aseman-application",
+            "scope": "normal"
+          },
+          {
+            "name": "aseman-contracts",
+            "path": "crates/aseman-contracts",
+            "scope": "normal"
+          },
+          {
+            "name": "aseman-domain",
+            "path": "crates/aseman-domain",
+            "scope": "normal"
+          },
+          {
+            "name": "aseman-ports",
+            "path": "crates/aseman-ports",
+            "scope": "normal"
+          },
+          {
+            "default-features": false,
+            "features": [
+              "http1",
+              "json",
+              "query",
+              "tokio"
+            ],
+            "name": "axum",
+            "scope": "normal",
+            "version": "0.7.9"
+          },
+          {
+            "default-features": false,
+            "features": [
+              "std"
+            ],
+            "name": "futures-util",
+            "scope": "normal",
+            "version": "0.3"
+          },
+          {
+            "features": [
+              "http1",
+              "server"
+            ],
+            "name": "hyper",
+            "scope": "normal",
+            "version": "1"
+          },
+          {
+            "features": [
+              "http1",
+              "server",
+              "service",
+              "tokio"
+            ],
+            "name": "hyper-util",
+            "scope": "normal",
+            "version": "0.1"
+          },
+          {
+            "default-features": false,
+            "features": [
+              "blocking",
+              "json",
+              "rustls-tls"
+            ],
+            "name": "reqwest",
+            "scope": "normal",
+            "version": "0.12"
+          },
+          {
+            "default-features": false,
+            "features": [
+              "ring",
+              "std",
+              "tls12"
+            ],
+            "name": "rustls",
+            "scope": "normal",
+            "version": "0.23"
+          },
+          {
+            "name": "rustls-pemfile",
+            "scope": "normal",
+            "version": "2"
+          },
+          {
+            "name": "serde",
+            "scope": "normal"
+          },
+          {
+            "name": "serde_json",
+            "scope": "normal"
+          },
+          {
+            "name": "sha2",
+            "scope": "normal"
+          },
+          {
+            "features": [
+              "sync"
+            ],
+            "name": "tokio",
+            "scope": "normal"
+          },
+          {
+            "default-features": false,
+            "features": [
+              "ring",
+              "tls12"
+            ],
+            "name": "tokio-rustls",
+            "scope": "normal",
+            "version": "0.26"
+          },
+          {
+            "default-features": false,
+            "features": [
+              "util"
+            ],
+            "name": "tower",
+            "scope": "normal",
+            "version": "0.5"
+          },
+          {
+            "name": "uuid",
+            "scope": "normal"
+          },
+          {
+            "features": [
+              "conformance"
+            ],
+            "name": "aseman-ports",
+            "path": "crates/aseman-ports",
+            "scope": "dev"
+          },
+          {
+            "default-features": false,
+            "features": [
+              "crypto",
+              "pem",
+              "ring"
+            ],
+            "name": "rcgen",
+            "scope": "dev",
+            "version": "0.14"
+          }
+        ],
+        "description": "The A501 node-to-VMM HTTP transport: the mutual-TLS server over the VMM service and the node's client.",
+        "edition": {
+          "workspace": true
+        },
+        "features": {},
+        "manifest": "modules/vmm-http/Cargo.toml",
+        "name": "aseman-vmm-http",
+        "targets": [
+          {
+            "kind": "lib",
+            "name": "aseman-vmm-http",
             "path": "src/lib.rs"
           }
         ],
@@ -787,6 +1082,11 @@
           {
             "name": "aseman-observability",
             "path": "crates/aseman-observability",
+            "scope": "normal"
+          },
+          {
+            "name": "aseman-policy-native",
+            "path": "modules/policy-native",
             "scope": "normal"
           },
           {
@@ -1153,6 +1453,41 @@
           {
             "kind": "lib",
             "name": "aseman-module-conformance",
+            "path": "src/lib.rs"
+          }
+        ],
+        "version": {
+          "workspace": true
+        }
+      },
+      {
+        "dependencies": [
+          {
+            "name": "aseman-domain",
+            "path": "crates/aseman-domain",
+            "scope": "normal"
+          },
+          {
+            "name": "aseman-ports",
+            "path": "crates/aseman-ports",
+            "scope": "normal"
+          },
+          {
+            "name": "serde_json",
+            "scope": "normal"
+          }
+        ],
+        "description": "A404 policy decision conformance kit: normative fixtures every policy provider must reproduce.",
+        "edition": {
+          "workspace": true
+        },
+        "features": {},
+        "manifest": "tests/contracts/policy/Cargo.toml",
+        "name": "aseman-policy-conformance",
+        "targets": [
+          {
+            "kind": "lib",
+            "name": "aseman-policy-conformance",
             "path": "src/lib.rs"
           }
         ],
@@ -1802,6 +2137,7 @@
           "node",
           "node/crates/*",
           "tests/contracts/module",
+          "tests/contracts/policy",
           "tests/contracts/storage",
           "tests/migration",
           "vm-sdk",

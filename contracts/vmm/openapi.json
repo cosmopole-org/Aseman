@@ -1,0 +1,2717 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Aseman VMM API",
+    "version": "1.0.0",
+    "description": "A501: the only interface between an Aseman node and a VMM (plan 04). States and generation rules are in `states.json` (A502, A503). Every request is authenticated by mutual TLS: the client certificate names the calling node; the VMM serves only that node's workloads."
+  },
+  "servers": [
+    {
+      "url": "https://vmm.internal"
+    }
+  ],
+  "security": [
+    {
+      "mtls": []
+    }
+  ],
+  "paths": {
+    "/v1/capabilities": {
+      "get": {
+        "operationId": "getCapabilities",
+        "summary": "Runtimes and operations this VMM supports",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/RequestId"
+          },
+          {
+            "$ref": "#/components/parameters/Traceparent"
+          },
+          {
+            "$ref": "#/components/parameters/Deadline"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Capabilities"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/v1/workloads": {
+      "post": {
+        "operationId": "createWorkload",
+        "summary": "Create a workload with its desired state",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          },
+          {
+            "$ref": "#/components/parameters/RequestId"
+          },
+          {
+            "$ref": "#/components/parameters/Traceparent"
+          },
+          {
+            "$ref": "#/components/parameters/Deadline"
+          }
+        ],
+        "description": "Refused with `unsupported_operation` when the runtime lacks what the spec needs.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateWorkload"
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "$ref": "#/components/responses/Accepted"
+          },
+          "default": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      },
+      "get": {
+        "operationId": "listWorkloads",
+        "summary": "List workloads",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Cursor"
+          },
+          {
+            "$ref": "#/components/parameters/Limit"
+          },
+          {
+            "name": "creature_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "observed_state",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/ObservedState"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/RequestId"
+          },
+          {
+            "$ref": "#/components/parameters/Traceparent"
+          },
+          {
+            "$ref": "#/components/parameters/Deadline"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkloadPage"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/v1/workloads/{workload_id}": {
+      "get": {
+        "operationId": "getWorkload",
+        "summary": "Read a workload's desired and observed state",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/WorkloadId"
+          },
+          {
+            "$ref": "#/components/parameters/RequestId"
+          },
+          {
+            "$ref": "#/components/parameters/Traceparent"
+          },
+          {
+            "$ref": "#/components/parameters/Deadline"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Workload"
+                }
+              }
+            },
+            "headers": {
+              "ETag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "The quoted resource version."
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      },
+      "delete": {
+        "operationId": "deleteWorkload",
+        "summary": "Delete the workload (desired `deleted`)",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          },
+          {
+            "$ref": "#/components/parameters/WorkloadId"
+          },
+          {
+            "$ref": "#/components/parameters/IfMatch"
+          },
+          {
+            "name": "generation",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/Generation"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/RequestId"
+          },
+          {
+            "$ref": "#/components/parameters/Traceparent"
+          },
+          {
+            "$ref": "#/components/parameters/Deadline"
+          }
+        ],
+        "responses": {
+          "202": {
+            "$ref": "#/components/responses/Accepted"
+          },
+          "default": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/v1/workloads/{workload_id}/spec": {
+      "put": {
+        "operationId": "updateWorkloadSpec",
+        "summary": "Replace the spec under a new generation",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          },
+          {
+            "$ref": "#/components/parameters/WorkloadId"
+          },
+          {
+            "$ref": "#/components/parameters/IfMatch"
+          },
+          {
+            "$ref": "#/components/parameters/RequestId"
+          },
+          {
+            "$ref": "#/components/parameters/Traceparent"
+          },
+          {
+            "$ref": "#/components/parameters/Deadline"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateSpec"
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "$ref": "#/components/responses/Accepted"
+          },
+          "default": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/v1/workloads/{workload_id}/start": {
+      "post": {
+        "operationId": "startWorkload",
+        "summary": "Start the workload",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          },
+          {
+            "$ref": "#/components/parameters/WorkloadId"
+          },
+          {
+            "$ref": "#/components/parameters/IfMatch"
+          },
+          {
+            "$ref": "#/components/parameters/RequestId"
+          },
+          {
+            "$ref": "#/components/parameters/Traceparent"
+          },
+          {
+            "$ref": "#/components/parameters/Deadline"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LifecycleCommand"
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "$ref": "#/components/responses/Accepted"
+          },
+          "default": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/v1/workloads/{workload_id}/stop": {
+      "post": {
+        "operationId": "stopWorkload",
+        "summary": "Stop the workload",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          },
+          {
+            "$ref": "#/components/parameters/WorkloadId"
+          },
+          {
+            "$ref": "#/components/parameters/IfMatch"
+          },
+          {
+            "$ref": "#/components/parameters/RequestId"
+          },
+          {
+            "$ref": "#/components/parameters/Traceparent"
+          },
+          {
+            "$ref": "#/components/parameters/Deadline"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LifecycleCommand"
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "$ref": "#/components/responses/Accepted"
+          },
+          "default": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/v1/workloads/{workload_id}/pause": {
+      "post": {
+        "operationId": "pauseWorkload",
+        "summary": "Pause the workload",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          },
+          {
+            "$ref": "#/components/parameters/WorkloadId"
+          },
+          {
+            "$ref": "#/components/parameters/IfMatch"
+          },
+          {
+            "$ref": "#/components/parameters/RequestId"
+          },
+          {
+            "$ref": "#/components/parameters/Traceparent"
+          },
+          {
+            "$ref": "#/components/parameters/Deadline"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LifecycleCommand"
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "$ref": "#/components/responses/Accepted"
+          },
+          "default": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/v1/workloads/{workload_id}/resume": {
+      "post": {
+        "operationId": "resumeWorkload",
+        "summary": "Resume the workload",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          },
+          {
+            "$ref": "#/components/parameters/WorkloadId"
+          },
+          {
+            "$ref": "#/components/parameters/IfMatch"
+          },
+          {
+            "$ref": "#/components/parameters/RequestId"
+          },
+          {
+            "$ref": "#/components/parameters/Traceparent"
+          },
+          {
+            "$ref": "#/components/parameters/Deadline"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LifecycleCommand"
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "$ref": "#/components/responses/Accepted"
+          },
+          "default": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/v1/workloads/{workload_id}/restore": {
+      "post": {
+        "operationId": "restoreWorkload",
+        "summary": "Restore the workload from a snapshot",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          },
+          {
+            "$ref": "#/components/parameters/WorkloadId"
+          },
+          {
+            "$ref": "#/components/parameters/IfMatch"
+          },
+          {
+            "$ref": "#/components/parameters/RequestId"
+          },
+          {
+            "$ref": "#/components/parameters/Traceparent"
+          },
+          {
+            "$ref": "#/components/parameters/Deadline"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RestoreRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "$ref": "#/components/responses/Accepted"
+          },
+          "default": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/v1/workloads/{workload_id}/snapshots": {
+      "post": {
+        "operationId": "snapshotWorkload",
+        "summary": "Take a snapshot",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          },
+          {
+            "$ref": "#/components/parameters/WorkloadId"
+          },
+          {
+            "$ref": "#/components/parameters/RequestId"
+          },
+          {
+            "$ref": "#/components/parameters/Traceparent"
+          },
+          {
+            "$ref": "#/components/parameters/Deadline"
+          }
+        ],
+        "responses": {
+          "202": {
+            "$ref": "#/components/responses/Accepted"
+          },
+          "default": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/v1/workloads/{workload_id}/invocations": {
+      "post": {
+        "operationId": "invokeWorkload",
+        "summary": "Deliver one event to the workload",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          },
+          {
+            "$ref": "#/components/parameters/WorkloadId"
+          },
+          {
+            "$ref": "#/components/parameters/RequestId"
+          },
+          {
+            "$ref": "#/components/parameters/Traceparent"
+          },
+          {
+            "$ref": "#/components/parameters/Deadline"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Invocation"
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "$ref": "#/components/responses/Accepted"
+          },
+          "default": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/v1/workloads/{workload_id}/exec": {
+      "post": {
+        "operationId": "execWorkload",
+        "summary": "Run a command in the workload",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          },
+          {
+            "$ref": "#/components/parameters/WorkloadId"
+          },
+          {
+            "$ref": "#/components/parameters/RequestId"
+          },
+          {
+            "$ref": "#/components/parameters/Traceparent"
+          },
+          {
+            "$ref": "#/components/parameters/Deadline"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExecRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "$ref": "#/components/responses/Accepted"
+          },
+          "default": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/v1/workloads/{workload_id}/http": {
+      "post": {
+        "operationId": "forwardHttp",
+        "summary": "Forward one HTTP request to the workload",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          },
+          {
+            "$ref": "#/components/parameters/WorkloadId"
+          },
+          {
+            "$ref": "#/components/parameters/RequestId"
+          },
+          {
+            "$ref": "#/components/parameters/Traceparent"
+          },
+          {
+            "$ref": "#/components/parameters/Deadline"
+          }
+        ],
+        "description": "Synchronous within the deadline. The idempotency key deduplicates retried deliveries.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HttpRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/v1/workloads/{workload_id}/files/{path}": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/WorkloadId"
+        },
+        {
+          "name": "path",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "maxLength": 1024,
+            "description": "Relative; `..` and absolute paths are `invalid_request`."
+          }
+        }
+      ],
+      "put": {
+        "operationId": "putWorkloadFile",
+        "summary": "Copy a file into the workload",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          },
+          {
+            "$ref": "#/components/parameters/IfMatch"
+          },
+          {
+            "$ref": "#/components/parameters/RequestId"
+          },
+          {
+            "$ref": "#/components/parameters/Traceparent"
+          },
+          {
+            "$ref": "#/components/parameters/Deadline"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/octet-stream": {
+              "schema": {
+                "type": "string",
+                "contentMediaType": "application/octet-stream"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Written."
+          },
+          "default": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      },
+      "get": {
+        "operationId": "getWorkloadFile",
+        "summary": "Copy a file out of the workload",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/RequestId"
+          },
+          {
+            "$ref": "#/components/parameters/Traceparent"
+          },
+          {
+            "$ref": "#/components/parameters/Deadline"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The file.",
+            "content": {
+              "application/octet-stream": {
+                "schema": {
+                  "type": "string",
+                  "contentMediaType": "application/octet-stream"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/v1/workloads/{workload_id}/endpoints": {
+      "get": {
+        "operationId": "listWorkloadEndpoints",
+        "summary": "Reachable ingress endpoints",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/WorkloadId"
+          },
+          {
+            "$ref": "#/components/parameters/RequestId"
+          },
+          {
+            "$ref": "#/components/parameters/Traceparent"
+          },
+          {
+            "$ref": "#/components/parameters/Deadline"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EndpointList"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/v1/workloads/{workload_id}/logs": {
+      "get": {
+        "operationId": "streamWorkloadLogs",
+        "summary": "Logs as a stream",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/WorkloadId"
+          },
+          {
+            "$ref": "#/components/parameters/LastEventId"
+          },
+          {
+            "name": "follow",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false
+            }
+          },
+          {
+            "name": "since_millis",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/RequestId"
+          },
+          {
+            "$ref": "#/components/parameters/Traceparent"
+          },
+          {
+            "$ref": "#/components/parameters/Deadline"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Log records.",
+            "content": {
+              "text/event-stream": {
+                "schema": {
+                  "type": "string",
+                  "description": "SSE; each event's `id` is the sequence and its `data` one `LogRecord` JSON value."
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/v1/workloads/{workload_id}/events": {
+      "get": {
+        "operationId": "streamWorkloadEvents",
+        "summary": "One workload's events",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/WorkloadId"
+          },
+          {
+            "$ref": "#/components/parameters/LastEventId"
+          },
+          {
+            "name": "follow",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": true
+            },
+            "description": "`false` ends the stream after the events already recorded."
+          },
+          {
+            "$ref": "#/components/parameters/RequestId"
+          },
+          {
+            "$ref": "#/components/parameters/Traceparent"
+          },
+          {
+            "$ref": "#/components/parameters/Deadline"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Workload events.",
+            "content": {
+              "text/event-stream": {
+                "schema": {
+                  "type": "string",
+                  "description": "SSE; each event's `id` is the sequence and its `data` one `WorkloadEvent` JSON value."
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/v1/events": {
+      "get": {
+        "operationId": "streamEvents",
+        "summary": "Every workload's events, for reconciliation",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/LastEventId"
+          },
+          {
+            "name": "follow",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": true
+            },
+            "description": "`false` ends the stream after the events already recorded."
+          },
+          {
+            "$ref": "#/components/parameters/RequestId"
+          },
+          {
+            "$ref": "#/components/parameters/Traceparent"
+          },
+          {
+            "$ref": "#/components/parameters/Deadline"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Workload events in sequence order.",
+            "content": {
+              "text/event-stream": {
+                "schema": {
+                  "type": "string",
+                  "description": "SSE; each event's `id` is the sequence and its `data` one `WorkloadEvent` JSON value."
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/v1/workloads/{workload_id}/usage": {
+      "get": {
+        "operationId": "getWorkloadUsage",
+        "summary": "Resource usage",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/WorkloadId"
+          },
+          {
+            "$ref": "#/components/parameters/RequestId"
+          },
+          {
+            "$ref": "#/components/parameters/Traceparent"
+          },
+          {
+            "$ref": "#/components/parameters/Deadline"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Usage"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/v1/workloads/{workload_id}/terminal": {
+      "get": {
+        "operationId": "openTerminal",
+        "summary": "Attach an interactive terminal",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/WorkloadId"
+          },
+          {
+            "$ref": "#/components/parameters/RequestId"
+          },
+          {
+            "$ref": "#/components/parameters/Traceparent"
+          },
+          {
+            "$ref": "#/components/parameters/Deadline"
+          }
+        ],
+        "responses": {
+          "101": {
+            "description": "WebSocket upgrade, subprotocol `aseman.terminal.v1`. Text frames are JSON: client `{\"type\":\"stdin\",\"data\":base64}` and `{\"type\":\"resize\",\"cols\":n,\"rows\":n}`; server `{\"type\":\"stdout\"|\"stderr\",\"data\":base64}` and a final `{\"type\":\"exit\",\"code\":n}`."
+          },
+          "default": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/v1/runtimes/{runtime}/verifications": {
+      "post": {
+        "operationId": "verifyExecution",
+        "summary": "Verify an execution proof",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          },
+          {
+            "name": "runtime",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/RequestId"
+          },
+          {
+            "$ref": "#/components/parameters/Traceparent"
+          },
+          {
+            "$ref": "#/components/parameters/Deadline"
+          }
+        ],
+        "description": "Stateless; needs a runtime with `execution_proofs`. An invalid proof is `valid: false`, not a problem.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VerificationRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VerificationResult"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/v1/builds": {
+      "post": {
+        "operationId": "createBuild",
+        "summary": "Build an artifact for a runtime",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          },
+          {
+            "$ref": "#/components/parameters/RequestId"
+          },
+          {
+            "$ref": "#/components/parameters/Traceparent"
+          },
+          {
+            "$ref": "#/components/parameters/Deadline"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BuildRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "$ref": "#/components/responses/Accepted"
+          },
+          "default": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/v1/operations": {
+      "get": {
+        "operationId": "listOperations",
+        "summary": "List operations",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Cursor"
+          },
+          {
+            "$ref": "#/components/parameters/Limit"
+          },
+          {
+            "name": "workload_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "state",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/OperationState"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/RequestId"
+          },
+          {
+            "$ref": "#/components/parameters/Traceparent"
+          },
+          {
+            "$ref": "#/components/parameters/Deadline"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OperationPage"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/v1/operations/{operation_id}": {
+      "get": {
+        "operationId": "getOperation",
+        "summary": "Read an operation",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/OperationId"
+          },
+          {
+            "$ref": "#/components/parameters/RequestId"
+          },
+          {
+            "$ref": "#/components/parameters/Traceparent"
+          },
+          {
+            "$ref": "#/components/parameters/Deadline"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Operation"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/v1/operations/{operation_id}/cancel": {
+      "post": {
+        "operationId": "cancelOperation",
+        "summary": "Cancel an unfinished operation",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          },
+          {
+            "$ref": "#/components/parameters/OperationId"
+          },
+          {
+            "$ref": "#/components/parameters/RequestId"
+          },
+          {
+            "$ref": "#/components/parameters/Traceparent"
+          },
+          {
+            "$ref": "#/components/parameters/Deadline"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Operation"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/health/live": {
+      "get": {
+        "operationId": "live",
+        "summary": "The process is running",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/RequestId"
+          },
+          {
+            "$ref": "#/components/parameters/Traceparent"
+          },
+          {
+            "$ref": "#/components/parameters/Deadline"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Health"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Problem"
+          }
+        },
+        "security": []
+      }
+    },
+    "/health/ready": {
+      "get": {
+        "operationId": "ready",
+        "summary": "The VMM can serve requests",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/RequestId"
+          },
+          {
+            "$ref": "#/components/parameters/Traceparent"
+          },
+          {
+            "$ref": "#/components/parameters/Deadline"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Health"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Not ready.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Health"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Problem"
+          }
+        },
+        "security": []
+      }
+    },
+    "/version": {
+      "get": {
+        "operationId": "version",
+        "summary": "Service and contract versions",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/RequestId"
+          },
+          {
+            "$ref": "#/components/parameters/Traceparent"
+          },
+          {
+            "$ref": "#/components/parameters/Deadline"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Version"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "mtls": {
+        "type": "mutualTLS"
+      }
+    },
+    "schemas": {
+      "ProblemCode": {
+        "type": "string",
+        "enum": [
+          "invalid_request",
+          "unauthenticated",
+          "forbidden",
+          "not_found",
+          "already_exists",
+          "resource_version_mismatch",
+          "stale_generation",
+          "invalid_transition",
+          "workload_deleted",
+          "unsupported_operation",
+          "idempotency_key_reused",
+          "idempotency_in_progress",
+          "operation_finished",
+          "payload_too_large",
+          "rate_limited",
+          "deadline_exceeded",
+          "unavailable",
+          "backend_failure",
+          "stale_observation"
+        ],
+        "description": "Stable machine code; clients branch on it, never on `title` or `detail`."
+      },
+      "Problem": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "format": "uri",
+            "description": "`https://aseman.dev/problems/vmm/{code}`."
+          },
+          "title": {
+            "type": "string"
+          },
+          "status": {
+            "type": "integer",
+            "minimum": 400,
+            "maximum": 599
+          },
+          "detail": {
+            "type": "string"
+          },
+          "instance": {
+            "type": "string"
+          },
+          "code": {
+            "$ref": "#/components/schemas/ProblemCode"
+          },
+          "request_id": {
+            "type": "string"
+          },
+          "retry_after_seconds": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "current_generation": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0,
+            "description": "With `stale_generation`: the generation the VMM applied."
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "code",
+          "request_id",
+          "status",
+          "title",
+          "type"
+        ],
+        "description": "RFC 9457 problem details. Never carries credentials, workload output, or backend internals."
+      },
+      "DesiredState": {
+        "type": "string",
+        "enum": [
+          "stopped",
+          "running",
+          "paused",
+          "deleted"
+        ]
+      },
+      "ObservedState": {
+        "type": "string",
+        "enum": [
+          "unknown",
+          "pending",
+          "running",
+          "paused",
+          "stopped",
+          "failed",
+          "lost"
+        ]
+      },
+      "OperationState": {
+        "type": "string",
+        "enum": [
+          "pending",
+          "running",
+          "succeeded",
+          "failed",
+          "cancelled"
+        ]
+      },
+      "OperationKind": {
+        "type": "string",
+        "enum": [
+          "create",
+          "start",
+          "stop",
+          "pause",
+          "resume",
+          "delete",
+          "restart",
+          "update_spec",
+          "invoke",
+          "exec",
+          "build",
+          "snapshot",
+          "restore",
+          "copy_files"
+        ]
+      },
+      "Generation": {
+        "type": "integer",
+        "format": "int64",
+        "minimum": 1,
+        "description": "The node's desired generation (A503)."
+      },
+      "ResourceVersion": {
+        "type": "string",
+        "pattern": "^[A-Za-z0-9_-]{1,64}$",
+        "description": "Opaque; changes on every change to the record, desired or observed. Sent as a quoted ETag."
+      },
+      "Artifact": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "blob",
+              "oci"
+            ]
+          },
+          "reference": {
+            "type": "string",
+            "maxLength": 2048,
+            "description": "`blob`: an ADR 0027 BlobStore key; `oci`: an image reference."
+          },
+          "digest": {
+            "type": "string",
+            "pattern": "^sha256:[0-9a-f]{64}$"
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "digest",
+          "kind",
+          "reference"
+        ],
+        "description": "Content-addressed input; the VMM verifies the digest before use."
+      },
+      "Resources": {
+        "type": "object",
+        "properties": {
+          "vcpu_millis": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 1
+          },
+          "memory_mib": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 1
+          },
+          "disk_mib": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "invocation_timeout_millis": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 1
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "memory_mib",
+          "vcpu_millis"
+        ]
+      },
+      "IngressPort": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9-]{0,31}$"
+          },
+          "port": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 65535
+          },
+          "protocol": {
+            "type": "string",
+            "enum": [
+              "http",
+              "tcp"
+            ]
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "name",
+          "port",
+          "protocol"
+        ]
+      },
+      "NetworkPolicy": {
+        "type": "object",
+        "properties": {
+          "ingress": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IngressPort"
+            },
+            "maxItems": 16
+          },
+          "egress_allow": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "maxLength": 253
+            },
+            "maxItems": 256,
+            "description": "Hosts the workload may reach, resolved by Aseman from `network.egress` grants. Empty denies all egress."
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "egress_allow",
+          "ingress"
+        ],
+        "description": "Deny by default: nothing is reachable in either direction unless listed."
+      },
+      "Bootstrap": {
+        "type": "object",
+        "properties": {
+          "guest_api_url": {
+            "type": "string",
+            "format": "uri"
+          },
+          "credential": {
+            "type": "string",
+            "writeOnly": true,
+            "maxLength": 8192,
+            "description": "Short-lived workload credential (A405). Write-only: never returned, logged, or placed in events."
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "credential",
+          "guest_api_url"
+        ],
+        "description": "How the workload reaches the Aseman guest API; it gets no other Aseman access."
+      },
+      "WorkloadSpec": {
+        "type": "object",
+        "properties": {
+          "runtime": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_-]{0,31}$",
+            "description": "A runtime key from `/v1/capabilities`."
+          },
+          "artifact": {
+            "$ref": "#/components/schemas/Artifact"
+          },
+          "entry": {
+            "type": "string",
+            "maxLength": 1024,
+            "description": "Module path or command inside the artifact."
+          },
+          "resources": {
+            "$ref": "#/components/schemas/Resources"
+          },
+          "network": {
+            "$ref": "#/components/schemas/NetworkPolicy"
+          },
+          "environment": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string",
+              "maxLength": 8192
+            },
+            "maxProperties": 128,
+            "description": "Non-secret configuration only."
+          },
+          "bootstrap": {
+            "$ref": "#/components/schemas/Bootstrap"
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "artifact",
+          "bootstrap",
+          "entry",
+          "network",
+          "resources",
+          "runtime"
+        ]
+      },
+      "WorkloadLabels": {
+        "type": "object",
+        "properties": {
+          "creature_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "program_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "entity_id": {
+            "type": "string",
+            "maxLength": 128
+          },
+          "legacy_machine_id": {
+            "type": "string",
+            "maxLength": 256
+          },
+          "legacy_vm_id": {
+            "type": "string",
+            "maxLength": 256
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "creature_id",
+          "entity_id",
+          "program_id"
+        ],
+        "description": "Ownership labels set by the node. The VMM never derives authority from them."
+      },
+      "DesiredStatus": {
+        "type": "object",
+        "properties": {
+          "state": {
+            "$ref": "#/components/schemas/DesiredState"
+          },
+          "generation": {
+            "$ref": "#/components/schemas/Generation"
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "generation",
+          "state"
+        ]
+      },
+      "Observation": {
+        "type": "object",
+        "properties": {
+          "state": {
+            "$ref": "#/components/schemas/ObservedState"
+          },
+          "generation": {
+            "$ref": "#/components/schemas/Generation"
+          },
+          "sequence": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0,
+            "description": "Provider-local; orders observations of one generation."
+          },
+          "reason": {
+            "type": "string",
+            "maxLength": 1024
+          },
+          "observed_at_millis": {
+            "type": "integer",
+            "format": "int64"
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "generation",
+          "observed_at_millis",
+          "sequence",
+          "state"
+        ]
+      },
+      "CreateWorkload": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "labels": {
+            "$ref": "#/components/schemas/WorkloadLabels"
+          },
+          "spec": {
+            "$ref": "#/components/schemas/WorkloadSpec"
+          },
+          "desired": {
+            "$ref": "#/components/schemas/DesiredStatus"
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "desired",
+          "id",
+          "labels",
+          "spec"
+        ],
+        "description": "The node chooses the ID, so a retried create names the same workload."
+      },
+      "Workload": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "labels": {
+            "$ref": "#/components/schemas/WorkloadLabels"
+          },
+          "spec": {
+            "$ref": "#/components/schemas/WorkloadSpec"
+          },
+          "desired": {
+            "$ref": "#/components/schemas/DesiredStatus"
+          },
+          "applied_generation": {
+            "$ref": "#/components/schemas/Generation"
+          },
+          "observed": {
+            "$ref": "#/components/schemas/Observation"
+          },
+          "resource_version": {
+            "$ref": "#/components/schemas/ResourceVersion"
+          },
+          "created_at_millis": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "updated_at_millis": {
+            "type": "integer",
+            "format": "int64"
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "created_at_millis",
+          "desired",
+          "id",
+          "labels",
+          "resource_version",
+          "spec",
+          "updated_at_millis"
+        ]
+      },
+      "WorkloadPage": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Workload"
+            }
+          },
+          "next_cursor": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "items"
+        ]
+      },
+      "LifecycleCommand": {
+        "type": "object",
+        "properties": {
+          "generation": {
+            "$ref": "#/components/schemas/Generation"
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "generation"
+        ]
+      },
+      "UpdateSpec": {
+        "type": "object",
+        "properties": {
+          "generation": {
+            "$ref": "#/components/schemas/Generation"
+          },
+          "spec": {
+            "$ref": "#/components/schemas/WorkloadSpec"
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "generation",
+          "spec"
+        ]
+      },
+      "Invocation": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "signal",
+              "chain_transactions",
+              "chain_effects"
+            ]
+          },
+          "key": {
+            "type": "string",
+            "maxLength": 256,
+            "description": "The signal key the program handles."
+          },
+          "store_id": {
+            "type": "string",
+            "maxLength": 256
+          },
+          "payload": {
+            "description": "Any JSON value, at most 4 MiB encoded."
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "key",
+          "kind",
+          "payload"
+        ],
+        "description": "One event for the workload: runs the program once (invocation runtimes) or is delivered to the running instance."
+      },
+      "ExecRequest": {
+        "type": "object",
+        "properties": {
+          "command": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "maxLength": 4096
+            },
+            "minItems": 1,
+            "maxItems": 256
+          },
+          "stdin": {
+            "type": "string",
+            "contentEncoding": "base64url",
+            "description": "Unpadded base64url (RFC 4648 section 5)."
+          },
+          "timeout_millis": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 1
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "command"
+        ]
+      },
+      "ExecResult": {
+        "type": "object",
+        "properties": {
+          "exit_code": {
+            "type": "integer"
+          },
+          "stdout": {
+            "type": "string",
+            "contentEncoding": "base64url",
+            "description": "Unpadded base64url (RFC 4648 section 5)."
+          },
+          "stderr": {
+            "type": "string",
+            "contentEncoding": "base64url",
+            "description": "Unpadded base64url (RFC 4648 section 5)."
+          },
+          "truncated": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "exit_code",
+          "stderr",
+          "stdout",
+          "truncated"
+        ]
+      },
+      "HttpRequest": {
+        "type": "object",
+        "properties": {
+          "method": {
+            "type": "string",
+            "pattern": "^[A-Z]{3,10}$"
+          },
+          "path": {
+            "type": "string",
+            "maxLength": 8192
+          },
+          "query": {
+            "type": "string",
+            "maxLength": 8192
+          },
+          "headers": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string",
+              "maxLength": 8192
+            },
+            "maxProperties": 128
+          },
+          "body": {
+            "type": "string",
+            "contentEncoding": "base64url",
+            "description": "Unpadded base64url (RFC 4648 section 5)."
+          },
+          "port": {
+            "type": "string",
+            "description": "Ingress port name; the first `http` port when absent."
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "headers",
+          "method",
+          "path"
+        ]
+      },
+      "HttpResponse": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "integer",
+            "minimum": 100,
+            "maximum": 599
+          },
+          "headers": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            }
+          },
+          "body": {
+            "type": "string",
+            "contentEncoding": "base64url",
+            "description": "Unpadded base64url (RFC 4648 section 5)."
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "headers",
+          "status"
+        ]
+      },
+      "BuildRequest": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "runtime": {
+            "type": "string"
+          },
+          "source": {
+            "$ref": "#/components/schemas/Artifact"
+          },
+          "entry": {
+            "type": "string",
+            "maxLength": 1024
+          },
+          "build_type": {
+            "type": "string",
+            "maxLength": 64,
+            "description": "Runtime-defined, for example `dockerfile` or `rust`."
+          },
+          "labels": {
+            "$ref": "#/components/schemas/WorkloadLabels"
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "labels",
+          "runtime",
+          "source"
+        ]
+      },
+      "BuildResult": {
+        "type": "object",
+        "properties": {
+          "artifact": {
+            "$ref": "#/components/schemas/Artifact"
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "artifact"
+        ]
+      },
+      "RestoreRequest": {
+        "type": "object",
+        "properties": {
+          "generation": {
+            "$ref": "#/components/schemas/Generation"
+          },
+          "snapshot_id": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "generation",
+          "snapshot_id"
+        ]
+      },
+      "SnapshotResult": {
+        "type": "object",
+        "properties": {
+          "snapshot_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "size_bytes": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "size_bytes",
+          "snapshot_id"
+        ]
+      },
+      "InvocationResult": {
+        "type": "object",
+        "properties": {
+          "output": {
+            "description": "The program's JSON output, if any."
+          },
+          "gas_used": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "proof": {
+            "type": "string",
+            "contentEncoding": "base64url",
+            "description": "With `execution_proofs`: the execution proof, unpadded base64url."
+          }
+        },
+        "additionalProperties": false,
+        "required": []
+      },
+      "VerificationRequest": {
+        "type": "object",
+        "properties": {
+          "program": {
+            "$ref": "#/components/schemas/Artifact"
+          },
+          "inputs": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "format": "int64",
+              "minimum": 0
+            },
+            "maxItems": 4096
+          },
+          "outputs": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "format": "int64",
+              "minimum": 0
+            },
+            "maxItems": 4096
+          },
+          "proof": {
+            "type": "string",
+            "contentEncoding": "base64url",
+            "description": "Unpadded base64url (RFC 4648 section 5)."
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "inputs",
+          "outputs",
+          "program",
+          "proof"
+        ],
+        "description": "A proof of one execution of `program` on `inputs` producing `outputs`."
+      },
+      "VerificationResult": {
+        "type": "object",
+        "properties": {
+          "valid": {
+            "type": "boolean"
+          },
+          "security_level": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "reason": {
+            "type": "string",
+            "maxLength": 1024
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "valid"
+        ]
+      },
+      "OperationResult": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/InvocationResult"
+          },
+          {
+            "$ref": "#/components/schemas/ExecResult"
+          },
+          {
+            "$ref": "#/components/schemas/BuildResult"
+          },
+          {
+            "$ref": "#/components/schemas/SnapshotResult"
+          }
+        ],
+        "description": "Present on `succeeded`; its shape follows `kind`."
+      },
+      "Operation": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "workload_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/OperationKind"
+          },
+          "state": {
+            "$ref": "#/components/schemas/OperationState"
+          },
+          "generation": {
+            "$ref": "#/components/schemas/Generation"
+          },
+          "created_at_millis": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "updated_at_millis": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "deadline_millis": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "result": {
+            "$ref": "#/components/schemas/OperationResult"
+          },
+          "error": {
+            "$ref": "#/components/schemas/Problem"
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "created_at_millis",
+          "id",
+          "kind",
+          "state",
+          "updated_at_millis"
+        ]
+      },
+      "OperationPage": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Operation"
+            }
+          },
+          "next_cursor": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "items"
+        ]
+      },
+      "Endpoint": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "protocol": {
+            "type": "string",
+            "enum": [
+              "http",
+              "tcp"
+            ]
+          },
+          "address": {
+            "type": "string"
+          },
+          "port": {
+            "type": "integer"
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "address",
+          "name",
+          "port",
+          "protocol"
+        ]
+      },
+      "EndpointList": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Endpoint"
+            }
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "items"
+        ]
+      },
+      "Usage": {
+        "type": "object",
+        "properties": {
+          "window_start_millis": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "window_end_millis": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "sequence": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "cpu_millis": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "memory_peak_bytes": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "network_rx_bytes": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "network_tx_bytes": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "storage_bytes": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "invocations": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "cpu_millis",
+          "invocations",
+          "memory_peak_bytes",
+          "network_rx_bytes",
+          "network_tx_bytes",
+          "sequence",
+          "storage_bytes",
+          "window_end_millis",
+          "window_start_millis"
+        ],
+        "description": "Cumulative counters for the window; `sequence` lets metering deduplicate (P6 finance)."
+      },
+      "LogRecord": {
+        "type": "object",
+        "properties": {
+          "sequence": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "at_millis": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "stream": {
+            "type": "string",
+            "enum": [
+              "stdout",
+              "stderr",
+              "system",
+              "build"
+            ]
+          },
+          "line": {
+            "type": "string",
+            "maxLength": 65536
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "at_millis",
+          "line",
+          "sequence",
+          "stream"
+        ]
+      },
+      "WorkloadEvent": {
+        "type": "object",
+        "properties": {
+          "sequence": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "workload_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "at_millis": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "observed",
+              "operation",
+              "deleted",
+              "resync"
+            ]
+          },
+          "observation": {
+            "$ref": "#/components/schemas/Observation"
+          },
+          "operation": {
+            "$ref": "#/components/schemas/Operation"
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "at_millis",
+          "sequence",
+          "type",
+          "workload_id"
+        ],
+        "description": "`resync` tells the reader its position expired: list workloads again, then resume."
+      },
+      "RuntimeCapabilities": {
+        "type": "object",
+        "properties": {
+          "runtime": {
+            "type": "string"
+          },
+          "invocation": {
+            "type": "boolean"
+          },
+          "long_running": {
+            "type": "boolean"
+          },
+          "pause": {
+            "type": "boolean"
+          },
+          "snapshot": {
+            "type": "boolean"
+          },
+          "exec": {
+            "type": "boolean"
+          },
+          "terminal": {
+            "type": "boolean"
+          },
+          "http_ingress": {
+            "type": "boolean"
+          },
+          "files": {
+            "type": "boolean"
+          },
+          "build": {
+            "type": "boolean"
+          },
+          "chain_transactions": {
+            "type": "boolean"
+          },
+          "execution_proofs": {
+            "type": "boolean"
+          },
+          "deploy": {
+            "$ref": "#/components/schemas/DeployConventions"
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "build",
+          "chain_transactions",
+          "deploy",
+          "exec",
+          "execution_proofs",
+          "files",
+          "http_ingress",
+          "invocation",
+          "long_running",
+          "pause",
+          "runtime",
+          "snapshot",
+          "terminal"
+        ],
+        "description": "An operation a runtime does not support is refused with `unsupported_operation`, never degraded."
+      },
+      "DeployConventions": {
+        "type": "object",
+        "properties": {
+          "entity_file_name": {
+            "type": "string",
+            "maxLength": 255
+          },
+          "accepts_extra_files": {
+            "type": "boolean"
+          },
+          "build_on_deploy": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "accepts_extra_files",
+          "build_on_deploy",
+          "entity_file_name"
+        ],
+        "description": "How the runtime's program files are deployed."
+      },
+      "Capabilities": {
+        "type": "object",
+        "properties": {
+          "api_version": {
+            "type": "string"
+          },
+          "backend": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "version": {
+                "type": "string"
+              }
+            },
+            "additionalProperties": false,
+            "required": [
+              "name",
+              "version"
+            ]
+          },
+          "runtimes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RuntimeCapabilities"
+            }
+          },
+          "max_request_bytes": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "api_version",
+          "backend",
+          "max_request_bytes",
+          "runtimes"
+        ]
+      },
+      "Health": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "ok",
+              "degraded",
+              "unavailable"
+            ]
+          },
+          "checks": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            }
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "status"
+        ]
+      },
+      "Version": {
+        "type": "object",
+        "properties": {
+          "api_version": {
+            "type": "string"
+          },
+          "service": {
+            "type": "string"
+          },
+          "build": {
+            "type": "string"
+          },
+          "backend_contract": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "api_version",
+          "backend_contract",
+          "build",
+          "service"
+        ]
+      }
+    },
+    "parameters": {
+      "IdempotencyKey": {
+        "name": "Idempotency-Key",
+        "in": "header",
+        "required": true,
+        "description": "Required on every mutation. A replay with the same key and body returns the first response; the same key with another body is `idempotency_key_reused`. Keys are kept for 24 hours.",
+        "schema": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_-]{16,128}$"
+        }
+      },
+      "IfMatch": {
+        "name": "If-Match",
+        "in": "header",
+        "required": false,
+        "description": "Optional quoted resource version; a mismatch is `resource_version_mismatch` (412).",
+        "schema": {
+          "type": "string"
+        }
+      },
+      "RequestId": {
+        "name": "X-Request-Id",
+        "in": "header",
+        "required": false,
+        "description": "Echoed in responses, problems, operations, and logs; generated when absent.",
+        "schema": {
+          "type": "string",
+          "maxLength": 128
+        }
+      },
+      "Traceparent": {
+        "name": "traceparent",
+        "in": "header",
+        "required": false,
+        "description": "W3C Trace Context, propagated to the backend.",
+        "schema": {
+          "type": "string"
+        }
+      },
+      "Deadline": {
+        "name": "Aseman-Deadline",
+        "in": "header",
+        "required": false,
+        "description": "Unix milliseconds after which the caller no longer wants the result; the VMM gives up with `deadline_exceeded` and cancels the operation.",
+        "schema": {
+          "type": "integer",
+          "format": "int64"
+        }
+      },
+      "LastEventId": {
+        "name": "Last-Event-ID",
+        "in": "header",
+        "required": false,
+        "description": "Resume a stream after this sequence.",
+        "schema": {
+          "type": "string"
+        }
+      },
+      "WorkloadId": {
+        "name": "workload_id",
+        "in": "path",
+        "required": true,
+        "schema": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "OperationId": {
+        "name": "operation_id",
+        "in": "path",
+        "required": true,
+        "schema": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "Cursor": {
+        "name": "cursor",
+        "in": "query",
+        "required": false,
+        "schema": {
+          "type": "string",
+          "maxLength": 512
+        },
+        "description": "Opaque `next_cursor` from the previous page."
+      },
+      "Limit": {
+        "name": "limit",
+        "in": "query",
+        "required": false,
+        "schema": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 500,
+          "default": 100
+        }
+      }
+    },
+    "responses": {
+      "Problem": {
+        "description": "A problem (RFC 9457).",
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "$ref": "#/components/schemas/Problem"
+            }
+          }
+        }
+      },
+      "Accepted": {
+        "description": "The operation was recorded; poll it or follow the workload's events.",
+        "headers": {
+          "Location": {
+            "schema": {
+              "type": "string"
+            },
+            "description": "`/v1/operations/{operation_id}`."
+          }
+        },
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Operation"
+            }
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,2588 @@
+{
+  "schema_version": 1,
+  "registry_version": "2026-09-22.4",
+  "description": "A402: every Aseman action, its resource type, the subject classes that may hold it, and the least-privilege rule that replaces the legacy guard. Unknown actions deny (ADR 0008).",
+  "subjects": [
+    "user",
+    "creature",
+    "node",
+    "service",
+    "workload",
+    "module_publisher"
+  ],
+  "resources": {
+    "node": "The local Aseman node (diagnostics, identity, cluster, telemetry)",
+    "raw_state": "Raw legacy node keys; no subject is ever granted access (LD-24)",
+    "creature": "A creature or user identity record, its metadata and type",
+    "creature_signal": "A direct signal to a creature",
+    "account": "A creature's financial account",
+    "hold": "A payment hold",
+    "lock": "A token lock",
+    "pool": "A payment pool",
+    "payout": "A payout request",
+    "finance_catalog": "A published pricing catalog",
+    "finance_quote": "A published quote",
+    "finance_node": "A registered finance node",
+    "finance_resource": "A registered billable resource",
+    "finance_system": "The node's financial system as a whole",
+    "secret": "A creature secret",
+    "store": "A store: records, signals, history, membership",
+    "topic": "A realtime topic or group",
+    "program": "A program and its metadata and alarm",
+    "entity": "A program entity and its deployed files",
+    "workload": "A running workload (VM instance): lifecycle, logs, terminal, files",
+    "resource_store": "A VM resource store",
+    "resource_entity": "A VM resource entity",
+    "guest_data": "A creature's guest database (ADR 0001)",
+    "network": "Outbound network destinations",
+    "file": "A public uploaded file",
+    "identity_key": "An identity key epoch (A401)",
+    "challenge": "A one-time identity challenge (A401)",
+    "trust_root": "A federation trust root (A401 section 8)",
+    "login_grant": "A delegated login grant (ADR 0023)",
+    "bridge_token": "A bridge grant token (ADR 0024)",
+    "session": "A legacy session",
+    "module": "An installed module (P2)",
+    "module_publisher": "A trusted module publisher",
+    "grant": "A capability grant (A403)"
+  },
+  "conditions": {
+    "public": "No authentication: anyone, including anonymous callers",
+    "authenticated": "Any authenticated subject",
+    "self": "The resource is the subject itself",
+    "owner": "The subject owns the resource (a creature's owner, a program's machine owner, a store's creator)",
+    "same_creature": "A workload acting on resources of the creature it is bound to (A405 trusted binding)",
+    "store_read": "Store membership with the `read` permission",
+    "store_signal": "Store membership with the `signal` permission",
+    "store_manage": "Store membership with the `manage` permission",
+    "secret_grantee": "A live secret grant to the subject",
+    "counterparty": "The subject is a party to the financial record (payer, payee, pool member)",
+    "finance_operator": "The subject holds the finance operator role",
+    "node_admin": "The subject holds the node administration role",
+    "granted": "An explicit capability grant for this action and resource (A403)",
+    "never": "Never allowed; the surface is removed at the phase in `removal`"
+  },
+  "legacy_guards": {
+    "public": "no authentication (Guard::default / anon_guard)",
+    "user": "authenticated user or applet signature (user_guard)",
+    "finance": "authenticated user without applet signature (finance_guard)",
+    "store": "authenticated store member (store_guard)",
+    "guest": "any code running in a VM, unauthenticated host call (LD-14/LD-24)",
+    "http_public": "unauthenticated HTTP",
+    "http_cluster": "cluster HTTP, peer network trust only",
+    "module_admin": "module admin API (P2 operator credential)",
+    "new": "no legacy surface"
+  },
+  "actions": [
+    {
+      "id": "node.diagnostics.read",
+      "resource": "node",
+      "class": "read",
+      "summary": "Hello, ping, and time",
+      "subjects": [
+        "user",
+        "creature",
+        "node",
+        "service",
+        "workload",
+        "module_publisher"
+      ],
+      "rule": [
+        "public"
+      ],
+      "legacy_guard": "public",
+      "delegable": true,
+      "surfaces": [
+        "signed-shell-action /api/hello",
+        "signed-shell-action /api/ping",
+        "signed-shell-action /api/time"
+      ]
+    },
+    {
+      "id": "node.health.read",
+      "resource": "node",
+      "class": "read",
+      "summary": "Health probes",
+      "subjects": [
+        "user",
+        "creature",
+        "node",
+        "service",
+        "workload",
+        "module_publisher"
+      ],
+      "rule": [
+        "public"
+      ],
+      "legacy_guard": "http_public",
+      "delegable": true,
+      "surfaces": [
+        "public-storage-http GET /storage/health",
+        "telemetry-http GET /telemetry/health"
+      ]
+    },
+    {
+      "id": "node.identity.read",
+      "resource": "node",
+      "class": "read",
+      "summary": "The node's public key and minimal identity",
+      "subjects": [
+        "user",
+        "creature",
+        "node",
+        "service",
+        "workload",
+        "module_publisher"
+      ],
+      "rule": [
+        "public"
+      ],
+      "legacy_guard": "public",
+      "delegable": true,
+      "surfaces": [
+        "signed-shell-action /auths/getServerPublicKey",
+        "unified-host-call nodeIdentity"
+      ]
+    },
+    {
+      "id": "node.peers.read",
+      "resource": "node",
+      "class": "read",
+      "summary": "The node's peer map (minimal federated descriptors)",
+      "subjects": [
+        "user",
+        "creature",
+        "node",
+        "service",
+        "workload",
+        "module_publisher"
+      ],
+      "rule": [
+        "public"
+      ],
+      "legacy_guard": "public",
+      "delegable": true,
+      "surfaces": [
+        "signed-shell-action /auths/getServersMap"
+      ]
+    },
+    {
+      "id": "node.id.generate",
+      "resource": "node",
+      "class": "write",
+      "summary": "Allocate a legacy identifier",
+      "subjects": [
+        "workload"
+      ],
+      "rule": [
+        "same_creature"
+      ],
+      "legacy_guard": "guest",
+      "delegable": true,
+      "removal": "P4 UUIDv7 identities (ADR 0020)",
+      "surfaces": [
+        "unified-host-call genId"
+      ]
+    },
+    {
+      "id": "node.telemetry.read",
+      "resource": "node",
+      "class": "administrative",
+      "summary": "Telemetry snapshot",
+      "subjects": [
+        "user",
+        "service"
+      ],
+      "rule": [
+        "node_admin"
+      ],
+      "legacy_guard": "http_public",
+      "delegable": false,
+      "surfaces": [
+        "telemetry-http GET /telemetry/snapshot"
+      ]
+    },
+    {
+      "id": "node.profiling.read",
+      "resource": "node",
+      "class": "administrative",
+      "summary": "Profiling endpoints",
+      "subjects": [
+        "user",
+        "service"
+      ],
+      "rule": [
+        "node_admin"
+      ],
+      "legacy_guard": "http_public",
+      "delegable": false,
+      "surfaces": [
+        "profiling-http GET /debug/pprof",
+        "profiling-http GET /debug/pprof/",
+        "profiling-http GET /debug/pprof/flamegraph",
+        "profiling-http GET /debug/pprof/heap",
+        "profiling-http GET /debug/pprof/profile",
+        "profiling-http GET /debug/pprof/runtime",
+        "profiling-http GET /debug/pprof/threads"
+      ]
+    },
+    {
+      "id": "node.cluster.administer",
+      "resource": "node",
+      "class": "administrative",
+      "summary": "OpenRaft cluster administration",
+      "subjects": [
+        "user",
+        "service"
+      ],
+      "rule": [
+        "node_admin"
+      ],
+      "legacy_guard": "http_cluster",
+      "delegable": false,
+      "removal": "RL-012 (ADR 0012)",
+      "surfaces": [
+        "cluster-admin-and-raft GET /cluster/config",
+        "cluster-admin-and-raft GET /cluster/nearest",
+        "cluster-admin-and-raft GET /cluster/peers",
+        "cluster-admin-and-raft GET /cluster/ping",
+        "cluster-admin-and-raft GET /cluster/status",
+        "cluster-admin-and-raft POST /cluster/add-peer",
+        "cluster-admin-and-raft POST /cluster/config",
+        "cluster-admin-and-raft POST /cluster/config/apply",
+        "cluster-admin-and-raft POST /cluster/init",
+        "cluster-admin-and-raft POST /cluster/promote",
+        "cluster-admin-and-raft POST /cluster/propose",
+        "cluster-admin-and-raft POST /cluster/remove-peer"
+      ]
+    },
+    {
+      "id": "node.cluster.replicate",
+      "resource": "node",
+      "class": "administrative",
+      "summary": "OpenRaft replication traffic",
+      "subjects": [
+        "node"
+      ],
+      "rule": [
+        "node_admin"
+      ],
+      "legacy_guard": "http_cluster",
+      "delegable": false,
+      "removal": "RL-012 (ADR 0012)",
+      "surfaces": [
+        "cluster-admin-and-raft POST /raft/append",
+        "cluster-admin-and-raft POST /raft/snapshot",
+        "cluster-admin-and-raft POST /raft/vote"
+      ]
+    },
+    {
+      "id": "node.protocol.call",
+      "resource": "node",
+      "class": "write",
+      "summary": "Guest call into a node protocol API",
+      "subjects": [
+        "workload"
+      ],
+      "rule": [
+        "never"
+      ],
+      "legacy_guard": "guest",
+      "delegable": false,
+      "surfaces": [
+        "unified-host-call callProtocolApi",
+        "unified-host-call protocolApi"
+      ],
+      "removal": "P4-04 (LD-14: forwarded guest-chosen operations to the identity-less callback protocol)"
+    },
+    {
+      "id": "raw_state.read",
+      "resource": "raw_state",
+      "class": "read",
+      "summary": "Read raw legacy node keys (the guest calls that used to reach them are confined guest data, ADR 0028)",
+      "subjects": [
+        "workload"
+      ],
+      "rule": [
+        "never"
+      ],
+      "legacy_guard": "guest",
+      "delegable": false,
+      "removal": "P4-04 guest gateway (LD-24)",
+      "surfaces": []
+    },
+    {
+      "id": "raw_state.write",
+      "resource": "raw_state",
+      "class": "write",
+      "summary": "Write or delete raw legacy node keys (the guest calls that used to reach them are confined guest data, ADR 0028)",
+      "subjects": [
+        "workload"
+      ],
+      "rule": [
+        "never"
+      ],
+      "legacy_guard": "guest",
+      "delegable": false,
+      "removal": "P4-04 guest gateway (LD-24)",
+      "surfaces": []
+    },
+    {
+      "id": "identity.session.create",
+      "resource": "session",
+      "class": "security",
+      "summary": "Legacy session authentication",
+      "subjects": [
+        "user",
+        "creature",
+        "node",
+        "service",
+        "workload",
+        "module_publisher"
+      ],
+      "rule": [
+        "public"
+      ],
+      "legacy_guard": "user",
+      "delegable": false,
+      "removal": "P7-05 (legacy framing expiry)",
+      "surfaces": [
+        "signed-shell-action /creatures/authenticate"
+      ]
+    },
+    {
+      "id": "identity.session.login_by_email",
+      "resource": "session",
+      "class": "security",
+      "summary": "Legacy email login returning a custodial key",
+      "subjects": [
+        "user"
+      ],
+      "rule": [
+        "never"
+      ],
+      "legacy_guard": "public",
+      "delegable": false,
+      "removal": "RL-019 (ADR 0019)",
+      "surfaces": [
+        "signed-shell-action /creatures/login"
+      ]
+    },
+    {
+      "id": "identity.signature.check",
+      "resource": "identity_key",
+      "class": "read",
+      "summary": "Check a signature against a creature key",
+      "subjects": [
+        "user",
+        "creature",
+        "node",
+        "service",
+        "workload",
+        "module_publisher"
+      ],
+      "rule": [
+        "authenticated"
+      ],
+      "legacy_guard": "user",
+      "delegable": true,
+      "surfaces": [
+        "signed-shell-action /creatures/checkSign",
+        "unified-host-call validateSign"
+      ]
+    },
+    {
+      "id": "identity.key.rotate",
+      "resource": "identity_key",
+      "class": "security",
+      "summary": "Register the next key epoch",
+      "subjects": [
+        "user",
+        "creature",
+        "node",
+        "service",
+        "workload"
+      ],
+      "rule": [
+        "self"
+      ],
+      "legacy_guard": "new",
+      "delegable": false,
+      "surfaces": []
+    },
+    {
+      "id": "identity.key.revoke",
+      "resource": "identity_key",
+      "class": "security",
+      "summary": "Revoke a key epoch",
+      "subjects": [
+        "user",
+        "creature",
+        "node",
+        "service",
+        "workload"
+      ],
+      "rule": [
+        "self",
+        "node_admin"
+      ],
+      "legacy_guard": "new",
+      "delegable": false,
+      "surfaces": []
+    },
+    {
+      "id": "identity.key.enroll",
+      "resource": "identity_key",
+      "class": "security",
+      "summary": "Enroll a canonical key with a legacy key proof",
+      "subjects": [
+        "user",
+        "creature"
+      ],
+      "rule": [
+        "self"
+      ],
+      "legacy_guard": "new",
+      "delegable": false,
+      "surfaces": []
+    },
+    {
+      "id": "identity.challenge.issue",
+      "resource": "challenge",
+      "class": "security",
+      "summary": "Issue a one-time challenge",
+      "subjects": [
+        "user",
+        "creature",
+        "node",
+        "service",
+        "workload",
+        "module_publisher"
+      ],
+      "rule": [
+        "public"
+      ],
+      "legacy_guard": "new",
+      "delegable": true,
+      "surfaces": []
+    },
+    {
+      "id": "identity.trust_root.enroll",
+      "resource": "trust_root",
+      "class": "administrative",
+      "summary": "Enroll a federation root",
+      "subjects": [
+        "user",
+        "service"
+      ],
+      "rule": [
+        "node_admin"
+      ],
+      "legacy_guard": "new",
+      "delegable": false,
+      "surfaces": []
+    },
+    {
+      "id": "identity.introduction.accept",
+      "resource": "trust_root",
+      "class": "administrative",
+      "summary": "Accept a root's node introduction",
+      "subjects": [
+        "node"
+      ],
+      "rule": [
+        "granted"
+      ],
+      "legacy_guard": "new",
+      "delegable": false,
+      "surfaces": []
+    },
+    {
+      "id": "identity.login_grant.issue",
+      "resource": "login_grant",
+      "class": "security",
+      "summary": "Grant a delegated login",
+      "subjects": [
+        "workload"
+      ],
+      "rule": [
+        "same_creature"
+      ],
+      "legacy_guard": "guest",
+      "delegable": false,
+      "surfaces": [
+        "unified-host-call grantLogin"
+      ]
+    },
+    {
+      "id": "identity.bridge_token.issue",
+      "resource": "bridge_token",
+      "class": "security",
+      "summary": "Register a bridge token",
+      "subjects": [
+        "workload"
+      ],
+      "rule": [
+        "same_creature"
+      ],
+      "legacy_guard": "guest",
+      "delegable": false,
+      "surfaces": [
+        "unified-host-call registerBridgeToken"
+      ]
+    },
+    {
+      "id": "identity.bridge_token.revoke",
+      "resource": "bridge_token",
+      "class": "security",
+      "summary": "Revoke a bridge token",
+      "subjects": [
+        "workload"
+      ],
+      "rule": [
+        "same_creature"
+      ],
+      "legacy_guard": "guest",
+      "delegable": false,
+      "surfaces": [
+        "unified-host-call revokeBridgeToken"
+      ]
+    },
+    {
+      "id": "creature.create",
+      "resource": "creature",
+      "class": "write",
+      "summary": "Create a creature",
+      "subjects": [
+        "user",
+        "creature",
+        "workload"
+      ],
+      "rule": [
+        "public",
+        "owner",
+        "same_creature"
+      ],
+      "legacy_guard": "public",
+      "delegable": true,
+      "surfaces": [
+        "signed-shell-action /creatures/create",
+        "unified-host-call createCreature",
+        "unified-host-call createOwnedCreature"
+      ]
+    },
+    {
+      "id": "creature.read",
+      "resource": "creature",
+      "class": "read",
+      "summary": "Read a creature record",
+      "subjects": [
+        "user",
+        "creature",
+        "workload"
+      ],
+      "rule": [
+        "authenticated"
+      ],
+      "legacy_guard": "user",
+      "delegable": true,
+      "surfaces": [
+        "signed-shell-action /creatures/get",
+        "signed-shell-action /creatures/getByUsername",
+        "unified-host-call getCreature"
+      ]
+    },
+    {
+      "id": "creature.discover",
+      "resource": "creature",
+      "class": "read",
+      "summary": "Find creatures by username fragment",
+      "subjects": [
+        "user",
+        "creature",
+        "workload"
+      ],
+      "rule": [
+        "authenticated"
+      ],
+      "legacy_guard": "user",
+      "delegable": true,
+      "surfaces": [
+        "signed-shell-action /creatures/find"
+      ]
+    },
+    {
+      "id": "creature.list",
+      "resource": "creature",
+      "class": "read",
+      "summary": "List creatures and machines (bulk discovery)",
+      "subjects": [
+        "user",
+        "creature",
+        "workload"
+      ],
+      "rule": [
+        "owner",
+        "granted"
+      ],
+      "legacy_guard": "user",
+      "delegable": true,
+      "surfaces": [
+        "signed-shell-action /creatures/list",
+        "signed-shell-action /machines/list",
+        "unified-host-call listCreatures"
+      ]
+    },
+    {
+      "id": "creature.update",
+      "resource": "creature",
+      "class": "write",
+      "summary": "Update a creature or its metadata",
+      "subjects": [
+        "user",
+        "creature",
+        "workload"
+      ],
+      "rule": [
+        "self",
+        "owner",
+        "same_creature"
+      ],
+      "legacy_guard": "user",
+      "delegable": true,
+      "surfaces": [
+        "signed-shell-action /creatures/meta",
+        "signed-shell-action /creatures/update",
+        "unified-host-call updateCreature"
+      ]
+    },
+    {
+      "id": "creature.delete",
+      "resource": "creature",
+      "class": "write",
+      "summary": "Delete a creature",
+      "subjects": [
+        "user",
+        "creature",
+        "workload"
+      ],
+      "rule": [
+        "self",
+        "owner",
+        "same_creature"
+      ],
+      "legacy_guard": "user",
+      "delegable": true,
+      "surfaces": [
+        "signed-shell-action /creatures/delete",
+        "unified-host-call deleteCreature",
+        "unified-host-call deleteOwnedCreature",
+        "unified-host-call removeCreature",
+        "unified-host-call removeOwnedCreature"
+      ]
+    },
+    {
+      "id": "creature.types.read",
+      "resource": "creature",
+      "class": "read",
+      "summary": "The creature type registry",
+      "subjects": [
+        "user",
+        "creature",
+        "node",
+        "service",
+        "workload",
+        "module_publisher"
+      ],
+      "rule": [
+        "authenticated"
+      ],
+      "legacy_guard": "user",
+      "delegable": true,
+      "surfaces": [
+        "signed-shell-action /creatures/types"
+      ]
+    },
+    {
+      "id": "creature.signal",
+      "resource": "creature_signal",
+      "class": "write",
+      "summary": "Signal a creature directly",
+      "subjects": [
+        "user",
+        "creature",
+        "workload"
+      ],
+      "rule": [
+        "authenticated"
+      ],
+      "legacy_guard": "user",
+      "delegable": true,
+      "surfaces": [
+        "signed-shell-action /creatures/signal",
+        "unified-host-call signalUser"
+      ]
+    },
+    {
+      "id": "finance.account.read",
+      "resource": "account",
+      "class": "financial",
+      "summary": "Read a financial account",
+      "subjects": [
+        "user",
+        "creature",
+        "workload"
+      ],
+      "rule": [
+        "self",
+        "owner"
+      ],
+      "legacy_guard": "finance",
+      "delegable": true,
+      "surfaces": [
+        "signed-shell-action /creatures/getFinancialAccount"
+      ]
+    },
+    {
+      "id": "finance.transfer",
+      "resource": "account",
+      "class": "financial",
+      "summary": "Transfer between accounts",
+      "subjects": [
+        "user",
+        "creature",
+        "workload"
+      ],
+      "rule": [
+        "self",
+        "same_creature"
+      ],
+      "legacy_guard": "finance",
+      "delegable": true,
+      "surfaces": [
+        "signed-shell-action /creatures/transfer",
+        "unified-host-call transfer"
+      ]
+    },
+    {
+      "id": "finance.mint",
+      "resource": "account",
+      "class": "financial",
+      "summary": "Mint currency (legacy: hard-coded 1@global)",
+      "subjects": [
+        "user",
+        "service"
+      ],
+      "rule": [
+        "node_admin"
+      ],
+      "legacy_guard": "user",
+      "delegable": false,
+      "surfaces": [
+        "signed-shell-action /creatures/mint"
+      ]
+    },
+    {
+      "id": "finance.adjustment",
+      "resource": "account",
+      "class": "financial",
+      "summary": "Payment adjustment",
+      "subjects": [
+        "user",
+        "service"
+      ],
+      "rule": [
+        "finance_operator"
+      ],
+      "legacy_guard": "finance",
+      "delegable": false,
+      "surfaces": [
+        "signed-shell-action /creatures/paymentAdjustment"
+      ]
+    },
+    {
+      "id": "finance.reconcile",
+      "resource": "finance_system",
+      "class": "financial",
+      "summary": "Reconcile the financial system",
+      "subjects": [
+        "user",
+        "service"
+      ],
+      "rule": [
+        "finance_operator"
+      ],
+      "legacy_guard": "finance",
+      "delegable": false,
+      "surfaces": [
+        "signed-shell-action /creatures/reconcileFinancialSystem"
+      ]
+    },
+    {
+      "id": "finance.lock.create",
+      "resource": "lock",
+      "class": "financial",
+      "summary": "Lock tokens",
+      "subjects": [
+        "user",
+        "creature",
+        "workload"
+      ],
+      "rule": [
+        "self",
+        "same_creature"
+      ],
+      "legacy_guard": "user",
+      "delegable": true,
+      "surfaces": [
+        "signed-shell-action /creatures/lockToken",
+        "unified-host-call lockToken"
+      ]
+    },
+    {
+      "id": "finance.lock.consume",
+      "resource": "lock",
+      "class": "financial",
+      "summary": "Consume a token lock",
+      "subjects": [
+        "user",
+        "creature",
+        "workload"
+      ],
+      "rule": [
+        "counterparty"
+      ],
+      "legacy_guard": "user",
+      "delegable": true,
+      "surfaces": [
+        "signed-shell-action /creatures/consumeLock",
+        "unified-host-call consumeLock"
+      ]
+    },
+    {
+      "id": "finance.hold.create",
+      "resource": "hold",
+      "class": "financial",
+      "summary": "Create a payment hold",
+      "subjects": [
+        "user",
+        "creature",
+        "workload"
+      ],
+      "rule": [
+        "counterparty"
+      ],
+      "legacy_guard": "finance",
+      "delegable": true,
+      "surfaces": [
+        "signed-shell-action /creatures/createHold"
+      ]
+    },
+    {
+      "id": "finance.hold.read",
+      "resource": "hold",
+      "class": "financial",
+      "summary": "Read a payment hold",
+      "subjects": [
+        "user",
+        "creature",
+        "workload"
+      ],
+      "rule": [
+        "counterparty"
+      ],
+      "legacy_guard": "finance",
+      "delegable": true,
+      "surfaces": [
+        "signed-shell-action /creatures/getHold"
+      ]
+    },
+    {
+      "id": "finance.hold.start",
+      "resource": "hold",
+      "class": "financial",
+      "summary": "Start a payment hold",
+      "subjects": [
+        "user",
+        "creature",
+        "workload"
+      ],
+      "rule": [
+        "counterparty"
+      ],
+      "legacy_guard": "finance",
+      "delegable": true,
+      "surfaces": [
+        "signed-shell-action /creatures/startHold",
+        "unified-host-call startHold"
+      ]
+    },
+    {
+      "id": "finance.hold.release",
+      "resource": "hold",
+      "class": "financial",
+      "summary": "Release a payment hold",
+      "subjects": [
+        "user",
+        "creature",
+        "workload"
+      ],
+      "rule": [
+        "counterparty"
+      ],
+      "legacy_guard": "finance",
+      "delegable": true,
+      "surfaces": [
+        "signed-shell-action /creatures/releaseHold",
+        "unified-host-call releaseHold"
+      ]
+    },
+    {
+      "id": "finance.hold.settle",
+      "resource": "hold",
+      "class": "financial",
+      "summary": "Settle a payment hold",
+      "subjects": [
+        "user",
+        "creature",
+        "workload"
+      ],
+      "rule": [
+        "counterparty"
+      ],
+      "legacy_guard": "finance",
+      "delegable": true,
+      "surfaces": [
+        "signed-shell-action /creatures/settleHold",
+        "unified-host-call settleHold"
+      ]
+    },
+    {
+      "id": "finance.pool.open",
+      "resource": "pool",
+      "class": "financial",
+      "summary": "Open a payment pool",
+      "subjects": [
+        "user",
+        "creature",
+        "workload"
+      ],
+      "rule": [
+        "counterparty"
+      ],
+      "legacy_guard": "finance",
+      "delegable": true,
+      "surfaces": [
+        "signed-shell-action /creatures/openPool"
+      ]
+    },
+    {
+      "id": "finance.pool.close",
+      "resource": "pool",
+      "class": "financial",
+      "summary": "Close a payment pool",
+      "subjects": [
+        "user",
+        "creature",
+        "workload"
+      ],
+      "rule": [
+        "counterparty"
+      ],
+      "legacy_guard": "finance",
+      "delegable": true,
+      "surfaces": [
+        "signed-shell-action /creatures/closePool"
+      ]
+    },
+    {
+      "id": "finance.pool.debit",
+      "resource": "pool",
+      "class": "financial",
+      "summary": "Debit a payment pool",
+      "subjects": [
+        "user",
+        "creature",
+        "workload"
+      ],
+      "rule": [
+        "counterparty"
+      ],
+      "legacy_guard": "finance",
+      "delegable": true,
+      "surfaces": [
+        "signed-shell-action /creatures/debitPool",
+        "unified-host-call debitPool"
+      ]
+    },
+    {
+      "id": "finance.pool.refresh",
+      "resource": "pool",
+      "class": "financial",
+      "summary": "Refresh a payment pool",
+      "subjects": [
+        "user",
+        "creature",
+        "workload"
+      ],
+      "rule": [
+        "counterparty"
+      ],
+      "legacy_guard": "finance",
+      "delegable": true,
+      "surfaces": [
+        "signed-shell-action /creatures/refreshPool"
+      ]
+    },
+    {
+      "id": "finance.pool.reserve",
+      "resource": "pool",
+      "class": "financial",
+      "summary": "Reserve a payment pool",
+      "subjects": [
+        "user",
+        "creature",
+        "workload"
+      ],
+      "rule": [
+        "counterparty"
+      ],
+      "legacy_guard": "finance",
+      "delegable": true,
+      "surfaces": [
+        "signed-shell-action /creatures/reservePool",
+        "unified-host-call reservePool"
+      ]
+    },
+    {
+      "id": "finance.pool.release",
+      "resource": "pool",
+      "class": "financial",
+      "summary": "Release a payment pool",
+      "subjects": [
+        "user",
+        "creature",
+        "workload"
+      ],
+      "rule": [
+        "counterparty"
+      ],
+      "legacy_guard": "finance",
+      "delegable": true,
+      "surfaces": [
+        "signed-shell-action /creatures/releasePool",
+        "unified-host-call releasePool"
+      ]
+    },
+    {
+      "id": "finance.pool.settle",
+      "resource": "pool",
+      "class": "financial",
+      "summary": "Settle a payment pool",
+      "subjects": [
+        "user",
+        "creature",
+        "workload"
+      ],
+      "rule": [
+        "counterparty"
+      ],
+      "legacy_guard": "finance",
+      "delegable": true,
+      "surfaces": [
+        "signed-shell-action /creatures/settlePool",
+        "unified-host-call settlePool"
+      ]
+    },
+    {
+      "id": "finance.payout.list",
+      "resource": "payout",
+      "class": "financial",
+      "summary": "List payouts",
+      "subjects": [
+        "user",
+        "creature",
+        "workload"
+      ],
+      "rule": [
+        "self",
+        "finance_operator"
+      ],
+      "legacy_guard": "finance",
+      "delegable": true,
+      "surfaces": [
+        "signed-shell-action /creatures/listPayouts"
+      ]
+    },
+    {
+      "id": "finance.payout.request",
+      "resource": "payout",
+      "class": "financial",
+      "summary": "Request a payout",
+      "subjects": [
+        "user",
+        "creature",
+        "workload"
+      ],
+      "rule": [
+        "self"
+      ],
+      "legacy_guard": "finance",
+      "delegable": true,
+      "surfaces": [
+        "signed-shell-action /creatures/requestPayout"
+      ]
+    },
+    {
+      "id": "finance.payout.resolve",
+      "resource": "payout",
+      "class": "financial",
+      "summary": "Resolve a payout",
+      "subjects": [
+        "user",
+        "service"
+      ],
+      "rule": [
+        "finance_operator"
+      ],
+      "legacy_guard": "finance",
+      "delegable": false,
+      "surfaces": [
+        "signed-shell-action /creatures/resolvePayout"
+      ]
+    },
+    {
+      "id": "finance.catalog.publish",
+      "resource": "finance_catalog",
+      "class": "financial",
+      "summary": "Publish a pricing catalog",
+      "subjects": [
+        "user",
+        "creature",
+        "workload"
+      ],
+      "rule": [
+        "self",
+        "same_creature"
+      ],
+      "legacy_guard": "finance",
+      "delegable": true,
+      "surfaces": [
+        "signed-shell-action /creatures/publishFinanceCatalog",
+        "unified-host-call publishFinanceCatalog"
+      ]
+    },
+    {
+      "id": "finance.quote.publish",
+      "resource": "finance_quote",
+      "class": "financial",
+      "summary": "Publish a quote",
+      "subjects": [
+        "user",
+        "creature",
+        "workload"
+      ],
+      "rule": [
+        "self",
+        "same_creature"
+      ],
+      "legacy_guard": "finance",
+      "delegable": true,
+      "surfaces": [
+        "signed-shell-action /creatures/publishFinanceQuote",
+        "unified-host-call publishFinanceQuote"
+      ]
+    },
+    {
+      "id": "finance.node.register",
+      "resource": "finance_node",
+      "class": "financial",
+      "summary": "Register a finance node",
+      "subjects": [
+        "user",
+        "creature",
+        "workload"
+      ],
+      "rule": [
+        "owner",
+        "same_creature",
+        "finance_operator"
+      ],
+      "legacy_guard": "finance",
+      "delegable": true,
+      "surfaces": [
+        "signed-shell-action /creatures/registerFinanceNode",
+        "unified-host-call registerFinanceNode"
+      ]
+    },
+    {
+      "id": "finance.node.retire",
+      "resource": "finance_node",
+      "class": "financial",
+      "summary": "Retire a finance node",
+      "subjects": [
+        "user",
+        "creature",
+        "workload"
+      ],
+      "rule": [
+        "owner",
+        "same_creature",
+        "finance_operator"
+      ],
+      "legacy_guard": "finance",
+      "delegable": true,
+      "surfaces": [
+        "signed-shell-action /creatures/retireFinanceNode",
+        "unified-host-call retireFinanceNode"
+      ]
+    },
+    {
+      "id": "finance.resource.register",
+      "resource": "finance_resource",
+      "class": "financial",
+      "summary": "Register a billable resource",
+      "subjects": [
+        "user",
+        "creature",
+        "workload"
+      ],
+      "rule": [
+        "owner",
+        "same_creature"
+      ],
+      "legacy_guard": "finance",
+      "delegable": true,
+      "surfaces": [
+        "signed-shell-action /creatures/registerFinanceResource",
+        "unified-host-call registerFinanceResource"
+      ]
+    },
+    {
+      "id": "finance.resource.retire",
+      "resource": "finance_resource",
+      "class": "financial",
+      "summary": "Retire a billable resource",
+      "subjects": [
+        "user",
+        "creature",
+        "workload"
+      ],
+      "rule": [
+        "owner",
+        "same_creature"
+      ],
+      "legacy_guard": "finance",
+      "delegable": true,
+      "surfaces": [
+        "signed-shell-action /creatures/retireFinanceResource",
+        "unified-host-call retireFinanceResource"
+      ]
+    },
+    {
+      "id": "finance.resource.review",
+      "resource": "finance_resource",
+      "class": "financial",
+      "summary": "Review a billable resource",
+      "subjects": [
+        "user",
+        "creature",
+        "workload"
+      ],
+      "rule": [
+        "owner",
+        "same_creature",
+        "finance_operator"
+      ],
+      "legacy_guard": "finance",
+      "delegable": true,
+      "surfaces": [
+        "signed-shell-action /creatures/reviewFinanceResource",
+        "unified-host-call reviewFinanceResource"
+      ]
+    },
+    {
+      "id": "secret.write",
+      "resource": "secret",
+      "class": "security",
+      "summary": "Store a secret",
+      "subjects": [
+        "user",
+        "creature",
+        "workload"
+      ],
+      "rule": [
+        "self",
+        "same_creature"
+      ],
+      "legacy_guard": "user",
+      "delegable": false,
+      "surfaces": [
+        "signed-shell-action /creatures/secretPut"
+      ]
+    },
+    {
+      "id": "secret.read",
+      "resource": "secret",
+      "class": "security",
+      "summary": "Read a secret",
+      "subjects": [
+        "user",
+        "creature",
+        "workload"
+      ],
+      "rule": [
+        "self",
+        "same_creature",
+        "secret_grantee"
+      ],
+      "legacy_guard": "user",
+      "delegable": true,
+      "surfaces": [
+        "signed-shell-action /creatures/secretGet",
+        "unified-host-call secretGet"
+      ]
+    },
+    {
+      "id": "secret.list",
+      "resource": "secret",
+      "class": "read",
+      "summary": "List own secret names",
+      "subjects": [
+        "user",
+        "creature",
+        "workload"
+      ],
+      "rule": [
+        "self",
+        "same_creature"
+      ],
+      "legacy_guard": "user",
+      "delegable": true,
+      "surfaces": [
+        "signed-shell-action /creatures/secretList"
+      ]
+    },
+    {
+      "id": "secret.list_granted",
+      "resource": "secret",
+      "class": "read",
+      "summary": "List secrets granted to the subject",
+      "subjects": [
+        "user",
+        "creature",
+        "workload"
+      ],
+      "rule": [
+        "self",
+        "same_creature"
+      ],
+      "legacy_guard": "user",
+      "delegable": true,
+      "surfaces": [
+        "signed-shell-action /creatures/secretListGranted",
+        "unified-host-call secretListGranted"
+      ]
+    },
+    {
+      "id": "secret.grant",
+      "resource": "secret",
+      "class": "security",
+      "summary": "Grant a secret",
+      "subjects": [
+        "user",
+        "creature",
+        "workload"
+      ],
+      "rule": [
+        "self",
+        "same_creature"
+      ],
+      "legacy_guard": "user",
+      "delegable": false,
+      "surfaces": [
+        "signed-shell-action /creatures/secretGrant"
+      ]
+    },
+    {
+      "id": "secret.revoke",
+      "resource": "secret",
+      "class": "security",
+      "summary": "Revoke a secret grant",
+      "subjects": [
+        "user",
+        "creature",
+        "workload"
+      ],
+      "rule": [
+        "self",
+        "same_creature"
+      ],
+      "legacy_guard": "user",
+      "delegable": false,
+      "surfaces": [
+        "signed-shell-action /creatures/secretRevoke"
+      ]
+    },
+    {
+      "id": "store.create",
+      "resource": "store",
+      "class": "write",
+      "summary": "Create a store",
+      "subjects": [
+        "user",
+        "creature",
+        "workload"
+      ],
+      "rule": [
+        "authenticated",
+        "same_creature"
+      ],
+      "legacy_guard": "guest",
+      "delegable": true,
+      "surfaces": [
+        "unified-host-call createOwnedStore",
+        "unified-host-call createStore"
+      ]
+    },
+    {
+      "id": "store.read",
+      "resource": "store",
+      "class": "read",
+      "summary": "Read store records",
+      "subjects": [
+        "user",
+        "creature",
+        "workload"
+      ],
+      "rule": [
+        "store_read",
+        "same_creature"
+      ],
+      "legacy_guard": "guest",
+      "delegable": true,
+      "surfaces": [
+        "unified-host-call getStore",
+        "unified-host-call listStores"
+      ]
+    },
+    {
+      "id": "store.update",
+      "resource": "store",
+      "class": "write",
+      "summary": "Update a store",
+      "subjects": [
+        "user",
+        "creature",
+        "workload"
+      ],
+      "rule": [
+        "store_manage",
+        "owner"
+      ],
+      "legacy_guard": "guest",
+      "delegable": true,
+      "surfaces": [
+        "unified-host-call updateStore"
+      ]
+    },
+    {
+      "id": "store.delete",
+      "resource": "store",
+      "class": "write",
+      "summary": "Delete a store",
+      "subjects": [
+        "user",
+        "creature",
+        "workload"
+      ],
+      "rule": [
+        "owner",
+        "store_manage"
+      ],
+      "legacy_guard": "guest",
+      "delegable": true,
+      "surfaces": [
+        "unified-host-call deleteOwnedStore",
+        "unified-host-call deleteStore",
+        "unified-host-call removeOwnedStore",
+        "unified-host-call removeStore"
+      ]
+    },
+    {
+      "id": "store.signal",
+      "resource": "store",
+      "class": "write",
+      "summary": "Signal a store",
+      "subjects": [
+        "user",
+        "creature",
+        "workload"
+      ],
+      "rule": [
+        "store_signal"
+      ],
+      "legacy_guard": "store",
+      "delegable": true,
+      "surfaces": [
+        "signed-shell-action /stores/signal",
+        "unified-host-call signal"
+      ]
+    },
+    {
+      "id": "store.history.read",
+      "resource": "store",
+      "class": "read",
+      "summary": "Read store history",
+      "subjects": [
+        "user",
+        "creature",
+        "workload"
+      ],
+      "rule": [
+        "store_read"
+      ],
+      "legacy_guard": "store",
+      "delegable": true,
+      "surfaces": [
+        "signed-shell-action /stores/history"
+      ]
+    },
+    {
+      "id": "store.access.read",
+      "resource": "store",
+      "class": "read",
+      "summary": "Read store permissions",
+      "subjects": [
+        "user",
+        "creature",
+        "workload"
+      ],
+      "rule": [
+        "store_read"
+      ],
+      "legacy_guard": "store",
+      "delegable": true,
+      "surfaces": [
+        "signed-shell-action /stores/getAccess",
+        "unified-host-call hasAccessToStore"
+      ]
+    },
+    {
+      "id": "store.access.write",
+      "resource": "store",
+      "class": "security",
+      "summary": "Change store membership",
+      "subjects": [
+        "user",
+        "creature",
+        "workload"
+      ],
+      "rule": [
+        "store_manage",
+        "owner"
+      ],
+      "legacy_guard": "store",
+      "delegable": true,
+      "surfaces": [
+        "signed-shell-action /stores/setAccess",
+        "unified-host-call createAccess",
+        "unified-host-call createOwnedAccess",
+        "unified-host-call deleteAccess",
+        "unified-host-call deleteOwnedAccess",
+        "unified-host-call removeAccess",
+        "unified-host-call removeOwnedAccess"
+      ]
+    },
+    {
+      "id": "store.members.read",
+      "resource": "store",
+      "class": "read",
+      "summary": "List store members",
+      "subjects": [
+        "user",
+        "creature",
+        "workload"
+      ],
+      "rule": [
+        "store_read"
+      ],
+      "legacy_guard": "guest",
+      "delegable": true,
+      "surfaces": [
+        "unified-host-call listStoreAccess",
+        "unified-host-call listStoreMembers",
+        "unified-host-call readMembers"
+      ]
+    },
+    {
+      "id": "topic.publish",
+      "resource": "topic",
+      "class": "write",
+      "summary": "Publish to a realtime topic",
+      "subjects": [
+        "user",
+        "creature",
+        "node",
+        "service",
+        "workload",
+        "module_publisher"
+      ],
+      "rule": [
+        "public",
+        "granted"
+      ],
+      "legacy_guard": "public",
+      "delegable": true,
+      "surfaces": [
+        "signed-shell-action /gateway/signal",
+        "unified-host-call publishUpdate",
+        "unified-host-call signalGroup"
+      ]
+    },
+    {
+      "id": "topic.subscribe",
+      "resource": "topic",
+      "class": "read",
+      "summary": "Subscribe to a realtime topic",
+      "subjects": [
+        "user",
+        "creature",
+        "node",
+        "service",
+        "workload",
+        "module_publisher"
+      ],
+      "rule": [
+        "public",
+        "granted"
+      ],
+      "legacy_guard": "public",
+      "delegable": true,
+      "surfaces": [
+        "signed-shell-action /gateway/subscribe",
+        "unified-host-call joinGroup"
+      ]
+    },
+    {
+      "id": "topic.unsubscribe",
+      "resource": "topic",
+      "class": "read",
+      "summary": "Unsubscribe from a realtime topic",
+      "subjects": [
+        "user",
+        "creature",
+        "node",
+        "service",
+        "workload",
+        "module_publisher"
+      ],
+      "rule": [
+        "public"
+      ],
+      "legacy_guard": "public",
+      "delegable": true,
+      "surfaces": [
+        "signed-shell-action /gateway/unsubscribe"
+      ]
+    },
+    {
+      "id": "program.create",
+      "resource": "program",
+      "class": "write",
+      "summary": "Create a program",
+      "subjects": [
+        "user",
+        "creature",
+        "workload"
+      ],
+      "rule": [
+        "owner",
+        "same_creature"
+      ],
+      "legacy_guard": "user",
+      "delegable": true,
+      "surfaces": [
+        "signed-shell-action /programs/create",
+        "unified-host-call createProgram"
+      ]
+    },
+    {
+      "id": "program.read",
+      "resource": "program",
+      "class": "read",
+      "summary": "Read a program",
+      "subjects": [
+        "user",
+        "creature",
+        "workload"
+      ],
+      "rule": [
+        "owner",
+        "same_creature"
+      ],
+      "legacy_guard": "guest",
+      "delegable": true,
+      "surfaces": [
+        "unified-host-call getProgram"
+      ]
+    },
+    {
+      "id": "program.list",
+      "resource": "program",
+      "class": "read",
+      "summary": "List programs",
+      "subjects": [
+        "user",
+        "creature",
+        "workload"
+      ],
+      "rule": [
+        "owner",
+        "same_creature"
+      ],
+      "legacy_guard": "user",
+      "delegable": true,
+      "surfaces": [
+        "signed-shell-action /machines/listProgramMachines",
+        "signed-shell-action /programs/list",
+        "unified-host-call listProgramMachines",
+        "unified-host-call listPrograms"
+      ]
+    },
+    {
+      "id": "program.update",
+      "resource": "program",
+      "class": "write",
+      "summary": "Update a program",
+      "subjects": [
+        "user",
+        "creature",
+        "workload"
+      ],
+      "rule": [
+        "owner",
+        "same_creature"
+      ],
+      "legacy_guard": "user",
+      "delegable": true,
+      "surfaces": [
+        "signed-shell-action /programs/update",
+        "unified-host-call updateProgram"
+      ]
+    },
+    {
+      "id": "program.delete",
+      "resource": "program",
+      "class": "write",
+      "summary": "Delete a program",
+      "subjects": [
+        "user",
+        "creature",
+        "workload"
+      ],
+      "rule": [
+        "owner",
+        "same_creature"
+      ],
+      "legacy_guard": "user",
+      "delegable": true,
+      "surfaces": [
+        "signed-shell-action /programs/delete",
+        "unified-host-call deleteOwnedProgram",
+        "unified-host-call deleteProgram"
+      ]
+    },
+    {
+      "id": "program.alarm.set",
+      "resource": "program",
+      "class": "write",
+      "summary": "Set a program alarm",
+      "subjects": [
+        "workload"
+      ],
+      "rule": [
+        "same_creature"
+      ],
+      "legacy_guard": "guest",
+      "delegable": true,
+      "surfaces": [
+        "unified-host-call plantTrigger"
+      ]
+    },
+    {
+      "id": "entity.deploy",
+      "resource": "entity",
+      "class": "write",
+      "summary": "Deploy an entity",
+      "subjects": [
+        "user",
+        "creature",
+        "workload"
+      ],
+      "rule": [
+        "owner",
+        "same_creature"
+      ],
+      "legacy_guard": "user",
+      "delegable": true,
+      "surfaces": [
+        "signed-shell-action /programs/deploy",
+        "unified-host-call deploy entity",
+        "unified-host-call deployEntity"
+      ]
+    },
+    {
+      "id": "entity.delete",
+      "resource": "entity",
+      "class": "write",
+      "summary": "Delete an entity",
+      "subjects": [
+        "user",
+        "creature",
+        "workload"
+      ],
+      "rule": [
+        "owner",
+        "same_creature"
+      ],
+      "legacy_guard": "user",
+      "delegable": true,
+      "surfaces": [
+        "signed-shell-action /programs/deleteEntity"
+      ]
+    },
+    {
+      "id": "entity.download",
+      "resource": "entity",
+      "class": "read",
+      "summary": "Download a downloadable entity",
+      "subjects": [
+        "user",
+        "creature",
+        "workload"
+      ],
+      "rule": [
+        "authenticated"
+      ],
+      "legacy_guard": "user",
+      "delegable": true,
+      "surfaces": [
+        "signed-shell-action /programs/downloadEntity"
+      ]
+    },
+    {
+      "id": "workload.start",
+      "resource": "workload",
+      "class": "write",
+      "summary": "Start a workload",
+      "subjects": [
+        "user",
+        "creature",
+        "workload"
+      ],
+      "rule": [
+        "owner",
+        "same_creature"
+      ],
+      "legacy_guard": "user",
+      "delegable": true,
+      "surfaces": [
+        "signed-shell-action /programs/runEntity",
+        "unified-host-call runVm"
+      ]
+    },
+    {
+      "id": "workload.stop",
+      "resource": "workload",
+      "class": "write",
+      "summary": "Stop a workload",
+      "subjects": [
+        "user",
+        "creature",
+        "workload"
+      ],
+      "rule": [
+        "owner",
+        "same_creature"
+      ],
+      "legacy_guard": "user",
+      "delegable": true,
+      "surfaces": [
+        "signed-shell-action /programs/stopEntity",
+        "unified-host-call terminateVm"
+      ]
+    },
+    {
+      "id": "workload.pause",
+      "resource": "workload",
+      "class": "write",
+      "summary": "Pause a workload",
+      "subjects": [
+        "user",
+        "creature",
+        "workload"
+      ],
+      "rule": [
+        "owner",
+        "same_creature"
+      ],
+      "legacy_guard": "new",
+      "delegable": true,
+      "surfaces": []
+    },
+    {
+      "id": "workload.delete",
+      "resource": "workload",
+      "class": "write",
+      "summary": "Delete a workload",
+      "subjects": [
+        "user",
+        "creature",
+        "workload"
+      ],
+      "rule": [
+        "owner",
+        "same_creature"
+      ],
+      "legacy_guard": "guest",
+      "delegable": true,
+      "surfaces": [
+        "unified-host-call deleteVm",
+        "unified-host-call destroyVm"
+      ]
+    },
+    {
+      "id": "workload.list",
+      "resource": "workload",
+      "class": "read",
+      "summary": "List an entity's workloads",
+      "subjects": [
+        "user",
+        "creature",
+        "workload"
+      ],
+      "rule": [
+        "owner",
+        "same_creature"
+      ],
+      "legacy_guard": "user",
+      "delegable": true,
+      "surfaces": [
+        "signed-shell-action /machines/listEntityVms"
+      ]
+    },
+    {
+      "id": "workload.status.read",
+      "resource": "workload",
+      "class": "read",
+      "summary": "Workload status",
+      "subjects": [
+        "user",
+        "creature",
+        "workload"
+      ],
+      "rule": [
+        "owner",
+        "same_creature"
+      ],
+      "legacy_guard": "guest",
+      "delegable": true,
+      "surfaces": [
+        "unified-host-call statusVm"
+      ]
+    },
+    {
+      "id": "workload.endpoints.read",
+      "resource": "workload",
+      "class": "read",
+      "summary": "Workload endpoints",
+      "subjects": [
+        "user",
+        "creature",
+        "workload"
+      ],
+      "rule": [
+        "owner",
+        "same_creature"
+      ],
+      "legacy_guard": "guest",
+      "delegable": true,
+      "surfaces": [
+        "unified-host-call vmEndpoints"
+      ]
+    },
+    {
+      "id": "workload.logs.read",
+      "resource": "workload",
+      "class": "read",
+      "summary": "Read workload logs",
+      "subjects": [
+        "user",
+        "creature",
+        "workload"
+      ],
+      "rule": [
+        "owner"
+      ],
+      "legacy_guard": "user",
+      "delegable": true,
+      "surfaces": [
+        "signed-shell-action /machines/readVmLogs"
+      ]
+    },
+    {
+      "id": "workload.logs.write",
+      "resource": "workload",
+      "class": "write",
+      "summary": "Write workload logs",
+      "subjects": [
+        "workload"
+      ],
+      "rule": [
+        "self"
+      ],
+      "legacy_guard": "guest",
+      "delegable": true,
+      "surfaces": [
+        "unified-host-call consoleLog",
+        "unified-host-call vmLog"
+      ]
+    },
+    {
+      "id": "workload.terminal.open",
+      "resource": "workload",
+      "class": "security",
+      "summary": "Open a workload terminal",
+      "subjects": [
+        "user",
+        "creature"
+      ],
+      "rule": [
+        "owner"
+      ],
+      "legacy_guard": "user",
+      "delegable": false,
+      "surfaces": [
+        "signed-shell-action /machines/openVmTerminal"
+      ]
+    },
+    {
+      "id": "workload.terminal.close",
+      "resource": "workload",
+      "class": "write",
+      "summary": "Close a workload terminal",
+      "subjects": [
+        "user",
+        "creature"
+      ],
+      "rule": [
+        "owner"
+      ],
+      "legacy_guard": "user",
+      "delegable": true,
+      "surfaces": [
+        "signed-shell-action /machines/closeVmTerminal"
+      ]
+    },
+    {
+      "id": "workload.exec",
+      "resource": "workload",
+      "class": "security",
+      "summary": "Execute a command in a workload",
+      "subjects": [
+        "user",
+        "creature",
+        "workload"
+      ],
+      "rule": [
+        "owner",
+        "same_creature"
+      ],
+      "legacy_guard": "guest",
+      "delegable": false,
+      "surfaces": [
+        "unified-host-call execDocker",
+        "unified-host-call execVm"
+      ]
+    },
+    {
+      "id": "workload.files.copy",
+      "resource": "workload",
+      "class": "write",
+      "summary": "Copy files into or out of a workload",
+      "subjects": [
+        "user",
+        "creature",
+        "workload"
+      ],
+      "rule": [
+        "owner",
+        "same_creature"
+      ],
+      "legacy_guard": "guest",
+      "delegable": true,
+      "surfaces": [
+        "unified-host-call copyFromVm",
+        "unified-host-call copyToDocker",
+        "unified-host-call copyToVm"
+      ]
+    },
+    {
+      "id": "workload.build",
+      "resource": "workload",
+      "class": "write",
+      "summary": "Build a workload image",
+      "subjects": [
+        "user",
+        "creature",
+        "workload"
+      ],
+      "rule": [
+        "owner",
+        "same_creature"
+      ],
+      "legacy_guard": "guest",
+      "delegable": true,
+      "surfaces": [
+        "unified-host-call buildDockerImage",
+        "unified-host-call buildVmImage"
+      ]
+    },
+    {
+      "id": "workload.builds.read",
+      "resource": "workload",
+      "class": "read",
+      "summary": "Read workload builds",
+      "subjects": [
+        "user",
+        "creature",
+        "workload"
+      ],
+      "rule": [
+        "owner"
+      ],
+      "legacy_guard": "user",
+      "delegable": true,
+      "surfaces": [
+        "signed-shell-action /machines/readMachineBuilds"
+      ]
+    },
+    {
+      "id": "workload.resource_lock",
+      "resource": "workload",
+      "class": "write",
+      "summary": "Take or release a workload resource lock",
+      "subjects": [
+        "workload"
+      ],
+      "rule": [
+        "same_creature"
+      ],
+      "legacy_guard": "guest",
+      "delegable": true,
+      "surfaces": [
+        "unified-host-call lockResource",
+        "unified-host-call unlockResource"
+      ]
+    },
+    {
+      "id": "workload.proof.verify",
+      "resource": "workload",
+      "class": "read",
+      "summary": "Verify a program execution proof",
+      "subjects": [
+        "user",
+        "creature",
+        "workload"
+      ],
+      "rule": [
+        "authenticated"
+      ],
+      "legacy_guard": "guest",
+      "delegable": true,
+      "surfaces": [
+        "unified-host-call elpifyProof",
+        "unified-host-call verifyProgramExecution"
+      ]
+    },
+    {
+      "id": "workload.http_ingress",
+      "resource": "workload",
+      "class": "write",
+      "summary": "HTTP ingress to a workload",
+      "subjects": [
+        "user",
+        "creature",
+        "node",
+        "service",
+        "workload",
+        "module_publisher"
+      ],
+      "rule": [
+        "public",
+        "granted"
+      ],
+      "legacy_guard": "http_public",
+      "delegable": true,
+      "surfaces": [
+        "vm-http-ingress ANY /{creatureId}/{programId}/{entityId}/{vmId}/{path...}",
+        "vm-http-ingress ANY /{creatureUsername}/{customPath...}"
+      ]
+    },
+    {
+      "id": "workload.shell_action",
+      "resource": "workload",
+      "class": "write",
+      "summary": "A guest calling a signed shell action; the inner action is authorized as itself",
+      "subjects": [
+        "workload"
+      ],
+      "rule": [
+        "same_creature"
+      ],
+      "legacy_guard": "guest",
+      "delegable": true,
+      "surfaces": [
+        "unified-host-call execShellAction"
+      ]
+    },
+    {
+      "id": "resource_store.read",
+      "resource": "resource_store",
+      "class": "read",
+      "summary": "Read or list resource stores",
+      "subjects": [
+        "user",
+        "creature",
+        "workload"
+      ],
+      "rule": [
+        "owner",
+        "same_creature"
+      ],
+      "legacy_guard": "guest",
+      "delegable": true,
+      "surfaces": [
+        "unified-host-call getResourceStore",
+        "unified-host-call getVmOwnedStore",
+        "unified-host-call listResourceStores",
+        "unified-host-call listVmOwnedStores"
+      ]
+    },
+    {
+      "id": "resource_store.write",
+      "resource": "resource_store",
+      "class": "write",
+      "summary": "Create or update a resource store",
+      "subjects": [
+        "user",
+        "creature",
+        "workload"
+      ],
+      "rule": [
+        "owner",
+        "same_creature"
+      ],
+      "legacy_guard": "guest",
+      "delegable": true,
+      "surfaces": [
+        "unified-host-call createResourceStore",
+        "unified-host-call createVmOwnedStore",
+        "unified-host-call updateResourceStore",
+        "unified-host-call updateVmOwnedStore"
+      ]
+    },
+    {
+      "id": "resource_store.delete",
+      "resource": "resource_store",
+      "class": "write",
+      "summary": "Delete a resource store",
+      "subjects": [
+        "user",
+        "creature",
+        "workload"
+      ],
+      "rule": [
+        "owner",
+        "same_creature"
+      ],
+      "legacy_guard": "guest",
+      "delegable": true,
+      "surfaces": [
+        "unified-host-call deleteResourceStore",
+        "unified-host-call deleteVmOwnedStore"
+      ]
+    },
+    {
+      "id": "resource_entity.write",
+      "resource": "resource_entity",
+      "class": "write",
+      "summary": "Create or update a resource entity",
+      "subjects": [
+        "user",
+        "creature",
+        "workload"
+      ],
+      "rule": [
+        "owner",
+        "same_creature"
+      ],
+      "legacy_guard": "guest",
+      "delegable": true,
+      "surfaces": [
+        "unified-host-call createResourceEntity"
+      ]
+    },
+    {
+      "id": "resource_entity.delete",
+      "resource": "resource_entity",
+      "class": "write",
+      "summary": "Delete a resource entity",
+      "subjects": [
+        "user",
+        "creature",
+        "workload"
+      ],
+      "rule": [
+        "owner",
+        "same_creature"
+      ],
+      "legacy_guard": "guest",
+      "delegable": true,
+      "surfaces": [
+        "unified-host-call deleteResourceEntity"
+      ]
+    },
+    {
+      "id": "guest_data.access",
+      "resource": "guest_data",
+      "class": "write",
+      "summary": "The creature's own guest data: dbOp, confined documents and links (ADR 0028)",
+      "subjects": [
+        "workload"
+      ],
+      "rule": [
+        "same_creature"
+      ],
+      "legacy_guard": "guest",
+      "delegable": true,
+      "surfaces": [
+        "unified-host-call commitTrx",
+        "unified-host-call dbOp",
+        "unified-host-call delKey",
+        "unified-host-call getByPrefix",
+        "unified-host-call getJson",
+        "unified-host-call getLink",
+        "unified-host-call putJson"
+      ]
+    },
+    {
+      "id": "network.egress",
+      "resource": "network",
+      "class": "security",
+      "summary": "Outbound HTTP from a workload (deny by default, A406)",
+      "subjects": [
+        "workload"
+      ],
+      "rule": [
+        "granted"
+      ],
+      "legacy_guard": "guest",
+      "delegable": true,
+      "surfaces": [
+        "unified-host-call httpPost",
+        "unified-host-call httpRequest"
+      ]
+    },
+    {
+      "id": "file.upload",
+      "resource": "file",
+      "class": "write",
+      "summary": "Upload a public file",
+      "subjects": [
+        "user",
+        "creature",
+        "workload"
+      ],
+      "rule": [
+        "authenticated"
+      ],
+      "legacy_guard": "user",
+      "delegable": true,
+      "surfaces": [
+        "public-storage-http POST /storage/upload",
+        "public-storage-http PUT /storage/upload",
+        "signed-shell-action /storage/upload"
+      ]
+    },
+    {
+      "id": "file.read",
+      "resource": "file",
+      "class": "read",
+      "summary": "Read a public file",
+      "subjects": [
+        "user",
+        "creature",
+        "node",
+        "service",
+        "workload",
+        "module_publisher"
+      ],
+      "rule": [
+        "public"
+      ],
+      "legacy_guard": "http_public",
+      "delegable": true,
+      "surfaces": [
+        "public-storage-http GET /storage/file/{id}",
+        "public-storage-http HEAD /storage/file/{id}"
+      ]
+    },
+    {
+      "id": "module.list",
+      "resource": "module",
+      "class": "read",
+      "summary": "Module admin: listModules",
+      "subjects": [
+        "user",
+        "service"
+      ],
+      "rule": [
+        "node_admin"
+      ],
+      "legacy_guard": "module_admin",
+      "delegable": false,
+      "surfaces": [
+        "module-admin listModules"
+      ]
+    },
+    {
+      "id": "module.inspect",
+      "resource": "module",
+      "class": "read",
+      "summary": "Module admin: inspectModule",
+      "subjects": [
+        "user",
+        "service"
+      ],
+      "rule": [
+        "node_admin"
+      ],
+      "legacy_guard": "module_admin",
+      "delegable": false,
+      "surfaces": [
+        "module-admin inspectModule"
+      ]
+    },
+    {
+      "id": "module.install",
+      "resource": "module",
+      "class": "administrative",
+      "summary": "Module admin: installModule",
+      "subjects": [
+        "user",
+        "service"
+      ],
+      "rule": [
+        "node_admin"
+      ],
+      "legacy_guard": "module_admin",
+      "delegable": false,
+      "surfaces": [
+        "module-admin installModule"
+      ]
+    },
+    {
+      "id": "module.lifecycle.change",
+      "resource": "module",
+      "class": "administrative",
+      "summary": "Module admin: changeModuleLifecycle",
+      "subjects": [
+        "user",
+        "service"
+      ],
+      "rule": [
+        "node_admin"
+      ],
+      "legacy_guard": "module_admin",
+      "delegable": false,
+      "surfaces": [
+        "module-admin changeModuleLifecycle"
+      ]
+    },
+    {
+      "id": "module_publisher.enroll",
+      "resource": "module_publisher",
+      "class": "administrative",
+      "summary": "Enroll a module publisher",
+      "subjects": [
+        "user",
+        "service"
+      ],
+      "rule": [
+        "node_admin"
+      ],
+      "legacy_guard": "module_admin",
+      "delegable": false,
+      "surfaces": [
+        "module-admin enrollModulePublisher"
+      ]
+    },
+    {
+      "id": "capability.issue",
+      "resource": "grant",
+      "class": "security",
+      "summary": "Issue a root capability grant",
+      "subjects": [
+        "user",
+        "creature",
+        "service"
+      ],
+      "rule": [
+        "node_admin",
+        "owner"
+      ],
+      "legacy_guard": "new",
+      "delegable": false,
+      "surfaces": []
+    },
+    {
+      "id": "capability.delegate",
+      "resource": "grant",
+      "class": "security",
+      "summary": "Delegate an attenuated grant from one the subject holds",
+      "subjects": [
+        "user",
+        "creature",
+        "workload"
+      ],
+      "rule": [
+        "self"
+      ],
+      "legacy_guard": "new",
+      "delegable": false,
+      "surfaces": []
+    },
+    {
+      "id": "capability.revoke",
+      "resource": "grant",
+      "class": "security",
+      "summary": "Revoke a grant and, with it, every descendant",
+      "subjects": [
+        "user",
+        "creature",
+        "service",
+        "workload"
+      ],
+      "rule": [
+        "self",
+        "owner",
+        "node_admin"
+      ],
+      "legacy_guard": "new",
+      "delegable": false,
+      "surfaces": []
+    }
+  ]
+}

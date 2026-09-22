@@ -55,13 +55,23 @@ verification: ASEMAN_TEST_POSTGRES_URL=... cargo test -p aseman-migration-e2e
    the active generation, and require a clean comparison.
 7. **Cut over.** Switch the binding generation, then raise the target fence to the new
    generation. The legacy side keeps receiving shadow writes.
+   - Before restarting, make sure every creature with guest data has an **active**
+     guest database binding (`core.guest_database_binding`): the import provisions,
+     fills, and enables it (ADR 0021, ADR 0028). On PostgreSQL, a creature without an
+     active binding is refused guest data rather than served from legacy.
    - Restart each node with `ASEMAN_CORE_STORAGE_PROVIDER=postgres`,
      `ASEMAN_DATABASE_URL_SECRET`, and `ASEMAN_CORE_BINDING_GENERATION` set to the new
-     generation.
-   - The core families then run on PostgreSQL. The families ADR 0026 keeps on legacy
-     (finance and balances, identity credentials, VMM runtime, chains, id allocation)
-     stay on the legacy store.
-   - Do not cut over while LD-14 or LD-24 is open.
+     generation. Also set the guest proxy: `ASEMAN_GUEST_PROXY_URL_SECRET` (a secret
+     file with the proxy's connection URL) and `ASEMAN_GUEST_PROXY_ROLE` (the `LOGIN`
+     role that assumes creature roles, A306). `ASEMAN_GUEST_PROXY_MAX_POOLS` and
+     `ASEMAN_GUEST_PROXY_POOL_SIZE` default to 64 and 4.
+   - The core families then run on PostgreSQL, guest data is served from each
+     creature's own database, and every enforcement decision is appended to
+     `audit.event`. The families ADR 0026 keeps on legacy (finance and balances,
+     identity credentials, VMM runtime, chains, id allocation) stay on the legacy
+     store.
+   - Issue the workload egress grants (`network.egress` on `network:{host}`) before
+     `network.egress` leaves shadow mode (A406).
 8. **Observe the rollback window.** If rollback is needed, and only while
    `shadow_failures = 0`, run rollback, which raises the generation again. Never drop
    or truncate the target during rollback.

@@ -199,43 +199,43 @@
       "logical_template": "Json::Creature::{}",
       "method": "get_json",
       "mode": "read",
-      "source": "node/src/drivers/vmm/hostcall_entities.rs:1980"
+      "source": "node/src/drivers/vmm/hostcall_entities.rs:1855"
     },
     {
       "logical_template": "Json::Creature::{}",
       "method": "put_json",
       "mode": "write",
-      "source": "node/src/shell/api/actions/creature.rs:1017"
+      "source": "node/src/shell/api/actions/creature.rs:1019"
     },
     {
       "logical_template": "Json::Creature::{}",
       "method": "get_json",
       "mode": "read",
-      "source": "node/src/shell/api/actions/creature.rs:1052"
+      "source": "node/src/shell/api/actions/creature.rs:1054"
     },
     {
       "logical_template": "Json::Creature::{}",
       "method": "del_json",
       "mode": "write",
-      "source": "node/src/shell/api/actions/creature.rs:1154"
+      "source": "node/src/shell/api/actions/creature.rs:1156"
     },
     {
       "logical_template": "Json::Creature::{}",
       "method": "put_json",
       "mode": "write",
-      "source": "node/src/shell/api/actions/creature.rs:1175"
+      "source": "node/src/shell/api/actions/creature.rs:1177"
     },
     {
       "logical_template": "Json::Creature::{}",
       "method": "get_json",
       "mode": "read",
-      "source": "node/src/shell/api/actions/program.rs:215"
+      "source": "node/src/shell/api/actions/program.rs:218"
     },
     {
       "logical_template": "Json::CreatureNamespace::billing",
       "method": "get_json",
       "mode": "read",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:1167"
+      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:1252"
     },
     {
       "logical_template": "Json::CreatureNamespace::billing",
@@ -331,19 +331,19 @@
       "logical_template": "Json::FinanceHold::{hold_id_c}",
       "method": "get_json",
       "mode": "read",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:1460"
+      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:1545"
     },
     {
       "logical_template": "Json::FinanceHold::{hold_id_c}",
       "method": "get_json",
       "mode": "read",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:1547"
+      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:1632"
     },
     {
       "logical_template": "Json::FinanceHold::{hold_id_c}",
       "method": "get_json",
       "mode": "read",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:1636"
+      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:1721"
     },
     {
       "logical_template": "Json::FinanceJournal::{journal_id}",
@@ -361,7 +361,7 @@
       "logical_template": "Json::FinancePool::{pool_id_c}",
       "method": "get_json",
       "mode": "read",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:1741"
+      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:1826"
     },
     {
       "logical_template": "Json::VmBilling::{}",
@@ -373,43 +373,43 @@
       "logical_template": "Json::VmBilling::{}",
       "method": "get_json",
       "mode": "read",
-      "source": "node/src/shell/api/actions/program.rs:315"
+      "source": "node/src/shell/api/actions/program.rs:318"
     },
     {
       "logical_template": "Json::VmBilling::{}",
       "method": "del_json",
       "mode": "write",
-      "source": "node/src/shell/api/actions/program.rs:434"
+      "source": "node/src/shell/api/actions/program.rs:437"
     },
     {
       "logical_template": "Json::VmBilling::{}",
       "method": "get_json",
       "mode": "read",
-      "source": "node/src/shell/api/actions/program.rs:490"
+      "source": "node/src/shell/api/actions/program.rs:493"
     },
     {
       "logical_template": "Json::VmBilling::{}",
       "method": "put_json",
       "mode": "write",
-      "source": "node/src/shell/api/actions/program.rs:495"
+      "source": "node/src/shell/api/actions/program.rs:498"
     },
     {
       "logical_template": "Json::VmBilling::{}",
       "method": "put_json",
       "mode": "write",
-      "source": "node/src/shell/api/actions/program.rs:741"
+      "source": "node/src/shell/api/actions/program.rs:751"
     },
     {
       "logical_template": "Json::VmBilling::{}",
       "method": "del_json",
       "mode": "write",
-      "source": "node/src/shell/api/actions/program.rs:856"
+      "source": "node/src/shell/api/actions/program.rs:859"
     },
     {
       "logical_template": "Json::VmBilling::{}",
       "method": "del_json",
       "mode": "write",
-      "source": "node/src/shell/api/actions/program.rs:984"
+      "source": "node/src/shell/api/actions/program.rs:980"
     },
     {
       "logical_template": "Program",
@@ -433,7 +433,7 @@
       "logical_template": "Session",
       "method": "get_index",
       "mode": "read",
-      "source": "node/src/shell/api/actions/creature.rs:1235"
+      "source": "node/src/shell/api/actions/creature.rs:1237"
     },
     {
       "logical_template": "Store",
@@ -469,79 +469,79 @@
       "logical_template": "UserEmailToId::{}",
       "method": "get_link",
       "mode": "read",
-      "source": "node/src/shell/api/actions/creature.rs:1226"
+      "source": "node/src/shell/api/actions/creature.rs:1228"
     },
     {
       "logical_template": "UserEmailToId::{}",
       "method": "put_link",
       "mode": "write",
-      "source": "node/src/shell/api/actions/creature.rs:1293"
+      "source": "node/src/shell/api/actions/creature.rs:1295"
     },
     {
       "logical_template": "UserEmailToId::{}",
       "method": "get_link",
       "mode": "read",
-      "source": "node/src/shell/api/actions/creature.rs:581"
+      "source": "node/src/shell/api/actions/creature.rs:582"
     },
     {
       "logical_template": "UserIdToEmail::{}",
       "method": "get_link",
       "mode": "read",
-      "source": "node/src/drivers/vmm/hostcall_entities.rs:172"
+      "source": "node/src/drivers/vmm/hostcall_entities.rs:173"
     },
     {
       "logical_template": "UserIdToEmail::{}",
+      "method": "put_link",
+      "mode": "write",
+      "source": "node/src/shell/api/actions/creature.rs:1296"
+    },
+    {
+      "logical_template": "UserIdToEmail::{}",
+      "method": "get_link",
+      "mode": "read",
+      "source": "node/src/shell/api/actions/creature.rs:1331"
+    },
+    {
+      "logical_template": "UserIdToEmail::{}",
+      "method": "get_link",
+      "mode": "read",
+      "source": "node/src/shell/api/actions/creature.rs:660"
+    },
+    {
+      "logical_template": "UserPrivateKey::{}",
+      "method": "get_link",
+      "mode": "read",
+      "source": "node/src/shell/api/actions/creature.rs:1243"
+    },
+    {
+      "logical_template": "UserPrivateKey::{}",
       "method": "put_link",
       "mode": "write",
       "source": "node/src/shell/api/actions/creature.rs:1294"
     },
     {
-      "logical_template": "UserIdToEmail::{}",
-      "method": "get_link",
-      "mode": "read",
-      "source": "node/src/shell/api/actions/creature.rs:1329"
-    },
-    {
-      "logical_template": "UserIdToEmail::{}",
-      "method": "get_link",
-      "mode": "read",
-      "source": "node/src/shell/api/actions/creature.rs:659"
-    },
-    {
-      "logical_template": "UserPrivateKey::{}",
-      "method": "get_link",
-      "mode": "read",
-      "source": "node/src/shell/api/actions/creature.rs:1241"
-    },
-    {
-      "logical_template": "UserPrivateKey::{}",
-      "method": "put_link",
-      "mode": "write",
-      "source": "node/src/shell/api/actions/creature.rs:1292"
-    },
-    {
       "logical_template": "VmBilling::",
       "method": "get_links_list",
       "mode": "read",
-      "source": "node/src/shell/api/actions/program.rs:305"
+      "source": "node/src/shell/api/actions/program.rs:308"
     },
     {
       "logical_template": "VmBilling::{}",
       "method": "put_link",
       "mode": "write",
-      "source": "node/src/shell/api/actions/program.rs:740"
+      "source": "node/src/shell/api/actions/program.rs:750"
     },
     {
       "logical_template": "VmBuilds::{}::{}",
       "method": "put_link",
       "mode": "write",
-      "source": "node/src/shell/api/actions/program.rs:1511"
+      "source": "node/src/shell/api/actions/program.rs:1461"
     },
     {
       "logical_template": "VmContainerName::{}::{}::{}",
       "method": "get_link",
       "mode": "read",
-      "source": "node/src/shell/api/actions/program.rs:1116"
+      "source": "node/src/shell/api/actions/program.rs:1106"
     },
     {
       "logical_template": "VmInstance::",
@@ -553,49 +553,49 @@
       "logical_template": "VmInstance::",
       "method": "get_links_list",
       "mode": "read",
-      "source": "node/src/shell/api/actions/program.rs:1013"
+      "source": "node/src/shell/api/actions/program.rs:1009"
     },
     {
       "logical_template": "VmInstance::{}::{}::{}",
       "method": "put_link",
       "mode": "write",
-      "source": "node/src/shell/api/actions/program.rs:760"
+      "source": "node/src/shell/api/actions/program.rs:770"
     },
     {
       "logical_template": "VmStartedAt::{}",
       "method": "get_link",
       "mode": "read",
-      "source": "node/src/shell/api/actions/program.rs:1113"
+      "source": "node/src/shell/api/actions/program.rs:1103"
     },
     {
       "logical_template": "VmStartedAt::{}",
       "method": "put_link",
       "mode": "write",
-      "source": "node/src/shell/api/actions/program.rs:690"
+      "source": "node/src/shell/api/actions/program.rs:700"
     },
     {
       "logical_template": "VmStatus::{}",
       "method": "get_link",
       "mode": "read",
-      "source": "node/src/shell/api/actions/program.rs:1111"
+      "source": "node/src/shell/api/actions/program.rs:1101"
     },
     {
       "logical_template": "VmStatus::{}",
       "method": "get_link",
       "mode": "read",
-      "source": "node/src/shell/api/actions/program.rs:312"
+      "source": "node/src/shell/api/actions/program.rs:315"
     },
     {
       "logical_template": "VmStatus::{}",
       "method": "put_link",
       "mode": "write",
-      "source": "node/src/shell/api/actions/program.rs:689"
+      "source": "node/src/shell/api/actions/program.rs:699"
     },
     {
       "logical_template": "VmTerminal::{}::{}::{}",
       "method": "put_link",
       "mode": "write",
-      "source": "node/src/shell/api/actions/program.rs:1193"
+      "source": "node/src/shell/api/actions/program.rs:1183"
     },
     {
       "logical_template": "creatorof::",
@@ -625,7 +625,7 @@
       "logical_template": "god::{}",
       "method": "get_string",
       "mode": "read",
-      "source": "node/src/drivers/security.rs:218"
+      "source": "node/src/drivers/security.rs:206"
     },
     {
       "logical_template": "hasaccess::{member_id}::{store_id}",
@@ -643,61 +643,61 @@
       "logical_template": "json::{}::{}",
       "method": "put_bytes",
       "mode": "write",
-      "source": "node/src/core/actor/model/trx.rs:665"
+      "source": "node/src/core/actor/model/trx.rs:646"
     },
     {
       "logical_template": "json::{}::{}",
       "method": "del_key",
       "mode": "write",
-      "source": "node/src/core/actor/model/trx.rs:687"
+      "source": "node/src/core/actor/model/trx.rs:668"
     },
     {
       "logical_template": "json::{}::{}.{}",
       "method": "put_bytes",
       "mode": "write",
-      "source": "node/src/core/actor/model/trx.rs:678"
+      "source": "node/src/core/actor/model/trx.rs:659"
     },
     {
       "logical_template": "link::UserEmailToId::{}",
       "method": "del_key",
       "mode": "write",
-      "source": "node/src/drivers/vmm/hostcall_entities.rs:174"
+      "source": "node/src/drivers/vmm/hostcall_entities.rs:175"
     },
     {
       "logical_template": "link::UserEmailToId::{}",
       "method": "del_key",
       "mode": "write",
-      "source": "node/src/shell/api/actions/creature.rs:1250"
+      "source": "node/src/shell/api/actions/creature.rs:1252"
     },
     {
       "logical_template": "link::UserEmailToId::{}",
       "method": "del_key",
       "mode": "write",
-      "source": "node/src/shell/api/actions/creature.rs:1332"
+      "source": "node/src/shell/api/actions/creature.rs:1334"
     },
     {
       "logical_template": "link::UserIdToEmail::{}",
-      "method": "del_key",
-      "mode": "write",
-      "source": "node/src/drivers/vmm/hostcall_entities.rs:176"
-    },
-    {
-      "logical_template": "link::UserIdToEmail::{}",
-      "method": "del_key",
-      "mode": "write",
-      "source": "node/src/shell/api/actions/creature.rs:1330"
-    },
-    {
-      "logical_template": "link::UserPrivateKey::{}",
       "method": "del_key",
       "mode": "write",
       "source": "node/src/drivers/vmm/hostcall_entities.rs:177"
     },
     {
+      "logical_template": "link::UserIdToEmail::{}",
+      "method": "del_key",
+      "mode": "write",
+      "source": "node/src/shell/api/actions/creature.rs:1332"
+    },
+    {
       "logical_template": "link::UserPrivateKey::{}",
       "method": "del_key",
       "mode": "write",
-      "source": "node/src/shell/api/actions/creature.rs:1334"
+      "source": "node/src/drivers/vmm/hostcall_entities.rs:178"
+    },
+    {
+      "logical_template": "link::UserPrivateKey::{}",
+      "method": "del_key",
+      "mode": "write",
+      "source": "node/src/shell/api/actions/creature.rs:1336"
     },
     {
       "logical_template": "link::VmBilling::{}",
@@ -709,49 +709,49 @@
       "logical_template": "link::VmBilling::{}",
       "method": "del_key",
       "mode": "write",
-      "source": "node/src/shell/api/actions/program.rs:433"
+      "source": "node/src/shell/api/actions/program.rs:436"
     },
     {
       "logical_template": "link::VmBilling::{}",
       "method": "del_key",
       "mode": "write",
-      "source": "node/src/shell/api/actions/program.rs:855"
+      "source": "node/src/shell/api/actions/program.rs:858"
     },
     {
       "logical_template": "link::VmBilling::{}",
+      "method": "del_key",
+      "mode": "write",
+      "source": "node/src/shell/api/actions/program.rs:979"
+    },
+    {
+      "logical_template": "link::VmContainerName::{}::{}::{}",
+      "method": "del_key",
+      "mode": "write",
+      "source": "node/src/shell/api/actions/program.rs:879"
+    },
+    {
+      "logical_template": "link::VmContainerName::{}::{}::{}",
       "method": "del_key",
       "mode": "write",
       "source": "node/src/shell/api/actions/program.rs:983"
     },
     {
-      "logical_template": "link::VmContainerName::{}::{}::{}",
+      "logical_template": "link::VmInstance::{}::{}::{}",
       "method": "del_key",
       "mode": "write",
-      "source": "node/src/shell/api/actions/program.rs:876"
-    },
-    {
-      "logical_template": "link::VmContainerName::{}::{}::{}",
-      "method": "del_key",
-      "mode": "write",
-      "source": "node/src/shell/api/actions/program.rs:987"
+      "source": "node/src/shell/api/actions/program.rs:432"
     },
     {
       "logical_template": "link::VmInstance::{}::{}::{}",
       "method": "del_key",
       "mode": "write",
-      "source": "node/src/shell/api/actions/program.rs:429"
-    },
-    {
-      "logical_template": "link::VmInstance::{}::{}::{}",
-      "method": "del_key",
-      "mode": "write",
-      "source": "node/src/shell/api/actions/program.rs:851"
+      "source": "node/src/shell/api/actions/program.rs:854"
     },
     {
       "logical_template": "link::VmOwnerProgram::{}",
       "method": "del_key",
       "mode": "write",
-      "source": "node/src/shell/api/actions/program.rs:986"
+      "source": "node/src/shell/api/actions/program.rs:982"
     },
     {
       "logical_template": "link::VmStartedAt::{}",
@@ -763,13 +763,13 @@
       "logical_template": "link::VmStartedAt::{}",
       "method": "del_key",
       "mode": "write",
-      "source": "node/src/shell/api/actions/program.rs:850"
+      "source": "node/src/shell/api/actions/program.rs:853"
     },
     {
       "logical_template": "link::VmStartedAt::{}",
       "method": "del_key",
       "mode": "write",
-      "source": "node/src/shell/api/actions/program.rs:981"
+      "source": "node/src/shell/api/actions/program.rs:977"
     },
     {
       "logical_template": "link::VmStatus::{}",
@@ -781,25 +781,25 @@
       "logical_template": "link::VmStatus::{}",
       "method": "del_key",
       "mode": "write",
-      "source": "node/src/shell/api/actions/program.rs:428"
+      "source": "node/src/shell/api/actions/program.rs:431"
     },
     {
       "logical_template": "link::VmStatus::{}",
       "method": "del_key",
       "mode": "write",
-      "source": "node/src/shell/api/actions/program.rs:849"
+      "source": "node/src/shell/api/actions/program.rs:852"
     },
     {
       "logical_template": "link::VmStatus::{}",
       "method": "del_key",
       "mode": "write",
-      "source": "node/src/shell/api/actions/program.rs:980"
+      "source": "node/src/shell/api/actions/program.rs:976"
     },
     {
       "logical_template": "link::VmTerminal::{}::{}::{}",
       "method": "del_key",
       "mode": "write",
-      "source": "node/src/shell/api/actions/program.rs:1229"
+      "source": "node/src/shell/api/actions/program.rs:1219"
     },
     {
       "logical_template": "link::creatorof::{creator_id}::{store_id}",
@@ -871,13 +871,7 @@
       "logical_template": "link::vmDistributed::{}",
       "method": "del_key",
       "mode": "write",
-      "source": "node/src/shell/api/actions/program.rs:985"
-    },
-    {
-      "logical_template": "link::vmEntityType::",
-      "method": "get_by_prefix",
-      "mode": "read",
-      "source": "node/src/lib.rs:199"
+      "source": "node/src/shell/api/actions/program.rs:981"
     },
     {
       "logical_template": "link::vmOwnedStore::{}::{store_id}",
@@ -895,25 +889,25 @@
       "logical_template": "link::vmStandaloneContainerName::{}::{}",
       "method": "del_key",
       "mode": "write",
-      "source": "node/src/shell/api/actions/program.rs:861"
+      "source": "node/src/shell/api/actions/program.rs:864"
     },
     {
       "logical_template": "link::vmStandaloneContainerName::{}::{}",
       "method": "del_key",
       "mode": "write",
-      "source": "node/src/shell/api/actions/program.rs:995"
-    },
-    {
-      "logical_template": "link::vmStandaloneImageName::{}::{}",
-      "method": "del_key",
-      "mode": "write",
-      "source": "node/src/shell/api/actions/program.rs:857"
-    },
-    {
-      "logical_template": "link::vmStandaloneImageName::{}::{}",
-      "method": "del_key",
-      "mode": "write",
       "source": "node/src/shell/api/actions/program.rs:991"
+    },
+    {
+      "logical_template": "link::vmStandaloneImageName::{}::{}",
+      "method": "del_key",
+      "mode": "write",
+      "source": "node/src/shell/api/actions/program.rs:860"
+    },
+    {
+      "logical_template": "link::vmStandaloneImageName::{}::{}",
+      "method": "del_key",
+      "mode": "write",
+      "source": "node/src/shell/api/actions/program.rs:987"
     },
     {
       "logical_template": "link::{}",
@@ -937,7 +931,7 @@
       "logical_template": "link::{}",
       "method": "del_key",
       "mode": "write",
-      "source": "node/src/drivers/vmm/host_bridge.rs:175"
+      "source": "node/src/drivers/vmm/host_bridge.rs:224"
     },
     {
       "logical_template": "link::{}",
@@ -958,12 +952,6 @@
       "source": "node/src/shell/api/model/program_ports.rs:47"
     },
     {
-      "logical_template": "obj::Creature::{}::publicKey",
-      "method": "get_string",
-      "mode": "read",
-      "source": "node/src/core/actor/model/trx.rs:631"
-    },
-    {
       "logical_template": "obj::Program::{program_id}::{column}",
       "method": "del_key",
       "mode": "write",
@@ -974,12 +962,6 @@
       "method": "del_key",
       "mode": "write",
       "source": "node/src/shell/api/model/store_ports.rs:167"
-    },
-    {
-      "logical_template": "obj::User::{}::privateKey",
-      "method": "get_string",
-      "mode": "read",
-      "source": "node/src/core/actor/model/trx.rs:622"
     },
     {
       "logical_template": "obj::{}::{}::{}",
@@ -1075,163 +1057,61 @@
       "logical_template": "vmDistributed::{}",
       "method": "get_link",
       "mode": "read",
-      "source": "node/src/core/core_orchestrator.rs:744"
+      "source": "node/src/core/core_orchestrator.rs:738"
     },
     {
       "logical_template": "vmDistributed::{}",
       "method": "get_link",
       "mode": "read",
-      "source": "node/src/drivers/vmm/driver.rs:260"
+      "source": "node/src/drivers/vmm/driver.rs:193"
     },
     {
       "logical_template": "vmDistributed::{}",
       "method": "put_link",
       "mode": "write",
-      "source": "node/src/shell/api/actions/program.rs:719"
+      "source": "node/src/shell/api/actions/program.rs:729"
     },
     {
       "logical_template": "vmDistribution::{}",
       "method": "put_link",
       "mode": "write",
-      "source": "node/src/drivers/cluster/mod.rs:467"
+      "source": "node/src/drivers/cluster/mod.rs:461"
     },
     {
       "logical_template": "vmDistribution::{}",
       "method": "get_link",
       "mode": "read",
-      "source": "node/src/drivers/vmm/driver.rs:263"
+      "source": "node/src/drivers/vmm/driver.rs:196"
     },
     {
       "logical_template": "vmDistribution::{}",
       "method": "put_link",
       "mode": "write",
-      "source": "node/src/shell/api/actions/program.rs:1533"
+      "source": "node/src/shell/api/actions/program.rs:1502"
     },
     {
       "logical_template": "vmDistribution::{}",
       "method": "get_link",
       "mode": "read",
-      "source": "node/src/shell/api/actions/program.rs:713"
+      "source": "node/src/shell/api/actions/program.rs:723"
     },
     {
       "logical_template": "vmDistribution::{}::{}",
-      "method": "put_link",
-      "mode": "write",
-      "source": "node/src/drivers/cluster/mod.rs:468"
-    },
-    {
-      "logical_template": "vmDistribution::{}::{}",
-      "method": "put_link",
-      "mode": "write",
-      "source": "node/src/shell/api/actions/program.rs:1537"
-    },
-    {
-      "logical_template": "vmDistribution::{}::{}",
-      "method": "get_link",
-      "mode": "read",
-      "source": "node/src/shell/api/actions/program.rs:714"
-    },
-    {
-      "logical_template": "vmEntityDownloadable::{}::{}",
-      "method": "put_link",
-      "mode": "write",
-      "source": "node/src/drivers/vmm/hostcall_entities.rs:799"
-    },
-    {
-      "logical_template": "vmEntityDownloadable::{}::{}",
-      "method": "put_link",
-      "mode": "write",
-      "source": "node/src/shell/api/actions/program.rs:1504"
-    },
-    {
-      "logical_template": "vmEntityDownloadable::{}::{}",
-      "method": "get_link",
-      "mode": "read",
-      "source": "node/src/shell/api/actions/program.rs:1587"
-    },
-    {
-      "logical_template": "vmEntityPath::{}::{}",
-      "method": "put_link",
-      "mode": "write",
-      "source": "node/src/drivers/cluster/mod.rs:458"
-    },
-    {
-      "logical_template": "vmEntityPath::{}::{}",
-      "method": "get_link",
-      "mode": "read",
-      "source": "node/src/drivers/vmm/driver.rs:1089"
-    },
-    {
-      "logical_template": "vmEntityPath::{}::{}",
-      "method": "get_link",
-      "mode": "read",
-      "source": "node/src/drivers/vmm/driver.rs:228"
-    },
-    {
-      "logical_template": "vmEntityPath::{}::{}",
-      "method": "put_link",
-      "mode": "write",
-      "source": "node/src/drivers/vmm/hostcall_entities.rs:786"
-    },
-    {
-      "logical_template": "vmEntityPath::{}::{}",
-      "method": "put_link",
-      "mode": "write",
-      "source": "node/src/drivers/vmm/proxy.rs:304"
-    },
-    {
-      "logical_template": "vmEntityPath::{}::{}",
-      "method": "get_link",
-      "mode": "read",
-      "source": "node/src/drivers/vmm/proxy.rs:549"
-    },
-    {
-      "logical_template": "vmEntityPath::{}::{}",
-      "method": "put_link",
-      "mode": "write",
-      "source": "node/src/shell/api/actions/program.rs:1465"
-    },
-    {
-      "logical_template": "vmEntityType::{}::{}",
       "method": "put_link",
       "mode": "write",
       "source": "node/src/drivers/cluster/mod.rs:462"
     },
     {
-      "logical_template": "vmEntityType::{}::{}",
-      "method": "get_link",
-      "mode": "read",
-      "source": "node/src/drivers/vmm/driver.rs:1082"
-    },
-    {
-      "logical_template": "vmEntityType::{}::{}",
-      "method": "get_link",
-      "mode": "read",
-      "source": "node/src/drivers/vmm/driver.rs:221"
-    },
-    {
-      "logical_template": "vmEntityType::{}::{}",
+      "logical_template": "vmDistribution::{}::{}",
       "method": "put_link",
       "mode": "write",
-      "source": "node/src/drivers/vmm/hostcall_entities.rs:790"
+      "source": "node/src/shell/api/actions/program.rs:1506"
     },
     {
-      "logical_template": "vmEntityType::{}::{}",
-      "method": "put_link",
-      "mode": "write",
-      "source": "node/src/drivers/vmm/proxy.rs:300"
-    },
-    {
-      "logical_template": "vmEntityType::{}::{}",
+      "logical_template": "vmDistribution::{}::{}",
       "method": "get_link",
       "mode": "read",
-      "source": "node/src/drivers/vmm/proxy.rs:542"
-    },
-    {
-      "logical_template": "vmEntityType::{}::{}",
-      "method": "put_link",
-      "mode": "write",
-      "source": "node/src/shell/api/actions/program.rs:1469"
+      "source": "node/src/shell/api/actions/program.rs:724"
     },
     {
       "logical_template": "vmOwnedStore::{machine}::{store_id}",
@@ -1246,76 +1126,64 @@
       "source": "node/src/shell/api/model/creature_ports.rs:386"
     },
     {
-      "logical_template": "{}::meta",
-      "method": "del_key",
-      "mode": "write",
-      "source": "node/src/drivers/vmm/hostcall_entities.rs:1088"
-    },
-    {
-      "logical_template": "{}::payload",
-      "method": "del_key",
-      "mode": "write",
-      "source": "node/src/drivers/vmm/hostcall_entities.rs:1087"
-    },
-    {
       "logical_template": "{}::targetCount",
       "method": "put_bytes",
       "mode": "write",
-      "source": "node/src/core/core_orchestrator.rs:619"
+      "source": "node/src/core/core_orchestrator.rs:613"
     },
     {
       "logical_template": "{}::tempCount",
       "method": "put_bytes",
       "mode": "write",
-      "source": "node/src/core/core_orchestrator.rs:623"
+      "source": "node/src/core/core_orchestrator.rs:617"
     },
     {
       "logical_template": "{}::{}",
       "method": "get_by_prefix",
       "mode": "read",
-      "source": "vms/javascript/src/host_calls.rs:149"
+      "source": "vms/javascript/src/host_calls.rs:130"
     },
     {
       "logical_template": "{}::{}",
       "method": "get_by_prefix",
       "mode": "read",
-      "source": "vms/wasm/src/host_calls.rs:129"
+      "source": "vms/wasm/src/host_calls.rs:109"
     },
     {
       "logical_template": "{}::{}",
       "method": "get_by_prefix",
       "mode": "read",
-      "source": "vms/wasm/src/host_calls.rs:524"
+      "source": "vms/wasm/src/host_calls.rs:499"
     },
     {
       "logical_template": "{}|>",
       "method": "get_by_prefix",
       "mode": "read",
-      "source": "node/src/core/core_orchestrator.rs:604"
+      "source": "node/src/core/core_orchestrator.rs:598"
     },
     {
       "logical_template": "{}|>{}",
       "method": "put_bytes",
       "mode": "write",
-      "source": "node/src/core/core_orchestrator.rs:605"
+      "source": "node/src/core/core_orchestrator.rs:599"
     },
     {
       "logical_template": "{}|{}::attachment",
       "method": "put_bytes",
       "mode": "write",
-      "source": "node/src/core/core_orchestrator.rs:614"
+      "source": "node/src/core/core_orchestrator.rs:608"
     },
     {
       "logical_template": "{}|{}::machineId",
       "method": "put_bytes",
       "mode": "write",
-      "source": "node/src/core/core_orchestrator.rs:606"
+      "source": "node/src/core/core_orchestrator.rs:600"
     },
     {
       "logical_template": "{}|{}::storeId",
       "method": "put_bytes",
       "mode": "write",
-      "source": "node/src/core/core_orchestrator.rs:610"
+      "source": "node/src/core/core_orchestrator.rs:604"
     }
   ],
   "candidate_key_templates": [
@@ -1337,17 +1205,17 @@
     {
       "logical_template": "::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/shell/api/actions/program.rs:1014"
+      "source": "node/src/shell/api/actions/program.rs:1010"
     },
     {
       "logical_template": "AppletDb::{}::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:165"
+      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:159"
     },
     {
       "logical_template": "AppletDb::{}::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:166"
+      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:160"
     },
     {
       "logical_template": "BridgeTopicOwner::{}",
@@ -1582,32 +1450,32 @@
     {
       "logical_template": "Json::Creature::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/drivers/vmm/hostcall_entities.rs:1981"
+      "source": "node/src/drivers/vmm/hostcall_entities.rs:1856"
     },
     {
       "logical_template": "Json::Creature::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/shell/api/actions/creature.rs:1018"
+      "source": "node/src/shell/api/actions/creature.rs:1020"
     },
     {
       "logical_template": "Json::Creature::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/shell/api/actions/creature.rs:1053"
+      "source": "node/src/shell/api/actions/creature.rs:1055"
     },
     {
       "logical_template": "Json::Creature::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/shell/api/actions/creature.rs:1155"
+      "source": "node/src/shell/api/actions/creature.rs:1157"
     },
     {
       "logical_template": "Json::Creature::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/shell/api/actions/creature.rs:1176"
+      "source": "node/src/shell/api/actions/creature.rs:1178"
     },
     {
       "logical_template": "Json::Creature::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/shell/api/actions/program.rs:216"
+      "source": "node/src/shell/api/actions/program.rs:219"
     },
     {
       "logical_template": "Json::CreatureType::{name}",
@@ -1617,17 +1485,17 @@
     {
       "logical_template": "Json::FinanceHold::{hold_id_c}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:1460"
+      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:1545"
     },
     {
       "logical_template": "Json::FinanceHold::{hold_id_c}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:1547"
+      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:1632"
     },
     {
       "logical_template": "Json::FinanceHold::{hold_id_c}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:1636"
+      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:1721"
     },
     {
       "logical_template": "Json::FinanceHold::{hold_id}",
@@ -1657,7 +1525,7 @@
     {
       "logical_template": "Json::FinancePool::{pool_id_c}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:1741"
+      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:1826"
     },
     {
       "logical_template": "Json::FinancePool::{pool_id}",
@@ -1677,12 +1545,7 @@
     {
       "logical_template": "Json::ProxyCorrelation::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/drivers/vmm/proxy.rs:66"
-    },
-    {
-      "logical_template": "Json::ProxyEntity::{}::{}",
-      "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/drivers/vmm/proxy.rs:79"
+      "source": "node/src/drivers/vmm/proxy.rs:70"
     },
     {
       "logical_template": "Json::VmBilling::{}",
@@ -1692,47 +1555,37 @@
     {
       "logical_template": "Json::VmBilling::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/shell/api/actions/program.rs:315"
+      "source": "node/src/shell/api/actions/program.rs:318"
     },
     {
       "logical_template": "Json::VmBilling::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/shell/api/actions/program.rs:435"
+      "source": "node/src/shell/api/actions/program.rs:438"
     },
     {
       "logical_template": "Json::VmBilling::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/shell/api/actions/program.rs:490"
+      "source": "node/src/shell/api/actions/program.rs:493"
     },
     {
       "logical_template": "Json::VmBilling::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/shell/api/actions/program.rs:496"
+      "source": "node/src/shell/api/actions/program.rs:499"
     },
     {
       "logical_template": "Json::VmBilling::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/shell/api/actions/program.rs:742"
+      "source": "node/src/shell/api/actions/program.rs:752"
     },
     {
       "logical_template": "Json::VmBilling::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/shell/api/actions/program.rs:856"
+      "source": "node/src/shell/api/actions/program.rs:859"
     },
     {
       "logical_template": "Json::VmBilling::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/shell/api/actions/program.rs:984"
-    },
-    {
-      "logical_template": "Json::VmResourceEntity::{}::{}::{}",
-      "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/drivers/vmm/hostcall_entities.rs:1027"
-    },
-    {
-      "logical_template": "Json::VmResourceEntity::{}::{}::{}",
-      "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/drivers/vmm/hostcall_entities.rs:1083"
+      "source": "node/src/shell/api/actions/program.rs:980"
     },
     {
       "logical_template": "Json::VmResourceStore::{store_id}",
@@ -1747,7 +1600,7 @@
     {
       "logical_template": "MintApplied::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/shell/api/actions/creature.rs:566"
+      "source": "node/src/shell/api/actions/creature.rs:567"
     },
     {
       "logical_template": "ModalApp::{}",
@@ -1787,7 +1640,7 @@
     {
       "logical_template": "NodeIpToHost::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/drivers/network/federation/fednet.rs:145"
+      "source": "node/src/drivers/network/federation/fednet.rs:140"
     },
     {
       "logical_template": "PaymentAdjustment::{}",
@@ -1802,17 +1655,17 @@
     {
       "logical_template": "ProxyCorrExpiry::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/drivers/vmm/proxy.rs:73"
+      "source": "node/src/drivers/vmm/proxy.rs:77"
     },
     {
       "logical_template": "Secret::{}::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:846"
+      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:931"
     },
     {
       "logical_template": "SecretGrant::{}::{}::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:847"
+      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:932"
     },
     {
       "logical_template": "StoreMeta::{store_id}",
@@ -1827,42 +1680,42 @@
     {
       "logical_template": "Temp::User::{}::consumedTokens::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/drivers/vmm/hostcall_entities.rs:1973"
+      "source": "node/src/drivers/vmm/hostcall_entities.rs:1848"
     },
     {
       "logical_template": "UserEmailToId::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/shell/api/actions/creature.rs:1226"
+      "source": "node/src/shell/api/actions/creature.rs:1228"
     },
     {
       "logical_template": "UserEmailToId::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/shell/api/actions/creature.rs:1293"
+      "source": "node/src/shell/api/actions/creature.rs:1295"
     },
     {
       "logical_template": "UserEmailToId::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/shell/api/actions/creature.rs:581"
+      "source": "node/src/shell/api/actions/creature.rs:582"
     },
     {
       "logical_template": "UserIdToEmail::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/drivers/vmm/hostcall_entities.rs:172"
+      "source": "node/src/drivers/vmm/hostcall_entities.rs:173"
     },
     {
       "logical_template": "UserIdToEmail::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/shell/api/actions/creature.rs:1294"
+      "source": "node/src/shell/api/actions/creature.rs:1296"
     },
     {
       "logical_template": "UserIdToEmail::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/shell/api/actions/creature.rs:1329"
+      "source": "node/src/shell/api/actions/creature.rs:1331"
     },
     {
       "logical_template": "UserIdToEmail::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/shell/api/actions/creature.rs:659"
+      "source": "node/src/shell/api/actions/creature.rs:660"
     },
     {
       "logical_template": "UserMeta::{creature_id}",
@@ -1872,32 +1725,32 @@
     {
       "logical_template": "UserPrivateKey::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/shell/api/actions/creature.rs:1241"
+      "source": "node/src/shell/api/actions/creature.rs:1243"
     },
     {
       "logical_template": "UserPrivateKey::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/shell/api/actions/creature.rs:1292"
+      "source": "node/src/shell/api/actions/creature.rs:1294"
     },
     {
       "logical_template": "VmBilling::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/shell/api/actions/program.rs:740"
+      "source": "node/src/shell/api/actions/program.rs:750"
     },
     {
       "logical_template": "VmBuilds::{}::",
       "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/shell/api/actions/program.rs:1246"
+      "source": "node/src/shell/api/actions/program.rs:1236"
     },
     {
       "logical_template": "VmBuilds::{}::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/shell/api/actions/program.rs:1511"
+      "source": "node/src/shell/api/actions/program.rs:1461"
     },
     {
       "logical_template": "VmContainerName::{}::{}::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/shell/api/actions/program.rs:1116"
+      "source": "node/src/shell/api/actions/program.rs:1106"
     },
     {
       "logical_template": "VmContainerName::{}::{}::{}",
@@ -1922,17 +1775,17 @@
     {
       "logical_template": "VmInstance::{}::{}::",
       "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/shell/api/actions/program.rs:1102"
+      "source": "node/src/shell/api/actions/program.rs:1092"
     },
     {
       "logical_template": "VmInstance::{}::{}::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/shell/api/actions/program.rs:761"
+      "source": "node/src/shell/api/actions/program.rs:771"
     },
     {
       "logical_template": "VmInstance::{}::{}::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/shell/api/actions/program.rs:949"
+      "source": "node/src/shell/api/actions/program.rs:945"
     },
     {
       "logical_template": "VmOwnerProgram::{}",
@@ -1942,27 +1795,27 @@
     {
       "logical_template": "VmStartedAt::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/shell/api/actions/program.rs:1113"
+      "source": "node/src/shell/api/actions/program.rs:1103"
     },
     {
       "logical_template": "VmStartedAt::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/shell/api/actions/program.rs:691"
+      "source": "node/src/shell/api/actions/program.rs:701"
     },
     {
       "logical_template": "VmStatus::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/shell/api/actions/program.rs:1111"
+      "source": "node/src/shell/api/actions/program.rs:1101"
     },
     {
       "logical_template": "VmStatus::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/shell/api/actions/program.rs:312"
+      "source": "node/src/shell/api/actions/program.rs:315"
     },
     {
       "logical_template": "VmStatus::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/shell/api/actions/program.rs:689"
+      "source": "node/src/shell/api/actions/program.rs:699"
     },
     {
       "logical_template": "VmTerminal::{}::{}::{}",
@@ -1972,12 +1825,12 @@
     {
       "logical_template": "VmTerminal::{}::{}::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/shell/api/actions/program.rs:1194"
+      "source": "node/src/shell/api/actions/program.rs:1184"
     },
     {
       "logical_template": "chainCallback::{}_{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/core/core_orchestrator.rs:603"
+      "source": "node/src/core/core_orchestrator.rs:597"
     },
     {
       "logical_template": "creatorof::{creator_id}::{}",
@@ -1987,7 +1840,7 @@
     {
       "logical_template": "god::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/drivers/security.rs:218"
+      "source": "node/src/drivers/security.rs:206"
     },
     {
       "logical_template": "hasaccess::{member_id}::",
@@ -2007,97 +1860,87 @@
     {
       "logical_template": "index::{}::{}::{}::",
       "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/core/actor/model/trx.rs:466"
+      "source": "node/src/core/actor/model/trx.rs:464"
     },
     {
       "logical_template": "index::{}::{}::{}::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/core/actor/model/trx.rs:268"
+      "source": "node/src/core/actor/model/trx.rs:266"
     },
     {
       "logical_template": "index::{}::{}::{}::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/core/actor/model/trx.rs:283"
+      "source": "node/src/core/actor/model/trx.rs:281"
     },
     {
       "logical_template": "index::{}::{}::{}::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/core/actor/model/trx.rs:295"
+      "source": "node/src/core/actor/model/trx.rs:293"
     },
     {
       "logical_template": "index::{}::{}::{}::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/core/actor/model/trx.rs:309"
-    },
-    {
-      "logical_template": "json::{}",
-      "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/drivers/vmm/host_bridge.rs:217"
-    },
-    {
-      "logical_template": "json::{}",
-      "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/drivers/vmm/hostcall_entities.rs:1515"
+      "source": "node/src/core/actor/model/trx.rs:307"
     },
     {
       "logical_template": "json::{}::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/core/actor/model/trx.rs:427"
+      "source": "node/src/core/actor/model/trx.rs:425"
     },
     {
       "logical_template": "json::{}::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/core/actor/model/trx.rs:665"
+      "source": "node/src/core/actor/model/trx.rs:646"
     },
     {
       "logical_template": "json::{}::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/core/actor/model/trx.rs:687"
+      "source": "node/src/core/actor/model/trx.rs:668"
     },
     {
       "logical_template": "json::{}::{}.",
       "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/core/actor/model/trx.rs:688"
+      "source": "node/src/core/actor/model/trx.rs:669"
     },
     {
       "logical_template": "json::{}::{}.{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/core/actor/model/trx.rs:678"
+      "source": "node/src/core/actor/model/trx.rs:659"
     },
     {
       "logical_template": "link::UserEmailToId::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/drivers/vmm/hostcall_entities.rs:174"
+      "source": "node/src/drivers/vmm/hostcall_entities.rs:175"
     },
     {
       "logical_template": "link::UserEmailToId::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/shell/api/actions/creature.rs:1250"
+      "source": "node/src/shell/api/actions/creature.rs:1252"
     },
     {
       "logical_template": "link::UserEmailToId::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/shell/api/actions/creature.rs:1332"
+      "source": "node/src/shell/api/actions/creature.rs:1334"
     },
     {
       "logical_template": "link::UserIdToEmail::{}",
-      "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/drivers/vmm/hostcall_entities.rs:176"
-    },
-    {
-      "logical_template": "link::UserIdToEmail::{}",
-      "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/shell/api/actions/creature.rs:1330"
-    },
-    {
-      "logical_template": "link::UserPrivateKey::{}",
       "review_status": "candidate; caller association may be indirect",
       "source": "node/src/drivers/vmm/hostcall_entities.rs:177"
     },
     {
+      "logical_template": "link::UserIdToEmail::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/shell/api/actions/creature.rs:1332"
+    },
+    {
       "logical_template": "link::UserPrivateKey::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/shell/api/actions/creature.rs:1334"
+      "source": "node/src/drivers/vmm/hostcall_entities.rs:178"
+    },
+    {
+      "logical_template": "link::UserPrivateKey::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/shell/api/actions/creature.rs:1336"
     },
     {
       "logical_template": "link::VmBilling::{}",
@@ -2107,42 +1950,42 @@
     {
       "logical_template": "link::VmBilling::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/shell/api/actions/program.rs:433"
+      "source": "node/src/shell/api/actions/program.rs:436"
     },
     {
       "logical_template": "link::VmBilling::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/shell/api/actions/program.rs:855"
+      "source": "node/src/shell/api/actions/program.rs:858"
     },
     {
       "logical_template": "link::VmBilling::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/shell/api/actions/program.rs:979"
+    },
+    {
+      "logical_template": "link::VmContainerName::{}::{}::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/shell/api/actions/program.rs:879"
+    },
+    {
+      "logical_template": "link::VmContainerName::{}::{}::{}",
       "review_status": "candidate; caller association may be indirect",
       "source": "node/src/shell/api/actions/program.rs:983"
     },
     {
-      "logical_template": "link::VmContainerName::{}::{}::{}",
+      "logical_template": "link::VmInstance::{}::{}::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/shell/api/actions/program.rs:876"
-    },
-    {
-      "logical_template": "link::VmContainerName::{}::{}::{}",
-      "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/shell/api/actions/program.rs:987"
+      "source": "node/src/shell/api/actions/program.rs:432"
     },
     {
       "logical_template": "link::VmInstance::{}::{}::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/shell/api/actions/program.rs:429"
-    },
-    {
-      "logical_template": "link::VmInstance::{}::{}::{}",
-      "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/shell/api/actions/program.rs:851"
+      "source": "node/src/shell/api/actions/program.rs:854"
     },
     {
       "logical_template": "link::VmOwnerProgram::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/shell/api/actions/program.rs:986"
+      "source": "node/src/shell/api/actions/program.rs:982"
     },
     {
       "logical_template": "link::VmStartedAt::{}",
@@ -2152,12 +1995,12 @@
     {
       "logical_template": "link::VmStartedAt::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/shell/api/actions/program.rs:850"
+      "source": "node/src/shell/api/actions/program.rs:853"
     },
     {
       "logical_template": "link::VmStartedAt::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/shell/api/actions/program.rs:981"
+      "source": "node/src/shell/api/actions/program.rs:977"
     },
     {
       "logical_template": "link::VmStatus::{}",
@@ -2167,22 +2010,22 @@
     {
       "logical_template": "link::VmStatus::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/shell/api/actions/program.rs:428"
+      "source": "node/src/shell/api/actions/program.rs:431"
     },
     {
       "logical_template": "link::VmStatus::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/shell/api/actions/program.rs:849"
+      "source": "node/src/shell/api/actions/program.rs:852"
     },
     {
       "logical_template": "link::VmStatus::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/shell/api/actions/program.rs:980"
+      "source": "node/src/shell/api/actions/program.rs:976"
     },
     {
       "logical_template": "link::VmTerminal::{}::{}::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/shell/api/actions/program.rs:1229"
+      "source": "node/src/shell/api/actions/program.rs:1219"
     },
     {
       "logical_template": "link::creatorof::{creator_id}::{store_id}",
@@ -2242,7 +2085,7 @@
     {
       "logical_template": "link::vmDistributed::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/shell/api/actions/program.rs:985"
+      "source": "node/src/shell/api/actions/program.rs:981"
     },
     {
       "logical_template": "link::vmOwnedStore::{}::{store_id}",
@@ -2257,42 +2100,42 @@
     {
       "logical_template": "link::vmStandaloneContainerName::{}::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/shell/api/actions/program.rs:861"
+      "source": "node/src/shell/api/actions/program.rs:864"
     },
     {
       "logical_template": "link::vmStandaloneContainerName::{}::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/shell/api/actions/program.rs:995"
-    },
-    {
-      "logical_template": "link::vmStandaloneImageName::{}::{}",
-      "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/shell/api/actions/program.rs:857"
-    },
-    {
-      "logical_template": "link::vmStandaloneImageName::{}::{}",
-      "review_status": "candidate; caller association may be indirect",
       "source": "node/src/shell/api/actions/program.rs:991"
     },
     {
-      "logical_template": "link::{}",
+      "logical_template": "link::vmStandaloneImageName::{}::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/core/actor/model/trx.rs:317"
+      "source": "node/src/shell/api/actions/program.rs:860"
+    },
+    {
+      "logical_template": "link::vmStandaloneImageName::{}::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/shell/api/actions/program.rs:987"
     },
     {
       "logical_template": "link::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/core/actor/model/trx.rs:322"
+      "source": "node/src/core/actor/model/trx.rs:315"
     },
     {
       "logical_template": "link::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/core/actor/model/trx.rs:443"
+      "source": "node/src/core/actor/model/trx.rs:320"
     },
     {
       "logical_template": "link::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/core/actor/model/trx.rs:508"
+      "source": "node/src/core/actor/model/trx.rs:441"
+    },
+    {
+      "logical_template": "link::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/core/actor/model/trx.rs:506"
     },
     {
       "logical_template": "link::{}",
@@ -2312,7 +2155,7 @@
     {
       "logical_template": "link::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/drivers/vmm/host_bridge.rs:175"
+      "source": "node/src/drivers/vmm/host_bridge.rs:224"
     },
     {
       "logical_template": "link::{}",
@@ -2335,11 +2178,6 @@
       "source": "node/src/drivers/vmm/network/gateway.rs:86"
     },
     {
-      "logical_template": "obj::Creature::{}::publicKey",
-      "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/core/actor/model/trx.rs:631"
-    },
-    {
       "logical_template": "obj::Program::{program_id}::{column}",
       "review_status": "candidate; caller association may be indirect",
       "source": "node/src/shell/api/model/program_ports.rs:150"
@@ -2350,14 +2188,9 @@
       "source": "node/src/shell/api/model/store_ports.rs:167"
     },
     {
-      "logical_template": "obj::User::{}::privateKey",
-      "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/core/actor/model/trx.rs:622"
-    },
-    {
       "logical_template": "obj::{}::",
       "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/core/actor/model/trx.rs:571"
+      "source": "node/src/core/actor/model/trx.rs:569"
     },
     {
       "logical_template": "obj::{}::{creature_id}::balance",
@@ -2367,17 +2200,17 @@
     {
       "logical_template": "obj::{}::{}::",
       "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/core/actor/model/trx.rs:363"
+      "source": "node/src/core/actor/model/trx.rs:361"
     },
     {
       "logical_template": "obj::{}::{}::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/core/actor/model/trx.rs:245"
+      "source": "node/src/core/actor/model/trx.rs:243"
     },
     {
       "logical_template": "obj::{}::{}::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/core/actor/model/trx.rs:377"
+      "source": "node/src/core/actor/model/trx.rs:375"
     },
     {
       "logical_template": "obj::{}::{}::{}",
@@ -2397,7 +2230,7 @@
     {
       "logical_template": "obj::{}::{}::|",
       "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/core/actor/model/trx.rs:257"
+      "source": "node/src/core/actor/model/trx.rs:255"
     },
     {
       "logical_template": "onaccess::{store_id}::",
@@ -2427,12 +2260,12 @@
     {
       "logical_template": "proxy entity {}::{} has no target configured; dropping signal",
       "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/drivers/vmm/proxy.rs:564"
+      "source": "node/src/drivers/vmm/proxy.rs:562"
     },
     {
       "logical_template": "proxy {}::{} -> {}::{} corr={}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/drivers/vmm/proxy.rs:646"
+      "source": "node/src/drivers/vmm/proxy.rs:648"
     },
     {
       "logical_template": "user::{}",
@@ -2487,102 +2320,52 @@
     {
       "logical_template": "vmDistributed::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/core/core_orchestrator.rs:744"
+      "source": "node/src/core/core_orchestrator.rs:738"
     },
     {
       "logical_template": "vmDistributed::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/drivers/vmm/driver.rs:260"
+      "source": "node/src/drivers/vmm/driver.rs:193"
     },
     {
       "logical_template": "vmDistributed::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/shell/api/actions/program.rs:719"
+      "source": "node/src/shell/api/actions/program.rs:729"
     },
     {
       "logical_template": "vmDistribution::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/drivers/cluster/mod.rs:467"
+      "source": "node/src/drivers/cluster/mod.rs:461"
     },
     {
       "logical_template": "vmDistribution::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/drivers/vmm/driver.rs:263"
+      "source": "node/src/drivers/vmm/driver.rs:196"
     },
     {
       "logical_template": "vmDistribution::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/shell/api/actions/program.rs:1534"
+      "source": "node/src/shell/api/actions/program.rs:1503"
     },
     {
       "logical_template": "vmDistribution::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/shell/api/actions/program.rs:713"
+      "source": "node/src/shell/api/actions/program.rs:723"
     },
     {
       "logical_template": "vmDistribution::{}::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/drivers/cluster/mod.rs:469"
+      "source": "node/src/drivers/cluster/mod.rs:463"
     },
     {
       "logical_template": "vmDistribution::{}::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/shell/api/actions/program.rs:1538"
+      "source": "node/src/shell/api/actions/program.rs:1507"
     },
     {
       "logical_template": "vmDistribution::{}::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/shell/api/actions/program.rs:714"
-    },
-    {
-      "logical_template": "vmEntityDownloadable::{}::{}",
-      "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/drivers/vmm/hostcall_entities.rs:800"
-    },
-    {
-      "logical_template": "vmEntityDownloadable::{}::{}",
-      "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/shell/api/actions/program.rs:1505"
-    },
-    {
-      "logical_template": "vmEntityDownloadable::{}::{}",
-      "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/shell/api/actions/program.rs:1587"
-    },
-    {
-      "logical_template": "vmEntityPath::{}::{}",
-      "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/drivers/cluster/mod.rs:459"
-    },
-    {
-      "logical_template": "vmEntityPath::{}::{}",
-      "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/drivers/vmm/driver.rs:1089"
-    },
-    {
-      "logical_template": "vmEntityPath::{}::{}",
-      "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/drivers/vmm/driver.rs:228"
-    },
-    {
-      "logical_template": "vmEntityPath::{}::{}",
-      "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/drivers/vmm/hostcall_entities.rs:787"
-    },
-    {
-      "logical_template": "vmEntityPath::{}::{}",
-      "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/drivers/vmm/proxy.rs:305"
-    },
-    {
-      "logical_template": "vmEntityPath::{}::{}",
-      "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/drivers/vmm/proxy.rs:549"
-    },
-    {
-      "logical_template": "vmEntityPath::{}::{}",
-      "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/shell/api/actions/program.rs:1466"
+      "source": "node/src/shell/api/actions/program.rs:724"
     },
     {
       "logical_template": "vmEntityPath::{}::{}",
@@ -2593,41 +2376,6 @@
       "logical_template": "vmEntityPath::{}::{}",
       "review_status": "candidate; caller association may be indirect",
       "source": "vms/wasm/src/controller.rs:272"
-    },
-    {
-      "logical_template": "vmEntityType::{}::{}",
-      "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/drivers/cluster/mod.rs:463"
-    },
-    {
-      "logical_template": "vmEntityType::{}::{}",
-      "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/drivers/vmm/driver.rs:1082"
-    },
-    {
-      "logical_template": "vmEntityType::{}::{}",
-      "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/drivers/vmm/driver.rs:221"
-    },
-    {
-      "logical_template": "vmEntityType::{}::{}",
-      "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/drivers/vmm/hostcall_entities.rs:791"
-    },
-    {
-      "logical_template": "vmEntityType::{}::{}",
-      "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/drivers/vmm/proxy.rs:301"
-    },
-    {
-      "logical_template": "vmEntityType::{}::{}",
-      "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/drivers/vmm/proxy.rs:542"
-    },
-    {
-      "logical_template": "vmEntityType::{}::{}",
-      "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/shell/api/actions/program.rs:1470"
     },
     {
       "logical_template": "vmOwnedStore::{machine}::",
@@ -2642,27 +2390,27 @@
     {
       "logical_template": "{SECRET_GRANTEE_PREFIX}{grantee}::",
       "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/shell/api/actions/creature.rs:697"
+      "source": "node/src/shell/api/actions/creature.rs:698"
     },
     {
       "logical_template": "{SECRET_GRANTEE_PREFIX}{grantee}::{owner}::{name}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/shell/api/actions/creature.rs:686"
+      "source": "node/src/shell/api/actions/creature.rs:687"
     },
     {
       "logical_template": "{SECRET_GRANT_PREFIX}{owner}::{name}::{grantee}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/shell/api/actions/creature.rs:682"
+      "source": "node/src/shell/api/actions/creature.rs:683"
     },
     {
       "logical_template": "{SECRET_PREFIX}{owner}::",
       "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/shell/api/actions/creature.rs:876"
+      "source": "node/src/shell/api/actions/creature.rs:877"
     },
     {
       "logical_template": "{SECRET_PREFIX}{owner}::{name}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/shell/api/actions/creature.rs:679"
+      "source": "node/src/shell/api/actions/creature.rs:680"
     },
     {
       "logical_template": "{}::",
@@ -2675,24 +2423,14 @@
       "source": "vms/javascript/src/runtime.rs:92"
     },
     {
-      "logical_template": "{}::meta",
-      "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/drivers/vmm/hostcall_entities.rs:1088"
-    },
-    {
-      "logical_template": "{}::payload",
-      "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/drivers/vmm/hostcall_entities.rs:1087"
-    },
-    {
       "logical_template": "{}::targetCount",
       "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/core/core_orchestrator.rs:620"
+      "source": "node/src/core/core_orchestrator.rs:614"
     },
     {
       "logical_template": "{}::tempCount",
       "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/core/core_orchestrator.rs:624"
+      "source": "node/src/core/core_orchestrator.rs:618"
     },
     {
       "logical_template": "{}::{}",
@@ -2737,7 +2475,17 @@
     {
       "logical_template": "{}::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:157"
+      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:151"
+    },
+    {
+      "logical_template": "{}::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:168"
+    },
+    {
+      "logical_template": "{}::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:170"
     },
     {
       "logical_template": "{}::{}",
@@ -2767,22 +2515,22 @@
     {
       "logical_template": "{}::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "vms/javascript/src/host_calls.rs:135"
+      "source": "vms/javascript/src/host_calls.rs:116"
     },
     {
       "logical_template": "{}::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "vms/javascript/src/host_calls.rs:140"
+      "source": "vms/javascript/src/host_calls.rs:121"
     },
     {
       "logical_template": "{}::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "vms/javascript/src/host_calls.rs:145"
+      "source": "vms/javascript/src/host_calls.rs:126"
     },
     {
       "logical_template": "{}::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "vms/javascript/src/host_calls.rs:149"
+      "source": "vms/javascript/src/host_calls.rs:130"
     },
     {
       "logical_template": "{}::{}",
@@ -2792,22 +2540,27 @@
     {
       "logical_template": "{}::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "vms/wasm/src/host_calls.rs:116"
+      "source": "vms/wasm/src/host_calls.rs:100"
     },
     {
       "logical_template": "{}::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "vms/wasm/src/host_calls.rs:120"
+      "source": "vms/wasm/src/host_calls.rs:104"
     },
     {
       "logical_template": "{}::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "vms/wasm/src/host_calls.rs:124"
+      "source": "vms/wasm/src/host_calls.rs:109"
     },
     {
       "logical_template": "{}::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "vms/wasm/src/host_calls.rs:129"
+      "source": "vms/wasm/src/host_calls.rs:459"
+    },
+    {
+      "logical_template": "{}::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "vms/wasm/src/host_calls.rs:471"
     },
     {
       "logical_template": "{}::{}",
@@ -2817,17 +2570,12 @@
     {
       "logical_template": "{}::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "vms/wasm/src/host_calls.rs:496"
+      "source": "vms/wasm/src/host_calls.rs:499"
     },
     {
       "logical_template": "{}::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "vms/wasm/src/host_calls.rs:509"
-    },
-    {
-      "logical_template": "{}::{}",
-      "review_status": "candidate; caller association may be indirect",
-      "source": "vms/wasm/src/host_calls.rs:524"
+      "source": "vms/wasm/src/host_calls.rs:96"
     },
     {
       "logical_template": "{}::{}",
@@ -2847,27 +2595,27 @@
     {
       "logical_template": "{}::{}::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:152"
+      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:146"
     },
     {
       "logical_template": "{}::{}::{}::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:147"
+      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:141"
     },
     {
       "logical_template": "{}|{}::attachment",
       "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/core/core_orchestrator.rs:615"
+      "source": "node/src/core/core_orchestrator.rs:609"
     },
     {
       "logical_template": "{}|{}::machineId",
       "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/core/core_orchestrator.rs:607"
+      "source": "node/src/core/core_orchestrator.rs:601"
     },
     {
       "logical_template": "{}|{}::storeId",
       "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/core/core_orchestrator.rs:611"
+      "source": "node/src/core/core_orchestrator.rs:605"
     }
   ],
   "cluster_rocksdb": {
@@ -3178,9 +2926,9 @@
     }
   ],
   "summary": {
-    "candidate_key_templates": 310,
+    "candidate_key_templates": 286,
     "core_object_types": 8,
-    "direct_application_accesses": 218,
+    "direct_application_accesses": 196,
     "hashgraph_key_families": 8,
     "questdb_tables": 2
   },

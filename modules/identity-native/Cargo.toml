@@ -1,0 +1,20 @@
+[package]
+name = "aseman-identity-native"
+description = "A401 identity verification: Ed25519 and legacy RSA proofs over the canonical signed structure."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+aseman-contracts = { path = "../../crates/aseman-contracts" }
+aseman-domain = { path = "../../crates/aseman-domain" }
+aseman-ports = { path = "../../crates/aseman-ports" }
+
+[dev-dependencies]
+aseman-application = { path = "../../crates/aseman-application" }
+serde_json.workspace = true
+
+[lints]
+workspace = true

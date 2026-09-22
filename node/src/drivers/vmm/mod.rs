@@ -15,6 +15,7 @@ pub mod bootstrap;
 pub mod bridge;
 pub mod driver;
 pub mod globals;
+pub(crate) mod guest_state;
 pub mod host;
 pub mod host_bridge;
 pub mod hostcall_entities;

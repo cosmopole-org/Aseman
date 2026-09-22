@@ -48,9 +48,29 @@ pub(crate) fn dispatch_host_call(identity: &ContainerIdentity, request: &JsonVal
         Some(other) => json!({ "value": other.clone() }),
     };
     stamp_request(&op, &mut input, identity);
+    match identity_packet(&op, input, identity) {
+        Some(packet) => handle_unified_host_call(&packet).into_bytes(),
+        None => error_response("the container has no verified identity"),
+    }
+}
 
-    let packet = json!({ "op": op, "input": input });
-    handle_unified_host_call(&packet).into_bytes()
+/// The host-call packet, carrying the connection's verified identity at packet level:
+/// the only place the host reads a caller's identity from. A container without a
+/// verified VM identity makes no host calls.
+fn identity_packet(op: &str, input: JsonValue, identity: &ContainerIdentity) -> Option<JsonValue> {
+    if identity.vm_id.trim().is_empty() {
+        return None;
+    }
+    let mut packet = json!({ "op": op, "input": input, "vmId": identity.vm_id });
+    for (field, value) in [
+        ("creatureId", &identity.creature_id),
+        ("programId", &identity.program_id),
+    ] {
+        if !value.is_empty() {
+            packet[field] = JsonValue::String(value.clone());
+        }
+    }
+    Some(packet)
 }
 
 /// What a host op addresses, when it is not the calling container itself.
@@ -188,6 +208,19 @@ mod tests {
         assert_eq!(input[TARGET_PROGRAM_ID_KEY], "proxy-program");
         let input = stamped("deleteProgram", json!({"programId": "proxy-program"}));
         assert_eq!(input[TARGET_PROGRAM_ID_KEY], "proxy-program");
+    }
+
+    #[test]
+    fn identity_travels_at_packet_level_and_unidentified_containers_are_refused() {
+        let packet = identity_packet("secretGet", json!({"vmId": "victim"}), &identity()).unwrap();
+        assert_eq!(packet["vmId"], "container-vm");
+        assert_eq!(packet["creatureId"], "8@global");
+        assert_eq!(packet["programId"], "10@global");
+        let anonymous = ContainerIdentity {
+            vm_id: String::new(),
+            ..identity()
+        };
+        assert!(identity_packet("secretGet", json!({"vmId": "victim"}), &anonymous).is_none());
     }
 
     #[test]

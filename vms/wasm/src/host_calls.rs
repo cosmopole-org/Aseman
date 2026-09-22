@@ -17,26 +17,6 @@ use caspar_vm_sdk::host::{host, log_vm};
 
 use crate::runtime::{HostData, WasmMac};
 
-fn host_dispatch(packet: &JsonValue) -> String {
-    match host() {
-        Some(h) => h.dispatch(packet),
-        None => json!({"ok": false, "error": "caspar vm host is not initialised"}).to_string(),
-    }
-}
-
-/// Wrap an input in a typed packet and dispatch it through the VMM router
-/// (the same path the node's host functions use).
-fn dispatch_typed(packet_type: &str, input: &JsonValue) -> String {
-    let mut packet = input.clone();
-    if let JsonValue::Object(map) = &mut packet {
-        map.insert(
-            "type".to_string(),
-            JsonValue::String(packet_type.to_string()),
-        );
-    }
-    host_dispatch(&packet)
-}
-
 /// Dispatch a VM lifecycle op through the *unified host-call* dispatcher
 /// rather than straight at the packet router.
 ///
@@ -179,25 +159,20 @@ pub fn host_call(
         // identity-resolving dispatcher instead of the bare packet router.
         "runVm" => dispatch_owned(rt, "runVm", &req["input"]),
         "deleteVm" | "destroyVm" => dispatch_owned(rt, "deleteVm", &req["input"]),
-        "terminateVm" => dispatch_typed("terminateVm", &req["input"]),
-        "execVm" | "execDocker" => dispatch_typed("execVm", &req["input"]),
-        "copyToVm" | "copyToDocker" => dispatch_typed("copyToVm", &req["input"]),
-        "buildVmImage" | "buildDockerImage" => dispatch_typed("buildVmImage", &req["input"]),
-        "httpPost" | "httpRequest" => {
-            let result = match host() {
-                Some(h) => h.http_request(&req["input"]),
-                None => Err("caspar vm host is not initialised".to_string()),
-            };
-            match result {
-                Ok(res) => res,
-                Err(err) => json!({"ok": false, "error": err}).to_string(),
-            }
-        }
-        // Proof verification is a capability of the provable runtime plugin;
-        // reach it through the router's verifyProgramExecution packet.
-        "elpifyProof" | "verifyProgramExecution" => {
-            dispatch_typed("verifyProgramExecution", &req["input"])
-        }
+        // Every other VM lifecycle op, outbound HTTP, and proof verification also
+        // carry the node-stamped identity: the node authorizes them (LD-14), and the
+        // bare packet router would take the guest's input at face value.
+        "terminateVm"
+        | "execVm"
+        | "execDocker"
+        | "copyToVm"
+        | "copyToDocker"
+        | "buildVmImage"
+        | "buildDockerImage"
+        | "httpPost"
+        | "httpRequest"
+        | "elpifyProof"
+        | "verifyProgramExecution" => dispatch_owned(rt, op, &req["input"]),
         // ── Per-VM JSON transaction ops ──────────────────────────────────
         // These operate on the single transaction held for this VM's entire
         // lifecycle; writes persist when `commitTrx` runs or the VM exits.

@@ -55,7 +55,7 @@
       "path": "contracts/capsule/guest/isolation-rules.json"
     },
     {
-      "digest": "sha256:7d2a86b730d74d34b6e30a4fe2a4394f9fc18fdfa14329f4c63c39c92fa7a079",
+      "digest": "sha256:08c80d41526f04c658ab71937b70cd427be4b27db5ffb5151020bbc6cab4ad0a",
       "path": "contracts/capsule/guest/legacy-kv-table.json"
     },
     {
@@ -67,7 +67,7 @@
       "path": "contracts/capsule/guest/schema-mutation.schema.json"
     },
     {
-      "digest": "sha256:7b419ab1e90c2186dae0135fb3ff23684554801ad4fd64c4f3d05f4826f97639",
+      "digest": "sha256:2fa8a7b596d41c7c4420111045ecee1a4b18a70a4ebb0b0bba7d1f45ae8cda6d",
       "path": "contracts/capsule/kinds/core-logical-schemas.json"
     },
     {
@@ -75,7 +75,7 @@
       "path": "contracts/capsule/kinds/core-logical-schemas.schema.json"
     },
     {
-      "digest": "sha256:044b73923285af5bef1761bef803638e3536b6547f93073552a98e7c22898ddf",
+      "digest": "sha256:aa528ed38d468fd19c57957412c7577e19452412dbf4076e49bf10c650d28966",
       "path": "contracts/capsule/kinds/core-registry.json"
     },
     {
@@ -199,7 +199,7 @@
     {
       "consistency": "serializable",
       "kind": "core.capability_grant",
-      "owner_scope": "creature",
+      "owner_scope": "global",
       "required_capabilities": [
         "indexes.unique"
       ],
@@ -268,13 +268,13 @@
     },
     {
       "consistency": "serializable",
-      "kind": "core.node_key",
-      "owner_scope": "node",
+      "kind": "core.identity_key",
+      "owner_scope": "global",
       "required_capabilities": [
         "indexes.unique"
       ],
       "storage_class": "core",
-      "table": "node_keys"
+      "table": "identity_keys"
     },
     {
       "consistency": "serializable",

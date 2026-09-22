@@ -1,17 +1,25 @@
 //! Driver-independent Aseman application use cases.
 #![forbid(unsafe_code)]
 
+use aseman_domain::authority::{Condition, ResourceRef};
+use aseman_domain::identity::{Subject, SubjectKind};
 use aseman_domain::{DesiredWorkloadState, WorkloadId};
+use aseman_ports::vmm::{LifecycleCommand, VmmClient};
 use aseman_ports::{
-    ClockPort, PeerDirectoryPort, PolicyDecisionPort, PortError, ServerIdentityPort, VmmPort,
+    ClockPort, GrantStore, PeerDirectoryPort, PolicyDecisionPort, PortError, ServerIdentityPort,
     WorkloadRepository,
 };
+use std::collections::BTreeSet;
 use thiserror::Error;
 
+pub mod capability;
 pub mod creature;
+pub mod guest;
+pub mod identity;
 pub mod program;
 pub mod storage_migration;
 pub mod store;
+pub mod vmm;
 
 #[derive(Clone, Debug, Eq, Error, PartialEq)]
 pub enum ApplicationError {
@@ -28,7 +36,9 @@ pub enum ApplicationError {
 pub struct SetDesiredWorkloadState<'a> {
     pub workloads: &'a dyn WorkloadRepository,
     pub policy: &'a dyn PolicyDecisionPort,
-    pub vmm: &'a dyn VmmPort,
+    pub grants: &'a dyn GrantStore,
+    pub vmm: &'a dyn VmmClient,
+    pub clock: &'a dyn ClockPort,
 }
 
 /// Transport-neutral diagnostics use cases backing the compatibility `/api/*` family.
@@ -95,7 +105,7 @@ impl GetServerPeers<'_> {
 impl SetDesiredWorkloadState<'_> {
     pub fn execute(
         &self,
-        actor: &str,
+        actor: Subject,
         workload_id: WorkloadId,
         state: DesiredWorkloadState,
     ) -> Result<u64, ApplicationError> {
@@ -109,17 +119,55 @@ impl SetDesiredWorkloadState<'_> {
             DesiredWorkloadState::Paused => "workload.pause",
             DesiredWorkloadState::Deleted => "workload.delete",
         };
-        let decision = self
-            .policy
-            .authorize(actor, action, &workload_id.to_string())?;
+        // The workload's own creature owns it; other relations are resolved by the
+        // enforcement layer (P4-05).
+        let owner = Subject {
+            kind: SubjectKind::Creature,
+            id: *workload.creature_id.as_uuid(),
+        };
+        let facts = if actor == owner {
+            BTreeSet::from([Condition::Owner])
+        } else {
+            BTreeSet::new()
+        };
+        let decision = capability::Authorize {
+            policy: self.policy,
+            grants: self.grants,
+            clock: self.clock,
+        }
+        .decide(
+            Some(actor),
+            action,
+            ResourceRef {
+                kind: "workload".to_owned(),
+                id: workload_id.to_string(),
+            },
+            facts,
+        )?;
         if !decision.allowed {
-            return Err(ApplicationError::Denied(decision.reason));
+            return Err(ApplicationError::Denied(decision.reason.code().to_owned()));
         }
         let expected = workload.generation;
+        let command = match (workload.state, state) {
+            (DesiredWorkloadState::Paused, DesiredWorkloadState::Running) => {
+                LifecycleCommand::Resume
+            }
+            (_, DesiredWorkloadState::Running) => LifecycleCommand::Start,
+            (_, DesiredWorkloadState::Stopped) => LifecycleCommand::Stop,
+            (_, DesiredWorkloadState::Paused) => LifecycleCommand::Pause,
+            (_, DesiredWorkloadState::Deleted) => LifecycleCommand::Delete,
+        };
         workload.generation = expected.next()?;
         workload.state = state;
         self.workloads.put_desired(&workload, expected)?;
-        self.vmm.apply_desired(&workload)?;
+        // Desired state is recorded first; the key names the generation, so a retry
+        // after a crash between the two is deduplicated by the VMM (A503).
+        self.vmm.command(
+            workload_id,
+            command,
+            workload.generation,
+            &format!("desired-{workload_id}-{}", workload.generation.get()),
+        )?;
         Ok(workload.generation.get())
     }
 }
@@ -127,14 +175,17 @@ impl SetDesiredWorkloadState<'_> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use aseman_domain::authority::{DecisionReason, PolicyDecision, PolicyRequest};
+    use aseman_domain::capability::Grant;
     use aseman_domain::{CreatureId, DesiredWorkload, Generation, ProgramId};
-    use aseman_ports::{PolicyDecision, PortResult};
+    use aseman_ports::PortResult;
     use std::sync::Mutex;
 
     struct Harness {
         workload: Mutex<Option<DesiredWorkload>>,
         allow: bool,
-        applied: Mutex<Vec<DesiredWorkload>>,
+        applied: Mutex<Vec<(WorkloadId, LifecycleCommand, Generation, String)>>,
+        asked: Mutex<Vec<PolicyRequest>>,
     }
 
     impl WorkloadRepository for Harness {
@@ -152,27 +203,112 @@ mod tests {
     }
 
     impl PolicyDecisionPort for Harness {
-        fn authorize(
-            &self,
-            _subject: &str,
-            _action: &str,
-            _resource: &str,
-        ) -> PortResult<PolicyDecision> {
+        /// Allows owners when `allow` is set; records what was asked.
+        fn decide(&self, request: &PolicyRequest) -> PortResult<PolicyDecision> {
+            self.asked.lock().expect("test mutex").push(request.clone());
+            let allowed = self.allow && request.facts.contains(&Condition::Owner);
             Ok(PolicyDecision {
-                allowed: self.allow,
+                allowed,
+                reason: if allowed {
+                    DecisionReason::Allowed
+                } else {
+                    DecisionReason::ConditionNotMet
+                },
+                matched: allowed.then_some(Condition::Owner),
+                considered: vec![Condition::Owner],
+                grant_chain: Vec::new(),
+                registry_version: "test".into(),
                 policy_version: "test-1".into(),
-                reason: "test-policy".into(),
             })
         }
     }
 
-    impl VmmPort for Harness {
-        fn apply_desired(&self, workload: &DesiredWorkload) -> PortResult<()> {
-            self.applied
-                .lock()
-                .expect("test mutex")
-                .push(workload.clone());
-            Ok(())
+    impl GrantStore for Harness {
+        fn grant(&self, _: aseman_domain::Uuid) -> PortResult<Option<Grant>> {
+            Ok(None)
+        }
+        fn grants_of(&self, _: &Subject) -> PortResult<Vec<Grant>> {
+            Ok(Vec::new())
+        }
+        fn children(&self, _: aseman_domain::Uuid) -> PortResult<Vec<Grant>> {
+            Ok(Vec::new())
+        }
+        fn put(&self, _: &Grant) -> PortResult<()> {
+            unreachable!()
+        }
+        fn revoke(&self, _: aseman_domain::Uuid, _: i64) -> PortResult<()> {
+            unreachable!()
+        }
+    }
+
+    impl aseman_ports::vmm::VmmClient for Harness {
+        fn capabilities(&self) -> PortResult<aseman_ports::vmm::BackendDescription> {
+            unreachable!()
+        }
+        fn create(
+            &self,
+            _: &aseman_ports::vmm::NewWorkload,
+            _: &str,
+        ) -> PortResult<aseman_domain::vmm::OperationRecord> {
+            unreachable!()
+        }
+        fn workload(
+            &self,
+            _: WorkloadId,
+        ) -> PortResult<Option<aseman_domain::vmm::WorkloadRecord>> {
+            unreachable!()
+        }
+        fn workloads(
+            &self,
+            _: &aseman_ports::vmm::WorkloadFilter,
+            _: Option<&str>,
+            _: usize,
+        ) -> PortResult<aseman_ports::vmm::Page<aseman_domain::vmm::WorkloadRecord>> {
+            unreachable!()
+        }
+        fn command(
+            &self,
+            id: WorkloadId,
+            command: LifecycleCommand,
+            generation: Generation,
+            key: &str,
+        ) -> PortResult<aseman_domain::vmm::OperationRecord> {
+            self.applied.lock().expect("test mutex").push((
+                id,
+                command,
+                generation,
+                key.to_owned(),
+            ));
+            Err(PortError::Unavailable("not needed"))
+        }
+        fn update_spec(
+            &self,
+            _: WorkloadId,
+            _: &aseman_domain::vmm::WorkloadSpec,
+            _: Generation,
+            _: &str,
+        ) -> PortResult<aseman_domain::vmm::OperationRecord> {
+            unreachable!()
+        }
+        fn invoke(
+            &self,
+            _: WorkloadId,
+            _: &str,
+            _: &str,
+        ) -> PortResult<aseman_domain::vmm::OperationRecord> {
+            unreachable!()
+        }
+        fn forward_http(&self, _: WorkloadId, _: &str, _: &str) -> PortResult<String> {
+            unreachable!()
+        }
+        fn operation(
+            &self,
+            _: aseman_domain::OperationId,
+        ) -> PortResult<Option<aseman_domain::vmm::OperationRecord>> {
+            unreachable!()
+        }
+        fn events_after(&self, _: u64, _: usize) -> PortResult<aseman_ports::vmm::EventBatch> {
+            unreachable!()
         }
     }
 
@@ -207,9 +343,24 @@ mod tests {
                 })),
                 allow,
                 applied: Mutex::new(Vec::new()),
+                asked: Mutex::new(Vec::new()),
             },
             id,
         )
+    }
+
+    fn owner(harness: &Harness) -> Subject {
+        Subject {
+            kind: SubjectKind::Creature,
+            id: *harness
+                .workload
+                .lock()
+                .unwrap()
+                .as_ref()
+                .unwrap()
+                .creature_id
+                .as_uuid(),
+        }
     }
 
     #[test]
@@ -218,12 +369,18 @@ mod tests {
         let use_case = SetDesiredWorkloadState {
             workloads: &harness,
             policy: &harness,
+            grants: &harness,
             vmm: &harness,
+            clock: &harness,
         };
-        assert!(matches!(
-            use_case.execute("user", id, DesiredWorkloadState::Running),
-            Err(ApplicationError::Denied(_))
-        ));
+        let stranger = Subject {
+            kind: SubjectKind::User,
+            id: *CreatureId::new().as_uuid(),
+        };
+        assert_eq!(
+            use_case.execute(stranger, id, DesiredWorkloadState::Running),
+            Err(ApplicationError::Denied("condition_not_met".to_owned()))
+        );
         assert_eq!(
             harness
                 .workload
@@ -238,22 +395,48 @@ mod tests {
     }
 
     #[test]
-    fn allowed_transition_increments_generation_before_vmm_apply() {
+    fn allowed_transition_records_desired_before_commanding_the_vmm() {
         let (harness, id) = harness(true);
         let use_case = SetDesiredWorkloadState {
             workloads: &harness,
             policy: &harness,
+            grants: &harness,
             vmm: &harness,
+            clock: &harness,
         };
+        // The VMM is unreachable here: desired state is recorded anyway, and the retry
+        // reuses the same key.
         assert_eq!(
-            use_case
-                .execute("user", id, DesiredWorkloadState::Running)
-                .unwrap(),
+            use_case.execute(owner(&harness), id, DesiredWorkloadState::Running),
+            Err(ApplicationError::Port(PortError::Unavailable("not needed")))
+        );
+        assert_eq!(
+            harness
+                .workload
+                .lock()
+                .unwrap()
+                .as_ref()
+                .unwrap()
+                .generation
+                .get(),
             2
         );
+        let asked = harness.asked.lock().unwrap();
+        assert_eq!(
+            (asked[0].action.as_str(), asked[0].resource.kind.as_str()),
+            ("workload.start", "workload")
+        );
+        assert_eq!(asked[0].at_millis, 1_700_000_000_123);
         let applied = harness.applied.lock().unwrap();
-        assert_eq!(applied[0].generation.get(), 2);
-        assert_eq!(applied[0].state, DesiredWorkloadState::Running);
+        assert_eq!(
+            applied[0],
+            (
+                id,
+                LifecycleCommand::Start,
+                Generation::from_stored(2).unwrap(),
+                format!("desired-{id}-2")
+            )
+        );
     }
 
     #[test]

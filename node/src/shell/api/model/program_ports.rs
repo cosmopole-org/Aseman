@@ -272,7 +272,7 @@ impl ProgramAlarms for LegacyPrograms<'_> {
     }
 }
 
-fn resource_store_key(store_id: &str) -> String {
+pub(crate) fn resource_store_key(store_id: &str) -> String {
     format!("Json::VmResourceStore::{store_id}")
 }
 

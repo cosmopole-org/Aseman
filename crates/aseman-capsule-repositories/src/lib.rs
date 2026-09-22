@@ -6,11 +6,16 @@
 use aseman_contracts::capsule::{CapsuleEnvelope, CapsuleId, CapsuleKind, CapsuleQuery};
 use thiserror::Error;
 
+pub mod audit;
+pub mod capability;
 pub mod creature;
+pub mod entity;
 pub mod gateway;
+pub mod identity;
 pub mod program;
 pub mod store;
 mod support;
+pub mod workload;
 
 #[derive(Clone, Debug, Eq, Error, PartialEq)]
 pub enum CapsuleStoreError {

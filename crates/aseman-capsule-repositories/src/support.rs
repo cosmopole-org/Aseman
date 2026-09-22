@@ -256,6 +256,8 @@ pub(crate) struct DocumentFamily {
     pub(crate) subject_relationship: &'static str,
     pub(crate) subject_kind: &'static str,
     pub(crate) subject_family: &'static str,
+    /// The legacy document path of the whole document (`metadata`, `config`).
+    pub(crate) root: &'static str,
 }
 
 fn stored_document(
@@ -273,7 +275,7 @@ fn stored_document(
 }
 
 impl Capsules<'_> {
-    /// The object at a legacy dotted `path` under `metadata`, as legacy `get_json`.
+    /// The object at a legacy dotted `path` under the root, as legacy `get_json`.
     pub(crate) fn document_at(
         &self,
         family: &DocumentFamily,
@@ -285,7 +287,7 @@ impl Capsules<'_> {
             return Ok(None);
         };
         let document = stored_document(&capsule)?;
-        aseman_contracts::legacy_documents::legacy_document_object_at("metadata", &document, path)
+        aseman_contracts::legacy_documents::legacy_document_object_at(family.root, &document, path)
             .map(|object| serde_json::to_string(object).map_err(failed))
             .transpose()
     }
@@ -298,7 +300,7 @@ impl Capsules<'_> {
         document: &str,
     ) -> PortResult<()> {
         let Ok(serde_json::Value::Object(incoming)) = serde_json::from_str(document) else {
-            return Err(failed("metadata must be a JSON object"));
+            return Err(failed(format!("{} must be a JSON object", family.root)));
         };
         let id = deterministic_legacy_capsule_id(family.family, legacy_id.as_bytes());
         let key = format!("{}{legacy_id}", family.key_prefix);
@@ -316,7 +318,9 @@ impl Capsules<'_> {
                         &incoming,
                     );
                     let fields = aseman_contracts::legacy_documents::legacy_document_fields(
-                        &key, "metadata", &merged,
+                        &key,
+                        family.root,
+                        &merged,
                     )
                     .map_err(failed)?;
                     let next = crate::store::next_revision(&current, fields)?;
@@ -328,7 +332,9 @@ impl Capsules<'_> {
                         .ok_or(PortError::NotFound)?
                         .owner_scope;
                     let fields = aseman_contracts::legacy_documents::legacy_document_fields(
-                        &key, "metadata", &incoming,
+                        &key,
+                        family.root,
+                        &incoming,
                     )
                     .map_err(failed)?;
                     self.0.put(

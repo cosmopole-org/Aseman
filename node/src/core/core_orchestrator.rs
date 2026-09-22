@@ -2,7 +2,7 @@
 //!
 //! `Core` is the `ICore` implementation, the central object that gives every
 //! action / driver access to the rest of the system. It owns the `ITools`
-//! bundle (storage, security, signaler, network, file, vmm), the `IActor`
+//! bundle (storage, security, signaler, network, vmm), the `IActor`
 //! registry, the `IGlobe` validator-set coordinator, and the chain dispatch
 //! channel.
 //!
@@ -29,7 +29,6 @@ use serde_json::{json, Value};
 use crate::core::actor::model::trx::TrxWrapper;
 use crate::core::actor::{Actor, Info as BaseInfo, State as ActorState};
 use crate::core::globe::{ChainPacketOp, Globe};
-use crate::drivers::file::File as FileDriver;
 use crate::drivers::network::chain::Blockchain;
 use crate::drivers::network::federation::FedNet;
 use crate::drivers::network::framing::tls_config_from_files;
@@ -47,7 +46,6 @@ use crate::models::chain::{
 use crate::models::core::{ICore, StateClosure};
 use crate::models::globe::IGlobe;
 use crate::models::info::IInfo;
-use crate::models::ports::file::IFile;
 use crate::models::ports::network::INetwork;
 use crate::models::ports::ratelimit::IRateLimiter;
 use crate::models::ports::security::ISecurity;
@@ -72,7 +70,6 @@ pub struct Tools {
     signaler: Arc<dyn ISignaler>,
     storage: Arc<dyn IStorage>,
     network: Arc<dyn INetwork>,
-    file: Arc<dyn IFile>,
     vmm: Arc<dyn IVmm>,
     rate_limiter: Arc<dyn IRateLimiter>,
 }
@@ -89,9 +86,6 @@ impl ITools for Tools {
     }
     fn network(&self) -> Arc<dyn INetwork> {
         self.network.clone()
-    }
-    fn file(&self) -> Arc<dyn IFile> {
-        self.file.clone()
     }
     fn vmm(&self) -> Arc<dyn IVmm> {
         self.vmm.clone()
@@ -843,13 +837,7 @@ impl Core {
                 .unwrap_or(8812),
         )?;
         let signaler: Arc<dyn ISignaler> = Signaler::new(self.clone(), fed.clone());
-        let security: Arc<dyn ISecurity> = Security::new(
-            self.clone(),
-            storage_root,
-            storage.clone(),
-            signaler.clone(),
-        );
-        let file: Arc<dyn IFile> = Arc::new(FileDriver::new(storage_root));
+        let security: Arc<dyn ISecurity> = Security::new(self.clone(), storage_root);
         let chain: Arc<dyn crate::models::ports::network::chain::IChain> =
             Blockchain::new(self.clone(), storage_root);
         let tls_cfg = match self.config.as_ref().map(|config| &config.core) {
@@ -874,16 +862,11 @@ impl Core {
             chain.clone(),
             tls_cfg,
         );
-        let vmm: Arc<dyn IVmm> = Vmm::new(
-            self.clone(),
-            storage_root,
-            storage.clone(),
-            applet_db_path,
-            file.clone(),
-        );
+        let vmm: Arc<dyn IVmm> =
+            Vmm::new(self.clone(), storage_root, storage.clone(), applet_db_path);
 
-        // Stage 2 — federation needs storage/file/signaler.
-        fed.second_stage(storage.clone(), file.clone(), signaler.clone());
+        // Stage 2 — federation needs storage/signaler.
+        fed.second_stage(storage.clone(), signaler.clone());
 
         // Load the server private key for signing.
         let pem = security.fetch_key_pair("server_key");
@@ -910,7 +893,6 @@ impl Core {
             signaler,
             storage,
             network: network.clone(),
-            file,
             vmm,
             rate_limiter,
         });

@@ -27,25 +27,25 @@ This records current legacy surfaces. It is not the target HTTP/VMM contract.
 | `/api/time` | `HelloInput` | `node/src/shell/api/actions/dummy.rs:45` |
 | `/auths/getServerPublicKey` | `GetServerKeyInput` | `node/src/shell/api/actions/auth.rs:41` |
 | `/auths/getServersMap` | `GetServersMapInput` | `node/src/shell/api/actions/auth.rs:57` |
-| `/creatures/authenticate` | `AuthenticateInput` | `node/src/shell/api/actions/creature.rs:500` |
-| `/creatures/checkSign` | `CheckSignInput` | `node/src/shell/api/actions/creature.rs:636` |
+| `/creatures/authenticate` | `AuthenticateInput` | `node/src/shell/api/actions/creature.rs:501` |
+| `/creatures/checkSign` | `CheckSignInput` | `node/src/shell/api/actions/creature.rs:637` |
 | `/creatures/closePool` | `ClosePoolInput` | `node/src/shell/api/actions/creature/finance.rs:2526` |
-| `/creatures/consumeLock` | `ConsumeLockInput` | `node/src/shell/api/actions/creature.rs:1033` |
-| `/creatures/create` | `CreatureCreateInput` | `node/src/shell/api/actions/creature.rs:200` |
+| `/creatures/consumeLock` | `ConsumeLockInput` | `node/src/shell/api/actions/creature.rs:1035` |
+| `/creatures/create` | `CreatureCreateInput` | `node/src/shell/api/actions/creature.rs:201` |
 | `/creatures/createHold` | `CreateHoldInput` | `node/src/shell/api/actions/creature/finance.rs:1121` |
 | `/creatures/debitPool` | `DebitPoolInput` | `node/src/shell/api/actions/creature/finance.rs:3071` |
-| `/creatures/delete` | `DeleteInput` | `node/src/shell/api/actions/creature.rs:1305` |
-| `/creatures/find` | `FindInput` | `node/src/shell/api/actions/creature.rs:1455` |
-| `/creatures/get` | `GetInput` | `node/src/shell/api/actions/creature.rs:251` |
-| `/creatures/getByUsername` | `GetByUsernameInput` | `node/src/shell/api/actions/creature.rs:1428` |
+| `/creatures/delete` | `DeleteInput` | `node/src/shell/api/actions/creature.rs:1307` |
+| `/creatures/find` | `FindInput` | `node/src/shell/api/actions/creature.rs:1457` |
+| `/creatures/get` | `GetInput` | `node/src/shell/api/actions/creature.rs:252` |
+| `/creatures/getByUsername` | `GetByUsernameInput` | `node/src/shell/api/actions/creature.rs:1430` |
 | `/creatures/getFinancialAccount` | `GetFinancialAccountInput` | `node/src/shell/api/actions/creature/finance.rs:1979` |
 | `/creatures/getHold` | `GetHoldInput` | `node/src/shell/api/actions/creature/finance.rs:1848` |
-| `/creatures/list` | `ListInput` | `node/src/shell/api/actions/creature.rs:270` |
+| `/creatures/list` | `ListInput` | `node/src/shell/api/actions/creature.rs:271` |
 | `/creatures/listPayouts` | `ListPayoutsInput` | `node/src/shell/api/actions/creature/finance.rs:2247` |
-| `/creatures/lockToken` | `LockTokenInput` | `node/src/shell/api/actions/creature.rs:946` |
-| `/creatures/login` | `LoginInput` | `node/src/shell/api/actions/creature.rs:1193` |
-| `/creatures/meta` | `MetaInput` | `node/src/shell/api/actions/creature.rs:1369` |
-| `/creatures/mint` | `MintInput` | `node/src/shell/api/actions/creature.rs:540` |
+| `/creatures/lockToken` | `LockTokenInput` | `node/src/shell/api/actions/creature.rs:948` |
+| `/creatures/login` | `LoginInput` | `node/src/shell/api/actions/creature.rs:1195` |
+| `/creatures/meta` | `MetaInput` | `node/src/shell/api/actions/creature.rs:1371` |
+| `/creatures/mint` | `MintInput` | `node/src/shell/api/actions/creature.rs:541` |
 | `/creatures/openPool` | `OpenPoolInput` | `node/src/shell/api/actions/creature/finance.rs:2314` |
 | `/creatures/paymentAdjustment` | `PaymentAdjustmentInput` | `node/src/shell/api/actions/creature/finance.rs:3983` |
 | `/creatures/publishFinanceCatalog` | `PublishFinanceCatalogInput` | `node/src/shell/api/actions/creature/finance.rs:432` |
@@ -62,39 +62,39 @@ This records current legacy surfaces. It is not the target HTTP/VMM contract.
 | `/creatures/retireFinanceNode` | `RetireFinanceNodeInput` | `node/src/shell/api/actions/creature/finance.rs:629` |
 | `/creatures/retireFinanceResource` | `RetireFinanceResourceInput` | `node/src/shell/api/actions/creature/finance.rs:819` |
 | `/creatures/reviewFinanceResource` | `ReviewFinanceResourceInput` | `node/src/shell/api/actions/creature/finance.rs:781` |
-| `/creatures/secretGet` | `SecretGetInput` | `node/src/shell/api/actions/creature.rs:746` |
-| `/creatures/secretGrant` | `SecretGrantInput` | `node/src/shell/api/actions/creature.rs:787` |
-| `/creatures/secretList` | `SecretListInput` | `node/src/shell/api/actions/creature.rs:867` |
-| `/creatures/secretListGranted` | `SecretListGrantedInput` | `node/src/shell/api/actions/creature.rs:851` |
-| `/creatures/secretPut` | `SecretPutInput` | `node/src/shell/api/actions/creature.rs:719` |
-| `/creatures/secretRevoke` | `SecretRevokeInput` | `node/src/shell/api/actions/creature.rs:826` |
+| `/creatures/secretGet` | `SecretGetInput` | `node/src/shell/api/actions/creature.rs:747` |
+| `/creatures/secretGrant` | `SecretGrantInput` | `node/src/shell/api/actions/creature.rs:788` |
+| `/creatures/secretList` | `SecretListInput` | `node/src/shell/api/actions/creature.rs:868` |
+| `/creatures/secretListGranted` | `SecretListGrantedInput` | `node/src/shell/api/actions/creature.rs:852` |
+| `/creatures/secretPut` | `SecretPutInput` | `node/src/shell/api/actions/creature.rs:720` |
+| `/creatures/secretRevoke` | `SecretRevokeInput` | `node/src/shell/api/actions/creature.rs:827` |
 | `/creatures/settleHold` | `SettleHoldInput` | `node/src/shell/api/actions/creature/finance.rs:1455` |
 | `/creatures/settlePool` | `SettlePoolInput` | `node/src/shell/api/actions/creature/finance.rs:2732` |
-| `/creatures/signal` | `CreatureSignalInput` | `node/src/shell/api/actions/creature.rs:392` |
+| `/creatures/signal` | `CreatureSignalInput` | `node/src/shell/api/actions/creature.rs:393` |
 | `/creatures/startHold` | `StartHoldInput` | `node/src/shell/api/actions/creature/finance.rs:1375` |
-| `/creatures/transfer` | `TransferInput` | `node/src/shell/api/actions/creature.rs:292` |
-| `/creatures/types` | `ListInput` | `node/src/shell/api/actions/creature.rs:1481` |
-| `/creatures/update` | `UpdateInput` | `node/src/shell/api/actions/creature.rs:1341` |
+| `/creatures/transfer` | `TransferInput` | `node/src/shell/api/actions/creature.rs:293` |
+| `/creatures/types` | `ListInput` | `node/src/shell/api/actions/creature.rs:1483` |
+| `/creatures/update` | `UpdateInput` | `node/src/shell/api/actions/creature.rs:1343` |
 | `/gateway/signal` | `GatewaySignalInput` | `node/src/shell/api/actions/gateway.rs:249` |
 | `/gateway/subscribe` | `GatewaySubscribeInput` | `node/src/shell/api/actions/gateway.rs:178` |
 | `/gateway/unsubscribe` | `GatewayUnsubscribeInput` | `node/src/shell/api/actions/gateway.rs:224` |
-| `/machines/closeVmTerminal` | `VmTerminalInput` | `node/src/shell/api/actions/program.rs:1208` |
-| `/machines/list` | `ListInput` | `node/src/shell/api/actions/program.rs:1613` |
-| `/machines/listEntityVms` | `RunProgramEntityInput` | `node/src/shell/api/actions/program.rs:1063` |
-| `/machines/listProgramMachines` | `ListAppMachsInput` | `node/src/shell/api/actions/program.rs:1692` |
-| `/machines/openVmTerminal` | `VmTerminalInput` | `node/src/shell/api/actions/program.rs:1172` |
-| `/machines/readMachineBuilds` | `MachineBuildsInput` | `node/src/shell/api/actions/program.rs:1241` |
-| `/machines/readVmLogs` | `ReadVmLogsInput` | `node/src/shell/api/actions/program.rs:1006` |
-| `/programs/create` | `CreateMachineInput` | `node/src/shell/api/actions/program.rs:558` |
-| `/programs/delete` | `DeleteProgramInput` | `node/src/shell/api/actions/program.rs:594` |
-| `/programs/deleteEntity` | `RunProgramEntityInput` | `node/src/shell/api/actions/program.rs:905` |
-| `/programs/deploy` | `DeployInput` | `node/src/shell/api/actions/program.rs:1315` |
-| `/programs/downloadEntity` | `DownloadEntityInput` | `node/src/shell/api/actions/program.rs:1573` |
-| `/programs/list` | `ListInput` | `node/src/shell/api/actions/program.rs:1670` |
-| `/programs/runEntity` | `RunProgramEntityInput` | `node/src/shell/api/actions/program.rs:650` |
-| `/programs/stopEntity` | `RunProgramEntityInput` | `node/src/shell/api/actions/program.rs:811` |
-| `/programs/update` | `UpdateProgramInput` | `node/src/shell/api/actions/program.rs:617` |
-| `/storage/upload` | `StorageUploadInput` | `node/src/shell/api/actions/creature.rs:895` |
+| `/machines/closeVmTerminal` | `VmTerminalInput` | `node/src/shell/api/actions/program.rs:1198` |
+| `/machines/list` | `ListInput` | `node/src/shell/api/actions/program.rs:1585` |
+| `/machines/listEntityVms` | `RunProgramEntityInput` | `node/src/shell/api/actions/program.rs:1060` |
+| `/machines/listProgramMachines` | `ListAppMachsInput` | `node/src/shell/api/actions/program.rs:1664` |
+| `/machines/openVmTerminal` | `VmTerminalInput` | `node/src/shell/api/actions/program.rs:1162` |
+| `/machines/readMachineBuilds` | `MachineBuildsInput` | `node/src/shell/api/actions/program.rs:1231` |
+| `/machines/readVmLogs` | `ReadVmLogsInput` | `node/src/shell/api/actions/program.rs:1002` |
+| `/programs/create` | `CreateMachineInput` | `node/src/shell/api/actions/program.rs:575` |
+| `/programs/delete` | `DeleteProgramInput` | `node/src/shell/api/actions/program.rs:611` |
+| `/programs/deleteEntity` | `RunProgramEntityInput` | `node/src/shell/api/actions/program.rs:908` |
+| `/programs/deploy` | `DeployInput` | `node/src/shell/api/actions/program.rs:1305` |
+| `/programs/downloadEntity` | `DownloadEntityInput` | `node/src/shell/api/actions/program.rs:1543` |
+| `/programs/list` | `ListInput` | `node/src/shell/api/actions/program.rs:1642` |
+| `/programs/runEntity` | `RunProgramEntityInput` | `node/src/shell/api/actions/program.rs:667` |
+| `/programs/stopEntity` | `RunProgramEntityInput` | `node/src/shell/api/actions/program.rs:821` |
+| `/programs/update` | `UpdateProgramInput` | `node/src/shell/api/actions/program.rs:634` |
+| `/storage/upload` | `StorageUploadInput` | `node/src/shell/api/actions/creature.rs:896` |
 | `/stores/getAccess` | `GetAccessInput` | `node/src/shell/api/actions/store.rs:241` |
 | `/stores/history` | `HistoryInput` | `node/src/shell/api/actions/store.rs:172` |
 | `/stores/setAccess` | `SetAccessInput` | `node/src/shell/api/actions/store.rs:212` |
@@ -126,11 +126,11 @@ This records current legacy surfaces. It is not the target HTTP/VMM contract.
 | profiling-http | GET | `/debug/pprof/profile` | `node/src/telemetry/pprof.rs:94` |
 | profiling-http | GET | `/debug/pprof/runtime` | `node/src/telemetry/pprof.rs:87` |
 | profiling-http | GET | `/debug/pprof/threads` | `node/src/telemetry/pprof.rs:89` |
-| public-storage-http | GET | `/storage/file/{id}` | `node/src/shell/storage_http.rs:118` |
-| public-storage-http | HEAD | `/storage/file/{id}` | `node/src/shell/storage_http.rs:118` |
-| public-storage-http | GET | `/storage/health` | `node/src/shell/storage_http.rs:112` |
-| public-storage-http | POST | `/storage/upload` | `node/src/shell/storage_http.rs:115` |
-| public-storage-http | PUT | `/storage/upload` | `node/src/shell/storage_http.rs:115` |
+| public-storage-http | GET | `/storage/file/{id}` | `node/src/shell/storage_http.rs:110` |
+| public-storage-http | HEAD | `/storage/file/{id}` | `node/src/shell/storage_http.rs:110` |
+| public-storage-http | GET | `/storage/health` | `node/src/shell/storage_http.rs:104` |
+| public-storage-http | POST | `/storage/upload` | `node/src/shell/storage_http.rs:107` |
+| public-storage-http | PUT | `/storage/upload` | `node/src/shell/storage_http.rs:107` |
 | telemetry-http | GET | `/telemetry/health` | `node/src/telemetry/server.rs:131` |
 | telemetry-http | GET | `/telemetry/snapshot` | `node/src/telemetry/server.rs:132` |
 | vm-http-ingress | ANY | `/{creatureId}/{programId}/{entityId}/{vmId}/{path...}` | `node/src/drivers/vmm/network/ingress.rs:1` |

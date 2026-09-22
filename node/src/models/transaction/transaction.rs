@@ -1,7 +1,6 @@
 use std::collections::HashMap;
 
 use anyhow::Result;
-use rsa::{RsaPrivateKey, RsaPublicKey};
 use serde_json::{Map, Value};
 
 use crate::models::update::Update;
@@ -91,8 +90,6 @@ pub trait ITrx: Send + Sync {
     fn put_json(&self, key: &str, path: &str, json_obj: &Value, merge: bool) -> Result<()>;
     fn del_json(&self, key: &str, path: &str);
     fn get_json(&self, key: &str, path: &str) -> Result<Map<String, Value>>;
-    fn get_pri_key(&self, tag: &str) -> Option<RsaPrivateKey>;
-    fn get_pub_key(&self, tag: &str) -> Option<RsaPublicKey>;
     fn updates(&self) -> Vec<Update>;
     /// Write the transaction atomically. A failed write is reported (LD-10).
     fn commit(&self) -> Result<()>;

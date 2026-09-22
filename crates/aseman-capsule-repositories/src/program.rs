@@ -222,6 +222,7 @@ const PROGRAM_METADATA: DocumentFamily = DocumentFamily {
     subject_relationship: "program",
     subject_kind: PROGRAM,
     subject_family: "Program",
+    root: "metadata",
 };
 
 impl ProgramMetadata for CapsuleProgramPorts<'_> {

@@ -19,25 +19,6 @@ use caspar_vm_sdk::host::{host, log_vm};
 
 use crate::runtime::JsState;
 
-fn host_dispatch(packet: &JsonValue) -> String {
-    match host() {
-        Some(h) => h.dispatch(packet),
-        None => json!({"ok": false, "error": "caspar vm host is not initialised"}).to_string(),
-    }
-}
-
-/// Wrap an input in a typed packet and dispatch it through the VMM router.
-fn dispatch_typed(packet_type: &str, input: &JsonValue) -> String {
-    let mut packet = input.clone();
-    if let JsonValue::Object(map) = &mut packet {
-        map.insert(
-            "type".to_string(),
-            JsonValue::String(packet_type.to_string()),
-        );
-    }
-    host_dispatch(&packet)
-}
-
 /// The node-stamped envelope every unified host call is made under.
 ///
 /// Identity is NEVER taken from the guest. A javascript creature fully controls
@@ -203,19 +184,21 @@ pub fn dispatch(cell: &Rc<RefCell<JsState>>, raw: &str) -> String {
             let state = cell.borrow();
             dispatch_owned(&state, "vmEndpoints", &input)
         }
-        "terminateVm" => dispatch_typed("terminateVm", &input),
-        "execVm" | "execDocker" => dispatch_typed("execVm", &input),
-        "copyToVm" | "copyToDocker" => dispatch_typed("copyToVm", &input),
-        "buildVmImage" | "buildDockerImage" => dispatch_typed("buildVmImage", &input),
-        "httpPost" | "httpRequest" => match host() {
-            Some(h) => match h.http_request(&input) {
-                Ok(v) => v,
-                Err(e) => json!({"ok": false, "error": e}).to_string(),
-            },
-            None => json!({"ok": false, "error": "caspar vm host is not initialised"}).to_string(),
-        },
-        "elpifyProof" | "verifyProgramExecution" => {
-            dispatch_typed("verifyProgramExecution", &input)
+        // Lifecycle ops, outbound HTTP, and proof verification carry the node-stamped
+        // identity so the node can authorize them (LD-14).
+        "terminateVm"
+        | "execVm"
+        | "execDocker"
+        | "copyToVm"
+        | "copyToDocker"
+        | "buildVmImage"
+        | "buildDockerImage"
+        | "httpPost"
+        | "httpRequest"
+        | "elpifyProof"
+        | "verifyProgramExecution" => {
+            let state = cell.borrow();
+            dispatch_owned(&state, op, &input)
         }
         // ── Per-VM JSON transaction ops ──────────────────────────────────
         // These operate on the single transaction held for this VM's entire

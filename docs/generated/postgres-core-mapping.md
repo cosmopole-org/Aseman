@@ -2,7 +2,7 @@
 status: GENERATED
 owner: storage/postgres
 source_of_truth: contracts/capsule/kinds, contracts/storage/postgres, and scripts/generate_postgres_core.py
-last_verified_commit: 736b958e96b9
+last_verified_commit: 5c6e6ebed395
 verification: python3 scripts/generate_postgres_core.py --check
 ---
 
@@ -20,14 +20,14 @@ indexes, and checks enforce the accepted logical schema. No guest payload table 
 | `core.store` | `aseman_core.stores` | 5 | 2 | 0 |
 | `core.store_membership` | `aseman_core.store_memberships` | 4 | 3 | 1 |
 | `core.access_level` | `aseman_core.access_levels` | 2 | 1 | 1 |
-| `core.capability_grant` | `aseman_core.capability_grants` | 5 | 2 | 0 |
+| `core.capability_grant` | `aseman_core.capability_grants` | 12 | 0 | 0 |
 | `core.session` | `aseman_core.sessions` | 4 | 1 | 1 |
 | `core.file` | `aseman_core.files` | 4 | 2 | 1 |
 | `core.workload` | `aseman_core.workloads` | 6 | 2 | 1 |
 | `core.workload_operation` | `aseman_core.workload_operations` | 5 | 1 | 1 |
 | `core.node` | `aseman_core.nodes` | 4 | 0 | 1 |
 | `core.federation_peer` | `aseman_core.federation_peers` | 4 | 0 | 1 |
-| `core.node_key` | `aseman_core.node_keys` | 6 | 1 | 1 |
+| `core.identity_key` | `aseman_core.identity_keys` | 11 | 0 | 2 |
 | `core.module_installation` | `aseman_core.module_installations` | 6 | 0 | 1 |
 | `core.guest_database_binding` | `aseman_core.guest_database_bindings` | 6 | 1 | 3 |
 | `core.guest_schema_definition` | `aseman_core.guest_schema_definitions` | 4 | 2 | 1 |

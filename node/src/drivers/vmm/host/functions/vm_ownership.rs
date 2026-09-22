@@ -20,7 +20,7 @@
 use crate::drivers::vmm::globals::with_global_app;
 use crate::models::transaction::ITrx;
 
-fn owner_link_key(vm_id: &str) -> String {
+pub(crate) fn owner_link_key(vm_id: &str) -> String {
     format!("VmOwnerProgram::{}", vm_id)
 }
 

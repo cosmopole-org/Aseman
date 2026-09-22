@@ -1,0 +1,565 @@
+{
+  "version": "1",
+  "artifact": "A505",
+  "description": "Where every native runtime operation (A006) and every node-facing IVmm method goes when the embedded VMM is removed. `status` becomes `verified` when `verification` names a passing parity test (P5-05), and `deleted` when the legacy method is gone (P5-06).",
+  "homes": {
+    "api": "A501 operation (`target` is its operationId)",
+    "node": "stays in the node, using the A501 operation in `target` when set",
+    "backend": "inside the native backend, invisible to the node",
+    "guest_gateway": "the authenticated guest API (P5-04)",
+    "removed": "no replacement; `note` says why"
+  },
+  "capability_rules": {
+    "invocation": {
+      "override": [
+        "run_vm"
+      ]
+    },
+    "long_running": {
+      "override": [
+        "status_vm"
+      ],
+      "config": "restorable"
+    },
+    "pause": {
+      "override": [
+        "pause"
+      ]
+    },
+    "snapshot": {
+      "override": [
+        "restore"
+      ]
+    },
+    "exec": {
+      "override": [
+        "exec_vm"
+      ],
+      "exclude": {
+        "wasm": "exec_vm only validated the module path and echoed it",
+        "javascript": "exec_vm only transpiled the module and echoed it",
+        "elpian": "exec_vm was start: an invocation, served by invokeWorkload",
+        "elpify": "exec_vm was run_vm: an invocation, served by invokeWorkload"
+      }
+    },
+    "terminal": {
+      "never": true
+    },
+    "http_ingress": {
+      "override": [
+        "forward_http"
+      ]
+    },
+    "files": {
+      "override": [
+        "copy_to_vm"
+      ]
+    },
+    "build": {
+      "override": [
+        "build_image"
+      ]
+    },
+    "chain_transactions": {
+      "config": "supportsChainTrxs"
+    },
+    "execution_proofs": {
+      "override": [
+        "verify_program_execution"
+      ]
+    }
+  },
+  "runtime_operations": {
+    "init": {
+      "home": "backend",
+      "note": "Backend start-up of the runtime.",
+      "status": "open",
+      "verification": null
+    },
+    "detect": {
+      "home": "api",
+      "target": "getCapabilities",
+      "note": "Whether the runtime is usable on this host decides whether it is listed.",
+      "status": "open",
+      "verification": null
+    },
+    "meta": {
+      "home": "api",
+      "target": "getCapabilities",
+      "note": "Runtime metadata and deploy conventions.",
+      "status": "open",
+      "verification": null
+    },
+    "create": {
+      "home": "api",
+      "target": "createWorkload",
+      "note": "",
+      "status": "open",
+      "verification": null
+    },
+    "start": {
+      "home": "api",
+      "target": "startWorkload",
+      "capability": "long_running",
+      "note": "",
+      "status": "open",
+      "verification": null
+    },
+    "stop": {
+      "home": "api",
+      "target": "stopWorkload",
+      "capability": "long_running",
+      "note": "",
+      "status": "open",
+      "verification": null
+    },
+    "destroy": {
+      "home": "api",
+      "target": "deleteWorkload",
+      "note": "",
+      "status": "open",
+      "verification": null
+    },
+    "pause": {
+      "home": "api",
+      "target": "pauseWorkload",
+      "capability": "pause",
+      "note": "",
+      "status": "open",
+      "verification": null
+    },
+    "resume": {
+      "home": "api",
+      "target": "resumeWorkload",
+      "capability": "pause",
+      "note": "",
+      "status": "open",
+      "verification": null
+    },
+    "restore": {
+      "home": "api",
+      "target": "restoreWorkload",
+      "capability": "snapshot",
+      "note": "",
+      "status": "open",
+      "verification": null
+    },
+    "run_vm": {
+      "home": "api",
+      "target": "invokeWorkload",
+      "capability": "invocation",
+      "note": "",
+      "status": "open",
+      "verification": null
+    },
+    "exec_vm": {
+      "home": "api",
+      "target": "execWorkload",
+      "capability": "exec",
+      "note": "Runs a command in a live instance. Where legacy exec_vm was an echo or an invocation, the runtime reports `exec: false` (see capability_rules).",
+      "status": "open",
+      "verification": null
+    },
+    "status_vm": {
+      "home": "api",
+      "target": "getWorkload",
+      "note": "Observed state, reported through `observed` and the event stream.",
+      "status": "open",
+      "verification": null
+    },
+    "terminate_vm": {
+      "home": "api",
+      "target": "stopWorkload",
+      "note": "",
+      "status": "open",
+      "verification": null
+    },
+    "delete_vm": {
+      "home": "api",
+      "target": "deleteWorkload",
+      "note": "",
+      "status": "open",
+      "verification": null
+    },
+    "build_image": {
+      "home": "api",
+      "target": "createBuild",
+      "capability": "build",
+      "note": "",
+      "status": "open",
+      "verification": null
+    },
+    "build_delete_request": {
+      "home": "backend",
+      "note": "The backend plans its own teardown for deleteWorkload.",
+      "status": "open",
+      "verification": null
+    },
+    "build_terminate_request": {
+      "home": "backend",
+      "note": "The backend plans its own stop for stopWorkload.",
+      "status": "open",
+      "verification": null
+    },
+    "plan_run_entity": {
+      "home": "backend",
+      "note": "Launch planning is the backend's; the node sends a complete spec.",
+      "status": "open",
+      "verification": null
+    },
+    "plan_stop_entity": {
+      "home": "backend",
+      "note": "Stop planning is the backend's.",
+      "status": "open",
+      "verification": null
+    },
+    "plan_delete_entity": {
+      "home": "backend",
+      "note": "Delete planning is the backend's.",
+      "status": "open",
+      "verification": null
+    },
+    "copy_to_vm": {
+      "home": "api",
+      "target": "putWorkloadFile",
+      "capability": "files",
+      "note": "",
+      "status": "open",
+      "verification": null
+    },
+    "copy_from_vm": {
+      "home": "api",
+      "target": "getWorkloadFile",
+      "capability": "files",
+      "note": "",
+      "status": "open",
+      "verification": null
+    },
+    "forward_http": {
+      "home": "api",
+      "target": "forwardHttp",
+      "capability": "http_ingress",
+      "note": "Runtimes without `http_ingress` are reached by invokeWorkload, as legacy fell back to signalling.",
+      "status": "open",
+      "verification": null
+    },
+    "vm_endpoints": {
+      "home": "api",
+      "target": "listWorkloadEndpoints",
+      "note": "",
+      "status": "open",
+      "verification": null
+    },
+    "identify_instance_by_ip": {
+      "home": "removed",
+      "note": "Source-IP identification is replaced by the A405 workload credential issued in `bootstrap` (P5-04).",
+      "status": "open",
+      "verification": null
+    },
+    "verify_program_execution": {
+      "home": "api",
+      "target": "verifyExecution",
+      "capability": "execution_proofs",
+      "note": "",
+      "status": "open",
+      "verification": null
+    }
+  },
+  "node_methods": {
+    "assign": {
+      "home": "node",
+      "target": "invokeWorkload",
+      "note": "The per-program signal listener stays in the node and delivers each signal with invokeWorkload.",
+      "status": "open",
+      "verification": null
+    },
+    "run_vm": {
+      "home": "api",
+      "target": "invokeWorkload",
+      "note": "",
+      "status": "open",
+      "verification": null
+    },
+    "run_vm_entity": {
+      "home": "api",
+      "target": "invokeWorkload",
+      "note": "",
+      "status": "open",
+      "verification": null
+    },
+    "terminate_vm": {
+      "home": "api",
+      "target": "stopWorkload",
+      "note": "",
+      "status": "open",
+      "verification": null
+    },
+    "build_vm_image": {
+      "home": "api",
+      "target": "createBuild",
+      "note": "",
+      "status": "open",
+      "verification": null
+    },
+    "execute_chain_trxs_group": {
+      "home": "api",
+      "target": "invokeWorkload",
+      "capability": "chain_transactions",
+      "note": "Invocation kind `chain_transactions`.",
+      "status": "open",
+      "verification": null
+    },
+    "execute_chain_effects": {
+      "home": "api",
+      "target": "invokeWorkload",
+      "capability": "chain_transactions",
+      "note": "Invocation kind `chain_effects`.",
+      "status": "open",
+      "verification": null
+    },
+    "close_kvdb": {
+      "home": "removed",
+      "note": "Guest data lives in the creature's guest database (ADR 0021); the VMM holds no store.",
+      "status": "open",
+      "verification": null
+    },
+    "vm_callback": {
+      "home": "guest_gateway",
+      "note": "Log and output events become the backend log stream; triggers, signals, and terminations become authorized guest API calls.",
+      "status": "open",
+      "verification": null
+    },
+    "start_docker_gateway": {
+      "home": "backend",
+      "note": "The docker host bridge moves into the native backend until P5-04 retires it.",
+      "status": "open",
+      "verification": null
+    },
+    "start_http_ingress": {
+      "home": "node",
+      "target": "forwardHttp",
+      "note": "Ingress stays in the node: it resolves the route to a workload and forwards with forwardHttp.",
+      "status": "open",
+      "verification": null
+    },
+    "register_vm_container": {
+      "home": "backend",
+      "note": "",
+      "status": "open",
+      "verification": null
+    },
+    "unregister_vm_container": {
+      "home": "backend",
+      "note": "",
+      "status": "open",
+      "verification": null
+    },
+    "identify_container_by_ip": {
+      "home": "removed",
+      "note": "Replaced by the workload credential (P5-04).",
+      "status": "open",
+      "verification": null
+    },
+    "push_signal_to_machine": {
+      "home": "api",
+      "target": "invokeWorkload",
+      "note": "Delivery to live instances is the backend's.",
+      "status": "open",
+      "verification": null
+    },
+    "push_signal_to_entity": {
+      "home": "api",
+      "target": "invokeWorkload",
+      "note": "",
+      "status": "open",
+      "verification": null
+    },
+    "queue_pending_signal": {
+      "home": "backend",
+      "note": "Cold-start queueing happens behind invokeWorkload.",
+      "status": "open",
+      "verification": null
+    },
+    "begin_cold_spawn": {
+      "home": "backend",
+      "note": "Cold-start debounce happens behind invokeWorkload.",
+      "status": "open",
+      "verification": null
+    },
+    "register_vm_context": {
+      "home": "guest_gateway",
+      "note": "Caller identity comes from the workload credential.",
+      "status": "open",
+      "verification": null
+    },
+    "unregister_vm_context": {
+      "home": "guest_gateway",
+      "note": "",
+      "status": "open",
+      "verification": null
+    },
+    "get_vm_context": {
+      "home": "guest_gateway",
+      "note": "",
+      "status": "open",
+      "verification": null
+    },
+    "begin_vm_trx": {
+      "home": "guest_gateway",
+      "note": "Guest data transactions (ADR 0021).",
+      "status": "open",
+      "verification": null
+    },
+    "commit_vm_trx": {
+      "home": "guest_gateway",
+      "note": "",
+      "status": "open",
+      "verification": null
+    },
+    "vm_db_op": {
+      "home": "guest_gateway",
+      "note": "",
+      "status": "open",
+      "verification": null
+    },
+    "vm_db_commit_explicit": {
+      "home": "guest_gateway",
+      "note": "",
+      "status": "open",
+      "verification": null
+    },
+    "acquire_resource_lock": {
+      "home": "guest_gateway",
+      "note": "",
+      "status": "open",
+      "verification": null
+    },
+    "release_resource_lock": {
+      "home": "guest_gateway",
+      "note": "",
+      "status": "open",
+      "verification": null
+    },
+    "host_action_micro": {
+      "home": "guest_gateway",
+      "note": "",
+      "status": "open",
+      "verification": null
+    },
+    "exec_shell_action": {
+      "home": "guest_gateway",
+      "note": "",
+      "status": "open",
+      "verification": null
+    },
+    "host_action_resource_store": {
+      "home": "guest_gateway",
+      "note": "",
+      "status": "open",
+      "verification": null
+    },
+    "host_action_resource_entity_create": {
+      "home": "guest_gateway",
+      "note": "",
+      "status": "open",
+      "verification": null
+    },
+    "host_action_resource_entity_delete": {
+      "home": "guest_gateway",
+      "note": "",
+      "status": "open",
+      "verification": null
+    },
+    "host_action_store": {
+      "home": "guest_gateway",
+      "note": "",
+      "status": "open",
+      "verification": null
+    },
+    "host_action_creature": {
+      "home": "guest_gateway",
+      "note": "",
+      "status": "open",
+      "verification": null
+    },
+    "host_action_program": {
+      "home": "guest_gateway",
+      "note": "",
+      "status": "open",
+      "verification": null
+    },
+    "supported_runtimes": {
+      "home": "api",
+      "target": "getCapabilities",
+      "note": "",
+      "status": "open",
+      "verification": null
+    },
+    "is_supported_runtime": {
+      "home": "api",
+      "target": "getCapabilities",
+      "note": "",
+      "status": "open",
+      "verification": null
+    },
+    "is_managed_runtime": {
+      "home": "removed",
+      "note": "The node no longer distinguishes in-process runtimes; invokeWorkload cold-starts any runtime.",
+      "status": "open",
+      "verification": null
+    },
+    "runtime_supports_chain_trxs": {
+      "home": "api",
+      "target": "getCapabilities",
+      "capability": "chain_transactions",
+      "note": "",
+      "status": "open",
+      "verification": null
+    },
+    "runtime_deploy_spec": {
+      "home": "api",
+      "target": "getCapabilities",
+      "note": "`deploy` conventions; `setEntityLinksOnDeploy` stays inside the backend.",
+      "status": "open",
+      "verification": null
+    },
+    "plan_run_entity": {
+      "home": "backend",
+      "note": "",
+      "status": "open",
+      "verification": null
+    },
+    "plan_stop_entity": {
+      "home": "backend",
+      "note": "",
+      "status": "open",
+      "verification": null
+    },
+    "plan_delete_entity": {
+      "home": "backend",
+      "note": "",
+      "status": "open",
+      "verification": null
+    },
+    "delete_vm_instance": {
+      "home": "api",
+      "target": "deleteWorkload",
+      "note": "",
+      "status": "open",
+      "verification": null
+    },
+    "forward_http": {
+      "home": "api",
+      "target": "forwardHttp",
+      "note": "",
+      "status": "open",
+      "verification": null
+    },
+    "resolve_http_route": {
+      "home": "node",
+      "note": "Custom gateway routes are node data (core gateway routes); the node resolves them before forwardHttp.",
+      "status": "open",
+      "verification": null
+    }
+  }
+}

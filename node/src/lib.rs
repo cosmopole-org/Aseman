@@ -51,7 +51,29 @@ fn install_core_storage(config: &AsemanConfig) -> anyhow::Result<()> {
         CORE_STORAGE_CONNECTIONS,
         Some(config.core_storage.binding_generation),
     )?;
-    crate::shell::api::model::core_storage::install_postgres(factory)
+    crate::shell::api::model::core_storage::install_postgres(factory)?;
+    // Guest data moves with the core families: each creature's own database, through
+    // the trusted guest proxy (ADR 0021, A405).
+    let proxy = config
+        .core_storage
+        .guest_proxy
+        .as_ref()
+        .ok_or_else(|| anyhow::anyhow!("the guest proxy is required on PostgreSQL"))?;
+    let proxy_url = aseman_config::read_secret_file(&proxy.url_secret, 4096)?;
+    let router = aseman_storage_postgres::guest::GuestPoolRouter::new(
+        &proxy_url,
+        &proxy.role,
+        proxy.max_pools,
+        proxy.max_pool_size,
+    )
+    .map_err(|error| anyhow::anyhow!("{error}"))?;
+    crate::shell::audit::install_postgres(
+        aseman_storage_postgres::PostgresCapsuleRepository::connect(&url)?,
+    )?;
+    crate::shell::api::model::guest_data::install_postgres(
+        aseman_storage_postgres::guest::PostgresGuestKv::new(router),
+        aseman_storage_postgres::PostgresCapsuleRepository::connect(&url)?,
+    )
 }
 
 /// Run the legacy node composition while use cases move behind Aseman ports.
@@ -187,34 +209,32 @@ pub fn run() {
     // ── Startup VMM listener restore ──────────────────────────────────────────
     // The signaler listeners that vmm.assign() registers are in-memory only.
     // After a node restart they are gone, so creature signals to deployed
-    // machines would silently drop.  Scan the DB for all previously deployed
-    // entity type links and re-register one listener per unique machine_id.
+    // machines would silently drop. Re-register one listener per program with a
+    // deployed entity.
     {
-        use std::collections::HashSet;
-        let keys_slot = std::sync::Arc::new(Mutex::new(Vec::<String>::new()));
-        let keys_clone = keys_slot.clone();
+        let programs_slot = std::sync::Arc::new(Mutex::new(Vec::<String>::new()));
+        let programs_clone = programs_slot.clone();
+        let blobs = drivers::blob_store::node_blobs(&*app.tools().storage());
         app.modify_state(
             true,
             Box::new(move |trx: &dyn crate::models::transaction::ITrx| {
-                *keys_clone.lock().unwrap() = trx.get_by_prefix("link::vmEntityType::");
+                let entities =
+                    crate::shell::api::model::entity_ports::EntityPorts { trx, blobs: &blobs };
+                *programs_clone.lock().unwrap() =
+                    aseman_ports::EntityDirectory::deployed_programs(&entities)
+                        .map_err(|error| anyhow::anyhow!("{error}"))?;
                 Ok(())
             }),
         );
-        let mut seen: HashSet<String> = HashSet::new();
-        for key in keys_slot.lock().unwrap().iter() {
-            // key = "link::vmEntityType::MACHINE_ID::ENTITY_ID"
-            let rest = key.strip_prefix("link::vmEntityType::").unwrap_or("");
-            if let Some(machine_id) = rest.split("::").next() {
-                if !machine_id.is_empty() && seen.insert(machine_id.to_string()) {
-                    app.tools().vmm().assign(machine_id);
-                }
-            }
+        let programs = programs_slot.lock().unwrap().clone();
+        for program_id in &programs {
+            app.tools().vmm().assign(program_id);
         }
-        if !seen.is_empty() {
+        if !programs.is_empty() {
             eprintln!(
                 "[startup] Restored VMM listeners for {} machine(s): {:?}",
-                seen.len(),
-                seen
+                programs.len(),
+                programs
             );
         }
     }

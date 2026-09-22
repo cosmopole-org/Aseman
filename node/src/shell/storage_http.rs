@@ -15,14 +15,16 @@
 //!     original content type.
 //!   * `GET  /storage/health`         — `{ "status": "ok" }`.
 //!
-//! Blobs live under `<storage_root>/public-files/` via the existing
-//! [`IFile`](crate::models::ports::file::IFile) global-storage driver: `<id>`
+//! Blobs live under `<storage_root>/public-files/` in the node blob store
+//! (ADR 0027): `<id>`
 //! holds the bytes and `<id>.type` the content type. Ids are opaque UUIDs and
 //! are validated on read so a crafted path can never escape the directory.
 
 use std::io::{BufRead, BufReader, Read, Write};
 use std::net::{TcpListener, TcpStream};
 use std::sync::Arc;
+
+use aseman_ports::BlobStore;
 use std::thread;
 
 use uuid::Uuid;
@@ -30,8 +32,6 @@ use uuid::Uuid;
 use crate::models::core::ICore;
 use aseman_contracts::legacy_storage_http::{escape_json, is_safe_id, sanitize_content_type};
 
-/// Where public blobs live, relative to the node storage root.
-const PUBLIC_DIR: &str = "public-files";
 /// Spawn the storage HTTP server on `port` (no-op when `port <= 0`).
 pub fn start(app: Arc<dyn ICore>, port: i64, max_bytes: usize) {
     if port <= 0 {
@@ -60,14 +60,6 @@ struct StorageHttp {
 }
 
 impl StorageHttp {
-    fn public_root(&self) -> String {
-        format!(
-            "{}/{}",
-            self.app.tools().storage().storage_root(),
-            PUBLIC_DIR
-        )
-    }
-
     fn handle(self: Arc<Self>, mut stream: TcpStream) {
         let mut reader = BufReader::new(match stream.try_clone() {
             Ok(s) => s,
@@ -166,9 +158,9 @@ impl StorageHttp {
 
         let id = Uuid::new_v4().to_string();
         let ctype = sanitize_content_type(content_type);
-        let root = self.public_root();
-        let file = self.app.tools().file();
-        if let Err(e) = file.save_data_to_global_storage(&root, &data, &id, true) {
+        let blobs = crate::drivers::blob_store::node_blobs(&*self.app.tools().storage());
+        let folder = crate::drivers::blob_store::PUBLIC_FILES;
+        if let Err(e) = blobs.put_blob(&[folder, "/", &id].concat(), &data, &ctype, true) {
             write_response(
                 stream,
                 500,
@@ -178,10 +170,10 @@ impl StorageHttp {
             return;
         }
         // Sidecar holding the content type so downloads round-trip it.
-        let _ = file.save_data_to_global_storage(
-            &root,
+        let _ = blobs.put_blob(
+            &[folder, "/", &id, ".type"].concat(),
             ctype.as_bytes(),
-            &format!("{}.type", id),
+            "text/plain",
             true,
         );
 
@@ -203,11 +195,11 @@ impl StorageHttp {
             );
             return;
         }
-        let root = self.public_root();
-        let file = self.app.tools().file();
-        let bytes = match file.read_file_by_path(&format!("{}/{}", root, id)) {
-            Ok(b) => b,
-            Err(_) => {
+        let blobs = crate::drivers::blob_store::node_blobs(&*self.app.tools().storage());
+        let folder = crate::drivers::blob_store::PUBLIC_FILES;
+        let bytes = match blobs.blob(&[folder, "/", id].concat()) {
+            Ok(Some(bytes)) => bytes,
+            _ => {
                 write_response(
                     stream,
                     404,
@@ -217,9 +209,10 @@ impl StorageHttp {
                 return;
             }
         };
-        let ctype = file
-            .read_file_by_path(&format!("{}/{}.type", root, id))
+        let ctype = blobs
+            .blob(&[folder, "/", id, ".type"].concat())
             .ok()
+            .flatten()
             .map(|b| String::from_utf8_lossy(&b).trim().to_string())
             .filter(|s| !s.is_empty())
             .unwrap_or_else(|| "application/octet-stream".to_string());

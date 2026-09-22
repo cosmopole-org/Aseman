@@ -2,8 +2,6 @@
 //! calls available to wasm / javascript / fire runtimes.
 
 use std::collections::HashMap;
-use std::fs;
-use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 
 use base64::Engine;
@@ -14,7 +12,10 @@ use crate::models::core::{ICore, StateClosure};
 use crate::models::info::IInfo;
 use crate::models::state::IState;
 use crate::models::transaction::ITrx;
-use crate::shell::api::model::{Creature, Entity, Program, Store, StorePermissions};
+use crate::shell::api::model::entity_ports::EntityPorts;
+use crate::shell::api::model::{Creature, Program, Store, StorePermissions};
+use aseman_domain::program::{EntityRecord, ResourceEntityRef};
+use aseman_ports::BlobStore;
 
 use super::driver::{check_bool, check_i64, check_str, normalize_runtime, Vmm};
 
@@ -628,46 +629,36 @@ impl Vmm {
                     )
                 }
             };
-            if let Err(e) =
-                self.file
-                    .save_data_to_global_storage(&build_folder_path, &data, "proxy.data", true)
+            let blobs = crate::drivers::blob_store::node_blobs(&*self.storage);
+            let evidence = match blobs.put_entity_file(&program_id, &entity_id, "proxy.data", &data)
             {
-                return (
-                    format!(
-                        "{{\"ok\":false,\"error\":\"{}\"}}",
-                        e.to_string().replace('"', "\\\"")
-                    ),
-                    req_id,
-                );
-            }
-            let data_path = format!("{}/proxy.data", build_folder_path);
+                Ok(evidence) => evidence,
+                Err(e) => {
+                    return (
+                        format!(
+                            "{{\"ok\":false,\"error\":\"{}\"}}",
+                            e.to_string().replace('"', "\\\"")
+                        ),
+                        req_id,
+                    );
+                }
+            };
             let program_id_owned = program_id.clone();
             let entity_id_owned = entity_id.clone();
             let config_owned = config.clone();
             self.app.modify_state(
                 false,
                 Box::new(move |t: &dyn ITrx| {
-                    // Make sure the program record exists so its signal
-                    // listener resolves; a bare proxy program needs no
-                    // runtime of its own.
-                    // LD-17: deploying never creates a bare program without a machine.
-                    if aseman_ports::ProgramDirectory::program(
-                        &crate::shell::api::model::program_ports::ProgramPorts { trx: t },
-                        &program_id_owned,
-                    )
-                    .map_err(|error| anyhow::anyhow!("{error}"))?
-                    .is_none()
-                    {
-                        return Err(anyhow::anyhow!("program not found"));
-                    }
+                    // LD-17: the program must exist (a bare proxy program needs no
+                    // runtime of its own); the entity write refuses a missing one.
                     proxy::record_proxy_entity(
                         t,
+                        &blobs,
                         &program_id_owned,
                         &entity_id_owned,
-                        &data_path,
+                        &evidence,
                         &config_owned,
-                    );
-                    Ok(())
+                    )
                 }),
             );
             self.app.tools().vmm().assign(&program_id);
@@ -700,20 +691,20 @@ impl Vmm {
         let accepts_extra_files = spec["acceptsExtraFiles"].as_bool().unwrap_or(false);
         let build_on_deploy = spec["buildOnDeploy"].as_bool().unwrap_or(false);
         let set_entity_links = spec["setEntityLinksOnDeploy"].as_bool().unwrap_or(false);
-        if let Err(e) = self.file.save_data_to_global_storage(
-            &build_folder_path,
-            &data,
-            &primary_file_name,
-            true,
-        ) {
-            return (
-                format!(
-                    "{{\"ok\":false,\"error\":\"{}\"}}",
-                    e.to_string().replace('"', "\\\"")
-                ),
-                req_id,
-            );
-        }
+        let blobs = crate::drivers::blob_store::node_blobs(&*self.storage);
+        let primary =
+            match blobs.put_entity_file(&program_id, &entity_id, &primary_file_name, &data) {
+                Ok(evidence) => evidence,
+                Err(e) => {
+                    return (
+                        format!(
+                            "{{\"ok\":false,\"error\":\"{}\"}}",
+                            e.to_string().replace('"', "\\\"")
+                        ),
+                        req_id,
+                    );
+                }
+            };
         if accepts_extra_files {
             if let Some(files) = metadata.get("files").and_then(Value::as_object) {
                 for (name, raw) in files {
@@ -736,12 +727,7 @@ impl Vmm {
                             )
                         }
                     };
-                    if let Err(e) = self.file.save_data_to_global_storage(
-                        &build_folder_path,
-                        &bytes,
-                        name,
-                        true,
-                    ) {
+                    if let Err(e) = blobs.put_entity_file(&program_id, &entity_id, name, &bytes) {
                         return (
                             format!(
                                 "{{\"ok\":false,\"error\":\"{}\"}}",
@@ -757,8 +743,6 @@ impl Vmm {
         let program_id_owned = program_id.clone();
         let entity_id_owned = entity_id.clone();
         let entity_type_owned = entity_type.clone();
-        let primary_owned = primary_file_name.clone();
-        let folder_owned = build_folder_path.clone();
         self.app.modify_state(
             false,
             Box::new(move |t: &dyn ITrx| {
@@ -775,35 +759,28 @@ impl Vmm {
                     aseman_ports::ProgramDirectory::update_program(&programs, &program)
                         .map_err(|error| anyhow::anyhow!("{error}"))?;
                 }
-                Entity {
-                    program_id: program_id_owned.clone(),
-                    entity_id: entity_id_owned.clone(),
-                    entity_type: entity_type_owned.clone(),
-                    image_name: entity_id_owned.clone(),
+                aseman_application::program::RecordEntityDeployment {
+                    entities: &EntityPorts {
+                        trx: t,
+                        blobs: &blobs,
+                    },
                 }
-                .push(t);
-                if set_entity_links {
-                    t.put_link(
-                        &format!("vmEntityPath::{}::{}", program_id_owned, entity_id_owned),
-                        &format!("{}/{}", folder_owned, primary_owned),
-                    );
-                    t.put_link(
-                        &format!("vmEntityType::{}::{}", program_id_owned, entity_id_owned),
-                        &entity_type_owned,
-                    );
-                }
-                if downloadable {
+                .execute(&aseman_application::program::EntityDeployment {
+                    entity: EntityRecord {
+                        program_id: program_id_owned.clone(),
+                        entity_id: entity_id_owned.clone(),
+                        entity_type: entity_type_owned.clone(),
+                        image_name: entity_id_owned.clone(),
+                    },
+                    primary: primary.clone(),
+                    runtime_file: set_entity_links,
                     // Downloadable entities (e.g. a front-end script executed
                     // client-side) are fetched by clients at any time via
                     // /programs/downloadEntity.
-                    t.put_link(
-                        &format!(
-                            "vmEntityDownloadable::{}::{}",
-                            program_id_owned, entity_id_owned
-                        ),
-                        &format!("{}/{}", folder_owned, primary_owned),
-                    );
-                }
+                    downloadable,
+                    config: None,
+                })
+                .map_err(|error| anyhow::anyhow!("{error}"))?;
                 Ok(())
             }),
         );
@@ -1009,43 +986,41 @@ impl Vmm {
         }
         let payload = input.get("payload").cloned().unwrap_or_else(|| json!({}));
         let data = check_str(input, "data", "");
-        let base_path = PathBuf::from(&self.storage_root)
-            .join("vm_stores")
-            .join(&store_id)
-            .join(&entity_type);
-        let _ = fs::create_dir_all(&base_path);
-        let path = base_path.join(format!("{}.json", entity_id));
-        let _ = fs::write(&path, data.as_bytes());
-        let path_str = path.to_string_lossy().into_owned();
-        let store_id_owned = store_id.clone();
-        let entity_id_owned = entity_id.clone();
-        let entity_type_owned = entity_type.clone();
-        let path_owned = path_str.clone();
+        let reference = ResourceEntityRef {
+            store_id,
+            entity_type,
+            entity_id: entity_id.clone(),
+        };
+        let blobs = crate::drivers::blob_store::node_blobs(&*self.storage);
+        let path = blobs
+            .local_path(&reference.data_key())
+            .map(|path| path.to_string_lossy().into_owned())
+            .unwrap_or_default();
+        let failure = Arc::new(Mutex::new(None));
+        let failure_slot = failure.clone();
         self.app.modify_state(
             false,
             Box::new(move |t: &dyn ITrx| {
-                let key = format!(
-                    "Json::VmResourceEntity::{}::{}::{}",
-                    store_id_owned, entity_type_owned, entity_id_owned
-                );
-                t.put_json(&key, "payload", &payload, true)?;
-                let meta = json!({
-                    "id": entity_id_owned.clone(),
-                    "storeId": store_id_owned.clone(),
-                    "entityType": entity_type_owned.clone(),
-                    "path": path_owned.clone(),
-                });
-                t.put_json(&key, "meta", &meta, true)?;
-                Ok(())
+                aseman_application::program::PutResourceEntity {
+                    entities: &EntityPorts {
+                        trx: t,
+                        blobs: &blobs,
+                    },
+                    blobs: &blobs,
+                }
+                .execute(&reference, &payload.to_string(), data.as_bytes())
+                .map_err(|error| {
+                    *failure_slot.lock().unwrap() = Some(error.to_string());
+                    anyhow::anyhow!("{error}")
+                })
             }),
         );
-        (
-            format!(
-                "{{\"ok\":true,\"entityId\":\"{}\",\"path\":\"{}\"}}",
-                entity_id, path_str
-            ),
-            req_id,
-        )
+        if let Some(error) = failure.lock().unwrap().take() {
+            let out = json!({"ok": false, "error": error});
+            return (out.to_string(), req_id);
+        }
+        let out = json!({"ok": true, "entityId": entity_id, "path": path});
+        (out.to_string(), req_id)
     }
 
     pub(crate) fn handle_resource_entity_delete(
@@ -1068,27 +1043,35 @@ impl Vmm {
                 req_id,
             );
         }
-        let path = PathBuf::from(&self.storage_root)
-            .join("vm_stores")
-            .join(&store_id)
-            .join(&entity_type)
-            .join(format!("{}.json", entity_id));
-        let _ = fs::remove_file(&path);
-        let store_id_owned = store_id.clone();
-        let entity_id_owned = entity_id.clone();
-        let entity_type_owned = entity_type.clone();
+        let reference = ResourceEntityRef {
+            store_id,
+            entity_type,
+            entity_id,
+        };
+        let blobs = crate::drivers::blob_store::node_blobs(&*self.storage);
+        let failure = Arc::new(Mutex::new(None));
+        let failure_slot = failure.clone();
         self.app.modify_state(
             false,
             Box::new(move |t: &dyn ITrx| {
-                let key = format!(
-                    "Json::VmResourceEntity::{}::{}::{}",
-                    store_id_owned, entity_type_owned, entity_id_owned
-                );
-                t.del_key(&format!("{}::payload", key));
-                t.del_key(&format!("{}::meta", key));
-                Ok(())
+                aseman_application::program::DeleteResourceEntity {
+                    entities: &EntityPorts {
+                        trx: t,
+                        blobs: &blobs,
+                    },
+                    blobs: &blobs,
+                }
+                .execute(&reference)
+                .map_err(|error| {
+                    *failure_slot.lock().unwrap() = Some(error.to_string());
+                    anyhow::anyhow!("{error}")
+                })
             }),
         );
+        if let Some(error) = failure.lock().unwrap().take() {
+            let out = json!({"ok": false, "error": error});
+            return (out.to_string(), req_id);
+        }
         (r#"{"ok":true}"#.into(), req_id)
     }
 
@@ -1331,49 +1314,6 @@ impl Vmm {
                 let id = self.gen_id(&source);
                 (format!("{{\"ok\":true,\"id\":\"{}\"}}", id), req_id)
             }
-            "getLink" => {
-                let key = check_str(input, "key", "");
-                if key.is_empty() {
-                    return (r#"{"ok":false,"error":"key is required"}"#.into(), req_id);
-                }
-                let val_slot = Arc::new(Mutex::new(String::new()));
-                let val_clone = val_slot.clone();
-                let key_owned = key.clone();
-                self.app.modify_state(
-                    true,
-                    Box::new(move |t: &dyn ITrx| {
-                        *val_clone.lock().unwrap() = t.get_link(&key_owned);
-                        Ok(())
-                    }),
-                );
-                let v = val_slot.lock().unwrap().clone();
-                (
-                    format!("{{\"ok\":true,\"value\":\"{}\"}}", v.replace('"', "\\\"")),
-                    req_id,
-                )
-            }
-            "delKey" => {
-                let key = check_str(input, "key", "");
-                if key.is_empty() {
-                    return (r#"{"ok":false,"error":"key is required"}"#.into(), req_id);
-                }
-                if key.starts_with("link::") {
-                    return (
-                        r#"{"ok":false,"error":"link modifications are not allowed via delKey"}"#
-                            .into(),
-                        req_id,
-                    );
-                }
-                let key_owned = key.clone();
-                self.app.modify_state(
-                    false,
-                    Box::new(move |t: &dyn ITrx| {
-                        t.del_key(&key_owned);
-                        Ok(())
-                    }),
-                );
-                (r#"{"ok":true}"#.into(), req_id)
-            }
             "createAccess" | "updateAccess" => {
                 let user_id = check_str(input, "userId", "");
                 if user_id.is_empty() {
@@ -1462,71 +1402,6 @@ impl Vmm {
                     }),
                 );
                 (r#"{"ok":true}"#.into(), req_id)
-            }
-            "getJson" => {
-                let key = check_str(input, "key", "");
-                if key.is_empty() {
-                    return (r#"{"ok":false,"error":"key is required"}"#.into(), req_id);
-                }
-                let path = check_str(input, "path", "");
-                let slot: Arc<Mutex<Map<String, Value>>> = Arc::new(Mutex::new(Map::new()));
-                let slot_clone = slot.clone();
-                let key_owned = key.clone();
-                let path_owned = path.clone();
-                self.app.modify_state(
-                    true,
-                    Box::new(move |t: &dyn ITrx| {
-                        if let Ok(m) = t.get_json(&key_owned, &path_owned) {
-                            *slot_clone.lock().unwrap() = m;
-                        }
-                        Ok(())
-                    }),
-                );
-                let data = Value::Object(slot.lock().unwrap().clone());
-                let out = json!({"ok": true, "data": data});
-                (serde_json::to_string(&out).unwrap_or_default(), req_id)
-            }
-            "putJson" => {
-                let key = check_str(input, "key", "");
-                if key.is_empty() {
-                    return (r#"{"ok":false,"error":"key is required"}"#.into(), req_id);
-                }
-                let path = check_str(input, "path", "");
-                let merge = check_bool(input, "merge", true);
-                let obj = input.get("data").cloned().unwrap_or(Value::Null);
-                let key_owned = key.clone();
-                let path_owned = path.clone();
-                self.app.modify_state(
-                    false,
-                    Box::new(move |t: &dyn ITrx| {
-                        let _ = t.put_json(&key_owned, &path_owned, &obj, merge);
-                        Ok(())
-                    }),
-                );
-                (r#"{"ok":true}"#.into(), req_id)
-            }
-            "getByPrefix" => {
-                let prefix = check_str(input, "prefix", "");
-                let slot: Arc<Mutex<Vec<String>>> = Arc::new(Mutex::new(Vec::new()));
-                let slot_clone = slot.clone();
-                // putJson/getJson store keys as "json::{key}::{path}", so prefix
-                // searches must also look under the "json::" namespace and strip
-                // it from results so callers see the same key space they wrote to.
-                let json_prefix = format!("json::{}", prefix);
-                self.app.modify_state(
-                    true,
-                    Box::new(move |t: &dyn ITrx| {
-                        let keys = t.get_by_prefix(&json_prefix);
-                        *slot_clone.lock().unwrap() = keys
-                            .into_iter()
-                            .map(|k| k.strip_prefix("json::").unwrap_or(&k).to_string())
-                            .collect();
-                        Ok(())
-                    }),
-                );
-                let data = slot.lock().unwrap().clone();
-                let out = json!({"ok": true, "data": data});
-                (serde_json::to_string(&out).unwrap_or_default(), req_id)
             }
             "readSignals" => {
                 // The store-log read, for creatures and connected containers:

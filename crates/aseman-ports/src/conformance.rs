@@ -3,6 +3,8 @@
 //! The legacy adapters and the capsule adapters run the same suite, so a use case
 //! behaves identically before and after cutover.
 
+pub mod vmm;
+
 use crate::{CreatureBalances, CreatureDirectory, PortError};
 use aseman_domain::creature::CreatureRecord;
 
@@ -725,4 +727,753 @@ pub fn store_access(access: &dyn crate::StoreAccess, store_id: &str, members: [&
     access.leave(store_id, first).unwrap();
     access.leave(store_id, second).unwrap();
     assert!(access.members(store_id).unwrap().is_empty());
+}
+
+/// Exercises [`crate::BlobStore`] on an empty store.
+///
+/// # Panics
+///
+/// Panics when the provider deviates from the port contract.
+pub fn blob_store(blobs: &dyn crate::BlobStore) {
+    let key = "machines/10@c/entities/main/module.wasm";
+    assert_eq!(blobs.blob(key), Ok(None));
+    assert_eq!(blobs.has_blob(key), Ok(false));
+    let first = blobs
+        .put_blob(key, b"\0asm-one", "application/wasm", false)
+        .unwrap();
+    assert_eq!(
+        (
+            first.store_key.as_str(),
+            first.size_bytes,
+            first.media_type.as_str()
+        ),
+        (key, 8, "application/wasm")
+    );
+    assert_eq!(blobs.blob(key), Ok(Some(b"\0asm-one".to_vec())));
+    assert_eq!(blobs.has_blob(key), Ok(true));
+    assert!(blobs.local_path(key).unwrap().ends_with("module.wasm"));
+    assert_eq!(
+        blobs.put_blob(key, b"other", "application/wasm", false),
+        Err(PortError::Conflict)
+    );
+    let second = blobs
+        .put_blob(key, b"\0asm-two", "application/wasm", true)
+        .unwrap();
+    assert_ne!(first.content_digest, second.content_digest);
+    // The same bytes always give the same evidence.
+    assert_eq!(
+        blobs
+            .put_blob(key, b"\0asm-two", "application/wasm", true)
+            .unwrap(),
+        second
+    );
+    for invalid in ["../escape", "/abs", "a//b"] {
+        assert!(matches!(
+            blobs.put_blob(invalid, b"x", "text/plain", true),
+            Err(PortError::Failed(_))
+        ));
+    }
+    blobs.delete_blob(key).unwrap();
+    blobs.delete_blob(key).unwrap();
+    assert_eq!(blobs.blob(key), Ok(None));
+}
+
+/// Exercises [`crate::EntityDirectory`] for an existing program without entities.
+/// Artifact keys lie under the program's entity folder, so a provider that records
+/// files by local path can map them back.
+///
+/// # Panics
+///
+/// Panics when the adapter deviates from the port contract.
+pub fn entity_directory(entities: &dyn crate::EntityDirectory, program_id: &str) {
+    use aseman_domain::blob::BlobEvidence;
+    use aseman_domain::program::{ArtifactRole, EntityArtifact, EntityRecord};
+    let entity = |entity_id: &str, entity_type: &str| EntityRecord {
+        program_id: program_id.to_owned(),
+        entity_id: entity_id.to_owned(),
+        entity_type: entity_type.to_owned(),
+        image_name: entity_id.to_owned(),
+    };
+    let evidence = |entity_id: &str, name: &str, digest: u8| BlobEvidence {
+        store_key: format!("machines/{program_id}/entities/{entity_id}/{name}"),
+        content_digest: [digest; 32],
+        size_bytes: 4,
+        media_type: "application/octet-stream".to_owned(),
+    };
+    let stored = |evidence: &BlobEvidence| {
+        Some(EntityArtifact {
+            store_key: Some(evidence.store_key.clone()),
+        })
+    };
+    let listed = |entities: &dyn crate::EntityDirectory| {
+        entities
+            .deployed_programs()
+            .unwrap()
+            .into_iter()
+            .filter(|program| program == program_id)
+            .count()
+    };
+
+    assert_eq!(entities.entity(program_id, "main"), Ok(None));
+    assert_eq!(
+        entities.artifact(program_id, "main", ArtifactRole::Primary),
+        Ok(None)
+    );
+    assert_eq!(entities.entity_config(program_id, "main"), Ok(None));
+    assert_eq!(listed(entities), 0);
+    let orphan = EntityRecord {
+        program_id: "missing@conformance".to_owned(),
+        ..entity("main", "wasm")
+    };
+    assert_eq!(entities.put_entity(&orphan), Err(PortError::NotFound));
+    assert_eq!(
+        entities.put_artifact(
+            program_id,
+            "main",
+            ArtifactRole::Primary,
+            &evidence("main", "module.wasm", 1)
+        ),
+        Err(PortError::NotFound)
+    );
+    assert_eq!(
+        entities.merge_entity_config(program_id, "main", "{}"),
+        Err(PortError::NotFound)
+    );
+
+    entities.put_entity(&entity("main", "wasm")).unwrap();
+    assert_eq!(
+        entities.entity(program_id, "main"),
+        Ok(Some(entity("main", "wasm")))
+    );
+    // An entity without a primary file is not deployed.
+    assert_eq!(listed(entities), 0);
+    let first = evidence("main", "module.wasm", 1);
+    entities
+        .put_artifact(program_id, "main", ArtifactRole::Primary, &first)
+        .unwrap();
+    assert_eq!(
+        entities.artifact(program_id, "main", ArtifactRole::Primary),
+        Ok(stored(&first))
+    );
+    assert_eq!(
+        entities.artifact(program_id, "main", ArtifactRole::Downloadable),
+        Ok(None)
+    );
+    assert_eq!(listed(entities), 1);
+
+    // A redeploy replaces the entity and its file.
+    let redeployed = EntityRecord {
+        image_name: "image".to_owned(),
+        ..entity("main", "javascript")
+    };
+    entities.put_entity(&redeployed).unwrap();
+    let second = evidence("main", "index.js", 2);
+    entities
+        .put_artifact(program_id, "main", ArtifactRole::Primary, &second)
+        .unwrap();
+    entities
+        .put_artifact(program_id, "main", ArtifactRole::Downloadable, &second)
+        .unwrap();
+    assert_eq!(entities.entity(program_id, "main"), Ok(Some(redeployed)));
+    assert_eq!(
+        entities.artifact(program_id, "main", ArtifactRole::Primary),
+        Ok(stored(&second))
+    );
+    assert_eq!(
+        entities.artifact(program_id, "main", ArtifactRole::Downloadable),
+        Ok(stored(&second))
+    );
+
+    // Each program is listed once, whatever its number of deployed entities.
+    entities.put_entity(&entity("worker", "wasm")).unwrap();
+    entities
+        .put_artifact(
+            program_id,
+            "worker",
+            ArtifactRole::Primary,
+            &evidence("worker", "module.wasm", 3),
+        )
+        .unwrap();
+    assert_eq!(listed(entities), 1);
+    let programs = entities.deployed_programs().unwrap();
+    let mut sorted = programs.clone();
+    sorted.sort_by(|left, right| left.as_bytes().cmp(right.as_bytes()));
+    sorted.dedup();
+    assert_eq!(programs, sorted);
+
+    entities
+        .merge_entity_config(
+            program_id,
+            "main",
+            r#"{"targetProgramId":"t","inject":{"a":1}}"#,
+        )
+        .unwrap();
+    entities
+        .merge_entity_config(program_id, "main", r#"{"inject":{"b":2}}"#)
+        .unwrap();
+    assert_eq!(
+        entities
+            .entity_config(program_id, "main")
+            .unwrap()
+            .as_deref(),
+        Some(r#"{"inject":{"a":1,"b":2},"targetProgramId":"t"}"#)
+    );
+    assert_eq!(entities.entity_config(program_id, "worker"), Ok(None));
+    assert!(matches!(
+        entities.merge_entity_config(program_id, "main", "[]"),
+        Err(PortError::Failed(_))
+    ));
+}
+
+/// Exercises [`crate::VmResourceEntities`] for an existing resource store without
+/// entities.
+///
+/// # Panics
+///
+/// Panics when the adapter deviates from the port contract.
+pub fn vm_resource_entities(entities: &dyn crate::VmResourceEntities, store_id: &str) {
+    use aseman_domain::blob::BlobEvidence;
+    use aseman_domain::program::{ResourceEntityRef, VmResourceEntity};
+    let reference = |store: &str, entity_id: &str| ResourceEntityRef {
+        store_id: store.to_owned(),
+        entity_type: "doc".to_owned(),
+        entity_id: entity_id.to_owned(),
+    };
+    let data = |reference: &ResourceEntityRef, digest: u8| BlobEvidence {
+        store_key: reference.data_key(),
+        content_digest: [digest; 32],
+        size_bytes: 2,
+        media_type: "application/json".to_owned(),
+    };
+    let first = reference(store_id, "e-1");
+
+    assert_eq!(entities.resource_entity(&first), Ok(None));
+    let orphan = reference("missing-store", "e-1");
+    assert_eq!(
+        entities.put_resource_entity(&orphan, "{}", &data(&orphan, 1)),
+        Err(PortError::NotFound)
+    );
+    let invalid = ResourceEntityRef {
+        entity_type: "../..".to_owned(),
+        ..first.clone()
+    };
+    assert!(matches!(
+        entities.put_resource_entity(&invalid, "{}", &data(&first, 1)),
+        Err(PortError::Failed(_))
+    ));
+    assert!(matches!(
+        entities.put_resource_entity(&first, "[]", &data(&first, 1)),
+        Err(PortError::Failed(_))
+    ));
+
+    entities
+        .put_resource_entity(&first, r#"{"a":{"x":1},"b":true}"#, &data(&first, 1))
+        .unwrap();
+    entities
+        .put_resource_entity(&first, r#"{"a":{"y":2}}"#, &data(&first, 2))
+        .unwrap();
+    assert_eq!(
+        entities.resource_entity(&first),
+        Ok(Some(VmResourceEntity {
+            reference: first.clone(),
+            payload: r#"{"a":{"x":1,"y":2},"b":true}"#.to_owned(),
+            data_key: Some(first.data_key()),
+        }))
+    );
+    let second = reference(store_id, "e-2");
+    entities
+        .put_resource_entity(&second, "{}", &data(&second, 3))
+        .unwrap();
+    entities.delete_resource_entity(&first).unwrap();
+    entities.delete_resource_entity(&first).unwrap();
+    assert_eq!(entities.resource_entity(&first), Ok(None));
+    assert!(entities.resource_entity(&second).unwrap().is_some());
+    // A deleted entity starts empty when written again.
+    entities
+        .put_resource_entity(&first, r#"{"c":3}"#, &data(&first, 4))
+        .unwrap();
+    assert_eq!(
+        entities
+            .resource_entity(&first)
+            .unwrap()
+            .map(|entity| entity.payload),
+        Some(r#"{"c":3}"#.to_owned())
+    );
+    entities.delete_resource_entity(&first).unwrap();
+    entities.delete_resource_entity(&second).unwrap();
+}
+
+/// Exercises [`crate::KeyDirectory`] on an empty directory.
+///
+/// # Panics
+///
+/// Panics when the adapter deviates from the port contract.
+pub fn key_directory(keys: &dyn crate::KeyDirectory) {
+    use aseman_domain::identity::{IdentityKey, KeyEpoch, KeyPurpose, Subject, SubjectKind};
+    let subject = Subject {
+        kind: SubjectKind::Workload,
+        id: "0190f1a2-7b3c-7d4e-8f00-00000000c0f1".parse().unwrap(),
+    };
+    let key = |key_id: &str, epoch: u32, subject: Subject| IdentityKey {
+        key_id: key_id.to_owned(),
+        public_key: vec![1, 0xed, 0x01, epoch as u8],
+        epoch: KeyEpoch {
+            subject,
+            purpose: KeyPurpose::Authentication,
+            epoch,
+            not_before_millis: 1_000,
+            expires_at_millis: Some(9_000_000),
+            retired_at_millis: None,
+            revoked_at_millis: None,
+            legacy: false,
+        },
+    };
+    let first = key("zQmKeyOne", 1, subject);
+    let second = key("zQmKeyTwo", 2, subject);
+
+    assert_eq!(keys.key("zQmKeyOne"), Ok(None));
+    assert_eq!(
+        keys.epochs(&subject, KeyPurpose::Authentication),
+        Ok(Vec::new())
+    );
+    keys.register(&second).unwrap();
+    keys.register(&first).unwrap();
+    assert_eq!(keys.key("zQmKeyOne"), Ok(Some(first.clone())));
+    assert_eq!(
+        keys.epochs(&subject, KeyPurpose::Authentication),
+        Ok(vec![first.clone(), second.clone()])
+    );
+    assert_eq!(
+        keys.epochs(&subject, KeyPurpose::Descriptor),
+        Ok(Vec::new())
+    );
+    // A key ID or an epoch is recorded once.
+    assert_eq!(keys.register(&first), Err(PortError::Conflict));
+    assert_eq!(
+        keys.register(&key("zQmOtherId", 1, subject)),
+        Err(PortError::Conflict)
+    );
+    let other_subject = Subject {
+        kind: SubjectKind::Creature,
+        ..subject
+    };
+    assert_eq!(
+        keys.register(&key("zQmKeyOne", 1, other_subject)),
+        Err(PortError::Conflict)
+    );
+    keys.register(&key("zQmCreature", 1, other_subject))
+        .unwrap();
+    assert_eq!(
+        keys.epochs(&subject, KeyPurpose::Authentication)
+            .unwrap()
+            .len(),
+        2
+    );
+
+    // Retirement and revocation keep the earliest time.
+    keys.retire("zQmKeyOne", 5_000).unwrap();
+    keys.retire("zQmKeyOne", 7_000).unwrap();
+    keys.revoke("zQmKeyOne", 6_000).unwrap();
+    keys.revoke("zQmKeyOne", 4_000).unwrap();
+    let stored = keys.key("zQmKeyOne").unwrap().unwrap();
+    assert_eq!(stored.epoch.retired_at_millis, Some(5_000));
+    assert_eq!(stored.epoch.revoked_at_millis, Some(4_000));
+    assert_eq!(keys.retire("zQmMissing", 1), Err(PortError::NotFound));
+    assert_eq!(keys.revoke("zQmMissing", 1), Err(PortError::NotFound));
+}
+
+/// Exercises [`crate::ReplayGuard`] on an empty guard.
+///
+/// # Panics
+///
+/// Panics when the adapter deviates from the port contract.
+pub fn replay_guard(guard: &dyn crate::ReplayGuard) {
+    let nonce = [7u8; 16];
+    assert_eq!(guard.record_nonce("zQmKey", &nonce, 2_000, 1_000), Ok(true));
+    assert_eq!(
+        guard.record_nonce("zQmKey", &nonce, 2_000, 1_500),
+        Ok(false)
+    );
+    // The same nonce under another key is another pair.
+    assert_eq!(
+        guard.record_nonce("zQmOther", &nonce, 2_000, 1_500),
+        Ok(true)
+    );
+    assert_eq!(
+        guard.record_nonce("zQmKey", &[8u8; 16], 2_000, 1_500),
+        Ok(true)
+    );
+    // After its retention the pair may be recorded again.
+    assert_eq!(guard.record_nonce("zQmKey", &nonce, 4_000, 2_000), Ok(true));
+    assert_eq!(
+        guard.record_nonce("zQmKey", &nonce, 4_000, 3_999),
+        Ok(false)
+    );
+}
+
+/// Exercises [`crate::ChallengeStore`] on an empty store.
+///
+/// # Panics
+///
+/// Panics when the adapter deviates from the port contract.
+pub fn challenge_store(challenges: &dyn crate::ChallengeStore) {
+    use aseman_domain::identity::{Subject, SubjectKind};
+    let subject = Subject {
+        kind: SubjectKind::Creature,
+        id: "0190f1a2-7b3c-7d4e-8f00-0000000c4a11".parse().unwrap(),
+    };
+    let other = Subject {
+        kind: SubjectKind::User,
+        ..subject
+    };
+    let first = challenges.issue(&subject, "node:a", 2_000).unwrap();
+    let second = challenges.issue(&subject, "node:a", 2_000).unwrap();
+    assert_eq!(first.nonce.len(), 32);
+    assert_ne!(first.nonce, second.nonce);
+    assert_eq!(
+        (
+            first.subject,
+            first.audience.as_str(),
+            first.expires_at_millis
+        ),
+        (subject, "node:a", 2_000)
+    );
+    // Another subject or audience cannot consume it, and does not use it up.
+    assert_eq!(
+        challenges.consume(&first.nonce, &other, "node:a", 1_000),
+        Ok(false)
+    );
+    assert_eq!(
+        challenges.consume(&first.nonce, &subject, "node:b", 1_000),
+        Ok(false)
+    );
+    assert_eq!(
+        challenges.consume(&first.nonce, &subject, "node:a", 1_000),
+        Ok(true)
+    );
+    assert_eq!(
+        challenges.consume(&first.nonce, &subject, "node:a", 1_000),
+        Ok(false)
+    );
+    // An expired challenge is never accepted.
+    assert_eq!(
+        challenges.consume(&second.nonce, &subject, "node:a", 2_000),
+        Ok(false)
+    );
+    assert_eq!(
+        challenges.consume(&[0; 32], &subject, "node:a", 1_000),
+        Ok(false)
+    );
+}
+
+/// Exercises [`crate::GrantStore`] on an empty store.
+///
+/// # Panics
+///
+/// Panics when the adapter deviates from the port contract.
+pub fn grant_store(grants: &dyn crate::GrantStore) {
+    use aseman_domain::Uuid;
+    use aseman_domain::capability::{Grant, ResourceSelector};
+    use aseman_domain::identity::{Subject, SubjectKind};
+    let holder = Subject {
+        kind: SubjectKind::User,
+        id: "0190f1a2-7b3c-7d4e-8f00-0000000067a1".parse().unwrap(),
+    };
+    let workload = Subject {
+        kind: SubjectKind::Workload,
+        id: "0190f1a2-7b3c-7d4e-8f00-0000000067a2".parse().unwrap(),
+    };
+    let root = Grant {
+        id: Uuid::from_u128(0x67a0_0001),
+        subject: holder,
+        issuer: holder,
+        actions: ["store.signal".to_owned(), "store.read".to_owned()].into(),
+        resource: ResourceSelector::AnyOfKind {
+            kind: "store".to_owned(),
+        },
+        delegable_actions: ["store.signal".to_owned()].into(),
+        max_depth: 2,
+        parent: None,
+        not_before_millis: 1_000,
+        expires_at_millis: Some(9_000_000),
+        revoked_at_millis: None,
+        policy_version: "p1".to_owned(),
+    };
+    let child = Grant {
+        id: Uuid::from_u128(0x67a0_0002),
+        subject: workload,
+        issuer: holder,
+        actions: ["store.signal".to_owned()].into(),
+        resource: ResourceSelector::Exact {
+            kind: "store".to_owned(),
+            id: "s1".to_owned(),
+        },
+        delegable_actions: Default::default(),
+        max_depth: 0,
+        parent: Some(root.id),
+        not_before_millis: 2_000,
+        expires_at_millis: None,
+        revoked_at_millis: None,
+        policy_version: "p1".to_owned(),
+    };
+    assert_eq!(grants.grant(root.id), Ok(None));
+    assert_eq!(grants.grants_of(&holder), Ok(Vec::new()));
+    grants.put(&root).unwrap();
+    grants.put(&child).unwrap();
+    assert_eq!(grants.put(&root), Err(PortError::Conflict));
+    assert_eq!(grants.grant(root.id), Ok(Some(root.clone())));
+    assert_eq!(grants.grant(child.id), Ok(Some(child.clone())));
+    assert_eq!(grants.grants_of(&holder), Ok(vec![root.clone()]));
+    assert_eq!(grants.grants_of(&workload), Ok(vec![child.clone()]));
+    assert_eq!(grants.children(root.id), Ok(vec![child.clone()]));
+    assert_eq!(grants.children(child.id), Ok(Vec::new()));
+    grants.revoke(root.id, 5_000).unwrap();
+    grants.revoke(root.id, 7_000).unwrap();
+    assert_eq!(
+        grants.grant(root.id).unwrap().unwrap().revoked_at_millis,
+        Some(5_000)
+    );
+    assert_eq!(
+        grants.revoke(Uuid::from_u128(0x67a0_0099), 1),
+        Err(PortError::NotFound)
+    );
+}
+
+/// Exercises [`crate::CreatureDatabaseBindings`] for a creature without a binding.
+///
+/// # Panics
+///
+/// Panics when the adapter deviates from the port contract.
+pub fn creature_database_bindings(
+    bindings: &dyn crate::CreatureDatabaseBindings,
+    creature: aseman_domain::CreatureId,
+) {
+    use aseman_domain::{BindingStatus, CreatureDatabaseBinding, Generation};
+    assert_eq!(bindings.binding_for(creature), Ok(None));
+    let first = CreatureDatabaseBinding::new(
+        creature,
+        "postgres-guest-v1".to_owned(),
+        "aseman_c_one".to_owned(),
+        "aseman_r_one".to_owned(),
+    )
+    .unwrap();
+    bindings.record_binding(&first).unwrap();
+    assert_eq!(bindings.binding_for(creature), Ok(Some(first.clone())));
+    let active = CreatureDatabaseBinding {
+        status: BindingStatus::Active,
+        ..first.clone()
+    };
+    bindings.record_binding(&active).unwrap();
+    assert_eq!(bindings.binding_for(creature), Ok(Some(active.clone())));
+    let next = CreatureDatabaseBinding {
+        database: "aseman_c_two".to_owned(),
+        role: "aseman_r_two".to_owned(),
+        generation: Generation::INITIAL.next().unwrap(),
+        ..active.clone()
+    };
+    bindings.record_binding(&next).unwrap();
+    assert_eq!(bindings.binding_for(creature), Ok(Some(next)));
+    // A generation never moves backwards.
+    assert_eq!(bindings.record_binding(&active), Err(PortError::Conflict));
+}
+
+/// Exercises [`crate::GuestKv`] on an active binding with no guest pairs.
+///
+/// # Panics
+///
+/// Panics when the adapter deviates from the port contract.
+pub fn guest_kv(kv: &dyn crate::GuestKv, binding: &aseman_domain::CreatureDatabaseBinding) {
+    use aseman_domain::guest::{GuestKvOperation as Op, GuestKvOutcome as Out, LegacyKvNamespace};
+    let run = |operation: Op| kv.execute(binding, &operation).unwrap();
+    let get = |namespace, key: &str| {
+        run(Op::Get {
+            namespace,
+            key: key.to_owned(),
+        })
+    };
+    let put = |namespace, key: &str, value: &str| {
+        run(Op::Put {
+            namespace,
+            key: key.to_owned(),
+            value: value.to_owned(),
+        })
+    };
+    let list = |namespace, prefix: &str, limit| {
+        run(Op::List {
+            namespace,
+            prefix: prefix.to_owned(),
+            limit,
+        })
+    };
+    let (dbop, applet) = (LegacyKvNamespace::DbOp, LegacyKvNamespace::AppletDb);
+    assert_eq!(get(dbop, "profile"), Out::Value { value: None });
+    assert_eq!(put(dbop, "profile", "v1"), Out::Written);
+    assert_eq!(put(dbop, "profile", "v2"), Out::Written);
+    assert_eq!(
+        get(dbop, "profile"),
+        Out::Value {
+            value: Some("v2".to_owned())
+        }
+    );
+    // The namespaces are separate key spaces.
+    assert_eq!(get(applet, "profile"), Out::Value { value: None });
+    put(applet, "profile", "applet");
+    for key in ["user:b", "user:a", "user_c", "other"] {
+        put(dbop, key, key);
+    }
+    // Committed pairs, in key order, limited, and prefix-exact (`_` is not a wildcard).
+    assert_eq!(
+        list(dbop, "user:", 10),
+        Out::Listed {
+            pairs: vec![
+                ("user:a".to_owned(), "user:a".to_owned()),
+                ("user:b".to_owned(), "user:b".to_owned()),
+            ]
+        }
+    );
+    assert_eq!(
+        list(dbop, "user", 2),
+        Out::Listed {
+            pairs: vec![
+                ("user:a".to_owned(), "user:a".to_owned()),
+                ("user:b".to_owned(), "user:b".to_owned()),
+            ]
+        }
+    );
+    // Deletes really delete, and a deleted key can be written again.
+    assert_eq!(
+        run(Op::Delete {
+            namespace: dbop,
+            key: "profile".to_owned()
+        }),
+        Out::Deleted { existed: true }
+    );
+    assert_eq!(get(dbop, "profile"), Out::Value { value: None });
+    assert_eq!(
+        run(Op::Delete {
+            namespace: dbop,
+            key: "profile".to_owned()
+        }),
+        Out::Deleted { existed: false }
+    );
+    assert!(!matches!(list(dbop, "prof", 10), Out::Listed { pairs } if !pairs.is_empty()));
+    put(dbop, "profile", "v3");
+    assert_eq!(
+        get(dbop, "profile"),
+        Out::Value {
+            value: Some("v3".to_owned())
+        }
+    );
+    assert_eq!(
+        get(applet, "profile"),
+        Out::Value {
+            value: Some("applet".to_owned())
+        }
+    );
+
+    // Documents (ADR 0028): the legacy JSON store's records, one row each.
+    let put_json = |key: &str, path: &str, data: &str, merge: bool| {
+        kv.execute(
+            binding,
+            &Op::PutJson {
+                key: key.to_owned(),
+                path: path.to_owned(),
+                data: data.to_owned(),
+                merge,
+            },
+        )
+    };
+    let get_json = |key: &str, path: &str| {
+        run(Op::GetJson {
+            key: key.to_owned(),
+            path: path.to_owned(),
+        })
+    };
+    let keys = |prefix: &str| {
+        run(Op::ListJson {
+            prefix: prefix.to_owned(),
+            limit: 100,
+        })
+    };
+    let document = |text: &str| Out::Document {
+        data: text.to_owned(),
+    };
+    let listed = |items: &[&str]| Out::Keys {
+        keys: items.iter().map(|item| (*item).to_owned()).collect(),
+    };
+    assert_eq!(get_json("counter", "doc"), document("{}"));
+    put_json("counter", "doc", r#"{"n":1}"#, true).unwrap();
+    assert_eq!(get_json("counter", "doc"), document(r#"{"n":1}"#));
+    assert_eq!(keys(""), listed(&["counter::doc", "counter::doc.n"]));
+    put_json("counter", "doc", r#"{"m":{"x":true}}"#, true).unwrap();
+    assert_eq!(
+        get_json("counter", "doc"),
+        document(r#"{"m":{"x":true},"n":1}"#)
+    );
+    assert_eq!(get_json("counter", "doc.m"), document(r#"{"x":true}"#));
+    assert_eq!(
+        keys("counter::doc."),
+        listed(&["counter::doc.m", "counter::doc.m.x", "counter::doc.n"])
+    );
+    // Without merge the object at the path is replaced.
+    put_json("counter", "doc", r#"{"z":0}"#, false).unwrap();
+    assert_eq!(get_json("counter", "doc"), document(r#"{"z":0}"#));
+    // Deleting a subtree, then the whole document.
+    put_json("other", "doc", r#"{"a":1}"#, true).unwrap();
+    run(Op::DeleteJson {
+        key: "counter".to_owned(),
+        path: "doc.m".to_owned(),
+    });
+    assert_eq!(get_json("counter", "doc.m"), document("{}"));
+    run(Op::DeleteJson {
+        key: "counter".to_owned(),
+        path: String::new(),
+    });
+    assert_eq!(keys("counter::"), listed(&[]));
+    assert_eq!(keys(""), listed(&["other::doc", "other::doc.a"]));
+    // A document root must be an object.
+    assert!(put_json("counter", "doc", "[1]", true).is_err());
+    // Documents and the other namespaces stay apart.
+    assert_eq!(
+        get(dbop, "profile"),
+        Out::Value {
+            value: Some("v3".to_owned())
+        }
+    );
+}
+
+/// Exercises [`crate::DecisionAudit`] on an empty log.
+///
+/// # Panics
+///
+/// Panics when the adapter deviates from the port contract.
+pub fn decision_audit(audit: &dyn crate::DecisionAudit) {
+    use aseman_domain::authority::AuditRecord;
+    let record = |actor: &str, decision: &str, at: i64| AuditRecord {
+        actor: actor.to_owned(),
+        action: "store.signal".to_owned(),
+        target: "store:s1".to_owned(),
+        decision: decision.to_owned(),
+        occurred_at_millis: at,
+        details: r#"{"matched":"store_signal"}"#.to_owned(),
+    };
+    let alice = "workload:0190f1a2-7b3c-7d4e-8f00-0000000a0d17";
+    let bob = "workload:0190f1a2-7b3c-7d4e-8f00-0000000a0d18";
+    assert_eq!(audit.stream(alice), Ok(Vec::new()));
+    assert_eq!(audit.record(&record(alice, "allowed", 1_000)), Ok(1));
+    assert_eq!(
+        audit.record(&record(alice, "condition_not_met", 2_000)),
+        Ok(2)
+    );
+    assert_eq!(audit.record(&record(bob, "allowed", 1_500)), Ok(1));
+    let stream = audit.stream(alice).unwrap();
+    assert_eq!(
+        stream
+            .iter()
+            .map(|entry| (entry.sequence, entry.record.decision.as_str()))
+            .collect::<Vec<_>>(),
+        vec![(1, "allowed"), (2, "condition_not_met")]
+    );
+    assert_eq!(stream[1].record, record(alice, "condition_not_met", 2_000));
+    assert_eq!(audit.stream(bob).unwrap().len(), 1);
 }

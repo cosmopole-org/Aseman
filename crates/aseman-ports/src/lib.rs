@@ -1,9 +1,21 @@
 //! Behavioral boundaries required by application use cases.
 #![forbid(unsafe_code)]
 
+use aseman_domain::Uuid;
+use aseman_domain::authority::{AuditRecord, AuditedDecision, PolicyDecision, PolicyRequest};
+use aseman_domain::blob::BlobEvidence;
+use aseman_domain::capability::Grant;
 use aseman_domain::creature::{CreatureRecord, MetadataKind};
 use aseman_domain::gateway::GatewayRoute;
-use aseman_domain::program::{ProgramAlarm, ProgramRecord, VmResourceStore};
+use aseman_domain::guest::{GuestKvOperation, GuestKvOutcome};
+use aseman_domain::identity::{
+    AuthenticationError, Challenge, IdentityKey, Introduction, KeyDescription, KeyPurpose, Proof,
+    Subject,
+};
+use aseman_domain::program::{
+    ArtifactRole, EntityArtifact, EntityRecord, ProgramAlarm, ProgramRecord, ResourceEntityRef,
+    VmResourceEntity, VmResourceStore,
+};
 use aseman_domain::signal_tags::LogQuery;
 use aseman_domain::storage_migration::{
     CanonicalWrite, MigrationPhase, MigrationRecord, StorageMigration,
@@ -15,6 +27,7 @@ use thiserror::Error;
 
 #[cfg(feature = "conformance")]
 pub mod conformance;
+pub mod vmm;
 
 pub type PortResult<T> = Result<T, PortError>;
 
@@ -42,23 +55,30 @@ pub trait WorkloadRepository: Send + Sync {
     fn put_desired(&self, workload: &DesiredWorkload, expected: Generation) -> PortResult<()>;
 }
 
+/// The trusted catalog of creature guest databases (`core.guest_database_binding`,
+/// A306). Routing reads only this catalog; no caller ever names a database or role.
 pub trait CreatureDatabaseBindings: Send + Sync {
+    /// The creature's current binding, active or not.
     fn binding_for(&self, creature: CreatureId) -> PortResult<Option<CreatureDatabaseBinding>>;
+    /// Record the creature's binding, replacing the current one. `Conflict` when its
+    /// generation is lower than the recorded one (rollback raises the generation).
+    fn record_binding(&self, binding: &CreatureDatabaseBinding) -> PortResult<()>;
 }
 
+/// Legacy key/value operations on one creature's guest database (A405, ADR 0021). The
+/// binding is the one the server resolved from the authenticated workload.
+pub trait GuestKv: Send + Sync {
+    fn execute(
+        &self,
+        binding: &CreatureDatabaseBinding,
+        operation: &GuestKvOperation,
+    ) -> PortResult<GuestKvOutcome>;
+}
+
+/// A policy provider (ADR 0008, A404). Providers decide from the request alone and
+/// perform no I/O; callers treat an error as a denial.
 pub trait PolicyDecisionPort: Send + Sync {
-    fn authorize(&self, subject: &str, action: &str, resource: &str) -> PortResult<PolicyDecision>;
-}
-
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct PolicyDecision {
-    pub allowed: bool,
-    pub policy_version: String,
-    pub reason: String,
-}
-
-pub trait VmmPort: Send + Sync {
-    fn apply_desired(&self, workload: &DesiredWorkload) -> PortResult<()>;
+    fn decide(&self, request: &PolicyRequest) -> PortResult<PolicyDecision>;
 }
 
 /// Time source supplied by composition so application behavior is deterministic in tests.
@@ -258,6 +278,179 @@ pub trait VmResourceStores: Send + Sync {
     ) -> PortResult<()>;
     /// Remove a store and its ownership. Removing an absent store succeeds.
     fn delete_resource_store(&self, store_id: &str) -> PortResult<()>;
+}
+
+/// Program entities, their deployed files, and their configuration (legacy `Entity`,
+/// the `vmEntity*` links and `Json::ProxyEntity`; target `core.entity`,
+/// `core.entity_artifact` and `core.entity_config`). Entities are never deleted, as in
+/// legacy.
+pub trait EntityDirectory: Send + Sync {
+    fn entity(&self, program_id: &str, entity_id: &str) -> PortResult<Option<EntityRecord>>;
+    /// Create or replace an entity. `NotFound` when its program does not exist.
+    fn put_entity(&self, entity: &EntityRecord) -> PortResult<()>;
+    fn artifact(
+        &self,
+        program_id: &str,
+        entity_id: &str,
+        role: ArtifactRole,
+    ) -> PortResult<Option<EntityArtifact>>;
+    /// Record the stored file of a role, replacing the previous one. `NotFound` when
+    /// the entity does not exist.
+    fn put_artifact(
+        &self,
+        program_id: &str,
+        entity_id: &str,
+        role: ArtifactRole,
+        evidence: &BlobEvidence,
+    ) -> PortResult<()>;
+    /// The programs with an entity that has a primary file, in identity byte order.
+    fn deployed_programs(&self) -> PortResult<Vec<String>>;
+    /// The entity's configuration document as JSON object text.
+    fn entity_config(&self, program_id: &str, entity_id: &str) -> PortResult<Option<String>>;
+    /// Deep-merge a JSON object into the configuration, as legacy
+    /// `put_json(.., merge = true)`. `NotFound` when the entity does not exist; any
+    /// other JSON is `Failed`.
+    fn merge_entity_config(
+        &self,
+        program_id: &str,
+        entity_id: &str,
+        document: &str,
+    ) -> PortResult<()>;
+}
+
+/// VM resource entities (legacy `Json::VmResourceEntity` with its data file, target
+/// `core.vm_resource_entity`). An invalid reference
+/// ([`aseman_domain::program::ResourceEntityRef::is_valid`]) is `Failed`.
+pub trait VmResourceEntities: Send + Sync {
+    fn resource_entity(&self, entity: &ResourceEntityRef) -> PortResult<Option<VmResourceEntity>>;
+    /// Create or update an entity: deep-merge the payload JSON object, as legacy
+    /// `put_json(.., merge = true)`, and record its stored data. `NotFound` when the
+    /// resource store does not exist.
+    fn put_resource_entity(
+        &self,
+        entity: &ResourceEntityRef,
+        payload: &str,
+        data: &BlobEvidence,
+    ) -> PortResult<()>;
+    /// Remove an entity record. Removing an absent entity succeeds.
+    fn delete_resource_entity(&self, entity: &ResourceEntityRef) -> PortResult<()>;
+}
+
+/// Identity keys by key ID and by subject (A401 section 9, `core.identity_key`).
+pub trait KeyDirectory: Send + Sync {
+    fn key(&self, key_id: &str) -> PortResult<Option<IdentityKey>>;
+    /// Every epoch of one subject and purpose, in epoch order.
+    fn epochs(&self, subject: &Subject, purpose: KeyPurpose) -> PortResult<Vec<IdentityKey>>;
+    /// Record a new key epoch. `Conflict` when its key ID, or its epoch for the subject
+    /// and purpose, is already recorded.
+    fn register(&self, key: &IdentityKey) -> PortResult<()>;
+    /// Record when the key stopped being current. An earlier recorded time is kept.
+    /// `NotFound` when absent.
+    fn retire(&self, key_id: &str, at_millis: i64) -> PortResult<()>;
+    /// Record the key's revocation. An earlier recorded time is kept. `NotFound` when
+    /// absent.
+    fn revoke(&self, key_id: &str, at_millis: i64) -> PortResult<()>;
+}
+
+/// Used nonces (A401 "Replay"), shared by every verifier of one audience.
+pub trait ReplayGuard: Send + Sync {
+    /// Atomically record `(key_id, nonce)` until `retain_until_millis`. `Ok(true)` on
+    /// first use, `Ok(false)` when the pair is already recorded and not yet expired at
+    /// `now_millis`.
+    fn record_nonce(
+        &self,
+        key_id: &str,
+        nonce: &[u8],
+        retain_until_millis: i64,
+        now_millis: i64,
+    ) -> PortResult<bool>;
+}
+
+/// The cryptography of A401 proofs.
+pub trait IdentityVerifier: Send + Sync {
+    /// Verify `proof`'s signature with `key` (A401 validation step 11).
+    ///
+    /// # Errors
+    ///
+    /// `BadSignature`, `UnsupportedAlgorithm`, `UnknownKey` when `key` is not the key
+    /// the proof names, or `Malformed` for an undecodable stored key.
+    fn verify(&self, proof: &Proof, key: &IdentityKey) -> Result<(), AuthenticationError>;
+    /// SHA-256 of a request body (A401 validation step 10).
+    fn body_digest(&self, body: &[u8]) -> [u8; 32];
+    /// Decode an A401 key encoding and name it.
+    ///
+    /// # Errors
+    ///
+    /// `UnsupportedVersion`, `UnsupportedAlgorithm`, or `Malformed`.
+    fn describe_key(&self, public_key: &[u8]) -> Result<KeyDescription, AuthenticationError>;
+    /// The canonical bytes of an introduction (A401 section 8), which its proof signs as
+    /// the body.
+    fn introduction_bytes(&self, introduction: &Introduction) -> Vec<u8>;
+}
+
+/// One-time server challenges (A401 "Replay").
+pub trait ChallengeStore: Send + Sync {
+    /// Issue a fresh random nonce (32 bytes) for `subject` and `audience`.
+    fn issue(
+        &self,
+        subject: &Subject,
+        audience: &str,
+        expires_at_millis: i64,
+    ) -> PortResult<Challenge>;
+    /// Atomically consume the challenge with `nonce` if it was issued to `subject` for
+    /// `audience` and has not expired at `now_millis`. `Ok(false)` otherwise; a nonce is
+    /// consumed at most once.
+    fn consume(
+        &self,
+        nonce: &[u8],
+        subject: &Subject,
+        audience: &str,
+        now_millis: i64,
+    ) -> PortResult<bool>;
+}
+
+/// Durable capability grants (A403, `core.capability_grant`).
+pub trait GrantStore: Send + Sync {
+    fn grant(&self, id: Uuid) -> PortResult<Option<Grant>>;
+    /// Every grant held by `subject`, live or not; evaluation checks liveness.
+    fn grants_of(&self, subject: &Subject) -> PortResult<Vec<Grant>>;
+    /// The grants delegated directly from `parent`.
+    fn children(&self, parent: Uuid) -> PortResult<Vec<Grant>>;
+    /// Record a new grant. `Conflict` when its ID is taken.
+    fn put(&self, grant: &Grant) -> PortResult<()>;
+    /// Record the grant's revocation; an earlier recorded time is kept. `NotFound` when
+    /// absent.
+    fn revoke(&self, id: Uuid, at_millis: i64) -> PortResult<()>;
+}
+
+/// The append-only record of policy decisions (`audit.event`), one chained stream
+/// per actor.
+pub trait DecisionAudit: Send + Sync {
+    /// Append a decision to its actor's stream; returns its sequence.
+    fn record(&self, record: &AuditRecord) -> PortResult<u64>;
+    /// The actor's stream in sequence order.
+    fn stream(&self, actor: &str) -> PortResult<Vec<AuditedDecision>>;
+}
+
+/// File bytes under provider-neutral keys (ADR 0027). Records keep only the
+/// [`BlobEvidence`] a put returns.
+pub trait BlobStore: Send + Sync {
+    /// Store `bytes` under `key`. Without `overwrite`, an existing blob is a
+    /// `Conflict`. An invalid key ([`aseman_domain::blob::valid_blob_key`]) is
+    /// `Failed`.
+    fn put_blob(
+        &self,
+        key: &str,
+        bytes: &[u8],
+        media_type: &str,
+        overwrite: bool,
+    ) -> PortResult<BlobEvidence>;
+    fn blob(&self, key: &str) -> PortResult<Option<Vec<u8>>>;
+    fn has_blob(&self, key: &str) -> PortResult<bool>;
+    /// Remove a blob. Removing an absent blob succeeds.
+    fn delete_blob(&self, key: &str) -> PortResult<()>;
+    /// A local filesystem path to the blob, for runtimes that open files by path.
+    fn local_path(&self, key: &str) -> PortResult<std::path::PathBuf>;
 }
 
 /// Store records as the store use cases see them.

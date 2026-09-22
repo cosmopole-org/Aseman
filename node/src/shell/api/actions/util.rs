@@ -34,7 +34,7 @@ pub fn build_secure_action<I, F>(
     func: F,
 ) -> Arc<dyn ISecureAction>
 where
-    I: IInput + DeserializeOwned + Default + Clone + Send + Sync + 'static,
+    I: IInput + DeserializeOwned + serde::Serialize + Default + Clone + Send + Sync + 'static,
     F: Fn(Arc<dyn IState>, I) -> Result<Value> + Send + Sync + 'static,
 {
     let app_for_mod = app.clone();
@@ -43,12 +43,24 @@ where
     });
     let func = Arc::new(func);
     let func_for_action = func.clone();
+    let path = key.to_owned();
     let action_fn: ActionFn = Arc::new(move |state: Arc<dyn IState>, input: Arc<dyn IInput>| {
         let typed: I = input
             .as_any()
             .downcast_ref::<I>()
             .cloned()
             .ok_or_else(|| anyhow!("action input type mismatch"))?;
+        // Every signed action is authorized as its registered action (P4-05).
+        let raw = serde_json::to_value(&typed).unwrap_or(Value::Null);
+        let trx = state.trx();
+        crate::shell::authority::authorize_shell_action(
+            &crate::shell::authority::TrxLookups { trx: &*trx },
+            &path,
+            &state.info().user_id(),
+            &raw,
+            chrono::Utc::now().timestamp_millis(),
+        )
+        .map_err(|denied| anyhow!(denied))?;
         func_for_action(state, typed)
     });
     let inner_action: Arc<dyn IAction> = Arc::new(Action::new(modifier, key, action_fn));

@@ -20,15 +20,18 @@ use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use anyhow::Result;
 use serde_json::{json, Value};
 
+use crate::drivers::blob_store::StorageRootBlobStore;
 use crate::models::core::ICore;
-use crate::models::ports::file::IFile;
 use crate::models::ports::signaler::Listener;
 use crate::models::ports::storage::IStorage;
 use crate::models::ports::vmm::IVmm;
 use crate::models::transaction::ITrx;
 use crate::models::worker::Trx as WorkerTrx;
-use crate::shell::api::model::{Creature, Entity, Program, Store};
+use crate::shell::api::model::entity_ports::EntityPorts;
+use crate::shell::api::model::{Creature, Program, Store};
 use crate::shell::api::packets::stores;
+use aseman_domain::program::ArtifactRole;
+use aseman_ports::{BlobStore, EntityDirectory};
 
 /// Default appengine REP socket exposed *by* the node (the engine connects
 /// to this with a REQ socket).
@@ -44,7 +47,6 @@ pub struct Vmm {
     pub(super) app: Arc<dyn ICore>,
     pub(super) storage_root: String,
     pub(super) storage: Arc<dyn IStorage>,
-    pub(super) file: Arc<dyn IFile>,
 
     /// vm_id → (creature_id, machine_id): active VM execution context map.
     pub(crate) vm_context: DashMap<String, (String, String)>,
@@ -77,13 +79,12 @@ pub struct Vmm {
 }
 
 impl Vmm {
-    /// `NewVmm(core, storageRoot, storage, kvDbPath, file)`.
+    /// `NewVmm(core, storageRoot, storage, kvDbPath)`.
     pub fn new(
         app: Arc<dyn ICore>,
         storage_root: &str,
         storage: Arc<dyn IStorage>,
         kv_db_path: &str,
-        file: Arc<dyn IFile>,
     ) -> Arc<Vmm> {
         let _ = fs::create_dir_all(kv_db_path);
         // Publish the core handle so stateless VM host-call handlers can
@@ -99,7 +100,6 @@ impl Vmm {
             app,
             storage_root: storage_root.to_string(),
             storage,
-            file,
             vm_context: DashMap::new(),
             vm_trx: DashMap::new(),
             resource_locks: ResourceLockRegistry::new(),
@@ -155,7 +155,8 @@ impl Vmm {
             return;
         }
         let store = store_slot.lock().unwrap().clone();
-        let (ast_path, vm_type) = self.resolve_vm_execution_target(machine_id, entity_id);
+        let (ast_path, vm_type) =
+            resolve_vm_execution_target(&self.app, &self.storage_root, machine_id, entity_id);
         let send_payload = stores::Send {
             user: Creature::default(),
             store,
@@ -171,74 +172,6 @@ impl Vmm {
             "astPath": ast_path,
             "vmType": vm_type,
         }));
-    }
-
-    pub(super) fn resolve_vm_execution_target(
-        &self,
-        machine_id: &str,
-        entity_id: &str,
-    ) -> (String, String) {
-        let default_path = format!(
-            "{}/machines/{}/module",
-            self.storage.storage_root(),
-            machine_id
-        );
-        let path_slot = Arc::new(Mutex::new(default_path));
-        let type_slot = Arc::new(Mutex::new(default_runtime_key()));
-        let path_clone = path_slot.clone();
-        let type_clone = type_slot.clone();
-        let machine_id_owned = machine_id.to_string();
-        let entity_id_owned = entity_id.to_string();
-        self.app.modify_state(
-            true,
-            Box::new(move |trx: &dyn ITrx| {
-                let vm = (crate::shell::api::model::program_ports::ProgramPorts { trx })
-                    .program_or_empty(&machine_id_owned.clone());
-                if !vm.path.is_empty() {
-                    *path_clone.lock().unwrap() = vm.path.clone();
-                }
-                if !vm.runtime.is_empty() {
-                    *type_clone.lock().unwrap() = vm.runtime.trim().to_lowercase();
-                }
-                if !entity_id_owned.is_empty() {
-                    // Runtimes that record no `vmEntityType` link on deploy
-                    // (docker: setEntityLinksOnDeploy=false) carry their type only
-                    // on the Entity record. When the program itself names no
-                    // runtime, fall back to it so callers that resolve by
-                    // (program, entity) — forward_http, cold spawn — pick the
-                    // right plugin instead of the default.
-                    if vm.runtime.is_empty() {
-                        let ent = Entity {
-                            program_id: machine_id_owned.clone(),
-                            entity_id: entity_id_owned.clone(),
-                            ..Default::default()
-                        }
-                        .pull(trx);
-                        if !ent.entity_type.is_empty() {
-                            *type_clone.lock().unwrap() = ent.entity_type.trim().to_lowercase();
-                        }
-                    }
-                    let runtime_link = trx.get_link(&format!(
-                        "vmEntityType::{}::{}",
-                        machine_id_owned, entity_id_owned
-                    ));
-                    if !runtime_link.is_empty() {
-                        *type_clone.lock().unwrap() = runtime_link.trim().to_lowercase();
-                    }
-                    let path_link = trx.get_link(&format!(
-                        "vmEntityPath::{}::{}",
-                        machine_id_owned, entity_id_owned
-                    ));
-                    if !path_link.is_empty() {
-                        *path_clone.lock().unwrap() = path_link;
-                    }
-                }
-                Ok(())
-            }),
-        );
-        let path = path_slot.lock().unwrap().clone();
-        let vm_type = type_slot.lock().unwrap().clone();
-        (path, vm_type)
     }
 
     /// Whether the state mutations of `vm_id` may enter the cluster
@@ -332,8 +265,12 @@ impl IVmm for Vmm {
                 if delivered > 0 {
                     return;
                 }
-                let (ast_path, vm_type) =
-                    trans.resolve_vm_execution_target(&machine_id_owned, &entity_id);
+                let (ast_path, vm_type) = resolve_vm_execution_target(
+                    &trans.app,
+                    &trans.storage_root,
+                    &machine_id_owned,
+                    &entity_id,
+                );
                 let is_docker = vm_type == "docker";
                 // The node-authoritative owner of this program. Stamped onto the
                 // cold-spawn packet so a docker container registers its real
@@ -815,7 +752,8 @@ impl IVmm for Vmm {
         // resolver (the same one the signal listener and runVm use), then hand
         // the packet router a `forwardHttp` packet shaped exactly like a runVm
         // packet so it resolves the responsible plugin identically.
-        let (ast_path, resolved_type) = self.resolve_vm_execution_target(program_id, entity_id);
+        let (ast_path, resolved_type) =
+            resolve_vm_execution_target(&self.app, &self.storage_root, program_id, entity_id);
         // A custom-route request carries the target entity's runtime captured at
         // deploy (request["runtime"]); trust it over the state-derived type,
         // which is unreliable for docker (no vmEntityType link, and the program
@@ -996,7 +934,7 @@ impl VmmShim {
         }
         let store = store_slot.lock().unwrap().clone();
         let (ast_path, vm_type) =
-            resolve_vm_execution_target(&self.app, &self.storage, machine_id, entity_id);
+            resolve_vm_execution_target(&self.app, &self.storage_root, machine_id, entity_id);
         let send_payload = stores::Send {
             user: Creature::default(),
             store,
@@ -1024,82 +962,61 @@ struct VmmListenerCtx {
     storage_root: String,
 }
 
-impl VmmListenerCtx {
-    fn resolve_vm_execution_target(&self, machine_id: &str, entity_id: &str) -> (String, String) {
-        let default_path = format!("{}/machines/{}/module", self.storage_root, machine_id);
-        resolve_vm_execution_target_inner(&self.app, &default_path, machine_id, entity_id)
-    }
-}
-
+/// Where and how to run a program entity: its primary file and type when it has one,
+/// else the program's path and runtime, else the machine's default module. An entity
+/// of a runtime that records no primary file (docker) still gives its type when the
+/// program names no runtime.
 fn resolve_vm_execution_target(
     app: &Arc<dyn ICore>,
-    storage: &Arc<dyn IStorage>,
+    storage_root: &str,
     machine_id: &str,
     entity_id: &str,
 ) -> (String, String) {
-    let default_path = format!("{}/machines/{}/module", storage.storage_root(), machine_id);
-    resolve_vm_execution_target_inner(app, &default_path, machine_id, entity_id)
-}
-
-fn resolve_vm_execution_target_inner(
-    app: &Arc<dyn ICore>,
-    default_path: &str,
-    machine_id: &str,
-    entity_id: &str,
-) -> (String, String) {
-    let path_slot = Arc::new(Mutex::new(default_path.to_string()));
-    let type_slot = Arc::new(Mutex::new(default_runtime_key()));
-    let path_clone = path_slot.clone();
-    let type_clone = type_slot.clone();
-    let machine_id_owned = machine_id.to_string();
-    let entity_id_owned = entity_id.to_string();
+    let target = Arc::new(Mutex::new((
+        format!("{storage_root}/machines/{machine_id}/module"),
+        default_runtime_key(),
+    )));
+    let slot = target.clone();
+    let blobs = StorageRootBlobStore::new(storage_root);
+    let machine_id = machine_id.to_owned();
+    let entity_id = entity_id.to_owned();
     app.modify_state(
         true,
         Box::new(move |trx: &dyn ITrx| {
-            let vm = (crate::shell::api::model::program_ports::ProgramPorts { trx })
-                .program_or_empty(&machine_id_owned.clone());
-            if !vm.path.is_empty() {
-                *path_clone.lock().unwrap() = vm.path.clone();
+            let program = (crate::shell::api::model::program_ports::ProgramPorts { trx })
+                .program_or_empty(&machine_id);
+            let mut target = slot.lock().unwrap();
+            if !program.path.is_empty() {
+                target.0 = program.path.clone();
             }
-            if !vm.runtime.is_empty() {
-                *type_clone.lock().unwrap() = vm.runtime.trim().to_lowercase();
+            if !program.runtime.is_empty() {
+                target.1 = program.runtime.trim().to_lowercase();
             }
-            if !entity_id_owned.is_empty() {
-                // Fall back to the Entity record's type for runtimes that record
-                // no vmEntityType link on deploy (docker), so resolution by
-                // (program, entity) picks the right plugin — see the Vmm method.
-                if vm.runtime.is_empty() {
-                    let ent = Entity {
-                        program_id: machine_id_owned.clone(),
-                        entity_id: entity_id_owned.clone(),
-                        ..Default::default()
-                    }
-                    .pull(trx);
-                    if !ent.entity_type.is_empty() {
-                        *type_clone.lock().unwrap() = ent.entity_type.trim().to_lowercase();
-                    }
-                }
-                let runtime_link = trx.get_link(&format!(
-                    "vmEntityType::{}::{}",
-                    machine_id_owned, entity_id_owned
-                ));
-                if !runtime_link.is_empty() {
-                    *type_clone.lock().unwrap() = runtime_link.trim().to_lowercase();
-                }
-                let path_link = trx.get_link(&format!(
-                    "vmEntityPath::{}::{}",
-                    machine_id_owned, entity_id_owned
-                ));
-                if !path_link.is_empty() {
-                    *path_clone.lock().unwrap() = path_link;
-                }
+            if entity_id.is_empty() {
+                return Ok(());
+            }
+            let entities = EntityPorts { trx, blobs: &blobs };
+            let Some(entity) = entities.entity(&machine_id, &entity_id).ok().flatten() else {
+                return Ok(());
+            };
+            let primary = entities
+                .artifact(&machine_id, &entity_id, ArtifactRole::Primary)
+                .ok()
+                .flatten();
+            if (program.runtime.is_empty() || primary.is_some()) && !entity.entity_type.is_empty() {
+                target.1 = entity.entity_type.trim().to_lowercase();
+            }
+            if let Some(path) = primary
+                .and_then(|artifact| artifact.store_key)
+                .and_then(|key| blobs.local_path(&key).ok())
+            {
+                target.0 = path.to_string_lossy().into_owned();
             }
             Ok(())
         }),
     );
-    let path = path_slot.lock().unwrap().clone();
-    let vm_type = type_slot.lock().unwrap().clone();
-    (path, vm_type)
+    let target = target.lock().unwrap().clone();
+    target
 }
 
 /// The owning machine-creature id of a program (`Program.machineId`), or empty

@@ -149,6 +149,48 @@ pub fn merge_legacy_objects(target: &mut Map<String, Value>, source: &Map<String
     }
 }
 
+/// The records legacy `put_json(key, path, object, merge)` writes, as `(path, JSON text)`
+/// pairs in write order (the node's `index_json`, ADR 0028). The object at `path` is
+/// merged with its stored object when `merge` is set, then every nested object is
+/// indexed at `path.member` (merged the same way) and every non-null leaf is written
+/// at `path.member`. `stored` answers the currently stored object of a path.
+pub fn legacy_json_index_writes(
+    path: &str,
+    object: &Map<String, Value>,
+    merge: bool,
+    stored: &dyn Fn(&str) -> Option<Map<String, Value>>,
+) -> Vec<(String, String)> {
+    let mut writes = Vec::new();
+    index_json_into(path, object, merge, stored, &mut writes);
+    writes
+}
+
+fn index_json_into(
+    path: &str,
+    object: &Map<String, Value>,
+    merge: bool,
+    stored: &dyn Fn(&str) -> Option<Map<String, Value>>,
+    writes: &mut Vec<(String, String)>,
+) {
+    let mut merged = if merge {
+        stored(path).unwrap_or_default()
+    } else {
+        Map::new()
+    };
+    merge_legacy_objects(&mut merged, object);
+    writes.push((path.to_owned(), Value::Object(merged).to_string()));
+    let mut members = object.keys().collect::<Vec<_>>();
+    members.sort();
+    for member in members {
+        let child = format!("{path}.{member}");
+        match &object[member] {
+            Value::Null => {}
+            Value::Object(nested) => index_json_into(&child, nested, merge, stored, writes),
+            leaf => writes.push((child, leaf.to_string())),
+        }
+    }
+}
+
 /// The object at a legacy dotted `path` inside a document rooted at `root_path`, as
 /// legacy `get_json` answers it: only objects are returned.
 #[must_use]
@@ -171,6 +213,35 @@ pub fn legacy_document_object_at<'a>(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn json_index_writes_match_the_legacy_record_layout() {
+        let stored = |path: &str| {
+            (path == "doc").then(|| {
+                serde_json::json!({"keep": 1, "n": 0})
+                    .as_object()
+                    .cloned()
+                    .unwrap()
+            })
+        };
+        let object = serde_json::json!({"n": 3, "sub": {"x": "y"}, "gone": null});
+        let writes = legacy_json_index_writes("doc", object.as_object().unwrap(), true, &stored);
+        assert_eq!(
+            writes,
+            vec![
+                (
+                    "doc".to_owned(),
+                    r#"{"gone":null,"keep":1,"n":3,"sub":{"x":"y"}}"#.to_owned()
+                ),
+                ("doc.n".to_owned(), "3".to_owned()),
+                ("doc.sub".to_owned(), r#"{"x":"y"}"#.to_owned()),
+                ("doc.sub.x".to_owned(), r#""y""#.to_owned()),
+            ]
+        );
+        // Without merge the stored object is replaced.
+        let replaced = legacy_json_index_writes("doc", object.as_object().unwrap(), false, &stored);
+        assert_eq!(replaced[0].1, r#"{"gone":null,"n":3,"sub":{"x":"y"}}"#);
+    }
 
     #[test]
     fn documents_round_trip_and_paths_resolve_like_legacy_get_json() {

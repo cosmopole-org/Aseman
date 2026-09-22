@@ -10,20 +10,22 @@ verification: cargo xtask fast; cargo test -p caspar-node --lib; live aseman-sto
 
 ## Decision
 
-**Not yet accepted.** Every Phase 3 artifact (A301–A310) is accepted or verified, and the
-migration protocol is proven end to end. The gate still requires the node to serve core
-state from PostgreSQL, which depends on rewiring the legacy actions onto typed capsule
-repositories family by family (RL-004 strangler). That work is open.
+**Not yet accepted.** Every Phase 3 artifact (A301–A310) is accepted or verified, the
+migration protocol is proven end to end, and every core family now goes through ports
+with conformance-tested legacy and capsule adapters (RL-004 strangler complete). The
+one open clause is the switch itself. It is an operator action (runbook step 7): its
+security blockers, LD-14 and LD-24, are fixed by Phase 4, and guest data routes to
+creature databases on PostgreSQL.
 
 ## Clause-by-clause status
 
 | Gate clause | Status | Evidence / remaining work |
 |---|---|---|
 | All persistent classes use capsules (except ADR 0022 VMM observed runtime) | **Met** | A308 accepted with zero blocked rows (ADRs 0016–0025). Every class the export emits has a native writer: core, finance, telemetry, realtime, and guest KV per creature |
-| PostgreSQL is the default (ADR 0026: every port family except balances and the finance ledger, which ADR 0017 keeps on legacy until P8, and identity credentials, which ADRs 0019/0023 keep on legacy until P4) | **Open** | The node still serves every family from the legacy provider. Remaining: port the families still read directly, add typed provider selection, and switch the binding generation. LD-10 and LD-15 (commit and action-failure atomicity) are fixed, which ADR 0026 compensations require |
+| PostgreSQL is the default (ADR 0026: every port family except balances and the finance ledger, which ADR 0017 keeps on legacy until P8, and identity credentials, which ADRs 0019/0023 keep on legacy until P4) | **Ready, not switched** | Every core family reads and writes through ports with both adapters, and a sweep of the storage-access inventory finds no direct core-family access outside the adapters (see the strangler table). What remains goes to legacy by ADR 0026: finance, identity credentials, VMM observed runtime, id allocation, and chains. Typed provider selection and per-action routing are in place (`ASEMAN_CORE_STORAGE_PROVIDER`). The switch is an operator cutover after A309 verification. Its blockers, LD-14 and LD-24, are fixed (P4-04/P4-05, ADR 0028), and guest data follows the core families into each creature's database. Remaining prerequisites are the guest proxy configuration and active guest bindings from the import (runbook step 7) |
 | Each creature's guest records and schemas live in its isolated database | **Met for migrated state** | A306 isolation tests, and the ADR 0021 importer writes only into the owner's database. Live guest access switches with the P4-04 gateway |
-| Legacy and PostgreSQL providers pass conformance, isolation, pool-contamination, schema, and migration/restart tests | **Partly met** | PostgreSQL: storage conformance, guest isolation, document capsules, fencing, and the A309 end-to-end test. Legacy: its export/KV/time-series seams and the LD-12 membership repair are tested (42 tests), but it is not a capsule repository, so the capsule conformance suite does not apply until action families read through repositories |
-| Node/application crates no longer import RocksDB or QuestDB types | **Met, with two owned exceptions** | The core path uses `LegacyKvStore` and `QuestDbTimeSeries` from `aseman-storage-legacy`, and all 382 node library tests pass. Exceptions: the OpenRaft store (RL-012, ADR 0012) and the Hashgraph store (RL-011, ADR 0025) |
+| Legacy and PostgreSQL providers pass conformance, isolation, pool-contamination, schema, and migration/restart tests | **Met** | PostgreSQL: storage conformance, guest isolation, document capsules, fencing, and the A309 end-to-end test. Legacy: every port family's legacy adapter passes the same conformance suite as its capsule adapter (node tests), alongside the export, KV and time-series seams and the LD-12 repair |
+| Node/application crates no longer import RocksDB or QuestDB types | **Met, with two owned exceptions** | The core path uses `LegacyKvStore` and `QuestDbTimeSeries` from `aseman-storage-legacy`, and all 384 node library tests pass. Exceptions: the OpenRaft store (RL-012, ADR 0012) and the Hashgraph store (RL-011, ADR 0025) |
 
 ## Cutover granularity
 
@@ -58,7 +60,9 @@ and the capsule adapter is proven against the same use cases.
 | VM resource stores (`Json::VmResourceStore`, `vmOwnedStore`) | `VmResourceStores` port | `LegacyPrograms` (node conformance test) | `core.vm_resource_store` (live conformance test) |
 | Legacy id allocation (`globalIdCounter`, `localIdCounter`) | P4 UUIDv7 identities (ADRs 0009/0020/0026) | stays legacy-authoritative | verified, not migrated |
 | Work chains and shards (`Chain`, `ChainShard`) | P8 with the consensus provider (ADRs 0025/0026; LD-22, LD-23) | stays legacy-authoritative | checkpoint only |
-| Entities, entity configs and artifacts, VM resource entities, files | blob-backed; ADR 0027 pending | — | — |
+| Entities, entity artifacts and configs (`Entity`, `vmEntityPath`/`vmEntityType`/`vmEntityDownloadable`, `Json::ProxyEntity`), every deploy path, the VM target resolver, proxy forwarding, the startup listener restore | `EntityDirectory` port, `aseman-application::program::RecordEntityDeployment`; bytes through `BlobStore` (ADR 0027) | `LegacyEntities` (node conformance test) | `core.entity` / `core.entity_artifact` / `core.entity_config` (live conformance test) |
+| File bytes (deployed entity files, public uploads) | `BlobStore` port (ADR 0027) | `StorageRootBlobStore` (node conformance test) | same provider (the storage root) in Phase 3 |
+| VM resource entities (`Json::VmResourceEntity` and its data file) | `VmResourceEntities`, `PutResourceEntity`, `DeleteResourceEntity` (LD-26) | `LegacyEntities` (node conformance test) | `core.vm_resource_entity` (live conformance test) |
 
 No node code outside `store_ports.rs` and `model/access.rs` reads or writes an
 `onaccess`/`hasaccess` key; the grep in the P3-06 record checks this. The A004 scanner
@@ -67,15 +71,8 @@ the A308 manifest keeps zero blocked rows.
 
 ## Next steps
 
-1. Blob-backed families (entities, entity configs and artifacts, VM resource
-   entities, files) need the target blob store decided (ADR 0027, pending). Every
-   other core family already reads and writes through ports with both adapters, and
-   the families ADR 0026 routes to legacy (finance ledger and balances, identity
-   credentials, VMM observed runtime, work chains, legacy id allocation) stay there.
-   LD-14 (unauthorized VM creature host calls) and LD-24 (VM guests write arbitrary
-   node keys) must be fixed before cutover.
-2. Typed provider selection and per-action routing are in place (ADR 0026;
-   `ASEMAN_CORE_STORAGE_PROVIDER`, `ASEMAN_CORE_BINDING_GENERATION`). The cutover
-   itself is an operator switch after A309 verification, blocked by LD-14, LD-24, and
-   the blob-backed families.
-3. Re-evaluate this gate.
+1. Cutover: run A309 verification, configure the guest proxy, confirm active guest
+   bindings, and switch `ASEMAN_CORE_STORAGE_PROVIDER=postgres` (runbook step 7). Then
+   accept this gate.
+2. RL-005 deletion gate: remove the legacy core path only after the cutover and its
+   deletion evidence (AGENTS: never delete before both gates pass).

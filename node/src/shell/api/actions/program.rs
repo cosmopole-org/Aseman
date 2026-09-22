@@ -28,7 +28,8 @@ use crate::models::action::ISecureAction;
 use crate::models::core::ICore;
 use crate::models::state::IState;
 use crate::models::transaction::ITrx;
-use crate::shell::api::model::{Creature, Entity, Program};
+use crate::shell::api::model::entity_ports::EntityPorts;
+use crate::shell::api::model::{Creature, Program};
 use crate::shell::api::packets::plugin::PlugInput;
 use crate::shell::api::packets::program::{
     CreateMachineInput, DeleteProgramInput, DeployInput, DownloadEntityInput, ListAppMachsInput,
@@ -36,6 +37,8 @@ use crate::shell::api::packets::program::{
     VmResourcesInput, VmTerminalInput,
 };
 use crate::shell::utils::future::async_once;
+use aseman_domain::program::{ArtifactRole, EntityRecord};
+use aseman_ports::{BlobStore, EntityDirectory};
 
 use super::util::build_secure_action;
 
@@ -508,6 +511,19 @@ pub(crate) fn charge_running_standalone_vms_if_needed(app: &Arc<dyn ICore>, lock
     *guard = current_minute;
 }
 
+/// A program's entity, read through the entity port.
+fn read_entity(
+    app: &Arc<dyn ICore>,
+    trx: &dyn ITrx,
+    program_id: &str,
+    entity_id: &str,
+) -> Result<Option<EntityRecord>> {
+    let blobs = crate::drivers::blob_store::node_blobs(&*app.tools().storage());
+    EntityPorts { trx, blobs: &blobs }
+        .entity(program_id, entity_id)
+        .map_err(|error| anyhow!("{error}"))
+}
+
 fn terminate_standalone_vm(app: &Arc<dyn ICore>, machine_id: &str, entity_id: &str, vm_id: &str) {
     let machine_id = machine_id.to_string();
     let entity_id = entity_id.to_string();
@@ -516,12 +532,13 @@ fn terminate_standalone_vm(app: &Arc<dyn ICore>, machine_id: &str, entity_id: &s
     app.modify_state(
         true,
         Box::new(move |tx: &dyn ITrx| {
-            let entity = Entity {
-                program_id: machine_id.clone(),
-                entity_id: entity_id.clone(),
-                ..Default::default()
-            }
-            .pull(tx);
+            let entity = read_entity(&app_for_closure, tx, &machine_id, &entity_id)
+                .ok()
+                .flatten()
+                .unwrap_or_else(|| EntityRecord {
+                    entity_id: entity_id.clone(),
+                    ..Default::default()
+                });
             let entity_type = normalize_entity_type(&entity.entity_type);
             let ctx = json!({
                 "machineId": machine_id,
@@ -669,15 +686,8 @@ fn run_program_entity(app: Arc<dyn ICore>) -> Arc<dyn ISecureAction> {
             }
             let program = (crate::shell::api::model::program_ports::ProgramPorts { trx: &*trx })
                 .program_or_empty(&program_id.clone());
-            let entity = Entity {
-                program_id: program.id.clone(),
-                entity_id: input.entity_id.clone(),
-                ..Default::default()
-            }
-            .pull(&*trx);
-            if entity.entity_id.is_empty() {
-                return Err(anyhow!("entity does not exist"));
-            }
+            let entity = read_entity(&app_for_handler, &*trx, &program.id, &input.entity_id)?
+                .ok_or_else(|| anyhow!("entity does not exist"))?;
             let entity_type = normalize_entity_type(&entity.entity_type);
             // A program owns itself: authorize against the recorded program owner
             // rather than the deprecated app_id parent pointer.
@@ -830,15 +840,8 @@ fn stop_program_entity(app: Arc<dyn ICore>) -> Arc<dyn ISecureAction> {
             }
             let program = (crate::shell::api::model::program_ports::ProgramPorts { trx: &*trx })
                 .program_or_empty(&program_id.clone());
-            let entity = Entity {
-                program_id: program.id.clone(),
-                entity_id: input.entity_id.clone(),
-                ..Default::default()
-            }
-            .pull(&*trx);
-            if entity.entity_id.is_empty() {
-                return Err(anyhow!("entity does not exist"));
-            }
+            let entity = read_entity(&app_for_handler, &*trx, &program.id, &input.entity_id)?
+                .ok_or_else(|| anyhow!("entity does not exist"))?;
             let entity_type = normalize_entity_type(&entity.entity_type);
             // Authorize against the recorded program owner (no app_id).
             let owner_machine = resolve_program_owner_machine(&*trx, &program);
@@ -924,15 +927,8 @@ fn delete_program_entity(app: Arc<dyn ICore>) -> Arc<dyn ISecureAction> {
             }
             let program = (crate::shell::api::model::program_ports::ProgramPorts { trx: &*trx })
                 .program_or_empty(&program_id.clone());
-            let entity = Entity {
-                program_id: program.id.clone(),
-                entity_id: input.entity_id.clone(),
-                ..Default::default()
-            }
-            .pull(&*trx);
-            if entity.entity_id.is_empty() {
-                return Err(anyhow!("entity does not exist"));
-            }
+            let entity = read_entity(&app_for_handler, &*trx, &program.id, &input.entity_id)?
+                .ok_or_else(|| anyhow!("entity does not exist"))?;
             let entity_type = normalize_entity_type(&entity.entity_type);
             let owner_machine = resolve_program_owner_machine(&*trx, &program);
             if owner_machine.owner_id != state.info().user_id() {
@@ -1060,6 +1056,7 @@ fn read_vm_logs(app: Arc<dyn ICore>) -> Arc<dyn ISecureAction> {
 /// List the VM instances recorded for one program entity and ask its runtime
 /// plugin for the current process/container state.
 fn list_entity_vms(app: Arc<dyn ICore>) -> Arc<dyn ISecureAction> {
+    let app_for_handler = app.clone();
     build_secure_action::<RunProgramEntityInput, _>(
         app,
         "/machines/listEntityVms",
@@ -1086,15 +1083,8 @@ fn list_entity_vms(app: Arc<dyn ICore>) -> Arc<dyn ISecureAction> {
             if owner_machine.owner_id != state.info().user_id() {
                 return Err(anyhow!("you are not owner of this program"));
             }
-            let entity = Entity {
-                program_id: program.id.clone(),
-                entity_id: input.entity_id.clone(),
-                ..Default::default()
-            }
-            .pull(&*trx);
-            if entity.entity_id.is_empty() {
-                return Err(anyhow!("entity does not exist"));
-            }
+            let entity = read_entity(&app_for_handler, &*trx, &program.id, &input.entity_id)?
+                .ok_or_else(|| anyhow!("entity does not exist"))?;
 
             let entity_type = normalize_entity_type(&entity.entity_type);
             let plugin = caspar_vm_sdk::registry::get(&entity_type)
@@ -1349,26 +1339,18 @@ fn deploy(app: Arc<dyn ICore>) -> Arc<dyn ISecureAction> {
                 let data = base64::engine::general_purpose::STANDARD
                     .decode(&input.payload)
                     .map_err(|e| anyhow!("{}", e))?;
-                let build_folder_path = format!(
-                    "{}{}{}/entities/{}",
-                    app_for_handler.tools().storage().storage_root(),
-                    PLUGINS_TEMPLATE_NAME,
-                    program.id,
-                    input.entity_id
-                );
-                app_for_handler.tools().file().save_data_to_global_storage(
-                    &build_folder_path,
-                    &data,
-                    "proxy.data",
-                    true,
-                )?;
+                let blobs =
+                    crate::drivers::blob_store::node_blobs(&*app_for_handler.tools().storage());
+                let evidence =
+                    blobs.put_entity_file(&program.id, &input.entity_id, "proxy.data", &data)?;
                 crate::drivers::vmm::proxy::record_proxy_entity(
                     &*trx,
+                    &blobs,
                     &program.id,
                     &input.entity_id,
-                    &format!("{}/proxy.data", build_folder_path),
+                    &evidence,
                     &config,
-                );
+                )?;
                 // Register the signal listener so the proxy entity actually
                 // receives (and forwards) signals addressed to this program.
                 app_for_handler.tools().vmm().assign(&program.id);
@@ -1409,12 +1391,6 @@ fn deploy(app: Arc<dyn ICore>) -> Arc<dyn ISecureAction> {
             // keeps all of its VM state out of the consensus.
             let distributed = input.wants_distribution() && crate::drivers::cluster::is_active();
             let distribution_label = if distributed { "cluster" } else { "local" };
-            let mut entity_model = Entity {
-                program_id: program.id.clone(),
-                entity_id: input.entity_id.clone(),
-                entity_type: entity_type.clone(),
-                image_name: input.entity_id.clone(),
-            };
             let vm_id = Uuid::new_v4().to_string();
             let build_folder_path = format!(
                 "{}{}{}/entities/{}",
@@ -1423,12 +1399,9 @@ fn deploy(app: Arc<dyn ICore>) -> Arc<dyn ISecureAction> {
                 program.id,
                 input.entity_id
             );
-            app_for_handler.tools().file().save_data_to_global_storage(
-                &build_folder_path,
-                &data,
-                &primary_file_name,
-                true,
-            )?;
+            let blobs = crate::drivers::blob_store::node_blobs(&*app_for_handler.tools().storage());
+            let primary =
+                blobs.put_entity_file(&program.id, &input.entity_id, &primary_file_name, &data)?;
             // Artifact files shipped to the other instances on a distributed
             // deploy (base64 as received; primary file first).
             let mut artifact_files: Vec<(String, String)> =
@@ -1452,24 +1425,9 @@ fn deploy(app: Arc<dyn ICore>) -> Arc<dyn ISecureAction> {
                     let raw = base64::engine::general_purpose::STANDARD
                         .decode(&data_str)
                         .map_err(|e| anyhow!("{}", e))?;
-                    app_for_handler.tools().file().save_data_to_global_storage(
-                        &build_folder_path,
-                        &raw,
-                        k,
-                        true,
-                    )?;
+                    blobs.put_entity_file(&program.id, &input.entity_id, k, &raw)?;
                     artifact_files.push((k.clone(), data_str));
                 }
-            }
-            if set_entity_links {
-                trx.put_link(
-                    &format!("vmEntityPath::{}::{}", program.id, input.entity_id),
-                    &format!("{}/{}", build_folder_path, primary_file_name),
-                );
-                trx.put_link(
-                    &format!("vmEntityType::{}::{}", program.id, input.entity_id),
-                    &entity_type,
-                );
             }
             // Custom VM gateway route: the deployer may bind this entity's HTTP
             // server to a friendly `/{creatureUsername}/{gatewayPath…}` path.
@@ -1498,14 +1456,6 @@ fn deploy(app: Arc<dyn ICore>) -> Arc<dyn ISecureAction> {
                 &gateway_vm_id,
                 &entity_type,
             )?;
-            if input.downloadable {
-                // Downloadable entities (front-end scripts executed on the
-                // client) are served at any time via /programs/downloadEntity.
-                trx.put_link(
-                    &format!("vmEntityDownloadable::{}::{}", program.id, input.entity_id),
-                    &format!("{}/{}", build_folder_path, primary_file_name),
-                );
-            }
             if build_on_deploy {
                 let build_id = Uuid::new_v4().to_string();
                 trx.put_link(&format!("VmBuilds::{}::{}", vm_id, build_id), "true");
@@ -1526,8 +1476,27 @@ fn deploy(app: Arc<dyn ICore>) -> Arc<dyn ISecureAction> {
             // listener) and every creature-to-creature signal silently times
             // out.
             app_for_handler.tools().vmm().assign(&program.id);
-            entity_model.entity_type = entity_type.clone();
-            entity_model.push(&*trx);
+            aseman_application::program::RecordEntityDeployment {
+                entities: &EntityPorts {
+                    trx: &*trx,
+                    blobs: &blobs,
+                },
+            }
+            .execute(&aseman_application::program::EntityDeployment {
+                entity: EntityRecord {
+                    program_id: program.id.clone(),
+                    entity_id: input.entity_id.clone(),
+                    entity_type: entity_type.clone(),
+                    image_name: input.entity_id.clone(),
+                },
+                primary,
+                runtime_file: set_entity_links,
+                // Downloadable entities (front-end scripts executed on the
+                // client) are served at any time via /programs/downloadEntity.
+                downloadable: input.downloadable,
+                config: None,
+            })
+            .map_err(|error| anyhow!("{error}"))?;
             // Persist the chosen scope; the VMM consults these links to decide
             // whether a VM's state mutations enter the raft consensus.
             trx.put_link(
@@ -1570,6 +1539,7 @@ fn deploy(app: Arc<dyn ICore>) -> Arc<dyn ISecureAction> {
 /// the caller (base64). This is how front-end apps deployed as entities are
 /// fetched and executed on the client side at any time.
 fn download_entity(app: Arc<dyn ICore>) -> Arc<dyn ISecureAction> {
+    let app_for_handler = app.clone();
     build_secure_action::<DownloadEntityInput, _>(
         app,
         "/programs/downloadEntity",
@@ -1584,21 +1554,23 @@ fn download_entity(app: Arc<dyn ICore>) -> Arc<dyn ISecureAction> {
             if program_id.is_empty() || input.entity_id.is_empty() {
                 return Err(anyhow!("programId and entityId are required"));
             }
-            let path = trx.get_link(&format!(
-                "vmEntityDownloadable::{}::{}",
-                program_id, input.entity_id
-            ));
-            if path.is_empty() {
-                return Err(anyhow!("entity is not downloadable"));
-            }
-            let entity = Entity {
-                program_id: program_id.clone(),
-                entity_id: input.entity_id.clone(),
-                ..Default::default()
-            }
-            .pull(&*trx);
-            let bytes =
-                std::fs::read(&path).map_err(|e| anyhow!("entity file unavailable: {}", e))?;
+            let blobs = crate::drivers::blob_store::node_blobs(&*app_for_handler.tools().storage());
+            let entities = EntityPorts {
+                trx: &*trx,
+                blobs: &blobs,
+            };
+            let artifact = entities
+                .artifact(&program_id, &input.entity_id, ArtifactRole::Downloadable)
+                .map_err(|error| anyhow!("{error}"))?
+                .ok_or_else(|| anyhow!("entity is not downloadable"))?;
+            let entity = entities
+                .entity(&program_id, &input.entity_id)
+                .map_err(|error| anyhow!("{error}"))?
+                .unwrap_or_default();
+            let bytes = artifact
+                .store_key
+                .and_then(|key| blobs.blob(&key).ok().flatten())
+                .ok_or_else(|| anyhow!("entity file unavailable"))?;
             Ok(json!({
                 "programId": program_id,
                 "entityId": input.entity_id,

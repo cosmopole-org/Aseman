@@ -22,14 +22,12 @@ use std::sync::{Arc, Mutex};
 
 use anyhow::{anyhow, Result};
 use aseman_storage_legacy::LegacyKvWrite;
-use rsa::{RsaPrivateKey, RsaPublicKey};
 use serde_json::{Map, Value};
 
 use crate::models::core::ICore;
 use crate::models::ports::storage::IStorage;
 use crate::models::transaction::ITrx;
 use crate::models::update::Update;
-use crate::shell::utils::crypto as cryp;
 
 /// `TrxWrapper` is the per-call transaction handle.
 pub struct TrxWrapper {
@@ -618,23 +616,6 @@ impl ITrx for TrxWrapper {
         Ok(out)
     }
 
-    fn get_pri_key(&self, tag: &str) -> Option<RsaPrivateKey> {
-        let res = self.get_string(&format!("obj::User::{}::privateKey", tag));
-        if res.is_empty() {
-            return None;
-        }
-        cryp::parse_private_key(res.as_bytes()).ok()
-    }
-
-    fn get_pub_key(&self, tag: &str) -> Option<RsaPublicKey> {
-        // Creature is the single authoritative identity record.
-        let res = self.get_string(&format!("obj::Creature::{}::publicKey", tag));
-        if res.is_empty() {
-            return None;
-        }
-        cryp::parse_public_key(res.as_bytes()).ok()
-    }
-
     fn updates(&self) -> Vec<Update> {
         self.inner.lock().unwrap().changes.clone()
     }
@@ -761,7 +742,6 @@ fn merge_objects(dst: &mut Map<String, Value>, src: &Map<String, Value>) {
 #[cfg(test)]
 pub(crate) mod tests {
     use super::*;
-    use crate::models::ports::file::IFile;
     use crate::models::ports::network::INetwork;
     use crate::models::ports::security::ISecurity;
     use crate::models::ports::signaler::ISignaler;
@@ -1231,7 +1211,6 @@ pub(crate) mod tests {
     // stub `ICore` impl path.
     #[allow(dead_code)]
     fn _silence(
-        _: Option<Arc<dyn IFile>>,
         _: Option<Arc<dyn INetwork>>,
         _: Option<Arc<dyn ISecurity>>,
         _: Option<Arc<dyn ISignaler>>,
