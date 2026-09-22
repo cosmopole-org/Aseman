@@ -204,6 +204,26 @@ dependencies = [
 ]
 
 [[package]]
+name = "aseman-guest-http"
+version = "0.1.0"
+dependencies = [
+ "aseman-application",
+ "aseman-contracts",
+ "aseman-domain",
+ "aseman-ports",
+ "axum",
+ "hyper 1.11.1",
+ "hyper-util",
+ "rcgen",
+ "reqwest 0.12.28",
+ "rustls 0.23.45",
+ "serde_json",
+ "tokio",
+ "tokio-rustls 0.26.5",
+ "tower 0.5.3",
+]
+
+[[package]]
 name = "aseman-identity-native"
 version = "0.1.0"
 dependencies = [
@@ -328,6 +348,7 @@ dependencies = [
  "r2d2_postgres",
  "rocksdb",
  "rsa",
+ "serde",
  "serde_json",
  "sha2 0.10.9",
  "thiserror 2.0.20",
@@ -357,6 +378,77 @@ dependencies = [
  "tokio",
  "tonic",
  "uuid",
+]
+
+[[package]]
+name = "aseman-vmm"
+version = "0.1.0"
+dependencies = [
+ "aseman-application",
+ "aseman-config",
+ "aseman-contracts",
+ "aseman-ports",
+ "aseman-storage-postgres",
+ "aseman-vmm-backend-grpc",
+ "aseman-vmm-http",
+ "axum",
+ "rustls 0.23.45",
+ "rustls-pemfile 2.2.0",
+ "tokio",
+]
+
+[[package]]
+name = "aseman-vmm-backend-conformance"
+version = "0.1.0"
+dependencies = [
+ "aseman-domain",
+ "aseman-ports",
+ "serde_json",
+]
+
+[[package]]
+name = "aseman-vmm-backend-grpc"
+version = "0.1.0"
+dependencies = [
+ "aseman-contracts",
+ "aseman-domain",
+ "aseman-ports",
+ "aseman-vmm-backend-conformance",
+ "serde_json",
+ "tokio",
+ "tokio-stream",
+ "tonic",
+ "uuid",
+]
+
+[[package]]
+name = "aseman-vmm-backend-native"
+version = "0.1.0"
+dependencies = [
+ "aseman-application",
+ "aseman-config",
+ "aseman-contracts",
+ "aseman-domain",
+ "aseman-guest-http",
+ "aseman-ports",
+ "aseman-storage-postgres",
+ "aseman-vmm-backend-conformance",
+ "aseman-vmm-backend-grpc",
+ "aseman-vmm-http",
+ "base64 0.22.1",
+ "caspar-vm-plugins",
+ "caspar-vm-sdk",
+ "dashmap",
+ "postgres",
+ "rcgen",
+ "reqwest 0.12.28",
+ "rustls 0.23.45",
+ "serde",
+ "serde_json",
+ "sha2 0.10.9",
+ "tokio",
+ "tokio-stream",
+ "tonic",
 ]
 
 [[package]]
@@ -830,12 +922,15 @@ dependencies = [
  "aseman-config",
  "aseman-contracts",
  "aseman-domain",
+ "aseman-guest-http",
+ "aseman-identity-native",
  "aseman-module-runtime",
  "aseman-observability",
  "aseman-policy-native",
  "aseman-ports",
  "aseman-storage-legacy",
  "aseman-storage-postgres",
+ "aseman-vmm-http",
  "base64 0.22.1",
  "caspar-vm-plugins",
  "caspar-vm-sdk",

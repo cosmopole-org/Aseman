@@ -159,6 +159,13 @@ fn live_guest_gateway_resolves_and_isolates_each_workload() {
         );
         placed.push((creature, program));
     }
+    // Workload records: creation, uniqueness, the creature chain, compare-and-set.
+    aseman_ports::conformance::workload_repository(
+        &catalog,
+        CreatureId::from_uuid(Uuid::from_bytes(placed[2].0)),
+        aseman_domain::ProgramId::from_uuid(Uuid::from_bytes(placed[2].1)),
+        aseman_domain::ProgramId::from_uuid(Uuid::from_bytes(placed[1].1)),
+    );
     // The binding catalog on a creature without a binding.
     aseman_ports::conformance::creature_database_bindings(
         &catalog,

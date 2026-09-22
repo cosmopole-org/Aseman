@@ -1,0 +1,45 @@
+[package]
+name = "aseman-vmm-backend-native"
+description = "The native-legacy VMM backend (P5-03): the Caspar runtime plugins behind A504, calling the node only through the authenticated guest API."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[[bin]]
+name = "aseman-vmm-backend-native"
+path = "src/main.rs"
+
+[dependencies]
+aseman-config = { path = "../../../crates/aseman-config" }
+aseman-contracts = { path = "../../../crates/aseman-contracts" }
+aseman-domain = { path = "../../../crates/aseman-domain" }
+aseman-guest-http = { path = "../../guest-http" }
+aseman-ports = { path = "../../../crates/aseman-ports" }
+aseman-vmm-backend-grpc = { path = "../../vmm-backend-grpc" }
+caspar-vm-plugins = { path = "../../../node/crates/caspar-vm-plugins" }
+caspar-vm-sdk = { path = "../../../vm-sdk" }
+base64.workspace = true
+dashmap = "6"
+serde.workspace = true
+serde_json.workspace = true
+sha2.workspace = true
+tokio = { workspace = true, features = ["net", "signal"] }
+tokio-stream = { version = "0.1", features = ["net"] }
+tonic.workspace = true
+
+[dev-dependencies]
+aseman-vmm-backend-conformance = { path = "../../../tests/contracts/vmm-backend" }
+aseman-ports = { path = "../../../crates/aseman-ports", features = ["conformance"] }
+rcgen = { version = "0.14", default-features = false, features = ["crypto", "pem", "ring"] }
+rustls = { version = "0.23", default-features = false, features = ["std", "ring", "tls12"] }
+aseman-guest-http = { path = "../../guest-http" }
+aseman-application = { path = "../../../crates/aseman-application" }
+aseman-storage-postgres = { path = "../../storage-postgres" }
+aseman-vmm-http = { path = "../../vmm-http" }
+postgres = { workspace = true }
+reqwest = { version = "0.12", default-features = false, features = ["blocking", "rustls-tls"] }
+
+[lints]
+workspace = true

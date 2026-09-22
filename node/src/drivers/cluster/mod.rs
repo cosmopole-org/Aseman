@@ -516,7 +516,7 @@ fn apply_deploy_artifact(app: &Arc<dyn ICore>, artifact: &DeployArtifact) -> Res
         );
     });
 
-    app.tools().vmm().assign(&artifact.program_id);
+    app.tools().workloads().assign(&artifact.program_id);
     if artifact.build_on_deploy {
         let app_async = app.clone();
         let mid = artifact.program_id.clone();
@@ -525,7 +525,7 @@ fn apply_deploy_artifact(app: &Arc<dyn ICore>, artifact: &DeployArtifact) -> Res
         std::thread::spawn(move || {
             app_async
                 .tools()
-                .vmm()
+                .workloads()
                 .build_vm_image(&mid, &eid, &build_folder_path, &etype);
         });
     }

@@ -1,0 +1,17 @@
+[package]
+name = "aseman-vmm-backend-conformance"
+description = "The A504 conformance kit: the behavior every VMM backend must show."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+publish = false
+
+[dependencies]
+aseman-domain = { path = "../../../crates/aseman-domain" }
+aseman-ports = { path = "../../../crates/aseman-ports" }
+serde_json.workspace = true
+
+[lints]
+workspace = true

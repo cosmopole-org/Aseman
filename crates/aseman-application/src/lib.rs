@@ -15,6 +15,7 @@ use thiserror::Error;
 pub mod capability;
 pub mod creature;
 pub mod guest;
+pub mod guest_call;
 pub mod identity;
 pub mod program;
 pub mod storage_migration;
@@ -103,11 +104,15 @@ impl GetServerPeers<'_> {
 }
 
 impl SetDesiredWorkloadState<'_> {
+    /// `established` holds facts the enforcement layer resolved for `actor` on this
+    /// workload (for example `owner` for the user owning its program); the workload's
+    /// own creature is always its owner.
     pub fn execute(
         &self,
         actor: Subject,
         workload_id: WorkloadId,
         state: DesiredWorkloadState,
+        established: &BTreeSet<Condition>,
     ) -> Result<u64, ApplicationError> {
         let mut workload = self
             .workloads
@@ -125,11 +130,10 @@ impl SetDesiredWorkloadState<'_> {
             kind: SubjectKind::Creature,
             id: *workload.creature_id.as_uuid(),
         };
-        let facts = if actor == owner {
-            BTreeSet::from([Condition::Owner])
-        } else {
-            BTreeSet::new()
-        };
+        let mut facts = established.clone();
+        if actor == owner {
+            facts.insert(Condition::Owner);
+        }
         let decision = capability::Authorize {
             policy: self.policy,
             grants: self.grants,
@@ -189,6 +193,9 @@ mod tests {
     }
 
     impl WorkloadRepository for Harness {
+        fn create_desired(&self, _: &DesiredWorkload) -> PortResult<()> {
+            unreachable!()
+        }
         fn get_desired(&self, _id: WorkloadId) -> PortResult<Option<DesiredWorkload>> {
             Ok(self.workload.lock().expect("test mutex").clone())
         }
@@ -310,6 +317,32 @@ mod tests {
         fn events_after(&self, _: u64, _: usize) -> PortResult<aseman_ports::vmm::EventBatch> {
             unreachable!()
         }
+        fn exec(
+            &self,
+            _: WorkloadId,
+            _: &str,
+            _: &str,
+        ) -> PortResult<aseman_domain::vmm::OperationRecord> {
+            unreachable!()
+        }
+        fn build(&self, _: &str, _: &str) -> PortResult<aseman_domain::vmm::OperationRecord> {
+            unreachable!()
+        }
+        fn put_file(&self, _: WorkloadId, _: &str, _: &[u8], _: &str) -> PortResult<()> {
+            unreachable!()
+        }
+        fn get_file(&self, _: WorkloadId, _: &str) -> PortResult<Vec<u8>> {
+            unreachable!()
+        }
+        fn endpoints(&self, _: WorkloadId) -> PortResult<Vec<aseman_domain::vmm::Endpoint>> {
+            unreachable!()
+        }
+        fn verify(&self, _: &str, _: &str, _: &str) -> PortResult<String> {
+            unreachable!()
+        }
+        fn logs(&self, _: WorkloadId, _: u64) -> PortResult<Vec<aseman_domain::vmm::LogRecord>> {
+            unreachable!()
+        }
     }
 
     impl ClockPort for Harness {
@@ -338,6 +371,8 @@ mod tests {
                     id,
                     creature_id: CreatureId::new(),
                     program_id: ProgramId::new(),
+                    name: "main/vm".to_owned(),
+                    runtime: "wasm".to_owned(),
                     generation: Generation::INITIAL,
                     state: DesiredWorkloadState::Stopped,
                 })),
@@ -378,7 +413,12 @@ mod tests {
             id: *CreatureId::new().as_uuid(),
         };
         assert_eq!(
-            use_case.execute(stranger, id, DesiredWorkloadState::Running),
+            use_case.execute(
+                stranger,
+                id,
+                DesiredWorkloadState::Running,
+                &BTreeSet::new()
+            ),
             Err(ApplicationError::Denied("condition_not_met".to_owned()))
         );
         assert_eq!(
@@ -407,7 +447,12 @@ mod tests {
         // The VMM is unreachable here: desired state is recorded anyway, and the retry
         // reuses the same key.
         assert_eq!(
-            use_case.execute(owner(&harness), id, DesiredWorkloadState::Running),
+            use_case.execute(
+                owner(&harness),
+                id,
+                DesiredWorkloadState::Running,
+                &BTreeSet::new()
+            ),
             Err(ApplicationError::Port(PortError::Unavailable("not needed")))
         );
         assert_eq!(

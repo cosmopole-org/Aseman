@@ -235,7 +235,7 @@
       "logical_template": "Json::CreatureNamespace::billing",
       "method": "get_json",
       "mode": "read",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:1252"
+      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:1253"
     },
     {
       "logical_template": "Json::CreatureNamespace::billing",
@@ -331,19 +331,19 @@
       "logical_template": "Json::FinanceHold::{hold_id_c}",
       "method": "get_json",
       "mode": "read",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:1545"
+      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:1546"
     },
     {
       "logical_template": "Json::FinanceHold::{hold_id_c}",
       "method": "get_json",
       "mode": "read",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:1632"
+      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:1633"
     },
     {
       "logical_template": "Json::FinanceHold::{hold_id_c}",
       "method": "get_json",
       "mode": "read",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:1721"
+      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:1722"
     },
     {
       "logical_template": "Json::FinanceJournal::{journal_id}",
@@ -361,13 +361,19 @@
       "logical_template": "Json::FinancePool::{pool_id_c}",
       "method": "get_json",
       "mode": "read",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:1826"
+      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:1827"
     },
     {
       "logical_template": "Json::VmBilling::{}",
       "method": "del_json",
       "mode": "write",
       "source": "node/src/drivers/vmm/host/functions/vm_ownership.rs:246"
+    },
+    {
+      "logical_template": "Json::VmBilling::{}",
+      "method": "del_json",
+      "mode": "write",
+      "source": "node/src/shell/api/actions/program.rs:1025"
     },
     {
       "logical_template": "Json::VmBilling::{}",
@@ -403,13 +409,7 @@
       "logical_template": "Json::VmBilling::{}",
       "method": "del_json",
       "mode": "write",
-      "source": "node/src/shell/api/actions/program.rs:859"
-    },
-    {
-      "logical_template": "Json::VmBilling::{}",
-      "method": "del_json",
-      "mode": "write",
-      "source": "node/src/shell/api/actions/program.rs:980"
+      "source": "node/src/shell/api/actions/program.rs:879"
     },
     {
       "logical_template": "Program",
@@ -535,13 +535,13 @@
       "logical_template": "VmBuilds::{}::{}",
       "method": "put_link",
       "mode": "write",
-      "source": "node/src/shell/api/actions/program.rs:1461"
+      "source": "node/src/shell/api/actions/program.rs:1506"
     },
     {
       "logical_template": "VmContainerName::{}::{}::{}",
       "method": "get_link",
       "mode": "read",
-      "source": "node/src/shell/api/actions/program.rs:1106"
+      "source": "node/src/shell/api/actions/program.rs:1151"
     },
     {
       "logical_template": "VmInstance::",
@@ -553,19 +553,19 @@
       "logical_template": "VmInstance::",
       "method": "get_links_list",
       "mode": "read",
-      "source": "node/src/shell/api/actions/program.rs:1009"
+      "source": "node/src/shell/api/actions/program.rs:1054"
     },
     {
       "logical_template": "VmInstance::{}::{}::{}",
       "method": "put_link",
       "mode": "write",
-      "source": "node/src/shell/api/actions/program.rs:770"
+      "source": "node/src/shell/api/actions/program.rs:773"
     },
     {
       "logical_template": "VmStartedAt::{}",
       "method": "get_link",
       "mode": "read",
-      "source": "node/src/shell/api/actions/program.rs:1103"
+      "source": "node/src/shell/api/actions/program.rs:1148"
     },
     {
       "logical_template": "VmStartedAt::{}",
@@ -577,7 +577,7 @@
       "logical_template": "VmStatus::{}",
       "method": "get_link",
       "mode": "read",
-      "source": "node/src/shell/api/actions/program.rs:1101"
+      "source": "node/src/shell/api/actions/program.rs:1146"
     },
     {
       "logical_template": "VmStatus::{}",
@@ -595,7 +595,7 @@
       "logical_template": "VmTerminal::{}::{}::{}",
       "method": "put_link",
       "mode": "write",
-      "source": "node/src/shell/api/actions/program.rs:1183"
+      "source": "node/src/shell/api/actions/program.rs:1228"
     },
     {
       "logical_template": "creatorof::",
@@ -709,31 +709,31 @@
       "logical_template": "link::VmBilling::{}",
       "method": "del_key",
       "mode": "write",
+      "source": "node/src/shell/api/actions/program.rs:1024"
+    },
+    {
+      "logical_template": "link::VmBilling::{}",
+      "method": "del_key",
+      "mode": "write",
       "source": "node/src/shell/api/actions/program.rs:436"
     },
     {
       "logical_template": "link::VmBilling::{}",
       "method": "del_key",
       "mode": "write",
-      "source": "node/src/shell/api/actions/program.rs:858"
-    },
-    {
-      "logical_template": "link::VmBilling::{}",
-      "method": "del_key",
-      "mode": "write",
-      "source": "node/src/shell/api/actions/program.rs:979"
+      "source": "node/src/shell/api/actions/program.rs:878"
     },
     {
       "logical_template": "link::VmContainerName::{}::{}::{}",
       "method": "del_key",
       "mode": "write",
-      "source": "node/src/shell/api/actions/program.rs:879"
+      "source": "node/src/shell/api/actions/program.rs:1028"
     },
     {
       "logical_template": "link::VmContainerName::{}::{}::{}",
       "method": "del_key",
       "mode": "write",
-      "source": "node/src/shell/api/actions/program.rs:983"
+      "source": "node/src/shell/api/actions/program.rs:911"
     },
     {
       "logical_template": "link::VmInstance::{}::{}::{}",
@@ -745,13 +745,13 @@
       "logical_template": "link::VmInstance::{}::{}::{}",
       "method": "del_key",
       "mode": "write",
-      "source": "node/src/shell/api/actions/program.rs:854"
+      "source": "node/src/shell/api/actions/program.rs:874"
     },
     {
       "logical_template": "link::VmOwnerProgram::{}",
       "method": "del_key",
       "mode": "write",
-      "source": "node/src/shell/api/actions/program.rs:982"
+      "source": "node/src/shell/api/actions/program.rs:1027"
     },
     {
       "logical_template": "link::VmStartedAt::{}",
@@ -763,13 +763,13 @@
       "logical_template": "link::VmStartedAt::{}",
       "method": "del_key",
       "mode": "write",
-      "source": "node/src/shell/api/actions/program.rs:853"
+      "source": "node/src/shell/api/actions/program.rs:1022"
     },
     {
       "logical_template": "link::VmStartedAt::{}",
       "method": "del_key",
       "mode": "write",
-      "source": "node/src/shell/api/actions/program.rs:977"
+      "source": "node/src/shell/api/actions/program.rs:873"
     },
     {
       "logical_template": "link::VmStatus::{}",
@@ -781,25 +781,25 @@
       "logical_template": "link::VmStatus::{}",
       "method": "del_key",
       "mode": "write",
+      "source": "node/src/shell/api/actions/program.rs:1021"
+    },
+    {
+      "logical_template": "link::VmStatus::{}",
+      "method": "del_key",
+      "mode": "write",
       "source": "node/src/shell/api/actions/program.rs:431"
     },
     {
       "logical_template": "link::VmStatus::{}",
       "method": "del_key",
       "mode": "write",
-      "source": "node/src/shell/api/actions/program.rs:852"
-    },
-    {
-      "logical_template": "link::VmStatus::{}",
-      "method": "del_key",
-      "mode": "write",
-      "source": "node/src/shell/api/actions/program.rs:976"
+      "source": "node/src/shell/api/actions/program.rs:872"
     },
     {
       "logical_template": "link::VmTerminal::{}::{}::{}",
       "method": "del_key",
       "mode": "write",
-      "source": "node/src/shell/api/actions/program.rs:1219"
+      "source": "node/src/shell/api/actions/program.rs:1264"
     },
     {
       "logical_template": "link::creatorof::{creator_id}::{store_id}",
@@ -871,7 +871,7 @@
       "logical_template": "link::vmDistributed::{}",
       "method": "del_key",
       "mode": "write",
-      "source": "node/src/shell/api/actions/program.rs:981"
+      "source": "node/src/shell/api/actions/program.rs:1026"
     },
     {
       "logical_template": "link::vmOwnedStore::{}::{store_id}",
@@ -889,25 +889,25 @@
       "logical_template": "link::vmStandaloneContainerName::{}::{}",
       "method": "del_key",
       "mode": "write",
-      "source": "node/src/shell/api/actions/program.rs:864"
+      "source": "node/src/shell/api/actions/program.rs:1036"
     },
     {
       "logical_template": "link::vmStandaloneContainerName::{}::{}",
       "method": "del_key",
       "mode": "write",
-      "source": "node/src/shell/api/actions/program.rs:991"
+      "source": "node/src/shell/api/actions/program.rs:884"
     },
     {
       "logical_template": "link::vmStandaloneImageName::{}::{}",
       "method": "del_key",
       "mode": "write",
-      "source": "node/src/shell/api/actions/program.rs:860"
+      "source": "node/src/shell/api/actions/program.rs:1032"
     },
     {
       "logical_template": "link::vmStandaloneImageName::{}::{}",
       "method": "del_key",
       "mode": "write",
-      "source": "node/src/shell/api/actions/program.rs:987"
+      "source": "node/src/shell/api/actions/program.rs:880"
     },
     {
       "logical_template": "link::{}",
@@ -1063,7 +1063,7 @@
       "logical_template": "vmDistributed::{}",
       "method": "get_link",
       "mode": "read",
-      "source": "node/src/drivers/vmm/driver.rs:193"
+      "source": "node/src/drivers/vmm/driver.rs:205"
     },
     {
       "logical_template": "vmDistributed::{}",
@@ -1081,13 +1081,13 @@
       "logical_template": "vmDistribution::{}",
       "method": "get_link",
       "mode": "read",
-      "source": "node/src/drivers/vmm/driver.rs:196"
+      "source": "node/src/drivers/vmm/driver.rs:208"
     },
     {
       "logical_template": "vmDistribution::{}",
       "method": "put_link",
       "mode": "write",
-      "source": "node/src/shell/api/actions/program.rs:1502"
+      "source": "node/src/shell/api/actions/program.rs:1547"
     },
     {
       "logical_template": "vmDistribution::{}",
@@ -1105,7 +1105,7 @@
       "logical_template": "vmDistribution::{}::{}",
       "method": "put_link",
       "mode": "write",
-      "source": "node/src/shell/api/actions/program.rs:1506"
+      "source": "node/src/shell/api/actions/program.rs:1551"
     },
     {
       "logical_template": "vmDistribution::{}::{}",
@@ -1205,7 +1205,7 @@
     {
       "logical_template": "::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/shell/api/actions/program.rs:1010"
+      "source": "node/src/shell/api/actions/program.rs:1055"
     },
     {
       "logical_template": "AppletDb::{}::{}",
@@ -1485,17 +1485,17 @@
     {
       "logical_template": "Json::FinanceHold::{hold_id_c}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:1545"
+      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:1546"
     },
     {
       "logical_template": "Json::FinanceHold::{hold_id_c}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:1632"
+      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:1633"
     },
     {
       "logical_template": "Json::FinanceHold::{hold_id_c}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:1721"
+      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:1722"
     },
     {
       "logical_template": "Json::FinanceHold::{hold_id}",
@@ -1525,7 +1525,7 @@
     {
       "logical_template": "Json::FinancePool::{pool_id_c}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:1826"
+      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:1827"
     },
     {
       "logical_template": "Json::FinancePool::{pool_id}",
@@ -1555,6 +1555,11 @@
     {
       "logical_template": "Json::VmBilling::{}",
       "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/shell/api/actions/program.rs:1025"
+    },
+    {
+      "logical_template": "Json::VmBilling::{}",
+      "review_status": "candidate; caller association may be indirect",
       "source": "node/src/shell/api/actions/program.rs:318"
     },
     {
@@ -1580,12 +1585,7 @@
     {
       "logical_template": "Json::VmBilling::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/shell/api/actions/program.rs:859"
-    },
-    {
-      "logical_template": "Json::VmBilling::{}",
-      "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/shell/api/actions/program.rs:980"
+      "source": "node/src/shell/api/actions/program.rs:879"
     },
     {
       "logical_template": "Json::VmResourceStore::{store_id}",
@@ -1660,12 +1660,12 @@
     {
       "logical_template": "Secret::{}::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:931"
+      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:932"
     },
     {
       "logical_template": "SecretGrant::{}::{}::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:932"
+      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:933"
     },
     {
       "logical_template": "StoreMeta::{store_id}",
@@ -1740,17 +1740,17 @@
     {
       "logical_template": "VmBuilds::{}::",
       "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/shell/api/actions/program.rs:1236"
+      "source": "node/src/shell/api/actions/program.rs:1281"
     },
     {
       "logical_template": "VmBuilds::{}::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/shell/api/actions/program.rs:1461"
+      "source": "node/src/shell/api/actions/program.rs:1506"
     },
     {
       "logical_template": "VmContainerName::{}::{}::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/shell/api/actions/program.rs:1106"
+      "source": "node/src/shell/api/actions/program.rs:1151"
     },
     {
       "logical_template": "VmContainerName::{}::{}::{}",
@@ -1775,17 +1775,17 @@
     {
       "logical_template": "VmInstance::{}::{}::",
       "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/shell/api/actions/program.rs:1092"
+      "source": "node/src/shell/api/actions/program.rs:1137"
     },
     {
       "logical_template": "VmInstance::{}::{}::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/shell/api/actions/program.rs:771"
+      "source": "node/src/shell/api/actions/program.rs:774"
     },
     {
       "logical_template": "VmInstance::{}::{}::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/shell/api/actions/program.rs:945"
+      "source": "node/src/shell/api/actions/program.rs:977"
     },
     {
       "logical_template": "VmOwnerProgram::{}",
@@ -1795,7 +1795,7 @@
     {
       "logical_template": "VmStartedAt::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/shell/api/actions/program.rs:1103"
+      "source": "node/src/shell/api/actions/program.rs:1148"
     },
     {
       "logical_template": "VmStartedAt::{}",
@@ -1805,7 +1805,7 @@
     {
       "logical_template": "VmStatus::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/shell/api/actions/program.rs:1101"
+      "source": "node/src/shell/api/actions/program.rs:1146"
     },
     {
       "logical_template": "VmStatus::{}",
@@ -1825,7 +1825,7 @@
     {
       "logical_template": "VmTerminal::{}::{}::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/shell/api/actions/program.rs:1184"
+      "source": "node/src/shell/api/actions/program.rs:1229"
     },
     {
       "logical_template": "chainCallback::{}_{}",
@@ -1950,27 +1950,27 @@
     {
       "logical_template": "link::VmBilling::{}",
       "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/shell/api/actions/program.rs:1024"
+    },
+    {
+      "logical_template": "link::VmBilling::{}",
+      "review_status": "candidate; caller association may be indirect",
       "source": "node/src/shell/api/actions/program.rs:436"
     },
     {
       "logical_template": "link::VmBilling::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/shell/api/actions/program.rs:858"
-    },
-    {
-      "logical_template": "link::VmBilling::{}",
-      "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/shell/api/actions/program.rs:979"
+      "source": "node/src/shell/api/actions/program.rs:878"
     },
     {
       "logical_template": "link::VmContainerName::{}::{}::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/shell/api/actions/program.rs:879"
+      "source": "node/src/shell/api/actions/program.rs:1028"
     },
     {
       "logical_template": "link::VmContainerName::{}::{}::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/shell/api/actions/program.rs:983"
+      "source": "node/src/shell/api/actions/program.rs:911"
     },
     {
       "logical_template": "link::VmInstance::{}::{}::{}",
@@ -1980,12 +1980,12 @@
     {
       "logical_template": "link::VmInstance::{}::{}::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/shell/api/actions/program.rs:854"
+      "source": "node/src/shell/api/actions/program.rs:874"
     },
     {
       "logical_template": "link::VmOwnerProgram::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/shell/api/actions/program.rs:982"
+      "source": "node/src/shell/api/actions/program.rs:1027"
     },
     {
       "logical_template": "link::VmStartedAt::{}",
@@ -1995,12 +1995,12 @@
     {
       "logical_template": "link::VmStartedAt::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/shell/api/actions/program.rs:853"
+      "source": "node/src/shell/api/actions/program.rs:1022"
     },
     {
       "logical_template": "link::VmStartedAt::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/shell/api/actions/program.rs:977"
+      "source": "node/src/shell/api/actions/program.rs:873"
     },
     {
       "logical_template": "link::VmStatus::{}",
@@ -2010,22 +2010,22 @@
     {
       "logical_template": "link::VmStatus::{}",
       "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/shell/api/actions/program.rs:1021"
+    },
+    {
+      "logical_template": "link::VmStatus::{}",
+      "review_status": "candidate; caller association may be indirect",
       "source": "node/src/shell/api/actions/program.rs:431"
     },
     {
       "logical_template": "link::VmStatus::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/shell/api/actions/program.rs:852"
-    },
-    {
-      "logical_template": "link::VmStatus::{}",
-      "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/shell/api/actions/program.rs:976"
+      "source": "node/src/shell/api/actions/program.rs:872"
     },
     {
       "logical_template": "link::VmTerminal::{}::{}::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/shell/api/actions/program.rs:1219"
+      "source": "node/src/shell/api/actions/program.rs:1264"
     },
     {
       "logical_template": "link::creatorof::{creator_id}::{store_id}",
@@ -2085,7 +2085,7 @@
     {
       "logical_template": "link::vmDistributed::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/shell/api/actions/program.rs:981"
+      "source": "node/src/shell/api/actions/program.rs:1026"
     },
     {
       "logical_template": "link::vmOwnedStore::{}::{store_id}",
@@ -2100,22 +2100,22 @@
     {
       "logical_template": "link::vmStandaloneContainerName::{}::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/shell/api/actions/program.rs:864"
+      "source": "node/src/shell/api/actions/program.rs:1036"
     },
     {
       "logical_template": "link::vmStandaloneContainerName::{}::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/shell/api/actions/program.rs:991"
+      "source": "node/src/shell/api/actions/program.rs:884"
     },
     {
       "logical_template": "link::vmStandaloneImageName::{}::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/shell/api/actions/program.rs:860"
+      "source": "node/src/shell/api/actions/program.rs:1032"
     },
     {
       "logical_template": "link::vmStandaloneImageName::{}::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/shell/api/actions/program.rs:987"
+      "source": "node/src/shell/api/actions/program.rs:880"
     },
     {
       "logical_template": "link::{}",
@@ -2325,7 +2325,7 @@
     {
       "logical_template": "vmDistributed::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/drivers/vmm/driver.rs:193"
+      "source": "node/src/drivers/vmm/driver.rs:205"
     },
     {
       "logical_template": "vmDistributed::{}",
@@ -2340,12 +2340,12 @@
     {
       "logical_template": "vmDistribution::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/drivers/vmm/driver.rs:196"
+      "source": "node/src/drivers/vmm/driver.rs:208"
     },
     {
       "logical_template": "vmDistribution::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/shell/api/actions/program.rs:1503"
+      "source": "node/src/shell/api/actions/program.rs:1548"
     },
     {
       "logical_template": "vmDistribution::{}",
@@ -2360,7 +2360,7 @@
     {
       "logical_template": "vmDistribution::{}::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/shell/api/actions/program.rs:1507"
+      "source": "node/src/shell/api/actions/program.rs:1552"
     },
     {
       "logical_template": "vmDistribution::{}::{}",

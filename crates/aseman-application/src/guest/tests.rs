@@ -28,6 +28,9 @@ struct World {
 }
 
 impl WorkloadRepository for World {
+    fn create_desired(&self, _: &DesiredWorkload) -> PortResult<()> {
+        unreachable!()
+    }
     fn get_desired(&self, id: WorkloadId) -> PortResult<Option<DesiredWorkload>> {
         Ok(self.workloads.get(&id).cloned())
     }
@@ -193,6 +196,8 @@ fn world() -> (World, [CreatureId; 2]) {
                 id,
                 creature_id: creature,
                 program_id: ProgramId::new(),
+                name: "main/vm".to_owned(),
+                runtime: "wasm".to_owned(),
                 generation: Generation::INITIAL,
                 state: DesiredWorkloadState::Running,
             },
@@ -429,6 +434,9 @@ fn signed_requests_authenticate_the_workload_key_before_the_gateway() {
 fn a_failing_workload_directory_is_reported_as_unavailable() {
     struct Down;
     impl WorkloadRepository for Down {
+        fn create_desired(&self, _: &DesiredWorkload) -> PortResult<()> {
+            unreachable!()
+        }
         fn get_desired(&self, _: WorkloadId) -> PortResult<Option<DesiredWorkload>> {
             Err(PortError::Failed("down".to_owned()))
         }

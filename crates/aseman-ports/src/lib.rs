@@ -27,6 +27,7 @@ use thiserror::Error;
 
 #[cfg(feature = "conformance")]
 pub mod conformance;
+pub mod guest;
 pub mod vmm;
 
 pub type PortResult<T> = Result<T, PortError>;
@@ -51,6 +52,9 @@ pub enum PortError {
 }
 
 pub trait WorkloadRepository: Send + Sync {
+    /// Record a new workload; `Conflict` when its ID or its name within the program
+    /// exists.
+    fn create_desired(&self, workload: &DesiredWorkload) -> PortResult<()>;
     fn get_desired(&self, id: WorkloadId) -> PortResult<Option<DesiredWorkload>>;
     fn put_desired(&self, workload: &DesiredWorkload, expected: Generation) -> PortResult<()>;
 }

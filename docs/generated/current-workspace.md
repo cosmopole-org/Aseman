@@ -15,9 +15,9 @@ The complete dependency and feature data is in `current-workspace.json`.
 
 ## Repository summary
 
-- Tracked files: 746
+- Tracked files: 827
 - Tracked files under `dist/`: 15
-- Rust package manifests: 32
+- Rust package manifests: 37
 - Declared Cargo workspace roots: 1
 - npm package manifests: 1
 - Lockfiles: `Cargo.lock`, `client-cli/package-lock.json`
@@ -30,12 +30,13 @@ from separate manifests. This is current behavior, not the target topology.
 
 | Manifest | Resolver | Members | Excludes |
 |---|---:|---|---|
-| `Cargo.toml` | 2 | `cmd/casparctl`, `crates/*`, `modules/*`, `node`, `node/crates/*`, `tests/contracts/module`, `tests/contracts/policy`, `tests/contracts/storage`, `tests/migration`, `vm-sdk`, `vms/docker`, `vms/elpian`, `vms/elpian/crates/elpian-vm`, `vms/elpify`, `vms/elpify/crates/elpify-lang`, `vms/fire`, `vms/javascript`, `vms/modal`, `vms/wasm`, `xtask` | — |
+| `Cargo.toml` | 2 | `apps/*`, `cmd/casparctl`, `crates/*`, `modules/*`, `modules/vmm-backend/native-legacy`, `node`, `node/crates/*`, `tests/contracts/module`, `tests/contracts/policy`, `tests/contracts/storage`, `tests/contracts/vmm-backend`, `tests/migration`, `vm-sdk`, `vms/docker`, `vms/elpian`, `vms/elpian/crates/elpian-vm`, `vms/elpify`, `vms/elpify/crates/elpify-lang`, `vms/fire`, `vms/javascript`, `vms/modal`, `vms/wasm`, `xtask` | `modules/vmm-backend` |
 
 ## Rust packages
 
 | Package | Manifest | Edition | Targets | Direct dependencies | Features |
 |---|---|---:|---|---:|---:|
+| `aseman-vmm` | `apps/aseman-vmm/Cargo.toml` | {'workspace': True} | bin:aseman-vmm | 11 | 0 |
 | `casparctl` | `cmd/casparctl/Cargo.toml` | 2021 | bin:casparctl | 9 | 0 |
 | `aseman-application` | `crates/aseman-application/Cargo.toml` | {'workspace': True} | lib:aseman-application | 4 | 0 |
 | `aseman-capsule-repositories` | `crates/aseman-capsule-repositories/Cargo.toml` | {'workspace': True} | lib:aseman-capsule-repositories | 6 | 0 |
@@ -45,17 +46,21 @@ from separate manifests. This is current behavior, not the target topology.
 | `aseman-module-runtime` | `crates/aseman-module-runtime/Cargo.toml` | {'workspace': True} | lib:aseman-module-runtime | 10 | 0 |
 | `aseman-observability` | `crates/aseman-observability/Cargo.toml` | {'workspace': True} | lib:aseman-observability | 1 | 0 |
 | `aseman-ports` | `crates/aseman-ports/Cargo.toml` | {'workspace': True} | lib:aseman-ports | 2 | 1 |
+| `aseman-guest-http` | `modules/guest-http/Cargo.toml` | {'workspace': True} | lib:aseman-guest-http | 14 | 0 |
 | `aseman-identity-native` | `modules/identity-native/Cargo.toml` | {'workspace': True} | lib:aseman-identity-native | 5 | 0 |
 | `aseman-policy-native` | `modules/policy-native/Cargo.toml` | {'workspace': True} | lib:aseman-policy-native | 4 | 0 |
 | `aseman-sample-provider` | `modules/sample-provider/Cargo.toml` | {'workspace': True} | bin:aseman-sample-provider, lib:aseman-sample-provider | 10 | 0 |
 | `aseman-storage-legacy` | `modules/storage-legacy/Cargo.toml` | {'workspace': True} | lib:aseman-storage-legacy | 13 | 0 |
 | `aseman-storage-postgres` | `modules/storage-postgres/Cargo.toml` | {'workspace': True} | bin:aseman-storage-postgres, lib:aseman-storage-postgres | 21 | 0 |
+| `aseman-vmm-backend-native` | `modules/vmm-backend/native-legacy/Cargo.toml` | {'workspace': True} | bin:aseman-vmm-backend-native, lib:aseman-vmm-backend-native | 21 | 0 |
+| `aseman-vmm-backend-grpc` | `modules/vmm-backend-grpc/Cargo.toml` | {'workspace': True} | lib:aseman-vmm-backend-grpc | 11 | 0 |
 | `aseman-vmm-http` | `modules/vmm-http/Cargo.toml` | {'workspace': True} | lib:aseman-vmm-http | 20 | 0 |
-| `caspar-node` | `node/Cargo.toml` | 2021 | bin:aseman-node, bin:caspar-keygen, bin:caspar-node, lib:caspar-node | 50 | 0 |
+| `caspar-node` | `node/Cargo.toml` | 2021 | bin:aseman-node, bin:caspar-keygen, bin:caspar-node, lib:caspar-node | 53 | 0 |
 | `caspar-vm-plugins` | `node/crates/caspar-vm-plugins/Cargo.toml` | 2021 | lib:caspar_vm_plugins | 8 | 0 |
 | `aseman-module-conformance` | `tests/contracts/module/Cargo.toml` | {'workspace': True} | lib:aseman-module-conformance | 2 | 0 |
 | `aseman-policy-conformance` | `tests/contracts/policy/Cargo.toml` | {'workspace': True} | lib:aseman-policy-conformance | 3 | 0 |
 | `aseman-storage-conformance` | `tests/contracts/storage/Cargo.toml` | {'workspace': True} | lib:aseman-storage-conformance | 3 | 0 |
+| `aseman-vmm-backend-conformance` | `tests/contracts/vmm-backend/Cargo.toml` | {'workspace': True} | lib:aseman-vmm-backend-conformance | 3 | 0 |
 | `aseman-migration-e2e` | `tests/migration/Cargo.toml` | {'workspace': True} | lib:aseman-migration-e2e | 11 | 0 |
 | `caspar-vm-sdk` | `vm-sdk/Cargo.toml` | 2021 | lib:caspar_vm_sdk | 3 | 0 |
 | `caspar-vm-docker` | `vms/docker/Cargo.toml` | 2021 | lib:caspar_vm_docker | 11 | 0 |
@@ -80,6 +85,10 @@ from separate manifests. This is current behavior, not the target topology.
 | `aseman-capsule-repositories` | normal | `aseman-domain` | `crates/aseman-domain` |
 | `aseman-capsule-repositories` | normal | `aseman-ports` | `crates/aseman-ports` |
 | `aseman-contracts` | normal | `aseman-domain` | `crates/aseman-domain` |
+| `aseman-guest-http` | normal | `aseman-application` | `crates/aseman-application` |
+| `aseman-guest-http` | normal | `aseman-contracts` | `crates/aseman-contracts` |
+| `aseman-guest-http` | normal | `aseman-domain` | `crates/aseman-domain` |
+| `aseman-guest-http` | normal | `aseman-ports` | `crates/aseman-ports` |
 | `aseman-identity-native` | dev | `aseman-application` | `crates/aseman-application` |
 | `aseman-identity-native` | normal | `aseman-contracts` | `crates/aseman-contracts` |
 | `aseman-identity-native` | normal | `aseman-domain` | `crates/aseman-domain` |
@@ -117,6 +126,32 @@ from separate manifests. This is current behavior, not the target topology.
 | `aseman-storage-postgres` | dev | `aseman-ports` | `crates/aseman-ports` |
 | `aseman-storage-postgres` | normal | `aseman-ports` | `crates/aseman-ports` |
 | `aseman-storage-postgres` | dev | `aseman-storage-conformance` | `tests/contracts/storage` |
+| `aseman-vmm` | normal | `aseman-application` | `crates/aseman-application` |
+| `aseman-vmm` | normal | `aseman-config` | `crates/aseman-config` |
+| `aseman-vmm` | normal | `aseman-contracts` | `crates/aseman-contracts` |
+| `aseman-vmm` | normal | `aseman-ports` | `crates/aseman-ports` |
+| `aseman-vmm` | normal | `aseman-storage-postgres` | `modules/storage-postgres` |
+| `aseman-vmm` | normal | `aseman-vmm-backend-grpc` | `modules/vmm-backend-grpc` |
+| `aseman-vmm` | normal | `aseman-vmm-http` | `modules/vmm-http` |
+| `aseman-vmm-backend-conformance` | normal | `aseman-domain` | `crates/aseman-domain` |
+| `aseman-vmm-backend-conformance` | normal | `aseman-ports` | `crates/aseman-ports` |
+| `aseman-vmm-backend-grpc` | normal | `aseman-contracts` | `crates/aseman-contracts` |
+| `aseman-vmm-backend-grpc` | normal | `aseman-domain` | `crates/aseman-domain` |
+| `aseman-vmm-backend-grpc` | dev | `aseman-ports` | `crates/aseman-ports` |
+| `aseman-vmm-backend-grpc` | normal | `aseman-ports` | `crates/aseman-ports` |
+| `aseman-vmm-backend-grpc` | dev | `aseman-vmm-backend-conformance` | `tests/contracts/vmm-backend` |
+| `aseman-vmm-backend-native` | dev | `aseman-application` | `crates/aseman-application` |
+| `aseman-vmm-backend-native` | normal | `aseman-config` | `crates/aseman-config` |
+| `aseman-vmm-backend-native` | normal | `aseman-contracts` | `crates/aseman-contracts` |
+| `aseman-vmm-backend-native` | normal | `aseman-domain` | `crates/aseman-domain` |
+| `aseman-vmm-backend-native` | dev | `aseman-guest-http` | `modules/guest-http` |
+| `aseman-vmm-backend-native` | normal | `aseman-guest-http` | `modules/guest-http` |
+| `aseman-vmm-backend-native` | dev | `aseman-ports` | `crates/aseman-ports` |
+| `aseman-vmm-backend-native` | normal | `aseman-ports` | `crates/aseman-ports` |
+| `aseman-vmm-backend-native` | dev | `aseman-vmm-backend-conformance` | `tests/contracts/vmm-backend` |
+| `aseman-vmm-backend-native` | normal | `aseman-vmm-backend-grpc` | `modules/vmm-backend-grpc` |
+| `aseman-vmm-backend-native` | normal | `caspar-vm-plugins` | `node/crates/caspar-vm-plugins` |
+| `aseman-vmm-backend-native` | normal | `caspar-vm-sdk` | `vm-sdk` |
 | `aseman-vmm-http` | normal | `aseman-application` | `crates/aseman-application` |
 | `aseman-vmm-http` | normal | `aseman-contracts` | `crates/aseman-contracts` |
 | `aseman-vmm-http` | normal | `aseman-domain` | `crates/aseman-domain` |
@@ -127,6 +162,8 @@ from separate manifests. This is current behavior, not the target topology.
 | `caspar-node` | normal | `aseman-config` | `crates/aseman-config` |
 | `caspar-node` | normal | `aseman-contracts` | `crates/aseman-contracts` |
 | `caspar-node` | normal | `aseman-domain` | `crates/aseman-domain` |
+| `caspar-node` | normal | `aseman-guest-http` | `modules/guest-http` |
+| `caspar-node` | normal | `aseman-identity-native` | `modules/identity-native` |
 | `caspar-node` | normal | `aseman-module-runtime` | `crates/aseman-module-runtime` |
 | `caspar-node` | normal | `aseman-observability` | `crates/aseman-observability` |
 | `caspar-node` | normal | `aseman-policy-native` | `modules/policy-native` |
@@ -134,6 +171,7 @@ from separate manifests. This is current behavior, not the target topology.
 | `caspar-node` | normal | `aseman-ports` | `crates/aseman-ports` |
 | `caspar-node` | normal | `aseman-storage-legacy` | `modules/storage-legacy` |
 | `caspar-node` | normal | `aseman-storage-postgres` | `modules/storage-postgres` |
+| `caspar-node` | normal | `aseman-vmm-http` | `modules/vmm-http` |
 | `caspar-node` | normal | `caspar-vm-plugins` | `node/crates/caspar-vm-plugins` |
 | `caspar-node` | normal | `caspar-vm-sdk` | `vm-sdk` |
 | `caspar-vm-docker` | normal | `aseman-config` | `crates/aseman-config` |

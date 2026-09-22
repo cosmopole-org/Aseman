@@ -9,7 +9,8 @@ use aseman_contracts::vmm::{
     LifecycleCommand as WireCommand, Operation, Page, Problem, ProblemCode, UpdateSpec, Workload,
     WorkloadEvent,
 };
-use aseman_domain::vmm::{OperationRecord, WorkloadRecord, WorkloadSpec};
+use aseman_contracts::vmm::EndpointList;
+use aseman_domain::vmm::{Endpoint, LogRecord, OperationRecord, WorkloadRecord, WorkloadSpec};
 use aseman_domain::{Generation, OperationId, WorkloadId};
 use aseman_ports::vmm::{
     BackendDescription, EventBatch, LifecycleCommand, NewWorkload, VmmClient, WorkloadFilter,
@@ -411,6 +412,97 @@ impl VmmClient for HttpVmmClient {
         let mut batch = parse_events(&self.owner, &text)?;
         batch.events.truncate(limit.max(1));
         Ok(batch)
+    }
+
+    fn exec(&self, id: WorkloadId, request: &str, idempotency_key: &str) -> PortResult<OperationRecord> {
+        check_key(idempotency_key)?;
+        let body: serde_json::Value = serde_json::from_str(request).map_err(failed)?;
+        let operation: Operation = self.mutate(
+            Method::POST,
+            &format!("/v1/workloads/{id}/exec"),
+            Some(&body),
+            idempotency_key,
+        )?;
+        Ok(self.operation_record(operation))
+    }
+
+    fn build(&self, request: &str, idempotency_key: &str) -> PortResult<OperationRecord> {
+        check_key(idempotency_key)?;
+        let body: serde_json::Value = serde_json::from_str(request).map_err(failed)?;
+        let operation: Operation =
+            self.mutate(Method::POST, "/v1/builds", Some(&body), idempotency_key)?;
+        Ok(self.operation_record(operation))
+    }
+
+    fn put_file(&self, id: WorkloadId, path: &str, bytes: &[u8], idempotency_key: &str) -> PortResult<()> {
+        check_key(idempotency_key)?;
+        let route = format!("/v1/workloads/{id}/files/{path}");
+        let response = self.send(
+            || {
+                self.request(Method::PUT, &route)
+                    .header(IDEMPOTENCY_KEY, idempotency_key)
+                    .header(reqwest::header::CONTENT_TYPE, "application/octet-stream")
+                    .body(bytes.to_vec())
+            },
+            true,
+        )?;
+        if response.status().is_success() {
+            return Ok(());
+        }
+        Self::decode::<serde_json::Value>(response).map(|_| ())
+    }
+
+    fn get_file(&self, id: WorkloadId, path: &str) -> PortResult<Vec<u8>> {
+        let route = format!("/v1/workloads/{id}/files/{path}");
+        let response = self.send(|| self.request(Method::GET, &route), true)?;
+        if response.status().is_success() {
+            return response
+                .bytes()
+                .map(|bytes| bytes.to_vec())
+                .map_err(|_| PortError::Unavailable("VMM"));
+        }
+        Self::decode::<serde_json::Value>(response).map(|_| Vec::new())
+    }
+
+    fn endpoints(&self, id: WorkloadId) -> PortResult<Vec<Endpoint>> {
+        let list: EndpointList = self.get(&format!("/v1/workloads/{id}/endpoints"))?;
+        Ok(list.items)
+    }
+
+    fn verify(&self, runtime: &str, request: &str, idempotency_key: &str) -> PortResult<String> {
+        check_key(idempotency_key)?;
+        let body: serde_json::Value = serde_json::from_str(request).map_err(failed)?;
+        let result: serde_json::Value = self.mutate(
+            Method::POST,
+            &format!("/v1/runtimes/{runtime}/verifications"),
+            Some(&body),
+            idempotency_key,
+        )?;
+        Ok(result.to_string())
+    }
+
+    fn logs(&self, id: WorkloadId, after: u64) -> PortResult<Vec<LogRecord>> {
+        let route = format!("/v1/workloads/{id}/logs?follow=false");
+        let response = self.send(
+            || {
+                self.request(Method::GET, &route)
+                    .header("Last-Event-ID", after.to_string())
+            },
+            true,
+        )?;
+        if !response.status().is_success() {
+            return Self::decode::<serde_json::Value>(response).map(|_| Vec::new());
+        }
+        let text = response.text().map_err(|_| PortError::Unavailable("VMM"))?;
+        text.split("\n\n")
+            .filter_map(|block| {
+                block
+                    .lines()
+                    .find_map(|line| line.strip_prefix("data:"))
+                    .map(str::trim_start)
+            })
+            .map(|data| serde_json::from_str::<LogRecord>(data).map_err(failed))
+            .collect()
     }
 }
 

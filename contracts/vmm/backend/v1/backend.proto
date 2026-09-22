@@ -1,0 +1,224 @@
+syntax = "proto3";
+
+// A504: the contract between the provider-neutral `aseman-vmm` service and a VMM
+// backend module (native-legacy, nomad, ...). The service authenticates callers,
+// deduplicates and records every request, and owns operations and reconciliation;
+// a backend does the infrastructure work and holds no Aseman state.
+//
+// Workloads and data-plane payloads are carried as JSON whose schemas are A501's
+// (`contracts/vmm/openapi.json`): one schema, decoded by `aseman-contracts`.
+// Every request carries RequestMetadata (request ID, trace, deadline); every response
+// carries a ModuleError on failure (module/control/v1).
+package aseman.vmm.backend.v1;
+
+import "module/control/v1/control.proto";
+
+enum ObservedState {
+  OBSERVED_STATE_UNSPECIFIED = 0;
+  OBSERVED_STATE_UNKNOWN = 1;
+  OBSERVED_STATE_PENDING = 2;
+  OBSERVED_STATE_RUNNING = 3;
+  OBSERVED_STATE_PAUSED = 4;
+  OBSERVED_STATE_STOPPED = 5;
+  OBSERVED_STATE_FAILED = 6;
+  OBSERVED_STATE_LOST = 7;
+}
+
+enum ReconcileAction {
+  RECONCILE_ACTION_UNSPECIFIED = 0;
+  RECONCILE_ACTION_START = 1;
+  RECONCILE_ACTION_STOP = 2;
+  RECONCILE_ACTION_PAUSE = 3;
+  RECONCILE_ACTION_RESUME = 4;
+  RECONCILE_ACTION_DELETE = 5;
+  RECONCILE_ACTION_RESTART = 6;
+}
+
+message Observation {
+  ObservedState state = 1;
+  // The desired generation the backend acted on (>= 1).
+  uint64 generation = 2;
+  // Backend-local, increasing; orders observations of one generation.
+  uint64 sequence = 3;
+  string reason = 4;
+  int64 observed_at_millis = 5;
+}
+
+message DeployConventions {
+  string entity_file_name = 1;
+  bool accepts_extra_files = 2;
+  bool build_on_deploy = 3;
+}
+
+message RuntimeCapabilities {
+  string runtime = 1;
+  bool invocation = 2;
+  bool long_running = 3;
+  bool pause = 4;
+  bool snapshot = 5;
+  bool exec = 6;
+  bool terminal = 7;
+  bool http_ingress = 8;
+  bool files = 9;
+  bool build = 10;
+  bool chain_transactions = 11;
+  bool execution_proofs = 12;
+  DeployConventions deploy = 13;
+}
+
+message DescribeRequest { aseman.module.control.v1.RequestMetadata meta = 1; }
+message DescribeResponse {
+  string name = 1;
+  string version = 2;
+  // The A504 version the backend speaks, "1".
+  string contract = 3;
+  repeated RuntimeCapabilities runtimes = 4;
+  aseman.module.control.v1.ModuleError error = 5;
+}
+
+// `workload` is the JSON of the VMM's workload record: the A501 `Workload` members
+// plus `owner`, with the write-only bootstrap credential the backend needs to start
+// the instance.
+message StepRequest {
+  aseman.module.control.v1.RequestMetadata meta = 1;
+  bytes workload = 2;
+  ReconcileAction action = 3;
+}
+message StepResponse {
+  Observation observation = 1;
+  aseman.module.control.v1.ModuleError error = 2;
+}
+
+message ObserveAllRequest { aseman.module.control.v1.RequestMetadata meta = 1; }
+message InstanceObservation {
+  string workload_id = 1;
+  Observation observation = 2;
+}
+message ObserveAllResponse {
+  repeated InstanceObservation instances = 1;
+  aseman.module.control.v1.ModuleError error = 2;
+}
+
+// `operation` is the JSON of the VMM's operation record; its `request` member is the
+// A501 request body (Invocation, ExecRequest, BuildRequest, RestoreRequest). The
+// result is the A501 result for the operation's kind.
+message RunRequest {
+  aseman.module.control.v1.RequestMetadata meta = 1;
+  // Empty for builds, which name a runtime instead of a workload.
+  bytes workload = 2;
+  bytes operation = 3;
+}
+message RunResponse {
+  bytes result = 1;
+  aseman.module.control.v1.ModuleError error = 2;
+}
+
+message ForwardHttpRequest {
+  aseman.module.control.v1.RequestMetadata meta = 1;
+  bytes workload = 2;
+  // An A501 HttpRequest.
+  bytes request = 3;
+}
+message ForwardHttpResponse {
+  // An A501 HttpResponse.
+  bytes response = 1;
+  aseman.module.control.v1.ModuleError error = 2;
+}
+
+message PutFileRequest {
+  aseman.module.control.v1.RequestMetadata meta = 1;
+  bytes workload = 2;
+  string path = 3;
+  bytes content = 4;
+}
+message PutFileResponse { aseman.module.control.v1.ModuleError error = 1; }
+
+message GetFileRequest {
+  aseman.module.control.v1.RequestMetadata meta = 1;
+  bytes workload = 2;
+  string path = 3;
+}
+message GetFileResponse {
+  bytes content = 1;
+  aseman.module.control.v1.ModuleError error = 2;
+}
+
+message Endpoint {
+  string name = 1;
+  // "http" or "tcp".
+  string protocol = 2;
+  string address = 3;
+  uint32 port = 4;
+}
+message EndpointsRequest {
+  aseman.module.control.v1.RequestMetadata meta = 1;
+  bytes workload = 2;
+}
+message EndpointsResponse {
+  repeated Endpoint endpoints = 1;
+  aseman.module.control.v1.ModuleError error = 2;
+}
+
+message Usage {
+  int64 window_start_millis = 1;
+  int64 window_end_millis = 2;
+  uint64 sequence = 3;
+  uint64 cpu_millis = 4;
+  uint64 memory_peak_bytes = 5;
+  uint64 network_rx_bytes = 6;
+  uint64 network_tx_bytes = 7;
+  uint64 storage_bytes = 8;
+  uint64 invocations = 9;
+}
+message UsageRequest {
+  aseman.module.control.v1.RequestMetadata meta = 1;
+  bytes workload = 2;
+}
+message UsageResponse {
+  Usage usage = 1;
+  aseman.module.control.v1.ModuleError error = 2;
+}
+
+message LogRecord {
+  uint64 sequence = 1;
+  int64 at_millis = 2;
+  // "stdout", "stderr", "system", or "build".
+  string stream = 3;
+  string line = 4;
+}
+message LogsRequest {
+  aseman.module.control.v1.RequestMetadata meta = 1;
+  bytes workload = 2;
+  uint64 after = 3;
+  uint32 limit = 4;
+}
+message LogsResponse {
+  repeated LogRecord records = 1;
+  aseman.module.control.v1.ModuleError error = 2;
+}
+
+message VerifyRequest {
+  aseman.module.control.v1.RequestMetadata meta = 1;
+  string runtime = 2;
+  // An A501 VerificationRequest.
+  bytes request = 3;
+}
+message VerifyResponse {
+  // An A501 VerificationResult.
+  bytes result = 1;
+  aseman.module.control.v1.ModuleError error = 2;
+}
+
+service VmmBackend {
+  rpc Describe(DescribeRequest) returns (DescribeResponse);
+  rpc Step(StepRequest) returns (StepResponse);
+  rpc ObserveAll(ObserveAllRequest) returns (ObserveAllResponse);
+  rpc Run(RunRequest) returns (RunResponse);
+  rpc ForwardHttp(ForwardHttpRequest) returns (ForwardHttpResponse);
+  rpc PutFile(PutFileRequest) returns (PutFileResponse);
+  rpc GetFile(GetFileRequest) returns (GetFileResponse);
+  rpc Endpoints(EndpointsRequest) returns (EndpointsResponse);
+  rpc Usage(UsageRequest) returns (UsageResponse);
+  rpc Logs(LogsRequest) returns (LogsResponse);
+  rpc Verify(VerifyRequest) returns (VerifyResponse);
+}

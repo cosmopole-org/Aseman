@@ -28,6 +28,9 @@ aseman-capsule-repositories = { path = "../crates/aseman-capsule-repositories" }
 aseman-storage-legacy = { path = "../modules/storage-legacy" }
 aseman-storage-postgres = { path = "../modules/storage-postgres" }
 aseman-policy-native = { path = "../modules/policy-native" }
+aseman-identity-native = { path = "../modules/identity-native" }
+aseman-guest-http = { path = "../modules/guest-http" }
+aseman-vmm-http = { path = "../modules/vmm-http" }
 anyhow = "1.0.102"
 base64 = "0.22.1"
 chacha20poly1305 = "0.10.1"

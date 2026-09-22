@@ -89,6 +89,11 @@ fn authority() -> Option<&'static Authority> {
         .as_ref()
 }
 
+/// The node's policy provider, for use cases that decide themselves.
+pub(crate) fn policy() -> Option<&'static aseman_policy_native::RegistryPolicy> {
+    authority().map(|authority| &authority.policy)
+}
+
 fn text<'a>(input: &'a JsonValue, fields: &[&str]) -> &'a str {
     fields
         .iter()

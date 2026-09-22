@@ -661,7 +661,7 @@ impl Vmm {
                     )
                 }),
             );
-            self.app.tools().vmm().assign(&program_id);
+            self.app.tools().workloads().assign(&program_id);
             let out = json!({
                 "ok": true,
                 "programId": program_id,
@@ -784,9 +784,9 @@ impl Vmm {
                 Ok(())
             }),
         );
-        self.app.tools().vmm().assign(&program_id);
+        self.app.tools().workloads().assign(&program_id);
         if build_on_deploy {
-            self.app.tools().vmm().build_vm_image(
+            self.app.tools().workloads().build_vm_image(
                 &program_id,
                 &entity_id,
                 &build_folder_path,
@@ -1948,10 +1948,10 @@ impl Vmm {
                     .security()
                     .has_access_to_store(&machine_id_owned, &store_id_owned)
                 {
-                    // Run via the IVmm trait so other implementations are not
+                    // Run via the IWorkloads trait so other implementations are not
                     // mandatory; this matches how Go re-entered itself. The entity
                     // is named so the creature's real module is resolved.
-                    app.tools().vmm().run_vm_entity(
+                    app.tools().workloads().run_vm_entity(
                         &machine_id_owned,
                         &store_id_owned,
                         &data_owned,

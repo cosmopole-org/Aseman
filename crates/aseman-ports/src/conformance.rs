@@ -1477,3 +1477,70 @@ pub fn decision_audit(audit: &dyn crate::DecisionAudit) {
     assert_eq!(stream[1].record, record(alice, "condition_not_met", 2_000));
     assert_eq!(audit.stream(bob).unwrap().len(), 1);
 }
+
+/// Exercises [`crate::WorkloadRepository`]: `program` belongs to `creature`, and
+/// `foreign_program` to another creature.
+///
+/// # Panics
+///
+/// Panics when the adapter deviates from the port contract.
+pub fn workload_repository(
+    workloads: &dyn crate::WorkloadRepository,
+    creature: aseman_domain::CreatureId,
+    program: aseman_domain::ProgramId,
+    foreign_program: aseman_domain::ProgramId,
+) {
+    use aseman_domain::{DesiredWorkload, DesiredWorkloadState, Generation, WorkloadId};
+    let workload = DesiredWorkload {
+        id: WorkloadId::new(),
+        creature_id: creature,
+        program_id: program,
+        name: "main/vm-1".to_owned(),
+        runtime: "wasm".to_owned(),
+        generation: Generation::INITIAL,
+        state: DesiredWorkloadState::Running,
+    };
+    assert_eq!(workloads.get_desired(workload.id), Ok(None));
+    workloads.create_desired(&workload).unwrap();
+    assert_eq!(
+        workloads.get_desired(workload.id),
+        Ok(Some(workload.clone()))
+    );
+    assert_eq!(
+        workloads.create_desired(&workload),
+        Err(PortError::Conflict),
+        "an ID exists once"
+    );
+    let same_name = DesiredWorkload {
+        id: WorkloadId::new(),
+        ..workload.clone()
+    };
+    assert_eq!(
+        workloads.create_desired(&same_name),
+        Err(PortError::Conflict),
+        "a name exists once per program"
+    );
+    let crossed = DesiredWorkload {
+        id: WorkloadId::new(),
+        program_id: foreign_program,
+        name: "main/vm-2".to_owned(),
+        ..workload.clone()
+    };
+    assert!(
+        workloads.create_desired(&crossed).is_err(),
+        "a workload never joins another creature's program"
+    );
+    assert_eq!(workloads.get_desired(crossed.id), Ok(None));
+    let mut stopped = workload.clone();
+    stopped.state = DesiredWorkloadState::Stopped;
+    stopped.generation = Generation::INITIAL.next().unwrap();
+    assert_eq!(
+        workloads.put_desired(&stopped, stopped.generation),
+        Err(PortError::Conflict),
+        "compare-and-set on the generation read"
+    );
+    workloads
+        .put_desired(&stopped, Generation::INITIAL)
+        .unwrap();
+    assert_eq!(workloads.get_desired(workload.id), Ok(Some(stopped)));
+}

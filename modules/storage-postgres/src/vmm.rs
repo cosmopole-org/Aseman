@@ -21,6 +21,7 @@ use serde::de::DeserializeOwned;
 use uuid::Uuid;
 
 pub const VMM_MIGRATION: &str = include_str!("../migrations/vmm/0001_vmm.sql");
+pub const VMM_EVENT_TIME_MIGRATION: &str = include_str!("../migrations/vmm/0002_event_time.sql");
 
 type Connection = PooledConnection<PostgresConnectionManager<NoTls>>;
 
@@ -87,6 +88,15 @@ impl PostgresVmmStore {
         let config = url
             .parse::<postgres::Config>()
             .map_err(|_| PortError::Unavailable("invalid VMM database URL"))?;
+        Self::connect_config(config, max_size)
+    }
+
+    /// Connect with an already-parsed configuration.
+    ///
+    /// # Errors
+    ///
+    /// `Unavailable` when the pool cannot be built.
+    pub fn connect_config(config: postgres::Config, max_size: u32) -> PortResult<Self> {
         let pool = Pool::builder()
             .max_size(max_size.max(1))
             .build(PostgresConnectionManager::new(config, NoTls))
@@ -106,7 +116,11 @@ impl PostgresVmmStore {
     ///
     /// Database failures.
     pub fn migrate(&self) -> PortResult<()> {
-        self.connection()?.batch_execute(VMM_MIGRATION).map_err(db)
+        let mut connection = self.connection()?;
+        connection.batch_execute(VMM_MIGRATION).map_err(db)?;
+        connection
+            .batch_execute(VMM_EVENT_TIME_MIGRATION)
+            .map_err(db)
     }
 
     fn workload_rows(
@@ -465,13 +479,14 @@ impl VmmEventLog for PostgresVmmStore {
         event.sequence = u64::try_from(sequence).map_err(failed)?;
         transaction
             .execute(
-                "INSERT INTO aseman_vmm.event (sequence, owner, workload_id, record) \
-                 VALUES ($1, $2, $3, $4)",
+                "INSERT INTO aseman_vmm.event (sequence, owner, workload_id, record, at_millis) \
+                 VALUES ($1, $2, $3, $4, $5)",
                 &[
                     &sequence,
                     &event.owner,
                     event.workload_id.as_uuid(),
                     &encode(&event)?,
+                    &event.at_millis,
                 ],
             )
             .map_err(db)?;
@@ -520,25 +535,30 @@ impl VmmEventLog for PostgresVmmStore {
         })
     }
 
-    fn truncate_through(&self, sequence: u64) -> PortResult<u64> {
-        let sequence = i64::try_from(sequence).map_err(failed)?;
+    fn truncate_before(&self, cutoff_millis: i64) -> PortResult<u64> {
         let mut connection = self.connection()?;
         let mut transaction = connection.transaction().map_err(db)?;
-        let removed = transaction
-            .execute(
-                "DELETE FROM aseman_vmm.event WHERE sequence <= $1",
-                &[&sequence],
-            )
-            .map_err(db)?;
+        // Serialize with appends, so a sequence committed later is never dropped.
         transaction
-            .execute(
-                "UPDATE aseman_vmm.event_log \
-                 SET truncated_through = GREATEST(truncated_through, $1)",
-                &[&sequence],
+            .execute("SELECT 1 FROM aseman_vmm.event_log FOR UPDATE", &[])
+            .map_err(db)?;
+        let dropped = transaction
+            .query(
+                "DELETE FROM aseman_vmm.event WHERE at_millis < $1 RETURNING sequence",
+                &[&cutoff_millis],
             )
             .map_err(db)?;
+        if let Some(highest) = dropped.iter().map(|row| row.get::<_, i64>(0)).max() {
+            transaction
+                .execute(
+                    "UPDATE aseman_vmm.event_log \
+                     SET truncated_through = GREATEST(truncated_through, $1)",
+                    &[&highest],
+                )
+                .map_err(db)?;
+        }
         transaction.commit().map_err(db)?;
-        Ok(removed)
+        Ok(dropped.len() as u64)
     }
 }
 

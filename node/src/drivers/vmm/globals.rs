@@ -1,6 +1,5 @@
 use crate::drivers::vmm::prelude::*;
 use crate::models::core::ICore;
-use std::collections::HashSet;
 
 // ── Single global entry point ─────────────────────────────────────────────────
 //
@@ -245,83 +244,5 @@ mod resource_lock_tests {
             "lock allowed two holders at once"
         );
         assert_eq!(reg.len(), 0, "lock must be reaped once fully quiescent");
-    }
-}
-
-/// Per-VM write-ahead transaction buffer.
-///
-/// One `VmDbBuffer` is created for each Docker/Fire VM execution and stored in
-/// `Vmm::vm_trx`.  All `dbOp` writes are buffered here during the VM's
-/// lifetime and committed atomically via `ICore::modify_state` when the VM
-/// exits (or on an explicit `commitTrx` host call).
-///
-/// Reads check the buffer first (read-your-own-writes) before falling through
-/// to `ICore`.
-pub(crate) struct VmDbBuffer {
-    pub(crate) pending_puts: HashMap<String, String>,
-    pub(crate) pending_dels: HashSet<String>,
-    /// Read-through cache to avoid redundant `ICore` round-trips per key.
-    pub(crate) read_cache: HashMap<String, String>,
-}
-
-impl VmDbBuffer {
-    pub(crate) fn new() -> Self {
-        VmDbBuffer {
-            pending_puts: HashMap::new(),
-            pending_dels: HashSet::new(),
-            read_cache: HashMap::new(),
-        }
-    }
-
-    pub(crate) fn put(&mut self, key: String, val: String) {
-        self.pending_dels.remove(&key);
-        self.read_cache.insert(key.clone(), val.clone());
-        self.pending_puts.insert(key, val);
-    }
-
-    pub(crate) fn del(&mut self, key: String) {
-        self.pending_puts.remove(&key);
-        self.read_cache.remove(&key);
-        self.pending_dels.insert(key);
-    }
-
-    /// Returns `Some(Some(val))` if the key has a pending write,
-    /// `Some(None)` if the key has been deleted, `None` if unknown to this buffer.
-    pub(crate) fn get_local(&self, key: &str) -> Option<Option<&str>> {
-        if self.pending_dels.contains(key) {
-            return Some(None);
-        }
-        if let Some(v) = self.pending_puts.get(key) {
-            return Some(Some(v.as_str()));
-        }
-        None
-    }
-
-    /// Flush all buffered writes through `ICore::modify_state` atomically.
-    pub(crate) fn commit(&mut self) -> Result<(), String> {
-        if self.pending_puts.is_empty() && self.pending_dels.is_empty() {
-            return Ok(());
-        }
-        let puts: Vec<(String, String)> = self.pending_puts.drain().collect();
-        let dels: Vec<String> = self.pending_dels.drain().collect();
-        let ok_slot = Arc::new(Mutex::new(Ok::<(), String>(())));
-        let ok_c = ok_slot.clone();
-        with_global_app(|app| {
-            app.modify_state(
-                false,
-                Box::new(move |trx: &dyn crate::models::transaction::ITrx| {
-                    for (k, v) in &puts {
-                        trx.put_link(k, v);
-                    }
-                    for k in &dels {
-                        trx.del_key(k);
-                    }
-                    *ok_c.lock().unwrap() = Ok(());
-                    Ok(())
-                }),
-            );
-        });
-        let result = { ok_slot.lock().unwrap().clone() };
-        result
     }
 }

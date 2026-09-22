@@ -1,7 +1,7 @@
 ---
 status: GENERATED
 owner: security/authority
-source_of_truth: contracts/security/actions.json (registry 2026-09-22.4)
+source_of_truth: contracts/security/actions.json (registry 2026-09-22.5)
 verification: python3 scripts/generate_security_registry.py --check
 ---
 
@@ -144,7 +144,7 @@ verification: python3 scripts/generate_security_registry.py --check
 | `resource_store.delete` | resource_store | write | user, creature, workload | `owner` or `same_creature` | guest | 2 |
 | `resource_entity.write` | resource_entity | write | user, creature, workload | `owner` or `same_creature` | guest | 1 |
 | `resource_entity.delete` | resource_entity | write | user, creature, workload | `owner` or `same_creature` | guest | 1 |
-| `guest_data.access` | guest_data | write | workload | `same_creature` | guest | 7 |
+| `guest_data.access` | guest_data | write | workload | `same_creature` | guest | 8 |
 | `network.egress` | network | security | workload | `granted` | guest | 2 |
 | `file.upload` | file | write | user, creature, workload | `authenticated` | user | 3 |
 | `file.read` | file | read | user, creature, node, service, workload, module_publisher | `public` | http_public | 2 |

@@ -1,13 +1,18 @@
 [workspace]
 resolver = "2"
+# The backend family directory holds member crates of its own.
+exclude = ["modules/vmm-backend"]
 members = [
+  "apps/*",
   "cmd/casparctl",
   "crates/*",
   "node",
   "node/crates/*",
   "modules/*",
+  "modules/vmm-backend/native-legacy",
   "tests/contracts/module",
   "tests/contracts/policy",
+  "tests/contracts/vmm-backend",
   "tests/contracts/storage",
   "tests/migration",
   "vm-sdk",

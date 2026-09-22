@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "registry_version": "2026-09-22.4",
+  "registry_version": "2026-09-22.5",
   "description": "A402: every Aseman action, its resource type, the subject classes that may hold it, and the least-privilege rule that replaces the legacy guard. Unknown actions deny (ADR 0008).",
   "subjects": [
     "user",
@@ -2358,7 +2358,7 @@
       "id": "guest_data.access",
       "resource": "guest_data",
       "class": "write",
-      "summary": "The creature's own guest data: dbOp, confined documents and links (ADR 0028)",
+      "summary": "The creature's own guest data: dbOp, runtime state (stateOp), confined documents and links (ADR 0021, ADR 0028)",
       "subjects": [
         "workload"
       ],
@@ -2374,7 +2374,8 @@
         "unified-host-call getByPrefix",
         "unified-host-call getJson",
         "unified-host-call getLink",
-        "unified-host-call putJson"
+        "unified-host-call putJson",
+        "unified-host-call stateOp"
       ]
     },
     {

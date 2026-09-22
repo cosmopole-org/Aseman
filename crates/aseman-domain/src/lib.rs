@@ -146,6 +146,10 @@ pub struct DesiredWorkload {
     pub id: WorkloadId,
     pub creature_id: CreatureId,
     pub program_id: ProgramId,
+    /// Unique within the program, for example `{entity}/{vm}`.
+    pub name: String,
+    /// The runtime key the workload runs on.
+    pub runtime: String,
     pub generation: Generation,
     pub state: DesiredWorkloadState,
 }

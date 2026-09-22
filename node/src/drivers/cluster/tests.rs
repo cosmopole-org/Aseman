@@ -118,7 +118,7 @@ struct StubVmm {
     builds: Mutex<Vec<(String, String, String)>>,
 }
 
-impl crate::models::ports::vmm::IVmm for StubVmm {
+impl crate::models::ports::workloads::IWorkloads for StubVmm {
     fn assign(&self, machine_id: &str) {
         self.assigned.lock().unwrap().push(machine_id.to_string());
     }
@@ -259,7 +259,7 @@ impl ITools for StubTools {
     fn network(&self) -> Arc<dyn crate::models::ports::network::INetwork> {
         unimplemented!("network unused by cluster tests")
     }
-    fn vmm(&self) -> Arc<dyn crate::models::ports::vmm::IVmm> {
+    fn workloads(&self) -> Arc<dyn crate::models::ports::workloads::IWorkloads> {
         self.vmm.clone()
     }
     fn rate_limiter(&self) -> Arc<dyn crate::models::ports::ratelimit::IRateLimiter> {

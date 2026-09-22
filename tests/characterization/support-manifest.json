@@ -1471,6 +1471,15 @@
       "current_owner": "unified-host-call",
       "disposition": "rewrite",
       "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "stateOp",
+      "support": "supported-compatibility",
+      "target_owner": "authenticated guest gateway and typed application/VMM ports"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "unified-host-call",
+      "disposition": "rewrite",
+      "expiry": "ADR-0004 window after replacement acceptance",
       "id": "statusVm",
       "support": "supported-compatibility",
       "target_owner": "authenticated guest gateway and typed application/VMM ports"

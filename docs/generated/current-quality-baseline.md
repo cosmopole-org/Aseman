@@ -8,7 +8,7 @@ verification: python3 scripts/generate_quality_baseline.py --check
 
 # Current static quality baseline
 
-Scanned 504 source files, 150486 physical lines, and 140408 nonblank lines.
+Scanned 527 source files, 155762 physical lines, and 145357 nonblank lines.
 
 ## Ratchet counts
 
@@ -16,13 +16,13 @@ Scanned 504 source files, 150486 physical lines, and 140408 nonblank lines.
 |---|---:|
 | `environment_reads` | 3 |
 | `rust_allow_attributes` | 35 |
-| `rust_expect_calls` | 328 |
-| `rust_json_value_mentions` | 1295 |
-| `rust_panic_macros` | 312 |
-| `rust_sleep_calls` | 62 |
-| `rust_spawn_calls` | 73 |
+| `rust_expect_calls` | 343 |
+| `rust_json_value_mentions` | 1322 |
+| `rust_panic_macros` | 315 |
+| `rust_sleep_calls` | 64 |
+| `rust_spawn_calls` | 76 |
 | `rust_unsafe_tokens` | 43 |
-| `rust_unwrap_calls` | 2744 |
+| `rust_unwrap_calls` | 2827 |
 
 These lexical metrics include tests and comments. They establish a reproducible
 ratchet; they do not assert that every occurrence is defective.
@@ -37,17 +37,17 @@ ratchet; they do not assert that every occurrence is defective.
 | `node/src/drivers/network/chain/hashgraph/hashgraph.rs` | 2761 |
 | `vms/elpian/crates/elpian-vm/src/sdk/stdlib/mod.rs` | 2468 |
 | `node/src/drivers/vmm/hostcall_entities.rs` | 2341 |
-| `node/src/drivers/vmm/host/vm_host_functions.rs` | 1962 |
+| `node/src/drivers/vmm/host/vm_host_functions.rs` | 1963 |
 | `vms/modal/src/controller.rs` | 1918 |
 | `cmd/casparctl/src/main.rs` | 1890 |
+| `node/src/shell/api/actions/program.rs` | 1878 |
 | `vms/elpian/crates/elpian-vm/src/sdk/compiler.rs` | 1862 |
-| `node/src/shell/api/actions/program.rs` | 1833 |
 | `client-cli/index.ts` | 1796 |
 | `crates/aseman-contracts/src/capsule.rs` | 1673 |
 | `run-nodes.sh` | 1594 |
 | `crates/aseman-module-runtime/src/lib.rs` | 1581 |
+| `crates/aseman-ports/src/conformance.rs` | 1546 |
 | `node/src/shell/api/actions/creature.rs` | 1545 |
-| `crates/aseman-ports/src/conformance.rs` | 1479 |
 | `modules/vmm-http/src/server.rs` | 1439 |
 | `vms/elpify/crates/elpify-lang/src/compiler.rs` | 1324 |
 | `modules/storage-postgres/src/lib.rs` | 1297 |

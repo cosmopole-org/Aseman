@@ -91,7 +91,7 @@ fn build_stop_input_from_plan(
 ) -> Result<Map<String, Value>> {
     let plan = app
         .tools()
-        .vmm()
+        .workloads()
         .plan_stop_entity(runtime, ctx)
         .map_err(|e| anyhow!(e))?;
     let mut stop_input: Map<String, Value> = plan["input"].as_object().cloned().unwrap_or_default();
@@ -127,7 +127,7 @@ fn build_delete_input_from_plan(
 ) -> Result<Map<String, Value>> {
     let plan = app
         .tools()
-        .vmm()
+        .workloads()
         .plan_delete_entity(runtime, ctx)
         .map_err(|e| anyhow!(e))?;
     let mut delete_input: Map<String, Value> =
@@ -564,7 +564,7 @@ fn terminate_standalone_vm(app: &Arc<dyn ICore>, machine_id: &str, entity_id: &s
                 "key": "terminateVm",
                 "input": stop_input,
             });
-            app_for_closure.tools().vmm().vm_callback(&msg.to_string());
+            app_for_closure.tools().workloads().vm_callback(&msg.to_string());
             Ok(())
         }),
     );
@@ -755,10 +755,13 @@ fn run_program_entity(app: Arc<dyn ICore>) -> Arc<dyn ISecureAction> {
                     true,
                 )?;
             }
-            if !app_for_handler
-                .tools()
-                .vmm()
-                .is_supported_runtime(&entity_type)
+            let remote = crate::shell::workloads::remote();
+            // The remote VMM checks the runtime against its own capabilities.
+            if remote.is_none()
+                && !app_for_handler
+                    .tools()
+                    .workloads()
+                    .is_supported_runtime(&entity_type)
             {
                 return Err(anyhow!("invalid entity type"));
             }
@@ -771,6 +774,23 @@ fn run_program_entity(app: Arc<dyn ICore>) -> Arc<dyn ISecureAction> {
                 &format!("VmInstance::{}::{}::{}", program.id, input.entity_id, vm_id),
                 "true",
             );
+            if let Some(remote) = remote {
+                remote.launch(
+                    &program.id,
+                    &program.machine_id,
+                    &input.entity_id,
+                    &vm_id,
+                    &entity_type,
+                    crate::shell::workloads::LaunchResources {
+                        cpu_cores: resources.cpu_cores,
+                        ram_mb: resources.ram_mb,
+                        disk_gb: resources.disk_gb,
+                        max_exec_time_seconds: resources.max_exec_time_seconds,
+                    },
+                    params.into_iter().collect(),
+                )?;
+                return Ok(json!({"vmId": vm_id}));
+            }
             // Ask the runtime's plugin how to launch this entity: it returns
             // the full runVm input (per-runtime fields included) plus any
             // state links to record — no per-VM logic lives here.
@@ -790,7 +810,7 @@ fn run_program_entity(app: Arc<dyn ICore>) -> Arc<dyn ISecureAction> {
             });
             let plan = app_for_handler
                 .tools()
-                .vmm()
+                .workloads()
                 .plan_run_entity(&entity_type, &ctx)
                 .map_err(|e| anyhow!(e))?;
             if let Some(links) = plan["links"].as_array() {
@@ -809,7 +829,7 @@ fn run_program_entity(app: Arc<dyn ICore>) -> Arc<dyn ISecureAction> {
                     "key": "runVm",
                     "input": run_input,
                 });
-                app_async.tools().vmm().vm_callback(&msg.to_string());
+                app_async.tools().workloads().vm_callback(&msg.to_string());
             });
             Ok(json!({"vmId": vm_id}))
         },
@@ -865,6 +885,18 @@ fn stop_program_entity(app: Arc<dyn ICore>) -> Arc<dyn ISecureAction> {
                 "link::vmStandaloneContainerName::{}::{}",
                 program.id, input.entity_id
             ));
+            if let Some(remote) = crate::shell::workloads::remote() {
+                remote.set_state(
+                    &state.info().user_id(),
+                    crate::shell::workloads::RemoteWorkloads::workload_id(
+                        &program.id,
+                        &input.entity_id,
+                        &vm_id,
+                    ),
+                    aseman_domain::DesiredWorkloadState::Stopped,
+                )?;
+                return Ok(json!({}));
+            }
             // Ask the runtime's plugin how to stop this entity; the plan
             // resolves per-runtime state links (e.g. a recorded container
             // name) and fails when a required link is missing.
@@ -884,7 +916,7 @@ fn stop_program_entity(app: Arc<dyn ICore>) -> Arc<dyn ISecureAction> {
                 "key": "terminateVm",
                 "input": stop_input,
             });
-            app_for_handler.tools().vmm().vm_callback(&msg.to_string());
+            app_for_handler.tools().workloads().vm_callback(&msg.to_string());
             Ok(json!({}))
         },
     )
@@ -947,21 +979,34 @@ fn delete_program_entity(app: Arc<dyn ICore>) -> Arc<dyn ISecureAction> {
                 return Err(anyhow!("vm does not belong to this entity"));
             }
 
-            // Build the delete packet BEFORE dropping the links: the plan
-            // resolves per-runtime state (a recorded container name, a sandbox
-            // id) that only exists while those links do.
-            let ctx = json!({
-                "machineId": input.machine_id,
-                "programId": program.id,
-                "entityId": entity.entity_id,
-                "vmId": vm_id,
-            });
-            let delete_input =
-                build_delete_input_from_plan(&app_for_handler, &*trx, &entity_type, &ctx)?;
-            let result = app_for_handler
-                .tools()
-                .vmm()
-                .delete_vm_instance(&Value::Object(delete_input));
+            let result = if let Some(remote) = crate::shell::workloads::remote() {
+                let generation = remote.set_state(
+                    &state.info().user_id(),
+                    crate::shell::workloads::RemoteWorkloads::workload_id(
+                        &program.id,
+                        &input.entity_id,
+                        &vm_id,
+                    ),
+                    aseman_domain::DesiredWorkloadState::Deleted,
+                )?;
+                json!({"ok": true, "generation": generation})
+            } else {
+                // Build the delete packet BEFORE dropping the links: the plan
+                // resolves per-runtime state (a recorded container name, a
+                // sandbox id) that only exists while those links do.
+                let ctx = json!({
+                    "machineId": input.machine_id,
+                    "programId": program.id,
+                    "entityId": entity.entity_id,
+                    "vmId": vm_id,
+                });
+                let delete_input =
+                    build_delete_input_from_plan(&app_for_handler, &*trx, &entity_type, &ctx)?;
+                app_for_handler
+                    .tools()
+                    .workloads()
+                    .delete_vm_instance(&Value::Object(delete_input))
+            };
             if !result["ok"].as_bool().unwrap_or(false) {
                 let err = result["error"]
                     .as_str()
@@ -1353,7 +1398,7 @@ fn deploy(app: Arc<dyn ICore>) -> Arc<dyn ISecureAction> {
                 )?;
                 // Register the signal listener so the proxy entity actually
                 // receives (and forwards) signals addressed to this program.
-                app_for_handler.tools().vmm().assign(&program.id);
+                app_for_handler.tools().workloads().assign(&program.id);
                 return Ok(json!({
                     "proxy": true,
                     "entityId": input.entity_id,
@@ -1367,12 +1412,12 @@ fn deploy(app: Arc<dyn ICore>) -> Arc<dyn ISecureAction> {
             // unknown runtime means no plugin was compiled into this node.
             let spec = app_for_handler
                 .tools()
-                .vmm()
+                .workloads()
                 .runtime_deploy_spec(&entity_type)
                 .ok_or_else(|| {
                     anyhow!(
                         "invalid entityType, expected one of {}",
-                        app_for_handler.tools().vmm().supported_runtimes().join("|")
+                        app_for_handler.tools().workloads().supported_runtimes().join("|")
                     )
                 })?;
             let primary_file_name = spec["entityFileName"]
@@ -1467,7 +1512,7 @@ fn deploy(app: Arc<dyn ICore>) -> Arc<dyn ISecureAction> {
                 let _ = async_once(move || {
                     app_async
                         .tools()
-                        .vmm()
+                        .workloads()
                         .build_vm_image(&mid, &eid, &path, &etype);
                 });
             }
@@ -1475,7 +1520,7 @@ fn deploy(app: Arc<dyn ICore>) -> Arc<dyn ISecureAction> {
             // this, signals addressed to a creature's program are dropped (no
             // listener) and every creature-to-creature signal silently times
             // out.
-            app_for_handler.tools().vmm().assign(&program.id);
+            app_for_handler.tools().workloads().assign(&program.id);
             aseman_application::program::RecordEntityDeployment {
                 entities: &EntityPorts {
                     trx: &*trx,
@@ -1732,13 +1777,13 @@ fn install_program_bootstrap(app: Arc<dyn ICore>) {
                     == crate::drivers::vmm::proxy::PROXY_RUNTIME_KEY;
                 let is_vm = app_for_closure
                     .tools()
-                    .vmm()
+                    .workloads()
                     .is_supported_runtime(&program.runtime);
                 // Proxy programs are non-runnable, but their signal listener must
                 // still be re-registered on restart so forwarded prompts reach
                 // them; only real VM runtimes additionally replay a pending alarm.
                 if is_proxy || is_vm {
-                    app_for_closure.tools().vmm().assign(&program.id);
+                    app_for_closure.tools().workloads().assign(&program.id);
                 }
                 if is_vm {
                     let pending = aseman_ports::ProgramAlarms::alarm(
@@ -1771,7 +1816,7 @@ fn install_program_bootstrap(app: Arc<dyn ICore>) {
                                 .security()
                                 .has_access_to_store(&machine_id, &store_id_clone)
                             {
-                                app_async.tools().vmm().run_vm_entity(
+                                app_async.tools().workloads().run_vm_entity(
                                     &machine_id,
                                     &store_id_clone,
                                     &alarm_data,

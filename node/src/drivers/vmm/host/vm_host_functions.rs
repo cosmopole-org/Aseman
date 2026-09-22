@@ -37,7 +37,7 @@ fn resolve_cached_vm_hierarchy(packet: &JsonValue, _input: &JsonValue) -> Cached
     }
     with_global_app(|app| {
         app.tools()
-            .vmm()
+            .workloads()
             .get_vm_context(&vm_id)
             .map(|(creature_id, program_id)| CachedVmHierarchy {
                 creature_id,
@@ -126,7 +126,7 @@ pub(crate) fn resolve_host_hierarchy(packet: &JsonValue, input: &JsonValue) -> H
 /// Execute a low-level key-value DB operation for a VM host-call.
 ///
 /// All logic (write-ahead buffering, read-your-own-writes, ICore fallthrough)
-/// lives in `IVmm::vm_db_op` on the `Vmm` struct, which is reached via the
+/// lives in `IWorkloads::vm_db_op` on the `Vmm` struct, which is reached via the
 /// canonical `ICore → tools() → vmm()` path.  This function is a thin
 /// adapter that computes the storage namespace from `HostHierarchy` and
 /// delegates.
@@ -174,7 +174,7 @@ pub(crate) fn run_db_op(ctx: &HostHierarchy, input: &JsonValue) -> Result<String
 
     match with_global_app(|app| {
         app.tools()
-            .vmm()
+            .workloads()
             .vm_db_op(&ctx.vm_id, op, &namespaced_key, val, &ns_prefix)
     }) {
         Some(result) => result,
@@ -638,7 +638,7 @@ pub(crate) fn handle_unified_host_call(packet: &JsonValue) -> String {
             if vm_id.is_empty() {
                 json!({"ok": false, "error": "vmId required for commitTrx"}).to_string()
             } else {
-                match with_global_app(|app| app.tools().vmm().vm_db_commit_explicit(&vm_id)) {
+                match with_global_app(|app| app.tools().workloads().vm_db_commit_explicit(&vm_id)) {
                     Some(Ok(())) => json!({"ok": true}).to_string(),
                     Some(Err(e)) => json!({"ok": false, "error": e}).to_string(),
                     None => json!({"ok": false, "error": "vmm not initialised"}).to_string(),
@@ -646,6 +646,7 @@ pub(crate) fn handle_unified_host_call(packet: &JsonValue) -> String {
             }
         }
         "dbOp" => host_fn_db_op(&ctx, &input),
+        "stateOp" => host_fn_state_op(&ctx, &input),
         "runVm" => host_fn_run_vm(&ctx.program_id, &input),
         "terminateVm" => host_fn_terminate_vm(&input),
         "deleteVm" | "destroyVm" => host_fn_delete_vm(&ctx.program_id, &input),
@@ -853,7 +854,7 @@ pub(crate) fn handle_unified_host_call(packet: &JsonValue) -> String {
 /// Run a registered shell action for the calling creature. `caller` is resolved
 /// by the node from the VM context, and is what an `asSelf` call acts as.
 pub(crate) fn host_fn_exec_shell_action(caller: &str, input: &JsonValue) -> String {
-    match with_global_app(|app| app.tools().vmm().exec_shell_action(caller, input)) {
+    match with_global_app(|app| app.tools().workloads().exec_shell_action(caller, input)) {
         Some(out) => out,
         None => json!({"ok": false, "error": "vmm not initialised"}).to_string(),
     }
@@ -888,9 +889,9 @@ fn host_fn_guest_state(creature: &str, op: &str, input: &JsonValue) -> String {
     }
 }
 
-/// Generic dispatch into `IVmm::host_action_micro` via the canonical tool path.
+/// Generic dispatch into `IWorkloads::host_action_micro` via the canonical tool path.
 pub(crate) fn host_fn_micro(op: &str, input: &JsonValue) -> String {
-    match with_global_app(|app| app.tools().vmm().host_action_micro(op, input, 0).0) {
+    match with_global_app(|app| app.tools().workloads().host_action_micro(op, input, 0).0) {
         Some(out) => out,
         None => json!({"ok": false, "error": "vmm not initialised"}).to_string(),
     }
@@ -1017,13 +1018,13 @@ pub(crate) fn host_fn_secret_list_granted(caller: &str) -> String {
 // Program CRUD reads — the write side (`createProgram`/`deleteProgram`) existed
 // but the read side did not, so a store/miniapp creature could not resolve a
 // program's record + metadata (e.g. an MCP manifest) or enumerate programs.
-// These route through the canonical `IVmm::host_action_program` tool path, the
+// These route through the canonical `IWorkloads::host_action_program` tool path, the
 // same persisted-state mechanism the creature CRUD reads use.
 // --------------------------------------------------------------------------- //
 
-/// Dispatch into `IVmm::host_action_program` via the canonical tool path.
+/// Dispatch into `IWorkloads::host_action_program` via the canonical tool path.
 fn host_fn_program(op: &str, input: &JsonValue) -> String {
-    match with_global_app(|app| app.tools().vmm().host_action_program(op, input, 0).0) {
+    match with_global_app(|app| app.tools().workloads().host_action_program(op, input, 0).0) {
         Some(out) => out,
         None => json!({"ok": false, "error": "vmm not initialised"}).to_string(),
     }
@@ -1033,7 +1034,7 @@ fn host_fn_program(op: &str, input: &JsonValue) -> String {
 pub(crate) fn host_fn_list_store_access(input: &JsonValue) -> String {
     match with_global_app(|app| {
         app.tools()
-            .vmm()
+            .workloads()
             .host_action_store("listAccess", input, 0)
             .0
     }) {
@@ -1062,19 +1063,19 @@ pub(crate) fn host_fn_update_program(input: &JsonValue) -> String {
     host_fn_program("update", input)
 }
 
-/// Dispatch into `IVmm::host_action_resource_store` via the canonical tool path.
+/// Dispatch into `IWorkloads::host_action_resource_store` via the canonical tool path.
 pub(crate) fn host_fn_resource_store(op: &str, input: &JsonValue) -> String {
-    match with_global_app(|app| app.tools().vmm().host_action_resource_store(op, input, 0).0) {
+    match with_global_app(|app| app.tools().workloads().host_action_resource_store(op, input, 0).0) {
         Some(out) => out,
         None => json!({"ok": false, "error": "vmm not initialised"}).to_string(),
     }
 }
 
-/// Dispatch into `IVmm::host_action_resource_entity_create`.
+/// Dispatch into `IWorkloads::host_action_resource_entity_create`.
 pub(crate) fn host_fn_resource_entity_create(input: &JsonValue) -> String {
     match with_global_app(|app| {
         app.tools()
-            .vmm()
+            .workloads()
             .host_action_resource_entity_create(input, 0)
             .0
     }) {
@@ -1083,11 +1084,11 @@ pub(crate) fn host_fn_resource_entity_create(input: &JsonValue) -> String {
     }
 }
 
-/// Dispatch into `IVmm::host_action_resource_entity_delete`.
+/// Dispatch into `IWorkloads::host_action_resource_entity_delete`.
 pub(crate) fn host_fn_resource_entity_delete(input: &JsonValue) -> String {
     match with_global_app(|app| {
         app.tools()
-            .vmm()
+            .workloads()
             .host_action_resource_entity_delete(input, 0)
             .0
     }) {

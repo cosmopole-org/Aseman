@@ -337,11 +337,21 @@ impl VmmEventLog for MemoryVmmStores {
         })
     }
 
-    fn truncate_through(&self, sequence: u64) -> PortResult<u64> {
+    fn truncate_before(&self, cutoff_millis: i64) -> PortResult<u64> {
         let mut state = lock(&self.state);
         let before = state.events.len();
-        state.events.retain(|event| event.sequence > sequence);
-        state.truncated_through = state.truncated_through.max(sequence);
+        let dropped = state
+            .events
+            .iter()
+            .filter(|event| event.at_millis < cutoff_millis)
+            .map(|event| event.sequence)
+            .max();
+        state
+            .events
+            .retain(|event| event.at_millis >= cutoff_millis);
+        if let Some(sequence) = dropped {
+            state.truncated_through = state.truncated_through.max(sequence);
+        }
         Ok((before - state.events.len()) as u64)
     }
 }
@@ -597,18 +607,18 @@ pub fn vmm_stores(
     );
 
     // Events: increasing sequences, owner and workload scoping, resync.
-    let event = |owner: &str, workload| WorkloadEventRecord {
+    let event = |owner: &str, workload, at_millis| WorkloadEventRecord {
         owner: owner.to_owned(),
         sequence: 0,
         workload_id: workload,
-        at_millis: 5,
+        at_millis,
         event_type: WorkloadEventType::Operation,
         observation: None,
         operation: Some(OperationId::new()),
     };
-    let one = events.append(&event("node-a", ids[0])).unwrap();
-    let two = events.append(&event("node-b", foreign)).unwrap();
-    let three = events.append(&event("node-a", ids[1])).unwrap();
+    let one = events.append(&event("node-a", ids[0], 5)).unwrap();
+    let two = events.append(&event("node-b", foreign, 6)).unwrap();
+    let three = events.append(&event("node-a", ids[1], 7)).unwrap();
     assert!(one < two && two < three);
     let mine = events.events_after("node-a", 0, None, 10).unwrap();
     assert!(!mine.resync);
@@ -627,7 +637,8 @@ pub fn vmm_stores(
             .len(),
         1
     );
-    assert_eq!(events.truncate_through(two), Ok(2));
+    assert_eq!(events.truncate_before(7), Ok(2));
+    assert_eq!(events.truncate_before(7), Ok(0), "truncation is idempotent");
     assert!(events.events_after("node-a", 0, None, 10).unwrap().resync);
     assert_eq!(
         events

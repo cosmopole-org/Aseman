@@ -27,9 +27,7 @@
       ]
     },
     "snapshot": {
-      "override": [
-        "restore"
-      ]
+      "never": true
     },
     "exec": {
       "override": [
@@ -137,10 +135,8 @@
       "verification": null
     },
     "restore": {
-      "home": "api",
-      "target": "restoreWorkload",
-      "capability": "snapshot",
-      "note": "",
+      "home": "backend",
+      "note": "Modal's restore re-attaches its own persisted sandbox entries; the native backend uses it when adopting ModalSandbox handles (P6-06, ADR 0022). It never takes snapshots, so no native runtime declares `snapshot`.",
       "status": "open",
       "verification": null
     },

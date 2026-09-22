@@ -346,7 +346,7 @@
       "method": "get_json",
       "mode": "read",
       "note": "ADR 0017 finance epoch record; legacy reconciliation invariants fail closed",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:1252",
+      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:1253",
       "target_kind": "finance.legacy_record"
     },
     {
@@ -490,7 +490,7 @@
       "method": "get_json",
       "mode": "read",
       "note": "ADR 0017 finance epoch record; legacy reconciliation invariants fail closed",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:1545",
+      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:1546",
       "target_kind": "finance.legacy_record"
     },
     {
@@ -499,7 +499,7 @@
       "method": "get_json",
       "mode": "read",
       "note": "ADR 0017 finance epoch record; legacy reconciliation invariants fail closed",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:1632",
+      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:1633",
       "target_kind": "finance.legacy_record"
     },
     {
@@ -508,7 +508,7 @@
       "method": "get_json",
       "mode": "read",
       "note": "ADR 0017 finance epoch record; legacy reconciliation invariants fail closed",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:1721",
+      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:1722",
       "target_kind": "finance.legacy_record"
     },
     {
@@ -535,7 +535,7 @@
       "method": "get_json",
       "mode": "read",
       "note": "ADR 0017 finance epoch record; legacy reconciliation invariants fail closed",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:1826",
+      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:1827",
       "target_kind": "finance.legacy_record"
     },
     {
@@ -545,6 +545,15 @@
       "mode": "write",
       "note": "ADR 0017 finance epoch record; legacy reconciliation invariants fail closed",
       "source": "node/src/drivers/vmm/host/functions/vm_ownership.rs:246",
+      "target_kind": "finance.legacy_record"
+    },
+    {
+      "disposition": "fixture_backed_transform",
+      "logical_template": "Json::VmBilling::{}",
+      "method": "del_json",
+      "mode": "write",
+      "note": "ADR 0017 finance epoch record; legacy reconciliation invariants fail closed",
+      "source": "node/src/shell/api/actions/program.rs:1025",
       "target_kind": "finance.legacy_record"
     },
     {
@@ -598,16 +607,7 @@
       "method": "del_json",
       "mode": "write",
       "note": "ADR 0017 finance epoch record; legacy reconciliation invariants fail closed",
-      "source": "node/src/shell/api/actions/program.rs:859",
-      "target_kind": "finance.legacy_record"
-    },
-    {
-      "disposition": "fixture_backed_transform",
-      "logical_template": "Json::VmBilling::{}",
-      "method": "del_json",
-      "mode": "write",
-      "note": "ADR 0017 finance epoch record; legacy reconciliation invariants fail closed",
-      "source": "node/src/shell/api/actions/program.rs:980",
+      "source": "node/src/shell/api/actions/program.rs:879",
       "target_kind": "finance.legacy_record"
     },
     {
@@ -796,7 +796,7 @@
       "method": "put_link",
       "mode": "write",
       "note": "ADR 0022 VMM-owned observed runtime; handoff inventory; rebuilt by P5 reconciliation (RL-013)",
-      "source": "node/src/shell/api/actions/program.rs:1461",
+      "source": "node/src/shell/api/actions/program.rs:1506",
       "target_kind": null
     },
     {
@@ -805,7 +805,7 @@
       "method": "get_link",
       "mode": "read",
       "note": "ADR 0022 VMM-owned observed runtime; handoff inventory; rebuilt by P5 reconciliation (RL-013)",
-      "source": "node/src/shell/api/actions/program.rs:1106",
+      "source": "node/src/shell/api/actions/program.rs:1151",
       "target_kind": null
     },
     {
@@ -823,7 +823,7 @@
       "method": "get_links_list",
       "mode": "read",
       "note": "ADR 0022 VMM-owned observed runtime; handoff inventory; rebuilt by P5 reconciliation (RL-013)",
-      "source": "node/src/shell/api/actions/program.rs:1009",
+      "source": "node/src/shell/api/actions/program.rs:1054",
       "target_kind": null
     },
     {
@@ -832,7 +832,7 @@
       "method": "put_link",
       "mode": "write",
       "note": "ADR 0022 VMM-owned observed runtime; handoff inventory; rebuilt by P5 reconciliation (RL-013)",
-      "source": "node/src/shell/api/actions/program.rs:770",
+      "source": "node/src/shell/api/actions/program.rs:773",
       "target_kind": null
     },
     {
@@ -841,7 +841,7 @@
       "method": "get_link",
       "mode": "read",
       "note": "ADR 0022 VMM-owned observed runtime; handoff inventory; rebuilt by P5 reconciliation (RL-013)",
-      "source": "node/src/shell/api/actions/program.rs:1103",
+      "source": "node/src/shell/api/actions/program.rs:1148",
       "target_kind": null
     },
     {
@@ -859,7 +859,7 @@
       "method": "get_link",
       "mode": "read",
       "note": "ADR 0022 VMM-owned observed runtime; handoff inventory; rebuilt by P5 reconciliation (RL-013)",
-      "source": "node/src/shell/api/actions/program.rs:1101",
+      "source": "node/src/shell/api/actions/program.rs:1146",
       "target_kind": null
     },
     {
@@ -886,7 +886,7 @@
       "method": "put_link",
       "mode": "write",
       "note": "ADR 0022 VMM-owned observed runtime; handoff inventory; rebuilt by P5 reconciliation (RL-013)",
-      "source": "node/src/shell/api/actions/program.rs:1183",
+      "source": "node/src/shell/api/actions/program.rs:1228",
       "target_kind": null
     },
     {
@@ -1057,6 +1057,15 @@
       "method": "del_key",
       "mode": "write",
       "note": "ADR 0022 derived link verified against its record",
+      "source": "node/src/shell/api/actions/program.rs:1024",
+      "target_kind": null
+    },
+    {
+      "disposition": "derived_index_or_relationship",
+      "logical_template": "link::VmBilling::{}",
+      "method": "del_key",
+      "mode": "write",
+      "note": "ADR 0022 derived link verified against its record",
       "source": "node/src/shell/api/actions/program.rs:436",
       "target_kind": null
     },
@@ -1066,16 +1075,7 @@
       "method": "del_key",
       "mode": "write",
       "note": "ADR 0022 derived link verified against its record",
-      "source": "node/src/shell/api/actions/program.rs:858",
-      "target_kind": null
-    },
-    {
-      "disposition": "derived_index_or_relationship",
-      "logical_template": "link::VmBilling::{}",
-      "method": "del_key",
-      "mode": "write",
-      "note": "ADR 0022 derived link verified against its record",
-      "source": "node/src/shell/api/actions/program.rs:979",
+      "source": "node/src/shell/api/actions/program.rs:878",
       "target_kind": null
     },
     {
@@ -1084,7 +1084,7 @@
       "method": "del_key",
       "mode": "write",
       "note": "ADR 0022 VMM-owned observed runtime; handoff inventory; rebuilt by P5 reconciliation (RL-013)",
-      "source": "node/src/shell/api/actions/program.rs:879",
+      "source": "node/src/shell/api/actions/program.rs:1028",
       "target_kind": null
     },
     {
@@ -1093,7 +1093,7 @@
       "method": "del_key",
       "mode": "write",
       "note": "ADR 0022 VMM-owned observed runtime; handoff inventory; rebuilt by P5 reconciliation (RL-013)",
-      "source": "node/src/shell/api/actions/program.rs:983",
+      "source": "node/src/shell/api/actions/program.rs:911",
       "target_kind": null
     },
     {
@@ -1111,7 +1111,7 @@
       "method": "del_key",
       "mode": "write",
       "note": "ADR 0022 VMM-owned observed runtime; handoff inventory; rebuilt by P5 reconciliation (RL-013)",
-      "source": "node/src/shell/api/actions/program.rs:854",
+      "source": "node/src/shell/api/actions/program.rs:874",
       "target_kind": null
     },
     {
@@ -1120,7 +1120,7 @@
       "method": "del_key",
       "mode": "write",
       "note": "ADR 0022 VMM-owned observed runtime; handoff inventory; rebuilt by P5 reconciliation (RL-013)",
-      "source": "node/src/shell/api/actions/program.rs:982",
+      "source": "node/src/shell/api/actions/program.rs:1027",
       "target_kind": null
     },
     {
@@ -1138,7 +1138,7 @@
       "method": "del_key",
       "mode": "write",
       "note": "ADR 0022 VMM-owned observed runtime; handoff inventory; rebuilt by P5 reconciliation (RL-013)",
-      "source": "node/src/shell/api/actions/program.rs:853",
+      "source": "node/src/shell/api/actions/program.rs:1022",
       "target_kind": null
     },
     {
@@ -1147,7 +1147,7 @@
       "method": "del_key",
       "mode": "write",
       "note": "ADR 0022 VMM-owned observed runtime; handoff inventory; rebuilt by P5 reconciliation (RL-013)",
-      "source": "node/src/shell/api/actions/program.rs:977",
+      "source": "node/src/shell/api/actions/program.rs:873",
       "target_kind": null
     },
     {
@@ -1165,6 +1165,15 @@
       "method": "del_key",
       "mode": "write",
       "note": "ADR 0022 VMM-owned observed runtime; handoff inventory; rebuilt by P5 reconciliation (RL-013)",
+      "source": "node/src/shell/api/actions/program.rs:1021",
+      "target_kind": null
+    },
+    {
+      "disposition": "vmm_observed_runtime",
+      "logical_template": "link::VmStatus::{}",
+      "method": "del_key",
+      "mode": "write",
+      "note": "ADR 0022 VMM-owned observed runtime; handoff inventory; rebuilt by P5 reconciliation (RL-013)",
       "source": "node/src/shell/api/actions/program.rs:431",
       "target_kind": null
     },
@@ -1174,16 +1183,7 @@
       "method": "del_key",
       "mode": "write",
       "note": "ADR 0022 VMM-owned observed runtime; handoff inventory; rebuilt by P5 reconciliation (RL-013)",
-      "source": "node/src/shell/api/actions/program.rs:852",
-      "target_kind": null
-    },
-    {
-      "disposition": "vmm_observed_runtime",
-      "logical_template": "link::VmStatus::{}",
-      "method": "del_key",
-      "mode": "write",
-      "note": "ADR 0022 VMM-owned observed runtime; handoff inventory; rebuilt by P5 reconciliation (RL-013)",
-      "source": "node/src/shell/api/actions/program.rs:976",
+      "source": "node/src/shell/api/actions/program.rs:872",
       "target_kind": null
     },
     {
@@ -1192,7 +1192,7 @@
       "method": "del_key",
       "mode": "write",
       "note": "ADR 0022 VMM-owned observed runtime; handoff inventory; rebuilt by P5 reconciliation (RL-013)",
-      "source": "node/src/shell/api/actions/program.rs:1219",
+      "source": "node/src/shell/api/actions/program.rs:1264",
       "target_kind": null
     },
     {
@@ -1300,7 +1300,7 @@
       "method": "del_key",
       "mode": "write",
       "note": "ADR 0022 VMM-owned observed runtime; handoff inventory; rebuilt by P5 reconciliation (RL-013)",
-      "source": "node/src/shell/api/actions/program.rs:981",
+      "source": "node/src/shell/api/actions/program.rs:1026",
       "target_kind": null
     },
     {
@@ -1327,7 +1327,7 @@
       "method": "del_key",
       "mode": "write",
       "note": "ADR 0022 VMM-owned observed runtime; handoff inventory; rebuilt by P5 reconciliation (RL-013)",
-      "source": "node/src/shell/api/actions/program.rs:864",
+      "source": "node/src/shell/api/actions/program.rs:1036",
       "target_kind": null
     },
     {
@@ -1336,7 +1336,7 @@
       "method": "del_key",
       "mode": "write",
       "note": "ADR 0022 VMM-owned observed runtime; handoff inventory; rebuilt by P5 reconciliation (RL-013)",
-      "source": "node/src/shell/api/actions/program.rs:991",
+      "source": "node/src/shell/api/actions/program.rs:884",
       "target_kind": null
     },
     {
@@ -1345,7 +1345,7 @@
       "method": "del_key",
       "mode": "write",
       "note": "ADR 0022 VMM-owned observed runtime; handoff inventory; rebuilt by P5 reconciliation (RL-013)",
-      "source": "node/src/shell/api/actions/program.rs:860",
+      "source": "node/src/shell/api/actions/program.rs:1032",
       "target_kind": null
     },
     {
@@ -1354,7 +1354,7 @@
       "method": "del_key",
       "mode": "write",
       "note": "ADR 0022 VMM-owned observed runtime; handoff inventory; rebuilt by P5 reconciliation (RL-013)",
-      "source": "node/src/shell/api/actions/program.rs:987",
+      "source": "node/src/shell/api/actions/program.rs:880",
       "target_kind": null
     },
     {
@@ -1588,7 +1588,7 @@
       "method": "get_link",
       "mode": "read",
       "note": "ADR 0022 VMM-owned observed runtime; handoff inventory; rebuilt by P5 reconciliation (RL-013)",
-      "source": "node/src/drivers/vmm/driver.rs:193",
+      "source": "node/src/drivers/vmm/driver.rs:205",
       "target_kind": null
     },
     {
@@ -1615,7 +1615,7 @@
       "method": "get_link",
       "mode": "read",
       "note": "ADR 0012/0022 OpenRaft replication scope; placement belongs to the P6 scheduler",
-      "source": "node/src/drivers/vmm/driver.rs:196",
+      "source": "node/src/drivers/vmm/driver.rs:208",
       "target_kind": null
     },
     {
@@ -1624,7 +1624,7 @@
       "method": "put_link",
       "mode": "write",
       "note": "ADR 0012/0022 OpenRaft replication scope; placement belongs to the P6 scheduler",
-      "source": "node/src/shell/api/actions/program.rs:1502",
+      "source": "node/src/shell/api/actions/program.rs:1547",
       "target_kind": null
     },
     {
@@ -1651,7 +1651,7 @@
       "method": "put_link",
       "mode": "write",
       "note": "ADR 0012/0022 OpenRaft replication scope; placement belongs to the P6 scheduler",
-      "source": "node/src/shell/api/actions/program.rs:1506",
+      "source": "node/src/shell/api/actions/program.rs:1551",
       "target_kind": null
     },
     {
@@ -1799,7 +1799,7 @@
       "logical_template": "::{}",
       "note": "ADR 0022 VM family key helper or delete path",
       "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/shell/api/actions/program.rs:1010"
+      "source": "node/src/shell/api/actions/program.rs:1055"
     },
     {
       "disposition": "covered_by_reviewed_family",
@@ -2191,21 +2191,21 @@
       "logical_template": "Json::FinanceHold::{hold_id_c}",
       "note": "heuristic match of a reviewed family: ADR 0017 finance epoch",
       "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:1545"
+      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:1546"
     },
     {
       "disposition": "covered_by_reviewed_family",
       "logical_template": "Json::FinanceHold::{hold_id_c}",
       "note": "heuristic match of a reviewed family: ADR 0017 finance epoch",
       "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:1632"
+      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:1633"
     },
     {
       "disposition": "covered_by_reviewed_family",
       "logical_template": "Json::FinanceHold::{hold_id_c}",
       "note": "heuristic match of a reviewed family: ADR 0017 finance epoch",
       "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:1721"
+      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:1722"
     },
     {
       "disposition": "covered_by_reviewed_family",
@@ -2247,7 +2247,7 @@
       "logical_template": "Json::FinancePool::{pool_id_c}",
       "note": "heuristic match of a reviewed family: ADR 0017 finance epoch",
       "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:1826"
+      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:1827"
     },
     {
       "disposition": "covered_by_reviewed_family",
@@ -2289,6 +2289,13 @@
       "logical_template": "Json::VmBilling::{}",
       "note": "heuristic match of a reviewed family: ADR 0017 finance epoch",
       "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/shell/api/actions/program.rs:1025"
+    },
+    {
+      "disposition": "covered_by_reviewed_family",
+      "logical_template": "Json::VmBilling::{}",
+      "note": "heuristic match of a reviewed family: ADR 0017 finance epoch",
+      "review_status": "candidate; caller association may be indirect",
       "source": "node/src/shell/api/actions/program.rs:318"
     },
     {
@@ -2324,14 +2331,7 @@
       "logical_template": "Json::VmBilling::{}",
       "note": "heuristic match of a reviewed family: ADR 0017 finance epoch",
       "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/shell/api/actions/program.rs:859"
-    },
-    {
-      "disposition": "covered_by_reviewed_family",
-      "logical_template": "Json::VmBilling::{}",
-      "note": "heuristic match of a reviewed family: ADR 0017 finance epoch",
-      "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/shell/api/actions/program.rs:980"
+      "source": "node/src/shell/api/actions/program.rs:879"
     },
     {
       "disposition": "covered_by_reviewed_family",
@@ -2436,14 +2436,14 @@
       "logical_template": "Secret::{}::{}",
       "note": "heuristic match of a reviewed family: ADR 0022 VM state",
       "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:931"
+      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:932"
     },
     {
       "disposition": "covered_by_reviewed_family",
       "logical_template": "SecretGrant::{}::{}::{}",
       "note": "heuristic match of a reviewed family: ADR 0022 VM state",
       "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:932"
+      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:933"
     },
     {
       "disposition": "covered_by_reviewed_family",
@@ -2548,21 +2548,21 @@
       "logical_template": "VmBuilds::{}::",
       "note": "heuristic match of a reviewed family: ADR 0022 VM state",
       "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/shell/api/actions/program.rs:1236"
+      "source": "node/src/shell/api/actions/program.rs:1281"
     },
     {
       "disposition": "covered_by_reviewed_family",
       "logical_template": "VmBuilds::{}::{}",
       "note": "heuristic match of a reviewed family: ADR 0022 VM state",
       "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/shell/api/actions/program.rs:1461"
+      "source": "node/src/shell/api/actions/program.rs:1506"
     },
     {
       "disposition": "covered_by_reviewed_family",
       "logical_template": "VmContainerName::{}::{}::{}",
       "note": "heuristic match of a reviewed family: ADR 0022 VM state",
       "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/shell/api/actions/program.rs:1106"
+      "source": "node/src/shell/api/actions/program.rs:1151"
     },
     {
       "disposition": "covered_by_reviewed_family",
@@ -2597,21 +2597,21 @@
       "logical_template": "VmInstance::{}::{}::",
       "note": "heuristic match of a reviewed family: ADR 0022 VM state",
       "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/shell/api/actions/program.rs:1092"
+      "source": "node/src/shell/api/actions/program.rs:1137"
     },
     {
       "disposition": "covered_by_reviewed_family",
       "logical_template": "VmInstance::{}::{}::{}",
       "note": "heuristic match of a reviewed family: ADR 0022 VM state",
       "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/shell/api/actions/program.rs:771"
+      "source": "node/src/shell/api/actions/program.rs:774"
     },
     {
       "disposition": "covered_by_reviewed_family",
       "logical_template": "VmInstance::{}::{}::{}",
       "note": "heuristic match of a reviewed family: ADR 0022 VM state",
       "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/shell/api/actions/program.rs:945"
+      "source": "node/src/shell/api/actions/program.rs:977"
     },
     {
       "disposition": "covered_by_reviewed_family",
@@ -2625,7 +2625,7 @@
       "logical_template": "VmStartedAt::{}",
       "note": "heuristic match of a reviewed family: ADR 0022 VM state",
       "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/shell/api/actions/program.rs:1103"
+      "source": "node/src/shell/api/actions/program.rs:1148"
     },
     {
       "disposition": "covered_by_reviewed_family",
@@ -2639,7 +2639,7 @@
       "logical_template": "VmStatus::{}",
       "note": "heuristic match of a reviewed family: ADR 0022 VM state",
       "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/shell/api/actions/program.rs:1101"
+      "source": "node/src/shell/api/actions/program.rs:1146"
     },
     {
       "disposition": "covered_by_reviewed_family",
@@ -2667,7 +2667,7 @@
       "logical_template": "VmTerminal::{}::{}::{}",
       "note": "heuristic match of a reviewed family: ADR 0022 VM state",
       "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/shell/api/actions/program.rs:1184"
+      "source": "node/src/shell/api/actions/program.rs:1229"
     },
     {
       "disposition": "covered_by_reviewed_family",
@@ -2842,6 +2842,13 @@
       "logical_template": "link::VmBilling::{}",
       "note": "heuristic match of a reviewed family: ADR 0022 VM state",
       "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/shell/api/actions/program.rs:1024"
+    },
+    {
+      "disposition": "covered_by_reviewed_family",
+      "logical_template": "link::VmBilling::{}",
+      "note": "heuristic match of a reviewed family: ADR 0022 VM state",
+      "review_status": "candidate; caller association may be indirect",
       "source": "node/src/shell/api/actions/program.rs:436"
     },
     {
@@ -2849,28 +2856,21 @@
       "logical_template": "link::VmBilling::{}",
       "note": "heuristic match of a reviewed family: ADR 0022 VM state",
       "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/shell/api/actions/program.rs:858"
-    },
-    {
-      "disposition": "covered_by_reviewed_family",
-      "logical_template": "link::VmBilling::{}",
-      "note": "heuristic match of a reviewed family: ADR 0022 VM state",
-      "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/shell/api/actions/program.rs:979"
+      "source": "node/src/shell/api/actions/program.rs:878"
     },
     {
       "disposition": "covered_by_reviewed_family",
       "logical_template": "link::VmContainerName::{}::{}::{}",
       "note": "heuristic match of a reviewed family: ADR 0022 VM state",
       "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/shell/api/actions/program.rs:879"
+      "source": "node/src/shell/api/actions/program.rs:1028"
     },
     {
       "disposition": "covered_by_reviewed_family",
       "logical_template": "link::VmContainerName::{}::{}::{}",
       "note": "heuristic match of a reviewed family: ADR 0022 VM state",
       "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/shell/api/actions/program.rs:983"
+      "source": "node/src/shell/api/actions/program.rs:911"
     },
     {
       "disposition": "covered_by_reviewed_family",
@@ -2884,14 +2884,14 @@
       "logical_template": "link::VmInstance::{}::{}::{}",
       "note": "heuristic match of a reviewed family: ADR 0022 VM state",
       "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/shell/api/actions/program.rs:854"
+      "source": "node/src/shell/api/actions/program.rs:874"
     },
     {
       "disposition": "covered_by_reviewed_family",
       "logical_template": "link::VmOwnerProgram::{}",
       "note": "heuristic match of a reviewed family: ADR 0022 VM state",
       "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/shell/api/actions/program.rs:982"
+      "source": "node/src/shell/api/actions/program.rs:1027"
     },
     {
       "disposition": "covered_by_reviewed_family",
@@ -2905,14 +2905,14 @@
       "logical_template": "link::VmStartedAt::{}",
       "note": "heuristic match of a reviewed family: ADR 0022 VM state",
       "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/shell/api/actions/program.rs:853"
+      "source": "node/src/shell/api/actions/program.rs:1022"
     },
     {
       "disposition": "covered_by_reviewed_family",
       "logical_template": "link::VmStartedAt::{}",
       "note": "heuristic match of a reviewed family: ADR 0022 VM state",
       "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/shell/api/actions/program.rs:977"
+      "source": "node/src/shell/api/actions/program.rs:873"
     },
     {
       "disposition": "covered_by_reviewed_family",
@@ -2926,6 +2926,13 @@
       "logical_template": "link::VmStatus::{}",
       "note": "heuristic match of a reviewed family: ADR 0022 VM state",
       "review_status": "candidate; caller association may be indirect",
+      "source": "node/src/shell/api/actions/program.rs:1021"
+    },
+    {
+      "disposition": "covered_by_reviewed_family",
+      "logical_template": "link::VmStatus::{}",
+      "note": "heuristic match of a reviewed family: ADR 0022 VM state",
+      "review_status": "candidate; caller association may be indirect",
       "source": "node/src/shell/api/actions/program.rs:431"
     },
     {
@@ -2933,21 +2940,14 @@
       "logical_template": "link::VmStatus::{}",
       "note": "heuristic match of a reviewed family: ADR 0022 VM state",
       "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/shell/api/actions/program.rs:852"
-    },
-    {
-      "disposition": "covered_by_reviewed_family",
-      "logical_template": "link::VmStatus::{}",
-      "note": "heuristic match of a reviewed family: ADR 0022 VM state",
-      "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/shell/api/actions/program.rs:976"
+      "source": "node/src/shell/api/actions/program.rs:872"
     },
     {
       "disposition": "covered_by_reviewed_family",
       "logical_template": "link::VmTerminal::{}::{}::{}",
       "note": "heuristic match of a reviewed family: ADR 0022 VM state",
       "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/shell/api/actions/program.rs:1219"
+      "source": "node/src/shell/api/actions/program.rs:1264"
     },
     {
       "disposition": "covered_by_reviewed_family",
@@ -3031,7 +3031,7 @@
       "logical_template": "link::vmDistributed::{}",
       "note": "heuristic match of a reviewed family: ADR 0022 VM state",
       "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/shell/api/actions/program.rs:981"
+      "source": "node/src/shell/api/actions/program.rs:1026"
     },
     {
       "disposition": "covered_by_reviewed_family",
@@ -3052,28 +3052,28 @@
       "logical_template": "link::vmStandaloneContainerName::{}::{}",
       "note": "heuristic match of a reviewed family: ADR 0022 VM state",
       "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/shell/api/actions/program.rs:864"
+      "source": "node/src/shell/api/actions/program.rs:1036"
     },
     {
       "disposition": "covered_by_reviewed_family",
       "logical_template": "link::vmStandaloneContainerName::{}::{}",
       "note": "heuristic match of a reviewed family: ADR 0022 VM state",
       "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/shell/api/actions/program.rs:991"
+      "source": "node/src/shell/api/actions/program.rs:884"
     },
     {
       "disposition": "covered_by_reviewed_family",
       "logical_template": "link::vmStandaloneImageName::{}::{}",
       "note": "heuristic match of a reviewed family: ADR 0022 VM state",
       "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/shell/api/actions/program.rs:860"
+      "source": "node/src/shell/api/actions/program.rs:1032"
     },
     {
       "disposition": "covered_by_reviewed_family",
       "logical_template": "link::vmStandaloneImageName::{}::{}",
       "note": "heuristic match of a reviewed family: ADR 0022 VM state",
       "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/shell/api/actions/program.rs:987"
+      "source": "node/src/shell/api/actions/program.rs:880"
     },
     {
       "disposition": "covered_by_reviewed_family",
@@ -3367,7 +3367,7 @@
       "logical_template": "vmDistributed::{}",
       "note": "heuristic match of a reviewed family: ADR 0022 VM state",
       "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/drivers/vmm/driver.rs:193"
+      "source": "node/src/drivers/vmm/driver.rs:205"
     },
     {
       "disposition": "covered_by_reviewed_family",
@@ -3388,14 +3388,14 @@
       "logical_template": "vmDistribution::{}",
       "note": "heuristic match of a reviewed family: ADR 0022 VM state",
       "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/drivers/vmm/driver.rs:196"
+      "source": "node/src/drivers/vmm/driver.rs:208"
     },
     {
       "disposition": "covered_by_reviewed_family",
       "logical_template": "vmDistribution::{}",
       "note": "heuristic match of a reviewed family: ADR 0022 VM state",
       "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/shell/api/actions/program.rs:1503"
+      "source": "node/src/shell/api/actions/program.rs:1548"
     },
     {
       "disposition": "covered_by_reviewed_family",
@@ -3416,7 +3416,7 @@
       "logical_template": "vmDistribution::{}::{}",
       "note": "heuristic match of a reviewed family: ADR 0022 VM state",
       "review_status": "candidate; caller association may be indirect",
-      "source": "node/src/shell/api/actions/program.rs:1507"
+      "source": "node/src/shell/api/actions/program.rs:1552"
     },
     {
       "disposition": "covered_by_reviewed_family",

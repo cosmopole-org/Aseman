@@ -1826,6 +1826,10 @@
       },
       {
         "gateway": "unified-host-call",
+        "operation": "stateOp"
+      },
+      {
+        "gateway": "unified-host-call",
         "operation": "statusVm"
       },
       {

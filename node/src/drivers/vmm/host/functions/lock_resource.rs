@@ -4,7 +4,7 @@ use serde_json::{json, Value as JsonValue};
 fn acquire_resource_lock(resource_id: &str, owner_id: &str) -> Result<(), String> {
     match with_global_app(|app| {
         app.tools()
-            .vmm()
+            .workloads()
             .acquire_resource_lock(resource_id, owner_id)
     }) {
         Some(result) => result,
@@ -15,7 +15,7 @@ fn acquire_resource_lock(resource_id: &str, owner_id: &str) -> Result<(), String
 fn release_resource_lock(resource_id: &str, owner_id: &str) -> Result<(), String> {
     match with_global_app(|app| {
         app.tools()
-            .vmm()
+            .workloads()
             .release_resource_lock(resource_id, owner_id)
     }) {
         Some(result) => result,

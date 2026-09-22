@@ -14,7 +14,7 @@ This records current legacy surfaces. It is not the target HTTP/VMM contract.
 
 - Signed shell actions: 77
 - HTTP routes/patterns: 31
-- Guest host operations and aliases: 111
+- Guest host operations and aliases: 112
 - A node-facing VMM control API does not currently exist.
 - Federation carries signed action paths over a custom framed transport.
 
@@ -78,21 +78,21 @@ This records current legacy surfaces. It is not the target HTTP/VMM contract.
 | `/gateway/signal` | `GatewaySignalInput` | `node/src/shell/api/actions/gateway.rs:249` |
 | `/gateway/subscribe` | `GatewaySubscribeInput` | `node/src/shell/api/actions/gateway.rs:178` |
 | `/gateway/unsubscribe` | `GatewayUnsubscribeInput` | `node/src/shell/api/actions/gateway.rs:224` |
-| `/machines/closeVmTerminal` | `VmTerminalInput` | `node/src/shell/api/actions/program.rs:1198` |
-| `/machines/list` | `ListInput` | `node/src/shell/api/actions/program.rs:1585` |
-| `/machines/listEntityVms` | `RunProgramEntityInput` | `node/src/shell/api/actions/program.rs:1060` |
-| `/machines/listProgramMachines` | `ListAppMachsInput` | `node/src/shell/api/actions/program.rs:1664` |
-| `/machines/openVmTerminal` | `VmTerminalInput` | `node/src/shell/api/actions/program.rs:1162` |
-| `/machines/readMachineBuilds` | `MachineBuildsInput` | `node/src/shell/api/actions/program.rs:1231` |
-| `/machines/readVmLogs` | `ReadVmLogsInput` | `node/src/shell/api/actions/program.rs:1002` |
+| `/machines/closeVmTerminal` | `VmTerminalInput` | `node/src/shell/api/actions/program.rs:1243` |
+| `/machines/list` | `ListInput` | `node/src/shell/api/actions/program.rs:1630` |
+| `/machines/listEntityVms` | `RunProgramEntityInput` | `node/src/shell/api/actions/program.rs:1105` |
+| `/machines/listProgramMachines` | `ListAppMachsInput` | `node/src/shell/api/actions/program.rs:1709` |
+| `/machines/openVmTerminal` | `VmTerminalInput` | `node/src/shell/api/actions/program.rs:1207` |
+| `/machines/readMachineBuilds` | `MachineBuildsInput` | `node/src/shell/api/actions/program.rs:1276` |
+| `/machines/readVmLogs` | `ReadVmLogsInput` | `node/src/shell/api/actions/program.rs:1047` |
 | `/programs/create` | `CreateMachineInput` | `node/src/shell/api/actions/program.rs:575` |
 | `/programs/delete` | `DeleteProgramInput` | `node/src/shell/api/actions/program.rs:611` |
-| `/programs/deleteEntity` | `RunProgramEntityInput` | `node/src/shell/api/actions/program.rs:908` |
-| `/programs/deploy` | `DeployInput` | `node/src/shell/api/actions/program.rs:1305` |
-| `/programs/downloadEntity` | `DownloadEntityInput` | `node/src/shell/api/actions/program.rs:1543` |
-| `/programs/list` | `ListInput` | `node/src/shell/api/actions/program.rs:1642` |
+| `/programs/deleteEntity` | `RunProgramEntityInput` | `node/src/shell/api/actions/program.rs:940` |
+| `/programs/deploy` | `DeployInput` | `node/src/shell/api/actions/program.rs:1350` |
+| `/programs/downloadEntity` | `DownloadEntityInput` | `node/src/shell/api/actions/program.rs:1588` |
+| `/programs/list` | `ListInput` | `node/src/shell/api/actions/program.rs:1687` |
 | `/programs/runEntity` | `RunProgramEntityInput` | `node/src/shell/api/actions/program.rs:667` |
-| `/programs/stopEntity` | `RunProgramEntityInput` | `node/src/shell/api/actions/program.rs:821` |
+| `/programs/stopEntity` | `RunProgramEntityInput` | `node/src/shell/api/actions/program.rs:841` |
 | `/programs/update` | `UpdateProgramInput` | `node/src/shell/api/actions/program.rs:634` |
 | `/storage/upload` | `StorageUploadInput` | `node/src/shell/api/actions/creature.rs:896` |
 | `/stores/getAccess` | `GetAccessInput` | `node/src/shell/api/actions/store.rs:241` |

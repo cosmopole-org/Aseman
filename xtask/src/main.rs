@@ -202,6 +202,16 @@ fn fast(root: &Path) -> Result<()> {
             "aseman-policy-native",
             "-p",
             "aseman-policy-conformance",
+            "-p",
+            "aseman-vmm-http",
+            "-p",
+            "aseman-vmm-backend-grpc",
+            "-p",
+            "aseman-vmm-backend-conformance",
+            "-p",
+            "aseman-guest-http",
+            "-p",
+            "aseman-vmm",
         ],
     )?;
     run(
@@ -243,6 +253,16 @@ fn fast(root: &Path) -> Result<()> {
             "aseman-policy-native",
             "-p",
             "aseman-policy-conformance",
+            "-p",
+            "aseman-vmm-http",
+            "-p",
+            "aseman-vmm-backend-grpc",
+            "-p",
+            "aseman-vmm-backend-conformance",
+            "-p",
+            "aseman-guest-http",
+            "-p",
+            "aseman-vmm",
             "--all-targets",
             "--",
             "-D",
@@ -254,5 +274,21 @@ fn fast(root: &Path) -> Result<()> {
 fn full(root: &Path) -> Result<()> {
     run(root, "cargo", &["check", "-p", "caspar-node", "--bins"])?;
     run(root, "cargo", &["test", "-p", "caspar-node", "--lib"])?;
+    // The native backend links every runtime plugin, as the node does.
+    run(root, "cargo", &["test", "-p", "aseman-vmm-backend-native"])?;
+    run(
+        root,
+        "cargo",
+        &[
+            "clippy",
+            "-p",
+            "aseman-vmm-backend-native",
+            "--all-targets",
+            "--no-deps",
+            "--",
+            "-D",
+            "warnings",
+        ],
+    )?;
     run(root, "cargo", &["test", "-p", "casparctl"])
 }

@@ -21,7 +21,7 @@ a runtime does not support is refused with `unsupported_operation` (A501).
 | elpify | yes | no | no | no | no | no | no | no | yes | no | yes | `module.elpify.js` | yes |
 | fire | yes | yes | no | no | yes | no | no | yes | yes | no | no | `module.wasm` | no |
 | javascript | yes | yes | no | no | no | no | no | no | yes | yes | no | `module.js` | no |
-| modal | yes | yes | no | yes | yes | no | yes | yes | yes | no | no | `Modalfile` | no |
+| modal | yes | yes | no | no | yes | no | yes | yes | yes | no | no | `Modalfile` | no |
 | wasm | yes | no | no | no | no | no | no | no | yes | yes | no | `module.wasm` | no |
 
 ## Where each legacy operation goes
@@ -50,7 +50,7 @@ Status: 73 open.
 | `plan_delete_entity` | backend |  | open | Delete planning is the backend's. |
 | `plan_run_entity` | backend |  | open | Launch planning is the backend's; the node sends a complete spec. |
 | `plan_stop_entity` | backend |  | open | Stop planning is the backend's. |
-| `restore` | api | `restoreWorkload` | open |  |
+| `restore` | backend |  | open | Modal's restore re-attaches its own persisted sandbox entries; the native backend uses it when adopting ModalSandbox handles (P6-06, ADR 0022). It never takes snapshots, so no native runtime declares `snapshot`. |
 | `resume` | api | `resumeWorkload` | open |  |
 | `run_vm` | api | `invokeWorkload` | open |  |
 | `start` | api | `startWorkload` | open |  |

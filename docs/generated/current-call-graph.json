@@ -874,7 +874,7 @@
       "request_type": "VmTerminalInput",
       "routes_via_chain": false,
       "services": [],
-      "source": "node/src/shell/api/actions/program.rs:1196",
+      "source": "node/src/shell/api/actions/program.rs:1241",
       "spawns_background_work": false,
       "transaction_operations": [
         "del_key"
@@ -889,7 +889,7 @@
       "request_type": "ListInput",
       "routes_via_chain": false,
       "services": [],
-      "source": "node/src/shell/api/actions/program.rs:1583",
+      "source": "node/src/shell/api/actions/program.rs:1628",
       "spawns_background_work": false,
       "transaction_operations": [],
       "vmm_operations": []
@@ -902,7 +902,7 @@
       "request_type": "RunProgramEntityInput",
       "routes_via_chain": false,
       "services": [],
-      "source": "node/src/shell/api/actions/program.rs:1058",
+      "source": "node/src/shell/api/actions/program.rs:1103",
       "spawns_background_work": false,
       "transaction_operations": [
         "get_link",
@@ -918,7 +918,7 @@
       "request_type": "ListAppMachsInput",
       "routes_via_chain": false,
       "services": [],
-      "source": "node/src/shell/api/actions/program.rs:1662",
+      "source": "node/src/shell/api/actions/program.rs:1707",
       "spawns_background_work": false,
       "transaction_operations": [],
       "vmm_operations": []
@@ -931,7 +931,7 @@
       "request_type": "VmTerminalInput",
       "routes_via_chain": false,
       "services": [],
-      "source": "node/src/shell/api/actions/program.rs:1160",
+      "source": "node/src/shell/api/actions/program.rs:1205",
       "spawns_background_work": false,
       "transaction_operations": [
         "put_link"
@@ -946,7 +946,7 @@
       "request_type": "MachineBuildsInput",
       "routes_via_chain": false,
       "services": [],
-      "source": "node/src/shell/api/actions/program.rs:1229",
+      "source": "node/src/shell/api/actions/program.rs:1274",
       "spawns_background_work": false,
       "transaction_operations": [
         "get_links_list"
@@ -963,7 +963,7 @@
       "services": [
         "storage"
       ],
-      "source": "node/src/shell/api/actions/program.rs:999",
+      "source": "node/src/shell/api/actions/program.rs:1044",
       "spawns_background_work": false,
       "transaction_operations": [
         "get_links_list"
@@ -1006,7 +1006,7 @@
       "request_type": "RunProgramEntityInput",
       "routes_via_chain": false,
       "services": [],
-      "source": "node/src/shell/api/actions/program.rs:906",
+      "source": "node/src/shell/api/actions/program.rs:938",
       "spawns_background_work": false,
       "transaction_operations": [
         "del_json",
@@ -1028,7 +1028,7 @@
         "storage",
         "vmm"
       ],
-      "source": "node/src/shell/api/actions/program.rs:1302",
+      "source": "node/src/shell/api/actions/program.rs:1347",
       "spawns_background_work": true,
       "transaction_operations": [
         "put_link"
@@ -1047,7 +1047,7 @@
       "services": [
         "storage"
       ],
-      "source": "node/src/shell/api/actions/program.rs:1541",
+      "source": "node/src/shell/api/actions/program.rs:1586",
       "spawns_background_work": false,
       "transaction_operations": [],
       "vmm_operations": []
@@ -1060,7 +1060,7 @@
       "request_type": "ListInput",
       "routes_via_chain": false,
       "services": [],
-      "source": "node/src/shell/api/actions/program.rs:1640",
+      "source": "node/src/shell/api/actions/program.rs:1685",
       "spawns_background_work": false,
       "transaction_operations": [],
       "vmm_operations": []
@@ -1094,7 +1094,7 @@
       "services": [
         "vmm"
       ],
-      "source": "node/src/shell/api/actions/program.rs:818",
+      "source": "node/src/shell/api/actions/program.rs:838",
       "spawns_background_work": false,
       "transaction_operations": [
         "del_json",

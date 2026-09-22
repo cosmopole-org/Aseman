@@ -746,7 +746,7 @@ pub(crate) mod tests {
     use crate::models::ports::security::ISecurity;
     use crate::models::ports::signaler::ISignaler;
     use crate::models::ports::tools::ITools;
-    use crate::models::ports::vmm::IVmm;
+    use crate::models::ports::workloads::IWorkloads;
     use std::sync::Arc;
 
     // ---- minimal `ICore` stub for unit tests -------------------------------
@@ -1214,7 +1214,7 @@ pub(crate) mod tests {
         _: Option<Arc<dyn INetwork>>,
         _: Option<Arc<dyn ISecurity>>,
         _: Option<Arc<dyn ISignaler>>,
-        _: Option<Arc<dyn IVmm>>,
+        _: Option<Arc<dyn IWorkloads>>,
     ) {
     }
 }

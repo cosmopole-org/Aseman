@@ -73,7 +73,33 @@ fn install_core_storage(config: &AsemanConfig) -> anyhow::Result<()> {
     crate::shell::api::model::guest_data::install_postgres(
         aseman_storage_postgres::guest::PostgresGuestKv::new(router),
         aseman_storage_postgres::PostgresCapsuleRepository::connect(&url)?,
-    )
+    )?;
+    // Program entities run on the configured VMM; their host calls come back through
+    // the guest API (P5-03, P5-04).
+    if let Some(vmm) = &config.vmm {
+        crate::shell::workloads::install(vmm, &config.node.id, &url, &config.storage.root_path)?;
+    }
+    Ok(())
+}
+
+/// `aseman-node vmm-handoff ...`: the operator's ADR 0022 handoff of legacy VM
+/// instances to the configured VMM (run while the node is stopped). Returns the exit
+/// status.
+pub fn vmm_handoff(arguments: &[String]) -> i32 {
+    let config = match AsemanConfig::from_process_with_dotenv(".env") {
+        Ok(config) => config,
+        Err(error) => {
+            eprintln!("invalid Aseman configuration: {error}");
+            return 2;
+        }
+    };
+    match crate::shell::workloads::handoff(&config, arguments) {
+        Ok(()) => 0,
+        Err(error) => {
+            eprintln!("vmm-handoff: {error}");
+            1
+        }
+    }
 }
 
 /// Run the legacy node composition while use cases move behind Aseman ports.
@@ -228,7 +254,7 @@ pub fn run() {
         );
         let programs = programs_slot.lock().unwrap().clone();
         for program_id in &programs {
-            app.tools().vmm().assign(program_id);
+            app.tools().workloads().assign(program_id);
         }
         if !programs.is_empty() {
             eprintln!(
@@ -258,7 +284,7 @@ pub fn run() {
     // (DB/storage ops, outbound HTTP, signalling) and every inbound signal flows
     // over it. Disabled when the port is unset/zero.
     app.tools()
-        .vmm()
+        .workloads()
         .start_docker_gateway(i64::from(config.network.docker_gateway_port));
 
     // ── VMM HTTP ingress ──────────────────────────────────────────────────────
@@ -268,7 +294,7 @@ pub fn run() {
     // the container's HTTP server, every other runtime falls back to signalling
     // the VM. Disabled when the port is unset/zero.
     app.tools()
-        .vmm()
+        .workloads()
         .start_http_ingress(i64::from(config.network.vm_http_ingress_port));
 
     // ── Public file storage HTTP server ───────────────────────────────────────

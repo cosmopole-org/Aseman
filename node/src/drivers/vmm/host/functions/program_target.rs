@@ -19,18 +19,7 @@ use crate::drivers::vmm::host::functions::vm_ownership::program_owner_user;
 use crate::models::transaction::ITrx;
 use crate::shell::api::model::Creature;
 
-/// Host ops whose `programId` names the program being operated ON.
-pub(crate) const PROGRAM_TARGET_OPS: &[&str] = &[
-    "deployEntity",
-    "deploy entity",
-    "deleteProgram",
-    "deleteOwnedProgram",
-    "updateProgram",
-    "getProgram",
-];
-
-/// Where a program op's target travels while `programId` carries the caller.
-pub(crate) const TARGET_PROGRAM_ID_KEY: &str = "targetProgramId";
+pub(crate) use aseman_contracts::guest_api::{PROGRAM_TARGET_OPS, TARGET_PROGRAM_ID_KEY};
 
 /// Ops that only read, and are not narrowed by ownership.
 const READ_ONLY_PROGRAM_OPS: &[&str] = &["getProgram"];

@@ -142,29 +142,7 @@ pub(crate) fn owns_vm_instance(program_id: &str, vm_id: &str) -> bool {
     hit
 }
 
-/// Host ops whose `vmId` names the VM being operated ON, not the caller.
-pub(crate) const VM_TARGET_OPS: &[&str] = &[
-    "runVm",
-    "execVm",
-    "execDocker",
-    "statusVm",
-    "terminateVm",
-    "deleteVm",
-    "destroyVm",
-    "copyToVm",
-    "copyToDocker",
-    "copyFromVm",
-    "vmEndpoints",
-];
-
-/// Where a VM op's target travels while `vmId` carries the caller's identity.
-///
-/// The node resolves the CALLER from `vmId` (a docker container's is stamped by
-/// the gateway), and the VM ops read their TARGET from the same field. A caller
-/// naming another VM therefore sends it here, and
-/// [`apply_vm_target`] moves it into `vmId` only after the caller has been
-/// resolved and authorized against it.
-pub(crate) const TARGET_VM_ID_KEY: &str = "targetVmId";
+pub(crate) use aseman_contracts::guest_api::{TARGET_VM_ID_KEY, VM_TARGET_OPS};
 
 /// Whether `caller_program_id` may act on `vm_id`: the program that launched
 /// it, a sibling program of the same owner, or the program `/programs/runEntity`

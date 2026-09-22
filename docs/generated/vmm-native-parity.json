@@ -100,7 +100,7 @@
       "invocation": true,
       "long_running": true,
       "pause": false,
-      "snapshot": true,
+      "snapshot": false,
       "exec": true,
       "terminal": false,
       "http_ingress": true,

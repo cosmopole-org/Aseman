@@ -17,7 +17,7 @@
 //! The ingress is a *pure HTTP adapter*: it parses the request, resolves the
 //! identity segments (through the VMM for the custom-route form), and hands the
 //! packaged request to its owning node
-//! instance's VMM via `self.app.tools().vmm().forward_http(..)`. It never
+//! instance's VMM via `self.app.tools().workloads().forward_http(..)`. It never
 //! reaches into the packet router or plugin registry itself, so it carries no
 //! process-wide state and is scoped entirely to the `ICore` instance it was
 //! constructed with. The VMM's `forward_http` resolves the entity's runtime
@@ -191,7 +191,7 @@ impl VmHttpIngress {
             "bodyBase64": BASE64_STANDARD.encode(&req.body),
         });
 
-        let value = self.app.tools().vmm().forward_http(&request);
+        let value = self.app.tools().workloads().forward_http(&request);
 
         if value["ok"].as_bool() != Some(true) {
             let err = value["error"]
@@ -230,7 +230,7 @@ impl VmHttpIngress {
     /// leading segment is a creature *id*, which is never a username.
     fn resolve_identity(&self, path: &str) -> Option<IdentitySegments> {
         if let Some((first, rest)) = split_first_segment(path) {
-            if let Some(route) = self.app.tools().vmm().resolve_http_route(first, rest) {
+            if let Some(route) = self.app.tools().workloads().resolve_http_route(first, rest) {
                 let program_id = route["programId"].as_str().unwrap_or("").to_string();
                 let entity_id = route["entityId"].as_str().unwrap_or("").to_string();
                 if !program_id.is_empty() && !entity_id.is_empty() {

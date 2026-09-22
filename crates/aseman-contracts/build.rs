@@ -8,6 +8,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         contracts.join("module/provider/v1/provider.proto"),
         contracts.join("module/sample/v1/sample.proto"),
         contracts.join("capsule/provider/v1/storage.proto"),
+        contracts.join("vmm/backend/v1/backend.proto"),
     ];
     for input in &inputs {
         println!("cargo:rerun-if-changed={}", input.display());

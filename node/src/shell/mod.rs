@@ -11,3 +11,4 @@ pub(crate) mod authority;
 pub mod kasper;
 pub mod storage_http;
 pub mod utils;
+pub(crate) mod workloads;

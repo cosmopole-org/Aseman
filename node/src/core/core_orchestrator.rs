@@ -52,7 +52,7 @@ use crate::models::ports::security::ISecurity;
 use crate::models::ports::signaler::ISignaler;
 use crate::models::ports::storage::IStorage;
 use crate::models::ports::tools::ITools;
-use crate::models::ports::vmm::IVmm;
+use crate::models::ports::workloads::IWorkloads;
 use crate::models::transaction::ITrx;
 use crate::models::worker::Trx as WorkerTrx;
 use crate::shell::api::model::Program;
@@ -70,7 +70,7 @@ pub struct Tools {
     signaler: Arc<dyn ISignaler>,
     storage: Arc<dyn IStorage>,
     network: Arc<dyn INetwork>,
-    vmm: Arc<dyn IVmm>,
+    vmm: Arc<dyn IWorkloads>,
     rate_limiter: Arc<dyn IRateLimiter>,
 }
 
@@ -87,7 +87,7 @@ impl ITools for Tools {
     fn network(&self) -> Arc<dyn INetwork> {
         self.network.clone()
     }
-    fn vmm(&self) -> Arc<dyn IVmm> {
+    fn workloads(&self) -> Arc<dyn IWorkloads> {
         self.vmm.clone()
     }
     fn rate_limiter(&self) -> Arc<dyn IRateLimiter> {
@@ -250,7 +250,7 @@ impl Core {
                 }),
             );
             let runtime_type = runtime_slot.lock().unwrap().clone();
-            if self.tools().vmm().is_supported_runtime(&runtime_type) {
+            if self.tools().workloads().is_supported_runtime(&runtime_type) {
                 let listeners = self.tools().signaler().listeners();
                 let listener = listeners.get(machine_id).map(|e| e.value().clone());
                 if let Some(listener) = listener {
@@ -273,11 +273,11 @@ impl Core {
                 // Only in-process (managed) runtimes are cold-started to
                 // handle a chain message; externally supervised VMs are
                 // reached via their live gateway listeners above.
-                if trans.tools().vmm().is_managed_runtime(&runtime_clone) {
+                if trans.tools().workloads().is_managed_runtime(&runtime_clone) {
                     let data = String::from_utf8_lossy(&payload).into_owned();
                     trans
                         .tools()
-                        .vmm()
+                        .workloads()
                         .run_vm(&machine_id_owned, &store_id, &data);
                 }
             });
@@ -573,7 +573,7 @@ impl ICore for Core {
         if let Some(tools) = self.tools.lock().unwrap().clone() {
             tools.network().chain().close();
             // The key/value store and the private QuestDB pool close on drop via their Arc owners.
-            tools.vmm().close_kvdb();
+            tools.workloads().close_kvdb();
         }
     }
     fn plant_chain_trigger(
@@ -629,10 +629,10 @@ impl ICore for Core {
         // declares chain-transaction support.
         let chain_trxs: Vec<WorkerTrx> = pending
             .into_iter()
-            .filter(|t| self.tools().vmm().runtime_supports_chain_trxs(&t.runtime))
+            .filter(|t| self.tools().workloads().runtime_supports_chain_trxs(&t.runtime))
             .collect();
         if !chain_trxs.is_empty() {
-            self.tools().vmm().execute_chain_trxs_group(chain_trxs);
+            self.tools().workloads().execute_chain_trxs_group(chain_trxs);
         }
     }
     fn ip_addr(&self) -> String {
@@ -804,7 +804,6 @@ impl Core {
 
     /// Runtime start phase invoked after load/module initialization.
     pub fn run(self: &Arc<Self>) {
-        crate::drivers::vmm::bootstrap::run();
     }
 
     /// Strongly-typed `Load`. Run once on startup after the constructor.
@@ -862,7 +861,7 @@ impl Core {
             chain.clone(),
             tls_cfg,
         );
-        let vmm: Arc<dyn IVmm> =
+        let vmm: Arc<dyn IWorkloads> =
             Vmm::new(self.clone(), storage_root, storage.clone(), applet_db_path);
 
         // Stage 2 — federation needs storage/signaler.

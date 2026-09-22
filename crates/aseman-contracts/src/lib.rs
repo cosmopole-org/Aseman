@@ -5,6 +5,7 @@ use serde::{Deserialize, Serialize};
 
 pub mod capsule;
 pub mod guest;
+pub mod guest_api;
 pub mod identity;
 pub mod legacy_documents;
 pub mod legacy_gateway;
@@ -44,12 +45,20 @@ pub mod aseman {
             }
         }
     }
+    pub mod vmm {
+        pub mod backend {
+            pub mod v1 {
+                tonic::include_proto!("aseman.vmm.backend.v1");
+            }
+        }
+    }
 }
 
 pub use aseman::capsule::provider::v1 as capsule_provider_v1;
 pub use aseman::module::control::v1 as module_control_v1;
 pub use aseman::module::provider::v1 as module_provider_v1;
 pub use aseman::module::sample::v1 as module_sample_v1;
+pub use aseman::vmm::backend::v1 as vmm_backend_v1;
 
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub struct ContractVersion {

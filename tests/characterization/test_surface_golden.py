@@ -46,7 +46,8 @@ class SurfaceGoldenTest(unittest.TestCase):
         self.assertEqual(len(guest_operations), len(set(guest_operations)))
         self.assertEqual(len(http_routes), len(set(http_routes)))
         self.assertEqual(len(runtime_keys), len(set(runtime_keys)))
-        self.assertEqual(111, len(guest_operations))
+        # 112: `stateOp` (P5-04) serves remote runtimes' creature-scoped state.
+        self.assertEqual(112, len(guest_operations))
         self.assertEqual(31, len(http_routes))
         self.assertEqual(7, len(runtime_keys))
 

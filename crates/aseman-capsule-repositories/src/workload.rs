@@ -14,6 +14,7 @@ use aseman_domain::{
     BindingStatus, CreatureDatabaseBinding, CreatureId, DesiredWorkload, DesiredWorkloadState,
     Generation, ProgramId, Uuid, WorkloadId,
 };
+use aseman_ports::guest::LegacyWorkloadRefs;
 use aseman_ports::{CreatureDatabaseBindings, PortError, PortResult, WorkloadRepository};
 use std::collections::BTreeMap;
 
@@ -63,6 +64,47 @@ fn target(capsule: &CapsuleEnvelope, name: &str) -> PortResult<[u8; 16]> {
 }
 
 impl WorkloadRepository for CapsuleWorkloads<'_> {
+    fn create_desired(&self, workload: &DesiredWorkload) -> PortResult<()> {
+        let creature = *workload.creature_id.as_uuid().as_bytes();
+        let program = *workload.program_id.as_uuid().as_bytes();
+        let program_capsule = Capsules(self.repository)
+            .live(PROGRAM, program)?
+            .ok_or_else(|| failed("the workload's program does not exist"))?;
+        if target(&program_capsule, "creature")? != creature {
+            return Err(failed("the workload's program belongs to another creature"));
+        }
+        let fields = BTreeMap::from([
+            (
+                "workload_name".to_owned(),
+                CapsuleValue::Text(workload.name.clone()),
+            ),
+            (
+                "runtime".to_owned(),
+                CapsuleValue::Text(workload.runtime.clone()),
+            ),
+            (
+                "desired_state".to_owned(),
+                CapsuleValue::Text(state_name(workload.state).to_owned()),
+            ),
+            (
+                "desired_generation".to_owned(),
+                CapsuleValue::Integer(i64::try_from(workload.generation.get()).map_err(failed)?),
+            ),
+        ]);
+        let capsule = new_capsule(
+            *workload.id.as_uuid().as_bytes(),
+            WORKLOAD,
+            StorageClass::Core,
+            OwnerScope::Creature(creature),
+            vec![
+                relationship("program", PROGRAM, program),
+                relationship("creature", CREATURE, creature),
+            ],
+            fields,
+        )?;
+        self.repository.put(&capsule, None).map_err(port_error)
+    }
+
     fn get_desired(&self, id: WorkloadId) -> PortResult<Option<DesiredWorkload>> {
         let capsules = Capsules(self.repository);
         let Some(capsule) = capsules.live(WORKLOAD, *id.as_uuid().as_bytes())? else {
@@ -82,6 +124,8 @@ impl WorkloadRepository for CapsuleWorkloads<'_> {
             id,
             creature_id: CreatureId::from_uuid(Uuid::from_bytes(creature)),
             program_id: ProgramId::from_uuid(Uuid::from_bytes(program)),
+            name: text(fields, "workload_name"),
+            runtime: text(fields, "runtime"),
             generation: Generation::from_stored(integer(fields, "desired_generation")?)
                 .map_err(failed)?,
             state: state(&text(fields, "desired_state"))?,
@@ -114,6 +158,16 @@ impl WorkloadRepository for CapsuleWorkloads<'_> {
             }
         }
         Err(PortError::Conflict)
+    }
+}
+
+impl LegacyWorkloadRefs for CapsuleWorkloads<'_> {
+    fn legacy_refs(&self, workload: &DesiredWorkload) -> PortResult<(String, String)> {
+        let capsules = Capsules(self.repository);
+        Ok((
+            capsules.legacy_id_of(CREATURE, *workload.creature_id.as_uuid().as_bytes())?,
+            capsules.legacy_id_of(PROGRAM, *workload.program_id.as_uuid().as_bytes())?,
+        ))
     }
 }
 

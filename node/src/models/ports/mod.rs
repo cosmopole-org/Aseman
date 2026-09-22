@@ -10,4 +10,4 @@ pub mod security;
 pub mod signaler;
 pub mod storage;
 pub mod tools;
-pub mod vmm;
+pub mod workloads;

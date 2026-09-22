@@ -40,10 +40,9 @@
       "client-cli/package-lock.json"
     ],
     "tracked_dist_file_count": 15,
-    "tracked_file_count": 746,
+    "tracked_file_count": 827,
     "tracked_files_by_top_level": {
       ".cargo": 1,
-      ".claude": 1,
       ".gitattributes": 1,
       ".github": 1,
       ".gitignore": 1,
@@ -57,34 +56,126 @@
       "client-cli": 6,
       "clippy.toml": 1,
       "cmd": 7,
-      "contracts": 60,
-      "crates": 51,
+      "contracts": 69,
+      "crates": 78,
       "dist": 15,
-      "docs": 88,
-      "modules": 53,
-      "node": 287,
+      "docs": 101,
+      "modules": 73,
+      "node": 295,
       "plan": 18,
       "run-nodes.sh": 1,
       "rust-toolchain.toml": 1,
       "rustfmt.toml": 1,
-      "scripts": 16,
+      "scripts": 18,
       "sdk": 10,
       "stop-nodes.sh": 1,
-      "tests": 16,
+      "tests": 19,
       "vm-sdk": 8,
       "vms": 80,
       "wiki": 11,
       "xtask": 3
     },
     "tracked_source_files_by_extension": {
-      ".py": 21,
-      ".rs": 420,
+      ".py": 23,
+      ".rs": 470,
       ".sh": 6,
       ".ts": 1
     }
   },
   "rust": {
     "packages": [
+      {
+        "dependencies": [
+          {
+            "name": "aseman-application",
+            "path": "crates/aseman-application",
+            "scope": "normal"
+          },
+          {
+            "name": "aseman-config",
+            "path": "crates/aseman-config",
+            "scope": "normal"
+          },
+          {
+            "name": "aseman-contracts",
+            "path": "crates/aseman-contracts",
+            "scope": "normal"
+          },
+          {
+            "name": "aseman-ports",
+            "path": "crates/aseman-ports",
+            "scope": "normal"
+          },
+          {
+            "name": "aseman-storage-postgres",
+            "path": "modules/storage-postgres",
+            "scope": "normal"
+          },
+          {
+            "name": "aseman-vmm-backend-grpc",
+            "path": "modules/vmm-backend-grpc",
+            "scope": "normal"
+          },
+          {
+            "name": "aseman-vmm-http",
+            "path": "modules/vmm-http",
+            "scope": "normal"
+          },
+          {
+            "default-features": false,
+            "features": [
+              "http1",
+              "tokio"
+            ],
+            "name": "axum",
+            "scope": "normal",
+            "version": "0.7.9"
+          },
+          {
+            "default-features": false,
+            "features": [
+              "ring",
+              "std",
+              "tls12"
+            ],
+            "name": "rustls",
+            "scope": "normal",
+            "version": "0.23"
+          },
+          {
+            "name": "rustls-pemfile",
+            "scope": "normal",
+            "version": "2"
+          },
+          {
+            "features": [
+              "net",
+              "signal",
+              "sync",
+              "time"
+            ],
+            "name": "tokio",
+            "scope": "normal"
+          }
+        ],
+        "description": "The provider-neutral VMM service (plan 04, ADR 0029): A501 over mutual TLS, with its backend behind A504.",
+        "edition": {
+          "workspace": true
+        },
+        "features": {},
+        "manifest": "apps/aseman-vmm/Cargo.toml",
+        "name": "aseman-vmm",
+        "targets": [
+          {
+            "kind": "bin",
+            "name": "aseman-vmm",
+            "path": "src/main.rs"
+          }
+        ],
+        "version": {
+          "workspace": true
+        }
+      },
       {
         "dependencies": [
           {
@@ -517,6 +608,139 @@
       {
         "dependencies": [
           {
+            "name": "aseman-application",
+            "path": "crates/aseman-application",
+            "scope": "normal"
+          },
+          {
+            "name": "aseman-contracts",
+            "path": "crates/aseman-contracts",
+            "scope": "normal"
+          },
+          {
+            "name": "aseman-domain",
+            "path": "crates/aseman-domain",
+            "scope": "normal"
+          },
+          {
+            "name": "aseman-ports",
+            "path": "crates/aseman-ports",
+            "scope": "normal"
+          },
+          {
+            "default-features": false,
+            "features": [
+              "http1",
+              "tokio"
+            ],
+            "name": "axum",
+            "scope": "normal",
+            "version": "0.7.9"
+          },
+          {
+            "features": [
+              "http1",
+              "server"
+            ],
+            "name": "hyper",
+            "scope": "normal",
+            "version": "1"
+          },
+          {
+            "features": [
+              "http1",
+              "server",
+              "service",
+              "tokio"
+            ],
+            "name": "hyper-util",
+            "scope": "normal",
+            "version": "0.1"
+          },
+          {
+            "default-features": false,
+            "features": [
+              "blocking",
+              "rustls-tls"
+            ],
+            "name": "reqwest",
+            "scope": "normal",
+            "version": "0.12"
+          },
+          {
+            "default-features": false,
+            "features": [
+              "ring",
+              "std",
+              "tls12"
+            ],
+            "name": "rustls",
+            "scope": "normal",
+            "version": "0.23"
+          },
+          {
+            "name": "serde_json",
+            "scope": "normal"
+          },
+          {
+            "features": [
+              "sync"
+            ],
+            "name": "tokio",
+            "scope": "normal"
+          },
+          {
+            "default-features": false,
+            "features": [
+              "ring",
+              "tls12"
+            ],
+            "name": "tokio-rustls",
+            "scope": "normal",
+            "version": "0.26"
+          },
+          {
+            "default-features": false,
+            "features": [
+              "util"
+            ],
+            "name": "tower",
+            "scope": "normal",
+            "version": "0.5"
+          },
+          {
+            "default-features": false,
+            "features": [
+              "crypto",
+              "pem",
+              "ring"
+            ],
+            "name": "rcgen",
+            "scope": "dev",
+            "version": "0.14"
+          }
+        ],
+        "description": "The guest API transport (A405, P5-04): the node's signed-request server and the workload-side client.",
+        "edition": {
+          "workspace": true
+        },
+        "features": {},
+        "manifest": "modules/guest-http/Cargo.toml",
+        "name": "aseman-guest-http",
+        "targets": [
+          {
+            "kind": "lib",
+            "name": "aseman-guest-http",
+            "path": "src/lib.rs"
+          }
+        ],
+        "version": {
+          "workspace": true
+        }
+      },
+      {
+        "dependencies": [
+          {
             "name": "aseman-contracts",
             "path": "crates/aseman-contracts",
             "scope": "normal"
@@ -875,6 +1099,236 @@
       {
         "dependencies": [
           {
+            "name": "aseman-config",
+            "path": "crates/aseman-config",
+            "scope": "normal"
+          },
+          {
+            "name": "aseman-contracts",
+            "path": "crates/aseman-contracts",
+            "scope": "normal"
+          },
+          {
+            "name": "aseman-domain",
+            "path": "crates/aseman-domain",
+            "scope": "normal"
+          },
+          {
+            "name": "aseman-guest-http",
+            "path": "modules/guest-http",
+            "scope": "normal"
+          },
+          {
+            "name": "aseman-ports",
+            "path": "crates/aseman-ports",
+            "scope": "normal"
+          },
+          {
+            "name": "aseman-vmm-backend-grpc",
+            "path": "modules/vmm-backend-grpc",
+            "scope": "normal"
+          },
+          {
+            "name": "base64",
+            "scope": "normal"
+          },
+          {
+            "name": "caspar-vm-plugins",
+            "path": "node/crates/caspar-vm-plugins",
+            "scope": "normal"
+          },
+          {
+            "name": "caspar-vm-sdk",
+            "path": "vm-sdk",
+            "scope": "normal"
+          },
+          {
+            "name": "serde",
+            "scope": "normal"
+          },
+          {
+            "name": "serde_json",
+            "scope": "normal"
+          },
+          {
+            "name": "sha2",
+            "scope": "normal"
+          },
+          {
+            "features": [
+              "net",
+              "signal"
+            ],
+            "name": "tokio",
+            "scope": "normal"
+          },
+          {
+            "features": [
+              "net"
+            ],
+            "name": "tokio-stream",
+            "scope": "normal",
+            "version": "0.1"
+          },
+          {
+            "name": "tonic",
+            "scope": "normal"
+          },
+          {
+            "name": "aseman-application",
+            "path": "crates/aseman-application",
+            "scope": "dev"
+          },
+          {
+            "name": "aseman-guest-http",
+            "path": "modules/guest-http",
+            "scope": "dev"
+          },
+          {
+            "features": [
+              "conformance"
+            ],
+            "name": "aseman-ports",
+            "path": "crates/aseman-ports",
+            "scope": "dev"
+          },
+          {
+            "name": "aseman-vmm-backend-conformance",
+            "path": "tests/contracts/vmm-backend",
+            "scope": "dev"
+          },
+          {
+            "default-features": false,
+            "features": [
+              "crypto",
+              "pem",
+              "ring"
+            ],
+            "name": "rcgen",
+            "scope": "dev",
+            "version": "0.14"
+          },
+          {
+            "default-features": false,
+            "features": [
+              "ring",
+              "std",
+              "tls12"
+            ],
+            "name": "rustls",
+            "scope": "dev",
+            "version": "0.23"
+          }
+        ],
+        "description": "The native-legacy VMM backend (P5-03): the Caspar runtime plugins behind A504, calling the node only through the authenticated guest API.",
+        "edition": {
+          "workspace": true
+        },
+        "features": {},
+        "manifest": "modules/vmm-backend/native-legacy/Cargo.toml",
+        "name": "aseman-vmm-backend-native",
+        "targets": [
+          {
+            "kind": "bin",
+            "name": "aseman-vmm-backend-native",
+            "path": "src/main.rs"
+          },
+          {
+            "kind": "lib",
+            "name": "aseman-vmm-backend-native",
+            "path": "src/lib.rs"
+          }
+        ],
+        "version": {
+          "workspace": true
+        }
+      },
+      {
+        "dependencies": [
+          {
+            "name": "aseman-contracts",
+            "path": "crates/aseman-contracts",
+            "scope": "normal"
+          },
+          {
+            "name": "aseman-domain",
+            "path": "crates/aseman-domain",
+            "scope": "normal"
+          },
+          {
+            "name": "aseman-ports",
+            "path": "crates/aseman-ports",
+            "scope": "normal"
+          },
+          {
+            "name": "serde_json",
+            "scope": "normal"
+          },
+          {
+            "features": [
+              "sync"
+            ],
+            "name": "tokio",
+            "scope": "normal"
+          },
+          {
+            "name": "tonic",
+            "scope": "normal"
+          },
+          {
+            "name": "uuid",
+            "scope": "normal"
+          },
+          {
+            "features": [
+              "conformance"
+            ],
+            "name": "aseman-ports",
+            "path": "crates/aseman-ports",
+            "scope": "dev"
+          },
+          {
+            "name": "aseman-vmm-backend-conformance",
+            "path": "tests/contracts/vmm-backend",
+            "scope": "dev"
+          },
+          {
+            "features": [
+              "net"
+            ],
+            "name": "tokio",
+            "scope": "dev"
+          },
+          {
+            "features": [
+              "net"
+            ],
+            "name": "tokio-stream",
+            "scope": "dev",
+            "version": "0.1"
+          }
+        ],
+        "description": "The A504 VMM-backend transport: serve a VmmBackend over gRPC, and the VMM service's client for it.",
+        "edition": {
+          "workspace": true
+        },
+        "features": {},
+        "manifest": "modules/vmm-backend-grpc/Cargo.toml",
+        "name": "aseman-vmm-backend-grpc",
+        "targets": [
+          {
+            "kind": "lib",
+            "name": "aseman-vmm-backend-grpc",
+            "path": "src/lib.rs"
+          }
+        ],
+        "version": {
+          "workspace": true
+        }
+      },
+      {
+        "dependencies": [
+          {
             "name": "aseman-application",
             "path": "crates/aseman-application",
             "scope": "normal"
@@ -1075,6 +1529,16 @@
             "scope": "normal"
           },
           {
+            "name": "aseman-guest-http",
+            "path": "modules/guest-http",
+            "scope": "normal"
+          },
+          {
+            "name": "aseman-identity-native",
+            "path": "modules/identity-native",
+            "scope": "normal"
+          },
+          {
             "name": "aseman-module-runtime",
             "path": "crates/aseman-module-runtime",
             "scope": "normal"
@@ -1102,6 +1566,11 @@
           {
             "name": "aseman-storage-postgres",
             "path": "modules/storage-postgres",
+            "scope": "normal"
+          },
+          {
+            "name": "aseman-vmm-http",
+            "path": "modules/vmm-http",
             "scope": "normal"
           },
           {
@@ -1522,6 +1991,41 @@
           {
             "kind": "lib",
             "name": "aseman-storage-conformance",
+            "path": "src/lib.rs"
+          }
+        ],
+        "version": {
+          "workspace": true
+        }
+      },
+      {
+        "dependencies": [
+          {
+            "name": "aseman-domain",
+            "path": "crates/aseman-domain",
+            "scope": "normal"
+          },
+          {
+            "name": "aseman-ports",
+            "path": "crates/aseman-ports",
+            "scope": "normal"
+          },
+          {
+            "name": "serde_json",
+            "scope": "normal"
+          }
+        ],
+        "description": "The A504 conformance kit: the behavior every VMM backend must show.",
+        "edition": {
+          "workspace": true
+        },
+        "features": {},
+        "manifest": "tests/contracts/vmm-backend/Cargo.toml",
+        "name": "aseman-vmm-backend-conformance",
+        "targets": [
+          {
+            "kind": "lib",
+            "name": "aseman-vmm-backend-conformance",
             "path": "src/lib.rs"
           }
         ],
@@ -2128,17 +2632,22 @@
     ],
     "workspaces": [
       {
-        "exclude": [],
+        "exclude": [
+          "modules/vmm-backend"
+        ],
         "manifest": "Cargo.toml",
         "members": [
+          "apps/*",
           "cmd/casparctl",
           "crates/*",
           "modules/*",
+          "modules/vmm-backend/native-legacy",
           "node",
           "node/crates/*",
           "tests/contracts/module",
           "tests/contracts/policy",
           "tests/contracts/storage",
+          "tests/contracts/vmm-backend",
           "tests/migration",
           "vm-sdk",
           "vms/docker",

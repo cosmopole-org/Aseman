@@ -141,8 +141,9 @@ pub trait VmmEventLog: Send + Sync {
         workload: Option<WorkloadId>,
         limit: usize,
     ) -> PortResult<EventBatch>;
-    /// Drop events at or below `sequence`; returns how many.
-    fn truncate_through(&self, sequence: u64) -> PortResult<u64>;
+    /// Drop events recorded before `cutoff_millis`; returns how many. A reader whose
+    /// position falls in the dropped range gets `resync`.
+    fn truncate_before(&self, cutoff_millis: i64) -> PortResult<u64>;
 }
 
 /// A backend's identity and runtimes.
@@ -265,4 +266,17 @@ pub trait VmmClient: Send + Sync {
     ) -> PortResult<String>;
     fn operation(&self, id: OperationId) -> PortResult<Option<OperationRecord>>;
     fn events_after(&self, after: u64, limit: usize) -> PortResult<EventBatch>;
+    /// Run an A501 `ExecRequest`.
+    fn exec(&self, id: WorkloadId, request: &str, idempotency_key: &str)
+        -> PortResult<OperationRecord>;
+    /// Build with an A501 `BuildRequest`.
+    fn build(&self, request: &str, idempotency_key: &str) -> PortResult<OperationRecord>;
+    fn put_file(&self, id: WorkloadId, path: &str, bytes: &[u8], idempotency_key: &str)
+        -> PortResult<()>;
+    fn get_file(&self, id: WorkloadId, path: &str) -> PortResult<Vec<u8>>;
+    fn endpoints(&self, id: WorkloadId) -> PortResult<Vec<Endpoint>>;
+    /// Verify an A501 `VerificationRequest`; returns the A501 `VerificationResult`.
+    fn verify(&self, runtime: &str, request: &str, idempotency_key: &str) -> PortResult<String>;
+    /// Log records with a sequence above `after`.
+    fn logs(&self, id: WorkloadId, after: u64) -> PortResult<Vec<LogRecord>>;
 }

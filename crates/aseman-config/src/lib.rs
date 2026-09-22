@@ -473,6 +473,16 @@ impl AsemanConfig {
 
     pub fn from_map(values: &BTreeMap<String, String>) -> Result<Self, ConfigError> {
         let (values, legacy_aliases_used) = canonicalize(values)?;
+        let vmm = VmmClientConfig::from_canonical(&values)?;
+        let core_storage = CoreStorageConfig::from_canonical(&values)?;
+        // Remote workloads are `core.workload` capsules resolved by the guest API: the
+        // remote VMM runs only after the PostgreSQL cutover (ADR 0030).
+        if vmm.is_some() && core_storage.provider != CoreStorageProvider::Postgres {
+            return Err(ConfigError::Invalid {
+                key: "ASEMAN_VMM_ENDPOINT",
+                reason: "the remote VMM needs ASEMAN_CORE_STORAGE_PROVIDER=postgres",
+            });
+        }
         Ok(Self {
             node: NodeIdentityConfig {
                 id: required(&values, "ASEMAN_NODE_ID")?,
@@ -606,9 +616,9 @@ impl AsemanConfig {
                 user_profile_dir: nonempty(&values, "ASEMAN_LEGACY_USERPROFILE"),
             },
             runtime: RuntimeConfig::from_canonical(&values)?,
-            vmm: VmmClientConfig::from_canonical(&values)?,
+            vmm,
             database_url_secret: values.get("ASEMAN_DATABASE_URL_SECRET").cloned(),
-            core_storage: CoreStorageConfig::from_canonical(&values)?,
+            core_storage,
             legacy_aliases_used,
         })
     }
@@ -625,6 +635,14 @@ pub struct VmmClientConfig {
     pub identity_secret: String,
     /// How long one VMM request may take.
     pub deadline_millis: u64,
+    /// The guest API listener workloads' backends call (TLS).
+    pub guest_api_listen: String,
+    /// The guest API URL as backends reach it (`https://…`).
+    pub guest_api_url: String,
+    /// PEM file: the guest API server certificate chain.
+    pub guest_api_certificate: String,
+    /// Secret file: the guest API server private key (PEM).
+    pub guest_api_key_secret: String,
 }
 
 impl VmmClientConfig {
@@ -643,6 +661,19 @@ impl VmmClientConfig {
             server_ca: required(values, "ASEMAN_VMM_SERVER_CA")?,
             identity_secret: required(values, "ASEMAN_VMM_CLIENT_IDENTITY_SECRET")?,
             deadline_millis: parse_or(values, "ASEMAN_VMM_DEADLINE_MILLIS", 30_000)?,
+            guest_api_listen: value_or(values, "ASEMAN_GUEST_API_LISTEN", "0.0.0.0:8444"),
+            guest_api_url: {
+                let url = required(values, "ASEMAN_GUEST_API_URL")?;
+                if !url.starts_with("https://") {
+                    return Err(ConfigError::Invalid {
+                        key: "ASEMAN_GUEST_API_URL",
+                        reason: "the guest API is served over https only",
+                    });
+                }
+                url.trim_end_matches('/').to_owned()
+            },
+            guest_api_certificate: required(values, "ASEMAN_GUEST_API_CERTIFICATE")?,
+            guest_api_key_secret: required(values, "ASEMAN_GUEST_API_KEY_SECRET")?,
         }))
     }
 }
@@ -1132,10 +1163,33 @@ mod tests {
             "ASEMAN_VMM_SERVER_CA".to_owned(),
             "/etc/aseman/vmm-ca.pem".to_owned(),
         );
-        values.insert(
-            "ASEMAN_VMM_CLIENT_IDENTITY_SECRET".to_owned(),
-            "/run/secrets/vmm-client".to_owned(),
-        );
+        for (key, value) in [
+            (
+                "ASEMAN_VMM_CLIENT_IDENTITY_SECRET",
+                "/run/secrets/vmm-client",
+            ),
+            ("ASEMAN_GUEST_API_URL", "https://node.internal:8444/"),
+            ("ASEMAN_GUEST_API_CERTIFICATE", "/etc/aseman/guest-api.pem"),
+            ("ASEMAN_GUEST_API_KEY_SECRET", "/run/secrets/guest-api-key"),
+        ] {
+            values.insert(key.to_owned(), value.to_owned());
+        }
+        // Remote workloads need the PostgreSQL provider.
+        assert!(matches!(
+            AsemanConfig::from_map(&values),
+            Err(ConfigError::Invalid {
+                key: "ASEMAN_VMM_ENDPOINT",
+                ..
+            })
+        ));
+        for (key, value) in [
+            ("ASEMAN_CORE_STORAGE_PROVIDER", "postgres"),
+            ("ASEMAN_DATABASE_URL_SECRET", "/run/secrets/db"),
+            ("ASEMAN_GUEST_PROXY_URL_SECRET", "/run/secrets/proxy"),
+            ("ASEMAN_GUEST_PROXY_ROLE", "aseman_guest_proxy"),
+        ] {
+            values.insert(key.to_owned(), value.to_owned());
+        }
         assert_eq!(
             AsemanConfig::from_map(&values).unwrap().vmm,
             Some(VmmClientConfig {
@@ -1143,8 +1197,17 @@ mod tests {
                 server_ca: "/etc/aseman/vmm-ca.pem".to_owned(),
                 identity_secret: "/run/secrets/vmm-client".to_owned(),
                 deadline_millis: 30_000,
+                guest_api_listen: "0.0.0.0:8444".to_owned(),
+                guest_api_url: "https://node.internal:8444".to_owned(),
+                guest_api_certificate: "/etc/aseman/guest-api.pem".to_owned(),
+                guest_api_key_secret: "/run/secrets/guest-api-key".to_owned(),
             })
         );
+        values.insert(
+            "ASEMAN_GUEST_API_URL".to_owned(),
+            "http://node.internal".to_owned(),
+        );
+        assert!(AsemanConfig::from_map(&values).is_err());
     }
 
     #[test]
