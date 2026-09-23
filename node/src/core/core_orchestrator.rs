@@ -36,7 +36,7 @@ use crate::drivers::network::Network as NetworkDriver;
 use crate::drivers::security::Security;
 use crate::drivers::signaler::Signaler;
 use crate::drivers::storage::Storage;
-use crate::drivers::vmm::Vmm;
+use crate::drivers::vmm::NodeWorkloads;
 use crate::models::action::actor::IActor;
 use crate::models::action::TrxClosure;
 use crate::models::chain::{
@@ -125,9 +125,6 @@ pub struct Core {
     elections: Mutex<Vec<crate::models::chain::Election>>,
     cost: Mutex<CostConfig>,
     priv_key: Mutex<Option<Arc<RsaPrivateKey>>>,
-    /// Open per-VM transactions keyed by vm_id.  Created by [`ICore::begin_vm_trx`]
-    /// and committed+removed by [`ICore::end_vm_trx`].
-    vm_trxs: Mutex<HashMap<String, Arc<dyn ITrx>>>,
 }
 
 #[derive(Default)]
@@ -193,7 +190,6 @@ impl Core {
             elections: Mutex::new(Vec::new()),
             cost: Mutex::new(CostConfig::default()),
             priv_key: Mutex::new(None),
-            vm_trxs: Mutex::new(HashMap::new()),
         })
     }
 
@@ -250,37 +246,42 @@ impl Core {
                 }),
             );
             let runtime_type = runtime_slot.lock().unwrap().clone();
-            if self.tools().workloads().is_supported_runtime(&runtime_type) {
-                let listeners = self.tools().signaler().listeners();
-                let listener = listeners.get(machine_id).map(|e| e.value().clone());
-                if let Some(listener) = listener {
-                    let payload = packet.payload.clone();
-                    let machine_id_inner = machine_id.clone();
+            let offered = crate::shell::workloads::remote()
+                .is_some_and(|remote| remote.offers(&runtime_type));
+            if !offered {
+                continue;
+            }
+            // The program's signal listener delivers the message to its workloads;
+            // without one (no assign yet), it goes to the entity directly.
+            let listener = self
+                .tools()
+                .signaler()
+                .listeners()
+                .get(machine_id)
+                .map(|e| e.value().clone());
+            let payload = packet.payload.clone();
+            match listener {
+                Some(listener) => {
                     thread::spawn(move || {
                         let value = Value::String(String::from_utf8_lossy(&payload).into_owned());
                         (listener.signal)("creatures/signal".to_string(), value);
-                        let _ = machine_id_inner;
                     });
-                    continue;
+                }
+                None => {
+                    let machine_id_owned = machine_id.clone();
+                    let store_id = packet.store_id.clone();
+                    let trans = self.clone();
+                    thread::spawn(move || {
+                        let data = String::from_utf8_lossy(&payload).into_owned();
+                        trans.tools().workloads().run_vm_entity(
+                            &machine_id_owned,
+                            &store_id,
+                            &data,
+                            "",
+                        );
+                    });
                 }
             }
-            let runtime_clone = runtime_type.clone();
-            let machine_id_owned = machine_id.clone();
-            let store_id = packet.store_id.clone();
-            let payload = packet.payload.clone();
-            let trans = self.clone();
-            thread::spawn(move || {
-                // Only in-process (managed) runtimes are cold-started to
-                // handle a chain message; externally supervised VMs are
-                // reached via their live gateway listeners above.
-                if trans.tools().workloads().is_managed_runtime(&runtime_clone) {
-                    let data = String::from_utf8_lossy(&payload).into_owned();
-                    trans
-                        .tools()
-                        .workloads()
-                        .run_vm(&machine_id_owned, &store_id, &data);
-                }
-            });
         }
     }
 
@@ -573,7 +574,6 @@ impl ICore for Core {
         if let Some(tools) = self.tools.lock().unwrap().clone() {
             tools.network().chain().close();
             // The key/value store and the private QuestDB pool close on drop via their Arc owners.
-            tools.workloads().close_kvdb();
         }
     }
     fn plant_chain_trigger(
@@ -624,16 +624,9 @@ impl ICore for Core {
         );
     }
     fn app_pending_trxs(&self) {
-        let pending = std::mem::take(&mut *self.app_pending_trxs.lock().unwrap());
-        // Group-executable chain transactions are those whose runtime plugin
-        // declares chain-transaction support.
-        let chain_trxs: Vec<WorkerTrx> = pending
-            .into_iter()
-            .filter(|t| self.tools().workloads().runtime_supports_chain_trxs(&t.runtime))
-            .collect();
-        if !chain_trxs.is_empty() {
-            self.tools().workloads().execute_chain_trxs_group(chain_trxs);
-        }
+        // Grouped chain-transaction execution was a no-op placeholder in the embedded
+        // VMM; chain messages reach workloads as invocations (P5-06).
+        self.app_pending_trxs.lock().unwrap().clear();
     }
     fn ip_addr(&self) -> String {
         self.ip.clone()
@@ -700,49 +693,6 @@ impl ICore for Core {
             .clone()
             .expect("Core.globe accessed before Load()")
     }
-
-    fn begin_vm_trx(&self, vm_id: &str) -> Arc<dyn ITrx> {
-        // Fast path: return an existing open transaction.
-        {
-            let map = self.vm_trxs.lock().unwrap();
-            if let Some(t) = map.get(vm_id) {
-                return t.clone();
-            }
-        }
-        // Slow path: create a new TrxWrapper and register it.
-        // weak_self() and tools lock are taken without holding vm_trxs.
-        let Some(tools) = self.tools.lock().unwrap().clone() else {
-            panic!(
-                "ICore::begin_vm_trx called before tools were set (vm_id: {})",
-                vm_id
-            );
-        };
-        let trx: Arc<dyn ITrx> = TrxWrapper::new(self.weak_self(), tools.storage(), false);
-        self.vm_trxs
-            .lock()
-            .unwrap()
-            .entry(vm_id.to_string())
-            .or_insert(trx)
-            .clone()
-    }
-
-    fn end_vm_trx(&self, vm_id: &str) {
-        let trx = self.vm_trxs.lock().unwrap().remove(vm_id);
-        if let Some(t) = trx {
-            // Only VMs launched from a distributed deployment propagate
-            // their state through the cluster consensus; local-mode VMs
-            // commit on this instance only.
-            // Runtimes key the transaction per execution (`<vmId>#exec-…`); the
-            // distribution marker belongs to the VM itself.
-            let base_vm_id = caspar_vm_sdk::util::trx_key_vm_id(vm_id);
-            let distributed = t.get_link(&format!("vmDistributed::{}", base_vm_id)) == "true";
-            if let Err(error) =
-                crate::drivers::cluster::with_replication_scope(distributed, || t.commit())
-            {
-                eprintln!("end_vm_trx {vm_id}: {error}");
-            }
-        }
-    }
 }
 
 use crate::shell::api::model::core_storage::{run_action, StateFailure};
@@ -803,8 +753,7 @@ impl Core {
     }
 
     /// Runtime start phase invoked after load/module initialization.
-    pub fn run(self: &Arc<Self>) {
-    }
+    pub fn run(self: &Arc<Self>) {}
 
     /// Strongly-typed `Load`. Run once on startup after the constructor.
     pub fn load_inner(
@@ -861,8 +810,7 @@ impl Core {
             chain.clone(),
             tls_cfg,
         );
-        let vmm: Arc<dyn IWorkloads> =
-            Vmm::new(self.clone(), storage_root, storage.clone(), applet_db_path);
+        let vmm: Arc<dyn IWorkloads> = NodeWorkloads::new(self.clone());
 
         // Stage 2 — federation needs storage/signaler.
         fed.second_stage(storage.clone(), signaler.clone());
@@ -1181,23 +1129,6 @@ impl ICore for WeakCoreView {
     }
     fn globe(&self) -> Arc<dyn IGlobe> {
         self.inner.globe.clone().expect("Globe unset on weak view")
-    }
-
-    fn begin_vm_trx(&self, _vm_id: &str) -> Arc<dyn ITrx> {
-        // WeakCoreView has no tracking map; create an untracked transaction.
-        // In practice VMs always call this via with_global_app which provides
-        // the real Core — this path is only hit in edge cases (e.g. nested trx).
-        let Some(tools) = self.inner.tools.clone() else {
-            panic!("WeakCoreView tools not set in begin_vm_trx");
-        };
-        let core: Arc<dyn ICore> = Arc::new(WeakCoreView {
-            inner: clone_handles(&self.inner),
-        });
-        TrxWrapper::new(core, tools.storage(), false)
-    }
-
-    fn end_vm_trx(&self, _vm_id: &str) {
-        // WeakCoreView has no tracking map; nothing to commit here.
     }
 }
 

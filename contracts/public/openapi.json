@@ -1,0 +1,6008 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Aseman public API",
+    "version": "1",
+    "summary": "The default public protocol (A701).",
+    "description": "Generated from the A402 action registry by `scripts/generate_public_api.py`; do not edit by hand. Every operation here is one registered action, so nothing is reachable that is not authorizable. The legacy TCP and WebSocket transports carry these same actions and contain framing only."
+  },
+  "servers": [
+    {
+      "url": "https://{node}/api",
+      "variables": {
+        "node": {
+          "default": "node.example"
+        }
+      }
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "session": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "Aseman-Session",
+        "description": "A session identifier. It is a bearer credential and is never mapped or logged."
+      },
+      "proof": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "Aseman-Proof",
+        "description": "An A401 signed request proof, for a workload or a node."
+      }
+    },
+    "responses": {
+      "Problem": {
+        "description": "A typed problem (RFC 9457).",
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "$ref": "#/components/schemas/Problem"
+            }
+          }
+        }
+      }
+    },
+    "schemas": {
+      "Problem": {
+        "type": "object",
+        "required": [
+          "type",
+          "title",
+          "status"
+        ],
+        "properties": {
+          "type": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "status": {
+            "type": "integer"
+          },
+          "detail": {
+            "type": "string"
+          },
+          "instance": {
+            "type": "string"
+          },
+          "aseman_reason": {
+            "type": "string",
+            "description": "The stable refusal reason, for a client to branch on."
+          }
+        }
+      }
+    }
+  },
+  "paths": {
+    "/v1/actions/api/hello": {
+      "post": {
+        "operationId": "apiHello",
+        "summary": "Hello, ping, and time",
+        "description": "Action `node.diagnostics.read` on `node`. Authorized subjects: user, creature, node, service, workload, module_publisher.",
+        "tags": [
+          "node"
+        ],
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "proof": []
+          }
+        ],
+        "x-aseman-action": "node.diagnostics.read",
+        "x-aseman-class": "read",
+        "x-aseman-legacy-request": "HelloInput",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "Aseman-Request-Id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Echoed in the response and in traces."
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Required for a mutating action: a retry under the same key returns the first outcome instead of repeating the effect."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The action's result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "409": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "429": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "503": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/v1/actions/api/ping": {
+      "post": {
+        "operationId": "apiPing",
+        "summary": "Hello, ping, and time",
+        "description": "Action `node.diagnostics.read` on `node`. Authorized subjects: user, creature, node, service, workload, module_publisher.",
+        "tags": [
+          "node"
+        ],
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "proof": []
+          }
+        ],
+        "x-aseman-action": "node.diagnostics.read",
+        "x-aseman-class": "read",
+        "x-aseman-legacy-request": "HelloInput",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "Aseman-Request-Id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Echoed in the response and in traces."
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Required for a mutating action: a retry under the same key returns the first outcome instead of repeating the effect."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The action's result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "409": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "429": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "503": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/v1/actions/api/time": {
+      "post": {
+        "operationId": "apiTime",
+        "summary": "Hello, ping, and time",
+        "description": "Action `node.diagnostics.read` on `node`. Authorized subjects: user, creature, node, service, workload, module_publisher.",
+        "tags": [
+          "node"
+        ],
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "proof": []
+          }
+        ],
+        "x-aseman-action": "node.diagnostics.read",
+        "x-aseman-class": "read",
+        "x-aseman-legacy-request": "HelloInput",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "Aseman-Request-Id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Echoed in the response and in traces."
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Required for a mutating action: a retry under the same key returns the first outcome instead of repeating the effect."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The action's result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "409": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "429": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "503": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/v1/actions/auths/getServerPublicKey": {
+      "post": {
+        "operationId": "authsGetServerPublicKey",
+        "summary": "The node's public key and minimal identity",
+        "description": "Action `node.identity.read` on `node`. Authorized subjects: user, creature, node, service, workload, module_publisher.",
+        "tags": [
+          "node"
+        ],
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "proof": []
+          }
+        ],
+        "x-aseman-action": "node.identity.read",
+        "x-aseman-class": "read",
+        "x-aseman-legacy-request": "GetServerKeyInput",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "Aseman-Request-Id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Echoed in the response and in traces."
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Required for a mutating action: a retry under the same key returns the first outcome instead of repeating the effect."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The action's result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "409": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "429": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "503": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/v1/actions/auths/getServersMap": {
+      "post": {
+        "operationId": "authsGetServersMap",
+        "summary": "The node's peer map (minimal federated descriptors)",
+        "description": "Action `node.peers.read` on `node`. Authorized subjects: user, creature, node, service, workload, module_publisher.",
+        "tags": [
+          "node"
+        ],
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "proof": []
+          }
+        ],
+        "x-aseman-action": "node.peers.read",
+        "x-aseman-class": "read",
+        "x-aseman-legacy-request": "GetServersMapInput",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "Aseman-Request-Id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Echoed in the response and in traces."
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Required for a mutating action: a retry under the same key returns the first outcome instead of repeating the effect."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The action's result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "409": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "429": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "503": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/v1/actions/creatures/authenticate": {
+      "post": {
+        "operationId": "creaturesAuthenticate",
+        "summary": "Legacy session authentication",
+        "description": "Action `identity.session.create` on `session`. Authorized subjects: user, creature, node, service, workload, module_publisher.",
+        "tags": [
+          "session"
+        ],
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "proof": []
+          }
+        ],
+        "x-aseman-action": "identity.session.create",
+        "x-aseman-class": "security",
+        "x-aseman-legacy-request": "AuthenticateInput",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "Aseman-Request-Id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Echoed in the response and in traces."
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Required for a mutating action: a retry under the same key returns the first outcome instead of repeating the effect."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The action's result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "409": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "429": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "503": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/v1/actions/creatures/checkSign": {
+      "post": {
+        "operationId": "creaturesCheckSign",
+        "summary": "Check a signature against a creature key",
+        "description": "Action `identity.signature.check` on `identity_key`. Authorized subjects: user, creature, node, service, workload, module_publisher.",
+        "tags": [
+          "identity_key"
+        ],
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "proof": []
+          }
+        ],
+        "x-aseman-action": "identity.signature.check",
+        "x-aseman-class": "read",
+        "x-aseman-legacy-request": "CheckSignInput",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "Aseman-Request-Id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Echoed in the response and in traces."
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Required for a mutating action: a retry under the same key returns the first outcome instead of repeating the effect."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The action's result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "409": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "429": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "503": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/v1/actions/creatures/closePool": {
+      "post": {
+        "operationId": "creaturesClosePool",
+        "summary": "Close a payment pool",
+        "description": "Action `finance.pool.close` on `pool`. Authorized subjects: user, creature, workload.",
+        "tags": [
+          "pool"
+        ],
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "proof": []
+          }
+        ],
+        "x-aseman-action": "finance.pool.close",
+        "x-aseman-class": "financial",
+        "x-aseman-legacy-request": "ClosePoolInput",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "Aseman-Request-Id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Echoed in the response and in traces."
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Required for a mutating action: a retry under the same key returns the first outcome instead of repeating the effect."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The action's result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "409": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "429": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "503": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/v1/actions/creatures/consumeLock": {
+      "post": {
+        "operationId": "creaturesConsumeLock",
+        "summary": "Consume a token lock",
+        "description": "Action `finance.lock.consume` on `lock`. Authorized subjects: user, creature, workload.",
+        "tags": [
+          "lock"
+        ],
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "proof": []
+          }
+        ],
+        "x-aseman-action": "finance.lock.consume",
+        "x-aseman-class": "financial",
+        "x-aseman-legacy-request": "ConsumeLockInput",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "Aseman-Request-Id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Echoed in the response and in traces."
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Required for a mutating action: a retry under the same key returns the first outcome instead of repeating the effect."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The action's result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "409": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "429": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "503": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/v1/actions/creatures/create": {
+      "post": {
+        "operationId": "creaturesCreate",
+        "summary": "Create a creature",
+        "description": "Action `creature.create` on `creature`. Authorized subjects: user, creature, workload.",
+        "tags": [
+          "creature"
+        ],
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "proof": []
+          }
+        ],
+        "x-aseman-action": "creature.create",
+        "x-aseman-class": "write",
+        "x-aseman-legacy-request": "CreatureCreateInput",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "Aseman-Request-Id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Echoed in the response and in traces."
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Required for a mutating action: a retry under the same key returns the first outcome instead of repeating the effect."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The action's result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "409": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "429": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "503": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/v1/actions/creatures/createHold": {
+      "post": {
+        "operationId": "creaturesCreateHold",
+        "summary": "Create a payment hold",
+        "description": "Action `finance.hold.create` on `hold`. Authorized subjects: user, creature, workload.",
+        "tags": [
+          "hold"
+        ],
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "proof": []
+          }
+        ],
+        "x-aseman-action": "finance.hold.create",
+        "x-aseman-class": "financial",
+        "x-aseman-legacy-request": "CreateHoldInput",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "Aseman-Request-Id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Echoed in the response and in traces."
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Required for a mutating action: a retry under the same key returns the first outcome instead of repeating the effect."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The action's result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "409": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "429": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "503": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/v1/actions/creatures/debitPool": {
+      "post": {
+        "operationId": "creaturesDebitPool",
+        "summary": "Debit a payment pool",
+        "description": "Action `finance.pool.debit` on `pool`. Authorized subjects: user, creature, workload.",
+        "tags": [
+          "pool"
+        ],
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "proof": []
+          }
+        ],
+        "x-aseman-action": "finance.pool.debit",
+        "x-aseman-class": "financial",
+        "x-aseman-legacy-request": "DebitPoolInput",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "Aseman-Request-Id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Echoed in the response and in traces."
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Required for a mutating action: a retry under the same key returns the first outcome instead of repeating the effect."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The action's result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "409": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "429": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "503": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/v1/actions/creatures/delete": {
+      "post": {
+        "operationId": "creaturesDelete",
+        "summary": "Delete a creature",
+        "description": "Action `creature.delete` on `creature`. Authorized subjects: user, creature, workload.",
+        "tags": [
+          "creature"
+        ],
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "proof": []
+          }
+        ],
+        "x-aseman-action": "creature.delete",
+        "x-aseman-class": "write",
+        "x-aseman-legacy-request": "DeleteInput",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "Aseman-Request-Id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Echoed in the response and in traces."
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Required for a mutating action: a retry under the same key returns the first outcome instead of repeating the effect."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The action's result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "409": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "429": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "503": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/v1/actions/creatures/find": {
+      "post": {
+        "operationId": "creaturesFind",
+        "summary": "Find creatures by username fragment",
+        "description": "Action `creature.discover` on `creature`. Authorized subjects: user, creature, workload.",
+        "tags": [
+          "creature"
+        ],
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "proof": []
+          }
+        ],
+        "x-aseman-action": "creature.discover",
+        "x-aseman-class": "read",
+        "x-aseman-legacy-request": "FindInput",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "Aseman-Request-Id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Echoed in the response and in traces."
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Required for a mutating action: a retry under the same key returns the first outcome instead of repeating the effect."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The action's result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "409": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "429": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "503": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/v1/actions/creatures/get": {
+      "post": {
+        "operationId": "creaturesGet",
+        "summary": "Read a creature record",
+        "description": "Action `creature.read` on `creature`. Authorized subjects: user, creature, workload.",
+        "tags": [
+          "creature"
+        ],
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "proof": []
+          }
+        ],
+        "x-aseman-action": "creature.read",
+        "x-aseman-class": "read",
+        "x-aseman-legacy-request": "GetInput",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "Aseman-Request-Id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Echoed in the response and in traces."
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Required for a mutating action: a retry under the same key returns the first outcome instead of repeating the effect."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The action's result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "409": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "429": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "503": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/v1/actions/creatures/getByUsername": {
+      "post": {
+        "operationId": "creaturesGetByUsername",
+        "summary": "Read a creature record",
+        "description": "Action `creature.read` on `creature`. Authorized subjects: user, creature, workload.",
+        "tags": [
+          "creature"
+        ],
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "proof": []
+          }
+        ],
+        "x-aseman-action": "creature.read",
+        "x-aseman-class": "read",
+        "x-aseman-legacy-request": "GetByUsernameInput",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "Aseman-Request-Id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Echoed in the response and in traces."
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Required for a mutating action: a retry under the same key returns the first outcome instead of repeating the effect."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The action's result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "409": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "429": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "503": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/v1/actions/creatures/getFinancialAccount": {
+      "post": {
+        "operationId": "creaturesGetFinancialAccount",
+        "summary": "Read a financial account",
+        "description": "Action `finance.account.read` on `account`. Authorized subjects: user, creature, workload.",
+        "tags": [
+          "account"
+        ],
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "proof": []
+          }
+        ],
+        "x-aseman-action": "finance.account.read",
+        "x-aseman-class": "financial",
+        "x-aseman-legacy-request": "GetFinancialAccountInput",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "Aseman-Request-Id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Echoed in the response and in traces."
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Required for a mutating action: a retry under the same key returns the first outcome instead of repeating the effect."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The action's result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "409": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "429": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "503": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/v1/actions/creatures/getHold": {
+      "post": {
+        "operationId": "creaturesGetHold",
+        "summary": "Read a payment hold",
+        "description": "Action `finance.hold.read` on `hold`. Authorized subjects: user, creature, workload.",
+        "tags": [
+          "hold"
+        ],
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "proof": []
+          }
+        ],
+        "x-aseman-action": "finance.hold.read",
+        "x-aseman-class": "financial",
+        "x-aseman-legacy-request": "GetHoldInput",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "Aseman-Request-Id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Echoed in the response and in traces."
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Required for a mutating action: a retry under the same key returns the first outcome instead of repeating the effect."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The action's result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "409": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "429": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "503": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/v1/actions/creatures/list": {
+      "post": {
+        "operationId": "creaturesList",
+        "summary": "List creatures and machines (bulk discovery)",
+        "description": "Action `creature.list` on `creature`. Authorized subjects: user, creature, workload.",
+        "tags": [
+          "creature"
+        ],
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "proof": []
+          }
+        ],
+        "x-aseman-action": "creature.list",
+        "x-aseman-class": "read",
+        "x-aseman-legacy-request": "ListInput",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "Aseman-Request-Id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Echoed in the response and in traces."
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Required for a mutating action: a retry under the same key returns the first outcome instead of repeating the effect."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The action's result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "409": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "429": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "503": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/v1/actions/creatures/listPayouts": {
+      "post": {
+        "operationId": "creaturesListPayouts",
+        "summary": "List payouts",
+        "description": "Action `finance.payout.list` on `payout`. Authorized subjects: user, creature, workload.",
+        "tags": [
+          "payout"
+        ],
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "proof": []
+          }
+        ],
+        "x-aseman-action": "finance.payout.list",
+        "x-aseman-class": "financial",
+        "x-aseman-legacy-request": "ListPayoutsInput",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "Aseman-Request-Id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Echoed in the response and in traces."
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Required for a mutating action: a retry under the same key returns the first outcome instead of repeating the effect."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The action's result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "409": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "429": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "503": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/v1/actions/creatures/lockToken": {
+      "post": {
+        "operationId": "creaturesLockToken",
+        "summary": "Lock tokens",
+        "description": "Action `finance.lock.create` on `lock`. Authorized subjects: user, creature, workload.",
+        "tags": [
+          "lock"
+        ],
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "proof": []
+          }
+        ],
+        "x-aseman-action": "finance.lock.create",
+        "x-aseman-class": "financial",
+        "x-aseman-legacy-request": "LockTokenInput",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "Aseman-Request-Id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Echoed in the response and in traces."
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Required for a mutating action: a retry under the same key returns the first outcome instead of repeating the effect."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The action's result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "409": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "429": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "503": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/v1/actions/creatures/meta": {
+      "post": {
+        "operationId": "creaturesMeta",
+        "summary": "Update a creature or its metadata",
+        "description": "Action `creature.update` on `creature`. Authorized subjects: user, creature, workload.",
+        "tags": [
+          "creature"
+        ],
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "proof": []
+          }
+        ],
+        "x-aseman-action": "creature.update",
+        "x-aseman-class": "write",
+        "x-aseman-legacy-request": "MetaInput",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "Aseman-Request-Id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Echoed in the response and in traces."
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Required for a mutating action: a retry under the same key returns the first outcome instead of repeating the effect."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The action's result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "409": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "429": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "503": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/v1/actions/creatures/mint": {
+      "post": {
+        "operationId": "creaturesMint",
+        "summary": "Mint currency (legacy: hard-coded 1@global)",
+        "description": "Action `finance.mint` on `account`. Authorized subjects: user, service.",
+        "tags": [
+          "account"
+        ],
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "proof": []
+          }
+        ],
+        "x-aseman-action": "finance.mint",
+        "x-aseman-class": "financial",
+        "x-aseman-legacy-request": "MintInput",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "Aseman-Request-Id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Echoed in the response and in traces."
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Required for a mutating action: a retry under the same key returns the first outcome instead of repeating the effect."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The action's result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "409": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "429": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "503": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/v1/actions/creatures/openPool": {
+      "post": {
+        "operationId": "creaturesOpenPool",
+        "summary": "Open a payment pool",
+        "description": "Action `finance.pool.open` on `pool`. Authorized subjects: user, creature, workload.",
+        "tags": [
+          "pool"
+        ],
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "proof": []
+          }
+        ],
+        "x-aseman-action": "finance.pool.open",
+        "x-aseman-class": "financial",
+        "x-aseman-legacy-request": "OpenPoolInput",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "Aseman-Request-Id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Echoed in the response and in traces."
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Required for a mutating action: a retry under the same key returns the first outcome instead of repeating the effect."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The action's result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "409": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "429": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "503": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/v1/actions/creatures/paymentAdjustment": {
+      "post": {
+        "operationId": "creaturesPaymentAdjustment",
+        "summary": "Payment adjustment",
+        "description": "Action `finance.adjustment` on `account`. Authorized subjects: user, service.",
+        "tags": [
+          "account"
+        ],
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "proof": []
+          }
+        ],
+        "x-aseman-action": "finance.adjustment",
+        "x-aseman-class": "financial",
+        "x-aseman-legacy-request": "PaymentAdjustmentInput",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "Aseman-Request-Id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Echoed in the response and in traces."
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Required for a mutating action: a retry under the same key returns the first outcome instead of repeating the effect."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The action's result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "409": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "429": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "503": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/v1/actions/creatures/publishFinanceCatalog": {
+      "post": {
+        "operationId": "creaturesPublishFinanceCatalog",
+        "summary": "Publish a pricing catalog",
+        "description": "Action `finance.catalog.publish` on `finance_catalog`. Authorized subjects: user, creature, workload.",
+        "tags": [
+          "finance_catalog"
+        ],
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "proof": []
+          }
+        ],
+        "x-aseman-action": "finance.catalog.publish",
+        "x-aseman-class": "financial",
+        "x-aseman-legacy-request": "PublishFinanceCatalogInput",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "Aseman-Request-Id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Echoed in the response and in traces."
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Required for a mutating action: a retry under the same key returns the first outcome instead of repeating the effect."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The action's result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "409": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "429": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "503": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/v1/actions/creatures/publishFinanceQuote": {
+      "post": {
+        "operationId": "creaturesPublishFinanceQuote",
+        "summary": "Publish a quote",
+        "description": "Action `finance.quote.publish` on `finance_quote`. Authorized subjects: user, creature, workload.",
+        "tags": [
+          "finance_quote"
+        ],
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "proof": []
+          }
+        ],
+        "x-aseman-action": "finance.quote.publish",
+        "x-aseman-class": "financial",
+        "x-aseman-legacy-request": "PublishFinanceQuoteInput",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "Aseman-Request-Id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Echoed in the response and in traces."
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Required for a mutating action: a retry under the same key returns the first outcome instead of repeating the effect."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The action's result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "409": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "429": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "503": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/v1/actions/creatures/reconcileFinancialSystem": {
+      "post": {
+        "operationId": "creaturesReconcileFinancialSystem",
+        "summary": "Reconcile the financial system",
+        "description": "Action `finance.reconcile` on `finance_system`. Authorized subjects: user, service.",
+        "tags": [
+          "finance_system"
+        ],
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "proof": []
+          }
+        ],
+        "x-aseman-action": "finance.reconcile",
+        "x-aseman-class": "financial",
+        "x-aseman-legacy-request": "ReconcileFinancialSystemInput",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "Aseman-Request-Id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Echoed in the response and in traces."
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Required for a mutating action: a retry under the same key returns the first outcome instead of repeating the effect."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The action's result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "409": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "429": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "503": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/v1/actions/creatures/refreshPool": {
+      "post": {
+        "operationId": "creaturesRefreshPool",
+        "summary": "Refresh a payment pool",
+        "description": "Action `finance.pool.refresh` on `pool`. Authorized subjects: user, creature, workload.",
+        "tags": [
+          "pool"
+        ],
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "proof": []
+          }
+        ],
+        "x-aseman-action": "finance.pool.refresh",
+        "x-aseman-class": "financial",
+        "x-aseman-legacy-request": "RefreshPoolInput",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "Aseman-Request-Id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Echoed in the response and in traces."
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Required for a mutating action: a retry under the same key returns the first outcome instead of repeating the effect."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The action's result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "409": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "429": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "503": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/v1/actions/creatures/registerFinanceNode": {
+      "post": {
+        "operationId": "creaturesRegisterFinanceNode",
+        "summary": "Register a finance node",
+        "description": "Action `finance.node.register` on `finance_node`. Authorized subjects: user, creature, workload.",
+        "tags": [
+          "finance_node"
+        ],
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "proof": []
+          }
+        ],
+        "x-aseman-action": "finance.node.register",
+        "x-aseman-class": "financial",
+        "x-aseman-legacy-request": "RegisterFinanceNodeInput",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "Aseman-Request-Id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Echoed in the response and in traces."
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Required for a mutating action: a retry under the same key returns the first outcome instead of repeating the effect."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The action's result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "409": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "429": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "503": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/v1/actions/creatures/registerFinanceResource": {
+      "post": {
+        "operationId": "creaturesRegisterFinanceResource",
+        "summary": "Register a billable resource",
+        "description": "Action `finance.resource.register` on `finance_resource`. Authorized subjects: user, creature, workload.",
+        "tags": [
+          "finance_resource"
+        ],
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "proof": []
+          }
+        ],
+        "x-aseman-action": "finance.resource.register",
+        "x-aseman-class": "financial",
+        "x-aseman-legacy-request": "RegisterFinanceResourceInput",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "Aseman-Request-Id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Echoed in the response and in traces."
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Required for a mutating action: a retry under the same key returns the first outcome instead of repeating the effect."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The action's result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "409": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "429": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "503": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/v1/actions/creatures/releaseHold": {
+      "post": {
+        "operationId": "creaturesReleaseHold",
+        "summary": "Release a payment hold",
+        "description": "Action `finance.hold.release` on `hold`. Authorized subjects: user, creature, workload.",
+        "tags": [
+          "hold"
+        ],
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "proof": []
+          }
+        ],
+        "x-aseman-action": "finance.hold.release",
+        "x-aseman-class": "financial",
+        "x-aseman-legacy-request": "ReleaseHoldInput",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "Aseman-Request-Id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Echoed in the response and in traces."
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Required for a mutating action: a retry under the same key returns the first outcome instead of repeating the effect."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The action's result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "409": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "429": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "503": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/v1/actions/creatures/releasePool": {
+      "post": {
+        "operationId": "creaturesReleasePool",
+        "summary": "Release a payment pool",
+        "description": "Action `finance.pool.release` on `pool`. Authorized subjects: user, creature, workload.",
+        "tags": [
+          "pool"
+        ],
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "proof": []
+          }
+        ],
+        "x-aseman-action": "finance.pool.release",
+        "x-aseman-class": "financial",
+        "x-aseman-legacy-request": "ReleasePoolInput",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "Aseman-Request-Id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Echoed in the response and in traces."
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Required for a mutating action: a retry under the same key returns the first outcome instead of repeating the effect."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The action's result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "409": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "429": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "503": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/v1/actions/creatures/requestPayout": {
+      "post": {
+        "operationId": "creaturesRequestPayout",
+        "summary": "Request a payout",
+        "description": "Action `finance.payout.request` on `payout`. Authorized subjects: user, creature, workload.",
+        "tags": [
+          "payout"
+        ],
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "proof": []
+          }
+        ],
+        "x-aseman-action": "finance.payout.request",
+        "x-aseman-class": "financial",
+        "x-aseman-legacy-request": "RequestPayoutInput",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "Aseman-Request-Id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Echoed in the response and in traces."
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Required for a mutating action: a retry under the same key returns the first outcome instead of repeating the effect."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The action's result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "409": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "429": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "503": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/v1/actions/creatures/reservePool": {
+      "post": {
+        "operationId": "creaturesReservePool",
+        "summary": "Reserve a payment pool",
+        "description": "Action `finance.pool.reserve` on `pool`. Authorized subjects: user, creature, workload.",
+        "tags": [
+          "pool"
+        ],
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "proof": []
+          }
+        ],
+        "x-aseman-action": "finance.pool.reserve",
+        "x-aseman-class": "financial",
+        "x-aseman-legacy-request": "ReservePoolInput",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "Aseman-Request-Id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Echoed in the response and in traces."
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Required for a mutating action: a retry under the same key returns the first outcome instead of repeating the effect."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The action's result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "409": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "429": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "503": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/v1/actions/creatures/resolvePayout": {
+      "post": {
+        "operationId": "creaturesResolvePayout",
+        "summary": "Resolve a payout",
+        "description": "Action `finance.payout.resolve` on `payout`. Authorized subjects: user, service.",
+        "tags": [
+          "payout"
+        ],
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "proof": []
+          }
+        ],
+        "x-aseman-action": "finance.payout.resolve",
+        "x-aseman-class": "financial",
+        "x-aseman-legacy-request": "ResolvePayoutInput",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "Aseman-Request-Id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Echoed in the response and in traces."
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Required for a mutating action: a retry under the same key returns the first outcome instead of repeating the effect."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The action's result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "409": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "429": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "503": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/v1/actions/creatures/retireFinanceNode": {
+      "post": {
+        "operationId": "creaturesRetireFinanceNode",
+        "summary": "Retire a finance node",
+        "description": "Action `finance.node.retire` on `finance_node`. Authorized subjects: user, creature, workload.",
+        "tags": [
+          "finance_node"
+        ],
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "proof": []
+          }
+        ],
+        "x-aseman-action": "finance.node.retire",
+        "x-aseman-class": "financial",
+        "x-aseman-legacy-request": "RetireFinanceNodeInput",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "Aseman-Request-Id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Echoed in the response and in traces."
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Required for a mutating action: a retry under the same key returns the first outcome instead of repeating the effect."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The action's result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "409": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "429": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "503": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/v1/actions/creatures/retireFinanceResource": {
+      "post": {
+        "operationId": "creaturesRetireFinanceResource",
+        "summary": "Retire a billable resource",
+        "description": "Action `finance.resource.retire` on `finance_resource`. Authorized subjects: user, creature, workload.",
+        "tags": [
+          "finance_resource"
+        ],
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "proof": []
+          }
+        ],
+        "x-aseman-action": "finance.resource.retire",
+        "x-aseman-class": "financial",
+        "x-aseman-legacy-request": "RetireFinanceResourceInput",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "Aseman-Request-Id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Echoed in the response and in traces."
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Required for a mutating action: a retry under the same key returns the first outcome instead of repeating the effect."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The action's result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "409": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "429": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "503": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/v1/actions/creatures/reviewFinanceResource": {
+      "post": {
+        "operationId": "creaturesReviewFinanceResource",
+        "summary": "Review a billable resource",
+        "description": "Action `finance.resource.review` on `finance_resource`. Authorized subjects: user, creature, workload.",
+        "tags": [
+          "finance_resource"
+        ],
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "proof": []
+          }
+        ],
+        "x-aseman-action": "finance.resource.review",
+        "x-aseman-class": "financial",
+        "x-aseman-legacy-request": "ReviewFinanceResourceInput",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "Aseman-Request-Id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Echoed in the response and in traces."
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Required for a mutating action: a retry under the same key returns the first outcome instead of repeating the effect."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The action's result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "409": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "429": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "503": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/v1/actions/creatures/secretGet": {
+      "post": {
+        "operationId": "creaturesSecretGet",
+        "summary": "Read a secret",
+        "description": "Action `secret.read` on `secret`. Authorized subjects: user, creature, workload.",
+        "tags": [
+          "secret"
+        ],
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "proof": []
+          }
+        ],
+        "x-aseman-action": "secret.read",
+        "x-aseman-class": "security",
+        "x-aseman-legacy-request": "SecretGetInput",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "Aseman-Request-Id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Echoed in the response and in traces."
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Required for a mutating action: a retry under the same key returns the first outcome instead of repeating the effect."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The action's result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "409": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "429": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "503": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/v1/actions/creatures/secretGrant": {
+      "post": {
+        "operationId": "creaturesSecretGrant",
+        "summary": "Grant a secret",
+        "description": "Action `secret.grant` on `secret`. Authorized subjects: user, creature, workload.",
+        "tags": [
+          "secret"
+        ],
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "proof": []
+          }
+        ],
+        "x-aseman-action": "secret.grant",
+        "x-aseman-class": "security",
+        "x-aseman-legacy-request": "SecretGrantInput",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "Aseman-Request-Id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Echoed in the response and in traces."
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Required for a mutating action: a retry under the same key returns the first outcome instead of repeating the effect."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The action's result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "409": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "429": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "503": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/v1/actions/creatures/secretList": {
+      "post": {
+        "operationId": "creaturesSecretList",
+        "summary": "List own secret names",
+        "description": "Action `secret.list` on `secret`. Authorized subjects: user, creature, workload.",
+        "tags": [
+          "secret"
+        ],
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "proof": []
+          }
+        ],
+        "x-aseman-action": "secret.list",
+        "x-aseman-class": "read",
+        "x-aseman-legacy-request": "SecretListInput",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "Aseman-Request-Id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Echoed in the response and in traces."
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Required for a mutating action: a retry under the same key returns the first outcome instead of repeating the effect."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The action's result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "409": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "429": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "503": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/v1/actions/creatures/secretListGranted": {
+      "post": {
+        "operationId": "creaturesSecretListGranted",
+        "summary": "List secrets granted to the subject",
+        "description": "Action `secret.list_granted` on `secret`. Authorized subjects: user, creature, workload.",
+        "tags": [
+          "secret"
+        ],
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "proof": []
+          }
+        ],
+        "x-aseman-action": "secret.list_granted",
+        "x-aseman-class": "read",
+        "x-aseman-legacy-request": "SecretListGrantedInput",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "Aseman-Request-Id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Echoed in the response and in traces."
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Required for a mutating action: a retry under the same key returns the first outcome instead of repeating the effect."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The action's result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "409": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "429": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "503": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/v1/actions/creatures/secretPut": {
+      "post": {
+        "operationId": "creaturesSecretPut",
+        "summary": "Store a secret",
+        "description": "Action `secret.write` on `secret`. Authorized subjects: user, creature, workload.",
+        "tags": [
+          "secret"
+        ],
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "proof": []
+          }
+        ],
+        "x-aseman-action": "secret.write",
+        "x-aseman-class": "security",
+        "x-aseman-legacy-request": "SecretPutInput",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "Aseman-Request-Id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Echoed in the response and in traces."
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Required for a mutating action: a retry under the same key returns the first outcome instead of repeating the effect."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The action's result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "409": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "429": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "503": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/v1/actions/creatures/secretRevoke": {
+      "post": {
+        "operationId": "creaturesSecretRevoke",
+        "summary": "Revoke a secret grant",
+        "description": "Action `secret.revoke` on `secret`. Authorized subjects: user, creature, workload.",
+        "tags": [
+          "secret"
+        ],
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "proof": []
+          }
+        ],
+        "x-aseman-action": "secret.revoke",
+        "x-aseman-class": "security",
+        "x-aseman-legacy-request": "SecretRevokeInput",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "Aseman-Request-Id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Echoed in the response and in traces."
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Required for a mutating action: a retry under the same key returns the first outcome instead of repeating the effect."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The action's result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "409": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "429": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "503": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/v1/actions/creatures/settleHold": {
+      "post": {
+        "operationId": "creaturesSettleHold",
+        "summary": "Settle a payment hold",
+        "description": "Action `finance.hold.settle` on `hold`. Authorized subjects: user, creature, workload.",
+        "tags": [
+          "hold"
+        ],
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "proof": []
+          }
+        ],
+        "x-aseman-action": "finance.hold.settle",
+        "x-aseman-class": "financial",
+        "x-aseman-legacy-request": "SettleHoldInput",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "Aseman-Request-Id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Echoed in the response and in traces."
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Required for a mutating action: a retry under the same key returns the first outcome instead of repeating the effect."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The action's result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "409": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "429": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "503": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/v1/actions/creatures/settlePool": {
+      "post": {
+        "operationId": "creaturesSettlePool",
+        "summary": "Settle a payment pool",
+        "description": "Action `finance.pool.settle` on `pool`. Authorized subjects: user, creature, workload.",
+        "tags": [
+          "pool"
+        ],
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "proof": []
+          }
+        ],
+        "x-aseman-action": "finance.pool.settle",
+        "x-aseman-class": "financial",
+        "x-aseman-legacy-request": "SettlePoolInput",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "Aseman-Request-Id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Echoed in the response and in traces."
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Required for a mutating action: a retry under the same key returns the first outcome instead of repeating the effect."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The action's result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "409": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "429": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "503": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/v1/actions/creatures/signal": {
+      "post": {
+        "operationId": "creaturesSignal",
+        "summary": "Signal a creature directly",
+        "description": "Action `creature.signal` on `creature_signal`. Authorized subjects: user, creature, workload.",
+        "tags": [
+          "creature_signal"
+        ],
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "proof": []
+          }
+        ],
+        "x-aseman-action": "creature.signal",
+        "x-aseman-class": "write",
+        "x-aseman-legacy-request": "CreatureSignalInput",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "Aseman-Request-Id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Echoed in the response and in traces."
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Required for a mutating action: a retry under the same key returns the first outcome instead of repeating the effect."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The action's result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "409": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "429": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "503": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/v1/actions/creatures/startHold": {
+      "post": {
+        "operationId": "creaturesStartHold",
+        "summary": "Start a payment hold",
+        "description": "Action `finance.hold.start` on `hold`. Authorized subjects: user, creature, workload.",
+        "tags": [
+          "hold"
+        ],
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "proof": []
+          }
+        ],
+        "x-aseman-action": "finance.hold.start",
+        "x-aseman-class": "financial",
+        "x-aseman-legacy-request": "StartHoldInput",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "Aseman-Request-Id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Echoed in the response and in traces."
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Required for a mutating action: a retry under the same key returns the first outcome instead of repeating the effect."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The action's result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "409": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "429": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "503": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/v1/actions/creatures/transfer": {
+      "post": {
+        "operationId": "creaturesTransfer",
+        "summary": "Transfer between accounts",
+        "description": "Action `finance.transfer` on `account`. Authorized subjects: user, creature, workload.",
+        "tags": [
+          "account"
+        ],
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "proof": []
+          }
+        ],
+        "x-aseman-action": "finance.transfer",
+        "x-aseman-class": "financial",
+        "x-aseman-legacy-request": "TransferInput",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "Aseman-Request-Id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Echoed in the response and in traces."
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Required for a mutating action: a retry under the same key returns the first outcome instead of repeating the effect."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The action's result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "409": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "429": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "503": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/v1/actions/creatures/types": {
+      "post": {
+        "operationId": "creaturesTypes",
+        "summary": "The creature type registry",
+        "description": "Action `creature.types.read` on `creature`. Authorized subjects: user, creature, node, service, workload, module_publisher.",
+        "tags": [
+          "creature"
+        ],
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "proof": []
+          }
+        ],
+        "x-aseman-action": "creature.types.read",
+        "x-aseman-class": "read",
+        "x-aseman-legacy-request": "ListInput",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "Aseman-Request-Id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Echoed in the response and in traces."
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Required for a mutating action: a retry under the same key returns the first outcome instead of repeating the effect."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The action's result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "409": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "429": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "503": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/v1/actions/creatures/update": {
+      "post": {
+        "operationId": "creaturesUpdate",
+        "summary": "Update a creature or its metadata",
+        "description": "Action `creature.update` on `creature`. Authorized subjects: user, creature, workload.",
+        "tags": [
+          "creature"
+        ],
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "proof": []
+          }
+        ],
+        "x-aseman-action": "creature.update",
+        "x-aseman-class": "write",
+        "x-aseman-legacy-request": "UpdateInput",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "Aseman-Request-Id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Echoed in the response and in traces."
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Required for a mutating action: a retry under the same key returns the first outcome instead of repeating the effect."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The action's result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "409": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "429": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "503": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/v1/actions/gateway/signal": {
+      "post": {
+        "operationId": "gatewaySignal",
+        "summary": "Publish to a realtime topic",
+        "description": "Action `topic.publish` on `topic`. Authorized subjects: user, creature, node, service, workload, module_publisher.",
+        "tags": [
+          "topic"
+        ],
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "proof": []
+          }
+        ],
+        "x-aseman-action": "topic.publish",
+        "x-aseman-class": "write",
+        "x-aseman-legacy-request": "GatewaySignalInput",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "Aseman-Request-Id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Echoed in the response and in traces."
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Required for a mutating action: a retry under the same key returns the first outcome instead of repeating the effect."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The action's result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "409": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "429": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "503": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/v1/actions/gateway/subscribe": {
+      "post": {
+        "operationId": "gatewaySubscribe",
+        "summary": "Subscribe to a realtime topic",
+        "description": "Action `topic.subscribe` on `topic`. Authorized subjects: user, creature, node, service, workload, module_publisher.",
+        "tags": [
+          "topic"
+        ],
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "proof": []
+          }
+        ],
+        "x-aseman-action": "topic.subscribe",
+        "x-aseman-class": "read",
+        "x-aseman-legacy-request": "GatewaySubscribeInput",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "Aseman-Request-Id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Echoed in the response and in traces."
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Required for a mutating action: a retry under the same key returns the first outcome instead of repeating the effect."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The action's result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "409": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "429": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "503": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/v1/actions/gateway/unsubscribe": {
+      "post": {
+        "operationId": "gatewayUnsubscribe",
+        "summary": "Unsubscribe from a realtime topic",
+        "description": "Action `topic.unsubscribe` on `topic`. Authorized subjects: user, creature, node, service, workload, module_publisher.",
+        "tags": [
+          "topic"
+        ],
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "proof": []
+          }
+        ],
+        "x-aseman-action": "topic.unsubscribe",
+        "x-aseman-class": "read",
+        "x-aseman-legacy-request": "GatewayUnsubscribeInput",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "Aseman-Request-Id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Echoed in the response and in traces."
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Required for a mutating action: a retry under the same key returns the first outcome instead of repeating the effect."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The action's result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "409": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "429": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "503": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/v1/actions/machines/closeVmTerminal": {
+      "post": {
+        "operationId": "machinesCloseVmTerminal",
+        "summary": "Close a workload terminal",
+        "description": "Action `workload.terminal.close` on `workload`. Authorized subjects: user, creature.",
+        "tags": [
+          "workload"
+        ],
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "proof": []
+          }
+        ],
+        "x-aseman-action": "workload.terminal.close",
+        "x-aseman-class": "write",
+        "x-aseman-legacy-request": "VmTerminalInput",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "Aseman-Request-Id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Echoed in the response and in traces."
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Required for a mutating action: a retry under the same key returns the first outcome instead of repeating the effect."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The action's result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "409": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "429": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "503": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/v1/actions/machines/list": {
+      "post": {
+        "operationId": "machinesList",
+        "summary": "List creatures and machines (bulk discovery)",
+        "description": "Action `creature.list` on `creature`. Authorized subjects: user, creature, workload.",
+        "tags": [
+          "creature"
+        ],
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "proof": []
+          }
+        ],
+        "x-aseman-action": "creature.list",
+        "x-aseman-class": "read",
+        "x-aseman-legacy-request": "ListInput",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "Aseman-Request-Id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Echoed in the response and in traces."
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Required for a mutating action: a retry under the same key returns the first outcome instead of repeating the effect."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The action's result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "409": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "429": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "503": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/v1/actions/machines/listEntityVms": {
+      "post": {
+        "operationId": "machinesListEntityVms",
+        "summary": "List an entity's workloads",
+        "description": "Action `workload.list` on `workload`. Authorized subjects: user, creature, workload.",
+        "tags": [
+          "workload"
+        ],
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "proof": []
+          }
+        ],
+        "x-aseman-action": "workload.list",
+        "x-aseman-class": "read",
+        "x-aseman-legacy-request": "RunProgramEntityInput",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "Aseman-Request-Id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Echoed in the response and in traces."
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Required for a mutating action: a retry under the same key returns the first outcome instead of repeating the effect."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The action's result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "409": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "429": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "503": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/v1/actions/machines/listProgramMachines": {
+      "post": {
+        "operationId": "machinesListProgramMachines",
+        "summary": "List programs",
+        "description": "Action `program.list` on `program`. Authorized subjects: user, creature, workload.",
+        "tags": [
+          "program"
+        ],
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "proof": []
+          }
+        ],
+        "x-aseman-action": "program.list",
+        "x-aseman-class": "read",
+        "x-aseman-legacy-request": "ListAppMachsInput",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "Aseman-Request-Id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Echoed in the response and in traces."
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Required for a mutating action: a retry under the same key returns the first outcome instead of repeating the effect."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The action's result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "409": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "429": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "503": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/v1/actions/machines/openVmTerminal": {
+      "post": {
+        "operationId": "machinesOpenVmTerminal",
+        "summary": "Open a workload terminal",
+        "description": "Action `workload.terminal.open` on `workload`. Authorized subjects: user, creature.",
+        "tags": [
+          "workload"
+        ],
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "proof": []
+          }
+        ],
+        "x-aseman-action": "workload.terminal.open",
+        "x-aseman-class": "security",
+        "x-aseman-legacy-request": "VmTerminalInput",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "Aseman-Request-Id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Echoed in the response and in traces."
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Required for a mutating action: a retry under the same key returns the first outcome instead of repeating the effect."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The action's result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "409": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "429": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "503": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/v1/actions/machines/readMachineBuilds": {
+      "post": {
+        "operationId": "machinesReadMachineBuilds",
+        "summary": "Read workload builds",
+        "description": "Action `workload.builds.read` on `workload`. Authorized subjects: user, creature, workload.",
+        "tags": [
+          "workload"
+        ],
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "proof": []
+          }
+        ],
+        "x-aseman-action": "workload.builds.read",
+        "x-aseman-class": "read",
+        "x-aseman-legacy-request": "MachineBuildsInput",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "Aseman-Request-Id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Echoed in the response and in traces."
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Required for a mutating action: a retry under the same key returns the first outcome instead of repeating the effect."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The action's result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "409": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "429": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "503": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/v1/actions/machines/readVmLogs": {
+      "post": {
+        "operationId": "machinesReadVmLogs",
+        "summary": "Read workload logs",
+        "description": "Action `workload.logs.read` on `workload`. Authorized subjects: user, creature, workload.",
+        "tags": [
+          "workload"
+        ],
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "proof": []
+          }
+        ],
+        "x-aseman-action": "workload.logs.read",
+        "x-aseman-class": "read",
+        "x-aseman-legacy-request": "ReadVmLogsInput",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "Aseman-Request-Id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Echoed in the response and in traces."
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Required for a mutating action: a retry under the same key returns the first outcome instead of repeating the effect."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The action's result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "409": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "429": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "503": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/v1/actions/programs/create": {
+      "post": {
+        "operationId": "programsCreate",
+        "summary": "Create a program",
+        "description": "Action `program.create` on `program`. Authorized subjects: user, creature, workload.",
+        "tags": [
+          "program"
+        ],
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "proof": []
+          }
+        ],
+        "x-aseman-action": "program.create",
+        "x-aseman-class": "write",
+        "x-aseman-legacy-request": "CreateMachineInput",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "Aseman-Request-Id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Echoed in the response and in traces."
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Required for a mutating action: a retry under the same key returns the first outcome instead of repeating the effect."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The action's result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "409": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "429": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "503": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/v1/actions/programs/delete": {
+      "post": {
+        "operationId": "programsDelete",
+        "summary": "Delete a program",
+        "description": "Action `program.delete` on `program`. Authorized subjects: user, creature, workload.",
+        "tags": [
+          "program"
+        ],
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "proof": []
+          }
+        ],
+        "x-aseman-action": "program.delete",
+        "x-aseman-class": "write",
+        "x-aseman-legacy-request": "DeleteProgramInput",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "Aseman-Request-Id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Echoed in the response and in traces."
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Required for a mutating action: a retry under the same key returns the first outcome instead of repeating the effect."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The action's result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "409": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "429": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "503": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/v1/actions/programs/deleteEntity": {
+      "post": {
+        "operationId": "programsDeleteEntity",
+        "summary": "Delete an entity",
+        "description": "Action `entity.delete` on `entity`. Authorized subjects: user, creature, workload.",
+        "tags": [
+          "entity"
+        ],
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "proof": []
+          }
+        ],
+        "x-aseman-action": "entity.delete",
+        "x-aseman-class": "write",
+        "x-aseman-legacy-request": "RunProgramEntityInput",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "Aseman-Request-Id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Echoed in the response and in traces."
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Required for a mutating action: a retry under the same key returns the first outcome instead of repeating the effect."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The action's result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "409": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "429": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "503": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/v1/actions/programs/deploy": {
+      "post": {
+        "operationId": "programsDeploy",
+        "summary": "Deploy an entity",
+        "description": "Action `entity.deploy` on `entity`. Authorized subjects: user, creature, workload.",
+        "tags": [
+          "entity"
+        ],
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "proof": []
+          }
+        ],
+        "x-aseman-action": "entity.deploy",
+        "x-aseman-class": "write",
+        "x-aseman-legacy-request": "DeployInput",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "Aseman-Request-Id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Echoed in the response and in traces."
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Required for a mutating action: a retry under the same key returns the first outcome instead of repeating the effect."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The action's result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "409": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "429": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "503": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/v1/actions/programs/downloadEntity": {
+      "post": {
+        "operationId": "programsDownloadEntity",
+        "summary": "Download a downloadable entity",
+        "description": "Action `entity.download` on `entity`. Authorized subjects: user, creature, workload.",
+        "tags": [
+          "entity"
+        ],
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "proof": []
+          }
+        ],
+        "x-aseman-action": "entity.download",
+        "x-aseman-class": "read",
+        "x-aseman-legacy-request": "DownloadEntityInput",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "Aseman-Request-Id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Echoed in the response and in traces."
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Required for a mutating action: a retry under the same key returns the first outcome instead of repeating the effect."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The action's result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "409": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "429": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "503": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/v1/actions/programs/list": {
+      "post": {
+        "operationId": "programsList",
+        "summary": "List programs",
+        "description": "Action `program.list` on `program`. Authorized subjects: user, creature, workload.",
+        "tags": [
+          "program"
+        ],
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "proof": []
+          }
+        ],
+        "x-aseman-action": "program.list",
+        "x-aseman-class": "read",
+        "x-aseman-legacy-request": "ListInput",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "Aseman-Request-Id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Echoed in the response and in traces."
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Required for a mutating action: a retry under the same key returns the first outcome instead of repeating the effect."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The action's result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "409": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "429": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "503": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/v1/actions/programs/runEntity": {
+      "post": {
+        "operationId": "programsRunEntity",
+        "summary": "Start a workload",
+        "description": "Action `workload.start` on `workload`. Authorized subjects: user, creature, workload.",
+        "tags": [
+          "workload"
+        ],
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "proof": []
+          }
+        ],
+        "x-aseman-action": "workload.start",
+        "x-aseman-class": "write",
+        "x-aseman-legacy-request": "RunProgramEntityInput",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "Aseman-Request-Id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Echoed in the response and in traces."
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Required for a mutating action: a retry under the same key returns the first outcome instead of repeating the effect."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The action's result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "409": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "429": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "503": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/v1/actions/programs/stopEntity": {
+      "post": {
+        "operationId": "programsStopEntity",
+        "summary": "Stop a workload",
+        "description": "Action `workload.stop` on `workload`. Authorized subjects: user, creature, workload.",
+        "tags": [
+          "workload"
+        ],
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "proof": []
+          }
+        ],
+        "x-aseman-action": "workload.stop",
+        "x-aseman-class": "write",
+        "x-aseman-legacy-request": "RunProgramEntityInput",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "Aseman-Request-Id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Echoed in the response and in traces."
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Required for a mutating action: a retry under the same key returns the first outcome instead of repeating the effect."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The action's result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "409": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "429": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "503": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/v1/actions/programs/update": {
+      "post": {
+        "operationId": "programsUpdate",
+        "summary": "Update a program",
+        "description": "Action `program.update` on `program`. Authorized subjects: user, creature, workload.",
+        "tags": [
+          "program"
+        ],
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "proof": []
+          }
+        ],
+        "x-aseman-action": "program.update",
+        "x-aseman-class": "write",
+        "x-aseman-legacy-request": "UpdateProgramInput",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "Aseman-Request-Id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Echoed in the response and in traces."
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Required for a mutating action: a retry under the same key returns the first outcome instead of repeating the effect."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The action's result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "409": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "429": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "503": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/v1/actions/storage/upload": {
+      "post": {
+        "operationId": "storageUpload",
+        "summary": "Upload a public file",
+        "description": "Action `file.upload` on `file`. Authorized subjects: user, creature, workload.",
+        "tags": [
+          "file"
+        ],
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "proof": []
+          }
+        ],
+        "x-aseman-action": "file.upload",
+        "x-aseman-class": "write",
+        "x-aseman-legacy-request": "StorageUploadInput",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "Aseman-Request-Id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Echoed in the response and in traces."
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Required for a mutating action: a retry under the same key returns the first outcome instead of repeating the effect."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The action's result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "409": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "429": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "503": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/v1/actions/stores/getAccess": {
+      "post": {
+        "operationId": "storesGetAccess",
+        "summary": "Read store permissions",
+        "description": "Action `store.access.read` on `store`. Authorized subjects: user, creature, workload.",
+        "tags": [
+          "store"
+        ],
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "proof": []
+          }
+        ],
+        "x-aseman-action": "store.access.read",
+        "x-aseman-class": "read",
+        "x-aseman-legacy-request": "GetAccessInput",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "Aseman-Request-Id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Echoed in the response and in traces."
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Required for a mutating action: a retry under the same key returns the first outcome instead of repeating the effect."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The action's result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "409": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "429": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "503": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/v1/actions/stores/history": {
+      "post": {
+        "operationId": "storesHistory",
+        "summary": "Read store history",
+        "description": "Action `store.history.read` on `store`. Authorized subjects: user, creature, workload.",
+        "tags": [
+          "store"
+        ],
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "proof": []
+          }
+        ],
+        "x-aseman-action": "store.history.read",
+        "x-aseman-class": "read",
+        "x-aseman-legacy-request": "HistoryInput",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "Aseman-Request-Id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Echoed in the response and in traces."
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Required for a mutating action: a retry under the same key returns the first outcome instead of repeating the effect."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The action's result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "409": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "429": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "503": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/v1/actions/stores/setAccess": {
+      "post": {
+        "operationId": "storesSetAccess",
+        "summary": "Change store membership",
+        "description": "Action `store.access.write` on `store`. Authorized subjects: user, creature, workload.",
+        "tags": [
+          "store"
+        ],
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "proof": []
+          }
+        ],
+        "x-aseman-action": "store.access.write",
+        "x-aseman-class": "security",
+        "x-aseman-legacy-request": "SetAccessInput",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "Aseman-Request-Id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Echoed in the response and in traces."
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Required for a mutating action: a retry under the same key returns the first outcome instead of repeating the effect."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The action's result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "409": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "429": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "503": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    },
+    "/v1/actions/stores/signal": {
+      "post": {
+        "operationId": "storesSignal",
+        "summary": "Signal a store",
+        "description": "Action `store.signal` on `store`. Authorized subjects: user, creature, workload.",
+        "tags": [
+          "store"
+        ],
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "proof": []
+          }
+        ],
+        "x-aseman-action": "store.signal",
+        "x-aseman-class": "write",
+        "x-aseman-legacy-request": "SignalInput",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "Aseman-Request-Id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Echoed in the response and in traces."
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Required for a mutating action: a retry under the same key returns the first outcome instead of repeating the effect."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The action's result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "403": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "409": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "429": {
+            "$ref": "#/components/responses/Problem"
+          },
+          "503": {
+            "$ref": "#/components/responses/Problem"
+          }
+        }
+      }
+    }
+  }
+}

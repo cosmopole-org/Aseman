@@ -1,7 +1,8 @@
 //! `aseman-vmm-backend-native LISTEN CONFIG`: serve the native backend over A504 on a
 //! loopback address. CONFIG is JSON:
-//! `{"state_dir": "...", "node_ca": "path/to/node-ca.pem", "guest_timeout_millis": 30000,
-//! "docker_gateway_port": 7000}`.
+//! `{"state_dir": "...", "node_ca": "path/to/node-ca.pem", "guest_timeout_millis": 30000}`.
+//! The runtime plugins read their own settings (`ASEMAN_LEGACY_DOCKER_HOST_GATEWAY_PORT`,
+//! Firecracker, Modal, ...) from the environment through `aseman-config`.
 
 use std::net::SocketAddr;
 use std::path::PathBuf;
@@ -21,9 +22,6 @@ struct Config {
     node_ca: PathBuf,
     #[serde(default = "default_timeout")]
     guest_timeout_millis: u64,
-    /// The docker-host gateway port docker containers dial; none when unset.
-    #[serde(default)]
-    docker_gateway_port: Option<u16>,
 }
 
 fn default_timeout() -> u64 {
@@ -54,7 +52,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let backend = Arc::new(NativeBackend::start(
         config.state_dir,
         guest,
-        config.docker_gateway_port,
+        // The runtime setting the docker plugin advertises to its containers.
+        Some(aseman_config::runtime_config().docker_gateway_port).filter(|port| *port > 0),
     )?);
     tokio::runtime::Runtime::new()?.block_on(async move {
         tonic::transport::Server::builder()

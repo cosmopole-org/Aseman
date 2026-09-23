@@ -134,6 +134,8 @@
     }
   },
   "status_counts": {
-    "open": 73
+    "deleted": 46,
+    "open": 5,
+    "verified": 22
   }
 }

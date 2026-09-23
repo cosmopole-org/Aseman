@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import functools
 import re
 import sys
 from collections import Counter
@@ -27,6 +28,33 @@ TRX_METHODS = (
     "get_obj|put_obj|put_json|del_json|get_json|commit|discard"
 )
 
+
+
+@functools.lru_cache(maxsize=1)
+def vmm_client_methods() -> frozenset:
+    """The node's VMM client surface, read from `RemoteWorkloads` itself.
+
+    The call graph names the A501 operations an action performs. Reading the surface
+    from the client keeps the inventory honest when the client gains or loses one,
+    instead of pinning a list that silently goes stale.
+    """
+    source = (ROOT / "node/src/shell/workloads.rs").read_text(encoding="utf-8")
+    blocks = [
+        source[start : source.find("\n}\n", start)]
+        for start in (
+            match.start()
+            for match in re.finditer(r"\nimpl RemoteWorkloads \{", source)
+        )
+    ]
+    if not blocks:
+        raise SystemExit("RemoteWorkloads is gone: update the call graph generator")
+    return frozenset(
+        name
+        for block in blocks
+        for name in re.findall(
+            r"\bpub(?:\(crate\))? fn ([a-z][a-zA-Z0-9_]*)\s*[(<]", block
+        )
+    )
 
 def rel(path: Path) -> str:
     return path.relative_to(ROOT).as_posix()
@@ -134,14 +162,16 @@ def action_rows() -> list[dict[str, Any]]:
                     )
                 )
             )
-            vmm_calls = sorted(
-                set(
-                    re.findall(
-                        r"\.(run_vm|terminate_vm|delete_vm_instance|exec_vm|read_vm_logs|open_vm_terminal|close_vm_terminal|build_vm_image)\s*\(",
-                        body,
-                    )
+            # Since P5-06 an action reaches a VM only through the node's VMM client
+            # (`shell::workloads::remote()`), never through an in-process runtime.
+            vmm_calls = []
+            if "shell::workloads::remote()" in body:
+                services.append("vmm")
+                vmm_calls = sorted(
+                    name
+                    for name in vmm_client_methods()
+                    if re.search(rf"\.{name}\s*\(", body)
                 )
-            )
             rows.append(
                 {
                     "path": action_path,

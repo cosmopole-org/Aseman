@@ -44,7 +44,7 @@ impl NodeWorkloads {
 
 /// The runtime of a program entity: the entity's type when it has one, else the
 /// program's runtime.
-fn entity_runtime(app: &Arc<dyn ICore>, program: &str, entity: &str) -> String {
+pub(crate) fn entity_runtime(app: &Arc<dyn ICore>, program: &str, entity: &str) -> String {
     let slot = Arc::new(Mutex::new(String::new()));
     let out = slot.clone();
     let program = program.to_owned();
@@ -69,7 +69,8 @@ fn entity_runtime(app: &Arc<dyn ICore>, program: &str, entity: &str) -> String {
                     }
                 }
             }
-            *out.lock().unwrap_or_else(std::sync::PoisonError::into_inner) = runtime;
+            *out.lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner) = runtime;
             Ok(())
         }),
     );
@@ -83,7 +84,9 @@ fn entity_runtime(app: &Arc<dyn ICore>, program: &str, entity: &str) -> String {
 /// Deliver one signal to an entity of `program` through the node's VMM.
 fn deliver(app: &Arc<dyn ICore>, program: &str, entity: &str, store_id: &str, packet: Value) {
     let Some(remote) = crate::shell::workloads::remote() else {
-        eprintln!("signal to {program}/{entity} dropped: this node has no VMM (ASEMAN_VMM_ENDPOINT)");
+        eprintln!(
+            "signal to {program}/{entity} dropped: this node has no VMM (ASEMAN_VMM_ENDPOINT)"
+        );
         return;
     };
     let runtime = entity_runtime(app, program, entity);
@@ -166,8 +169,9 @@ impl IWorkloads for NodeWorkloads {
         self.app.modify_state(
             true,
             Box::new(move |trx: &dyn ITrx| {
-                *store_out.lock().unwrap() = (crate::shell::api::model::store_ports::StorePorts { trx })
-                    .store_or_empty(&store_id_owned);
+                *store_out.lock().unwrap() =
+                    (crate::shell::api::model::store_ports::StorePorts { trx })
+                        .store_or_empty(&store_id_owned);
                 let ports = crate::shell::api::model::store_ports::MembershipPorts { trx };
                 *member_out.lock().unwrap() =
                     aseman_ports::StoreAccess::is_member(&ports, &store_id_owned, &machine_owned)
@@ -341,17 +345,15 @@ impl IWorkloads for NodeWorkloads {
     fn host_action_program(&self, op: &str, input: &Value, req_id: i64) -> (String, i64) {
         self.handle_program_crud(op, input, req_id)
     }
+
+    fn host_action_signal(&self, input: &Value) -> String {
+        self.handle_signal_store(input, 0).0
+    }
 }
 
 /// `normalizeRuntime` — Go's `strings.ToLower(TrimSpace(.))`.
 pub(super) fn normalize_runtime(runtime: &str) -> String {
     runtime.trim().to_lowercase()
-}
-
-/// Canonical key of the registered fallback runtime, used when a program
-/// record carries no runtime of its own.
-pub(super) fn default_runtime_key() -> String {
-    caspar_vm_sdk::registry::default_key().unwrap_or_default()
 }
 
 /// Field-getter helper — emulates Go's generic `checkField[T]`.
@@ -393,4 +395,3 @@ pub(super) fn now_unix_ms() -> i64 {
         .unwrap_or_default()
         .as_millis() as i64
 }
-

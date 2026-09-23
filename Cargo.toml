@@ -10,6 +10,7 @@ members = [
   "node/crates/*",
   "modules/*",
   "modules/vmm-backend/native-legacy",
+  "modules/vmm-backend/nomad",
   "tests/contracts/module",
   "tests/contracts/policy",
   "tests/contracts/vmm-backend",

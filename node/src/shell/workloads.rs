@@ -89,6 +89,8 @@ impl Default for LaunchResources {
 
 pub(crate) struct RemoteWorkloads {
     client: HttpVmmClient,
+    /// The VMM's runtimes, read once (capabilities change only with a new backend).
+    runtimes: std::sync::Mutex<Option<Vec<aseman_domain::vmm::RuntimeCapabilities>>>,
     catalog: PostgresCapsuleRepository,
     blobs: StorageRootBlobStore,
     guest_api_url: String,
@@ -111,6 +113,14 @@ fn capsule(family: &str, legacy_id: &str) -> Uuid {
         family,
         legacy_id.as_bytes(),
     ))
+}
+
+/// A legacy creature's typed identity.
+pub(crate) fn creature_subject(legacy_id: &str) -> Subject {
+    Subject {
+        kind: SubjectKind::Creature,
+        id: capsule("Creature", legacy_id),
+    }
 }
 
 /// The node's typed identity (ADR 0009): its legacy ID's deterministic capsule ID.
@@ -234,6 +244,24 @@ impl RemoteWorkloads {
         workload: WorkloadId,
         state: DesiredWorkloadState,
     ) -> Result<u64> {
+        self.set_state_as(
+            Subject {
+                kind: SubjectKind::User,
+                id: capsule("Creature", user),
+            },
+            workload,
+            state,
+        )
+    }
+
+    /// Change a workload's desired state as `actor`, whose ownership of the workload
+    /// the node's decision point already established.
+    pub(crate) fn set_state_as(
+        &self,
+        actor: Subject,
+        workload: WorkloadId,
+        state: DesiredWorkloadState,
+    ) -> Result<u64> {
         let policy = crate::shell::authority::policy()
             .ok_or_else(|| anyhow!("the action registry did not load"))?;
         let workloads = self.workloads();
@@ -246,15 +274,7 @@ impl RemoteWorkloads {
             vmm: &self.client,
             clock: &SystemClock,
         }
-        .execute(
-            Subject {
-                kind: SubjectKind::User,
-                id: capsule("Creature", user),
-            },
-            workload,
-            state,
-            &BTreeSet::from([Condition::Owner]),
-        )
+        .execute(actor, workload, state, &BTreeSet::from([Condition::Owner]))
         .map_err(|error| anyhow!("{error}"))
     }
 
@@ -383,8 +403,427 @@ impl RemoteWorkloads {
     }
 }
 
+/// How long a host call waits for an operation it started.
+const HOST_CALL_WAIT: Duration = Duration::from_secs(120);
+
+fn refused(reason: impl std::fmt::Display) -> String {
+    json!({"ok": false, "error": reason.to_string()}).to_string()
+}
+
+impl RemoteWorkloads {
+    /// The VMM's capabilities for `runtime`.
+    fn runtime(&self, runtime: &str) -> Result<aseman_domain::vmm::RuntimeCapabilities> {
+        let mut cached = self
+            .runtimes
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        if cached.is_none() {
+            *cached = Some(
+                aseman_ports::vmm::VmmClient::capabilities(&self.client)
+                    .map_err(|error| anyhow!("{error}"))?
+                    .runtimes,
+            );
+        }
+        cached
+            .as_ref()
+            .and_then(|runtimes| runtimes.iter().find(|entry| entry.runtime == runtime))
+            .cloned()
+            .ok_or_else(|| anyhow!("the VMM offers no runtime {runtime}"))
+    }
+
+    /// Whether the VMM offers `runtime`.
+    pub(crate) fn offers(&self, runtime: &str) -> bool {
+        self.runtime(runtime).is_ok()
+    }
+
+    /// The runtime keys the VMM offers.
+    pub(crate) fn runtime_keys(&self) -> Vec<String> {
+        let _ = self.runtime("");
+        self.runtimes
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .as_ref()
+            .map(|runtimes| runtimes.iter().map(|entry| entry.runtime.clone()).collect())
+            .unwrap_or_default()
+    }
+
+    /// A workload's log lines after `after`, oldest first (A501 `logs`). A workload's
+    /// logs are its VMM's: the node stores none of its own.
+    pub(crate) fn logs(
+        &self,
+        workload: WorkloadId,
+        after: u64,
+    ) -> Result<Vec<aseman_domain::vmm::LogRecord>> {
+        aseman_ports::vmm::VmmClient::logs(&self.client, workload, after)
+            .map_err(|error| anyhow!("{error}"))
+    }
+
+    /// The deploy conventions of `runtime`.
+    pub(crate) fn deploy_conventions(
+        &self,
+        runtime: &str,
+    ) -> Option<aseman_domain::vmm::DeployConventions> {
+        self.runtime(runtime).ok().map(|entry| entry.deploy)
+    }
+
+    /// Wait for an operation to finish; its A501 result or failure.
+    fn await_operation(
+        &self,
+        operation: aseman_domain::vmm::OperationRecord,
+    ) -> Result<Option<String>> {
+        use aseman_domain::OperationState;
+        let deadline = std::time::Instant::now() + HOST_CALL_WAIT;
+        let mut current = operation;
+        loop {
+            match current.state {
+                OperationState::Succeeded => return Ok(current.result),
+                OperationState::Failed | OperationState::Cancelled => {
+                    return Err(anyhow!(
+                        "{}",
+                        current
+                            .error
+                            .map(|failure| format!("{}: {}", failure.code.as_str(), failure.detail))
+                            .unwrap_or_else(|| "the operation did not complete".to_owned())
+                    ));
+                }
+                _ => {}
+            }
+            if std::time::Instant::now() >= deadline {
+                return Err(anyhow!("the operation is still running"));
+            }
+            std::thread::sleep(Duration::from_millis(50));
+            current = aseman_ports::vmm::VmmClient::operation(&self.client, current.id)
+                .map_err(|error| anyhow!("{error}"))?
+                .ok_or_else(|| anyhow!("the operation disappeared"))?;
+        }
+    }
+
+    fn key(prefix: &str) -> String {
+        format!("{prefix}-{}", Uuid::now_v7().simple())
+    }
+
+    /// A VM host call (`runVm`, `terminateVm`, `deleteVm`, `execVm`, `statusVm`,
+    /// `copyToVm`, `copyFromVm`, `buildVmImage`, `vmEndpoints`) for `caller` (the
+    /// node-resolved calling program), already authorized by the node's decision
+    /// point. The target is `{machineId, entityId, vmId}` of `input`; the answer keeps
+    /// the legacy shapes.
+    pub(crate) fn vm_host_call(
+        &self,
+        app: &Arc<dyn crate::models::core::ICore>,
+        op: &str,
+        caller: &str,
+        input: &Value,
+    ) -> String {
+        match self.vm_host_call_inner(app, op, caller, input) {
+            Ok(answer) => answer.to_string(),
+            Err(error) => refused(error),
+        }
+    }
+
+    fn vm_host_call_inner(
+        &self,
+        app: &Arc<dyn crate::models::core::ICore>,
+        op: &str,
+        caller: &str,
+        input: &Value,
+    ) -> Result<Value> {
+        use base64::Engine;
+        let text = |field: &str| input[field].as_str().unwrap_or("").trim().to_owned();
+        let program = if text("machineId").is_empty() {
+            caller.to_owned()
+        } else {
+            text("machineId")
+        };
+        let entity = if text("entityId").is_empty() {
+            aseman_domain::program::DEFAULT_ALARM_ENTITY.to_owned()
+        } else {
+            text("entityId")
+        };
+        let runtime = [text("runtime"), text("vmType")]
+            .into_iter()
+            .find(|value| !value.is_empty())
+            .map(|value| value.to_lowercase())
+            .unwrap_or_else(|| crate::drivers::vmm::driver::entity_runtime(app, &program, &entity));
+        let vm = text("vmId");
+        let target = |vm: &str| Self::workload_id(&program, &entity, vm);
+        let as_caller = Subject {
+            kind: SubjectKind::Creature,
+            id: capsule("Creature", caller),
+        };
+        let client = &self.client;
+        Ok(match op {
+            "runVm" => {
+                let capabilities = self.runtime(&runtime)?;
+                if !capabilities.long_running {
+                    // An invocation runtime runs the program once and answers.
+                    let machine = program_machine(app, &program);
+                    let payload = input.get("input").cloned().unwrap_or(Value::Null);
+                    let id = Self::workload_id(&program, &entity, SIGNAL_INSTANCE);
+                    if !self.exists(id)? {
+                        self.launch(
+                            &program,
+                            &machine,
+                            &entity,
+                            SIGNAL_INSTANCE,
+                            &runtime,
+                            LaunchResources::default(),
+                            BTreeMap::new(),
+                        )?;
+                    }
+                    let invocation = Invocation {
+                        kind: InvocationKind::Signal,
+                        key: "runVm".to_owned(),
+                        store_id: None,
+                        payload,
+                    };
+                    let operation = aseman_ports::vmm::VmmClient::invoke(
+                        client,
+                        id,
+                        &serde_json::to_string(&invocation)?,
+                        &Self::key("run"),
+                    )
+                    .map_err(|error| anyhow!("{error}"))?;
+                    let result = self.await_operation(operation)?.unwrap_or_default();
+                    let result: Value = serde_json::from_str(&result).unwrap_or_default();
+                    let mut answer = result["output"].clone();
+                    if !answer.is_object() {
+                        answer = json!({"output": answer});
+                    }
+                    answer["ok"] = answer.get("ok").cloned().unwrap_or(json!(true));
+                    answer
+                } else {
+                    let vm = if vm.is_empty() {
+                        Uuid::now_v7().to_string()
+                    } else {
+                        vm
+                    };
+                    let machine = program_machine(app, &program);
+                    let resources = &input["resources"];
+                    let number =
+                        |field: &str, default: i64| resources[field].as_i64().unwrap_or(default);
+                    let environment = input["params"]
+                        .as_object()
+                        .map(|params| {
+                            params
+                                .iter()
+                                .map(|(name, value)| {
+                                    (
+                                        name.clone(),
+                                        value
+                                            .as_str()
+                                            .map_or_else(|| value.to_string(), str::to_owned),
+                                    )
+                                })
+                                .collect()
+                        })
+                        .unwrap_or_default();
+                    self.launch(
+                        &program,
+                        &machine,
+                        &entity,
+                        &vm,
+                        &runtime,
+                        LaunchResources {
+                            cpu_cores: number("cpuCores", 1),
+                            ram_mb: number("ramMb", 64),
+                            disk_gb: number("diskGb", 1),
+                            max_exec_time_seconds: number("maxExecTimeSeconds", 60),
+                        },
+                        environment,
+                    )?;
+                    json!({"ok": true, "vmId": vm, "machineId": program})
+                }
+            }
+            "terminateVm" | "deleteVm" | "destroyVm" => {
+                let state = if op == "terminateVm" {
+                    DesiredWorkloadState::Stopped
+                } else {
+                    DesiredWorkloadState::Deleted
+                };
+                let generation = self.set_state_as(as_caller, target(&vm), state)?;
+                json!({"ok": true, "vmId": vm, "generation": generation})
+            }
+            "execVm" | "execDocker" => {
+                let mut command: Vec<String> = input["args"]
+                    .as_array()
+                    .map(|args| {
+                        args.iter()
+                            .filter_map(|arg| arg.as_str().map(str::to_owned))
+                            .collect()
+                    })
+                    .unwrap_or_default();
+                if command.is_empty() {
+                    command = vec!["sh".to_owned(), "-lc".to_owned(), text("command")];
+                }
+                let request = aseman_contracts::vmm::ExecRequest {
+                    command,
+                    stdin: None,
+                    timeout_millis: input["timeoutSecs"].as_u64().map(|seconds| seconds * 1000),
+                };
+                let operation = aseman_ports::vmm::VmmClient::exec(
+                    client,
+                    target(&vm),
+                    &serde_json::to_string(&request)?,
+                    &Self::key("exec"),
+                )
+                .map_err(|error| anyhow!("{error}"))?;
+                let result: aseman_contracts::vmm::ExecResult =
+                    serde_json::from_str(&self.await_operation(operation)?.unwrap_or_default())?;
+                let decode = |text: &str| {
+                    base64::engine::general_purpose::URL_SAFE_NO_PAD
+                        .decode(text)
+                        .map(|bytes| String::from_utf8_lossy(&bytes).into_owned())
+                        .unwrap_or_default()
+                };
+                json!({
+                    "ok": result.exit_code == 0,
+                    "exitCode": result.exit_code,
+                    "stdout": decode(&result.stdout),
+                    "stderr": decode(&result.stderr),
+                })
+            }
+            "statusVm" => {
+                let workload = aseman_ports::vmm::VmmClient::workload(client, target(&vm))
+                    .map_err(|error| anyhow!("{error}"))?
+                    .ok_or_else(|| anyhow!("no such vm"))?;
+                let observed = workload.observed.as_ref();
+                json!({
+                    "ok": true,
+                    "vmId": vm,
+                    "status": observed.map_or_else(|| "pending".to_owned(), |observed| serde_json::to_value(observed.state).ok().and_then(|value| value.as_str().map(str::to_owned)).unwrap_or_default()),
+                    "running": observed.is_some_and(|observed| observed.state == aseman_domain::ObservedWorkloadState::Running),
+                    "error": observed.and_then(|observed| observed.reason.clone()),
+                })
+            }
+            "copyToVm" | "copyToDocker" => {
+                let path = [text("targetPath"), text("fileName")]
+                    .into_iter()
+                    .filter(|part| !part.is_empty())
+                    .collect::<Vec<_>>()
+                    .join("/");
+                let path = if path.is_empty() { text("path") } else { path };
+                let bytes = base64::engine::general_purpose::STANDARD
+                    .decode(text("content"))
+                    .unwrap_or_else(|_| text("content").into_bytes());
+                aseman_ports::vmm::VmmClient::put_file(
+                    client,
+                    target(&vm),
+                    path.trim_start_matches('/'),
+                    &bytes,
+                    &Self::key("put"),
+                )
+                .map_err(|error| anyhow!("{error}"))?;
+                json!({"ok": true})
+            }
+            "copyFromVm" => {
+                let bytes = aseman_ports::vmm::VmmClient::get_file(
+                    client,
+                    target(&vm),
+                    text("path").trim_start_matches('/'),
+                )
+                .map_err(|error| anyhow!("{error}"))?;
+                json!({"ok": true, "content": base64::engine::general_purpose::STANDARD.encode(bytes)})
+            }
+            "buildVmImage" | "buildDockerImage" => {
+                let workload = aseman_ports::vmm::VmmClient::workload(client, target(&vm))
+                    .map_err(|error| anyhow!("{error}"))?
+                    .ok_or_else(|| anyhow!("build a deployed entity with a running workload"))?;
+                let request = aseman_contracts::vmm::BuildRequest {
+                    id: Uuid::now_v7(),
+                    runtime: runtime.clone(),
+                    source: workload.spec.artifact.clone(),
+                    entry: Some(workload.spec.entry.clone()),
+                    build_type: (!text("buildType").is_empty()).then(|| text("buildType")),
+                    labels: workload.labels,
+                };
+                let operation = aseman_ports::vmm::VmmClient::build(
+                    client,
+                    &serde_json::to_string(&request)?,
+                    &Self::key("build"),
+                )
+                .map_err(|error| anyhow!("{error}"))?;
+                self.await_operation(operation)?;
+                json!({"ok": true})
+            }
+            "vmEndpoints" => {
+                let endpoints = aseman_ports::vmm::VmmClient::endpoints(client, target(&vm))
+                    .map_err(|error| anyhow!("{error}"))?;
+                json!({"ok": true, "endpoints": endpoints})
+            }
+            other => return Err(anyhow!("{other} is not a VM host call")),
+        })
+    }
+
+    /// `verifyProgramExecution`: verify a proof of one of the node's program files
+    /// (`masmPath` under the node's storage), by the VMM runtime that proves them.
+    pub(crate) fn verify_execution(&self, input: &Value) -> String {
+        match self.verify_inner(input) {
+            Ok(answer) => answer,
+            Err(error) => refused(error),
+        }
+    }
+
+    fn verify_inner(&self, input: &Value) -> Result<String> {
+        use base64::Engine;
+        let path = input["masmPath"].as_str().unwrap_or("");
+        let key = self
+            .blobs
+            .key_of(path)
+            .ok_or_else(|| anyhow!("masmPath must name a program file of this node"))?;
+        let bytes = self
+            .blobs
+            .blob(&key)
+            .map_err(|error| anyhow!("{error}"))?
+            .ok_or_else(|| anyhow!("the program file does not exist"))?;
+        let numbers = |field: &str| -> Vec<u64> {
+            input[field]
+                .as_array()
+                .map(|values| values.iter().filter_map(Value::as_u64).collect())
+                .unwrap_or_default()
+        };
+        let proof: Vec<u8> = input["proof"]
+            .as_array()
+            .map(|values| {
+                values
+                    .iter()
+                    .filter_map(|value| value.as_u64().and_then(|byte| u8::try_from(byte).ok()))
+                    .collect()
+            })
+            .unwrap_or_default();
+        let runtime = self
+            .runtime_keys()
+            .into_iter()
+            .find(|key| self.runtime(key).is_ok_and(|entry| entry.execution_proofs))
+            .ok_or_else(|| anyhow!("no runtime of the VMM verifies program executions"))?;
+        let request = aseman_contracts::vmm::VerificationRequest {
+            program: Artifact {
+                kind: ArtifactKind::Blob,
+                reference: key,
+                digest: format!("sha256:{}", hex::encode(Sha256::digest(&bytes))),
+            },
+            inputs: numbers("inputs"),
+            outputs: numbers("outputs"),
+            proof: base64::engine::general_purpose::URL_SAFE_NO_PAD.encode(proof),
+        };
+        let answer = aseman_ports::vmm::VmmClient::verify(
+            &self.client,
+            &runtime,
+            &serde_json::to_string(&request)?,
+            &Self::key("verify"),
+        )
+        .map_err(|error| anyhow!("{error}"))?;
+        let result: aseman_contracts::vmm::VerificationResult = serde_json::from_str(&answer)?;
+        Ok(if result.valid {
+            json!({"ok": true, "security": result.security_level})
+        } else {
+            json!({"ok": false, "error": result.reason.unwrap_or_else(|| "the proof does not verify".to_owned())})
+        }
+        .to_string())
+    }
+}
+
 /// The machine creature that owns `program` (legacy IDs).
-fn program_machine(app: &Arc<dyn crate::models::core::ICore>, program: &str) -> String {
+pub(crate) fn program_machine(app: &Arc<dyn crate::models::core::ICore>, program: &str) -> String {
     let slot = Arc::new(std::sync::Mutex::new(String::new()));
     let out = slot.clone();
     let program = program.to_owned();
@@ -535,6 +974,7 @@ pub(crate) fn connect(
     .map_err(|error| anyhow!("{error}"))?;
     Ok(RemoteWorkloads {
         client,
+        runtimes: std::sync::Mutex::new(None),
         catalog: PostgresCapsuleRepository::connect(database_url)?,
         blobs: StorageRootBlobStore::new(storage_root),
         guest_api_url: config.guest_api_url.clone(),

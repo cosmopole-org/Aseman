@@ -27,7 +27,12 @@ use thiserror::Error;
 
 #[cfg(feature = "conformance")]
 pub mod conformance;
+pub mod consensus;
+pub mod coordination;
+pub mod federation;
+pub mod finance;
 pub mod guest;
+pub mod realtime;
 pub mod vmm;
 
 pub type PortResult<T> = Result<T, PortError>;

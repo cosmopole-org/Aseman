@@ -544,17 +544,19 @@ impl DockerVmController {
                 ..Default::default()
             },
         ))?;
-        let mut output = String::new();
-        let start_res = self.with_async(self.docker.start_exec(&create_res.id, None))?;
-        if let StartExecResults::Attached {
-            output: mut stream, ..
-        } = start_res
-        {
-            tokio::runtime::Builder::new_current_thread()
-                .enable_all()
-                .build()
-                .map_err(|e| format!("tokio runtime init failed: {}", e))?
-                .block_on(async {
+        // Start the exec and read its attached output in ONE runtime: the attached
+        // stream is driven by that runtime's connection tasks, so reading it from a
+        // second runtime after the first is dropped always failed (LD-29).
+        let output = tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()
+            .map_err(|e| format!("tokio runtime init failed: {}", e))?
+            .block_on(async {
+                let mut output = String::new();
+                if let StartExecResults::Attached {
+                    output: mut stream, ..
+                } = self.docker.start_exec(&create_res.id, None).await?
+                {
                     while let Some(msg) = stream.try_next().await? {
                         match msg {
                             LogOutput::StdOut { message }
@@ -565,10 +567,10 @@ impl DockerVmController {
                             }
                         }
                     }
-                    Ok::<(), BollardError>(())
-                })
-                .map_err(|e| format!("docker exec stream error: {}", e))?;
-        }
+                }
+                Ok::<String, BollardError>(output)
+            })
+            .map_err(|e| format!("docker exec stream error: {}", e))?;
         Ok(json!({
             "ok": true,
             "machineId": machine_id,
@@ -880,6 +882,9 @@ impl DockerVmController {
             .as_str()
             .map(|s| s.to_string())
             .unwrap_or_else(|| docker_image_ref(machine_id, &entity_id));
+        // Build output belongs to the workload being built: the VMM registers it
+        // before the build so its `build` stream has an owner (LD-30).
+        let vm_id_for_logs = packet["vmId"].as_str().unwrap_or("main").to_string();
         let context = build_context_from_path(image_build_path)?;
         let options = BuildImageOptions {
             dockerfile: "Dockerfile".to_string(),
@@ -897,10 +902,10 @@ impl DockerVmController {
                 let mut stream = self.docker.build_image(options, None, Some(context.into()));
                 while let Some(update) = stream.try_next().await.map_err(|e| e.to_string())? {
                     if let Some(status) = update.stream.clone() {
-                        emit_vm_log("main", "build", status.trim());
+                        emit_vm_log(&vm_id_for_logs, "build", status.trim());
                     }
                     if let Some(error) = update.error {
-                        emit_vm_log("main", "build", error.trim());
+                        emit_vm_log(&vm_id_for_logs, "build", error.trim());
                         return Err(format!("docker build failed: {}", error));
                     }
                 }

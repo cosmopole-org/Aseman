@@ -73,7 +73,6 @@ pub struct NodeIdentityConfig {
 pub struct NetworkConfig {
     pub public_http_port: u16,
     pub public_storage_port: u16,
-    pub docker_gateway_port: u16,
     pub vm_http_ingress_port: u16,
     pub legacy_tcp_port: u16,
     pub legacy_ws_port: u16,
@@ -323,6 +322,9 @@ pub struct CliConfig {
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct IntegrationTestConfig {
     pub postgres_url: Option<String>,
+    /// The Nomad cluster a live backend test runs against; absent skips the test,
+    /// because Aseman never installs a scheduler (ADR 0002).
+    pub nomad_endpoint: Option<String>,
 }
 
 impl IntegrationTestConfig {
@@ -330,6 +332,9 @@ impl IntegrationTestConfig {
     pub fn from_process() -> Self {
         Self {
             postgres_url: std::env::var("ASEMAN_TEST_POSTGRES_URL")
+                .ok()
+                .filter(|value| !value.trim().is_empty()),
+            nomad_endpoint: std::env::var("ASEMAN_TEST_NOMAD_ENDPOINT")
                 .ok()
                 .filter(|value| !value.trim().is_empty()),
         }
@@ -492,11 +497,6 @@ impl AsemanConfig {
             network: NetworkConfig {
                 public_http_port: parse_or(&values, "ASEMAN_PUBLIC_HTTP_PORT", 8080)?,
                 public_storage_port: parse_or(&values, "ASEMAN_PUBLIC_STORAGE_PORT", 8091)?,
-                docker_gateway_port: parse_or(
-                    &values,
-                    "ASEMAN_LEGACY_DOCKER_HOST_GATEWAY_PORT",
-                    8079,
-                )?,
                 vm_http_ingress_port: parse_or(
                     &values,
                     "ASEMAN_LEGACY_VM_HTTP_INGRESS_PORT",
@@ -701,6 +701,15 @@ pub struct VmmServiceConfig {
     pub max_request_bytes: usize,
     /// How often the executor, observer, and reconciler run.
     pub reconcile_interval_millis: u64,
+    /// This replica's identity in the coordination lease. Replicas of one VMM share
+    /// a database, so the singleton work is fenced between them (ADR 0013); the
+    /// default is the host name, which is distinct per replica in every profile.
+    pub instance: String,
+    /// How long the singleton lease is held for at a time.
+    pub lease_ttl_millis: i64,
+    /// How long before expiry the holder stops working, covering the database round
+    /// trip and the clock skew the operator assumes.
+    pub lease_margin_millis: i64,
 }
 
 impl VmmServiceConfig {
@@ -757,6 +766,14 @@ impl VmmServiceConfig {
                 "ASEMAN_VMM_RECONCILE_INTERVAL_MILLIS",
                 1_000,
             )?,
+            instance: values
+                .get("ASEMAN_VMM_INSTANCE")
+                .filter(|value| !value.trim().is_empty())
+                .cloned()
+                .or_else(|| values.get("HOSTNAME").cloned())
+                .unwrap_or_else(|| "aseman-vmm".to_owned()),
+            lease_ttl_millis: parse_or(values, "ASEMAN_VMM_LEASE_TTL_MILLIS", 30_000)?,
+            lease_margin_millis: parse_or(values, "ASEMAN_VMM_LEASE_MARGIN_MILLIS", 5_000)?,
         })
     }
 }
@@ -988,7 +1005,7 @@ mod tests {
     fn canonical_defaults_are_typed() {
         let config = AsemanConfig::from_map(&base()).unwrap();
         assert_eq!(config.network.public_http_port, 8080);
-        assert_eq!(config.network.docker_gateway_port, 8079);
+        assert_eq!(config.runtime.docker_gateway_port, 8079);
         assert_eq!(config.allocator.trim_interval_seconds, 30);
         assert!(config.legacy_aliases_used.is_empty());
     }

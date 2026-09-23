@@ -851,13 +851,17 @@
       "path": "/machines/listEntityVms",
       "request_type": "RunProgramEntityInput",
       "routes_via_chain": false,
-      "services": [],
+      "services": [
+        "vmm"
+      ],
       "spawns_background_work": false,
       "transaction_operations": [
         "get_link",
         "get_links_list"
       ],
-      "vmm_operations": []
+      "vmm_operations": [
+        "vm_host_call"
+      ]
     },
     {
       "guard_expression": "user_guard()",
@@ -907,14 +911,14 @@
       "request_type": "ReadVmLogsInput",
       "routes_via_chain": false,
       "services": [
-        "storage"
+        "vmm"
       ],
       "spawns_background_work": false,
       "transaction_operations": [
         "get_links_list"
       ],
       "vmm_operations": [
-        "read_vm_logs"
+        "logs"
       ]
     },
     {
@@ -948,7 +952,9 @@
       "path": "/programs/deleteEntity",
       "request_type": "RunProgramEntityInput",
       "routes_via_chain": false,
-      "services": [],
+      "services": [
+        "vmm"
+      ],
       "spawns_background_work": false,
       "transaction_operations": [
         "del_json",
@@ -956,7 +962,7 @@
         "get_link"
       ],
       "vmm_operations": [
-        "delete_vm_instance"
+        "set_state"
       ]
     },
     {
@@ -968,14 +974,16 @@
       "routes_via_chain": false,
       "services": [
         "storage",
-        "vmm"
+        "vmm",
+        "workloads"
       ],
-      "spawns_background_work": true,
+      "spawns_background_work": false,
       "transaction_operations": [
         "put_link"
       ],
       "vmm_operations": [
-        "build_vm_image"
+        "deploy_conventions",
+        "runtime_keys"
       ]
     },
     {
@@ -1014,13 +1022,16 @@
       "services": [
         "vmm"
       ],
-      "spawns_background_work": true,
+      "spawns_background_work": false,
       "transaction_operations": [
         "get_link",
         "put_json",
         "put_link"
       ],
-      "vmm_operations": []
+      "vmm_operations": [
+        "launch",
+        "offers"
+      ]
     },
     {
       "guard_expression": "user_guard()",
@@ -1037,7 +1048,9 @@
         "del_json",
         "del_key"
       ],
-      "vmm_operations": []
+      "vmm_operations": [
+        "set_state"
+      ]
     },
     {
       "guard_expression": "user_guard()",

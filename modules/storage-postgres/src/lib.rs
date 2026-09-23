@@ -17,8 +17,12 @@ use uuid::Uuid;
 pub mod service;
 pub use service::PostgresStorageService;
 pub mod capsule_store;
+pub mod coordination;
+pub mod federation;
+pub mod finance;
 pub mod guest;
 pub mod migration;
+pub mod realtime;
 mod replay;
 pub mod unit_of_work;
 pub mod vmm;
@@ -34,6 +38,10 @@ pub const MIGRATION_FENCE_MIGRATION: &str = include_str!("../migrations/0003_mig
 pub const PROGRAM_MACHINE_MIGRATION: &str =
     include_str!("../migrations/0004_program_machine_not_unique.sql");
 pub const IDENTITY_KEYS_MIGRATION: &str = include_str!("../migrations/0005_identity_keys.sql");
+pub const COORDINATION_MIGRATION: &str = include_str!("../migrations/0006_coordination.sql");
+pub const REALTIME_MIGRATION: &str = include_str!("../migrations/0007_realtime.sql");
+pub const FEDERATION_MIGRATION: &str = include_str!("../migrations/0008_federation.sql");
+pub const FINANCE_MIGRATION: &str = include_str!("../migrations/0009_finance.sql");
 pub(crate) const SCHEMA: &str = "aseman_core";
 /// The most capsules one [`PostgresCapsuleRepository::put_all`] transaction holds.
 pub const MAX_TRANSACTION_CAPSULES: usize = 64;
@@ -373,7 +381,11 @@ impl PostgresCapsuleRepository {
             client.batch_execute(STORAGE_CLASS_MIGRATION)?;
             client.batch_execute(MIGRATION_FENCE_MIGRATION)?;
             client.batch_execute(PROGRAM_MACHINE_MIGRATION)?;
-            client.batch_execute(IDENTITY_KEYS_MIGRATION)
+            client.batch_execute(IDENTITY_KEYS_MIGRATION)?;
+            client.batch_execute(COORDINATION_MIGRATION)?;
+            client.batch_execute(REALTIME_MIGRATION)?;
+            client.batch_execute(FEDERATION_MIGRATION)?;
+            client.batch_execute(FINANCE_MIGRATION)
         })
     }
 

@@ -432,12 +432,6 @@ fn apply_kv_batch(app: &Arc<dyn ICore>, ops: &[KvOp]) -> command::ClusterRespons
 /// and register the VMM listener — the same effects `/programs/deploy` had
 /// on the origin instance.
 fn apply_deploy_artifact(app: &Arc<dyn ICore>, artifact: &DeployArtifact) -> Result<()> {
-    let build_folder_path = format!(
-        "{}/machines/{}/entities/{}",
-        app.tools().storage().storage_root(),
-        artifact.program_id,
-        artifact.entity_id
-    );
     let blobs = crate::drivers::blob_store::node_blobs(&*app.tools().storage());
     let mut primary = None;
     for (name, data_b64) in &artifact.files {
@@ -506,7 +500,8 @@ fn apply_deploy_artifact(app: &Arc<dyn ICore>, artifact: &DeployArtifact) -> Res
                         image_name: art.entity_id.clone(),
                     },
                     primary: primary.clone(),
-                    runtime_file: art.set_entity_links,
+                    // The VMM fetches every runtime's primary file (P5-06).
+                    runtime_file: true,
                     downloadable: false,
                     config: None,
                 })
@@ -517,18 +512,7 @@ fn apply_deploy_artifact(app: &Arc<dyn ICore>, artifact: &DeployArtifact) -> Res
     });
 
     app.tools().workloads().assign(&artifact.program_id);
-    if artifact.build_on_deploy {
-        let app_async = app.clone();
-        let mid = artifact.program_id.clone();
-        let eid = artifact.entity_id.clone();
-        let etype = artifact.entity_type.clone();
-        std::thread::spawn(move || {
-            app_async
-                .tools()
-                .workloads()
-                .build_vm_image(&mid, &eid, &build_folder_path, &etype);
-        });
-    }
+    // A build-on-deploy runtime is built by the VMM before the first start.
     Ok(())
 }
 

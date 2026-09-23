@@ -78,6 +78,10 @@ verification: ASEMAN_TEST_POSTGRES_URL=... cargo test -p aseman-migration-e2e
 9. **Retire.** After the window, with operator approval, retire the legacy provider
    (RL-005 deletion gate). Do not remove VMM observed-runtime keys before RL-013
    (ADR 0022).
+10. **Then the VMM.** A node of the P5-06 version runs no runtimes and refuses a VMM
+    endpoint on the legacy provider, so this cutover comes first. Continue with
+    `docs/operations/vmm-handoff-runbook.md` (ADR 0030): start the backend and
+    `aseman-vmm`, adopt or stop the legacy instances, then start the node.
 
 Also retain these for the rollback window: the OpenRaft checkpoint digests of every
 replica (which must be equal), the Hashgraph block digest, and the VMM handoff

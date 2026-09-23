@@ -77,78 +77,6 @@ pub(crate) fn resolve_program_owner_machine(trx: &dyn ITrx, program: &Program) -
     Creature::default()
 }
 
-/// Execute a runtime plugin's stop plan against the current transaction:
-/// take the plan's terminate input and resolve every requested state link
-/// into it. With `strict`, a missing required link aborts the stop (used by
-/// the user-facing stopEntity action); without it, best-effort (used by the
-/// billing reaper, which must always be able to tear a VM down).
-fn build_stop_input_from_plan(
-    app: &Arc<dyn ICore>,
-    trx: &dyn ITrx,
-    runtime: &str,
-    ctx: &Value,
-    strict: bool,
-) -> Result<Map<String, Value>> {
-    let plan = app
-        .tools()
-        .workloads()
-        .plan_stop_entity(runtime, ctx)
-        .map_err(|e| anyhow!(e))?;
-    let mut stop_input: Map<String, Value> = plan["input"].as_object().cloned().unwrap_or_default();
-    if let Some(links) = plan["links"].as_array() {
-        for query in links {
-            let field = query["field"].as_str().unwrap_or("");
-            let key = query["key"].as_str().unwrap_or("");
-            if field.is_empty() || key.is_empty() {
-                continue;
-            }
-            let value = trx.get_link(key);
-            if value.is_empty() && strict && query["required"].as_bool().unwrap_or(false) {
-                return Err(anyhow!("entity runtime links are not found"));
-            }
-            stop_input.insert(field.to_string(), json!(value));
-        }
-    }
-    Ok(stop_input)
-}
-
-/// Execute a runtime plugin's *delete* plan against the current transaction.
-///
-/// Same contract as [`build_stop_input_from_plan`] — the plan names the state
-/// links a given runtime needs resolved into its packet — but resolved from
-/// `plan_delete_entity`, and always strict: a delete that cannot address the
-/// concrete instance must fail rather than destroy the wrong one (or nothing,
-/// silently).
-fn build_delete_input_from_plan(
-    app: &Arc<dyn ICore>,
-    trx: &dyn ITrx,
-    runtime: &str,
-    ctx: &Value,
-) -> Result<Map<String, Value>> {
-    let plan = app
-        .tools()
-        .workloads()
-        .plan_delete_entity(runtime, ctx)
-        .map_err(|e| anyhow!(e))?;
-    let mut delete_input: Map<String, Value> =
-        plan["input"].as_object().cloned().unwrap_or_default();
-    if let Some(links) = plan["links"].as_array() {
-        for query in links {
-            let field = query["field"].as_str().unwrap_or("");
-            let key = query["key"].as_str().unwrap_or("");
-            if field.is_empty() || key.is_empty() {
-                continue;
-            }
-            let value = trx.get_link(key);
-            if value.is_empty() && query["required"].as_bool().unwrap_or(false) {
-                return Err(anyhow!("entity runtime links are not found"));
-            }
-            delete_input.insert(field.to_string(), json!(value));
-        }
-    }
-    Ok(delete_input)
-}
-
 fn as_i64(raw: &Value) -> Option<i64> {
     match raw {
         Value::Number(n) => n.as_i64().or_else(|| n.as_f64().map(|f| f as i64)),
@@ -524,50 +452,21 @@ fn read_entity(
         .map_err(|error| anyhow!("{error}"))
 }
 
+/// Stop one standalone instance (the billing reaper): a desired-state change made
+/// as the program's owning creature, whose ownership the node established.
 fn terminate_standalone_vm(app: &Arc<dyn ICore>, machine_id: &str, entity_id: &str, vm_id: &str) {
-    let machine_id = machine_id.to_string();
-    let entity_id = entity_id.to_string();
-    let vm_id = vm_id.to_string();
-    let app_for_closure = app.clone();
-    app.modify_state(
-        true,
-        Box::new(move |tx: &dyn ITrx| {
-            let entity = read_entity(&app_for_closure, tx, &machine_id, &entity_id)
-                .ok()
-                .flatten()
-                .unwrap_or_else(|| EntityRecord {
-                    entity_id: entity_id.clone(),
-                    ..Default::default()
-                });
-            let entity_type = normalize_entity_type(&entity.entity_type);
-            let ctx = json!({
-                "machineId": machine_id,
-                "programId": machine_id,
-                "entityId": entity.entity_id,
-                "vmId": vm_id,
-            });
-            let stop_input =
-                match build_stop_input_from_plan(&app_for_closure, tx, &entity_type, &ctx, false) {
-                    Ok(input) => input,
-                    Err(_) => {
-                        // Unknown runtime: fall back to a generic terminate so
-                        // the billing reaper can still stop the instance.
-                        let mut input: Map<String, Value> = Map::new();
-                        input.insert("runtime".into(), json!(entity_type));
-                        input.insert("machineId".into(), json!(machine_id));
-                        input.insert("entityId".into(), json!(entity_id));
-                        input.insert("vmId".into(), json!(vm_id));
-                        input
-                    }
-                };
-            let msg = json!({
-                "key": "terminateVm",
-                "input": stop_input,
-            });
-            app_for_closure.tools().workloads().vm_callback(&msg.to_string());
-            Ok(())
-        }),
-    );
+    let Some(remote) = crate::shell::workloads::remote() else {
+        eprintln!("cannot stop {machine_id}/{entity_id}/{vm_id}: this node has no VMM");
+        return;
+    };
+    let owner = crate::shell::workloads::program_machine(app, machine_id);
+    if let Err(error) = remote.set_state_as(
+        crate::shell::workloads::creature_subject(&owner),
+        crate::shell::workloads::RemoteWorkloads::workload_id(machine_id, entity_id, vm_id),
+        aseman_domain::DesiredWorkloadState::Stopped,
+    ) {
+        eprintln!("cannot stop {machine_id}/{entity_id}/{vm_id}: {error}");
+    }
 }
 
 fn create_program(app: Arc<dyn ICore>) -> Arc<dyn ISecureAction> {
@@ -755,14 +654,9 @@ fn run_program_entity(app: Arc<dyn ICore>) -> Arc<dyn ISecureAction> {
                     true,
                 )?;
             }
-            let remote = crate::shell::workloads::remote();
-            // The remote VMM checks the runtime against its own capabilities.
-            if remote.is_none()
-                && !app_for_handler
-                    .tools()
-                    .workloads()
-                    .is_supported_runtime(&entity_type)
-            {
+            let remote = crate::shell::workloads::remote()
+                .ok_or_else(|| anyhow!("this node has no VMM (ASEMAN_VMM_ENDPOINT)"))?;
+            if !remote.offers(&entity_type) {
                 return Err(anyhow!("invalid entity type"));
             }
             let params: HashMap<String, String> = if input.params.is_empty() {
@@ -774,63 +668,20 @@ fn run_program_entity(app: Arc<dyn ICore>) -> Arc<dyn ISecureAction> {
                 &format!("VmInstance::{}::{}::{}", program.id, input.entity_id, vm_id),
                 "true",
             );
-            if let Some(remote) = remote {
-                remote.launch(
-                    &program.id,
-                    &program.machine_id,
-                    &input.entity_id,
-                    &vm_id,
-                    &entity_type,
-                    crate::shell::workloads::LaunchResources {
-                        cpu_cores: resources.cpu_cores,
-                        ram_mb: resources.ram_mb,
-                        disk_gb: resources.disk_gb,
-                        max_exec_time_seconds: resources.max_exec_time_seconds,
-                    },
-                    params.into_iter().collect(),
-                )?;
-                return Ok(json!({"vmId": vm_id}));
-            }
-            // Ask the runtime's plugin how to launch this entity: it returns
-            // the full runVm input (per-runtime fields included) plus any
-            // state links to record — no per-VM logic lives here.
-            let ctx = json!({
-                "machineId": input.machine_id,
-                "programId": program.id,
-                // The program's node-authoritative owner (the machine creature).
-                // A docker entity must run as this so its host calls (secretGet,
-                // dbOp namespacing) resolve to the creature that owns it — e.g. the
-                // agent backbone reads its granted platform keys. Carried through
-                // the runtime's plan_run_entity into the runVm packet.
-                "creatureId": owner_machine.id,
-                "entityId": input.entity_id,
-                "vmId": vm_id,
-                "resources": resources,
-                "params": params,
-            });
-            let plan = app_for_handler
-                .tools()
-                .workloads()
-                .plan_run_entity(&entity_type, &ctx)
-                .map_err(|e| anyhow!(e))?;
-            if let Some(links) = plan["links"].as_array() {
-                for pair in links {
-                    let key = pair[0].as_str().unwrap_or("");
-                    let value = pair[1].as_str().unwrap_or("");
-                    if !key.is_empty() {
-                        trx.put_link(key, value);
-                    }
-                }
-            }
-            let run_input = plan["input"].clone();
-            let app_async = app_for_handler.clone();
-            let _ = async_once(move || {
-                let msg = json!({
-                    "key": "runVm",
-                    "input": run_input,
-                });
-                app_async.tools().workloads().vm_callback(&msg.to_string());
-            });
+            remote.launch(
+                &program.id,
+                &program.machine_id,
+                &input.entity_id,
+                &vm_id,
+                &entity_type,
+                crate::shell::workloads::LaunchResources {
+                    cpu_cores: resources.cpu_cores,
+                    ram_mb: resources.ram_mb,
+                    disk_gb: resources.disk_gb,
+                    max_exec_time_seconds: resources.max_exec_time_seconds,
+                },
+                params.into_iter().collect(),
+            )?;
             Ok(json!({"vmId": vm_id}))
         },
     )
@@ -860,9 +711,8 @@ fn stop_program_entity(app: Arc<dyn ICore>) -> Arc<dyn ISecureAction> {
             }
             let program = (crate::shell::api::model::program_ports::ProgramPorts { trx: &*trx })
                 .program_or_empty(&program_id.clone());
-            let entity = read_entity(&app_for_handler, &*trx, &program.id, &input.entity_id)?
+            read_entity(&app_for_handler, &*trx, &program.id, &input.entity_id)?
                 .ok_or_else(|| anyhow!("entity does not exist"))?;
-            let entity_type = normalize_entity_type(&entity.entity_type);
             // Authorize against the recorded program owner (no app_id).
             let owner_machine = resolve_program_owner_machine(&*trx, &program);
             if owner_machine.owner_id != state.info().user_id() {
@@ -885,8 +735,9 @@ fn stop_program_entity(app: Arc<dyn ICore>) -> Arc<dyn ISecureAction> {
                 "link::vmStandaloneContainerName::{}::{}",
                 program.id, input.entity_id
             ));
-            if let Some(remote) = crate::shell::workloads::remote() {
-                remote.set_state(
+            crate::shell::workloads::remote()
+                .ok_or_else(|| anyhow!("this node has no VMM (ASEMAN_VMM_ENDPOINT)"))?
+                .set_state(
                     &state.info().user_id(),
                     crate::shell::workloads::RemoteWorkloads::workload_id(
                         &program.id,
@@ -895,28 +746,6 @@ fn stop_program_entity(app: Arc<dyn ICore>) -> Arc<dyn ISecureAction> {
                     ),
                     aseman_domain::DesiredWorkloadState::Stopped,
                 )?;
-                return Ok(json!({}));
-            }
-            // Ask the runtime's plugin how to stop this entity; the plan
-            // resolves per-runtime state links (e.g. a recorded container
-            // name) and fails when a required link is missing.
-            let ctx = json!({
-                "machineId": input.machine_id,
-                "programId": program.id,
-                "entityId": entity.entity_id,
-                "vmId": vm_id,
-            });
-            let stop_input =
-                build_stop_input_from_plan(&app_for_handler, &*trx, &entity_type, &ctx, true)?;
-            trx.del_key(&format!(
-                "link::VmContainerName::{}::{}::{}",
-                program.id, input.entity_id, vm_id
-            ));
-            let msg = json!({
-                "key": "terminateVm",
-                "input": stop_input,
-            });
-            app_for_handler.tools().workloads().vm_callback(&msg.to_string());
             Ok(json!({}))
         },
     )
@@ -959,9 +788,8 @@ fn delete_program_entity(app: Arc<dyn ICore>) -> Arc<dyn ISecureAction> {
             }
             let program = (crate::shell::api::model::program_ports::ProgramPorts { trx: &*trx })
                 .program_or_empty(&program_id.clone());
-            let entity = read_entity(&app_for_handler, &*trx, &program.id, &input.entity_id)?
+            read_entity(&app_for_handler, &*trx, &program.id, &input.entity_id)?
                 .ok_or_else(|| anyhow!("entity does not exist"))?;
-            let entity_type = normalize_entity_type(&entity.entity_type);
             let owner_machine = resolve_program_owner_machine(&*trx, &program);
             if owner_machine.owner_id != state.info().user_id() {
                 return Err(anyhow!("you are not owner of this program"));
@@ -979,8 +807,9 @@ fn delete_program_entity(app: Arc<dyn ICore>) -> Arc<dyn ISecureAction> {
                 return Err(anyhow!("vm does not belong to this entity"));
             }
 
-            let result = if let Some(remote) = crate::shell::workloads::remote() {
-                let generation = remote.set_state(
+            let generation = crate::shell::workloads::remote()
+                .ok_or_else(|| anyhow!("this node has no VMM (ASEMAN_VMM_ENDPOINT)"))?
+                .set_state(
                     &state.info().user_id(),
                     crate::shell::workloads::RemoteWorkloads::workload_id(
                         &program.id,
@@ -989,24 +818,7 @@ fn delete_program_entity(app: Arc<dyn ICore>) -> Arc<dyn ISecureAction> {
                     ),
                     aseman_domain::DesiredWorkloadState::Deleted,
                 )?;
-                json!({"ok": true, "generation": generation})
-            } else {
-                // Build the delete packet BEFORE dropping the links: the plan
-                // resolves per-runtime state (a recorded container name, a
-                // sandbox id) that only exists while those links do.
-                let ctx = json!({
-                    "machineId": input.machine_id,
-                    "programId": program.id,
-                    "entityId": entity.entity_id,
-                    "vmId": vm_id,
-                });
-                let delete_input =
-                    build_delete_input_from_plan(&app_for_handler, &*trx, &entity_type, &ctx)?;
-                app_for_handler
-                    .tools()
-                    .workloads()
-                    .delete_vm_instance(&Value::Object(delete_input))
-            };
+            let result = json!({"ok": true, "generation": generation});
             if !result["ok"].as_bool().unwrap_or(false) {
                 let err = result["error"]
                     .as_str()
@@ -1043,56 +855,72 @@ fn delete_program_entity(app: Arc<dyn ICore>) -> Arc<dyn ISecureAction> {
 }
 
 fn read_vm_logs(app: Arc<dyn ICore>) -> Arc<dyn ISecureAction> {
-    let app_for_handler = app.clone();
     build_secure_action::<ReadVmLogsInput, _>(
         app,
         "/machines/readVmLogs",
         user_guard(),
         move |state: Arc<dyn IState>, input: ReadVmLogsInput| -> Result<Value> {
             let trx = state.trx();
-            let mut owner_user_id = String::new();
-            if let Ok(links) = trx.get_links_list("VmInstance::", -1, -1, &[]) {
-                let suffix = format!("::{}", input.vm_id);
-                for link in links {
-                    if !link.ends_with(&suffix) {
-                        continue;
-                    }
+            // A workload's logs are its VMM's (A501 `logs`, ADR 0030): the instance
+            // link names the workload, and the program it belongs to authorizes the
+            // read. Build output is that workload's `build` stream — the node-wide
+            // "main" build stream any user could read is gone with the host bridge.
+            let suffix = format!("::{}", input.vm_id);
+            let instance = trx
+                .get_links_list("VmInstance::", -1, -1, &[])
+                .unwrap_or_default()
+                .into_iter()
+                .filter(|link| link.ends_with(&suffix))
+                .find_map(|link| {
                     let parts: Vec<&str> = link.split("::").collect();
-                    if parts.len() < 4 {
-                        continue;
-                    }
-                    let program =
-                        (crate::shell::api::model::program_ports::ProgramPorts { trx: &*trx })
-                            .program_or_empty(&parts[1].to_string());
-                    if program.id.is_empty() {
-                        break;
-                    }
-                    owner_user_id = resolve_program_owner_machine(&*trx, &program).owner_id;
-                    break;
-                }
+                    let [_, program, entity, _] = parts[..] else {
+                        return None;
+                    };
+                    Some((program.to_owned(), entity.to_owned()))
+                });
+            let Some((program_id, entity_id)) = instance else {
+                return Err(anyhow!("vm not found"));
+            };
+            let program = (crate::shell::api::model::program_ports::ProgramPorts { trx: &*trx })
+                .program_or_empty(&program_id);
+            if program.id.is_empty() {
+                return Err(anyhow!("vm not found"));
             }
-            if owner_user_id.is_empty() {
-                // Docker image BUILD output is emitted before any VM exists,
-                // under the runtime's node-wide "main" stream with log type
-                // "build" (see the docker plugin's emit_vm_log calls) — there
-                // is no VmInstance link to anchor ownership to, so build
-                // streams stay readable by any authenticated user, matching
-                // how the runtime records them (one shared stream, no
-                // per-program isolation).
-                if input.log_type != "build" {
-                    return Err(anyhow!("vm not found"));
-                }
-            } else if owner_user_id != state.info().user_id() {
+            if resolve_program_owner_machine(&*trx, &program).owner_id != state.info().user_id() {
                 return Err(anyhow!("you are not owner of this vm"));
             }
-            let count = if input.count <= 0 { 100 } else { input.count };
-            let offset = if input.offset < 0 { 0 } else { input.offset };
-            let logs = app_for_handler.tools().storage().read_vm_logs(
-                &input.vm_id,
-                &input.log_type,
-                offset,
-                count,
-            );
+            let remote = crate::shell::workloads::remote()
+                .ok_or_else(|| anyhow!("this node has no VMM (ASEMAN_VMM_ENDPOINT)"))?;
+            let count = usize::try_from(input.count).unwrap_or(0).clamp(1, 1000);
+            let after = u64::try_from(input.offset).unwrap_or(0);
+            let build = input.log_type == "build";
+            let logs: Vec<Value> = remote
+                .logs(
+                    crate::shell::workloads::RemoteWorkloads::workload_id(
+                        &program.id,
+                        &entity_id,
+                        &input.vm_id,
+                    ),
+                    after,
+                )?
+                .into_iter()
+                .filter(|record| (record.stream == aseman_domain::vmm::LogStream::Build) == build)
+                .take(count)
+                .map(|record| {
+                    // The legacy log shape, with the VMM's sequence as the cursor a
+                    // reader pages with.
+                    serde_json::to_value(crate::models::packet::BuildPacket {
+                        id: record.sequence.to_string(),
+                        build_id: input.vm_id.clone(),
+                        creature_id: program.machine_id.clone(),
+                        vm_id: input.vm_id.clone(),
+                        log_type: input.log_type.clone(),
+                        time: record.at_millis,
+                        data: record.line,
+                    })
+                    .unwrap_or_default()
+                })
+                .collect();
             Ok(json!({"logs": logs}))
         },
     )
@@ -1132,8 +960,8 @@ fn list_entity_vms(app: Arc<dyn ICore>) -> Arc<dyn ISecureAction> {
                 .ok_or_else(|| anyhow!("entity does not exist"))?;
 
             let entity_type = normalize_entity_type(&entity.entity_type);
-            let plugin = caspar_vm_sdk::registry::get(&entity_type)
-                .ok_or_else(|| anyhow!("invalid entity type"))?;
+            let remote = crate::shell::workloads::remote()
+                .ok_or_else(|| anyhow!("this node has no VMM (ASEMAN_VMM_ENDPOINT)"))?;
             let prefix = format!("VmInstance::{}::{}::", program.id, input.entity_id);
             let links = trx.get_links_list(&prefix, -1, -1, &[]).unwrap_or_default();
             let mut instances: Vec<Value> = Vec::new();
@@ -1148,18 +976,27 @@ fn list_entity_vms(app: Arc<dyn ICore>) -> Arc<dyn ISecureAction> {
                     .get_link(&format!("VmStartedAt::{}", vm_id))
                     .parse::<i64>()
                     .unwrap_or(0);
-                let container_name = trx.get_link(&format!(
-                    "VmContainerName::{}::{}::{}",
-                    program.id, input.entity_id, vm_id
-                ));
-                let probe = plugin.status_vm(&json!({
-                    "runtime": entity_type,
-                    "machineId": program.id,
-                    "programId": program.id,
-                    "entityId": input.entity_id,
-                    "vmId": vm_id,
-                    "containerName": container_name,
-                }));
+                // What the VMM observes for the instance's workload.
+                let probe: Result<Value, String> =
+                    serde_json::from_str::<Value>(&remote.vm_host_call(
+                        &app_for_handler,
+                        "statusVm",
+                        &program.id,
+                        &json!({
+                            "runtime": entity_type,
+                            "machineId": program.id,
+                            "entityId": input.entity_id,
+                            "vmId": vm_id,
+                        }),
+                    ))
+                    .map_err(|error| error.to_string())
+                    .and_then(|value| {
+                        if value["ok"] == false {
+                            Err(value["error"].as_str().unwrap_or("unknown").to_owned())
+                        } else {
+                            Ok(value)
+                        }
+                    });
                 let (status, running, detail) = match probe {
                     Ok(value) => {
                         let status = value["status"].as_str().unwrap_or("unknown").to_string();
@@ -1406,27 +1243,19 @@ fn deploy(app: Arc<dyn ICore>) -> Arc<dyn ISecureAction> {
                     "target": config.to_value(),
                 }));
             }
-            // The runtime's plugin declares how its entities deploy: the
-            // primary file name, whether extra files are accepted, whether a
-            // build must follow, and whether entity links are recorded. An
-            // unknown runtime means no plugin was compiled into this node.
-            let spec = app_for_handler
-                .tools()
-                .workloads()
-                .runtime_deploy_spec(&entity_type)
-                .ok_or_else(|| {
-                    anyhow!(
-                        "invalid entityType, expected one of {}",
-                        app_for_handler.tools().workloads().supported_runtimes().join("|")
-                    )
-                })?;
-            let primary_file_name = spec["entityFileName"]
-                .as_str()
-                .unwrap_or("module.wasm")
-                .to_string();
-            let accepts_extra_files = spec["acceptsExtraFiles"].as_bool().unwrap_or(false);
-            let build_on_deploy = spec["buildOnDeploy"].as_bool().unwrap_or(false);
-            let set_entity_links = spec["setEntityLinksOnDeploy"].as_bool().unwrap_or(false);
+            // The VMM declares how each runtime's entities deploy: the primary
+            // file name, whether extra files are accepted, and whether a build
+            // must precede the first start (the VMM builds then).
+            let remote = crate::shell::workloads::remote()
+                .ok_or_else(|| anyhow!("this node has no VMM (ASEMAN_VMM_ENDPOINT)"))?;
+            let conventions = remote.deploy_conventions(&entity_type).ok_or_else(|| {
+                anyhow!(
+                    "invalid entityType, expected one of {}",
+                    remote.runtime_keys().join("|")
+                )
+            })?;
+            let primary_file_name = conventions.entity_file_name.clone();
+            let accepts_extra_files = conventions.accepts_extra_files;
             let data = base64::engine::general_purpose::STANDARD
                 .decode(&input.payload)
                 .map_err(|e| anyhow!("{}", e))?;
@@ -1436,14 +1265,6 @@ fn deploy(app: Arc<dyn ICore>) -> Arc<dyn ISecureAction> {
             // keeps all of its VM state out of the consensus.
             let distributed = input.wants_distribution() && crate::drivers::cluster::is_active();
             let distribution_label = if distributed { "cluster" } else { "local" };
-            let vm_id = Uuid::new_v4().to_string();
-            let build_folder_path = format!(
-                "{}{}{}/entities/{}",
-                app_for_handler.tools().storage().storage_root(),
-                PLUGINS_TEMPLATE_NAME,
-                program.id,
-                input.entity_id
-            );
             let blobs = crate::drivers::blob_store::node_blobs(&*app_for_handler.tools().storage());
             let primary =
                 blobs.put_entity_file(&program.id, &input.entity_id, &primary_file_name, &data)?;
@@ -1501,21 +1322,6 @@ fn deploy(app: Arc<dyn ICore>) -> Arc<dyn ISecureAction> {
                 &gateway_vm_id,
                 &entity_type,
             )?;
-            if build_on_deploy {
-                let build_id = Uuid::new_v4().to_string();
-                trx.put_link(&format!("VmBuilds::{}::{}", vm_id, build_id), "true");
-                let app_async = app_for_handler.clone();
-                let mid = program.id.clone();
-                let eid = input.entity_id.clone();
-                let path = build_folder_path.clone();
-                let etype = entity_type.clone();
-                let _ = async_once(move || {
-                    app_async
-                        .tools()
-                        .workloads()
-                        .build_vm_image(&mid, &eid, &path, &etype);
-                });
-            }
             // Register the machine signal listener for every runtime. Without
             // this, signals addressed to a creature's program are dropped (no
             // listener) and every creature-to-creature signal silently times
@@ -1535,7 +1341,8 @@ fn deploy(app: Arc<dyn ICore>) -> Arc<dyn ISecureAction> {
                     image_name: input.entity_id.clone(),
                 },
                 primary,
-                runtime_file: set_entity_links,
+                // The VMM fetches every runtime's primary file (P5-06).
+                runtime_file: true,
                 // Downloadable entities (front-end scripts executed on the
                 // client) are served at any time via /programs/downloadEntity.
                 downloadable: input.downloadable,
@@ -1564,8 +1371,8 @@ fn deploy(app: Arc<dyn ICore>) -> Arc<dyn ISecureAction> {
                         comment: program.comment.clone(),
                         primary_file_name: primary_file_name.clone(),
                         files: artifact_files,
-                        set_entity_links,
-                        build_on_deploy,
+                        set_entity_links: true,
+                        build_on_deploy: conventions.build_on_deploy,
                         gateway_route: gateway_path.clone(),
                         gateway_vm_id: gateway_vm_id.clone(),
                     },
@@ -1775,10 +1582,8 @@ fn install_program_bootstrap(app: Arc<dyn ICore>) {
             for program in programs {
                 let is_proxy = normalize_entity_type(&program.runtime)
                     == crate::drivers::vmm::proxy::PROXY_RUNTIME_KEY;
-                let is_vm = app_for_closure
-                    .tools()
-                    .workloads()
-                    .is_supported_runtime(&program.runtime);
+                let is_vm = crate::shell::workloads::remote()
+                    .is_some_and(|remote| remote.offers(&program.runtime));
                 // Proxy programs are non-runnable, but their signal listener must
                 // still be re-registered on restart so forwarded prompts reach
                 // them; only real VM runtimes additionally replay a pending alarm.

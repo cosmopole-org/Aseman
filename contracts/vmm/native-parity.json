@@ -1,7 +1,7 @@
 {
   "version": "1",
   "artifact": "A505",
-  "description": "Where every native runtime operation (A006) and every node-facing IVmm method goes when the embedded VMM is removed. `status` becomes `verified` when `verification` names a passing parity test (P5-05), and `deleted` when the legacy method is gone (P5-06).",
+  "description": "Where every native runtime operation (A006) and every node-facing IVmm method goes when the embedded VMM is removed. `status` becomes `verified` when `verification` names a passing parity test (P5-05), and `deleted` when the legacy method is gone (P5-06). Operations only long-running runtimes use (docker, fire, modal) stay open until a live provider test covers them.",
   "homes": {
     "api": "A501 operation (`target` is its operationId)",
     "node": "stays in the node, using the A501 operation in `target` when set",
@@ -71,72 +71,72 @@
     "init": {
       "home": "backend",
       "note": "Backend start-up of the runtime.",
-      "status": "open",
-      "verification": null
+      "status": "verified",
+      "verification": "aseman-vmm-backend-native live_native (the backend registers its plugins)"
     },
     "detect": {
       "home": "api",
       "target": "getCapabilities",
       "note": "Whether the runtime is usable on this host decides whether it is listed.",
-      "status": "open",
-      "verification": null
+      "status": "verified",
+      "verification": "aseman-vmm-backend-native live_native (describe)"
     },
     "meta": {
       "home": "api",
       "target": "getCapabilities",
       "note": "Runtime metadata and deploy conventions.",
-      "status": "open",
-      "verification": null
+      "status": "verified",
+      "verification": "aseman-vmm-backend-native live_native (describe: capabilities and deploy conventions)"
     },
     "create": {
       "home": "api",
       "target": "createWorkload",
       "note": "",
-      "status": "open",
-      "verification": null
+      "status": "verified",
+      "verification": "aseman-vmm-backend-native system (create over A501, observed running)"
     },
     "start": {
       "home": "api",
       "target": "startWorkload",
       "capability": "long_running",
       "note": "",
-      "status": "open",
-      "verification": null
+      "status": "verified",
+      "verification": "aseman-vmm-backend-conformance check_backend via live_native"
     },
     "stop": {
       "home": "api",
       "target": "stopWorkload",
       "capability": "long_running",
       "note": "",
-      "status": "open",
-      "verification": null
+      "status": "verified",
+      "verification": "aseman-vmm-backend-conformance check_backend via live_native"
     },
     "destroy": {
       "home": "api",
       "target": "deleteWorkload",
       "note": "",
-      "status": "open",
-      "verification": null
+      "status": "verified",
+      "verification": "aseman-vmm-backend-conformance check_backend via live_native; system (delete converges)"
     },
     "pause": {
       "home": "api",
       "target": "pauseWorkload",
       "capability": "pause",
       "note": "",
-      "status": "open",
-      "verification": null
+      "status": "verified",
+      "verification": "aseman-application unsupported_operations_are_refused_not_degraded: no native runtime pauses, and the service refuses it"
     },
     "resume": {
       "home": "api",
       "target": "resumeWorkload",
       "capability": "pause",
       "note": "",
-      "status": "open",
-      "verification": null
+      "status": "verified",
+      "verification": "aseman-application unsupported_operations_are_refused_not_degraded"
     },
     "restore": {
       "home": "backend",
-      "note": "Modal's restore re-attaches its own persisted sandbox entries; the native backend uses it when adopting ModalSandbox handles (P6-06, ADR 0022). It never takes snapshots, so no native runtime declares `snapshot`.",
+      "note": "Modal's restore re-attaches its own persisted sandbox entries; the native backend uses it when adopting ModalSandbox handles (P6-06, ADR 0022). It never takes snapshots, so no native runtime declares `snapshot`. Modal needs an account and API key, which this environment has none of; it is unverified here.",
       "status": "open",
       "verification": null
     },
@@ -145,110 +145,110 @@
       "target": "invokeWorkload",
       "capability": "invocation",
       "note": "",
-      "status": "open",
-      "verification": null
+      "status": "verified",
+      "verification": "aseman-vmm-backend-native live_native and system (counter.js runs as its workload)"
     },
     "exec_vm": {
       "home": "api",
       "target": "execWorkload",
       "capability": "exec",
       "note": "Runs a command in a live instance. Where legacy exec_vm was an echo or an invocation, the runtime reports `exec: false` (see capability_rules).",
-      "status": "open",
-      "verification": null
+      "status": "verified",
+      "verification": "aseman-vmm-backend-native live_docker (real Docker daemon): a command runs inside the container (LD-29 fixed)"
     },
     "status_vm": {
       "home": "api",
       "target": "getWorkload",
-      "note": "Observed state, reported through `observed` and the event stream.",
-      "status": "open",
-      "verification": null
+      "note": "Not used by the native backend: it reports its own instances, and A501 `getWorkload` answers what the VMM observed.",
+      "status": "verified",
+      "verification": "aseman-vmm-backend-native system (A501 getWorkload answers from the observed record)"
     },
     "terminate_vm": {
       "home": "api",
       "target": "stopWorkload",
       "note": "",
-      "status": "open",
-      "verification": null
+      "status": "verified",
+      "verification": "aseman-vmm-backend-conformance check_backend via live_native"
     },
     "delete_vm": {
       "home": "api",
       "target": "deleteWorkload",
       "note": "",
-      "status": "open",
-      "verification": null
+      "status": "verified",
+      "verification": "aseman-vmm-backend-conformance check_backend via live_native; system (delete converges)"
     },
     "build_image": {
       "home": "api",
       "target": "createBuild",
       "capability": "build",
       "note": "",
-      "status": "open",
-      "verification": null
+      "status": "verified",
+      "verification": "aseman-vmm-backend-native live_docker (real Docker daemon): the Dockerfile is built before the first start"
     },
     "build_delete_request": {
       "home": "backend",
-      "note": "The backend plans its own teardown for deleteWorkload.",
+      "note": "Not used: the native backend addresses instances through the plan_* hooks, which the docker test verifies.",
       "status": "open",
       "verification": null
     },
     "build_terminate_request": {
       "home": "backend",
-      "note": "The backend plans its own stop for stopWorkload.",
+      "note": "Not used: the native backend addresses instances through the plan_* hooks, which the docker test verifies.",
       "status": "open",
       "verification": null
     },
     "plan_run_entity": {
       "home": "backend",
       "note": "Launch planning is the backend's; the node sends a complete spec.",
-      "status": "open",
-      "verification": null
+      "status": "verified",
+      "verification": "aseman-vmm-backend-native live_docker (real Docker daemon): the container launches from the plugin's plan"
     },
     "plan_stop_entity": {
       "home": "backend",
       "note": "Stop planning is the backend's.",
-      "status": "open",
-      "verification": null
+      "status": "verified",
+      "verification": "aseman-vmm-backend-native live_docker (real Docker daemon): the container stops from the plugin's plan"
     },
     "plan_delete_entity": {
       "home": "backend",
       "note": "Delete planning is the backend's.",
-      "status": "open",
-      "verification": null
+      "status": "verified",
+      "verification": "aseman-vmm-backend-native live_docker (real Docker daemon): the container is removed from the plugin's plan"
     },
     "copy_to_vm": {
       "home": "api",
       "target": "putWorkloadFile",
       "capability": "files",
       "note": "",
-      "status": "open",
-      "verification": null
+      "status": "verified",
+      "verification": "aseman-vmm-backend-native live_docker (real Docker daemon): a text file is copied into the container"
     },
     "copy_from_vm": {
       "home": "api",
       "target": "getWorkloadFile",
       "capability": "files",
       "note": "",
-      "status": "open",
-      "verification": null
+      "status": "verified",
+      "verification": "aseman-vmm-backend-native live_docker (real Docker daemon) and the A504 conformance kit: a file the runtime cannot read back is `not_found`"
     },
     "forward_http": {
       "home": "api",
       "target": "forwardHttp",
       "capability": "http_ingress",
       "note": "Runtimes without `http_ingress` are reached by invokeWorkload, as legacy fell back to signalling.",
-      "status": "open",
-      "verification": null
+      "status": "verified",
+      "verification": "aseman-vmm-backend-native live_docker (real Docker daemon): HTTP reaches the server inside the container"
     },
     "vm_endpoints": {
       "home": "api",
       "target": "listWorkloadEndpoints",
       "note": "",
-      "status": "open",
-      "verification": null
+      "status": "verified",
+      "verification": "aseman-vmm-backend-native live_docker (real Docker daemon): a docker entity publishes none"
     },
     "identify_instance_by_ip": {
       "home": "removed",
-      "note": "Source-IP identification is replaced by the A405 workload credential issued in `bootstrap` (P5-04).",
+      "note": "Replaced by the workload credential for host calls (P5-04). The docker-host gateway still resolves a container's source IP to its workload inside the backend; a container speaking the gateway protocol is exercised with the P6 worker-agent tests.",
       "status": "open",
       "verification": null
     },
@@ -256,7 +256,7 @@
       "home": "api",
       "target": "verifyExecution",
       "capability": "execution_proofs",
-      "note": "",
+      "note": "Elpify proofs: the backend verifies a program it holds, through A501 `verifyExecution`. Verifying one end to end needs an elpify program and proof fixture (P8 finance/consensus work uses them).",
       "status": "open",
       "verification": null
     }
@@ -266,35 +266,35 @@
       "home": "node",
       "target": "invokeWorkload",
       "note": "The per-program signal listener stays in the node and delivers each signal with invokeWorkload.",
-      "status": "open",
+      "status": "deleted",
       "verification": null
     },
     "run_vm": {
       "home": "api",
       "target": "invokeWorkload",
       "note": "",
-      "status": "open",
+      "status": "deleted",
       "verification": null
     },
     "run_vm_entity": {
       "home": "api",
       "target": "invokeWorkload",
       "note": "",
-      "status": "open",
+      "status": "deleted",
       "verification": null
     },
     "terminate_vm": {
       "home": "api",
       "target": "stopWorkload",
       "note": "",
-      "status": "open",
+      "status": "deleted",
       "verification": null
     },
     "build_vm_image": {
       "home": "api",
       "target": "createBuild",
       "note": "",
-      "status": "open",
+      "status": "deleted",
       "verification": null
     },
     "execute_chain_trxs_group": {
@@ -302,7 +302,7 @@
       "target": "invokeWorkload",
       "capability": "chain_transactions",
       "note": "Invocation kind `chain_transactions`.",
-      "status": "open",
+      "status": "deleted",
       "verification": null
     },
     "execute_chain_effects": {
@@ -310,198 +310,198 @@
       "target": "invokeWorkload",
       "capability": "chain_transactions",
       "note": "Invocation kind `chain_effects`.",
-      "status": "open",
+      "status": "deleted",
       "verification": null
     },
     "close_kvdb": {
       "home": "removed",
       "note": "Guest data lives in the creature's guest database (ADR 0021); the VMM holds no store.",
-      "status": "open",
+      "status": "deleted",
       "verification": null
     },
     "vm_callback": {
       "home": "guest_gateway",
       "note": "Log and output events become the backend log stream; triggers, signals, and terminations become authorized guest API calls.",
-      "status": "open",
+      "status": "deleted",
       "verification": null
     },
     "start_docker_gateway": {
       "home": "backend",
       "note": "The docker host bridge moves into the native backend until P5-04 retires it.",
-      "status": "open",
+      "status": "deleted",
       "verification": null
     },
     "start_http_ingress": {
       "home": "node",
       "target": "forwardHttp",
       "note": "Ingress stays in the node: it resolves the route to a workload and forwards with forwardHttp.",
-      "status": "open",
+      "status": "deleted",
       "verification": null
     },
     "register_vm_container": {
       "home": "backend",
       "note": "",
-      "status": "open",
+      "status": "deleted",
       "verification": null
     },
     "unregister_vm_container": {
       "home": "backend",
       "note": "",
-      "status": "open",
+      "status": "deleted",
       "verification": null
     },
     "identify_container_by_ip": {
       "home": "removed",
       "note": "Replaced by the workload credential (P5-04).",
-      "status": "open",
+      "status": "deleted",
       "verification": null
     },
     "push_signal_to_machine": {
       "home": "api",
       "target": "invokeWorkload",
       "note": "Delivery to live instances is the backend's.",
-      "status": "open",
+      "status": "deleted",
       "verification": null
     },
     "push_signal_to_entity": {
       "home": "api",
       "target": "invokeWorkload",
       "note": "",
-      "status": "open",
+      "status": "deleted",
       "verification": null
     },
     "queue_pending_signal": {
       "home": "backend",
       "note": "Cold-start queueing happens behind invokeWorkload.",
-      "status": "open",
+      "status": "deleted",
       "verification": null
     },
     "begin_cold_spawn": {
       "home": "backend",
       "note": "Cold-start debounce happens behind invokeWorkload.",
-      "status": "open",
+      "status": "deleted",
       "verification": null
     },
     "register_vm_context": {
       "home": "guest_gateway",
       "note": "Caller identity comes from the workload credential.",
-      "status": "open",
+      "status": "deleted",
       "verification": null
     },
     "unregister_vm_context": {
       "home": "guest_gateway",
       "note": "",
-      "status": "open",
+      "status": "deleted",
       "verification": null
     },
     "get_vm_context": {
       "home": "guest_gateway",
       "note": "",
-      "status": "open",
+      "status": "deleted",
       "verification": null
     },
     "begin_vm_trx": {
       "home": "guest_gateway",
       "note": "Guest data transactions (ADR 0021).",
-      "status": "open",
+      "status": "deleted",
       "verification": null
     },
     "commit_vm_trx": {
       "home": "guest_gateway",
       "note": "",
-      "status": "open",
+      "status": "deleted",
       "verification": null
     },
     "vm_db_op": {
       "home": "guest_gateway",
       "note": "",
-      "status": "open",
+      "status": "deleted",
       "verification": null
     },
     "vm_db_commit_explicit": {
       "home": "guest_gateway",
       "note": "",
-      "status": "open",
+      "status": "deleted",
       "verification": null
     },
     "acquire_resource_lock": {
       "home": "guest_gateway",
       "note": "",
-      "status": "open",
+      "status": "deleted",
       "verification": null
     },
     "release_resource_lock": {
       "home": "guest_gateway",
       "note": "",
-      "status": "open",
+      "status": "deleted",
       "verification": null
     },
     "host_action_micro": {
       "home": "guest_gateway",
       "note": "",
-      "status": "open",
+      "status": "deleted",
       "verification": null
     },
     "exec_shell_action": {
       "home": "guest_gateway",
       "note": "",
-      "status": "open",
+      "status": "deleted",
       "verification": null
     },
     "host_action_resource_store": {
       "home": "guest_gateway",
       "note": "",
-      "status": "open",
+      "status": "deleted",
       "verification": null
     },
     "host_action_resource_entity_create": {
       "home": "guest_gateway",
       "note": "",
-      "status": "open",
+      "status": "deleted",
       "verification": null
     },
     "host_action_resource_entity_delete": {
       "home": "guest_gateway",
       "note": "",
-      "status": "open",
+      "status": "deleted",
       "verification": null
     },
     "host_action_store": {
       "home": "guest_gateway",
       "note": "",
-      "status": "open",
+      "status": "deleted",
       "verification": null
     },
     "host_action_creature": {
       "home": "guest_gateway",
       "note": "",
-      "status": "open",
+      "status": "deleted",
       "verification": null
     },
     "host_action_program": {
       "home": "guest_gateway",
       "note": "",
-      "status": "open",
+      "status": "deleted",
       "verification": null
     },
     "supported_runtimes": {
       "home": "api",
       "target": "getCapabilities",
       "note": "",
-      "status": "open",
+      "status": "deleted",
       "verification": null
     },
     "is_supported_runtime": {
       "home": "api",
       "target": "getCapabilities",
       "note": "",
-      "status": "open",
+      "status": "deleted",
       "verification": null
     },
     "is_managed_runtime": {
       "home": "removed",
       "note": "The node no longer distinguishes in-process runtimes; invokeWorkload cold-starts any runtime.",
-      "status": "open",
+      "status": "deleted",
       "verification": null
     },
     "runtime_supports_chain_trxs": {
@@ -509,52 +509,52 @@
       "target": "getCapabilities",
       "capability": "chain_transactions",
       "note": "",
-      "status": "open",
+      "status": "deleted",
       "verification": null
     },
     "runtime_deploy_spec": {
       "home": "api",
       "target": "getCapabilities",
       "note": "`deploy` conventions; `setEntityLinksOnDeploy` stays inside the backend.",
-      "status": "open",
+      "status": "deleted",
       "verification": null
     },
     "plan_run_entity": {
       "home": "backend",
       "note": "",
-      "status": "open",
+      "status": "deleted",
       "verification": null
     },
     "plan_stop_entity": {
       "home": "backend",
       "note": "",
-      "status": "open",
+      "status": "deleted",
       "verification": null
     },
     "plan_delete_entity": {
       "home": "backend",
       "note": "",
-      "status": "open",
+      "status": "deleted",
       "verification": null
     },
     "delete_vm_instance": {
       "home": "api",
       "target": "deleteWorkload",
       "note": "",
-      "status": "open",
+      "status": "deleted",
       "verification": null
     },
     "forward_http": {
       "home": "api",
       "target": "forwardHttp",
       "note": "",
-      "status": "open",
+      "status": "deleted",
       "verification": null
     },
     "resolve_http_route": {
       "home": "node",
       "note": "Custom gateway routes are node data (core gateway routes); the node resolves them before forwardHttp.",
-      "status": "open",
+      "status": "deleted",
       "verification": null
     }
   }

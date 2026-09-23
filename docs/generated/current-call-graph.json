@@ -874,7 +874,7 @@
       "request_type": "VmTerminalInput",
       "routes_via_chain": false,
       "services": [],
-      "source": "node/src/shell/api/actions/program.rs:1241",
+      "source": "node/src/shell/api/actions/program.rs:1078",
       "spawns_background_work": false,
       "transaction_operations": [
         "del_key"
@@ -889,7 +889,7 @@
       "request_type": "ListInput",
       "routes_via_chain": false,
       "services": [],
-      "source": "node/src/shell/api/actions/program.rs:1628",
+      "source": "node/src/shell/api/actions/program.rs:1435",
       "spawns_background_work": false,
       "transaction_operations": [],
       "vmm_operations": []
@@ -901,14 +901,18 @@
       "path": "/machines/listEntityVms",
       "request_type": "RunProgramEntityInput",
       "routes_via_chain": false,
-      "services": [],
-      "source": "node/src/shell/api/actions/program.rs:1103",
+      "services": [
+        "vmm"
+      ],
+      "source": "node/src/shell/api/actions/program.rs:931",
       "spawns_background_work": false,
       "transaction_operations": [
         "get_link",
         "get_links_list"
       ],
-      "vmm_operations": []
+      "vmm_operations": [
+        "vm_host_call"
+      ]
     },
     {
       "guard_expression": "user_guard()",
@@ -918,7 +922,7 @@
       "request_type": "ListAppMachsInput",
       "routes_via_chain": false,
       "services": [],
-      "source": "node/src/shell/api/actions/program.rs:1707",
+      "source": "node/src/shell/api/actions/program.rs:1514",
       "spawns_background_work": false,
       "transaction_operations": [],
       "vmm_operations": []
@@ -931,7 +935,7 @@
       "request_type": "VmTerminalInput",
       "routes_via_chain": false,
       "services": [],
-      "source": "node/src/shell/api/actions/program.rs:1205",
+      "source": "node/src/shell/api/actions/program.rs:1042",
       "spawns_background_work": false,
       "transaction_operations": [
         "put_link"
@@ -946,7 +950,7 @@
       "request_type": "MachineBuildsInput",
       "routes_via_chain": false,
       "services": [],
-      "source": "node/src/shell/api/actions/program.rs:1274",
+      "source": "node/src/shell/api/actions/program.rs:1111",
       "spawns_background_work": false,
       "transaction_operations": [
         "get_links_list"
@@ -961,15 +965,15 @@
       "request_type": "ReadVmLogsInput",
       "routes_via_chain": false,
       "services": [
-        "storage"
+        "vmm"
       ],
-      "source": "node/src/shell/api/actions/program.rs:1044",
+      "source": "node/src/shell/api/actions/program.rs:856",
       "spawns_background_work": false,
       "transaction_operations": [
         "get_links_list"
       ],
       "vmm_operations": [
-        "read_vm_logs"
+        "logs"
       ]
     },
     {
@@ -980,7 +984,7 @@
       "request_type": "CreateMachineInput",
       "routes_via_chain": false,
       "services": [],
-      "source": "node/src/shell/api/actions/program.rs:572",
+      "source": "node/src/shell/api/actions/program.rs:471",
       "spawns_background_work": false,
       "transaction_operations": [],
       "vmm_operations": []
@@ -993,7 +997,7 @@
       "request_type": "DeleteProgramInput",
       "routes_via_chain": false,
       "services": [],
-      "source": "node/src/shell/api/actions/program.rs:609",
+      "source": "node/src/shell/api/actions/program.rs:508",
       "spawns_background_work": false,
       "transaction_operations": [],
       "vmm_operations": []
@@ -1005,8 +1009,10 @@
       "path": "/programs/deleteEntity",
       "request_type": "RunProgramEntityInput",
       "routes_via_chain": false,
-      "services": [],
-      "source": "node/src/shell/api/actions/program.rs:938",
+      "services": [
+        "vmm"
+      ],
+      "source": "node/src/shell/api/actions/program.rs:767",
       "spawns_background_work": false,
       "transaction_operations": [
         "del_json",
@@ -1014,7 +1020,7 @@
         "get_link"
       ],
       "vmm_operations": [
-        "delete_vm_instance"
+        "set_state"
       ]
     },
     {
@@ -1026,15 +1032,17 @@
       "routes_via_chain": false,
       "services": [
         "storage",
-        "vmm"
+        "vmm",
+        "workloads"
       ],
-      "source": "node/src/shell/api/actions/program.rs:1347",
-      "spawns_background_work": true,
+      "source": "node/src/shell/api/actions/program.rs:1184",
+      "spawns_background_work": false,
       "transaction_operations": [
         "put_link"
       ],
       "vmm_operations": [
-        "build_vm_image"
+        "deploy_conventions",
+        "runtime_keys"
       ]
     },
     {
@@ -1047,7 +1055,7 @@
       "services": [
         "storage"
       ],
-      "source": "node/src/shell/api/actions/program.rs:1586",
+      "source": "node/src/shell/api/actions/program.rs:1393",
       "spawns_background_work": false,
       "transaction_operations": [],
       "vmm_operations": []
@@ -1060,7 +1068,7 @@
       "request_type": "ListInput",
       "routes_via_chain": false,
       "services": [],
-      "source": "node/src/shell/api/actions/program.rs:1685",
+      "source": "node/src/shell/api/actions/program.rs:1492",
       "spawns_background_work": false,
       "transaction_operations": [],
       "vmm_operations": []
@@ -1075,14 +1083,17 @@
       "services": [
         "vmm"
       ],
-      "source": "node/src/shell/api/actions/program.rs:664",
-      "spawns_background_work": true,
+      "source": "node/src/shell/api/actions/program.rs:563",
+      "spawns_background_work": false,
       "transaction_operations": [
         "get_link",
         "put_json",
         "put_link"
       ],
-      "vmm_operations": []
+      "vmm_operations": [
+        "launch",
+        "offers"
+      ]
     },
     {
       "guard_expression": "user_guard()",
@@ -1094,13 +1105,15 @@
       "services": [
         "vmm"
       ],
-      "source": "node/src/shell/api/actions/program.rs:838",
+      "source": "node/src/shell/api/actions/program.rs:689",
       "spawns_background_work": false,
       "transaction_operations": [
         "del_json",
         "del_key"
       ],
-      "vmm_operations": []
+      "vmm_operations": [
+        "set_state"
+      ]
     },
     {
       "guard_expression": "user_guard()",
@@ -1110,7 +1123,7 @@
       "request_type": "UpdateProgramInput",
       "routes_via_chain": false,
       "services": [],
-      "source": "node/src/shell/api/actions/program.rs:632",
+      "source": "node/src/shell/api/actions/program.rs:531",
       "spawns_background_work": false,
       "transaction_operations": [],
       "vmm_operations": []
@@ -1206,9 +1219,9 @@
   },
   "summary": {
     "action_count": 77,
-    "actions_spawning_background_work": 5,
+    "actions_spawning_background_work": 3,
     "actions_with_storage_operations": 47,
-    "actions_with_vmm_operations": 5,
+    "actions_with_vmm_operations": 6,
     "guard_expression_counts": {
       "Guard::default()": 8,
       "anon_guard()": 2,
@@ -1219,8 +1232,9 @@
     "service_reference_counts": {
       "security": 2,
       "signaler": 1,
-      "storage": 8,
-      "vmm": 3
+      "storage": 7,
+      "vmm": 6,
+      "workloads": 1
     },
     "unique_guard_expressions": 5
   }

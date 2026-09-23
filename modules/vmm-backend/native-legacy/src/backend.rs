@@ -201,12 +201,16 @@ impl NativeBackend {
     /// The workload's instance, created (artifact fetched, identity registered) on
     /// first use; later calls refresh its record.
     fn ensure(&self, workload: &WorkloadRecord) -> PortResult<()> {
-        if self
-            .registry
-            .with(workload.id, |instance| instance.record = workload.clone())
-            .is_some()
-        {
-            return Ok(());
+        if let Some(build_pending) = self.registry.with(workload.id, |instance| {
+            instance.record = workload.clone();
+            instance.build_pending
+        }) {
+            return if build_pending {
+                // The previous build failed; its output is in the instance's log.
+                self.build_image(workload)
+            } else {
+                Ok(())
+            };
         }
         let (capabilities, _) = self.runtime(&workload.spec.runtime)?;
         let credential = Self::credential(workload)?;
@@ -240,6 +244,7 @@ impl NativeBackend {
             vm_id,
             entity_id,
             artifact_path,
+            build_pending: capabilities.deploy.build_on_deploy,
             observation: Observation {
                 state: ObservedWorkloadState::Pending,
                 generation: workload.desired.generation,
@@ -251,6 +256,36 @@ impl NativeBackend {
             next_log: 0,
             usage: Usage::default(),
         });
+        if capabilities.deploy.build_on_deploy {
+            self.build_image(workload)?;
+        }
+        Ok(())
+    }
+
+    /// Build a build-on-deploy runtime's image (docker, elpify) from the fetched
+    /// artifact's directory, once, before the workload's first start. The plugin's
+    /// output is the workload's `build` log stream.
+    fn build_image(&self, workload: &WorkloadRecord) -> PortResult<()> {
+        let (_, plugin) = self.runtime(&workload.spec.runtime)?;
+        let (machine_id, vm_id, entity_id, artifact_path) = self.identity(workload.id)?;
+        let directory = std::path::Path::new(&artifact_path)
+            .parent()
+            .map(|path| path.display().to_string())
+            .unwrap_or_default();
+        plugin
+            .build_image(&json!({
+                "type": "buildVmImage",
+                "runtime": workload.spec.runtime,
+                "buildType": workload.spec.runtime,
+                "machineId": machine_id,
+                "entityId": entity_id,
+                "vmId": vm_id,
+                "imageBuildPath": directory,
+                "astPath": artifact_path,
+            }))
+            .map_err(|error| failed(format!("build: {error}")))?;
+        self.registry
+            .with(workload.id, |instance| instance.build_pending = false);
         Ok(())
     }
 
@@ -493,10 +528,10 @@ impl NativeBackend {
                 .as_i64()
                 .and_then(|code| i32::try_from(code).ok())
                 .unwrap_or(0),
-            stdout: if answer["stdout"].is_string() {
-                text("stdout")
-            } else {
-                URL_SAFE_NO_PAD.encode(answer.to_string())
+            stdout: match (answer["stdout"].as_str(), answer["output"].as_str()) {
+                (Some(_), _) => text("stdout"),
+                (None, Some(output)) => URL_SAFE_NO_PAD.encode(output),
+                (None, None) => URL_SAFE_NO_PAD.encode(answer.to_string()),
             },
             stderr: text("stderr"),
             truncated: false,
@@ -658,7 +693,9 @@ impl VmmBackend for NativeBackend {
                 "path": path,
                 "targetPath": directory,
                 "fileName": name,
-                "content": STANDARD.encode(bytes),
+                // The legacy runtimes copy text content.
+                "content": std::str::from_utf8(bytes)
+                    .map_err(|_| PortError::Unsupported("binary files on the native backend"))?,
             }))
             .map(|_| ())
             .map_err(failed)

@@ -42,4 +42,6 @@ pub trait IWorkloads: Send + Sync {
     fn host_action_store(&self, op: &str, input: &JsonValue, req_id: i64) -> (String, i64);
     fn host_action_creature(&self, op: &str, input: &JsonValue, req_id: i64) -> (String, i64);
     fn host_action_program(&self, op: &str, input: &JsonValue, req_id: i64) -> (String, i64);
+    /// A guest's `signal` to a store (identity stamped by the node).
+    fn host_action_signal(&self, input: &JsonValue) -> String;
 }

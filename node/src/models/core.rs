@@ -83,17 +83,4 @@ pub trait ICore: Send + Sync {
     fn vm_cpu_core_cost_per_minute(&self) -> i64;
     fn vm_disk_cost_per_gb_per_minute(&self) -> i64;
     fn globe(&self) -> Arc<dyn IGlobe>;
-
-    /// Open (or return an existing) per-VM RocksDB transaction keyed by `vm_id`.
-    ///
-    /// All writes accumulate in an in-memory overlay and are not persisted until
-    /// [`end_vm_trx`] is called. The Core tracks every open transaction so they
-    /// are committed atomically and removed from memory with no footprint after
-    /// the VM lifecycle ends.
-    fn begin_vm_trx(&self, vm_id: &str) -> Arc<dyn ITrx>;
-
-    /// Commit the per-VM transaction for `vm_id`, persist all buffered writes to
-    /// RocksDB, and remove the entry from the Core's tracking map.  Calling this
-    /// when no open transaction exists for `vm_id` is a safe no-op.
-    fn end_vm_trx(&self, vm_id: &str);
 }

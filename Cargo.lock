@@ -387,6 +387,7 @@ dependencies = [
  "aseman-application",
  "aseman-config",
  "aseman-contracts",
+ "aseman-domain",
  "aseman-ports",
  "aseman-storage-postgres",
  "aseman-vmm-backend-grpc",
@@ -395,6 +396,15 @@ dependencies = [
  "rustls 0.23.45",
  "rustls-pemfile 2.2.0",
  "tokio",
+]
+
+[[package]]
+name = "aseman-vmm-agent"
+version = "0.1.0"
+dependencies = [
+ "aseman-domain",
+ "serde",
+ "serde_json",
 ]
 
 [[package]]
@@ -448,6 +458,24 @@ dependencies = [
  "sha2 0.10.9",
  "tokio",
  "tokio-stream",
+ "tonic",
+]
+
+[[package]]
+name = "aseman-vmm-backend-nomad"
+version = "0.1.0"
+dependencies = [
+ "aseman-config",
+ "aseman-contracts",
+ "aseman-domain",
+ "aseman-ports",
+ "aseman-vmm-backend-conformance",
+ "aseman-vmm-backend-grpc",
+ "base64 0.22.1",
+ "reqwest 0.12.28",
+ "serde",
+ "serde_json",
+ "tokio",
  "tonic",
 ]
 
@@ -932,8 +960,6 @@ dependencies = [
  "aseman-storage-postgres",
  "aseman-vmm-http",
  "base64 0.22.1",
- "caspar-vm-plugins",
- "caspar-vm-sdk",
  "chacha20poly1305",
  "chrono",
  "crossbeam-channel",

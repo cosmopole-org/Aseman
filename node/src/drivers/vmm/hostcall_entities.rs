@@ -17,7 +17,7 @@ use crate::shell::api::model::{Creature, Program, Store, StorePermissions};
 use aseman_domain::program::{EntityRecord, ResourceEntityRef};
 use aseman_ports::BlobStore;
 
-use super::driver::{check_bool, check_i64, check_str, normalize_runtime, Vmm};
+use super::driver::{check_bool, check_i64, check_str, normalize_runtime, NodeWorkloads};
 
 fn number_from_input(input: &Value, key: &str, def: i64) -> i64 {
     check_i64(input, key, def)
@@ -27,7 +27,7 @@ fn bool_from_input(input: &Value, key: &str, def: bool) -> bool {
     check_bool(input, key, def)
 }
 
-impl Vmm {
+impl NodeWorkloads {
     pub(crate) fn handle_creature_crud(
         &self,
         op: &str,
@@ -614,7 +614,7 @@ impl Vmm {
             .unwrap_or_else(|| Value::Object(Map::new()));
         let build_folder_path = format!(
             "{}/machines/{}/entities/{}",
-            self.storage.storage_root(),
+            self.app.tools().storage().storage_root(),
             program_id,
             entity_id
         );
@@ -629,7 +629,7 @@ impl Vmm {
                     )
                 }
             };
-            let blobs = crate::drivers::blob_store::node_blobs(&*self.storage);
+            let blobs = crate::drivers::blob_store::node_blobs(&*self.app.tools().storage());
             let evidence = match blobs.put_entity_file(&program_id, &entity_id, "proxy.data", &data)
             {
                 Ok(evidence) => evidence,
@@ -672,26 +672,24 @@ impl Vmm {
             return (serde_json::to_string(&out).unwrap_or_default(), req_id);
         }
 
-        let spec = match caspar_vm_sdk::registry::get(&entity_type) {
-            Some(p) => p.meta().deploy_spec_json(),
-            None => {
-                return (
-                    format!(
-                        "{{\"ok\":false,\"error\":\"invalid entityType, expected proxy or one of {}\"}}",
-                        caspar_vm_sdk::registry::keys().join("|")
-                    ),
-                    req_id,
-                )
-            }
+        let Some(conventions) = crate::shell::workloads::remote()
+            .and_then(|remote| remote.deploy_conventions(&entity_type))
+        else {
+            let offered = crate::shell::workloads::remote()
+                .map(|remote| remote.runtime_keys().join("|"))
+                .unwrap_or_default();
+            return (
+                json!({
+                    "ok": false,
+                    "error": format!("invalid entityType, expected proxy or one of {offered}"),
+                })
+                .to_string(),
+                req_id,
+            );
         };
-        let primary_file_name = spec["entityFileName"]
-            .as_str()
-            .unwrap_or("module.wasm")
-            .to_string();
-        let accepts_extra_files = spec["acceptsExtraFiles"].as_bool().unwrap_or(false);
-        let build_on_deploy = spec["buildOnDeploy"].as_bool().unwrap_or(false);
-        let set_entity_links = spec["setEntityLinksOnDeploy"].as_bool().unwrap_or(false);
-        let blobs = crate::drivers::blob_store::node_blobs(&*self.storage);
+        let primary_file_name = conventions.entity_file_name.clone();
+        let accepts_extra_files = conventions.accepts_extra_files;
+        let blobs = crate::drivers::blob_store::node_blobs(&*self.app.tools().storage());
         let primary =
             match blobs.put_entity_file(&program_id, &entity_id, &primary_file_name, &data) {
                 Ok(evidence) => evidence,
@@ -773,7 +771,8 @@ impl Vmm {
                         image_name: entity_id_owned.clone(),
                     },
                     primary: primary.clone(),
-                    runtime_file: set_entity_links,
+                    // The VMM fetches every runtime's primary file (P5-06).
+                    runtime_file: true,
                     // Downloadable entities (e.g. a front-end script executed
                     // client-side) are fetched by clients at any time via
                     // /programs/downloadEntity.
@@ -784,15 +783,9 @@ impl Vmm {
                 Ok(())
             }),
         );
+        // A build-on-deploy runtime is built by the VMM before the entity's first
+        // start (P5-06).
         self.app.tools().workloads().assign(&program_id);
-        if build_on_deploy {
-            self.app.tools().workloads().build_vm_image(
-                &program_id,
-                &entity_id,
-                &build_folder_path,
-                &entity_type,
-            );
-        }
         let out = json!({
             "ok": true,
             "programId": program_id,
@@ -991,7 +984,7 @@ impl Vmm {
             entity_type,
             entity_id: entity_id.clone(),
         };
-        let blobs = crate::drivers::blob_store::node_blobs(&*self.storage);
+        let blobs = crate::drivers::blob_store::node_blobs(&*self.app.tools().storage());
         let path = blobs
             .local_path(&reference.data_key())
             .map(|path| path.to_string_lossy().into_owned())
@@ -1048,7 +1041,7 @@ impl Vmm {
             entity_type,
             entity_id,
         };
-        let blobs = crate::drivers::blob_store::node_blobs(&*self.storage);
+        let blobs = crate::drivers::blob_store::node_blobs(&*self.app.tools().storage());
         let failure = Arc::new(Mutex::new(None));
         let failure_slot = failure.clone();
         self.app.modify_state(
@@ -1809,29 +1802,6 @@ impl Vmm {
         }
     }
 
-    /// `wm.handleTerminateVM` — terminates a VM by runtime.
-    ///
-    /// The typed terminate packet is built by the runtime's own plugin
-    /// (`VmPlugin::build_terminate_request`), so per-runtime identity fields
-    /// (e.g. container names) never leak into the node.
-    pub(crate) fn handle_terminate_vm(&self, input: &Value, req_id: i64) -> (String, i64) {
-        let target_runtime = normalize_runtime(&check_str(input, "runtime", ""));
-        if target_runtime.is_empty() {
-            return (r#"{"error":1}"#.into(), req_id);
-        }
-        let plugin = match caspar_vm_sdk::registry::get(&target_runtime) {
-            Some(p) => p,
-            None => return ("unsupported runtime".into(), req_id),
-        };
-        match plugin.build_terminate_request(input) {
-            Ok(packet) => {
-                self.send_to_engine(packet);
-                ("{}".into(), req_id)
-            }
-            Err(_) => ("unsupported runtime".into(), req_id),
-        }
-    }
-
     pub(crate) fn handle_check_token_validity(&self, input: &Value, req_id: i64) -> (String, i64) {
         let token_owner_id = check_str(input, "tokenOwnerId", "");
         let token_id = check_str(input, "tokenId", "");
@@ -2123,7 +2093,7 @@ impl Vmm {
     pub(super) fn gen_id(&self, source: &str) -> String {
         let slot = Arc::new(Mutex::new(String::new()));
         let slot_clone = slot.clone();
-        let storage = self.storage.clone();
+        let storage = self.app.tools().storage().clone();
         let source_owned = source.to_string();
         self.app.modify_state(
             true,

@@ -54,30 +54,8 @@ pub(crate) fn host_fn_delete_vm(caller_program_id: &str, input: &JsonValue) -> S
         .to_string();
     }
 
-    // Ask the runtime's own plugin to shape the delete packet: the container
-    // name, sandbox id or entity fields a given runtime needs to address one
-    // concrete instance are the plugin's business, not this dispatcher's.
-    let runtime = caspar_vm_sdk::util::normalize_runtime(input["runtime"].as_str().unwrap_or(""));
-    let packet = match caspar_vm_sdk::registry::get(&runtime) {
-        Some(plugin) => match plugin.build_delete_request(input) {
-            Ok(p) => p,
-            Err(err) => return json!({"ok": false, "error": err}).to_string(),
-        },
-        None => {
-            let mut p = input.clone();
-            if let Some(obj) = p.as_object_mut() {
-                obj.insert(
-                    "type".to_string(),
-                    JsonValue::String("deleteVm".to_string()),
-                );
-                obj.insert("purge".to_string(), JsonValue::Bool(true));
-                obj.insert("delete".to_string(), JsonValue::Bool(true));
-            }
-            p
-        }
-    };
-
-    let raw = crate::drivers::vmm::dispatch_packet(&packet);
+    let raw =
+        crate::drivers::vmm::host::functions::vm_calls::remote_vm_call("deleteVm", &caller, input);
     // Only forget the VM once the runtime actually destroyed it — clearing the
     // owner link after a failed delete would strand a live VM nobody may
     // delete any more.

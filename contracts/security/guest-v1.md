@@ -1,9 +1,9 @@
 ---
 status: ACCEPTED
 owner: security/guest
-source_of_truth: this contract, ADR 0001, ADR 0021, contracts/capsule/guest/isolation-rules.json
-last_verified_commit: 5c6e6eb
-verification: cargo test -p aseman-application guest; live aseman-storage-postgres live_guest_gateway
+source_of_truth: this contract, ADR 0001, ADR 0021, ADR 0030, contracts/capsule/guest/isolation-rules.json
+last_verified_commit: eebb9c5
+verification: cargo test -p aseman-application guest; live aseman-storage-postgres live_guest_gateway; modules/vmm-backend/native-legacy/tests/system.rs (host calls from a real runtime)
 ---
 
 # A405: guest gateway resolution and authorization (v1)
@@ -13,15 +13,23 @@ sends selects the creature, program, database, namespace owner, or role.
 
 ## Authentication
 
-The gateway serves an authenticated workload, established in one of two ways:
-- **Signed request.** An A401 proof in the `request` context, signed by the workload's
-  `authentication` key. `subject` is `workload:{uuid}`, `audience` is
-  `node:{node uuid}/guest/v1`, and `action` is the registered action of the operation.
-  The body digest covers the exact operation body. All A401 checks apply, including
-  replay.
-- **In-process runtime.** The VM handle the node registered when it started the
-  workload (the node-side VM context). A `vmId` or any other identity carried in the
-  guest's input is never used.
+The gateway serves an authenticated workload, and the only way to be one is an A401
+proof signed by the workload's `authentication` key. `subject` is `workload:{uuid}`,
+`audience` is `node:{node uuid}/guest/v1`, and `action` is the registered action of the
+operation. The body digest covers the exact operation body. All A401 checks apply,
+including replay. The proof travels in the `request` context, or in the `Aseman-Proof`
+header for a host call.
+
+Who holds the key depends on where the workload runs, and the gateway cannot tell them
+apart, which is the point:
+- **Out-of-process.** The workload itself holds the credential it was bootstrapped
+  with.
+- **In-process runtime.** The VMM backend hosting the runtime holds one credential per
+  workload it runs and signs on its behalf.
+
+Since P5-06 there is no unauthenticated in-process path: the node registers no VM
+handles and serves no callback. A `vmId`, `programId`, or any other identity carried in
+the guest's input never establishes the caller (LD-14, LD-27).
 
 ## Resolution
 
@@ -77,6 +85,41 @@ nested object and non-null leaf at `path.member`
 - `getByPrefix` lists record keys in byte order.
 - A document root must be an object.
 
+## Host calls
+
+The guest API is also the only way a workload reaches a node capability. A host call is
+`POST /guest/v1/calls/{op}` with the call's JSON input as the body; the artifact read is
+`GET /guest/v1/artifacts/{digest}`. Both carry the proof in the `Aseman-Proof` header
+(unpadded base64url of the proof JSON), because a guest runtime cannot always shape a
+request context.
+
+- **Registration.** `op` is served only when the A402 registry has the surface
+  `unified-host-call {op}`; the signer and the verifier both derive the signed action
+  from it (`aseman_contracts::guest_api::call_action`). An unregistered op is refused
+  before anything is resolved.
+- **Confinement.** The caller resolves to a workload, and from it to a program and a
+  creature, exactly as above. Every entity a call reads or writes is confined to that
+  creature; a call naming an entity of another creature is refused, not filtered
+  (LD-26).
+- **Targets.** A call whose subject is another VM or program (`runVm`, `execVm`,
+  `deleteVm`, `deployEntity`, `updateProgram`, ...) carries the target in
+  `targetVmId`/`targetProgramId`, never in `vmId`/`programId`: those name the caller.
+  The node moves the target into place only after it has resolved and authorized the
+  caller, so a guest can never impersonate one by naming it (LD-27).
+- **VM operations.** A host call that operates on a VM is an A501 call to the workload's
+  VMM. The node performs no runtime work of its own (ADR 0030).
+- **Artifacts.** `ARTIFACT_ACTION` (`workload.artifact.read`) lets a workload read its
+  own program's artifact by digest, and nothing else.
+
+## Credential
+
+A workload's credential is an Ed25519 seed with its subject, key id, key epoch, guest
+API base URL, and audience, encoded as unpadded base64url JSON. It is the write-only
+`bootstrap.credential` of A501: the VMM accepts it, hands it to the backend, and never
+returns or logs it (ADR 0019, ADR 0023). It never appears in `Debug` output, in an
+event, or in a capsule. A key epoch change invalidates it; the workload is restarted
+with the next one.
+
 ## Refusals
 
 Refusals are stable reasons:
@@ -87,6 +130,8 @@ Refusals are stable reasons:
 - `the workload is deleted`
 - `the creature's guest database is not active`
 - `the policy denies guest data access`
+- `unknown host call`
+- `the entity belongs to another creature`
 
 A failing proof returns its A401 code. A store that cannot answer is reported as
 unavailable, and nothing is served.

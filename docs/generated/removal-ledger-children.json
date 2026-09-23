@@ -12,6 +12,7 @@
         "aseman-application",
         "aseman-config",
         "aseman-contracts",
+        "aseman-domain",
         "aseman-ports",
         "aseman-storage-postgres",
         "aseman-vmm-backend-grpc",
@@ -25,6 +26,19 @@
       "disposition": "move-or-wrap-per-parent-ledger",
       "expiry": "owning phase replacement/deletion gate",
       "id": "rust-package:aseman-vmm",
+      "replacement_evidence": "A001 plus architecture dependency checks",
+      "target_owner": "root Aseman workspace or isolated legacy provider"
+    },
+    {
+      "callers": [
+        "aseman-domain",
+        "serde",
+        "serde_json"
+      ],
+      "current_owner": "apps/aseman-vmm-agent/Cargo.toml",
+      "disposition": "move-or-wrap-per-parent-ledger",
+      "expiry": "owning phase replacement/deletion gate",
+      "id": "rust-package:aseman-vmm-agent",
       "replacement_evidence": "A001 plus architecture dependency checks",
       "target_owner": "root Aseman workspace or isolated legacy provider"
     },
@@ -255,6 +269,7 @@
         "r2d2_postgres",
         "rocksdb",
         "rsa",
+        "serde",
         "serde_json",
         "sha2",
         "thiserror"
@@ -308,6 +323,7 @@
         "base64",
         "caspar-vm-plugins",
         "caspar-vm-sdk",
+        "dashmap",
         "serde",
         "serde_json",
         "sha2",
@@ -317,14 +333,41 @@
         "aseman-application",
         "aseman-guest-http",
         "aseman-ports",
+        "aseman-storage-postgres",
         "aseman-vmm-backend-conformance",
+        "aseman-vmm-http",
+        "postgres",
         "rcgen",
+        "reqwest",
         "rustls"
       ],
       "current_owner": "modules/vmm-backend/native-legacy/Cargo.toml",
       "disposition": "move-or-wrap-per-parent-ledger",
       "expiry": "owning phase replacement/deletion gate",
       "id": "rust-package:aseman-vmm-backend-native",
+      "replacement_evidence": "A001 plus architecture dependency checks",
+      "target_owner": "root Aseman workspace or isolated legacy provider"
+    },
+    {
+      "callers": [
+        "aseman-config",
+        "aseman-contracts",
+        "aseman-domain",
+        "aseman-ports",
+        "aseman-vmm-backend-grpc",
+        "base64",
+        "reqwest",
+        "serde",
+        "serde_json",
+        "tokio",
+        "tonic",
+        "aseman-ports",
+        "aseman-vmm-backend-conformance"
+      ],
+      "current_owner": "modules/vmm-backend/nomad/Cargo.toml",
+      "disposition": "move-or-wrap-per-parent-ledger",
+      "expiry": "owning phase replacement/deletion gate",
+      "id": "rust-package:aseman-vmm-backend-nomad",
       "replacement_evidence": "A001 plus architecture dependency checks",
       "target_owner": "root Aseman workspace or isolated legacy provider"
     },
@@ -397,8 +440,6 @@
         "aseman-storage-postgres",
         "aseman-vmm-http",
         "base64",
-        "caspar-vm-plugins",
-        "caspar-vm-sdk",
         "chacha20poly1305",
         "chrono",
         "crossbeam-channel",
@@ -730,7 +771,19 @@
     {
       "callers": [
         "contracts/config/legacy-aliases.json:36",
-        "crates/aseman-config/src/lib.rs:332"
+        "crates/aseman-config/src/lib.rs:337"
+      ],
+      "current_owner": "network",
+      "disposition": "move",
+      "expiry": "Phase 1 typed-config gate",
+      "id": "config:ASEMAN_TEST_NOMAD_ENDPOINT",
+      "replacement_evidence": "A003/A103 config inventory, alias, and startup fixtures",
+      "target_owner": "typed AsemanConfig schema/composition root"
+    },
+    {
+      "callers": [
+        "contracts/config/legacy-aliases.json:53",
+        "crates/aseman-config/src/lib.rs:334"
       ],
       "current_owner": "network",
       "disposition": "move",
@@ -741,7 +794,7 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:53",
+        "contracts/config/legacy-aliases.json:70",
         "run-nodes.sh:1304"
       ],
       "current_owner": "runtime-or-storage",
@@ -753,7 +806,7 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:70",
+        "contracts/config/legacy-aliases.json:87",
         "run-nodes.sh:1303"
       ],
       "current_owner": "runtime-or-storage",
@@ -765,7 +818,7 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:87",
+        "contracts/config/legacy-aliases.json:104",
         "node/sample.env:4",
         "run-nodes.sh:1281"
       ],
@@ -778,7 +831,7 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:108",
+        "contracts/config/legacy-aliases.json:125",
         "node/sample.env:11",
         "run-nodes.sh:1288"
       ],
@@ -791,7 +844,7 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:129"
+        "contracts/config/legacy-aliases.json:146"
       ],
       "current_owner": "network",
       "disposition": "move",
@@ -802,7 +855,7 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:142"
+        "contracts/config/legacy-aliases.json:159"
       ],
       "current_owner": "runtime-or-storage",
       "disposition": "move",
@@ -813,7 +866,7 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:155"
+        "contracts/config/legacy-aliases.json:172"
       ],
       "current_owner": "runtime-or-storage",
       "disposition": "move",
@@ -824,7 +877,7 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:168"
+        "contracts/config/legacy-aliases.json:185"
       ],
       "current_owner": "application",
       "disposition": "deprecate-alias",
@@ -835,7 +888,7 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:181"
+        "contracts/config/legacy-aliases.json:198"
       ],
       "current_owner": "application",
       "disposition": "deprecate-alias",
@@ -846,7 +899,7 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:194"
+        "contracts/config/legacy-aliases.json:211"
       ],
       "current_owner": "secret-or-sensitive",
       "disposition": "deprecate-alias",
@@ -857,7 +910,7 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:207"
+        "contracts/config/legacy-aliases.json:224"
       ],
       "current_owner": "application",
       "disposition": "deprecate-alias",
@@ -868,7 +921,7 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:220"
+        "contracts/config/legacy-aliases.json:237"
       ],
       "current_owner": "application",
       "disposition": "deprecate-alias",
@@ -879,7 +932,7 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:233"
+        "contracts/config/legacy-aliases.json:250"
       ],
       "current_owner": "application",
       "disposition": "deprecate-alias",
@@ -891,7 +944,7 @@
     {
       "callers": [
         "client-cli/index.ts:1200",
-        "contracts/config/legacy-aliases.json:246"
+        "contracts/config/legacy-aliases.json:263"
       ],
       "current_owner": "network",
       "disposition": "deprecate-alias",
@@ -903,7 +956,7 @@
     {
       "callers": [
         "client-cli/index.ts:78",
-        "contracts/config/legacy-aliases.json:263"
+        "contracts/config/legacy-aliases.json:280"
       ],
       "current_owner": "application",
       "disposition": "deprecate-alias",
@@ -914,7 +967,7 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:280"
+        "contracts/config/legacy-aliases.json:297"
       ],
       "current_owner": "application",
       "disposition": "deprecate-alias",
@@ -925,7 +978,7 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:293"
+        "contracts/config/legacy-aliases.json:310"
       ],
       "current_owner": "application",
       "disposition": "deprecate-alias",
@@ -936,7 +989,7 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:306"
+        "contracts/config/legacy-aliases.json:323"
       ],
       "current_owner": "application",
       "disposition": "deprecate-alias",
@@ -947,7 +1000,7 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:319"
+        "contracts/config/legacy-aliases.json:336"
       ],
       "current_owner": "application",
       "disposition": "deprecate-alias",
@@ -958,7 +1011,7 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:332"
+        "contracts/config/legacy-aliases.json:349"
       ],
       "current_owner": "application",
       "disposition": "deprecate-alias",
@@ -970,7 +1023,7 @@
     {
       "callers": [
         "client-cli/index.ts:1202",
-        "contracts/config/legacy-aliases.json:345"
+        "contracts/config/legacy-aliases.json:362"
       ],
       "current_owner": "network",
       "disposition": "deprecate-alias",
@@ -982,7 +1035,7 @@
     {
       "callers": [
         "client-cli/index.ts:1201",
-        "contracts/config/legacy-aliases.json:362"
+        "contracts/config/legacy-aliases.json:379"
       ],
       "current_owner": "application",
       "disposition": "deprecate-alias",
@@ -993,7 +1046,7 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:379"
+        "contracts/config/legacy-aliases.json:396"
       ],
       "current_owner": "application",
       "disposition": "deprecate-alias",
@@ -1004,7 +1057,7 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:392"
+        "contracts/config/legacy-aliases.json:409"
       ],
       "current_owner": "application",
       "disposition": "deprecate-alias",
@@ -1015,7 +1068,7 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:405"
+        "contracts/config/legacy-aliases.json:422"
       ],
       "current_owner": "application",
       "disposition": "deprecate-alias",
@@ -1027,7 +1080,7 @@
     {
       "callers": [
         "client-cli/index.ts:572",
-        "contracts/config/legacy-aliases.json:418"
+        "contracts/config/legacy-aliases.json:435"
       ],
       "current_owner": "application",
       "disposition": "deprecate-alias",
@@ -1038,7 +1091,7 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:435"
+        "contracts/config/legacy-aliases.json:452"
       ],
       "current_owner": "application",
       "disposition": "deprecate-alias",
@@ -1049,7 +1102,7 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:448"
+        "contracts/config/legacy-aliases.json:465"
       ],
       "current_owner": "network",
       "disposition": "deprecate-alias",
@@ -1061,7 +1114,7 @@
     {
       "callers": [
         "client-cli/index.ts:51",
-        "contracts/config/legacy-aliases.json:461"
+        "contracts/config/legacy-aliases.json:478"
       ],
       "current_owner": "application",
       "disposition": "deprecate-alias",
@@ -1072,7 +1125,7 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:478"
+        "contracts/config/legacy-aliases.json:495"
       ],
       "current_owner": "application",
       "disposition": "deprecate-alias",
@@ -1083,7 +1136,7 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:491"
+        "contracts/config/legacy-aliases.json:508"
       ],
       "current_owner": "network",
       "disposition": "deprecate-alias",
@@ -1094,7 +1147,7 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:504"
+        "contracts/config/legacy-aliases.json:521"
       ],
       "current_owner": "application",
       "disposition": "deprecate-alias",
@@ -1105,7 +1158,7 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:517"
+        "contracts/config/legacy-aliases.json:534"
       ],
       "current_owner": "application",
       "disposition": "deprecate-alias",
@@ -1116,7 +1169,7 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:530"
+        "contracts/config/legacy-aliases.json:547"
       ],
       "current_owner": "application",
       "disposition": "deprecate-alias",
@@ -1127,7 +1180,7 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:543",
+        "contracts/config/legacy-aliases.json:560",
         "node/sample.env:9",
         "run-nodes.sh:1286"
       ],
@@ -1140,7 +1193,7 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:564",
+        "contracts/config/legacy-aliases.json:581",
         "node/sample.env:8",
         "run-nodes.sh:1285"
       ],
@@ -1153,7 +1206,7 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:585"
+        "contracts/config/legacy-aliases.json:602"
       ],
       "current_owner": "network",
       "disposition": "move",
@@ -1164,7 +1217,7 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:598"
+        "contracts/config/legacy-aliases.json:615"
       ],
       "current_owner": "secret-or-sensitive",
       "disposition": "move",
@@ -1175,7 +1228,7 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:611"
+        "contracts/config/legacy-aliases.json:628"
       ],
       "current_owner": "application",
       "disposition": "move",
@@ -1186,7 +1239,7 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:624"
+        "contracts/config/legacy-aliases.json:641"
       ],
       "current_owner": "application",
       "disposition": "move",
@@ -1197,7 +1250,7 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:637"
+        "contracts/config/legacy-aliases.json:654"
       ],
       "current_owner": "application",
       "disposition": "move",
@@ -1208,7 +1261,7 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:650"
+        "contracts/config/legacy-aliases.json:667"
       ],
       "current_owner": "network",
       "disposition": "move",
@@ -1219,7 +1272,7 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:663"
+        "contracts/config/legacy-aliases.json:680"
       ],
       "current_owner": "application",
       "disposition": "move",
@@ -1230,7 +1283,7 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:676"
+        "contracts/config/legacy-aliases.json:693"
       ],
       "current_owner": "application",
       "disposition": "move",
@@ -1241,7 +1294,7 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:689"
+        "contracts/config/legacy-aliases.json:706"
       ],
       "current_owner": "application",
       "disposition": "move",
@@ -1252,7 +1305,7 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:702",
+        "contracts/config/legacy-aliases.json:719",
         "node/Dockerfile:24"
       ],
       "current_owner": "runtime-or-storage",
@@ -1264,7 +1317,7 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:719"
+        "contracts/config/legacy-aliases.json:736"
       ],
       "current_owner": "network",
       "disposition": "move",
@@ -1275,7 +1328,7 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:732"
+        "contracts/config/legacy-aliases.json:749"
       ],
       "current_owner": "network",
       "disposition": "move",
@@ -1286,7 +1339,7 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:745",
+        "contracts/config/legacy-aliases.json:762",
         "node/sample.env:12",
         "run-nodes.sh:1289"
       ],
@@ -1299,7 +1352,7 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:766",
+        "contracts/config/legacy-aliases.json:783",
         "node/Dockerfile:78"
       ],
       "current_owner": "runtime-or-storage",
@@ -1311,7 +1364,7 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:783",
+        "contracts/config/legacy-aliases.json:800",
         "node/sample.env:10",
         "run-nodes.sh:1287"
       ],
@@ -1324,7 +1377,7 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:804"
+        "contracts/config/legacy-aliases.json:821"
       ],
       "current_owner": "runtime-or-storage",
       "disposition": "move",
@@ -1335,7 +1388,7 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:817"
+        "contracts/config/legacy-aliases.json:834"
       ],
       "current_owner": "runtime-or-storage",
       "disposition": "move",
@@ -1346,7 +1399,7 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:830"
+        "contracts/config/legacy-aliases.json:847"
       ],
       "current_owner": "runtime-or-storage",
       "disposition": "move",
@@ -1357,7 +1410,7 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:843"
+        "contracts/config/legacy-aliases.json:860"
       ],
       "current_owner": "runtime-or-storage",
       "disposition": "move",
@@ -1368,8 +1421,8 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:856",
-        "crates/aseman-config/src/lib.rs:390"
+        "contracts/config/legacy-aliases.json:873",
+        "crates/aseman-config/src/lib.rs:395"
       ],
       "current_owner": "process-environment",
       "disposition": "move",
@@ -1380,7 +1433,7 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:873",
+        "contracts/config/legacy-aliases.json:890",
         "node/Dockerfile:77"
       ],
       "current_owner": "runtime-or-storage",
@@ -1392,7 +1445,7 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:890",
+        "contracts/config/legacy-aliases.json:907",
         "node/sample.env:15",
         "run-nodes.sh:1293"
       ],
@@ -1405,7 +1458,7 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:911",
+        "contracts/config/legacy-aliases.json:928",
         "node/sample.env:17",
         "run-nodes.sh:1295"
       ],
@@ -1418,7 +1471,7 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:932",
+        "contracts/config/legacy-aliases.json:949",
         "node/Dockerfile:50"
       ],
       "current_owner": "process-environment",
@@ -1430,7 +1483,7 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:949"
+        "contracts/config/legacy-aliases.json:966"
       ],
       "current_owner": "network",
       "disposition": "move",
@@ -1441,7 +1494,7 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:962",
+        "contracts/config/legacy-aliases.json:979",
         "node/sample.env:46"
       ],
       "current_owner": "secret-or-sensitive",
@@ -1453,7 +1506,7 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:979",
+        "contracts/config/legacy-aliases.json:996",
         "node/sample.env:55"
       ],
       "current_owner": "application",
@@ -1465,7 +1518,7 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:996",
+        "contracts/config/legacy-aliases.json:1013",
         "node/sample.env:58"
       ],
       "current_owner": "application",
@@ -1477,7 +1530,7 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:1013"
+        "contracts/config/legacy-aliases.json:1030"
       ],
       "current_owner": "application",
       "disposition": "move",
@@ -1488,7 +1541,7 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:1026"
+        "contracts/config/legacy-aliases.json:1043"
       ],
       "current_owner": "application",
       "disposition": "move",
@@ -1499,7 +1552,7 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:1039",
+        "contracts/config/legacy-aliases.json:1056",
         "node/sample.env:60"
       ],
       "current_owner": "application",
@@ -1511,7 +1564,7 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:1056",
+        "contracts/config/legacy-aliases.json:1073",
         "node/sample.env:50"
       ],
       "current_owner": "application",
@@ -1523,7 +1576,7 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:1073",
+        "contracts/config/legacy-aliases.json:1090",
         "node/sample.env:66"
       ],
       "current_owner": "application",
@@ -1535,7 +1588,7 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:1090",
+        "contracts/config/legacy-aliases.json:1107",
         "node/sample.env:64"
       ],
       "current_owner": "application",
@@ -1547,7 +1600,7 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:1107",
+        "contracts/config/legacy-aliases.json:1124",
         "node/sample.env:52"
       ],
       "current_owner": "network",
@@ -1559,7 +1612,7 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:1124"
+        "contracts/config/legacy-aliases.json:1141"
       ],
       "current_owner": "application",
       "disposition": "move",
@@ -1570,7 +1623,7 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:1137",
+        "contracts/config/legacy-aliases.json:1154",
         "node/sample.env:47"
       ],
       "current_owner": "secret-or-sensitive",
@@ -1582,7 +1635,7 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:1154",
+        "contracts/config/legacy-aliases.json:1171",
         "node/sample.env:48"
       ],
       "current_owner": "secret-or-sensitive",
@@ -1594,7 +1647,7 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:1171",
+        "contracts/config/legacy-aliases.json:1188",
         "node/sample.env:62"
       ],
       "current_owner": "application",
@@ -1606,7 +1659,7 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:1188"
+        "contracts/config/legacy-aliases.json:1205"
       ],
       "current_owner": "application",
       "disposition": "move",
@@ -1617,7 +1670,7 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:1201",
+        "contracts/config/legacy-aliases.json:1218",
         "node/sample.env:14",
         "run-nodes.sh:1292"
       ],
@@ -1630,7 +1683,7 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:1222",
+        "contracts/config/legacy-aliases.json:1239",
         "node/sample.env:1",
         "run-nodes.sh:1278"
       ],
@@ -1643,7 +1696,7 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:1243",
+        "contracts/config/legacy-aliases.json:1260",
         "node/sample.env:2",
         "run-nodes.sh:1279"
       ],
@@ -1656,8 +1709,8 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:1264",
-        "crates/aseman-config/src/lib.rs:358"
+        "contracts/config/legacy-aliases.json:1281",
+        "crates/aseman-config/src/lib.rs:363"
       ],
       "current_owner": "process-environment",
       "disposition": "move",
@@ -1668,7 +1721,7 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:1281",
+        "contracts/config/legacy-aliases.json:1298",
         "run-nodes.sh:1291"
       ],
       "current_owner": "network",
@@ -1680,7 +1733,7 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:1298"
+        "contracts/config/legacy-aliases.json:1315"
       ],
       "current_owner": "runtime-or-storage",
       "disposition": "move",
@@ -1691,7 +1744,7 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:1311"
+        "contracts/config/legacy-aliases.json:1328"
       ],
       "current_owner": "runtime-or-storage",
       "disposition": "move",
@@ -1702,7 +1755,7 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:1324"
+        "contracts/config/legacy-aliases.json:1341"
       ],
       "current_owner": "runtime-or-storage",
       "disposition": "move",
@@ -1713,7 +1766,7 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:1337",
+        "contracts/config/legacy-aliases.json:1354",
         "run-nodes.sh:1309"
       ],
       "current_owner": "runtime-or-storage",
@@ -1725,7 +1778,7 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:1354",
+        "contracts/config/legacy-aliases.json:1371",
         "run-nodes.sh:1307"
       ],
       "current_owner": "network",
@@ -1737,7 +1790,7 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:1371",
+        "contracts/config/legacy-aliases.json:1388",
         "run-nodes.sh:1306"
       ],
       "current_owner": "network",
@@ -1749,7 +1802,7 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:1388",
+        "contracts/config/legacy-aliases.json:1405",
         "run-nodes.sh:1308"
       ],
       "current_owner": "network",
@@ -1761,7 +1814,7 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:1405",
+        "contracts/config/legacy-aliases.json:1422",
         "run-nodes.sh:1305"
       ],
       "current_owner": "network",
@@ -1773,7 +1826,7 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:1422",
+        "contracts/config/legacy-aliases.json:1439",
         "node/sample.env:33"
       ],
       "current_owner": "application",
@@ -1785,7 +1838,7 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:1439",
+        "contracts/config/legacy-aliases.json:1456",
         "node/sample.env:32"
       ],
       "current_owner": "application",
@@ -1797,7 +1850,7 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:1456",
+        "contracts/config/legacy-aliases.json:1473",
         "node/sample.env:31"
       ],
       "current_owner": "application",
@@ -1809,7 +1862,7 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:1473",
+        "contracts/config/legacy-aliases.json:1490",
         "node/sample.env:30"
       ],
       "current_owner": "application",
@@ -1821,7 +1874,7 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:1490",
+        "contracts/config/legacy-aliases.json:1507",
         "node/sample.env:29"
       ],
       "current_owner": "application",
@@ -1833,7 +1886,7 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:1507",
+        "contracts/config/legacy-aliases.json:1524",
         "node/sample.env:35"
       ],
       "current_owner": "application",
@@ -1845,7 +1898,7 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:1524",
+        "contracts/config/legacy-aliases.json:1541",
         "node/sample.env:34"
       ],
       "current_owner": "application",
@@ -1857,7 +1910,7 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:1541",
+        "contracts/config/legacy-aliases.json:1558",
         "node/sample.env:36"
       ],
       "current_owner": "application",
@@ -1869,7 +1922,7 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:1558",
+        "contracts/config/legacy-aliases.json:1575",
         "node/sample.env:16",
         "run-nodes.sh:1294"
       ],
@@ -1882,7 +1935,7 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:1579",
+        "contracts/config/legacy-aliases.json:1596",
         "node/sample.env:6",
         "run-nodes.sh:1283"
       ],
@@ -1895,7 +1948,7 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:1600"
+        "contracts/config/legacy-aliases.json:1617"
       ],
       "current_owner": "runtime-or-storage",
       "disposition": "move",
@@ -1906,7 +1959,7 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:1613",
+        "contracts/config/legacy-aliases.json:1630",
         "node/sample.env:3",
         "run-nodes.sh:1280"
       ],
@@ -1919,7 +1972,7 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:1634",
+        "contracts/config/legacy-aliases.json:1651",
         "node/sample.env:7",
         "run-nodes.sh:1284"
       ],
@@ -1932,7 +1985,7 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:1655",
+        "contracts/config/legacy-aliases.json:1672",
         "node/sample.env:38",
         "run-nodes.sh:1301"
       ],
@@ -1945,7 +1998,7 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:1676",
+        "contracts/config/legacy-aliases.json:1693",
         "node/sample.env:39",
         "run-nodes.sh:1302"
       ],
@@ -1958,7 +2011,7 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:1697"
+        "contracts/config/legacy-aliases.json:1714"
       ],
       "current_owner": "runtime-or-storage",
       "disposition": "move",
@@ -1969,7 +2022,7 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:1710"
+        "contracts/config/legacy-aliases.json:1727"
       ],
       "current_owner": "secret-or-sensitive",
       "disposition": "move",
@@ -1980,8 +2033,8 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:1723",
-        "crates/aseman-config/src/lib.rs:394"
+        "contracts/config/legacy-aliases.json:1740",
+        "crates/aseman-config/src/lib.rs:399"
       ],
       "current_owner": "process-environment",
       "disposition": "move",
@@ -1992,7 +2045,7 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:1740",
+        "contracts/config/legacy-aliases.json:1757",
         "node/sample.env:13",
         "run-nodes.sh:1290"
       ],
@@ -2005,7 +2058,7 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:1761",
+        "contracts/config/legacy-aliases.json:1778",
         "node/sample.env:21",
         "run-nodes.sh:1299"
       ],
@@ -2018,7 +2071,7 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:1782",
+        "contracts/config/legacy-aliases.json:1799",
         "node/sample.env:22",
         "run-nodes.sh:1300"
       ],
@@ -2031,7 +2084,7 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:1803",
+        "contracts/config/legacy-aliases.json:1820",
         "node/sample.env:19",
         "run-nodes.sh:1297"
       ],
@@ -2044,7 +2097,7 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:1824"
+        "contracts/config/legacy-aliases.json:1841"
       ],
       "current_owner": "network",
       "disposition": "move",
@@ -2055,7 +2108,7 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:1837",
+        "contracts/config/legacy-aliases.json:1854",
         "node/sample.env:20",
         "run-nodes.sh:1298"
       ],
@@ -2068,7 +2121,7 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:1858",
+        "contracts/config/legacy-aliases.json:1875",
         "node/Dockerfile:51"
       ],
       "current_owner": "runtime-or-storage",
@@ -5275,26 +5328,13 @@
     {
       "callers": [
         "node/src/drivers/vmm/host/functions/vm_ownership.rs:127",
-        "node/src/drivers/vmm/host/functions/vm_ownership.rs:248",
-        "node/src/drivers/vmm/hostcall_logs.rs:21",
-        "node/src/shell/api/actions/program.rs:1055"
+        "node/src/drivers/vmm/host/functions/vm_ownership.rs:226",
+        "node/src/shell/api/actions/program.rs:868"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
       "expiry": "Phase 3 cutover plus rollback window",
       "id": "storage-key:::{}",
-      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
-      "target_owner": "reviewed A308 legacy-to-capsule transform"
-    },
-    {
-      "callers": [
-        "node/src/drivers/vmm/host/vm_host_functions.rs:159",
-        "node/src/drivers/vmm/host/vm_host_functions.rs:160"
-      ],
-      "current_owner": "legacy RocksDB/transaction key space",
-      "disposition": "rewrite",
-      "expiry": "Phase 3 cutover plus rollback window",
-      "id": "storage-key:AppletDb::{}::{}",
       "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
       "target_owner": "reviewed A308 legacy-to-capsule transform"
     },
@@ -5686,12 +5726,12 @@
     },
     {
       "callers": [
-        "node/src/drivers/vmm/hostcall_entities.rs:1856",
+        "node/src/drivers/vmm/hostcall_entities.rs:1826",
         "node/src/shell/api/actions/creature.rs:1020",
         "node/src/shell/api/actions/creature.rs:1055",
         "node/src/shell/api/actions/creature.rs:1157",
         "node/src/shell/api/actions/creature.rs:1178",
-        "node/src/shell/api/actions/program.rs:219"
+        "node/src/shell/api/actions/program.rs:147"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -5713,9 +5753,9 @@
     },
     {
       "callers": [
-        "node/src/drivers/vmm/host/vm_host_functions.rs:1546",
-        "node/src/drivers/vmm/host/vm_host_functions.rs:1633",
-        "node/src/drivers/vmm/host/vm_host_functions.rs:1722"
+        "node/src/drivers/vmm/host/vm_host_functions.rs:1476",
+        "node/src/drivers/vmm/host/vm_host_functions.rs:1563",
+        "node/src/drivers/vmm/host/vm_host_functions.rs:1652"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -5771,7 +5811,7 @@
     },
     {
       "callers": [
-        "node/src/drivers/vmm/host/vm_host_functions.rs:1827"
+        "node/src/drivers/vmm/host/vm_host_functions.rs:1757"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -5826,14 +5866,14 @@
     },
     {
       "callers": [
-        "node/src/drivers/vmm/host/functions/vm_ownership.rs:246",
-        "node/src/shell/api/actions/program.rs:1025",
-        "node/src/shell/api/actions/program.rs:318",
-        "node/src/shell/api/actions/program.rs:438",
-        "node/src/shell/api/actions/program.rs:493",
-        "node/src/shell/api/actions/program.rs:499",
-        "node/src/shell/api/actions/program.rs:752",
-        "node/src/shell/api/actions/program.rs:879"
+        "node/src/drivers/vmm/host/functions/vm_ownership.rs:224",
+        "node/src/shell/api/actions/program.rs:246",
+        "node/src/shell/api/actions/program.rs:366",
+        "node/src/shell/api/actions/program.rs:421",
+        "node/src/shell/api/actions/program.rs:427",
+        "node/src/shell/api/actions/program.rs:651",
+        "node/src/shell/api/actions/program.rs:729",
+        "node/src/shell/api/actions/program.rs:837"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -5988,7 +6028,7 @@
     },
     {
       "callers": [
-        "node/src/drivers/vmm/host/vm_host_functions.rs:932"
+        "node/src/drivers/vmm/host/vm_host_functions.rs:857"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -5999,7 +6039,7 @@
     },
     {
       "callers": [
-        "node/src/drivers/vmm/host/vm_host_functions.rs:933"
+        "node/src/drivers/vmm/host/vm_host_functions.rs:858"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -6032,7 +6072,7 @@
     },
     {
       "callers": [
-        "node/src/drivers/vmm/hostcall_entities.rs:1848"
+        "node/src/drivers/vmm/hostcall_entities.rs:1818"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -6093,7 +6133,7 @@
     },
     {
       "callers": [
-        "node/src/shell/api/actions/program.rs:750"
+        "node/src/shell/api/actions/program.rs:649"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -6104,7 +6144,7 @@
     },
     {
       "callers": [
-        "node/src/shell/api/actions/program.rs:1281"
+        "node/src/shell/api/actions/program.rs:1118"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -6115,20 +6155,8 @@
     },
     {
       "callers": [
-        "node/src/shell/api/actions/program.rs:1506"
-      ],
-      "current_owner": "legacy RocksDB/transaction key space",
-      "disposition": "rewrite",
-      "expiry": "Phase 3 cutover plus rollback window",
-      "id": "storage-key:VmBuilds::{}::{}",
-      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
-      "target_owner": "workload/program capsules and VMM observations"
-    },
-    {
-      "callers": [
-        "node/src/shell/api/actions/program.rs:1151",
-        "vms/docker/src/controller.rs:1014",
-        "vms/docker/src/controller.rs:993"
+        "vms/docker/src/controller.rs:1019",
+        "vms/docker/src/controller.rs:998"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -6140,7 +6168,7 @@
     {
       "callers": [
         "node/src/drivers/vmm/host/functions/vm_ownership.rs:126",
-        "node/src/drivers/vmm/host/functions/vm_ownership.rs:234"
+        "node/src/drivers/vmm/host/functions/vm_ownership.rs:212"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -6151,7 +6179,7 @@
     },
     {
       "callers": [
-        "node/src/shell/api/actions/program.rs:1137"
+        "node/src/shell/api/actions/program.rs:965"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -6162,8 +6190,8 @@
     },
     {
       "callers": [
-        "node/src/shell/api/actions/program.rs:774",
-        "node/src/shell/api/actions/program.rs:977"
+        "node/src/shell/api/actions/program.rs:668",
+        "node/src/shell/api/actions/program.rs:805"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -6185,8 +6213,8 @@
     },
     {
       "callers": [
-        "node/src/shell/api/actions/program.rs:1148",
-        "node/src/shell/api/actions/program.rs:701"
+        "node/src/shell/api/actions/program.rs:600",
+        "node/src/shell/api/actions/program.rs:976"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -6197,9 +6225,9 @@
     },
     {
       "callers": [
-        "node/src/shell/api/actions/program.rs:1146",
-        "node/src/shell/api/actions/program.rs:315",
-        "node/src/shell/api/actions/program.rs:699"
+        "node/src/shell/api/actions/program.rs:243",
+        "node/src/shell/api/actions/program.rs:598",
+        "node/src/shell/api/actions/program.rs:974"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -6210,8 +6238,7 @@
     },
     {
       "callers": [
-        "node/src/drivers/vmm/hostcall_logs.rs:77",
-        "node/src/shell/api/actions/program.rs:1229"
+        "node/src/shell/api/actions/program.rs:1066"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -6375,10 +6402,10 @@
     },
     {
       "callers": [
-        "node/src/drivers/vmm/host/functions/vm_ownership.rs:244",
-        "node/src/shell/api/actions/program.rs:1024",
-        "node/src/shell/api/actions/program.rs:436",
-        "node/src/shell/api/actions/program.rs:878"
+        "node/src/drivers/vmm/host/functions/vm_ownership.rs:222",
+        "node/src/shell/api/actions/program.rs:364",
+        "node/src/shell/api/actions/program.rs:728",
+        "node/src/shell/api/actions/program.rs:836"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -6389,8 +6416,7 @@
     },
     {
       "callers": [
-        "node/src/shell/api/actions/program.rs:1028",
-        "node/src/shell/api/actions/program.rs:911"
+        "node/src/shell/api/actions/program.rs:840"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -6401,8 +6427,8 @@
     },
     {
       "callers": [
-        "node/src/shell/api/actions/program.rs:432",
-        "node/src/shell/api/actions/program.rs:874"
+        "node/src/shell/api/actions/program.rs:360",
+        "node/src/shell/api/actions/program.rs:724"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -6413,7 +6439,7 @@
     },
     {
       "callers": [
-        "node/src/shell/api/actions/program.rs:1027"
+        "node/src/shell/api/actions/program.rs:839"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -6424,9 +6450,9 @@
     },
     {
       "callers": [
-        "node/src/drivers/vmm/host/functions/vm_ownership.rs:243",
-        "node/src/shell/api/actions/program.rs:1022",
-        "node/src/shell/api/actions/program.rs:873"
+        "node/src/drivers/vmm/host/functions/vm_ownership.rs:221",
+        "node/src/shell/api/actions/program.rs:723",
+        "node/src/shell/api/actions/program.rs:834"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -6437,10 +6463,10 @@
     },
     {
       "callers": [
-        "node/src/drivers/vmm/host/functions/vm_ownership.rs:242",
-        "node/src/shell/api/actions/program.rs:1021",
-        "node/src/shell/api/actions/program.rs:431",
-        "node/src/shell/api/actions/program.rs:872"
+        "node/src/drivers/vmm/host/functions/vm_ownership.rs:220",
+        "node/src/shell/api/actions/program.rs:359",
+        "node/src/shell/api/actions/program.rs:722",
+        "node/src/shell/api/actions/program.rs:833"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -6451,7 +6477,7 @@
     },
     {
       "callers": [
-        "node/src/shell/api/actions/program.rs:1264"
+        "node/src/shell/api/actions/program.rs:1101"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -6572,8 +6598,8 @@
     },
     {
       "callers": [
-        "node/src/drivers/vmm/host/functions/vm_ownership.rs:245",
-        "node/src/shell/api/actions/program.rs:1026"
+        "node/src/drivers/vmm/host/functions/vm_ownership.rs:223",
+        "node/src/shell/api/actions/program.rs:838"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -6596,8 +6622,8 @@
     },
     {
       "callers": [
-        "node/src/shell/api/actions/program.rs:1036",
-        "node/src/shell/api/actions/program.rs:884"
+        "node/src/shell/api/actions/program.rs:734",
+        "node/src/shell/api/actions/program.rs:848"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -6608,8 +6634,8 @@
     },
     {
       "callers": [
-        "node/src/shell/api/actions/program.rs:1032",
-        "node/src/shell/api/actions/program.rs:880"
+        "node/src/shell/api/actions/program.rs:730",
+        "node/src/shell/api/actions/program.rs:844"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -6625,9 +6651,8 @@
         "node/src/core/actor/model/trx.rs:441",
         "node/src/core/actor/model/trx.rs:506",
         "node/src/drivers/vmm/host/functions/login_grant.rs:85",
-        "node/src/drivers/vmm/host/functions/vm_ownership.rs:241",
-        "node/src/drivers/vmm/host/functions/vm_ownership.rs:252",
-        "node/src/drivers/vmm/host_bridge.rs:224",
+        "node/src/drivers/vmm/host/functions/vm_ownership.rs:219",
+        "node/src/drivers/vmm/host/functions/vm_ownership.rs:230",
         "node/src/drivers/vmm/proxy.rs:90"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
@@ -6658,17 +6683,6 @@
       "id": "storage-key:machinePrograms::{machine_id}::{program_id}",
       "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
       "target_owner": "workload/program capsules and VMM observations"
-    },
-    {
-      "callers": [
-        "node/src/drivers/vmm/network/gateway.rs:86"
-      ],
-      "current_owner": "legacy RocksDB/transaction key space",
-      "disposition": "rewrite",
-      "expiry": "Phase 3 cutover plus rollback window",
-      "id": "storage-key:no gateway endpoint registered for {}::{}",
-      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
-      "target_owner": "reviewed A308 legacy-to-capsule transform"
     },
     {
       "callers": [
@@ -6870,9 +6884,7 @@
     },
     {
       "callers": [
-        "node/src/core/core_orchestrator.rs:738",
-        "node/src/drivers/vmm/driver.rs:205",
-        "node/src/shell/api/actions/program.rs:729"
+        "node/src/shell/api/actions/program.rs:628"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -6883,10 +6895,9 @@
     },
     {
       "callers": [
-        "node/src/drivers/cluster/mod.rs:461",
-        "node/src/drivers/vmm/driver.rs:208",
-        "node/src/shell/api/actions/program.rs:1548",
-        "node/src/shell/api/actions/program.rs:723"
+        "node/src/drivers/cluster/mod.rs:455",
+        "node/src/shell/api/actions/program.rs:1355",
+        "node/src/shell/api/actions/program.rs:622"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -6897,9 +6908,9 @@
     },
     {
       "callers": [
-        "node/src/drivers/cluster/mod.rs:463",
-        "node/src/shell/api/actions/program.rs:1552",
-        "node/src/shell/api/actions/program.rs:724"
+        "node/src/drivers/cluster/mod.rs:457",
+        "node/src/shell/api/actions/program.rs:1359",
+        "node/src/shell/api/actions/program.rs:623"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -7041,12 +7052,9 @@
         "node/src/drivers/network/chain/net/net_transport.rs:142",
         "node/src/drivers/network/chain/net/net_transport.rs:311",
         "node/src/drivers/network/federation/netserver.rs:136",
-        "node/src/drivers/vmm/host/vm_host_functions.rs:151",
-        "node/src/drivers/vmm/host/vm_host_functions.rs:168",
-        "node/src/drivers/vmm/host/vm_host_functions.rs:170",
-        "node/src/drivers/vmm/network/gateway_registry.rs:17",
-        "node/src/drivers/vmm/network/gateway_registry.rs:23",
-        "node/src/drivers/vmm/network/gateway_types.rs:36",
+        "node/src/drivers/vmm/host/vm_host_functions.rs:115",
+        "node/src/drivers/vmm/host/vm_host_functions.rs:129",
+        "node/src/drivers/vmm/host/vm_host_functions.rs:131",
         "node/src/shell/api/model/entity.rs:27",
         "vms/elpify/src/queue.rs:156",
         "vms/javascript/src/host_calls.rs:116",
@@ -7075,7 +7083,7 @@
       "callers": [
         "node/src/core/globe.rs:489",
         "node/src/core/globe.rs:676",
-        "node/src/drivers/vmm/host/vm_host_functions.rs:146"
+        "node/src/drivers/vmm/host/vm_host_functions.rs:110"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -7086,7 +7094,7 @@
     },
     {
       "callers": [
-        "node/src/drivers/vmm/host/vm_host_functions.rs:141"
+        "node/src/drivers/vmm/host/vm_host_functions.rs:105"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -7335,10 +7343,10 @@
     }
   ],
   "summary": {
-    "artifacts": 38,
-    "configuration": 116,
+    "artifacts": 40,
+    "configuration": 117,
     "protocol_and_compatibility": 290,
-    "storage": 175,
+    "storage": 172,
     "total": 619
   }
 }

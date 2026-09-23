@@ -4,12 +4,12 @@
 
 use std::time::Duration;
 
+use aseman_contracts::vmm::EndpointList;
 use aseman_contracts::vmm::{
     Capabilities, CreateWorkload, DEADLINE_HEADER, IDEMPOTENCY_KEY,
     LifecycleCommand as WireCommand, Operation, Page, Problem, ProblemCode, UpdateSpec, Workload,
     WorkloadEvent,
 };
-use aseman_contracts::vmm::EndpointList;
 use aseman_domain::vmm::{Endpoint, LogRecord, OperationRecord, WorkloadRecord, WorkloadSpec};
 use aseman_domain::{Generation, OperationId, WorkloadId};
 use aseman_ports::vmm::{
@@ -414,7 +414,12 @@ impl VmmClient for HttpVmmClient {
         Ok(batch)
     }
 
-    fn exec(&self, id: WorkloadId, request: &str, idempotency_key: &str) -> PortResult<OperationRecord> {
+    fn exec(
+        &self,
+        id: WorkloadId,
+        request: &str,
+        idempotency_key: &str,
+    ) -> PortResult<OperationRecord> {
         check_key(idempotency_key)?;
         let body: serde_json::Value = serde_json::from_str(request).map_err(failed)?;
         let operation: Operation = self.mutate(
@@ -434,7 +439,13 @@ impl VmmClient for HttpVmmClient {
         Ok(self.operation_record(operation))
     }
 
-    fn put_file(&self, id: WorkloadId, path: &str, bytes: &[u8], idempotency_key: &str) -> PortResult<()> {
+    fn put_file(
+        &self,
+        id: WorkloadId,
+        path: &str,
+        bytes: &[u8],
+        idempotency_key: &str,
+    ) -> PortResult<()> {
         check_key(idempotency_key)?;
         let route = format!("/v1/workloads/{id}/files/{path}");
         let response = self.send(

@@ -3,16 +3,21 @@
 //! It serves A501 to the nodes admitted by `ASEMAN_VMM_CLIENTS` over mutual TLS,
 //! keeps workloads, operations, idempotency keys, and events in PostgreSQL, and does
 //! infrastructure work through the A504 backend at `ASEMAN_VMM_BACKEND_ENDPOINT`.
-//! A worker thread runs the executor, the observer, reconciliation, and retention.
+//! A worker thread runs the executor, the observer, reconciliation, and retention —
+//! all of it singleton work, so it runs only while this replica holds the fenced
+//! coordination lease (ADR 0013). Other replicas serve the API and stand by.
 
 use std::io::BufReader;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::Duration;
 
+use aseman_application::singleton::{Pass, Singleton};
 use aseman_config::{VmmServiceConfig, read_secret_file};
 use aseman_contracts::vmm::IDEMPOTENCY_RETENTION_MILLIS;
+use aseman_domain::coordination::{LeaseName, SafetyMargin};
 use aseman_ports::ClockPort;
+use aseman_storage_postgres::coordination::PostgresCoordination;
 use aseman_storage_postgres::vmm::PostgresVmmStore;
 use aseman_vmm_backend_grpc::client::GrpcBackend;
 use aseman_vmm_http::server::{ServerTls, VmmHttpState, health_router, serve};
@@ -113,16 +118,51 @@ fn main() -> Result<(), Failure> {
             .map(|(node, fingerprint)| (*fingerprint, node.clone()))
             .collect(),
     };
+    // The executor, observer, reconciler, and retention are singleton work: two
+    // replicas running them would execute the same operation twice. The lease makes
+    // exactly one replica the worker, and the rest serve the API (ADR 0013).
+    let coordination =
+        PostgresCoordination::connect(&read_secret_file(&config.database_url_secret, 4096)?, 2)?;
+    coordination.migrate()?;
+    let lease_name = LeaseName::new("aseman-vmm-reconcile")?;
+    let margin = SafetyMargin::new(config.lease_margin_millis)?;
+    let ttl = config.lease_ttl_millis;
+    let instance = config.instance.clone();
+
     let running = Arc::new(AtomicBool::new(true));
     let worker = {
         let state = state.clone();
         let running = running.clone();
         let interval = Duration::from_millis(config.reconcile_interval_millis.max(50));
         std::thread::spawn(move || {
+            let mut singleton = Singleton::new(&coordination, lease_name, instance, ttl, margin);
             let mut last_retention = 0;
+            let mut standby = false;
             while running.load(Ordering::Relaxed) {
-                tick(&state, &clock, &mut last_retention);
+                match singleton.run(|_token| tick(&state, &clock, &mut last_retention)) {
+                    Ok((Pass::Ran(_), _)) => standby = false,
+                    Ok((Pass::Standby { holder }, _)) => {
+                        // Said once per change, not once per pass: a standby replica
+                        // is the normal state, not an incident.
+                        if !standby {
+                            standby = true;
+                            eprintln!("aseman-vmm: {holder} is doing the singleton work");
+                        }
+                    }
+                    Ok((Pass::Yielded, _)) => {
+                        standby = false;
+                        eprintln!("aseman-vmm: gave up the reconciliation lease");
+                    }
+                    Err(error) => {
+                        standby = false;
+                        report("the coordination lease", error);
+                    }
+                }
                 std::thread::sleep(interval);
+            }
+            // Hand the lease on rather than making the next replica wait it out.
+            if let Err(error) = singleton.resign() {
+                report("resigning the lease", error);
             }
         })
     };

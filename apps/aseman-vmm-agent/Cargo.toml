@@ -1,0 +1,18 @@
+[package]
+name = "aseman-vmm-agent"
+description = "The worker agent (A603, ADR 0010): the one component with host privilege, owning /dev/kvm and microVM lifecycle behind a narrow authenticated API."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+aseman-domain = { path = "../../crates/aseman-domain" }
+serde.workspace = true
+serde_json.workspace = true
+
+[dev-dependencies]
+
+[lints]
+workspace = true

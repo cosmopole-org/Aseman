@@ -1,0 +1,145 @@
+{
+  "version": "1",
+  "artifact": "A602",
+  "source_of_truth": "this file; `cargo xtask fast` checks the deploy profiles against it",
+  "description": "The deployment profiles an Aseman node runs in, the ports each service listens on, who may reach them, and the certificates and tokens each side presents. One Aseman node is one federation identity in every profile: adding a worker or losing a replica never changes it (ADR 0013).",
+  "profiles": {
+    "compact": {
+      "summary": "One machine. One Aseman control replica, one Nomad server that is also a client, one PostgreSQL, one VMM, one backend.",
+      "aseman_replicas": 1,
+      "nomad_servers": 1,
+      "nomad_clients": 1,
+      "postgres": "local",
+      "singleton_work": "the one replica still takes the coordination lease, so a compact deployment that later grows never has to change how singleton work is fenced",
+      "suitable_for": "development, a single-tenant node, and evaluation"
+    },
+    "cluster": {
+      "summary": "Several Aseman control replicas behind one stable endpoint, three or five Nomad servers, an expandable worker pool, and external or HA PostgreSQL.",
+      "aseman_replicas": "3 or more, across failure domains; PostgreSQL owns state, so the count needs no quorum",
+      "nomad_servers": "3 or 5 (Nomad's own Raft quorum)",
+      "nomad_clients": "1 or more, added and removed without touching Aseman identity",
+      "postgres": "external or HA",
+      "singleton_work": "one fenced `CoordinationPort` lease per named job (ADR 0013)"
+    },
+    "host": {
+      "summary": "Worker agents and Nomad clients installed on the host, for machines where a container cannot safely be given KVM or network capabilities.",
+      "applies_to": ["aseman-vmm-agent", "nomad client"],
+      "reason": "Firecracker needs /dev/kvm, tap devices, and cgroup control; these stay on the host and out of every other service (ADR 0010)"
+    }
+  },
+  "services": {
+    "aseman-node": {
+      "role": "the Aseman API and control plane",
+      "ports": [
+        { "name": "api", "port": 443, "protocol": "https", "reachable_by": "users and federated nodes, through the stable endpoint" },
+        { "name": "guest", "port": 443, "protocol": "https", "path": "/guest/v1", "reachable_by": "workloads, from the worker network only" },
+        { "name": "health", "port": 8080, "protocol": "http", "path": "/health", "reachable_by": "the load balancer and the operator" }
+      ],
+      "presents": "the node's TLS certificate for the stable endpoint",
+      "verifies": "user sessions, A401 proofs, and workload credentials",
+      "privileges": "none: no KVM, no docker socket, no host mounts"
+    },
+    "aseman-vmm": {
+      "role": "the provider-neutral VMM service (A501)",
+      "ports": [
+        { "name": "a501", "port": 8443, "protocol": "https+mtls", "reachable_by": "the Aseman node only" },
+        { "name": "health", "port": 8444, "protocol": "http", "path": "/health", "reachable_by": "the operator" }
+      ],
+      "presents": "a server certificate from the VMM CA",
+      "verifies": "the calling node's client certificate; the certificate's SHA-256 is the owner every record is scoped by",
+      "privileges": "none: it schedules, it does not run workloads"
+    },
+    "aseman-vmm-backend": {
+      "role": "an A504 backend (native-legacy or nomad)",
+      "ports": [
+        { "name": "a504", "port": 9090, "protocol": "grpc", "bind": "loopback", "reachable_by": "the VMM service on the same host only" }
+      ],
+      "presents": "nothing: the listener is refused on a non-loopback address",
+      "verifies": "nothing: loopback is the boundary",
+      "privileges": "the native backend needs the docker socket; the Nomad backend needs only a namespace-scoped Nomad token"
+    },
+    "aseman-vmm-agent": {
+      "role": "privileged host-local runtime work (ADR 0010)",
+      "ports": [
+        { "name": "agent", "port": 9091, "protocol": "https+mtls", "bind": "host-local", "reachable_by": "the VMM backend on the same host only" }
+      ],
+      "presents": "a host certificate from the VMM CA",
+      "verifies": "a signed, short-lived operation naming one allocation",
+      "privileges": "/dev/kvm, tap devices, cgroups, the jailer, and its own allocation root — nothing else",
+      "owned_by": "P6-05"
+    },
+    "nomad-server": {
+      "role": "the scheduler's control plane",
+      "ports": [
+        { "name": "http", "port": 4646, "protocol": "https", "reachable_by": "the Nomad backend and operators" },
+        { "name": "rpc", "port": 4647, "protocol": "tls", "reachable_by": "Nomad servers and clients" },
+        { "name": "serf", "port": 4648, "protocol": "tls", "reachable_by": "Nomad servers" }
+      ],
+      "presents": "a Nomad server certificate",
+      "verifies": "mutual TLS between servers and clients, and ACL tokens on the HTTP API",
+      "supplied_by": "the operator (ADR 0002)"
+    },
+    "nomad-client": {
+      "role": "a worker",
+      "ports": [
+        { "name": "http", "port": 4646, "protocol": "https", "bind": "host-local", "reachable_by": "the Nomad backend, for allocation logs, stats, and files" }
+      ],
+      "presents": "a Nomad client certificate",
+      "verifies": "mutual TLS to the servers",
+      "privileges": "the docker socket and CNI; it is never given the Aseman database or the node's keys",
+      "supplied_by": "the operator (ADR 0002)"
+    },
+    "postgres": {
+      "role": "all authoritative Aseman state, including the VMM's",
+      "ports": [
+        { "name": "sql", "port": 5432, "protocol": "tls", "reachable_by": "the Aseman node and the VMM service only" }
+      ],
+      "verifies": "a role per creature for guest data; the control roles are separate",
+      "privileges": "workers and workloads never reach it: guest data is reached only through the node's signed guest API (ADR 0001)"
+    }
+  },
+  "acls": {
+    "nomad_backend_token": {
+      "namespace": "aseman",
+      "capabilities": [
+        "submit-job",
+        "read-job",
+        "list-jobs",
+        "alloc-lifecycle",
+        "read-logs",
+        "read-fs"
+      ],
+      "forbidden": ["operator", "acl", "agent-write", "node-write"],
+      "reason": "a stolen backend token must not be able to reconfigure the cluster or read another namespace's jobs"
+    },
+    "workload": {
+      "nomad_identity": "proves which allocation is calling; authorizes no Aseman operation",
+      "aseman_credential": "the workload's Ed25519 credential, which every guest-API call is signed with (A405)"
+    }
+  },
+  "certificates": {
+    "node_endpoint": "the stable public endpoint's certificate; replicas share it, so replica identity is never published",
+    "vmm_ca": "issues the VMM's server certificate and the node's client certificate; the VMM admits exactly the node certificates its configuration lists",
+    "nomad_ca": "the operator's, separate from the VMM CA: a compromise of one does not admit the other",
+    "rotation": "every certificate is rotated without restarting the node, and a rotation never changes the Aseman node ID or its signing-key lineage (ADR 0009, ADR 0013)"
+  },
+  "identity": {
+    "node_id": "one node ID and one node signing-key lineage in authoritative capsule state",
+    "invariants": [
+      "adding or removing a worker does not change the node ID",
+      "losing or replacing a control replica does not change the node ID",
+      "changing the VMM backend does not change the node ID",
+      "a replica address is never published as node identity"
+    ]
+  },
+  "ordering": {
+    "comment": "The order a profile is brought up in, and the order it is migrated in.",
+    "bring_up": [
+      "postgres",
+      "aseman-vmm-backend",
+      "aseman-vmm",
+      "aseman-node"
+    ],
+    "migration": "the Phase 3 storage cutover, then the VMM rollout, then the VMM handoff, then the new node (ADR 0030): a remote VMM is refused under the legacy storage provider"
+  }
+}

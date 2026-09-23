@@ -90,19 +90,19 @@ Registered actions: 77; distinct guard expressions: 5.
 | `/gateway/unsubscribe` | `node/src/shell/api/actions/gateway.rs::unsubscribe` | `Guard::default()` | — | — | — |
 | `/machines/closeVmTerminal` | `node/src/shell/api/actions/program.rs::close_vm_terminal` | `user_guard()` | `del_key` | — | — |
 | `/machines/list` | `node/src/shell/api/actions/program.rs::list_machines` | `user_guard()` | — | — | — |
-| `/machines/listEntityVms` | `node/src/shell/api/actions/program.rs::list_entity_vms` | `user_guard()` | `get_link`, `get_links_list` | — | — |
+| `/machines/listEntityVms` | `node/src/shell/api/actions/program.rs::list_entity_vms` | `user_guard()` | `get_link`, `get_links_list` | `vmm` | `vm_host_call` |
 | `/machines/listProgramMachines` | `node/src/shell/api/actions/program.rs::list_program_machines` | `user_guard()` | — | — | — |
 | `/machines/openVmTerminal` | `node/src/shell/api/actions/program.rs::open_vm_terminal` | `user_guard()` | `put_link` | — | — |
 | `/machines/readMachineBuilds` | `node/src/shell/api/actions/program.rs::read_machine_builds` | `user_guard()` | `get_links_list` | — | — |
-| `/machines/readVmLogs` | `node/src/shell/api/actions/program.rs::read_vm_logs` | `user_guard()` | `get_links_list` | `storage` | `read_vm_logs` |
+| `/machines/readVmLogs` | `node/src/shell/api/actions/program.rs::read_vm_logs` | `user_guard()` | `get_links_list` | `vmm` | `logs` |
 | `/programs/create` | `node/src/shell/api/actions/program.rs::create_program` | `user_guard()` | — | — | — |
 | `/programs/delete` | `node/src/shell/api/actions/program.rs::delete_program` | `user_guard()` | — | — | — |
-| `/programs/deleteEntity` | `node/src/shell/api/actions/program.rs::delete_program_entity` | `user_guard()` | `del_json`, `del_key`, `get_link` | — | `delete_vm_instance` |
-| `/programs/deploy` | `node/src/shell/api/actions/program.rs::deploy` | `user_guard()` | `put_link` | `storage`, `vmm` | `build_vm_image` |
+| `/programs/deleteEntity` | `node/src/shell/api/actions/program.rs::delete_program_entity` | `user_guard()` | `del_json`, `del_key`, `get_link` | `vmm` | `set_state` |
+| `/programs/deploy` | `node/src/shell/api/actions/program.rs::deploy` | `user_guard()` | `put_link` | `storage`, `vmm`, `workloads` | `deploy_conventions`, `runtime_keys` |
 | `/programs/downloadEntity` | `node/src/shell/api/actions/program.rs::download_entity` | `user_guard()` | — | `storage` | — |
 | `/programs/list` | `node/src/shell/api/actions/program.rs::list_programs` | `user_guard()` | — | — | — |
-| `/programs/runEntity` | `node/src/shell/api/actions/program.rs::run_program_entity` | `user_guard()` | `get_link`, `put_json`, `put_link` | `vmm` | — |
-| `/programs/stopEntity` | `node/src/shell/api/actions/program.rs::stop_program_entity` | `user_guard()` | `del_json`, `del_key` | `vmm` | — |
+| `/programs/runEntity` | `node/src/shell/api/actions/program.rs::run_program_entity` | `user_guard()` | `get_link`, `put_json`, `put_link` | `vmm` | `launch`, `offers` |
+| `/programs/stopEntity` | `node/src/shell/api/actions/program.rs::stop_program_entity` | `user_guard()` | `del_json`, `del_key` | `vmm` | `set_state` |
 | `/programs/update` | `node/src/shell/api/actions/program.rs::update_program` | `user_guard()` | — | — | — |
 | `/storage/upload` | `node/src/shell/api/actions/creature.rs::storage_upload` | `user_guard()` | — | `storage` | — |
 | `/stores/getAccess` | `node/src/shell/api/actions/store.rs::get_access` | `store_guard()` | — | — | — |

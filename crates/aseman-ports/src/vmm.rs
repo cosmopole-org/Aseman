@@ -267,12 +267,21 @@ pub trait VmmClient: Send + Sync {
     fn operation(&self, id: OperationId) -> PortResult<Option<OperationRecord>>;
     fn events_after(&self, after: u64, limit: usize) -> PortResult<EventBatch>;
     /// Run an A501 `ExecRequest`.
-    fn exec(&self, id: WorkloadId, request: &str, idempotency_key: &str)
-        -> PortResult<OperationRecord>;
+    fn exec(
+        &self,
+        id: WorkloadId,
+        request: &str,
+        idempotency_key: &str,
+    ) -> PortResult<OperationRecord>;
     /// Build with an A501 `BuildRequest`.
     fn build(&self, request: &str, idempotency_key: &str) -> PortResult<OperationRecord>;
-    fn put_file(&self, id: WorkloadId, path: &str, bytes: &[u8], idempotency_key: &str)
-        -> PortResult<()>;
+    fn put_file(
+        &self,
+        id: WorkloadId,
+        path: &str,
+        bytes: &[u8],
+        idempotency_key: &str,
+    ) -> PortResult<()>;
     fn get_file(&self, id: WorkloadId, path: &str) -> PortResult<Vec<u8>>;
     fn endpoints(&self, id: WorkloadId) -> PortResult<Vec<Endpoint>>;
     /// Verify an A501 `VerificationRequest`; returns the A501 `VerificationResult`.

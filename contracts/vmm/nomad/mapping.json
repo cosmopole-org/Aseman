@@ -1,0 +1,151 @@
+{
+  "version": "1",
+  "artifact": "A601",
+  "source_of_truth": "this file; the Nomad backend's contract test fails when the code and this file disagree",
+  "description": "How an Aseman workload (A501/A503) becomes a Nomad job, and how Nomad's allocation state becomes an Aseman observation. Nomad servers are the VMM control plane; Nomad clients are workers. Nothing here changes the node-facing A501 contract.",
+  "job": {
+    "id": "aseman-{workload}",
+    "comment": "One workload is one job with one group and one task. The workload UUID is the job ID, so registration is idempotent and a workload can never place twice.",
+    "namespace": "aseman",
+    "type": "service",
+    "group": "workload",
+    "task": "workload",
+    "count_by_desired_state": {
+      "running": 1,
+      "stopped": 0,
+      "paused": 0,
+      "deleted": 0
+    },
+    "meta": {
+      "aseman.workload": "the workload UUID",
+      "aseman.owner": "the node identity that owns the workload (A501 owner)",
+      "aseman.generation": "the desired generation this job spec was written for",
+      "aseman.creature": "labels.creature_id",
+      "aseman.program": "labels.program_id",
+      "aseman.entity": "labels.entity_id",
+      "aseman.runtime": "spec.runtime",
+      "aseman.artifact": "spec.artifact.digest"
+    },
+    "meta_is_observed_generation": true,
+    "comment_generation": "The observation's generation is read back from the job's meta, never from the request, so a stale allocation is never reported as the current generation."
+  },
+  "actions": {
+    "start": "register the job at the desired generation with count 1; the register is a plain PUT, so repeating it is harmless",
+    "stop": "register the same job with count 0; the allocations stop and the job stays, so a restart keeps the workload's identity",
+    "delete": "stop the job with purge=true; a purge of an unknown job is success",
+    "pause": "refused: Nomad has no allocation-level pause. A runtime that pauses does it through the worker agent (ADR 0010), never by stopping the group",
+    "none": "no call"
+  },
+  "resources": {
+    "cpu_mhz": "resources.vcpu_millis, floored to Nomad's minimum of 1 MHz per the rule below",
+    "cpu_rule": "vcpu_millis is thousandths of a core; Nomad wants MHz. One core is declared as 1000 MHz, so cpu_mhz = max(1, vcpu_millis)",
+    "memory_mb": "resources.memory_mib, at least 10 (Nomad's floor)",
+    "disk_mb": "resources.disk_mib when set, else the group default of 300"
+  },
+  "network": {
+    "mode": "the operator's CNI network (`cni/{name}`), or Nomad's plain `bridge`",
+    "comment": "A workload gets its own network namespace. Host mode is never used: it would put the workload on the host's network with no policy.",
+    "ingress": "each spec.network.ingress port becomes a group port with the same label; an http port is also registered as a service for discovery",
+    "egress_deny_by_default": "an empty `egress_allow` means the workload reaches nothing. Nomad's plain bridge cannot deliver that, so a deny-by-default workload is refused there; the operator supplies a CNI network that enforces it and declares that it does",
+    "egress_allow_entries": "refused: nothing in this mapping can express a per-destination allowance, so it is never widened to everything nor narrowed to nothing",
+    "guest_api": "spec.bootstrap.guest_api_url is passed to the task as ASEMAN_GUEST_API; the address must be reachable from the allocation's namespace"
+  },
+  "drivers": {
+    "docker": {
+      "driver": "docker",
+      "image": "the workload's built image (artifact reference)",
+      "comment": "The Nomad Docker driver, not the Aseman docker plugin: Nomad owns the container's life."
+    },
+    "qemu": {
+      "driver": "qemu",
+      "comment": "Used only when the artifact is a bootable image the QEMU driver accepts."
+    },
+    "javascript": {
+      "driver": "docker",
+      "image": "the runner image for the runtime",
+      "runner": true
+    },
+    "wasm": {
+      "driver": "docker",
+      "image": "the runner image for the runtime",
+      "runner": true
+    },
+    "elpian": {
+      "driver": "docker",
+      "image": "the runner image for the runtime",
+      "runner": true
+    },
+    "elpify": {
+      "driver": "docker",
+      "image": "the runner image for the runtime",
+      "runner": true
+    },
+    "firecracker": {
+      "driver": "docker",
+      "runner": true,
+      "agent": true,
+      "comment": "Nomad schedules an unprivileged runner task; the microVM itself is the worker agent's (ADR 0010). P6-05."
+    },
+    "forbidden": {
+      "raw_exec": "raw_exec does not isolate a workload and is never used, in any mode",
+      "exec_privileged": "the docker driver's privileged mode, host network, host PID, and host bind mounts are never set by the mapping"
+    }
+  },
+  "runner": {
+    "comment": "A runtime with no image of its own runs in a hardened OCI runner task that fetches the program artifact with the workload credential and executes it. The runner image is declared per runtime by the operator; the mapping never invents one.",
+    "environment": {
+      "ASEMAN_GUEST_API": "spec.bootstrap.guest_api_url",
+      "ASEMAN_WORKLOAD": "the workload UUID",
+      "ASEMAN_RUNTIME": "spec.runtime",
+      "ASEMAN_ENTRY": "spec.entry",
+      "ASEMAN_ARTIFACT_DIGEST": "spec.artifact.digest"
+    },
+    "credential": "the workload credential is written to the task's secrets directory as bootstrap.credential and never appears in meta, env, or the job spec Nomad stores in plain text"
+  },
+  "observation": {
+    "comment": "The observed state is read from the workload's allocations, newest first. A job with no allocation is Pending while its evaluation is open and Stopped once it is not.",
+    "from_client_status": {
+      "pending": "pending",
+      "running": "running",
+      "complete": "stopped",
+      "failed": "failed",
+      "lost": "lost",
+      "unknown": "unknown"
+    },
+    "job_stopped_is": "stopped",
+    "job_missing_is": "stopped",
+    "reason": "the allocation's task event message, when it has one; never the raw Nomad struct"
+  },
+  "data_plane": {
+    "logs": "GET /v1/client/allocation/{alloc}/logs for stdout and stderr; the record's sequence is the byte offset the reader continues from",
+    "usage": "GET /v1/client/allocation/{alloc}/stats",
+    "exec": "POST /v1/client/allocation/{alloc}/exec (websocket), only for a runtime whose capabilities declare exec",
+    "endpoints": "the allocation's network addresses and their labelled ports",
+    "forward_http": "an HTTP request to the allocation's http port; the VMM never reaches a workload by any other address",
+    "files": "GET/POST /v1/client/fs on the allocation directory, only for a runtime whose capabilities declare files",
+    "build": "not the scheduler's: an image is built before registration and the job names the built reference"
+  },
+  "identity": {
+    "comment": "Nomad workload identity proves which allocation is calling. It never authorizes an Aseman operation on its own: the workload signs its guest-API calls with its Aseman credential (A405).",
+    "acl": "the backend's Nomad token is scoped to the aseman namespace and to job, alloc, and node read/write; it has no operator or ACL rights"
+  },
+  "federation": {
+    "comment": "The whole Nomad cluster is one Aseman node. Adding or removing a worker, or losing a server, never changes the Aseman node identity or its federation address."
+  },
+  "capabilities": {
+    "source": "docs/generated/vmm-native-parity.json (A505): the runtime's own capabilities",
+    "comment": "The backend declares the runtime's capabilities with everything Nomad cannot deliver masked off. It never claims more than it can do.",
+    "masked_off": {
+      "pause": "Nomad has no allocation-level pause (P6-05, ADR 0010)",
+      "snapshot": "the same",
+      "exec": "Nomad's exec is a websocket this backend does not speak yet (P6-05)",
+      "terminal": "the same",
+      "build": "an image is built before registration; the scheduler does not build",
+      "files_write": "Nomad's client API reads an allocation directory; it does not write one"
+    },
+    "narrowed": {
+      "invocation": "only for a runtime that also serves HTTP ingress: the ingress is the only way into an allocation the mapping gives",
+      "execution_proofs": "only under a runner image, which is what would carry them out"
+    }
+  }
+}

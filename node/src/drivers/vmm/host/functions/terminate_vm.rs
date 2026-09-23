@@ -1,12 +1,6 @@
+use crate::drivers::vmm::host::functions::vm_calls::remote_vm_call;
 use crate::drivers::vmm::prelude::*;
 
-pub(crate) fn host_fn_terminate_vm(input: &JsonValue) -> String {
-    let mut packet = input.clone();
-    if let JsonValue::Object(map) = &mut packet {
-        map.insert(
-            "type".to_string(),
-            JsonValue::String("terminateVm".to_string()),
-        );
-    }
-    crate::drivers::vmm::dispatch_packet(&packet)
+pub(crate) fn host_fn_terminate_vm(caller: &str, input: &JsonValue) -> String {
+    remote_vm_call("terminateVm", caller, input)
 }

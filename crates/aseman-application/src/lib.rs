@@ -14,10 +14,12 @@ use thiserror::Error;
 
 pub mod capability;
 pub mod creature;
+pub mod federation;
 pub mod guest;
 pub mod guest_call;
 pub mod identity;
 pub mod program;
+pub mod singleton;
 pub mod storage_migration;
 pub mod store;
 pub mod vmm;

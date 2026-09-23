@@ -830,10 +830,6 @@ pub(crate) mod tests {
         fn globe(&self) -> Arc<dyn crate::models::globe::IGlobe> {
             unimplemented!()
         }
-        fn begin_vm_trx(&self, _vm_id: &str) -> Arc<dyn ITrx> {
-            unimplemented!("begin_vm_trx not used in trx unit tests");
-        }
-        fn end_vm_trx(&self, _vm_id: &str) {}
     }
 
     pub(crate) struct StubStorage {
@@ -902,18 +898,6 @@ pub(crate) mod tests {
             _: &str,
             _: Vec<String>,
         ) -> Vec<crate::models::packet::LogPacket> {
-            Vec::new()
-        }
-        fn log_vm(&self, _: &str, _: &str, _: &str, _: i64) -> crate::models::packet::BuildPacket {
-            Default::default()
-        }
-        fn read_vm_logs(
-            &self,
-            _: &str,
-            _: &str,
-            _: i64,
-            _: i64,
-        ) -> Vec<crate::models::packet::BuildPacket> {
             Vec::new()
         }
     }

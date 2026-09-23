@@ -532,12 +532,6 @@ mod tests {
         fn globe(&self) -> Arc<dyn crate::models::globe::IGlobe> {
             unimplemented!()
         }
-        fn begin_vm_trx(&self, vm_id: &str) -> Arc<dyn crate::models::transaction::ITrx> {
-            unimplemented!()
-        }
-        fn end_vm_trx(&self, vm_id: &str) {
-            unimplemented!()
-        }
     }
 
     fn new_signaler() -> Arc<Signaler> {

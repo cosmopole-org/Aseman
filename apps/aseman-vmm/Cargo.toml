@@ -11,6 +11,7 @@ repository.workspace = true
 aseman-application = { path = "../../crates/aseman-application" }
 aseman-config = { path = "../../crates/aseman-config" }
 aseman-contracts = { path = "../../crates/aseman-contracts" }
+aseman-domain = { path = "../../crates/aseman-domain" }
 aseman-ports = { path = "../../crates/aseman-ports" }
 aseman-storage-postgres = { path = "../../modules/storage-postgres" }
 aseman-vmm-backend-grpc = { path = "../../modules/vmm-backend-grpc" }

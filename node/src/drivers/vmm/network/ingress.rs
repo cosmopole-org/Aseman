@@ -24,7 +24,7 @@
 //! and dispatches to its plugin, where:
 //!
 //! * five of the six runtimes fall back to the SDK's generic
-//!   [`forward_http_via_signal`](caspar_vm_sdk::forward_http_via_signal), which
+//!   the node's signal fallback (`driver::forward_as_signal`), which
 //!   signals the VM so it handles the request on its next run, and
 //! * the docker runtime overrides it to proxy the request straight to the HTTP
 //!   server running inside the container and return its real response.

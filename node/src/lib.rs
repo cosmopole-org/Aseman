@@ -278,15 +278,6 @@ pub fn run() {
         drivers::cluster::init(app_for_cluster, &config.cluster);
     }
 
-    // ── Docker-host bridge gateway ────────────────────────────────────────────
-    // Long-lived TCP server that docker-based creature containers connect to.
-    // It is their only channel to the outside world: every host interaction
-    // (DB/storage ops, outbound HTTP, signalling) and every inbound signal flows
-    // over it. Disabled when the port is unset/zero.
-    app.tools()
-        .workloads()
-        .start_docker_gateway(i64::from(config.network.docker_gateway_port));
-
     // ── VMM HTTP ingress ──────────────────────────────────────────────────────
     // Inbound HTTP server that accepts requests shaped as
     // `/{creatureId}/{programId}/{entityId}/{vmId}/{path…}` and forwards them to

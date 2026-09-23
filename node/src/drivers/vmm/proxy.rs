@@ -445,7 +445,7 @@ pub fn try_route_proxy_response(
                 Ok(())
             }),
         );
-        crate::drivers::vmm::bridge::runtime_io::log(format!(
+        proxy_log(format!(
             "proxy correlation {} expired; dropping late response for {}",
             correlation_id, listener_machine_id
         ));
@@ -559,7 +559,7 @@ pub fn try_forward_through_proxy(
     }
     let config = ProxyConfig::from_value(&Value::Object(config_raw));
     if config.target_program_id.is_empty() {
-        crate::drivers::vmm::bridge::runtime_io::log(format!(
+        proxy_log(format!(
             "proxy entity {}::{} has no target configured; dropping signal",
             machine_id, entity_id
         ));
@@ -645,7 +645,7 @@ pub fn try_forward_through_proxy(
     // a dead one), and nothing in any log ties the prompt to the id it was
     // actually sent to. One line per relay makes that a grep instead of a
     // deduction.
-    crate::drivers::vmm::bridge::runtime_io::log(format!(
+    proxy_log(format!(
         "proxy {}::{} -> {}::{} corr={}",
         machine_id, entity_id, config.target_program_id, config.target_entity_id, correlation_id
     ));
@@ -710,7 +710,7 @@ pub fn sweep_expired_correlations(app: &Arc<dyn ICore>) {
             Ok(())
         }),
     );
-    crate::drivers::vmm::bridge::runtime_io::log(format!(
+    proxy_log(format!(
         "proxy correlation reaper dropped {} expired record(s)",
         count
     ));
@@ -804,4 +804,8 @@ mod inject_tests {
         }
         assert_eq!(after, before);
     }
+}
+
+fn proxy_log(text: String) {
+    eprintln!("[proxy] {text}");
 }

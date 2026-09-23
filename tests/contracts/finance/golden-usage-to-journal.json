@@ -1,0 +1,64 @@
+{
+  "version": "1",
+  "artifact": "A807",
+  "description": "Golden usage-to-price-to-journal cases. Every provider and every price implementation must reproduce these exactly: the same samples, through the same price list, produce the same charge and the same journal record. A case that changes here is a billing change and must be argued for.",
+  "price_list": {
+    "version": "2026-09",
+    "effective_from_millis": 0,
+    "rates": {
+      "cpu_millis": 1000000,
+      "network_egress_bytes": 953
+    }
+  },
+  "price_scale": 1000000000,
+  "cases": [
+    {
+      "name": "one minute of half a core",
+      "why": "the ordinary case: 30 seconds of CPU at one minor unit per second",
+      "previous": { "provider_sample_id": "s1", "collected_at_millis": 0, "cumulative": { "cpu_millis": 0 } },
+      "current": { "provider_sample_id": "s2", "collected_at_millis": 60000, "cumulative": { "cpu_millis": 30000 } },
+      "expect": {
+        "interval_start_millis": 0,
+        "deltas": { "cpu_millis": 30000 },
+        "lines": { "cpu_millis": 30 },
+        "amount": 30,
+        "journal_entries": [-30, 30]
+      }
+    },
+    {
+      "name": "a fraction of a minor unit",
+      "why": "rounding up: one millisecond of CPU costs one minor unit, not zero",
+      "previous": { "provider_sample_id": "s1", "collected_at_millis": 0, "cumulative": { "cpu_millis": 0 } },
+      "current": { "provider_sample_id": "s2", "collected_at_millis": 60000, "cumulative": { "cpu_millis": 1 } },
+      "expect": { "interval_start_millis": 0, "deltas": { "cpu_millis": 1 }, "lines": { "cpu_millis": 1 }, "amount": 1, "journal_entries": [-1, 1] }
+    },
+    {
+      "name": "ten mebibytes of egress",
+      "why": "a per-byte rate at the billion scale: at a million it would round to free",
+      "previous": { "provider_sample_id": "s1", "collected_at_millis": 0, "cumulative": { "network_egress_bytes": 0 } },
+      "current": { "provider_sample_id": "s2", "collected_at_millis": 60000, "cumulative": { "network_egress_bytes": 10485760 } },
+      "expect": { "interval_start_millis": 0, "deltas": { "network_egress_bytes": 10485760 }, "lines": { "network_egress_bytes": 10 }, "amount": 10, "journal_entries": [-10, 10] }
+    },
+    {
+      "name": "a restarted workload",
+      "why": "the counter reset; the delta is the new counter, never an unsigned underflow",
+      "previous": { "provider_sample_id": "s1", "collected_at_millis": 0, "cumulative": { "cpu_millis": 900000 } },
+      "current": { "provider_sample_id": "s2", "collected_at_millis": 60000, "cumulative": { "cpu_millis": 1200 } },
+      "expect": { "interval_start_millis": 0, "deltas": { "cpu_millis": 1200 }, "lines": { "cpu_millis": 2 }, "amount": 2, "journal_entries": [-2, 2] }
+    },
+    {
+      "name": "an idle minute",
+      "why": "nothing consumed is nothing owed, and no line is invented",
+      "previous": { "provider_sample_id": "s1", "collected_at_millis": 0, "cumulative": { "cpu_millis": 5000 } },
+      "current": { "provider_sample_id": "s2", "collected_at_millis": 60000, "cumulative": { "cpu_millis": 5000 } },
+      "expect": { "interval_start_millis": 0, "deltas": { "cpu_millis": 0 }, "lines": {}, "amount": 0, "journal_entries": [0, 0] }
+    },
+    {
+      "name": "ingress is never billable",
+      "why": "a workload cannot refuse what is sent to it; charging would let anyone spend its balance",
+      "previous": { "provider_sample_id": "s1", "collected_at_millis": 0, "cumulative": { "network_ingress_bytes": 0 } },
+      "current": { "provider_sample_id": "s2", "collected_at_millis": 60000, "cumulative": { "network_ingress_bytes": 1000000000 } },
+      "expect": { "interval_start_millis": 0, "deltas": { "network_ingress_bytes": 1000000000 }, "lines": {}, "amount": 0, "journal_entries": [0, 0] }
+    }
+  ]
+}

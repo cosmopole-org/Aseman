@@ -12,562 +12,562 @@
     {
       "gateway": "unified-host-call",
       "operation": "buildDockerImage",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:677"
+      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:612"
     },
     {
       "gateway": "unified-host-call",
       "operation": "buildVmImage",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:677"
+      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:612"
     },
     {
       "gateway": "unified-host-call",
       "operation": "callProtocolApi",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:682"
+      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:617"
     },
     {
       "gateway": "unified-host-call",
       "operation": "commitTrx",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:631"
+      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:587"
     },
     {
       "gateway": "unified-host-call",
       "operation": "consoleLog",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:821"
+      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:746"
     },
     {
       "gateway": "unified-host-call",
       "operation": "consumeLock",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:762"
+      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:687"
     },
     {
       "gateway": "unified-host-call",
       "operation": "copyFromVm",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:676"
+      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:611"
     },
     {
       "gateway": "unified-host-call",
       "operation": "copyToDocker",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:675"
+      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:610"
     },
     {
       "gateway": "unified-host-call",
       "operation": "copyToVm",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:675"
+      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:610"
     },
     {
       "gateway": "unified-host-call",
       "operation": "createAccess",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:743"
+      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:668"
     },
     {
       "gateway": "unified-host-call",
       "operation": "createCreature",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:756"
+      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:681"
     },
     {
       "gateway": "unified-host-call",
       "operation": "createOwnedAccess",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:743"
+      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:668"
     },
     {
       "gateway": "unified-host-call",
       "operation": "createOwnedCreature",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:756"
+      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:681"
     },
     {
       "gateway": "unified-host-call",
       "operation": "createOwnedStore",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:747"
+      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:672"
     },
     {
       "gateway": "unified-host-call",
       "operation": "createProgram",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:804"
+      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:729"
     },
     {
       "gateway": "unified-host-call",
       "operation": "createResourceEntity",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:846"
+      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:771"
     },
     {
       "gateway": "unified-host-call",
       "operation": "createResourceStore",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:830"
-    },
-    {
-      "gateway": "unified-host-call",
-      "operation": "createStore",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:747"
-    },
-    {
-      "gateway": "unified-host-call",
-      "operation": "createVmOwnedStore",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:830"
-    },
-    {
-      "gateway": "unified-host-call",
-      "operation": "dbOp",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:648"
-    },
-    {
-      "gateway": "unified-host-call",
-      "operation": "debitPool",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:798"
-    },
-    {
-      "gateway": "unified-host-call",
-      "operation": "delKey",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:825"
-    },
-    {
-      "gateway": "unified-host-call",
-      "operation": "deleteAccess",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:744"
-    },
-    {
-      "gateway": "unified-host-call",
-      "operation": "deleteCreature",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:814"
-    },
-    {
-      "gateway": "unified-host-call",
-      "operation": "deleteOwnedAccess",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:744"
-    },
-    {
-      "gateway": "unified-host-call",
-      "operation": "deleteOwnedCreature",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:814"
-    },
-    {
-      "gateway": "unified-host-call",
-      "operation": "deleteOwnedProgram",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:805"
-    },
-    {
-      "gateway": "unified-host-call",
-      "operation": "deleteOwnedStore",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:748"
-    },
-    {
-      "gateway": "unified-host-call",
-      "operation": "deleteProgram",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:805"
-    },
-    {
-      "gateway": "unified-host-call",
-      "operation": "deleteResourceEntity",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:847"
-    },
-    {
-      "gateway": "unified-host-call",
-      "operation": "deleteResourceStore",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:836"
-    },
-    {
-      "gateway": "unified-host-call",
-      "operation": "deleteStore",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:748"
-    },
-    {
-      "gateway": "unified-host-call",
-      "operation": "deleteVm",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:652"
-    },
-    {
-      "gateway": "unified-host-call",
-      "operation": "deleteVmOwnedStore",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:836"
-    },
-    {
-      "gateway": "unified-host-call",
-      "operation": "deploy entity",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:813"
-    },
-    {
-      "gateway": "unified-host-call",
-      "operation": "deployEntity",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:813"
-    },
-    {
-      "gateway": "unified-host-call",
-      "operation": "destroyVm",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:652"
-    },
-    {
-      "gateway": "unified-host-call",
-      "operation": "elpifyProof",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:679"
-    },
-    {
-      "gateway": "unified-host-call",
-      "operation": "execDocker",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:661"
-    },
-    {
-      "gateway": "unified-host-call",
-      "operation": "execShellAction",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:735"
-    },
-    {
-      "gateway": "unified-host-call",
-      "operation": "execVm",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:661"
-    },
-    {
-      "gateway": "unified-host-call",
-      "operation": "genId",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:828"
-    },
-    {
-      "gateway": "unified-host-call",
-      "operation": "getByPrefix",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:825"
-    },
-    {
-      "gateway": "unified-host-call",
-      "operation": "getCreature",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:757"
-    },
-    {
-      "gateway": "unified-host-call",
-      "operation": "getJson",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:825"
-    },
-    {
-      "gateway": "unified-host-call",
-      "operation": "getLink",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:825"
-    },
-    {
-      "gateway": "unified-host-call",
-      "operation": "getProgram",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:809"
-    },
-    {
-      "gateway": "unified-host-call",
-      "operation": "getResourceStore",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:839"
-    },
-    {
-      "gateway": "unified-host-call",
-      "operation": "getStore",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:751"
-    },
-    {
-      "gateway": "unified-host-call",
-      "operation": "getVmOwnedStore",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:839"
-    },
-    {
-      "gateway": "unified-host-call",
-      "operation": "grantLogin",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:698"
-    },
-    {
-      "gateway": "unified-host-call",
-      "operation": "hasAccessToStore",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:828"
-    },
-    {
-      "gateway": "unified-host-call",
-      "operation": "httpPost",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:678"
-    },
-    {
-      "gateway": "unified-host-call",
-      "operation": "httpRequest",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:678"
-    },
-    {
-      "gateway": "unified-host-call",
-      "operation": "joinGroup",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:828"
-    },
-    {
-      "gateway": "unified-host-call",
-      "operation": "listCreatures",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:758"
-    },
-    {
-      "gateway": "unified-host-call",
-      "operation": "listProgramMachines",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:811"
-    },
-    {
-      "gateway": "unified-host-call",
-      "operation": "listPrograms",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:810"
-    },
-    {
-      "gateway": "unified-host-call",
-      "operation": "listResourceStores",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:842"
-    },
-    {
-      "gateway": "unified-host-call",
-      "operation": "listStoreAccess",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:754"
-    },
-    {
-      "gateway": "unified-host-call",
-      "operation": "listStoreMembers",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:754"
-    },
-    {
-      "gateway": "unified-host-call",
-      "operation": "listStores",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:752"
-    },
-    {
-      "gateway": "unified-host-call",
-      "operation": "listVmOwnedStores",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:842"
-    },
-    {
-      "gateway": "unified-host-call",
-      "operation": "lockResource",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:819"
-    },
-    {
-      "gateway": "unified-host-call",
-      "operation": "lockToken",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:763"
-    },
-    {
-      "gateway": "unified-host-call",
-      "operation": "nodeIdentity",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:696"
-    },
-    {
-      "gateway": "unified-host-call",
-      "operation": "plantTrigger",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:691"
-    },
-    {
-      "gateway": "unified-host-call",
-      "operation": "protocolApi",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:682"
-    },
-    {
-      "gateway": "unified-host-call",
-      "operation": "publishFinanceCatalog",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:705"
-    },
-    {
-      "gateway": "unified-host-call",
-      "operation": "publishFinanceQuote",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:723"
-    },
-    {
-      "gateway": "unified-host-call",
-      "operation": "publishUpdate",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:660"
-    },
-    {
-      "gateway": "unified-host-call",
-      "operation": "putJson",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:825"
-    },
-    {
-      "gateway": "unified-host-call",
-      "operation": "readMembers",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:754"
-    },
-    {
-      "gateway": "unified-host-call",
-      "operation": "registerBridgeToken",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:658"
-    },
-    {
-      "gateway": "unified-host-call",
-      "operation": "registerFinanceNode",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:710"
-    },
-    {
-      "gateway": "unified-host-call",
-      "operation": "registerFinanceResource",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:712"
-    },
-    {
-      "gateway": "unified-host-call",
-      "operation": "releaseHold",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:779"
-    },
-    {
-      "gateway": "unified-host-call",
-      "operation": "releasePool",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:792"
-    },
-    {
-      "gateway": "unified-host-call",
-      "operation": "removeAccess",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:744"
-    },
-    {
-      "gateway": "unified-host-call",
-      "operation": "removeCreature",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:814"
-    },
-    {
-      "gateway": "unified-host-call",
-      "operation": "removeOwnedAccess",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:744"
-    },
-    {
-      "gateway": "unified-host-call",
-      "operation": "removeOwnedCreature",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:814"
-    },
-    {
-      "gateway": "unified-host-call",
-      "operation": "removeOwnedStore",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:748"
-    },
-    {
-      "gateway": "unified-host-call",
-      "operation": "removeStore",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:748"
-    },
-    {
-      "gateway": "unified-host-call",
-      "operation": "reservePool",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:780"
-    },
-    {
-      "gateway": "unified-host-call",
-      "operation": "retireFinanceNode",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:711"
-    },
-    {
-      "gateway": "unified-host-call",
-      "operation": "retireFinanceResource",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:718"
-    },
-    {
-      "gateway": "unified-host-call",
-      "operation": "reviewFinanceResource",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:713"
-    },
-    {
-      "gateway": "unified-host-call",
-      "operation": "revokeBridgeToken",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:659"
-    },
-    {
-      "gateway": "unified-host-call",
-      "operation": "runVm",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:650"
-    },
-    {
-      "gateway": "unified-host-call",
-      "operation": "secretGet",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:728"
-    },
-    {
-      "gateway": "unified-host-call",
-      "operation": "secretListGranted",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:739"
-    },
-    {
-      "gateway": "unified-host-call",
-      "operation": "settleHold",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:778"
-    },
-    {
-      "gateway": "unified-host-call",
-      "operation": "settlePool",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:786"
-    },
-    {
-      "gateway": "unified-host-call",
-      "operation": "signal",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:685"
-    },
-    {
-      "gateway": "unified-host-call",
-      "operation": "signalGroup",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:818"
-    },
-    {
-      "gateway": "unified-host-call",
-      "operation": "signalUser",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:817"
-    },
-    {
-      "gateway": "unified-host-call",
-      "operation": "startHold",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:777"
-    },
-    {
-      "gateway": "unified-host-call",
-      "operation": "stateOp",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:649"
-    },
-    {
-      "gateway": "unified-host-call",
-      "operation": "statusVm",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:665"
-    },
-    {
-      "gateway": "unified-host-call",
-      "operation": "terminateVm",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:651"
-    },
-    {
-      "gateway": "unified-host-call",
-      "operation": "transfer",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:761"
-    },
-    {
-      "gateway": "unified-host-call",
-      "operation": "unlockResource",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:820"
-    },
-    {
-      "gateway": "unified-host-call",
-      "operation": "updateCreature",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:759"
-    },
-    {
-      "gateway": "unified-host-call",
-      "operation": "updateProgram",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:812"
-    },
-    {
-      "gateway": "unified-host-call",
-      "operation": "updateResourceStore",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:833"
-    },
-    {
-      "gateway": "unified-host-call",
-      "operation": "updateStore",
       "source": "node/src/drivers/vmm/host/vm_host_functions.rs:755"
     },
     {
       "gateway": "unified-host-call",
-      "operation": "updateVmOwnedStore",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:833"
+      "operation": "createStore",
+      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:672"
     },
     {
       "gateway": "unified-host-call",
-      "operation": "validateSign",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:760"
+      "operation": "createVmOwnedStore",
+      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:755"
     },
     {
       "gateway": "unified-host-call",
-      "operation": "verifyProgramExecution",
+      "operation": "dbOp",
+      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:588"
+    },
+    {
+      "gateway": "unified-host-call",
+      "operation": "debitPool",
+      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:723"
+    },
+    {
+      "gateway": "unified-host-call",
+      "operation": "delKey",
+      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:750"
+    },
+    {
+      "gateway": "unified-host-call",
+      "operation": "deleteAccess",
+      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:669"
+    },
+    {
+      "gateway": "unified-host-call",
+      "operation": "deleteCreature",
+      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:739"
+    },
+    {
+      "gateway": "unified-host-call",
+      "operation": "deleteOwnedAccess",
+      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:669"
+    },
+    {
+      "gateway": "unified-host-call",
+      "operation": "deleteOwnedCreature",
+      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:739"
+    },
+    {
+      "gateway": "unified-host-call",
+      "operation": "deleteOwnedProgram",
+      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:730"
+    },
+    {
+      "gateway": "unified-host-call",
+      "operation": "deleteOwnedStore",
+      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:673"
+    },
+    {
+      "gateway": "unified-host-call",
+      "operation": "deleteProgram",
+      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:730"
+    },
+    {
+      "gateway": "unified-host-call",
+      "operation": "deleteResourceEntity",
+      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:772"
+    },
+    {
+      "gateway": "unified-host-call",
+      "operation": "deleteResourceStore",
+      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:761"
+    },
+    {
+      "gateway": "unified-host-call",
+      "operation": "deleteStore",
+      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:673"
+    },
+    {
+      "gateway": "unified-host-call",
+      "operation": "deleteVm",
+      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:592"
+    },
+    {
+      "gateway": "unified-host-call",
+      "operation": "deleteVmOwnedStore",
+      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:761"
+    },
+    {
+      "gateway": "unified-host-call",
+      "operation": "deploy entity",
+      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:738"
+    },
+    {
+      "gateway": "unified-host-call",
+      "operation": "deployEntity",
+      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:738"
+    },
+    {
+      "gateway": "unified-host-call",
+      "operation": "destroyVm",
+      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:592"
+    },
+    {
+      "gateway": "unified-host-call",
+      "operation": "elpifyProof",
+      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:614"
+    },
+    {
+      "gateway": "unified-host-call",
+      "operation": "execDocker",
+      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:601"
+    },
+    {
+      "gateway": "unified-host-call",
+      "operation": "execShellAction",
+      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:666"
+    },
+    {
+      "gateway": "unified-host-call",
+      "operation": "execVm",
+      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:601"
+    },
+    {
+      "gateway": "unified-host-call",
+      "operation": "genId",
+      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:753"
+    },
+    {
+      "gateway": "unified-host-call",
+      "operation": "getByPrefix",
+      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:750"
+    },
+    {
+      "gateway": "unified-host-call",
+      "operation": "getCreature",
+      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:682"
+    },
+    {
+      "gateway": "unified-host-call",
+      "operation": "getJson",
+      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:750"
+    },
+    {
+      "gateway": "unified-host-call",
+      "operation": "getLink",
+      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:750"
+    },
+    {
+      "gateway": "unified-host-call",
+      "operation": "getProgram",
+      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:734"
+    },
+    {
+      "gateway": "unified-host-call",
+      "operation": "getResourceStore",
+      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:764"
+    },
+    {
+      "gateway": "unified-host-call",
+      "operation": "getStore",
+      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:676"
+    },
+    {
+      "gateway": "unified-host-call",
+      "operation": "getVmOwnedStore",
+      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:764"
+    },
+    {
+      "gateway": "unified-host-call",
+      "operation": "grantLogin",
+      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:633"
+    },
+    {
+      "gateway": "unified-host-call",
+      "operation": "hasAccessToStore",
+      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:753"
+    },
+    {
+      "gateway": "unified-host-call",
+      "operation": "httpPost",
+      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:613"
+    },
+    {
+      "gateway": "unified-host-call",
+      "operation": "httpRequest",
+      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:613"
+    },
+    {
+      "gateway": "unified-host-call",
+      "operation": "joinGroup",
+      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:753"
+    },
+    {
+      "gateway": "unified-host-call",
+      "operation": "listCreatures",
+      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:683"
+    },
+    {
+      "gateway": "unified-host-call",
+      "operation": "listProgramMachines",
+      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:736"
+    },
+    {
+      "gateway": "unified-host-call",
+      "operation": "listPrograms",
+      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:735"
+    },
+    {
+      "gateway": "unified-host-call",
+      "operation": "listResourceStores",
+      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:767"
+    },
+    {
+      "gateway": "unified-host-call",
+      "operation": "listStoreAccess",
       "source": "node/src/drivers/vmm/host/vm_host_functions.rs:679"
     },
     {
       "gateway": "unified-host-call",
-      "operation": "vmEndpoints",
+      "operation": "listStoreMembers",
+      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:679"
+    },
+    {
+      "gateway": "unified-host-call",
+      "operation": "listStores",
+      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:677"
+    },
+    {
+      "gateway": "unified-host-call",
+      "operation": "listVmOwnedStores",
+      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:767"
+    },
+    {
+      "gateway": "unified-host-call",
+      "operation": "lockResource",
+      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:744"
+    },
+    {
+      "gateway": "unified-host-call",
+      "operation": "lockToken",
+      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:688"
+    },
+    {
+      "gateway": "unified-host-call",
+      "operation": "nodeIdentity",
+      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:631"
+    },
+    {
+      "gateway": "unified-host-call",
+      "operation": "plantTrigger",
+      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:626"
+    },
+    {
+      "gateway": "unified-host-call",
+      "operation": "protocolApi",
+      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:617"
+    },
+    {
+      "gateway": "unified-host-call",
+      "operation": "publishFinanceCatalog",
+      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:640"
+    },
+    {
+      "gateway": "unified-host-call",
+      "operation": "publishFinanceQuote",
+      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:658"
+    },
+    {
+      "gateway": "unified-host-call",
+      "operation": "publishUpdate",
+      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:600"
+    },
+    {
+      "gateway": "unified-host-call",
+      "operation": "putJson",
+      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:750"
+    },
+    {
+      "gateway": "unified-host-call",
+      "operation": "readMembers",
+      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:679"
+    },
+    {
+      "gateway": "unified-host-call",
+      "operation": "registerBridgeToken",
+      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:598"
+    },
+    {
+      "gateway": "unified-host-call",
+      "operation": "registerFinanceNode",
+      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:645"
+    },
+    {
+      "gateway": "unified-host-call",
+      "operation": "registerFinanceResource",
+      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:647"
+    },
+    {
+      "gateway": "unified-host-call",
+      "operation": "releaseHold",
+      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:704"
+    },
+    {
+      "gateway": "unified-host-call",
+      "operation": "releasePool",
+      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:717"
+    },
+    {
+      "gateway": "unified-host-call",
+      "operation": "removeAccess",
+      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:669"
+    },
+    {
+      "gateway": "unified-host-call",
+      "operation": "removeCreature",
+      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:739"
+    },
+    {
+      "gateway": "unified-host-call",
+      "operation": "removeOwnedAccess",
+      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:669"
+    },
+    {
+      "gateway": "unified-host-call",
+      "operation": "removeOwnedCreature",
+      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:739"
+    },
+    {
+      "gateway": "unified-host-call",
+      "operation": "removeOwnedStore",
+      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:673"
+    },
+    {
+      "gateway": "unified-host-call",
+      "operation": "removeStore",
+      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:673"
+    },
+    {
+      "gateway": "unified-host-call",
+      "operation": "reservePool",
+      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:705"
+    },
+    {
+      "gateway": "unified-host-call",
+      "operation": "retireFinanceNode",
+      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:646"
+    },
+    {
+      "gateway": "unified-host-call",
+      "operation": "retireFinanceResource",
       "source": "node/src/drivers/vmm/host/vm_host_functions.rs:653"
     },
     {
       "gateway": "unified-host-call",
+      "operation": "reviewFinanceResource",
+      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:648"
+    },
+    {
+      "gateway": "unified-host-call",
+      "operation": "revokeBridgeToken",
+      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:599"
+    },
+    {
+      "gateway": "unified-host-call",
+      "operation": "runVm",
+      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:590"
+    },
+    {
+      "gateway": "unified-host-call",
+      "operation": "secretGet",
+      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:662"
+    },
+    {
+      "gateway": "unified-host-call",
+      "operation": "secretListGranted",
+      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:667"
+    },
+    {
+      "gateway": "unified-host-call",
+      "operation": "settleHold",
+      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:703"
+    },
+    {
+      "gateway": "unified-host-call",
+      "operation": "settlePool",
+      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:711"
+    },
+    {
+      "gateway": "unified-host-call",
+      "operation": "signal",
+      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:620"
+    },
+    {
+      "gateway": "unified-host-call",
+      "operation": "signalGroup",
+      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:743"
+    },
+    {
+      "gateway": "unified-host-call",
+      "operation": "signalUser",
+      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:742"
+    },
+    {
+      "gateway": "unified-host-call",
+      "operation": "startHold",
+      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:702"
+    },
+    {
+      "gateway": "unified-host-call",
+      "operation": "stateOp",
+      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:589"
+    },
+    {
+      "gateway": "unified-host-call",
+      "operation": "statusVm",
+      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:605"
+    },
+    {
+      "gateway": "unified-host-call",
+      "operation": "terminateVm",
+      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:591"
+    },
+    {
+      "gateway": "unified-host-call",
+      "operation": "transfer",
+      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:686"
+    },
+    {
+      "gateway": "unified-host-call",
+      "operation": "unlockResource",
+      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:745"
+    },
+    {
+      "gateway": "unified-host-call",
+      "operation": "updateCreature",
+      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:684"
+    },
+    {
+      "gateway": "unified-host-call",
+      "operation": "updateProgram",
+      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:737"
+    },
+    {
+      "gateway": "unified-host-call",
+      "operation": "updateResourceStore",
+      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:758"
+    },
+    {
+      "gateway": "unified-host-call",
+      "operation": "updateStore",
+      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:680"
+    },
+    {
+      "gateway": "unified-host-call",
+      "operation": "updateVmOwnedStore",
+      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:758"
+    },
+    {
+      "gateway": "unified-host-call",
+      "operation": "validateSign",
+      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:685"
+    },
+    {
+      "gateway": "unified-host-call",
+      "operation": "verifyProgramExecution",
+      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:614"
+    },
+    {
+      "gateway": "unified-host-call",
+      "operation": "vmEndpoints",
+      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:593"
+    },
+    {
+      "gateway": "unified-host-call",
       "operation": "vmLog",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:821"
+      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:746"
     }
   ],
   "http_routes": [
@@ -1154,112 +1154,112 @@
     {
       "path": "/machines/closeVmTerminal",
       "request_type": "VmTerminalInput",
-      "source": "node/src/shell/api/actions/program.rs:1243",
+      "source": "node/src/shell/api/actions/program.rs:1080",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/machines/list",
       "request_type": "ListInput",
-      "source": "node/src/shell/api/actions/program.rs:1630",
+      "source": "node/src/shell/api/actions/program.rs:1437",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/machines/listEntityVms",
       "request_type": "RunProgramEntityInput",
-      "source": "node/src/shell/api/actions/program.rs:1105",
+      "source": "node/src/shell/api/actions/program.rs:933",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/machines/listProgramMachines",
       "request_type": "ListAppMachsInput",
-      "source": "node/src/shell/api/actions/program.rs:1709",
+      "source": "node/src/shell/api/actions/program.rs:1516",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/machines/openVmTerminal",
       "request_type": "VmTerminalInput",
-      "source": "node/src/shell/api/actions/program.rs:1207",
+      "source": "node/src/shell/api/actions/program.rs:1044",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/machines/readMachineBuilds",
       "request_type": "MachineBuildsInput",
-      "source": "node/src/shell/api/actions/program.rs:1276",
+      "source": "node/src/shell/api/actions/program.rs:1113",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/machines/readVmLogs",
       "request_type": "ReadVmLogsInput",
-      "source": "node/src/shell/api/actions/program.rs:1047",
+      "source": "node/src/shell/api/actions/program.rs:858",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/programs/create",
       "request_type": "CreateMachineInput",
-      "source": "node/src/shell/api/actions/program.rs:575",
+      "source": "node/src/shell/api/actions/program.rs:474",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/programs/delete",
       "request_type": "DeleteProgramInput",
-      "source": "node/src/shell/api/actions/program.rs:611",
+      "source": "node/src/shell/api/actions/program.rs:510",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/programs/deleteEntity",
       "request_type": "RunProgramEntityInput",
-      "source": "node/src/shell/api/actions/program.rs:940",
+      "source": "node/src/shell/api/actions/program.rs:769",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/programs/deploy",
       "request_type": "DeployInput",
-      "source": "node/src/shell/api/actions/program.rs:1350",
+      "source": "node/src/shell/api/actions/program.rs:1187",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/programs/downloadEntity",
       "request_type": "DownloadEntityInput",
-      "source": "node/src/shell/api/actions/program.rs:1588",
+      "source": "node/src/shell/api/actions/program.rs:1395",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/programs/list",
       "request_type": "ListInput",
-      "source": "node/src/shell/api/actions/program.rs:1687",
+      "source": "node/src/shell/api/actions/program.rs:1494",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/programs/runEntity",
       "request_type": "RunProgramEntityInput",
-      "source": "node/src/shell/api/actions/program.rs:667",
+      "source": "node/src/shell/api/actions/program.rs:566",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/programs/stopEntity",
       "request_type": "RunProgramEntityInput",
-      "source": "node/src/shell/api/actions/program.rs:841",
+      "source": "node/src/shell/api/actions/program.rs:692",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/programs/update",
       "request_type": "UpdateProgramInput",
-      "source": "node/src/shell/api/actions/program.rs:634",
+      "source": "node/src/shell/api/actions/program.rs:533",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },

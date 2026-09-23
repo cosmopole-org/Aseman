@@ -1,4 +1,4 @@
-use crate::drivers::vmm::host::functions::protocol_api::forward_host_api_packet;
+use crate::drivers::vmm::globals::with_global_app;
 use crate::drivers::vmm::prelude::*;
 
 pub(crate) fn host_fn_signal(input: &JsonValue) -> String {
@@ -9,5 +9,6 @@ pub(crate) fn host_fn_signal(input: &JsonValue) -> String {
             .to_string();
     }
 
-    forward_host_api_packet("signal", input)
+    with_global_app(|app| app.tools().workloads().host_action_signal(input))
+        .unwrap_or_else(|| json!({"ok": false, "error": "the node is not initialised"}).to_string())
 }

@@ -26,87 +26,87 @@ a runtime does not support is refused with `unsupported_operation` (A501).
 
 ## Where each legacy operation goes
 
-Status: 73 open.
+Status: 46 deleted, 5 open, 22 verified.
 
 ### Runtime operations (A006)
 
 | Operation | Home | Target | Status | Note |
 |---|---|---|---|---|
-| `build_delete_request` | backend |  | open | The backend plans its own teardown for deleteWorkload. |
-| `build_image` | api | `createBuild` | open |  |
-| `build_terminate_request` | backend |  | open | The backend plans its own stop for stopWorkload. |
-| `copy_from_vm` | api | `getWorkloadFile` | open |  |
-| `copy_to_vm` | api | `putWorkloadFile` | open |  |
-| `create` | api | `createWorkload` | open |  |
-| `delete_vm` | api | `deleteWorkload` | open |  |
-| `destroy` | api | `deleteWorkload` | open |  |
-| `detect` | api | `getCapabilities` | open | Whether the runtime is usable on this host decides whether it is listed. |
-| `exec_vm` | api | `execWorkload` | open | Runs a command in a live instance. Where legacy exec_vm was an echo or an invocation, the runtime reports `exec: false` (see capability_rules). |
-| `forward_http` | api | `forwardHttp` | open | Runtimes without `http_ingress` are reached by invokeWorkload, as legacy fell back to signalling. |
-| `identify_instance_by_ip` | removed |  | open | Source-IP identification is replaced by the A405 workload credential issued in `bootstrap` (P5-04). |
-| `init` | backend |  | open | Backend start-up of the runtime. |
-| `meta` | api | `getCapabilities` | open | Runtime metadata and deploy conventions. |
-| `pause` | api | `pauseWorkload` | open |  |
-| `plan_delete_entity` | backend |  | open | Delete planning is the backend's. |
-| `plan_run_entity` | backend |  | open | Launch planning is the backend's; the node sends a complete spec. |
-| `plan_stop_entity` | backend |  | open | Stop planning is the backend's. |
-| `restore` | backend |  | open | Modal's restore re-attaches its own persisted sandbox entries; the native backend uses it when adopting ModalSandbox handles (P6-06, ADR 0022). It never takes snapshots, so no native runtime declares `snapshot`. |
-| `resume` | api | `resumeWorkload` | open |  |
-| `run_vm` | api | `invokeWorkload` | open |  |
-| `start` | api | `startWorkload` | open |  |
-| `status_vm` | api | `getWorkload` | open | Observed state, reported through `observed` and the event stream. |
-| `stop` | api | `stopWorkload` | open |  |
-| `terminate_vm` | api | `stopWorkload` | open |  |
-| `verify_program_execution` | api | `verifyExecution` | open |  |
-| `vm_endpoints` | api | `listWorkloadEndpoints` | open |  |
+| `build_delete_request` | backend |  | open | Not used: the native backend addresses instances through the plan_* hooks, which the docker test verifies. |
+| `build_image` | api | `createBuild` | verified | Verified by `aseman-vmm-backend-native live_docker (real Docker daemon): the Dockerfile is built before the first start`. |
+| `build_terminate_request` | backend |  | open | Not used: the native backend addresses instances through the plan_* hooks, which the docker test verifies. |
+| `copy_from_vm` | api | `getWorkloadFile` | verified | Verified by `aseman-vmm-backend-native live_docker (real Docker daemon) and the A504 conformance kit: a file the runtime cannot read back is `not_found``. |
+| `copy_to_vm` | api | `putWorkloadFile` | verified | Verified by `aseman-vmm-backend-native live_docker (real Docker daemon): a text file is copied into the container`. |
+| `create` | api | `createWorkload` | verified | Verified by `aseman-vmm-backend-native system (create over A501, observed running)`. |
+| `delete_vm` | api | `deleteWorkload` | verified | Verified by `aseman-vmm-backend-conformance check_backend via live_native; system (delete converges)`. |
+| `destroy` | api | `deleteWorkload` | verified | Verified by `aseman-vmm-backend-conformance check_backend via live_native; system (delete converges)`. |
+| `detect` | api | `getCapabilities` | verified | Whether the runtime is usable on this host decides whether it is listed. Verified by `aseman-vmm-backend-native live_native (describe)`. |
+| `exec_vm` | api | `execWorkload` | verified | Runs a command in a live instance. Where legacy exec_vm was an echo or an invocation, the runtime reports `exec: false` (see capability_rules). Verified by `aseman-vmm-backend-native live_docker (real Docker daemon): a command runs inside the container (LD-29 fixed)`. |
+| `forward_http` | api | `forwardHttp` | verified | Runtimes without `http_ingress` are reached by invokeWorkload, as legacy fell back to signalling. Verified by `aseman-vmm-backend-native live_docker (real Docker daemon): HTTP reaches the server inside the container`. |
+| `identify_instance_by_ip` | removed |  | open | Replaced by the workload credential for host calls (P5-04). The docker-host gateway still resolves a container's source IP to its workload inside the backend; a container speaking the gateway protocol is exercised with the P6 worker-agent tests. |
+| `init` | backend |  | verified | Backend start-up of the runtime. Verified by `aseman-vmm-backend-native live_native (the backend registers its plugins)`. |
+| `meta` | api | `getCapabilities` | verified | Runtime metadata and deploy conventions. Verified by `aseman-vmm-backend-native live_native (describe: capabilities and deploy conventions)`. |
+| `pause` | api | `pauseWorkload` | verified | Verified by `aseman-application unsupported_operations_are_refused_not_degraded: no native runtime pauses, and the service refuses it`. |
+| `plan_delete_entity` | backend |  | verified | Delete planning is the backend's. Verified by `aseman-vmm-backend-native live_docker (real Docker daemon): the container is removed from the plugin's plan`. |
+| `plan_run_entity` | backend |  | verified | Launch planning is the backend's; the node sends a complete spec. Verified by `aseman-vmm-backend-native live_docker (real Docker daemon): the container launches from the plugin's plan`. |
+| `plan_stop_entity` | backend |  | verified | Stop planning is the backend's. Verified by `aseman-vmm-backend-native live_docker (real Docker daemon): the container stops from the plugin's plan`. |
+| `restore` | backend |  | open | Modal's restore re-attaches its own persisted sandbox entries; the native backend uses it when adopting ModalSandbox handles (P6-06, ADR 0022). It never takes snapshots, so no native runtime declares `snapshot`. Modal needs an account and API key, which this environment has none of; it is unverified here. |
+| `resume` | api | `resumeWorkload` | verified | Verified by `aseman-application unsupported_operations_are_refused_not_degraded`. |
+| `run_vm` | api | `invokeWorkload` | verified | Verified by `aseman-vmm-backend-native live_native and system (counter.js runs as its workload)`. |
+| `start` | api | `startWorkload` | verified | Verified by `aseman-vmm-backend-conformance check_backend via live_native`. |
+| `status_vm` | api | `getWorkload` | verified | Not used by the native backend: it reports its own instances, and A501 `getWorkload` answers what the VMM observed. Verified by `aseman-vmm-backend-native system (A501 getWorkload answers from the observed record)`. |
+| `stop` | api | `stopWorkload` | verified | Verified by `aseman-vmm-backend-conformance check_backend via live_native`. |
+| `terminate_vm` | api | `stopWorkload` | verified | Verified by `aseman-vmm-backend-conformance check_backend via live_native`. |
+| `verify_program_execution` | api | `verifyExecution` | open | Elpify proofs: the backend verifies a program it holds, through A501 `verifyExecution`. Verifying one end to end needs an elpify program and proof fixture (P8 finance/consensus work uses them). |
+| `vm_endpoints` | api | `listWorkloadEndpoints` | verified | Verified by `aseman-vmm-backend-native live_docker (real Docker daemon): a docker entity publishes none`. |
 
 ### Node-facing `IVmm` methods
 
 | Operation | Home | Target | Status | Note |
 |---|---|---|---|---|
-| `acquire_resource_lock` | guest_gateway |  | open |  |
-| `assign` | node | `invokeWorkload` | open | The per-program signal listener stays in the node and delivers each signal with invokeWorkload. |
-| `begin_cold_spawn` | backend |  | open | Cold-start debounce happens behind invokeWorkload. |
-| `begin_vm_trx` | guest_gateway |  | open | Guest data transactions (ADR 0021). |
-| `build_vm_image` | api | `createBuild` | open |  |
-| `close_kvdb` | removed |  | open | Guest data lives in the creature's guest database (ADR 0021); the VMM holds no store. |
-| `commit_vm_trx` | guest_gateway |  | open |  |
-| `delete_vm_instance` | api | `deleteWorkload` | open |  |
-| `exec_shell_action` | guest_gateway |  | open |  |
-| `execute_chain_effects` | api | `invokeWorkload` | open | Invocation kind `chain_effects`. |
-| `execute_chain_trxs_group` | api | `invokeWorkload` | open | Invocation kind `chain_transactions`. |
-| `forward_http` | api | `forwardHttp` | open |  |
-| `get_vm_context` | guest_gateway |  | open |  |
-| `host_action_creature` | guest_gateway |  | open |  |
-| `host_action_micro` | guest_gateway |  | open |  |
-| `host_action_program` | guest_gateway |  | open |  |
-| `host_action_resource_entity_create` | guest_gateway |  | open |  |
-| `host_action_resource_entity_delete` | guest_gateway |  | open |  |
-| `host_action_resource_store` | guest_gateway |  | open |  |
-| `host_action_store` | guest_gateway |  | open |  |
-| `identify_container_by_ip` | removed |  | open | Replaced by the workload credential (P5-04). |
-| `is_managed_runtime` | removed |  | open | The node no longer distinguishes in-process runtimes; invokeWorkload cold-starts any runtime. |
-| `is_supported_runtime` | api | `getCapabilities` | open |  |
-| `plan_delete_entity` | backend |  | open |  |
-| `plan_run_entity` | backend |  | open |  |
-| `plan_stop_entity` | backend |  | open |  |
-| `push_signal_to_entity` | api | `invokeWorkload` | open |  |
-| `push_signal_to_machine` | api | `invokeWorkload` | open | Delivery to live instances is the backend's. |
-| `queue_pending_signal` | backend |  | open | Cold-start queueing happens behind invokeWorkload. |
-| `register_vm_container` | backend |  | open |  |
-| `register_vm_context` | guest_gateway |  | open | Caller identity comes from the workload credential. |
-| `release_resource_lock` | guest_gateway |  | open |  |
-| `resolve_http_route` | node |  | open | Custom gateway routes are node data (core gateway routes); the node resolves them before forwardHttp. |
-| `run_vm` | api | `invokeWorkload` | open |  |
-| `run_vm_entity` | api | `invokeWorkload` | open |  |
-| `runtime_deploy_spec` | api | `getCapabilities` | open | `deploy` conventions; `setEntityLinksOnDeploy` stays inside the backend. |
-| `runtime_supports_chain_trxs` | api | `getCapabilities` | open |  |
-| `start_docker_gateway` | backend |  | open | The docker host bridge moves into the native backend until P5-04 retires it. |
-| `start_http_ingress` | node | `forwardHttp` | open | Ingress stays in the node: it resolves the route to a workload and forwards with forwardHttp. |
-| `supported_runtimes` | api | `getCapabilities` | open |  |
-| `terminate_vm` | api | `stopWorkload` | open |  |
-| `unregister_vm_container` | backend |  | open |  |
-| `unregister_vm_context` | guest_gateway |  | open |  |
-| `vm_callback` | guest_gateway |  | open | Log and output events become the backend log stream; triggers, signals, and terminations become authorized guest API calls. |
-| `vm_db_commit_explicit` | guest_gateway |  | open |  |
-| `vm_db_op` | guest_gateway |  | open |  |
+| `acquire_resource_lock` | guest_gateway |  | deleted |  |
+| `assign` | node | `invokeWorkload` | deleted | The per-program signal listener stays in the node and delivers each signal with invokeWorkload. |
+| `begin_cold_spawn` | backend |  | deleted | Cold-start debounce happens behind invokeWorkload. |
+| `begin_vm_trx` | guest_gateway |  | deleted | Guest data transactions (ADR 0021). |
+| `build_vm_image` | api | `createBuild` | deleted |  |
+| `close_kvdb` | removed |  | deleted | Guest data lives in the creature's guest database (ADR 0021); the VMM holds no store. |
+| `commit_vm_trx` | guest_gateway |  | deleted |  |
+| `delete_vm_instance` | api | `deleteWorkload` | deleted |  |
+| `exec_shell_action` | guest_gateway |  | deleted |  |
+| `execute_chain_effects` | api | `invokeWorkload` | deleted | Invocation kind `chain_effects`. |
+| `execute_chain_trxs_group` | api | `invokeWorkload` | deleted | Invocation kind `chain_transactions`. |
+| `forward_http` | api | `forwardHttp` | deleted |  |
+| `get_vm_context` | guest_gateway |  | deleted |  |
+| `host_action_creature` | guest_gateway |  | deleted |  |
+| `host_action_micro` | guest_gateway |  | deleted |  |
+| `host_action_program` | guest_gateway |  | deleted |  |
+| `host_action_resource_entity_create` | guest_gateway |  | deleted |  |
+| `host_action_resource_entity_delete` | guest_gateway |  | deleted |  |
+| `host_action_resource_store` | guest_gateway |  | deleted |  |
+| `host_action_store` | guest_gateway |  | deleted |  |
+| `identify_container_by_ip` | removed |  | deleted | Replaced by the workload credential (P5-04). |
+| `is_managed_runtime` | removed |  | deleted | The node no longer distinguishes in-process runtimes; invokeWorkload cold-starts any runtime. |
+| `is_supported_runtime` | api | `getCapabilities` | deleted |  |
+| `plan_delete_entity` | backend |  | deleted |  |
+| `plan_run_entity` | backend |  | deleted |  |
+| `plan_stop_entity` | backend |  | deleted |  |
+| `push_signal_to_entity` | api | `invokeWorkload` | deleted |  |
+| `push_signal_to_machine` | api | `invokeWorkload` | deleted | Delivery to live instances is the backend's. |
+| `queue_pending_signal` | backend |  | deleted | Cold-start queueing happens behind invokeWorkload. |
+| `register_vm_container` | backend |  | deleted |  |
+| `register_vm_context` | guest_gateway |  | deleted | Caller identity comes from the workload credential. |
+| `release_resource_lock` | guest_gateway |  | deleted |  |
+| `resolve_http_route` | node |  | deleted | Custom gateway routes are node data (core gateway routes); the node resolves them before forwardHttp. |
+| `run_vm` | api | `invokeWorkload` | deleted |  |
+| `run_vm_entity` | api | `invokeWorkload` | deleted |  |
+| `runtime_deploy_spec` | api | `getCapabilities` | deleted | `deploy` conventions; `setEntityLinksOnDeploy` stays inside the backend. |
+| `runtime_supports_chain_trxs` | api | `getCapabilities` | deleted |  |
+| `start_docker_gateway` | backend |  | deleted | The docker host bridge moves into the native backend until P5-04 retires it. |
+| `start_http_ingress` | node | `forwardHttp` | deleted | Ingress stays in the node: it resolves the route to a workload and forwards with forwardHttp. |
+| `supported_runtimes` | api | `getCapabilities` | deleted |  |
+| `terminate_vm` | api | `stopWorkload` | deleted |  |
+| `unregister_vm_container` | backend |  | deleted |  |
+| `unregister_vm_context` | guest_gateway |  | deleted |  |
+| `vm_callback` | guest_gateway |  | deleted | Log and output events become the backend log stream; triggers, signals, and terminations become authorized guest API calls. |
+| `vm_db_commit_explicit` | guest_gateway |  | deleted |  |
+| `vm_db_op` | guest_gateway |  | deleted |  |

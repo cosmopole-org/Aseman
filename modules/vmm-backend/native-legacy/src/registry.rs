@@ -25,6 +25,10 @@ pub struct Instance {
     pub vm_id: String,
     pub entity_id: String,
     pub artifact_path: PathBuf,
+    /// A build-on-deploy runtime whose image has not been built yet. The instance is
+    /// registered before its build so the build's output is its own `build` stream,
+    /// and a failed build is retried on the next use.
+    pub build_pending: bool,
     pub observation: Observation,
     pub logs: VecDeque<LogRecord>,
     pub next_log: u64,

@@ -1,4 +1,3 @@
-use crate::drivers::vmm::bridge::runtime_io::wasm_send;
 use crate::drivers::vmm::globals::with_global_app;
 use crate::drivers::vmm::host::functions::*;
 use crate::drivers::vmm::prelude::*;
@@ -12,12 +11,6 @@ pub(crate) struct HostHierarchy {
     pub(crate) entity_path: String,
 }
 
-#[derive(Default)]
-pub(crate) struct CachedVmHierarchy {
-    pub(crate) creature_id: String,
-    pub(crate) program_id: String,
-}
-
 /// The calling VM, as the runtime or the docker gateway stamped it on the *packet*.
 /// The guest controls only `input`, so identity is never read from it (LD-14: an input
 /// `vmId` used to select another VM's context, and with it another creature's secrets).
@@ -28,24 +21,6 @@ fn packet_vm_id(packet: &JsonValue) -> String {
         .filter(|v| !v.is_empty())
         .unwrap_or("")
         .to_string()
-}
-
-fn resolve_cached_vm_hierarchy(packet: &JsonValue, _input: &JsonValue) -> CachedVmHierarchy {
-    let vm_id = packet_vm_id(packet);
-    if vm_id.is_empty() {
-        return CachedVmHierarchy::default();
-    }
-    with_global_app(|app| {
-        app.tools()
-            .workloads()
-            .get_vm_context(&vm_id)
-            .map(|(creature_id, program_id)| CachedVmHierarchy {
-                creature_id,
-                program_id,
-            })
-    })
-    .flatten()
-    .unwrap_or_default()
 }
 
 fn value_from_packet_or_input<'a>(
@@ -63,7 +38,6 @@ fn value_from_packet_or_input<'a>(
 pub(crate) fn resolve_host_hierarchy(packet: &JsonValue, input: &JsonValue) -> HostHierarchy {
     // Only the runtime- or gateway-stamped packet names the caller.
     let vm_id = packet_vm_id(packet);
-    let cached = resolve_cached_vm_hierarchy(packet, input);
 
     // Identity (creature + program) comes ONLY from node-authoritative sources —
     // NEVER from a guest-supplied claim. There are two such sources, in priority
@@ -83,24 +57,16 @@ pub(crate) fn resolve_host_hierarchy(packet: &JsonValue, input: &JsonValue) -> H
     // for the docker path the packet carries no top-level id, so (2) is a no-op
     // there. This preserves per-creature storage isolation for every legitimate
     // runtime while trusting nothing the guest can set.
-    let creature_id_owned = if !cached.creature_id.is_empty() {
-        cached.creature_id
-    } else {
-        packet["creatureId"]
-            .as_str()
-            .filter(|v| !v.is_empty())
-            .unwrap_or("")
-            .to_string()
-    };
-    let program_id_owned = if !cached.program_id.is_empty() {
-        cached.program_id
-    } else {
-        packet["programId"]
-            .as_str()
-            .filter(|v| !v.is_empty())
-            .unwrap_or("")
-            .to_string()
-    };
+    let creature_id_owned = packet["creatureId"]
+        .as_str()
+        .filter(|v| !v.is_empty())
+        .unwrap_or("")
+        .to_string();
+    let program_id_owned = packet["programId"]
+        .as_str()
+        .filter(|v| !v.is_empty())
+        .unwrap_or("")
+        .to_string();
 
     // entity_name / entity_path only subdivide storage *within* the already-
     // authenticated creature+program namespace, so they carry through as given.
@@ -125,11 +91,9 @@ pub(crate) fn resolve_host_hierarchy(packet: &JsonValue, input: &JsonValue) -> H
 
 /// Execute a low-level key-value DB operation for a VM host-call.
 ///
-/// All logic (write-ahead buffering, read-your-own-writes, ICore fallthrough)
-/// lives in `IWorkloads::vm_db_op` on the `Vmm` struct, which is reached via the
-/// canonical `ICore → tools() → vmm()` path.  This function is a thin
-/// adapter that computes the storage namespace from `HostHierarchy` and
-/// delegates.
+/// It computes the `applet_db` namespace from `HostHierarchy` and runs the
+/// operation on the creature's own guest database (ADR 0021). Workloads run on the
+/// node's VMM, which the node uses only with the PostgreSQL guest store.
 pub(crate) fn run_db_op(ctx: &HostHierarchy, input: &JsonValue) -> Result<String, String> {
     let op = input["op"].as_str().unwrap_or("");
     let key = input["key"].as_str().unwrap_or("");
@@ -156,9 +120,6 @@ pub(crate) fn run_db_op(ctx: &HostHierarchy, input: &JsonValue) -> Result<String
         ctx.creature_id.clone()
     };
 
-    let namespaced_key = format!("AppletDb::{}::{}", db_prefix, key);
-    let ns_prefix = format!("AppletDb::{}::{}", db_prefix, prefix);
-
     // On PostgreSQL the creature's own guest database serves it (ADR 0021): the
     // `applet_db` key is the remainder after `AppletDb::`.
     if let Some(result) = crate::shell::api::model::guest_data::route_db_op(
@@ -172,14 +133,7 @@ pub(crate) fn run_db_op(ctx: &HostHierarchy, input: &JsonValue) -> Result<String
         return result;
     }
 
-    match with_global_app(|app| {
-        app.tools()
-            .workloads()
-            .vm_db_op(&ctx.vm_id, op, &namespaced_key, val, &ns_prefix)
-    }) {
-        Some(result) => result,
-        None => Err("vmm not initialised".to_string()),
-    }
+    Err("guest data needs the PostgreSQL guest store".to_string())
 }
 
 /// Default request ceiling, matching reqwest's own blocking default so no
@@ -628,27 +582,13 @@ pub(crate) fn handle_unified_host_call(packet: &JsonValue) -> String {
         Err(denied) => return json!({"ok": false, "error": denied}).to_string(),
     }
     match op {
-        "commitTrx" => {
-            let vm_id = input["vmId"]
-                .as_str()
-                .or_else(|| packet["vmId"].as_str())
-                .unwrap_or("")
-                .trim()
-                .to_string();
-            if vm_id.is_empty() {
-                json!({"ok": false, "error": "vmId required for commitTrx"}).to_string()
-            } else {
-                match with_global_app(|app| app.tools().workloads().vm_db_commit_explicit(&vm_id)) {
-                    Some(Ok(())) => json!({"ok": true}).to_string(),
-                    Some(Err(e)) => json!({"ok": false, "error": e}).to_string(),
-                    None => json!({"ok": false, "error": "vmm not initialised"}).to_string(),
-                }
-            }
-        }
+        // Every guest write commits on its own (ADR 0021); there is no buffer to
+        // flush.
+        "commitTrx" => json!({"ok": true}).to_string(),
         "dbOp" => host_fn_db_op(&ctx, &input),
         "stateOp" => host_fn_state_op(&ctx, &input),
         "runVm" => host_fn_run_vm(&ctx.program_id, &input),
-        "terminateVm" => host_fn_terminate_vm(&input),
+        "terminateVm" => host_fn_terminate_vm(&ctx.program_id, &input),
         "deleteVm" | "destroyVm" => host_fn_delete_vm(&ctx.program_id, &input),
         "vmEndpoints" => host_fn_vm_endpoints(&ctx.program_id, &input),
         // The gateway subscription channel: a creature mints bearer tokens for
@@ -658,23 +598,18 @@ pub(crate) fn handle_unified_host_call(packet: &JsonValue) -> String {
         "registerBridgeToken" => host_fn_register_bridge_token(&ctx.program_id, &input),
         "revokeBridgeToken" => host_fn_revoke_bridge_token(&ctx.program_id, &input),
         "publishUpdate" => host_fn_publish_update(&ctx.program_id, &input),
-        "execVm" | "execDocker" => host_fn_exec_vm(&input),
+        "execVm" | "execDocker" => host_fn_exec_vm(&ctx.program_id, &input),
         // Read-only: what the runtime says about a VM — provisioning, running,
         // stopped, or failed with the build/boot error. Without it a creature
         // could start a machine but never learn that it had failed to come up.
-        "statusVm" => {
-            let mut packet = input.clone();
-            if let JsonValue::Object(map) = &mut packet {
-                map.insert(
-                    "type".to_string(),
-                    JsonValue::String("statusVm".to_string()),
-                );
-            }
-            crate::drivers::vmm::dispatch_packet(&packet)
-        }
-        "copyToVm" | "copyToDocker" => host_fn_copy_to_vm(&input),
-        "copyFromVm" => host_fn_copy_from_vm(&input),
-        "buildVmImage" | "buildDockerImage" => host_fn_build_vm_image(&input),
+        "statusVm" => crate::drivers::vmm::host::functions::vm_calls::remote_vm_call(
+            "statusVm",
+            &ctx.program_id,
+            &input,
+        ),
+        "copyToVm" | "copyToDocker" => host_fn_copy_to_vm(&ctx.program_id, &input),
+        "copyFromVm" => host_fn_copy_from_vm(&ctx.program_id, &input),
+        "buildVmImage" | "buildDockerImage" => host_fn_build_vm_image(&ctx.program_id, &input),
         "httpPost" | "httpRequest" => host_fn_http_request(&input),
         "elpifyProof" | "verifyProgramExecution" => host_fn_verify_program(&input),
         // It forwarded a guest-chosen operation to the identity-less callback
@@ -721,25 +656,15 @@ pub(crate) fn handle_unified_host_call(packet: &JsonValue) -> String {
             input.clone(),
         ),
         "publishFinanceQuote" => host_fn_publish_finance_quote(&ctx.program_id, &input),
-        // Secret reads, authenticated as the node-authoritative creature bound to
-        // this VM (get_vm_context on the runtime-stamped / gateway-verified vmId),
-        // never a `creatureId` the guest may put in the request — so
-        // resolve_cached_vm_hierarchy, never ctx.creature_id. Unresolvable → deny.
-        "secretGet" => {
-            let caller = resolve_cached_vm_hierarchy(packet, &input).creature_id;
-            host_fn_secret_get(&caller, &input)
-        }
+        // Secret reads, authenticated as the creature the node stamped on the packet
+        // from the authenticated workload (guest API), never a `creatureId` the guest
+        // may put in the request. Unresolvable → deny.
+        "secretGet" => host_fn_secret_get(&ctx.creature_id, &input),
         // Running a shell action as the calling creature (`asSelf`) — same
         // node-authoritative caller resolution as `secretGet`, so a guest can
         // never nominate whose identity it acts under.
-        "execShellAction" => {
-            let caller = resolve_cached_vm_hierarchy(packet, &input).creature_id;
-            host_fn_exec_shell_action(&caller, &input)
-        }
-        "secretListGranted" => {
-            let caller = resolve_cached_vm_hierarchy(packet, &input).creature_id;
-            host_fn_secret_list_granted(&caller)
-        }
+        "execShellAction" => host_fn_exec_shell_action(&ctx.creature_id, &input),
+        "secretListGranted" => host_fn_secret_list_granted(&ctx.creature_id),
         "createAccess" | "createOwnedAccess" => host_fn_create_access(&input),
         "deleteAccess" | "removeAccess" | "deleteOwnedAccess" | "removeOwnedAccess" => {
             host_fn_delete_access(&input)
@@ -1065,7 +990,12 @@ pub(crate) fn host_fn_update_program(input: &JsonValue) -> String {
 
 /// Dispatch into `IWorkloads::host_action_resource_store` via the canonical tool path.
 pub(crate) fn host_fn_resource_store(op: &str, input: &JsonValue) -> String {
-    match with_global_app(|app| app.tools().workloads().host_action_resource_store(op, input, 0).0) {
+    match with_global_app(|app| {
+        app.tools()
+            .workloads()
+            .host_action_resource_store(op, input, 0)
+            .0
+    }) {
         Some(out) => out,
         None => json!({"ok": false, "error": "vmm not initialised"}).to_string(),
     }
@@ -1882,7 +1812,6 @@ mod identity_tests {
         assert_eq!(hierarchy.vm_id, "");
         assert_eq!(hierarchy.creature_id, "");
         assert_eq!(hierarchy.program_id, "");
-        assert_eq!(resolve_cached_vm_hierarchy(&packet, &input).creature_id, "");
         // The packet the runtime or gateway stamped is the identity.
         let stamped = json!({"op": "dbOp", "vmId": "own-vm", "creatureId": "8@global", "programId": "10@global"});
         let hierarchy = resolve_host_hierarchy(&stamped, &input);

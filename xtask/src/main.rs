@@ -126,6 +126,8 @@ fn fast(root: &Path) -> Result<()> {
         "aseman-identity-native",
         "aseman-policy-native",
         "aseman-policy-conformance",
+        "aseman-vmm-backend-nomad",
+        "aseman-vmm-agent",
         "xtask",
     ] {
         run(root, "cargo", &["fmt", "-p", package, "--", "--check"])?;
@@ -147,6 +149,18 @@ fn fast(root: &Path) -> Result<()> {
         "generate_legacy_transform_manifest.py",
         "generate_security_registry.py",
         "generate_vmm_parity.py",
+        "generate_public_api.py",
+        // Not a generator: it checks the deployment contract against the code that
+        // decides the ports, the loopback boundary, and the privileges (A602).
+        "check_deploy_topology.py",
+        // Not a generator either: the legacy transports must stay framing-only
+        // (A701, P7-05).
+        "check_legacy_transports.py",
+        // The Phase 10 release gate: a legacy path may not outlive its window in
+        // silence.
+        "check_removal_ledger_due.py",
+        // The register's completeness rule: an unmentioned artifact reads as done.
+        "check_artifact_register.py",
     ] {
         run(root, "python3", &[&format!("scripts/{script}"), "--check"])?;
     }
@@ -212,6 +226,12 @@ fn fast(root: &Path) -> Result<()> {
             "aseman-guest-http",
             "-p",
             "aseman-vmm",
+            // The Nomad backend's live test skips without a cluster (ADR 0002).
+            "-p",
+            "aseman-vmm-backend-nomad",
+            // The agent's live test skips without a firecracker binary.
+            "-p",
+            "aseman-vmm-agent",
         ],
     )?;
     run(
@@ -263,6 +283,10 @@ fn fast(root: &Path) -> Result<()> {
             "aseman-guest-http",
             "-p",
             "aseman-vmm",
+            "-p",
+            "aseman-vmm-backend-nomad",
+            "-p",
+            "aseman-vmm-agent",
             "--all-targets",
             "--",
             "-D",

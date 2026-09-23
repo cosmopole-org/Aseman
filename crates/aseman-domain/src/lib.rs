@@ -7,19 +7,27 @@ use serde::{Deserialize, Serialize};
 use thiserror::Error;
 pub use uuid::Uuid;
 
+pub mod agent;
 pub mod authority;
 pub mod blob;
+pub mod bootstrap;
 pub mod capability;
+pub mod consensus;
+pub mod coordination;
 pub mod creature;
+pub mod federation;
+pub mod finance;
 pub mod gateway;
 pub mod guest;
 pub mod identity;
 pub mod program;
+pub mod realtime;
 pub mod signal_tags;
 pub mod storage_migration;
 pub mod store;
 pub mod store_permissions;
 pub mod vmm;
+pub mod volume;
 
 macro_rules! typed_id {
     ($name:ident) => {

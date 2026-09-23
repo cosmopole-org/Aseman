@@ -335,7 +335,7 @@ mod tests {
         use super::super::*;
         use crate::core::actor::model::trx::tests::StubCore;
         use crate::core::actor::model::trx::TrxWrapper;
-        use crate::models::packet::{BuildPacket, LogPacket, LogQuery};
+        use crate::models::packet::{LogPacket, LogQuery};
         use crate::models::ports::storage::{IStorage, KvDb};
         use std::sync::Mutex;
 
@@ -392,12 +392,6 @@ mod tests {
                 Ok(rows)
             }
             fn pick_store_logs(&self, _: &str, _: Vec<String>) -> Vec<LogPacket> {
-                Vec::new()
-            }
-            fn log_vm(&self, _: &str, _: &str, _: &str, _: i64) -> BuildPacket {
-                BuildPacket::default()
-            }
-            fn read_vm_logs(&self, _: &str, _: &str, _: i64, _: i64) -> Vec<BuildPacket> {
                 Vec::new()
             }
         }

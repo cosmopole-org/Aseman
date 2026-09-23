@@ -96,85 +96,26 @@ impl IStorage for StubStorage {
     fn pick_store_logs(&self, _: &str, _: Vec<String>) -> Vec<crate::models::packet::LogPacket> {
         Vec::new()
     }
-    fn log_vm(&self, _: &str, _: &str, _: &str, _: i64) -> crate::models::packet::BuildPacket {
-        Default::default()
-    }
-    fn read_vm_logs(
-        &self,
-        _: &str,
-        _: &str,
-        _: i64,
-        _: i64,
-    ) -> Vec<crate::models::packet::BuildPacket> {
-        Vec::new()
-    }
 }
 
-/// Records `assign` / `build_vm_image` calls; everything else is unreachable
-/// from the cluster paths under test.
+/// Records `assign` calls; everything else is unreachable from the cluster paths
+/// under test.
 #[derive(Default)]
 struct StubVmm {
     assigned: Mutex<Vec<String>>,
-    builds: Mutex<Vec<(String, String, String)>>,
 }
 
 impl crate::models::ports::workloads::IWorkloads for StubVmm {
     fn assign(&self, machine_id: &str) {
         self.assigned.lock().unwrap().push(machine_id.to_string());
     }
-    fn run_vm(&self, _: &str, _: &str, _: &str) {}
-    fn terminate_vm(&self, _: &str) {}
-    fn build_vm_image(
-        &self,
-        machine_id: &str,
-        entity_id: &str,
-        _build_path: &str,
-        build_type: &str,
-    ) {
-        self.builds.lock().unwrap().push((
-            machine_id.to_string(),
-            entity_id.to_string(),
-            build_type.to_string(),
-        ));
-    }
-    fn execute_chain_trxs_group(&self, _: Vec<crate::models::worker::Trx>) {}
-    fn execute_chain_effects(&self, _: &str) {}
-    fn close_kvdb(&self) {}
-    fn vm_callback(&self, _: &str) -> (String, i64) {
-        (String::new(), 0)
-    }
-    fn start_docker_gateway(&self, _: i64) {}
+    fn run_vm_entity(&self, _: &str, _: &str, _: &str, _: &str) {}
     fn start_http_ingress(&self, _: i64) {}
-    fn register_vm_container(&self, _: &str, _: &str, _: &str, _: &str, _: &str, _: &str) {}
-    fn unregister_vm_container(&self, _: &str) {}
-    fn identify_container_by_ip(
-        &self,
-        _: &str,
-    ) -> Option<(String, String, String, String, String)> {
+    fn forward_http(&self, _: &Value) -> Value {
+        Value::Null
+    }
+    fn resolve_http_route(&self, _: &str, _: &str) -> Option<Value> {
         None
-    }
-    fn push_signal_to_machine(&self, _: &str, _: &str, _: &Value) -> usize {
-        0
-    }
-    fn push_signal_to_entity(&self, _: &str, _: &str, _: &str, _: &Value) -> usize {
-        0
-    }
-    fn queue_pending_signal(&self, _: &str, _: &str, _: &str, _: &Value) {}
-    fn begin_cold_spawn(&self, _: &str, _: &str) -> bool {
-        true
-    }
-    fn register_vm_context(&self, _: &str, _: &str, _: &str) {}
-    fn unregister_vm_context(&self, _: &str) {}
-    fn get_vm_context(&self, _: &str) -> Option<(String, String)> {
-        None
-    }
-    fn begin_vm_trx(&self, _: &str) {}
-    fn commit_vm_trx(&self, _: &str) {}
-    fn vm_db_op(&self, _: &str, _: &str, _: &str, _: &str, _: &str) -> Result<String, String> {
-        Err("stub".into())
-    }
-    fn vm_db_commit_explicit(&self, _: &str) -> Result<(), String> {
-        Ok(())
     }
     fn acquire_resource_lock(&self, _: &str, _: &str) -> Result<(), String> {
         Ok(())
@@ -206,38 +147,8 @@ impl crate::models::ports::workloads::IWorkloads for StubVmm {
     fn host_action_program(&self, _: &str, _: &Value, _: i64) -> (String, i64) {
         (String::new(), 0)
     }
-    fn supported_runtimes(&self) -> Vec<String> {
-        vec!["docker".into()]
-    }
-    fn is_supported_runtime(&self, _: &str) -> bool {
-        true
-    }
-    fn is_managed_runtime(&self, _: &str) -> bool {
-        false
-    }
-    fn runtime_supports_chain_trxs(&self, _: &str) -> bool {
-        false
-    }
-    fn runtime_deploy_spec(&self, _: &str) -> Option<Value> {
-        None
-    }
-    fn plan_run_entity(&self, _: &str, _: &Value) -> Result<Value, String> {
-        Err("stub".into())
-    }
-    fn plan_stop_entity(&self, _: &str, _: &Value) -> Result<Value, String> {
-        Err("stub".into())
-    }
-    fn plan_delete_entity(&self, _: &str, _: &Value) -> Result<Value, String> {
-        Err("stub".into())
-    }
-    fn delete_vm_instance(&self, _: &Value) -> Value {
-        Value::Null
-    }
-    fn forward_http(&self, _: &Value) -> Value {
-        Value::Null
-    }
-    fn resolve_http_route(&self, _: &str, _: &str) -> Option<Value> {
-        None
+    fn host_action_signal(&self, _: &Value) -> String {
+        String::new()
     }
 }
 
@@ -352,18 +263,6 @@ impl IStorage for RootedStorage {
     fn pick_store_logs(&self, a: &str, b: Vec<String>) -> Vec<crate::models::packet::LogPacket> {
         self.inner.pick_store_logs(a, b)
     }
-    fn log_vm(&self, a: &str, b: &str, c: &str, d: i64) -> crate::models::packet::BuildPacket {
-        self.inner.log_vm(a, b, c, d)
-    }
-    fn read_vm_logs(
-        &self,
-        a: &str,
-        b: &str,
-        c: i64,
-        d: i64,
-    ) -> Vec<crate::models::packet::BuildPacket> {
-        self.inner.read_vm_logs(a, b, c, d)
-    }
 }
 
 impl ICore for StubCore {
@@ -444,10 +343,6 @@ impl ICore for StubCore {
     fn globe(&self) -> Arc<dyn crate::models::globe::IGlobe> {
         unimplemented!()
     }
-    fn begin_vm_trx(&self, _vm_id: &str) -> Arc<dyn ITrx> {
-        unimplemented!()
-    }
-    fn end_vm_trx(&self, _vm_id: &str) {}
 }
 
 // ────────────────────────── harness helpers ────────────────────────────────
@@ -708,16 +603,9 @@ fn three_instance_cluster_replication() {
             kv_get(inst, "obj::Program::prog-42::runtime").as_deref(),
             Some(b"docker".as_ref())
         );
-        // VMM effects: signal listener registered + image build started.
+        // The signal listener is registered; the VMM builds the image before the
+        // entity's first start (P5-06).
         assert_eq!(inst.vmm.assigned.lock().unwrap().as_slice(), ["prog-42"]);
-        assert_eq!(
-            inst.vmm.builds.lock().unwrap().first(),
-            Some(&(
-                "prog-42".to_string(),
-                "api".to_string(),
-                "docker".to_string()
-            ))
-        );
     }
     // The origin instance skips re-application (it already deployed locally):
     assert!(n1.vmm.assigned.lock().unwrap().is_empty());

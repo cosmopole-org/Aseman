@@ -3,6 +3,9 @@
 //! The legacy adapters and the capsule adapters run the same suite, so a use case
 //! behaves identically before and after cutover.
 
+pub mod coordination;
+pub mod federation;
+pub mod realtime;
 pub mod vmm;
 
 use crate::{CreatureBalances, CreatureDirectory, PortError};

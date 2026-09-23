@@ -17,10 +17,8 @@ use crate::drivers::vmm::prelude::*;
 ///   so the caller can address it later through `execVm`,
 ///   `terminateVm`, signals, etc.
 ///
-/// All of this routing already exists in `route_vm_packet`'s
-/// `dispatch_run_vm_packet`; this host fn just wraps the input in the
-/// `{type:"runVm", ...}` shape that the unified dispatcher expects
-/// and delegates.
+/// The node's VMM does the work (P5-06): an invocation runtime runs the program
+/// once and answers; a long-running one starts an instance.
 ///
 /// The launching creature is recorded as the VM's owner (`caller_program_id`
 /// is node-resolved, never a packet field), because `deleteVm` needs somebody
@@ -30,7 +28,11 @@ pub(crate) fn host_fn_run_vm(caller_program_id: &str, input: &JsonValue) -> Stri
     if let JsonValue::Object(map) = &mut packet {
         map.insert("type".to_string(), JsonValue::String("runVm".to_string()));
     }
-    let raw = crate::drivers::vmm::dispatch_packet(&packet);
+    let raw = crate::drivers::vmm::host::functions::vm_calls::remote_vm_call(
+        "runVm",
+        caller_program_id,
+        &packet,
+    );
     // Prefer the vm id the runtime reports (a plugin may allocate one when the
     // caller named none); fall back to the requested id.
     let launched_vm_id = serde_json::from_str::<JsonValue>(&raw)

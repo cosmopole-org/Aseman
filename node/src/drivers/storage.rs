@@ -10,12 +10,12 @@ use std::fs;
 use std::sync::{Arc, Mutex};
 
 use anyhow::{anyhow, Result};
-use aseman_storage_legacy::{LegacyBuildLogRow, LegacySignalRow, QuestDbTimeSeries};
+use aseman_storage_legacy::{LegacySignalRow, QuestDbTimeSeries};
 use uuid::Uuid;
 
 use crate::models::core::ICore;
 use crate::models::packet::signal_tags::{decode_tags, encode_tags};
-use crate::models::packet::{BuildPacket, LogPacket, LogQuery};
+use crate::models::packet::{LogPacket, LogQuery};
 use crate::models::ports::storage::{IStorage, KvDb};
 use crate::models::transaction::ITrx;
 
@@ -185,45 +185,6 @@ impl IStorage for Storage {
             .map(log_packet)
             .collect()
     }
-
-    fn log_vm(&self, vm_id: &str, log_type: &str, data: &str, time_val: i64) -> BuildPacket {
-        // No storage.lock: a running VM streams many log lines through here.
-        let log_type = if log_type.is_empty() {
-            "runtime"
-        } else {
-            log_type
-        };
-        let time_val = if time_val == 0 {
-            chrono::Utc::now().timestamp_millis()
-        } else {
-            time_val
-        };
-        let row = LegacyBuildLogRow {
-            id: Uuid::new_v4().to_string(),
-            build_id: String::new(),
-            machine_id: String::new(),
-            vm_id: vm_id.to_string(),
-            log_type: log_type.to_string(),
-            data: data.to_string(),
-            time_millis: time_val,
-        };
-        self.tsdb.insert_build_log(&row);
-        build_packet(row)
-    }
-
-    fn read_vm_logs(
-        &self,
-        vm_id: &str,
-        log_type: &str,
-        offset: i64,
-        count: i64,
-    ) -> Vec<BuildPacket> {
-        self.tsdb
-            .read_build_logs(vm_id, log_type, offset, count)
-            .into_iter()
-            .map(build_packet)
-            .collect()
-    }
 }
 
 fn log_packet(row: LegacySignalRow) -> LogPacket {
@@ -235,17 +196,5 @@ fn log_packet(row: LegacySignalRow) -> LogPacket {
         store_id: row.store_id,
         time: row.time_millis,
         edited: row.edited,
-    }
-}
-
-fn build_packet(row: LegacyBuildLogRow) -> BuildPacket {
-    BuildPacket {
-        id: row.id,
-        build_id: row.build_id,
-        creature_id: row.machine_id,
-        vm_id: row.vm_id,
-        log_type: row.log_type,
-        time: row.time_millis,
-        data: row.data,
     }
 }

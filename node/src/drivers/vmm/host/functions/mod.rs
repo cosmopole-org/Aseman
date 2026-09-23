@@ -25,6 +25,7 @@ pub mod terminate_vm;
 pub mod transfer;
 pub mod validate_sign;
 pub mod verify_program;
+pub mod vm_calls;
 pub mod vm_endpoints;
 pub mod vm_log;
 pub mod vm_ownership;

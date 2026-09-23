@@ -39,16 +39,5 @@ pub(crate) fn host_fn_vm_endpoints(caller_program_id: &str, input: &JsonValue) -
         return json!({"ok": false, "error": "you are not the owner of this vm"}).to_string();
     }
 
-    let runtime = caspar_vm_sdk::util::normalize_runtime(input["runtime"].as_str().unwrap_or(""));
-    let Some(plugin) = caspar_vm_sdk::registry::get(&runtime) else {
-        return json!({
-            "ok": false,
-            "error": "vmEndpoints requires a resolvable runtime",
-        })
-        .to_string();
-    };
-    match plugin.vm_endpoints(input) {
-        Ok(res) => res.to_string(),
-        Err(err) => json!({"ok": false, "error": err}).to_string(),
-    }
+    crate::drivers::vmm::host::functions::vm_calls::remote_vm_call("vmEndpoints", &caller, input)
 }
