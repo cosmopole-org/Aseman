@@ -728,14 +728,18 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "aseman-config",
+ "aseman-domain",
  "base64 0.22.1",
  "chrono",
  "clap",
  "ctrlc",
  "regex",
+ "ring",
  "serde",
  "serde_json",
+ "sha2 0.10.9",
  "thiserror 2.0.20",
+ "uuid",
 ]
 
 [[package]]

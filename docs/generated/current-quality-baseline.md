@@ -8,21 +8,21 @@ verification: python3 scripts/generate_quality_baseline.py --check
 
 # Current static quality baseline
 
-Scanned 602 source files, 170817 physical lines, and 159321 nonblank lines.
+Scanned 604 source files, 172321 physical lines, and 160743 nonblank lines.
 
 ## Ratchet counts
 
 | Metric | Count |
 |---|---:|
-| `environment_reads` | 4 |
+| `environment_reads` | 6 |
 | `rust_allow_attributes` | 36 |
-| `rust_expect_calls` | 592 |
-| `rust_json_value_mentions` | 1336 |
+| `rust_expect_calls` | 600 |
+| `rust_json_value_mentions` | 1338 |
 | `rust_panic_macros` | 323 |
 | `rust_sleep_calls` | 78 |
 | `rust_spawn_calls` | 78 |
 | `rust_unsafe_tokens` | 43 |
-| `rust_unwrap_calls` | 3210 |
+| `rust_unwrap_calls` | 3229 |
 
 These lexical metrics include tests and comments. They establish a reproducible
 ratchet; they do not assert that every occurrence is defective.
@@ -38,8 +38,8 @@ ratchet; they do not assert that every occurrence is defective.
 | `modules/runtime/elpian/crates/elpian-vm/src/sdk/stdlib/mod.rs` | 2468 |
 | `apps/aseman-node/src/drivers/vmm/hostcall_entities.rs` | 2311 |
 | `modules/runtime/modal/src/controller.rs` | 1918 |
+| `apps/asemanctl/src/cli/mod.rs` | 1901 |
 | `apps/aseman-node/src/drivers/vmm/host/vm_host_functions.rs` | 1893 |
-| `apps/asemanctl/src/cli/mod.rs` | 1890 |
 | `modules/runtime/elpian/crates/elpian-vm/src/sdk/compiler.rs` | 1862 |
 | `apps/aseman-client/index.ts` | 1796 |
 | `apps/aseman-node/src/shell/api/actions/program.rs` | 1681 |
@@ -47,10 +47,10 @@ ratchet; they do not assert that every occurrence is defective.
 | `crates/aseman-module-runtime/src/lib.rs` | 1581 |
 | `crates/aseman-ports/src/conformance.rs` | 1550 |
 | `apps/aseman-node/src/shell/api/actions/creature.rs` | 1545 |
-| `crates/aseman-config/src/lib.rs` | 1476 |
+| `crates/aseman-config/src/lib.rs` | 1494 |
 | `modules/vmm-http/src/server.rs` | 1439 |
+| `apps/asemanctl/src/cli/ops.rs` | 1325 |
 | `modules/runtime/elpify/crates/elpify-lang/src/compiler.rs` | 1324 |
-| `modules/storage/postgres/src/lib.rs` | 1304 |
 
 ## Limitations
 

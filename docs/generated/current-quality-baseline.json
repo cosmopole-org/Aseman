@@ -13,12 +13,14 @@
   ],
   "ratchet_counts": {
     "environment_reads": {
-      "count": 4,
+      "count": 6,
       "sample_locations": [
-        "crates/aseman-config/src/lib.rs:333",
-        "crates/aseman-config/src/lib.rs:336",
-        "crates/aseman-config/src/lib.rs:402",
-        "crates/aseman-config/src/lib.rs:406"
+        "crates/aseman-config/src/lib.rs:337",
+        "crates/aseman-config/src/lib.rs:340",
+        "crates/aseman-config/src/lib.rs:380",
+        "crates/aseman-config/src/lib.rs:383",
+        "crates/aseman-config/src/lib.rs:420",
+        "crates/aseman-config/src/lib.rs:424"
       ]
     },
     "rust_allow_attributes": {
@@ -48,11 +50,11 @@
         "apps/aseman-node/src/models/transaction/transaction.rs:64",
         "apps/aseman-node/src/shell/api/actions/program.rs:216",
         "apps/aseman-node/src/shell/utils/timer.rs:54",
-        "apps/asemanctl/src/cli/mod.rs:828"
+        "apps/asemanctl/src/cli/mod.rs:839"
       ]
     },
     "rust_expect_calls": {
-      "count": 592,
+      "count": 600,
       "sample_locations": [
         "apps/aseman-node/src/bin/scan_vmdb.rs:11",
         "apps/aseman-node/src/bin/scan_vmdb.rs:17",
@@ -82,7 +84,7 @@
       ]
     },
     "rust_json_value_mentions": {
-      "count": 1336,
+      "count": 1338,
       "sample_locations": [
         "apps/aseman-node/src/bots/sample_bot/agent.rs:5",
         "apps/aseman-node/src/bots/sample_bot/agent.rs:44",
@@ -232,7 +234,7 @@
       ]
     },
     "rust_unwrap_calls": {
-      "count": 3210,
+      "count": 3229,
       "sample_locations": [
         "apps/aseman-node/src/bots/sample_bot/agent.rs:39",
         "apps/aseman-node/src/bots/sample_bot/agent.rs:49",
@@ -263,11 +265,11 @@
     }
   },
   "source": {
-    "file_count": 602,
+    "file_count": 604,
     "files_by_suffix": {
       ".js": 2,
       ".py": 33,
-      ".rs": 564,
+      ".rs": 566,
       ".sh": 2,
       ".ts": 1
     },
@@ -301,12 +303,12 @@
         "path": "modules/runtime/modal/src/controller.rs"
       },
       {
-        "lines": 1893,
-        "path": "apps/aseman-node/src/drivers/vmm/host/vm_host_functions.rs"
+        "lines": 1901,
+        "path": "apps/asemanctl/src/cli/mod.rs"
       },
       {
-        "lines": 1890,
-        "path": "apps/asemanctl/src/cli/mod.rs"
+        "lines": 1893,
+        "path": "apps/aseman-node/src/drivers/vmm/host/vm_host_functions.rs"
       },
       {
         "lines": 1862,
@@ -337,7 +339,7 @@
         "path": "apps/aseman-node/src/shell/api/actions/creature.rs"
       },
       {
-        "lines": 1476,
+        "lines": 1494,
         "path": "crates/aseman-config/src/lib.rs"
       },
       {
@@ -345,15 +347,15 @@
         "path": "modules/vmm-http/src/server.rs"
       },
       {
-        "lines": 1324,
-        "path": "modules/runtime/elpify/crates/elpify-lang/src/compiler.rs"
+        "lines": 1325,
+        "path": "apps/asemanctl/src/cli/ops.rs"
       },
       {
-        "lines": 1304,
-        "path": "modules/storage/postgres/src/lib.rs"
+        "lines": 1324,
+        "path": "modules/runtime/elpify/crates/elpify-lang/src/compiler.rs"
       }
     ],
-    "nonblank_lines": 159321,
-    "physical_lines": 170817
+    "nonblank_lines": 160743,
+    "physical_lines": 172321
   }
 }

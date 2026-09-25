@@ -15,7 +15,7 @@ The complete dependency and feature data is in `current-workspace.json`.
 
 ## Repository summary
 
-- Tracked files: 1021
+- Tracked files: 1020
 - Tracked files under `dist/`: 15
 - Rust package manifests: 48
 - Declared Cargo workspace roots: 1
@@ -40,7 +40,7 @@ from separate manifests. This is current behavior, not the target topology.
 | `aseman-node` | `apps/aseman-node/Cargo.toml` | {'workspace': True} | bin:caspar-keygen, bin:caspar-node, lib:aseman-node | 53 | 0 |
 | `aseman-vmm` | `apps/aseman-vmm/Cargo.toml` | {'workspace': True} | bin:aseman-vmm | 12 | 0 |
 | `aseman-vmm-agent` | `apps/aseman-vmm-agent/Cargo.toml` | {'workspace': True} | bin:aseman-vmm-agent, lib:aseman-vmm-agent | 18 | 0 |
-| `asemanctl` | `apps/asemanctl/Cargo.toml` | {'workspace': True} | bin:casparctl, lib:asemanctl | 10 | 0 |
+| `asemanctl` | `apps/asemanctl/Cargo.toml` | {'workspace': True} | bin:casparctl, lib:asemanctl | 14 | 0 |
 | `aseman-application` | `crates/aseman-application/Cargo.toml` | {'workspace': True} | lib:aseman-application | 4 | 0 |
 | `aseman-capsule` | `crates/aseman-capsule/Cargo.toml` | {'workspace': True} | lib:aseman-capsule | 6 | 0 |
 | `aseman-config` | `crates/aseman-config/Cargo.toml` | {'workspace': True} | lib:aseman-config | 3 | 0 |
@@ -230,6 +230,7 @@ from separate manifests. This is current behavior, not the target topology.
 | `aseman-vmm-http` | dev | `aseman-ports` | `crates/aseman-ports` |
 | `aseman-vmm-http` | normal | `aseman-ports` | `crates/aseman-ports` |
 | `asemanctl` | normal | `aseman-config` | `crates/aseman-config` |
+| `asemanctl` | normal | `aseman-domain` | `crates/aseman-domain` |
 | `caspar-vm-docker` | normal | `aseman-config` | `crates/aseman-config` |
 | `caspar-vm-docker` | normal | `caspar-vm-sdk` | `modules/runtime/sdk-legacy` |
 | `caspar-vm-elpian` | normal | `caspar-vm-sdk` | `modules/runtime/sdk-legacy` |

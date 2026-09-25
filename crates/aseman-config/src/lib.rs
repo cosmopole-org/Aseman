@@ -316,6 +316,10 @@ pub struct CliConfig {
     pub owner_username: Option<String>,
     pub owner_email: Option<String>,
     pub vms_dir: Option<String>,
+    /// Journal/state directory override for `asemanctl doctor|backup|restore|upgrade|support-bundle`.
+    pub state_dir: Option<String>,
+    /// Operator Ed25519 seed used to sign backup manifests (A902).
+    pub operator_signing_key: Option<String>,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -363,8 +367,22 @@ impl CliConfig {
             owner_username: nonempty(&values, "ASEMAN_OWNER_USERNAME"),
             owner_email: nonempty(&values, "ASEMAN_OWNER_EMAIL"),
             vms_dir: nonempty(&values, "ASEMAN_VMS_DIR"),
+            state_dir: nonempty(&values, "ASEMAN_CTL_STATE_DIR"),
+            operator_signing_key: nonempty(&values, "ASEMAN_OPERATOR_SIGNING_KEY"),
         })
     }
+}
+
+/// The XDG state home (`$XDG_STATE_HOME`, else `$HOME/.local/state`) that asemanctl
+/// journals and support-bundle collections live under.
+#[must_use]
+pub fn process_state_home() -> std::path::PathBuf {
+    std::env::var("XDG_STATE_HOME")
+        .map(std::path::PathBuf::from)
+        .unwrap_or_else(|_| {
+            let home = std::env::var("HOME").unwrap_or_default();
+            std::path::PathBuf::from(format!("{home}/.local/state"))
+        })
 }
 
 pub fn install_cli_process_config() -> Result<(), ConfigError> {

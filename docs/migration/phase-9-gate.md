@@ -38,13 +38,17 @@ observed.
 ## What is not
 
 - **Completing `asemanctl` administration groups.** `apps/asemanctl` now owns the
-  implementation and `casparctl` is a one-way warning shim, but the required
-  backup/restore/policy/finance execution surfaces are incomplete (RL-015).
+  implementation and `casparctl` is a one-way warning shim. The
+  `doctor`/`backup`/`restore`/`upgrade`/`support-bundle` execution drivers are
+  delivered (A902) and drive the ordered resumable journals over files, directories,
+  checks, and processes. A stable structured-output and exit-code catalogue, generated
+  public clients/SDKs, and compatibility-expiry observation remain open (RL-015).
 - **An executable compact/cluster profile and one-command bootstrap** on a clean host;
   image definitions exist, but deployment health has not been observed.
-- **Upgrade, backup, restore, doctor, and support bundle execution drivers.** Their
-  ordered resumable journals, backup manifest, runbook, and support-bundle redaction
-  are implemented; the commands do not yet operate databases, files, and services.
+- **Upgrade, backup, restore, doctor, and support bundle drivers operating
+  databases.** The file/directory/process drivers run; database-level backup for
+  PostgreSQL core storage goes through the A309 capsule export, schema migration runs
+  on node start, and a clean-host restore drill has not yet been executed.
 - **Moving tracked `dist/*` blobs out of source control** (RL-018). Deleting them
   without a signed-artifact pipeline to replace them would break installation, so they
   stay until there is one. That is a deliberate refusal to do half of a two-part gate.

@@ -300,6 +300,51 @@
       "current_owner": "casparctl",
       "disposition": "deprecate-alias",
       "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "casparctl top_level doctor",
+      "support": "supported-compatibility",
+      "target_owner": "asemanctl"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "casparctl",
+      "disposition": "deprecate-alias",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "casparctl top_level backup",
+      "support": "supported-compatibility",
+      "target_owner": "asemanctl"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "casparctl",
+      "disposition": "deprecate-alias",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "casparctl top_level restore",
+      "support": "supported-compatibility",
+      "target_owner": "asemanctl"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "casparctl",
+      "disposition": "deprecate-alias",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "casparctl top_level upgrade",
+      "support": "supported-compatibility",
+      "target_owner": "asemanctl"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "casparctl",
+      "disposition": "deprecate-alias",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "casparctl top_level support-bundle",
+      "support": "supported-compatibility",
+      "target_owner": "asemanctl"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "casparctl",
+      "disposition": "deprecate-alias",
+      "expiry": "ADR-0004 window after replacement acceptance",
       "id": "casparctl vms list",
       "support": "supported-compatibility",
       "target_owner": "asemanctl"

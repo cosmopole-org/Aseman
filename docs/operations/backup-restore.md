@@ -34,3 +34,32 @@ A release candidate passes only when an independently provisioned clean deployme
 restored from its signed backup, artifact hashes match, provider/module catalogs match,
 health passes, and a second invocation performs no completed step. Keep the journal,
 manifest, logs, and target health output as release evidence.
+
+## Drivers
+
+The execution drivers are `asemanctl` administration commands. Each persists its
+journal under the state directory (`ASEMAN_CTL_STATE_DIR`, else
+`$XDG_STATE_HOME/asemanctl`) and never repeats a completed step:
+
+- `asemanctl doctor [--json]` — the six ordered checks: configuration, dependencies,
+  storage, runtime liveness, secret permissions, and a final health gate that fails on
+  any fatal finding. `--json` emits a machine-readable findings report.
+- `asemanctl backup --out DIR --signing-key FILE` — preflight (target must be empty),
+  quiesce writes (refused while the node is running unless `--allow-running`), snapshot
+  the storage directories, capture the catalog, hash every artifact, sign the manifest
+  (Ed25519 seed; also `ASEMAN_OPERATOR_SIGNING_KEY`), resume writes, and verify. Core
+  storage on PostgreSQL is backed up through the A309 capsule export, not a file
+  snapshot; the `SnapshotStores` step refuses that case.
+- `asemanctl restore --from DIR --signing-key FILE [--force] [--start]` — verify the
+  manifest signature and every artifact hash, prepare an empty target, restore the
+  stores, apply the catalog, re-verify, and gate on node health after services start.
+- `asemanctl upgrade [--start]` — verify the staged binary, snapshot the current stores,
+  drain (stop) the node, apply the upgrade, migrate the schema (PostgreSQL migrations
+  run on node start), restart, and pass health.
+- `asemanctl support-bundle [--out FILE]` — collect diagnostics, apply the checked
+  redaction contract, package a tar.gz, and verify the archive. The `never_collect`
+  list governs what is never read in the first place.
+
+A failed step is retried, never skipped: the journal records the failing step and a
+re-run resumes there. The `health` gate deliberately fails an upgrade or restore whose
+node has not been started, so a half-finished restart is never recorded as success.

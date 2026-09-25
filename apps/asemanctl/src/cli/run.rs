@@ -30,7 +30,7 @@ use anyhow::{Context, Result, anyhow, bail};
 
 // ── flag helpers (same convention as the rest of casparctl) ────────────────
 
-fn flag_value(args: &[String], name: &str) -> Option<String> {
+pub(crate) fn flag_value(args: &[String], name: &str) -> Option<String> {
     let long = format!("--{}", name);
     let long_eq = format!("--{}=", name);
     let mut i = 0;
@@ -46,7 +46,7 @@ fn flag_value(args: &[String], name: &str) -> Option<String> {
     None
 }
 
-fn has_flag(args: &[String], name: &str) -> bool {
+pub(crate) fn has_flag(args: &[String], name: &str) -> bool {
     let long = format!("--{}", name);
     args.iter().any(|a| a == &long)
 }
@@ -58,7 +58,7 @@ fn has_flag(args: &[String], name: &str) -> bool {
 /// host fails at exec ("failed to run caspar-keygen") before anything useful
 /// can be said. The choice follows the architecture casparctl itself was built
 /// for, which is the host's — it would not be running otherwise.
-fn arch_dist(repo: &Path) -> PathBuf {
+pub(crate) fn arch_dist(repo: &Path) -> PathBuf {
     if cfg!(target_arch = "aarch64") {
         let arm = repo.join("dist/arm64");
         if arm.join("bin/caspar-node").exists() {
@@ -69,7 +69,7 @@ fn arch_dist(repo: &Path) -> PathBuf {
 }
 
 /// Resolve the repo root: the directory that contains `dist/bin/caspar-node`.
-fn resolve_repo_dir(args: &[String]) -> Result<PathBuf> {
+pub(crate) fn resolve_repo_dir(args: &[String]) -> Result<PathBuf> {
     if let Some(d) = flag_value(args, "repo-dir") {
         let p = fs::canonicalize(&d).unwrap_or_else(|_| PathBuf::from(&d));
         if p.join("dist/bin/caspar-node").exists() {
@@ -96,14 +96,14 @@ fn resolve_repo_dir(args: &[String]) -> Result<PathBuf> {
     bail!("could not locate the repo (dist/bin/caspar-node); pass --repo-dir")
 }
 
-fn data_dir(args: &[String], repo: &Path) -> PathBuf {
+pub(crate) fn data_dir(args: &[String], repo: &Path) -> PathBuf {
     if let Some(d) = flag_value(args, "data-dir") {
         return PathBuf::from(d);
     }
     repo.join("caspar-data/node1")
 }
 
-fn port_open(port: u16) -> bool {
+pub(crate) fn port_open(port: u16) -> bool {
     TcpStream::connect_timeout(
         &format!("127.0.0.1:{}", port).parse().unwrap(),
         Duration::from_millis(400),
@@ -366,7 +366,7 @@ fn start_questdb(repo: &Path, dir: &Path) -> Result<()> {
 
 // ── node launch ─────────────────────────────────────────────────────────────
 
-fn launch_node(repo: &Path, dir: &Path, detach: bool) -> Result<u32> {
+pub(crate) fn launch_node(repo: &Path, dir: &Path, detach: bool) -> Result<u32> {
     let binary = {
         let dist = arch_dist(repo).join("bin/caspar-node");
         let built = repo.join("target/release/caspar-node");

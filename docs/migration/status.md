@@ -57,13 +57,15 @@ contract over HTTP, packaging, and the load and fuzz suites — not design.
    now delivered independently; its node signer/verifier/executor composition remains
    alongside RL-004 and RL-009.
 3. **Finish `asemanctl` and packaging** (RL-015, RL-018). The canonical
-   `apps/asemanctl` crate now owns the command implementation and `casparctl` is a
-   one-way warning compatibility shim, but several required administration groups, stable
-   structured output, and executable deployment profiles remain incomplete. Separate
-   least-privilege image definitions for node, VMM, meter, and Nomad backend now live
-   under `deploy/images`. Tracked `dist/*` blobs stay until there is a
-   signed-artifact pipeline to replace them — deleting them first would be half of a
-   two-part gate.
+   `apps/asemanctl` crate owns the command implementation and `casparctl` is a
+   one-way warning compatibility shim. The `doctor`/`backup`/`restore`/`upgrade`/
+   `support-bundle` administration groups are now implemented and drive the A902
+   resumable journals (RL-015); a stable structured-output/exit-code catalogue,
+   generated public clients/SDKs, and executable deployment profiles remain
+   incomplete. Separate least-privilege image definitions for node, VMM, meter, and
+   Nomad backend now live under `deploy/images`. Tracked `dist/*` blobs stay until
+   there is a signed-artifact pipeline to replace them — deleting them first would be
+   half of a two-part gate.
 4. **Compose the Hashgraph financial epoch switch** (RL-011). The complete engine now
    lives in `modules/consensus/hashgraph`; its `HashgraphConsensusProvider` sends
    records through the real Babble proxy and derives finalizations/checkpoints from

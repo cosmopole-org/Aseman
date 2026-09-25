@@ -27,6 +27,11 @@
       ],
       "x-secret-reference": true
     },
+    "ASEMAN_CTL_STATE_DIR": {
+      "description": "Typed replacement for legacy ASEMAN_CTL_STATE_DIR (runtime-or-storage).",
+      "type": "string",
+      "x-legacy-aliases": []
+    },
     "ASEMAN_DOCKER_DISK_QUOTA": {
       "description": "Typed replacement for legacy CASPAR_DOCKER_DISK_QUOTA (application).",
       "type": "string",
@@ -709,6 +714,13 @@
         "CLIENT_WS_API_PORT"
       ]
     },
+    "ASEMAN_LEGACY_XDG_STATE_HOME": {
+      "description": "Typed replacement for legacy XDG_STATE_HOME (runtime-or-storage).",
+      "type": "string",
+      "x-legacy-aliases": [
+        "XDG_STATE_HOME"
+      ]
+    },
     "ASEMAN_LOGIN_MODE": {
       "description": "Typed replacement for legacy CASPAR_LOGIN_MODE (application).",
       "type": "string",
@@ -745,6 +757,11 @@
         "OWNER_PRIVATE_KEY"
       ],
       "x-secret-reference": true
+    },
+    "ASEMAN_OPERATOR_SIGNING_KEY": {
+      "description": "Typed replacement for legacy ASEMAN_OPERATOR_SIGNING_KEY (runtime-or-storage).",
+      "type": "string",
+      "x-legacy-aliases": []
     },
     "ASEMAN_OWNER_EMAIL": {
       "description": "Typed replacement for legacy CASPAR_OWNER_EMAIL (application).",

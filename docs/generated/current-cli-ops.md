@@ -12,7 +12,7 @@ verification: python3 scripts/generate_current_surface_inventories.py --check
 
 ## asemanctl
 
-- top level: `install`, `uninstall`, `purge`, `start`, `pause`, `resume`, `stop`, `stats`, `run`, `status`, `pprof`, `vms`, `cluster`, `module`, `modules`
+- top level: `install`, `uninstall`, `purge`, `start`, `pause`, `resume`, `stop`, `stats`, `run`, `status`, `pprof`, `vms`, `cluster`, `module`, `modules`, `doctor`, `backup`, `restore`, `upgrade`, `support-bundle`
 - vms: `list`, `enable`, `disable`, `sync`, `new`
 - cluster: `status`, `init`, `peers`, `nearest`, `add-peer`, `remove-peer`, `promote`, `config`, `apply`
 - cluster config: `list`, `get`, `set`

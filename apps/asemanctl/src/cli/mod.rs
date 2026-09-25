@@ -37,6 +37,7 @@ use anyhow::{Context, Result, anyhow, bail};
 
 mod cluster;
 mod modules;
+mod ops;
 mod owner;
 mod run;
 mod vms;
@@ -173,6 +174,11 @@ pub fn main() {
         "vms" => vms::run_vms(&args[2..]),
         "cluster" => cluster::run_cluster(&args[2..]),
         "module" | "modules" => modules::run_modules(&args[2..]),
+        "doctor" => ops::run_doctor(&args[2..]),
+        "backup" => ops::run_backup(&args[2..]),
+        "restore" => ops::run_restore(&args[2..]),
+        "upgrade" => ops::run_upgrade(&args[2..]),
+        "support-bundle" => ops::run_support_bundle(&args[2..]),
         "help" | "-h" | "--help" => {
             print_usage();
             Ok(())
@@ -209,6 +215,11 @@ fn print_usage() {
          vms        Manage the node's pluggable VM types (list/enable/disable/sync/new)\n  \
          cluster    Orchestrate the geo-distributed instance mesh (peers/config/status)\n\n\
          module     Manage signed provider modules (install/validate/stage/activate/rollback)\n\n\
+         doctor     Run the ordered node health checks\n  \
+         backup     Snapshot node storage into a signed backup manifest\n  \
+         restore    Restore a node from a backup\n  \
+         upgrade    Snapshot, stop, replace binaries, migrate, and restart\n  \
+         support-bundle  Collect, redact, and package a diagnostics bundle\n\n\
          Run \"asemanctl <command> --help\" for command-specific flags."
     );
 }

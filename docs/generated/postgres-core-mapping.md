@@ -2,7 +2,7 @@
 status: GENERATED
 owner: storage/postgres
 source_of_truth: contracts/capsule/kinds, contracts/storage/postgres, and scripts/generate_postgres_core.py
-last_verified_commit: ca89ce4b243b
+last_verified_commit: d864e947e097
 verification: python3 scripts/generate_postgres_core.py --check
 ---
 

@@ -1261,6 +1261,26 @@
         {
           "command": "modules",
           "handler": "modules::run_modules(&args[2..])"
+        },
+        {
+          "command": "doctor",
+          "handler": "ops::run_doctor(&args[2..])"
+        },
+        {
+          "command": "backup",
+          "handler": "ops::run_backup(&args[2..])"
+        },
+        {
+          "command": "restore",
+          "handler": "ops::run_restore(&args[2..])"
+        },
+        {
+          "command": "upgrade",
+          "handler": "ops::run_upgrade(&args[2..])"
+        },
+        {
+          "command": "support-bundle",
+          "handler": "ops::run_support_bundle(&args[2..])"
         }
       ],
       "vms": [
