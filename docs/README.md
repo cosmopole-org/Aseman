@@ -13,7 +13,8 @@ verification: cargo xtask fast
 - [Architecture](architecture/) — trust, state, data flow, consistency, and failure
   models.
 - [Decisions](decisions/) — accepted ADRs.
-- [Development](development/) — dependency rules and common-change playbooks.
+- [Development](development/) — dependency rules and common-change playbooks,
+  including the per-runtime [creature implementation guide](development/creature-implementation.md).
 - [Operations](operations/) — topology, migration, handoff, and recovery runbooks.
 - [Generated references](generated/) — workspace, routes, configuration, contracts,
   mappings, and traceability.

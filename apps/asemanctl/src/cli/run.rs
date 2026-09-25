@@ -6,8 +6,9 @@
 //! generating a fresh single-node config (keys, `.env`, babble genesis) and
 //! starting the QuestDB instance the node requires.
 //!
-//! It mirrors the local single-node path of `run-nodes.sh`, minus the
-//! privileged gVisor / Firecracker setup, so it works in a plain sandbox.
+//! It is the canonical replacement for the former `run-nodes.sh` local
+//! single-node path, minus the privileged gVisor / Firecracker setup, so it
+//! works in a plain sandbox.
 //!
 //! Companion commands:
 //!   * `casparctl node-status` — is the node process up, which ports are open

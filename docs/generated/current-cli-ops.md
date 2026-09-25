@@ -26,9 +26,5 @@ The TypeScript client exposes 22 dispatch-table commands; the complete list is i
 
 | Script | Parsed interface flags |
 |---|---|
-| `bench-all.sh` | `--skip-deploy`, `--redeploy`, `--help` |
-| `build-dist.sh` | `--skip-node`, `--skip-ctl`, `--skip-services`, `--wasmedge-ver`, `--disable-vm`, `--enable-vm`, `--help` |
-| `run-nodes.sh` | `--no-docker`, `--no-questdb`, `--fresh`, `--no-gvisor`, `--no-firecracker`, `--no-rebuild`, `--foreground`, `--skip-deploy`, `--help` |
-| `stop-nodes.sh` | `--clean`, `--purge`, `--keep-questdb`, `--help` |
 
 These scripts are current imperative operations and are not the target bootstrap/operations interface.

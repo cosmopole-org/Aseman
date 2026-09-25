@@ -25,7 +25,7 @@
 
 set -euo pipefail
 
-REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 NATIVE_BACKEND_DIR="$REPO_DIR/modules/vmm-backend/native-legacy"
 DIST_DIR="$REPO_DIR/dist"
 WASMEDGE_VERSION="0.17.1"

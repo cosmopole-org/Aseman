@@ -116,7 +116,7 @@ strength of an intention.
 | CLI, API, schema, config references generated from source | MET | `generate_public_api.py`, `generate_current_surface_inventories.py`, and the rest |
 | Generated freshness passes CI | MET | Every generator runs `--check` in the gate |
 | Root documentation references no missing authoritative artifact | MET | `README.md` is the current Aseman entry point; the absent `reports/final` and `node.old` claims were removed in P9-05 |
-| Agent comprehension evaluations run as a release gate | PARTIAL | `evals/agent/cases.json` is versioned and its authority paths are checked by `check_agent_evals.py`; executing/scoring cold-agent runs remains open |
+| Agent comprehension evaluations run as a release gate | PARTIAL | `tests/evals/agent/cases.json` is versioned and its authority paths are checked by `check_agent_evals.py`; executing/scoring cold-agent runs remains open |
 | The removal ledger has no overdue item | MET | `check_removal_ledger_due.py`, which found eleven silent rows and now fails on any new one |
 | Requirements traceability is mechanically checked | MET | `generate_requirements_traceability.py` (A1005): 25 requirements, 0 violations, each with design authority, delivery phase, phase-gate status, and acceptance authority; runs `--check` in the gate |
 

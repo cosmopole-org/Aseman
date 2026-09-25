@@ -5,10 +5,11 @@ protocol** (the "Caspar shell API"). Every command maps directly to a Caspar
 shell action route (`/creatures/*`, `/programs/*`) — there is no dependency on
 any hosted backend, billing service, or miniapp layer.
 
-The directory also owns `aseman_client.py`, the Python compatibility client for
-the same framed API. It was consolidated here from the former top-level SDK;
-deployable creature projects belong in `examples/creatures`, while reusable
-guest-side contracts belong in `crates/aseman-guest-sdk`.
+The directory also owns `aseman_client.py`, the Python compatibility client for the
+same framed API. It was consolidated here from the former top-level SDK; reusable
+guest-side contracts belong in `crates/aseman-guest-sdk`, and the per-runtime
+creature-implementation guide lives in
+[`docs/development/creature-implementation.md`](../../docs/development/creature-implementation.md).
 
 With it you can:
 

@@ -67,7 +67,7 @@ def check() -> list[str]:
     # Each unprivileged Aseman service is a separate, single-process, non-root image.
     # The privileged agent deliberately has no image until its authenticated server
     # executable exists; inventing a container for a library would be false evidence.
-    build_script = (ROOT / "build-dist.sh").read_text(encoding="utf-8")
+    build_script = (ROOT / "scripts" / "build-dist.sh").read_text(encoding="utf-8")
     for service, (dockerfile, binary) in IMAGES.items():
         path = ROOT / dockerfile
         if not path.exists():

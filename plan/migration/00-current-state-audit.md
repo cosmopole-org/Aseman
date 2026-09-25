@@ -56,7 +56,9 @@ The Rust codebase is approximately 87,000 lines, with approximately 55,000 in th
 ### Packaging and administration
 
 - The Docker image combines concerns that should be separate services.
-- `run-nodes.sh` installs many dependencies but is too large and imperative to be the long-term adaptive installer.
+- The root `run-nodes.sh` installed many dependencies but was too large and
+  imperative to be the long-term adaptive installer; the canonical lifecycle moved
+  to `asemanctl install/run/stop/status` and `scripts/build-dist.sh`.
 - The CLI lacks runtime module install/activate/rollback, provider migration, generalized policy, federation trust, worker lifecycle, and metering reconciliation commands.
 - CI builds artifacts but lacks complete format, lint, test, compatibility, security, and artifact-signing gates.
 

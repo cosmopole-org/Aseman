@@ -68,8 +68,7 @@ rust-toolchain.toml       pinned reproducible Rust toolchain
 Cargo.toml                virtual workspace and shared lint/profile policy
 docs/                     authoritative documentation portal
 contracts/                source wire/schema definitions
-examples/                 executable end-to-end examples
-evals/agent/              repository-comprehension evaluations
+tests/evals/agent/        repository-comprehension evaluations
 xtask/                    deterministic repository automation
 ```
 
@@ -233,7 +232,7 @@ Each playbook names files to touch, forbidden dependencies, generated outputs, t
 
 ## LLM comprehension evaluations
 
-Add small, versioned evaluations under `evals/agent/`. Run them in documentation/architecture CI and before major reorganizations.
+Add small, versioned evaluations under `tests/evals/agent/`. Run them in documentation/architecture CI and before major reorganizations.
 
 Cold-start tasks should test whether an unfamiliar agent can:
 

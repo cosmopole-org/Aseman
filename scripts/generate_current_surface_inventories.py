@@ -309,16 +309,6 @@ def configuration_inventory() -> dict[str, Any]:
             {"kind": "sample-declaration", "source": location("deploy/legacy/sample.env", sample_text, offset)}
         )
 
-    runner = text("run-nodes.sh")
-    heredoc = re.search(r'cat > "\$env_file" <<EOF\n(?P<body>.*?)\nEOF', runner, re.S)
-    if heredoc:
-        for found in re.finditer(r'^([A-Z][A-Z0-9_]*)=', heredoc.group("body"), re.M):
-            key = found.group(1)
-            absolute = heredoc.start("body") + found.start()
-            occurrences[key].append(
-                {"kind": "deployment-write", "source": location("run-nodes.sh", runner, absolute)}
-            )
-
     dockerfile = text("deploy/legacy/node.Dockerfile")
     for found in re.finditer(r'^(ENV|ARG)\s+([A-Z][A-Z0-9_]*)', dockerfile, re.M):
         occurrences[found.group(2)].append(

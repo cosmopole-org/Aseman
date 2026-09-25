@@ -37,7 +37,7 @@ on:
       - 'apps/asemanctl/**'
       - 'modules/runtime/**'
       - 'modules/vmm-backend/native-legacy/**'
-      - 'build-dist.sh'
+      - 'scripts/build-dist.sh'
       - '.github/workflows/build-node.yml'
 
 # The publish job commits the rebuilt binaries back to the repo.
@@ -105,7 +105,7 @@ jobs:
 
       - name: Build dist/ for ${{ matrix.arch }} (node + keygen + casparctl)
         run: |
-          ./build-dist.sh --wasmedge-ver "${{ inputs.wasmedge_version || '0.17.1' }}"
+          ./scripts/build-dist.sh --wasmedge-ver "${{ inputs.wasmedge_version || '0.17.1' }}"
 
       - name: Verify all three binaries are ${{ matrix.arch }}
         run: |

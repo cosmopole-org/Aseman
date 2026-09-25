@@ -537,42 +537,6 @@
       "id": "caspar-client vm.init",
       "support": "supported-compatibility",
       "target_owner": "generated Aseman client/asemanctl"
-    },
-    {
-      "characterization": "tests/characterization/surface-golden.json",
-      "current_owner": "root script",
-      "disposition": "rewrite",
-      "expiry": "ADR-0004 window after replacement acceptance",
-      "id": "bench-all.sh",
-      "support": "supported-compatibility",
-      "target_owner": "xtask/bootstrap/deploy workflow"
-    },
-    {
-      "characterization": "tests/characterization/surface-golden.json",
-      "current_owner": "root script",
-      "disposition": "rewrite",
-      "expiry": "ADR-0004 window after replacement acceptance",
-      "id": "build-dist.sh",
-      "support": "supported-compatibility",
-      "target_owner": "xtask/bootstrap/deploy workflow"
-    },
-    {
-      "characterization": "tests/characterization/surface-golden.json",
-      "current_owner": "root script",
-      "disposition": "rewrite",
-      "expiry": "ADR-0004 window after replacement acceptance",
-      "id": "run-nodes.sh",
-      "support": "supported-compatibility",
-      "target_owner": "xtask/bootstrap/deploy workflow"
-    },
-    {
-      "characterization": "tests/characterization/surface-golden.json",
-      "current_owner": "root script",
-      "disposition": "rewrite",
-      "expiry": "ADR-0004 window after replacement acceptance",
-      "id": "stop-nodes.sh",
-      "support": "supported-compatibility",
-      "target_owner": "xtask/bootstrap/deploy workflow"
     }
   ],
   "evidence": [

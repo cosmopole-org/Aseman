@@ -40,9 +40,8 @@ conditions are tracked in the [removal ledger](docs/migration/removal-ledger.md)
 - `deploy/` — deployment-profile ownership root; executable assets are still Phase 9.
 - `docs/` — current architecture, ADRs, development guidance, operations, and
   generated references.
-- `examples/` — public-contract examples as they are delivered.
-- `tests/` — characterization, conformance, migration, and cross-service suites.
-- `evals/agent/` — cold-start repository-comprehension evaluations.
+- `tests/` — characterization, conformance, migration, cross-service, and
+  cold-start agent-comprehension (under `tests/evals/`) suites.
 - `xtask/` — deterministic architecture and verification automation.
 
 The generated [repository hierarchy report](docs/generated/repository-layout.md)

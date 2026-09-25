@@ -959,8 +959,7 @@
     {
       "callers": [
         "contracts/config/legacy-aliases.json:15",
-        "deploy/legacy/sample.env:5",
-        "run-nodes.sh:1281"
+        "deploy/legacy/sample.env:5"
       ],
       "current_owner": "runtime-or-storage",
       "disposition": "move",
@@ -971,7 +970,7 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:36",
+        "contracts/config/legacy-aliases.json:32",
         "crates/aseman-config/src/lib.rs:336"
       ],
       "current_owner": "network",
@@ -983,7 +982,7 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:53",
+        "contracts/config/legacy-aliases.json:49",
         "crates/aseman-config/src/lib.rs:333"
       ],
       "current_owner": "network",
@@ -995,8 +994,7 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:70",
-        "run-nodes.sh:1303"
+        "contracts/config/legacy-aliases.json:66"
       ],
       "current_owner": "runtime-or-storage",
       "disposition": "move",
@@ -1007,8 +1005,7 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:87",
-        "run-nodes.sh:1302"
+        "contracts/config/legacy-aliases.json:79"
       ],
       "current_owner": "runtime-or-storage",
       "disposition": "move",
@@ -1019,9 +1016,8 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:104",
-        "deploy/legacy/sample.env:4",
-        "run-nodes.sh:1280"
+        "contracts/config/legacy-aliases.json:92",
+        "deploy/legacy/sample.env:4"
       ],
       "current_owner": "runtime-or-storage",
       "disposition": "move",
@@ -1032,9 +1028,8 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:125",
-        "deploy/legacy/sample.env:11",
-        "run-nodes.sh:1287"
+        "contracts/config/legacy-aliases.json:109",
+        "deploy/legacy/sample.env:11"
       ],
       "current_owner": "network",
       "disposition": "move",
@@ -1045,7 +1040,7 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:146"
+        "contracts/config/legacy-aliases.json:126"
       ],
       "current_owner": "network",
       "disposition": "move",
@@ -1056,7 +1051,7 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:159"
+        "contracts/config/legacy-aliases.json:139"
       ],
       "current_owner": "runtime-or-storage",
       "disposition": "move",
@@ -1067,7 +1062,7 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:172"
+        "contracts/config/legacy-aliases.json:152"
       ],
       "current_owner": "runtime-or-storage",
       "disposition": "move",
@@ -1078,7 +1073,7 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:185"
+        "contracts/config/legacy-aliases.json:165"
       ],
       "current_owner": "application",
       "disposition": "deprecate-alias",
@@ -1089,7 +1084,7 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:198"
+        "contracts/config/legacy-aliases.json:178"
       ],
       "current_owner": "application",
       "disposition": "deprecate-alias",
@@ -1100,7 +1095,7 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:211"
+        "contracts/config/legacy-aliases.json:191"
       ],
       "current_owner": "secret-or-sensitive",
       "disposition": "deprecate-alias",
@@ -1111,7 +1106,7 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:224"
+        "contracts/config/legacy-aliases.json:204"
       ],
       "current_owner": "application",
       "disposition": "deprecate-alias",
@@ -1122,7 +1117,7 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:237"
+        "contracts/config/legacy-aliases.json:217"
       ],
       "current_owner": "application",
       "disposition": "deprecate-alias",
@@ -1133,7 +1128,7 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:250"
+        "contracts/config/legacy-aliases.json:230"
       ],
       "current_owner": "application",
       "disposition": "deprecate-alias",
@@ -1145,7 +1140,7 @@
     {
       "callers": [
         "apps/aseman-client/index.ts:1200",
-        "contracts/config/legacy-aliases.json:263"
+        "contracts/config/legacy-aliases.json:243"
       ],
       "current_owner": "network",
       "disposition": "deprecate-alias",
@@ -1157,7 +1152,7 @@
     {
       "callers": [
         "apps/aseman-client/index.ts:78",
-        "contracts/config/legacy-aliases.json:280"
+        "contracts/config/legacy-aliases.json:260"
       ],
       "current_owner": "application",
       "disposition": "deprecate-alias",
@@ -1168,7 +1163,7 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:297"
+        "contracts/config/legacy-aliases.json:277"
       ],
       "current_owner": "application",
       "disposition": "deprecate-alias",
@@ -1179,7 +1174,7 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:310"
+        "contracts/config/legacy-aliases.json:290"
       ],
       "current_owner": "application",
       "disposition": "deprecate-alias",
@@ -1190,7 +1185,7 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:323"
+        "contracts/config/legacy-aliases.json:303"
       ],
       "current_owner": "application",
       "disposition": "deprecate-alias",
@@ -1201,7 +1196,7 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:336"
+        "contracts/config/legacy-aliases.json:316"
       ],
       "current_owner": "application",
       "disposition": "deprecate-alias",
@@ -1212,7 +1207,7 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:349"
+        "contracts/config/legacy-aliases.json:329"
       ],
       "current_owner": "application",
       "disposition": "deprecate-alias",
@@ -1224,7 +1219,7 @@
     {
       "callers": [
         "apps/aseman-client/index.ts:1202",
-        "contracts/config/legacy-aliases.json:362"
+        "contracts/config/legacy-aliases.json:342"
       ],
       "current_owner": "network",
       "disposition": "deprecate-alias",
@@ -1236,7 +1231,7 @@
     {
       "callers": [
         "apps/aseman-client/index.ts:1201",
-        "contracts/config/legacy-aliases.json:379"
+        "contracts/config/legacy-aliases.json:359"
       ],
       "current_owner": "application",
       "disposition": "deprecate-alias",
@@ -1247,7 +1242,7 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:396"
+        "contracts/config/legacy-aliases.json:376"
       ],
       "current_owner": "application",
       "disposition": "deprecate-alias",
@@ -1258,7 +1253,7 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:409"
+        "contracts/config/legacy-aliases.json:389"
       ],
       "current_owner": "application",
       "disposition": "deprecate-alias",
@@ -1269,7 +1264,7 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:422"
+        "contracts/config/legacy-aliases.json:402"
       ],
       "current_owner": "application",
       "disposition": "deprecate-alias",
@@ -1281,7 +1276,7 @@
     {
       "callers": [
         "apps/aseman-client/index.ts:572",
-        "contracts/config/legacy-aliases.json:435"
+        "contracts/config/legacy-aliases.json:415"
       ],
       "current_owner": "application",
       "disposition": "deprecate-alias",
@@ -1292,7 +1287,7 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:452"
+        "contracts/config/legacy-aliases.json:432"
       ],
       "current_owner": "application",
       "disposition": "deprecate-alias",
@@ -1303,7 +1298,7 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:465"
+        "contracts/config/legacy-aliases.json:445"
       ],
       "current_owner": "network",
       "disposition": "deprecate-alias",
@@ -1315,7 +1310,7 @@
     {
       "callers": [
         "apps/aseman-client/index.ts:51",
-        "contracts/config/legacy-aliases.json:478"
+        "contracts/config/legacy-aliases.json:458"
       ],
       "current_owner": "application",
       "disposition": "deprecate-alias",
@@ -1326,7 +1321,7 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:495"
+        "contracts/config/legacy-aliases.json:475"
       ],
       "current_owner": "application",
       "disposition": "deprecate-alias",
@@ -1337,7 +1332,7 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:508"
+        "contracts/config/legacy-aliases.json:488"
       ],
       "current_owner": "network",
       "disposition": "deprecate-alias",
@@ -1348,7 +1343,7 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:521"
+        "contracts/config/legacy-aliases.json:501"
       ],
       "current_owner": "application",
       "disposition": "deprecate-alias",
@@ -1359,7 +1354,7 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:534"
+        "contracts/config/legacy-aliases.json:514"
       ],
       "current_owner": "application",
       "disposition": "deprecate-alias",
@@ -1370,7 +1365,7 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:547"
+        "contracts/config/legacy-aliases.json:527"
       ],
       "current_owner": "application",
       "disposition": "deprecate-alias",
@@ -1381,9 +1376,8 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:560",
-        "deploy/legacy/sample.env:9",
-        "run-nodes.sh:1285"
+        "contracts/config/legacy-aliases.json:540",
+        "deploy/legacy/sample.env:9"
       ],
       "current_owner": "network",
       "disposition": "move",
@@ -1394,9 +1388,8 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:581",
-        "deploy/legacy/sample.env:8",
-        "run-nodes.sh:1284"
+        "contracts/config/legacy-aliases.json:557",
+        "deploy/legacy/sample.env:8"
       ],
       "current_owner": "network",
       "disposition": "move",
@@ -1407,7 +1400,7 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:602"
+        "contracts/config/legacy-aliases.json:574"
       ],
       "current_owner": "network",
       "disposition": "move",
@@ -1418,7 +1411,7 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:615"
+        "contracts/config/legacy-aliases.json:587"
       ],
       "current_owner": "secret-or-sensitive",
       "disposition": "move",
@@ -1429,7 +1422,7 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:628"
+        "contracts/config/legacy-aliases.json:600"
       ],
       "current_owner": "application",
       "disposition": "move",
@@ -1440,7 +1433,7 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:641"
+        "contracts/config/legacy-aliases.json:613"
       ],
       "current_owner": "application",
       "disposition": "move",
@@ -1451,7 +1444,7 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:654"
+        "contracts/config/legacy-aliases.json:626"
       ],
       "current_owner": "application",
       "disposition": "move",
@@ -1462,7 +1455,7 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:667"
+        "contracts/config/legacy-aliases.json:639"
       ],
       "current_owner": "network",
       "disposition": "move",
@@ -1473,7 +1466,7 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:680"
+        "contracts/config/legacy-aliases.json:652"
       ],
       "current_owner": "application",
       "disposition": "move",
@@ -1484,7 +1477,7 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:693"
+        "contracts/config/legacy-aliases.json:665"
       ],
       "current_owner": "application",
       "disposition": "move",
@@ -1495,7 +1488,7 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:706"
+        "contracts/config/legacy-aliases.json:678"
       ],
       "current_owner": "application",
       "disposition": "move",
@@ -1506,7 +1499,7 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:719",
+        "contracts/config/legacy-aliases.json:691",
         "deploy/legacy/node.Dockerfile:24"
       ],
       "current_owner": "runtime-or-storage",
@@ -1518,7 +1511,7 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:736"
+        "contracts/config/legacy-aliases.json:708"
       ],
       "current_owner": "network",
       "disposition": "move",
@@ -1529,7 +1522,7 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:749"
+        "contracts/config/legacy-aliases.json:721"
       ],
       "current_owner": "network",
       "disposition": "move",
@@ -1540,9 +1533,8 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:762",
-        "deploy/legacy/sample.env:12",
-        "run-nodes.sh:1288"
+        "contracts/config/legacy-aliases.json:734",
+        "deploy/legacy/sample.env:12"
       ],
       "current_owner": "network",
       "disposition": "move",
@@ -1553,7 +1545,7 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:783",
+        "contracts/config/legacy-aliases.json:751",
         "deploy/legacy/node.Dockerfile:84"
       ],
       "current_owner": "runtime-or-storage",
@@ -1565,9 +1557,8 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:800",
-        "deploy/legacy/sample.env:10",
-        "run-nodes.sh:1286"
+        "contracts/config/legacy-aliases.json:768",
+        "deploy/legacy/sample.env:10"
       ],
       "current_owner": "network",
       "disposition": "move",
@@ -1578,7 +1569,7 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:821"
+        "contracts/config/legacy-aliases.json:785"
       ],
       "current_owner": "runtime-or-storage",
       "disposition": "move",
@@ -1589,7 +1580,7 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:834"
+        "contracts/config/legacy-aliases.json:798"
       ],
       "current_owner": "runtime-or-storage",
       "disposition": "move",
@@ -1600,7 +1591,7 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:847"
+        "contracts/config/legacy-aliases.json:811"
       ],
       "current_owner": "runtime-or-storage",
       "disposition": "move",
@@ -1611,7 +1602,7 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:860"
+        "contracts/config/legacy-aliases.json:824"
       ],
       "current_owner": "runtime-or-storage",
       "disposition": "move",
@@ -1622,7 +1613,7 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:873",
+        "contracts/config/legacy-aliases.json:837",
         "crates/aseman-config/src/lib.rs:402"
       ],
       "current_owner": "process-environment",
@@ -1634,7 +1625,7 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:890",
+        "contracts/config/legacy-aliases.json:854",
         "deploy/legacy/node.Dockerfile:83"
       ],
       "current_owner": "runtime-or-storage",
@@ -1646,9 +1637,8 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:907",
-        "deploy/legacy/sample.env:15",
-        "run-nodes.sh:1292"
+        "contracts/config/legacy-aliases.json:871",
+        "deploy/legacy/sample.env:15"
       ],
       "current_owner": "network",
       "disposition": "move",
@@ -1659,9 +1649,8 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:928",
-        "deploy/legacy/sample.env:17",
-        "run-nodes.sh:1294"
+        "contracts/config/legacy-aliases.json:888",
+        "deploy/legacy/sample.env:17"
       ],
       "current_owner": "runtime-or-storage",
       "disposition": "move",
@@ -1672,7 +1661,7 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:949",
+        "contracts/config/legacy-aliases.json:905",
         "deploy/legacy/node.Dockerfile:50"
       ],
       "current_owner": "process-environment",
@@ -1684,7 +1673,7 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:966"
+        "contracts/config/legacy-aliases.json:922"
       ],
       "current_owner": "network",
       "disposition": "move",
@@ -1695,7 +1684,7 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:979",
+        "contracts/config/legacy-aliases.json:935",
         "deploy/legacy/sample.env:46"
       ],
       "current_owner": "secret-or-sensitive",
@@ -1707,7 +1696,7 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:996",
+        "contracts/config/legacy-aliases.json:952",
         "deploy/legacy/sample.env:55"
       ],
       "current_owner": "application",
@@ -1719,7 +1708,7 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:1013",
+        "contracts/config/legacy-aliases.json:969",
         "deploy/legacy/sample.env:58"
       ],
       "current_owner": "application",
@@ -1731,7 +1720,7 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:1030"
+        "contracts/config/legacy-aliases.json:986"
       ],
       "current_owner": "application",
       "disposition": "move",
@@ -1742,7 +1731,7 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:1043"
+        "contracts/config/legacy-aliases.json:999"
       ],
       "current_owner": "application",
       "disposition": "move",
@@ -1753,7 +1742,7 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:1056",
+        "contracts/config/legacy-aliases.json:1012",
         "deploy/legacy/sample.env:60"
       ],
       "current_owner": "application",
@@ -1765,7 +1754,7 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:1073",
+        "contracts/config/legacy-aliases.json:1029",
         "deploy/legacy/sample.env:50"
       ],
       "current_owner": "application",
@@ -1777,7 +1766,7 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:1090",
+        "contracts/config/legacy-aliases.json:1046",
         "deploy/legacy/sample.env:66"
       ],
       "current_owner": "application",
@@ -1789,7 +1778,7 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:1107",
+        "contracts/config/legacy-aliases.json:1063",
         "deploy/legacy/sample.env:64"
       ],
       "current_owner": "application",
@@ -1801,7 +1790,7 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:1124",
+        "contracts/config/legacy-aliases.json:1080",
         "deploy/legacy/sample.env:52"
       ],
       "current_owner": "network",
@@ -1813,7 +1802,7 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:1141"
+        "contracts/config/legacy-aliases.json:1097"
       ],
       "current_owner": "application",
       "disposition": "move",
@@ -1824,7 +1813,7 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:1154",
+        "contracts/config/legacy-aliases.json:1110",
         "deploy/legacy/sample.env:47"
       ],
       "current_owner": "secret-or-sensitive",
@@ -1836,7 +1825,7 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:1171",
+        "contracts/config/legacy-aliases.json:1127",
         "deploy/legacy/sample.env:48"
       ],
       "current_owner": "secret-or-sensitive",
@@ -1848,7 +1837,7 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:1188",
+        "contracts/config/legacy-aliases.json:1144",
         "deploy/legacy/sample.env:62"
       ],
       "current_owner": "application",
@@ -1860,7 +1849,7 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:1205"
+        "contracts/config/legacy-aliases.json:1161"
       ],
       "current_owner": "application",
       "disposition": "move",
@@ -1871,9 +1860,8 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:1218",
-        "deploy/legacy/sample.env:14",
-        "run-nodes.sh:1291"
+        "contracts/config/legacy-aliases.json:1174",
+        "deploy/legacy/sample.env:14"
       ],
       "current_owner": "network",
       "disposition": "move",
@@ -1884,9 +1872,8 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:1239",
-        "deploy/legacy/sample.env:1",
-        "run-nodes.sh:1277"
+        "contracts/config/legacy-aliases.json:1191",
+        "deploy/legacy/sample.env:1"
       ],
       "current_owner": "runtime-or-storage",
       "disposition": "move",
@@ -1897,9 +1884,8 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:1260",
-        "deploy/legacy/sample.env:2",
-        "run-nodes.sh:1278"
+        "contracts/config/legacy-aliases.json:1208",
+        "deploy/legacy/sample.env:2"
       ],
       "current_owner": "secret-or-sensitive",
       "disposition": "move",
@@ -1910,7 +1896,7 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:1281",
+        "contracts/config/legacy-aliases.json:1225",
         "crates/aseman-config/src/lib.rs:362"
       ],
       "current_owner": "process-environment",
@@ -1922,8 +1908,7 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:1298",
-        "run-nodes.sh:1290"
+        "contracts/config/legacy-aliases.json:1242"
       ],
       "current_owner": "network",
       "disposition": "move",
@@ -1934,7 +1919,7 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:1315"
+        "contracts/config/legacy-aliases.json:1255"
       ],
       "current_owner": "runtime-or-storage",
       "disposition": "move",
@@ -1945,7 +1930,7 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:1328"
+        "contracts/config/legacy-aliases.json:1268"
       ],
       "current_owner": "runtime-or-storage",
       "disposition": "move",
@@ -1956,7 +1941,7 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:1341"
+        "contracts/config/legacy-aliases.json:1281"
       ],
       "current_owner": "runtime-or-storage",
       "disposition": "move",
@@ -1967,8 +1952,7 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:1354",
-        "run-nodes.sh:1308"
+        "contracts/config/legacy-aliases.json:1294"
       ],
       "current_owner": "runtime-or-storage",
       "disposition": "move",
@@ -1979,8 +1963,7 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:1371",
-        "run-nodes.sh:1306"
+        "contracts/config/legacy-aliases.json:1307"
       ],
       "current_owner": "network",
       "disposition": "move",
@@ -1991,8 +1974,7 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:1388",
-        "run-nodes.sh:1305"
+        "contracts/config/legacy-aliases.json:1320"
       ],
       "current_owner": "network",
       "disposition": "move",
@@ -2003,8 +1985,7 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:1405",
-        "run-nodes.sh:1307"
+        "contracts/config/legacy-aliases.json:1333"
       ],
       "current_owner": "network",
       "disposition": "move",
@@ -2015,8 +1996,7 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:1422",
-        "run-nodes.sh:1304"
+        "contracts/config/legacy-aliases.json:1346"
       ],
       "current_owner": "network",
       "disposition": "move",
@@ -2027,7 +2007,7 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:1439",
+        "contracts/config/legacy-aliases.json:1359",
         "deploy/legacy/sample.env:33"
       ],
       "current_owner": "application",
@@ -2039,7 +2019,7 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:1456",
+        "contracts/config/legacy-aliases.json:1376",
         "deploy/legacy/sample.env:32"
       ],
       "current_owner": "application",
@@ -2051,7 +2031,7 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:1473",
+        "contracts/config/legacy-aliases.json:1393",
         "deploy/legacy/sample.env:31"
       ],
       "current_owner": "application",
@@ -2063,7 +2043,7 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:1490",
+        "contracts/config/legacy-aliases.json:1410",
         "deploy/legacy/sample.env:30"
       ],
       "current_owner": "application",
@@ -2075,7 +2055,7 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:1507",
+        "contracts/config/legacy-aliases.json:1427",
         "deploy/legacy/sample.env:29"
       ],
       "current_owner": "application",
@@ -2087,7 +2067,7 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:1524",
+        "contracts/config/legacy-aliases.json:1444",
         "deploy/legacy/sample.env:35"
       ],
       "current_owner": "application",
@@ -2099,7 +2079,7 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:1541",
+        "contracts/config/legacy-aliases.json:1461",
         "deploy/legacy/sample.env:34"
       ],
       "current_owner": "application",
@@ -2111,7 +2091,7 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:1558",
+        "contracts/config/legacy-aliases.json:1478",
         "deploy/legacy/sample.env:36"
       ],
       "current_owner": "application",
@@ -2123,9 +2103,8 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:1575",
-        "deploy/legacy/sample.env:16",
-        "run-nodes.sh:1293"
+        "contracts/config/legacy-aliases.json:1495",
+        "deploy/legacy/sample.env:16"
       ],
       "current_owner": "runtime-or-storage",
       "disposition": "move",
@@ -2136,9 +2115,8 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:1596",
-        "deploy/legacy/sample.env:6",
-        "run-nodes.sh:1282"
+        "contracts/config/legacy-aliases.json:1512",
+        "deploy/legacy/sample.env:6"
       ],
       "current_owner": "runtime-or-storage",
       "disposition": "move",
@@ -2149,9 +2127,8 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:1617",
-        "deploy/legacy/sample.env:3",
-        "run-nodes.sh:1279"
+        "contracts/config/legacy-aliases.json:1529",
+        "deploy/legacy/sample.env:3"
       ],
       "current_owner": "runtime-or-storage",
       "disposition": "move",
@@ -2162,9 +2139,8 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:1638",
-        "deploy/legacy/sample.env:7",
-        "run-nodes.sh:1283"
+        "contracts/config/legacy-aliases.json:1546",
+        "deploy/legacy/sample.env:7"
       ],
       "current_owner": "runtime-or-storage",
       "disposition": "move",
@@ -2175,9 +2151,8 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:1659",
-        "deploy/legacy/sample.env:38",
-        "run-nodes.sh:1300"
+        "contracts/config/legacy-aliases.json:1563",
+        "deploy/legacy/sample.env:38"
       ],
       "current_owner": "network",
       "disposition": "move",
@@ -2188,9 +2163,8 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:1680",
-        "deploy/legacy/sample.env:39",
-        "run-nodes.sh:1301"
+        "contracts/config/legacy-aliases.json:1580",
+        "deploy/legacy/sample.env:39"
       ],
       "current_owner": "runtime-or-storage",
       "disposition": "move",
@@ -2201,7 +2175,7 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:1701"
+        "contracts/config/legacy-aliases.json:1597"
       ],
       "current_owner": "runtime-or-storage",
       "disposition": "move",
@@ -2212,7 +2186,7 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:1714"
+        "contracts/config/legacy-aliases.json:1610"
       ],
       "current_owner": "secret-or-sensitive",
       "disposition": "move",
@@ -2223,7 +2197,7 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:1727",
+        "contracts/config/legacy-aliases.json:1623",
         "crates/aseman-config/src/lib.rs:406"
       ],
       "current_owner": "process-environment",
@@ -2235,9 +2209,8 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:1744",
-        "deploy/legacy/sample.env:13",
-        "run-nodes.sh:1289"
+        "contracts/config/legacy-aliases.json:1640",
+        "deploy/legacy/sample.env:13"
       ],
       "current_owner": "network",
       "disposition": "move",
@@ -2248,9 +2221,8 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:1765",
-        "deploy/legacy/sample.env:21",
-        "run-nodes.sh:1298"
+        "contracts/config/legacy-aliases.json:1657",
+        "deploy/legacy/sample.env:21"
       ],
       "current_owner": "application",
       "disposition": "move",
@@ -2261,9 +2233,8 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:1786",
-        "deploy/legacy/sample.env:22",
-        "run-nodes.sh:1299"
+        "contracts/config/legacy-aliases.json:1674",
+        "deploy/legacy/sample.env:22"
       ],
       "current_owner": "application",
       "disposition": "move",
@@ -2274,9 +2245,8 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:1807",
-        "deploy/legacy/sample.env:19",
-        "run-nodes.sh:1296"
+        "contracts/config/legacy-aliases.json:1691",
+        "deploy/legacy/sample.env:19"
       ],
       "current_owner": "application",
       "disposition": "move",
@@ -2287,7 +2257,7 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:1828"
+        "contracts/config/legacy-aliases.json:1708"
       ],
       "current_owner": "network",
       "disposition": "move",
@@ -2298,9 +2268,8 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:1841",
-        "deploy/legacy/sample.env:20",
-        "run-nodes.sh:1297"
+        "contracts/config/legacy-aliases.json:1721",
+        "deploy/legacy/sample.env:20"
       ],
       "current_owner": "application",
       "disposition": "move",
@@ -2311,7 +2280,7 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:1862",
+        "contracts/config/legacy-aliases.json:1738",
         "deploy/legacy/node.Dockerfile:51"
       ],
       "current_owner": "runtime-or-storage",
@@ -5468,50 +5437,6 @@
       "id": "cli_and_scripts:caspar-client vm.init",
       "replacement_evidence": "tests/characterization/surface-golden.json",
       "target_owner": "generated Aseman client/asemanctl"
-    },
-    {
-      "callers": [
-        "bench-all.sh"
-      ],
-      "current_owner": "root script",
-      "disposition": "rewrite",
-      "expiry": "ADR-0004 window after replacement acceptance",
-      "id": "cli_and_scripts:bench-all.sh",
-      "replacement_evidence": "tests/characterization/surface-golden.json",
-      "target_owner": "xtask/bootstrap/deploy workflow"
-    },
-    {
-      "callers": [
-        "build-dist.sh"
-      ],
-      "current_owner": "root script",
-      "disposition": "rewrite",
-      "expiry": "ADR-0004 window after replacement acceptance",
-      "id": "cli_and_scripts:build-dist.sh",
-      "replacement_evidence": "tests/characterization/surface-golden.json",
-      "target_owner": "xtask/bootstrap/deploy workflow"
-    },
-    {
-      "callers": [
-        "run-nodes.sh"
-      ],
-      "current_owner": "root script",
-      "disposition": "rewrite",
-      "expiry": "ADR-0004 window after replacement acceptance",
-      "id": "cli_and_scripts:run-nodes.sh",
-      "replacement_evidence": "tests/characterization/surface-golden.json",
-      "target_owner": "xtask/bootstrap/deploy workflow"
-    },
-    {
-      "callers": [
-        "stop-nodes.sh"
-      ],
-      "current_owner": "root script",
-      "disposition": "rewrite",
-      "expiry": "ADR-0004 window after replacement acceptance",
-      "id": "cli_and_scripts:stop-nodes.sh",
-      "replacement_evidence": "tests/characterization/surface-golden.json",
-      "target_owner": "xtask/bootstrap/deploy workflow"
     }
   ],
   "storage": [
@@ -7530,8 +7455,8 @@
   "summary": {
     "artifacts": 49,
     "configuration": 116,
-    "protocol_and_compatibility": 290,
+    "protocol_and_compatibility": 286,
     "storage": 172,
-    "total": 627
+    "total": 623
   }
 }

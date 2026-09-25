@@ -7,7 +7,7 @@
 # This entrypoint also starts a per-container QuestDB instance so each
 # caspar-node has its own isolated tsdb. Containers run with --network host,
 # so each node uses its own QUESTDB_PORT (8812 / 8912 / 9012) along with
-# matching HTTP and ILP ports — see run-nodes.sh for the layout.
+# matching HTTP and ILP ports — see asemanctl's cluster topology docs.
 
 set -e
 
@@ -90,7 +90,7 @@ trap _term TERM INT
 
 # Mirror caspar-node's stdout/stderr to /app/data/node.log AND the container
 # stdout (so `docker logs` still works). Logs end up on the host bind mount,
-# which means they survive container removal — without that, `stop-nodes.sh`
+# which means they survive container removal — without that, cleanup
 # wipes the only copy before the report-collection step runs.
 NODE_LOG="/app/data/node.log"
 : > "${NODE_LOG}" 2>/dev/null || true

@@ -33,7 +33,7 @@ observed.
 | Restricted host-agent profile | `apps/aseman-vmm-agent` serves A603 on loopback with mTLS plus signed grants; `deploy/systemd/aseman-vmm-agent.service` limits devices, capabilities, and writable paths |
 | Resumable administrative recovery contracts | `aseman-domain::operations`, signed backup-manifest and journal schemas, and `docs/operations/backup-restore.md` (A902) |
 | Support-bundle secrecy boundary | deny-before-collect contract plus recursively tested structured/value redaction in `asemanctl` (A904) |
-| Canonical documentation/operations ownership roots | Root architecture/contribution/security/changelog files, `docs/README.md`, `deploy/`, `examples/`, and the checked `evals/agent/cases.json` catalog (P9-05) |
+| Canonical documentation/operations ownership roots | Root architecture/contribution/security/changelog files, `docs/README.md`, `deploy/`, and the checked `tests/evals/agent/cases.json` catalog (P9-05) |
 
 ## What is not
 

@@ -75,9 +75,8 @@ modules/                    independently deployable provider packages
 contracts/                  source OpenAPI/protobuf/schema definitions
 deploy/                     deployment assets and profiles
 docs/                       current architecture, concepts, runbooks, ADRs
-examples/                   executable examples
 tests/                      contract, integration, end-to-end, chaos
-evals/agent/                repository-comprehension evaluations
+tests/evals/agent/          repository-comprehension evaluations
 xtask/                      deterministic repository automation
 ```
 

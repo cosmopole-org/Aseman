@@ -131,13 +131,14 @@ propose a **target** hierarchy. The current tree deliberately differs in these w
   `apps/aseman-meter` is independent and composes A501 collection with PostgreSQL
   usage, pricing, and ledger ports.
 - **Legacy roots were consolidated without proxy crates:** the client is
-  `apps/aseman-client`, deployable samples are `examples/creatures`, all seven runtime
+  `apps/aseman-client`, all seven runtime
   implementations plus their compatibility SDK are `modules/runtime`, the generated
   registry belongs to the native backend, and old wiki pages are explicitly archived
-  in `docs/legacy/caspar`. Tracked `dist/` and root scripts remain open under RL-016/18.
+  in `docs/legacy/caspar`. Tracked `dist/` remains open under RL-016.
 - **The required ownership roots now exist.** `deploy/` points to the authoritative
-  topology contract, `examples/` defines the executable-example policy, and
-  `evals/agent/` contains a mechanically checked cold-start catalog. Root
+  topology contract, creature-implementation guidance lives in
+  `docs/development/creature-implementation.md`, and
+  `tests/evals/agent/` contains a mechanically checked cold-start catalog. Root
   `ARCHITECTURE.md`, `CONTRIBUTING.md`, `SECURITY.md`, `CHANGELOG.md`, and the
   `docs/` portal are present. Actual compact orchestration, broader generated SDK
   examples, and deployment-backed evaluation runs remain Phase 9 work.

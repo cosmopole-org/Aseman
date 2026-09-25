@@ -8,7 +8,7 @@ verification: python3 scripts/generate_quality_baseline.py --check
 
 # Current static quality baseline
 
-Scanned 607 source files, 173025 physical lines, and 161319 nonblank lines.
+Scanned 602 source files, 170817 physical lines, and 159321 nonblank lines.
 
 ## Ratchet counts
 
@@ -44,13 +44,13 @@ ratchet; they do not assert that every occurrence is defective.
 | `apps/aseman-client/index.ts` | 1796 |
 | `apps/aseman-node/src/shell/api/actions/program.rs` | 1681 |
 | `crates/aseman-contracts/src/capsule.rs` | 1673 |
-| `run-nodes.sh` | 1585 |
 | `crates/aseman-module-runtime/src/lib.rs` | 1581 |
 | `crates/aseman-ports/src/conformance.rs` | 1550 |
 | `apps/aseman-node/src/shell/api/actions/creature.rs` | 1545 |
 | `crates/aseman-config/src/lib.rs` | 1476 |
 | `modules/vmm-http/src/server.rs` | 1439 |
 | `modules/runtime/elpify/crates/elpify-lang/src/compiler.rs` | 1324 |
+| `modules/storage/postgres/src/lib.rs` | 1304 |
 
 ## Limitations
 

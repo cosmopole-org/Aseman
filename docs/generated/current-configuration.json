@@ -20,10 +20,6 @@
         {
           "kind": "sample-declaration",
           "source": "deploy/legacy/sample.env:5"
-        },
-        {
-          "kind": "deployment-write",
-          "source": "run-nodes.sh:1281"
         }
       ],
       "sample_value": ""
@@ -34,7 +30,7 @@
       "occurrences": [
         {
           "kind": "compatibility-alias",
-          "source": "contracts/config/legacy-aliases.json:36"
+          "source": "contracts/config/legacy-aliases.json:32"
         },
         {
           "kind": "read",
@@ -49,7 +45,7 @@
       "occurrences": [
         {
           "kind": "compatibility-alias",
-          "source": "contracts/config/legacy-aliases.json:53"
+          "source": "contracts/config/legacy-aliases.json:49"
         },
         {
           "kind": "read",
@@ -64,11 +60,7 @@
       "occurrences": [
         {
           "kind": "compatibility-alias",
-          "source": "contracts/config/legacy-aliases.json:70"
-        },
-        {
-          "kind": "deployment-write",
-          "source": "run-nodes.sh:1303"
+          "source": "contracts/config/legacy-aliases.json:66"
         }
       ],
       "sample_value": null
@@ -79,11 +71,7 @@
       "occurrences": [
         {
           "kind": "compatibility-alias",
-          "source": "contracts/config/legacy-aliases.json:87"
-        },
-        {
-          "kind": "deployment-write",
-          "source": "run-nodes.sh:1302"
+          "source": "contracts/config/legacy-aliases.json:79"
         }
       ],
       "sample_value": null
@@ -94,15 +82,11 @@
       "occurrences": [
         {
           "kind": "compatibility-alias",
-          "source": "contracts/config/legacy-aliases.json:104"
+          "source": "contracts/config/legacy-aliases.json:92"
         },
         {
           "kind": "sample-declaration",
           "source": "deploy/legacy/sample.env:4"
-        },
-        {
-          "kind": "deployment-write",
-          "source": "run-nodes.sh:1280"
         }
       ],
       "sample_value": ""
@@ -113,15 +97,11 @@
       "occurrences": [
         {
           "kind": "compatibility-alias",
-          "source": "contracts/config/legacy-aliases.json:125"
+          "source": "contracts/config/legacy-aliases.json:109"
         },
         {
           "kind": "sample-declaration",
           "source": "deploy/legacy/sample.env:11"
-        },
-        {
-          "kind": "deployment-write",
-          "source": "run-nodes.sh:1287"
         }
       ],
       "sample_value": ""
@@ -132,7 +112,7 @@
       "occurrences": [
         {
           "kind": "compatibility-alias",
-          "source": "contracts/config/legacy-aliases.json:146"
+          "source": "contracts/config/legacy-aliases.json:126"
         }
       ],
       "sample_value": null
@@ -143,7 +123,7 @@
       "occurrences": [
         {
           "kind": "compatibility-alias",
-          "source": "contracts/config/legacy-aliases.json:159"
+          "source": "contracts/config/legacy-aliases.json:139"
         }
       ],
       "sample_value": null
@@ -154,7 +134,7 @@
       "occurrences": [
         {
           "kind": "compatibility-alias",
-          "source": "contracts/config/legacy-aliases.json:172"
+          "source": "contracts/config/legacy-aliases.json:152"
         }
       ],
       "sample_value": null
@@ -165,7 +145,7 @@
       "occurrences": [
         {
           "kind": "compatibility-alias",
-          "source": "contracts/config/legacy-aliases.json:185"
+          "source": "contracts/config/legacy-aliases.json:165"
         }
       ],
       "sample_value": null
@@ -176,7 +156,7 @@
       "occurrences": [
         {
           "kind": "compatibility-alias",
-          "source": "contracts/config/legacy-aliases.json:198"
+          "source": "contracts/config/legacy-aliases.json:178"
         }
       ],
       "sample_value": null
@@ -187,7 +167,7 @@
       "occurrences": [
         {
           "kind": "compatibility-alias",
-          "source": "contracts/config/legacy-aliases.json:211"
+          "source": "contracts/config/legacy-aliases.json:191"
         }
       ],
       "sample_value": null
@@ -198,7 +178,7 @@
       "occurrences": [
         {
           "kind": "compatibility-alias",
-          "source": "contracts/config/legacy-aliases.json:224"
+          "source": "contracts/config/legacy-aliases.json:204"
         }
       ],
       "sample_value": null
@@ -209,7 +189,7 @@
       "occurrences": [
         {
           "kind": "compatibility-alias",
-          "source": "contracts/config/legacy-aliases.json:237"
+          "source": "contracts/config/legacy-aliases.json:217"
         }
       ],
       "sample_value": null
@@ -220,7 +200,7 @@
       "occurrences": [
         {
           "kind": "compatibility-alias",
-          "source": "contracts/config/legacy-aliases.json:250"
+          "source": "contracts/config/legacy-aliases.json:230"
         }
       ],
       "sample_value": null
@@ -235,7 +215,7 @@
         },
         {
           "kind": "compatibility-alias",
-          "source": "contracts/config/legacy-aliases.json:263"
+          "source": "contracts/config/legacy-aliases.json:243"
         }
       ],
       "sample_value": null
@@ -250,7 +230,7 @@
         },
         {
           "kind": "compatibility-alias",
-          "source": "contracts/config/legacy-aliases.json:280"
+          "source": "contracts/config/legacy-aliases.json:260"
         }
       ],
       "sample_value": null
@@ -261,7 +241,7 @@
       "occurrences": [
         {
           "kind": "compatibility-alias",
-          "source": "contracts/config/legacy-aliases.json:297"
+          "source": "contracts/config/legacy-aliases.json:277"
         }
       ],
       "sample_value": null
@@ -272,7 +252,7 @@
       "occurrences": [
         {
           "kind": "compatibility-alias",
-          "source": "contracts/config/legacy-aliases.json:310"
+          "source": "contracts/config/legacy-aliases.json:290"
         }
       ],
       "sample_value": null
@@ -283,7 +263,7 @@
       "occurrences": [
         {
           "kind": "compatibility-alias",
-          "source": "contracts/config/legacy-aliases.json:323"
+          "source": "contracts/config/legacy-aliases.json:303"
         }
       ],
       "sample_value": null
@@ -294,7 +274,7 @@
       "occurrences": [
         {
           "kind": "compatibility-alias",
-          "source": "contracts/config/legacy-aliases.json:336"
+          "source": "contracts/config/legacy-aliases.json:316"
         }
       ],
       "sample_value": null
@@ -305,7 +285,7 @@
       "occurrences": [
         {
           "kind": "compatibility-alias",
-          "source": "contracts/config/legacy-aliases.json:349"
+          "source": "contracts/config/legacy-aliases.json:329"
         }
       ],
       "sample_value": null
@@ -320,7 +300,7 @@
         },
         {
           "kind": "compatibility-alias",
-          "source": "contracts/config/legacy-aliases.json:362"
+          "source": "contracts/config/legacy-aliases.json:342"
         }
       ],
       "sample_value": null
@@ -335,7 +315,7 @@
         },
         {
           "kind": "compatibility-alias",
-          "source": "contracts/config/legacy-aliases.json:379"
+          "source": "contracts/config/legacy-aliases.json:359"
         }
       ],
       "sample_value": null
@@ -346,7 +326,7 @@
       "occurrences": [
         {
           "kind": "compatibility-alias",
-          "source": "contracts/config/legacy-aliases.json:396"
+          "source": "contracts/config/legacy-aliases.json:376"
         }
       ],
       "sample_value": null
@@ -357,7 +337,7 @@
       "occurrences": [
         {
           "kind": "compatibility-alias",
-          "source": "contracts/config/legacy-aliases.json:409"
+          "source": "contracts/config/legacy-aliases.json:389"
         }
       ],
       "sample_value": null
@@ -368,7 +348,7 @@
       "occurrences": [
         {
           "kind": "compatibility-alias",
-          "source": "contracts/config/legacy-aliases.json:422"
+          "source": "contracts/config/legacy-aliases.json:402"
         }
       ],
       "sample_value": null
@@ -383,7 +363,7 @@
         },
         {
           "kind": "compatibility-alias",
-          "source": "contracts/config/legacy-aliases.json:435"
+          "source": "contracts/config/legacy-aliases.json:415"
         }
       ],
       "sample_value": null
@@ -394,7 +374,7 @@
       "occurrences": [
         {
           "kind": "compatibility-alias",
-          "source": "contracts/config/legacy-aliases.json:452"
+          "source": "contracts/config/legacy-aliases.json:432"
         }
       ],
       "sample_value": null
@@ -405,7 +385,7 @@
       "occurrences": [
         {
           "kind": "compatibility-alias",
-          "source": "contracts/config/legacy-aliases.json:465"
+          "source": "contracts/config/legacy-aliases.json:445"
         }
       ],
       "sample_value": null
@@ -420,7 +400,7 @@
         },
         {
           "kind": "compatibility-alias",
-          "source": "contracts/config/legacy-aliases.json:478"
+          "source": "contracts/config/legacy-aliases.json:458"
         }
       ],
       "sample_value": null
@@ -431,7 +411,7 @@
       "occurrences": [
         {
           "kind": "compatibility-alias",
-          "source": "contracts/config/legacy-aliases.json:495"
+          "source": "contracts/config/legacy-aliases.json:475"
         }
       ],
       "sample_value": null
@@ -442,7 +422,7 @@
       "occurrences": [
         {
           "kind": "compatibility-alias",
-          "source": "contracts/config/legacy-aliases.json:508"
+          "source": "contracts/config/legacy-aliases.json:488"
         }
       ],
       "sample_value": null
@@ -453,7 +433,7 @@
       "occurrences": [
         {
           "kind": "compatibility-alias",
-          "source": "contracts/config/legacy-aliases.json:521"
+          "source": "contracts/config/legacy-aliases.json:501"
         }
       ],
       "sample_value": null
@@ -464,7 +444,7 @@
       "occurrences": [
         {
           "kind": "compatibility-alias",
-          "source": "contracts/config/legacy-aliases.json:534"
+          "source": "contracts/config/legacy-aliases.json:514"
         }
       ],
       "sample_value": null
@@ -475,7 +455,7 @@
       "occurrences": [
         {
           "kind": "compatibility-alias",
-          "source": "contracts/config/legacy-aliases.json:547"
+          "source": "contracts/config/legacy-aliases.json:527"
         }
       ],
       "sample_value": null
@@ -486,15 +466,11 @@
       "occurrences": [
         {
           "kind": "compatibility-alias",
-          "source": "contracts/config/legacy-aliases.json:560"
+          "source": "contracts/config/legacy-aliases.json:540"
         },
         {
           "kind": "sample-declaration",
           "source": "deploy/legacy/sample.env:9"
-        },
-        {
-          "kind": "deployment-write",
-          "source": "run-nodes.sh:1285"
         }
       ],
       "sample_value": ""
@@ -505,15 +481,11 @@
       "occurrences": [
         {
           "kind": "compatibility-alias",
-          "source": "contracts/config/legacy-aliases.json:581"
+          "source": "contracts/config/legacy-aliases.json:557"
         },
         {
           "kind": "sample-declaration",
           "source": "deploy/legacy/sample.env:8"
-        },
-        {
-          "kind": "deployment-write",
-          "source": "run-nodes.sh:1284"
         }
       ],
       "sample_value": ""
@@ -524,7 +496,7 @@
       "occurrences": [
         {
           "kind": "compatibility-alias",
-          "source": "contracts/config/legacy-aliases.json:602"
+          "source": "contracts/config/legacy-aliases.json:574"
         }
       ],
       "sample_value": null
@@ -535,7 +507,7 @@
       "occurrences": [
         {
           "kind": "compatibility-alias",
-          "source": "contracts/config/legacy-aliases.json:615"
+          "source": "contracts/config/legacy-aliases.json:587"
         }
       ],
       "sample_value": null
@@ -546,7 +518,7 @@
       "occurrences": [
         {
           "kind": "compatibility-alias",
-          "source": "contracts/config/legacy-aliases.json:628"
+          "source": "contracts/config/legacy-aliases.json:600"
         }
       ],
       "sample_value": null
@@ -557,7 +529,7 @@
       "occurrences": [
         {
           "kind": "compatibility-alias",
-          "source": "contracts/config/legacy-aliases.json:641"
+          "source": "contracts/config/legacy-aliases.json:613"
         }
       ],
       "sample_value": null
@@ -568,7 +540,7 @@
       "occurrences": [
         {
           "kind": "compatibility-alias",
-          "source": "contracts/config/legacy-aliases.json:654"
+          "source": "contracts/config/legacy-aliases.json:626"
         }
       ],
       "sample_value": null
@@ -579,7 +551,7 @@
       "occurrences": [
         {
           "kind": "compatibility-alias",
-          "source": "contracts/config/legacy-aliases.json:667"
+          "source": "contracts/config/legacy-aliases.json:639"
         }
       ],
       "sample_value": null
@@ -590,7 +562,7 @@
       "occurrences": [
         {
           "kind": "compatibility-alias",
-          "source": "contracts/config/legacy-aliases.json:680"
+          "source": "contracts/config/legacy-aliases.json:652"
         }
       ],
       "sample_value": null
@@ -601,7 +573,7 @@
       "occurrences": [
         {
           "kind": "compatibility-alias",
-          "source": "contracts/config/legacy-aliases.json:693"
+          "source": "contracts/config/legacy-aliases.json:665"
         }
       ],
       "sample_value": null
@@ -612,7 +584,7 @@
       "occurrences": [
         {
           "kind": "compatibility-alias",
-          "source": "contracts/config/legacy-aliases.json:706"
+          "source": "contracts/config/legacy-aliases.json:678"
         }
       ],
       "sample_value": null
@@ -623,7 +595,7 @@
       "occurrences": [
         {
           "kind": "compatibility-alias",
-          "source": "contracts/config/legacy-aliases.json:719"
+          "source": "contracts/config/legacy-aliases.json:691"
         },
         {
           "kind": "docker-env",
@@ -638,7 +610,7 @@
       "occurrences": [
         {
           "kind": "compatibility-alias",
-          "source": "contracts/config/legacy-aliases.json:736"
+          "source": "contracts/config/legacy-aliases.json:708"
         }
       ],
       "sample_value": null
@@ -649,7 +621,7 @@
       "occurrences": [
         {
           "kind": "compatibility-alias",
-          "source": "contracts/config/legacy-aliases.json:749"
+          "source": "contracts/config/legacy-aliases.json:721"
         }
       ],
       "sample_value": null
@@ -660,15 +632,11 @@
       "occurrences": [
         {
           "kind": "compatibility-alias",
-          "source": "contracts/config/legacy-aliases.json:762"
+          "source": "contracts/config/legacy-aliases.json:734"
         },
         {
           "kind": "sample-declaration",
           "source": "deploy/legacy/sample.env:12"
-        },
-        {
-          "kind": "deployment-write",
-          "source": "run-nodes.sh:1288"
         }
       ],
       "sample_value": ""
@@ -679,7 +647,7 @@
       "occurrences": [
         {
           "kind": "compatibility-alias",
-          "source": "contracts/config/legacy-aliases.json:783"
+          "source": "contracts/config/legacy-aliases.json:751"
         },
         {
           "kind": "docker-arg",
@@ -694,15 +662,11 @@
       "occurrences": [
         {
           "kind": "compatibility-alias",
-          "source": "contracts/config/legacy-aliases.json:800"
+          "source": "contracts/config/legacy-aliases.json:768"
         },
         {
           "kind": "sample-declaration",
           "source": "deploy/legacy/sample.env:10"
-        },
-        {
-          "kind": "deployment-write",
-          "source": "run-nodes.sh:1286"
         }
       ],
       "sample_value": ""
@@ -713,7 +677,7 @@
       "occurrences": [
         {
           "kind": "compatibility-alias",
-          "source": "contracts/config/legacy-aliases.json:821"
+          "source": "contracts/config/legacy-aliases.json:785"
         }
       ],
       "sample_value": null
@@ -724,7 +688,7 @@
       "occurrences": [
         {
           "kind": "compatibility-alias",
-          "source": "contracts/config/legacy-aliases.json:834"
+          "source": "contracts/config/legacy-aliases.json:798"
         }
       ],
       "sample_value": null
@@ -735,7 +699,7 @@
       "occurrences": [
         {
           "kind": "compatibility-alias",
-          "source": "contracts/config/legacy-aliases.json:847"
+          "source": "contracts/config/legacy-aliases.json:811"
         }
       ],
       "sample_value": null
@@ -746,7 +710,7 @@
       "occurrences": [
         {
           "kind": "compatibility-alias",
-          "source": "contracts/config/legacy-aliases.json:860"
+          "source": "contracts/config/legacy-aliases.json:824"
         }
       ],
       "sample_value": null
@@ -757,7 +721,7 @@
       "occurrences": [
         {
           "kind": "compatibility-alias",
-          "source": "contracts/config/legacy-aliases.json:873"
+          "source": "contracts/config/legacy-aliases.json:837"
         },
         {
           "kind": "read",
@@ -772,7 +736,7 @@
       "occurrences": [
         {
           "kind": "compatibility-alias",
-          "source": "contracts/config/legacy-aliases.json:890"
+          "source": "contracts/config/legacy-aliases.json:854"
         },
         {
           "kind": "docker-arg",
@@ -787,15 +751,11 @@
       "occurrences": [
         {
           "kind": "compatibility-alias",
-          "source": "contracts/config/legacy-aliases.json:907"
+          "source": "contracts/config/legacy-aliases.json:871"
         },
         {
           "kind": "sample-declaration",
           "source": "deploy/legacy/sample.env:15"
-        },
-        {
-          "kind": "deployment-write",
-          "source": "run-nodes.sh:1292"
         }
       ],
       "sample_value": ""
@@ -806,15 +766,11 @@
       "occurrences": [
         {
           "kind": "compatibility-alias",
-          "source": "contracts/config/legacy-aliases.json:928"
+          "source": "contracts/config/legacy-aliases.json:888"
         },
         {
           "kind": "sample-declaration",
           "source": "deploy/legacy/sample.env:17"
-        },
-        {
-          "kind": "deployment-write",
-          "source": "run-nodes.sh:1294"
         }
       ],
       "sample_value": ""
@@ -825,7 +781,7 @@
       "occurrences": [
         {
           "kind": "compatibility-alias",
-          "source": "contracts/config/legacy-aliases.json:949"
+          "source": "contracts/config/legacy-aliases.json:905"
         },
         {
           "kind": "docker-env",
@@ -840,7 +796,7 @@
       "occurrences": [
         {
           "kind": "compatibility-alias",
-          "source": "contracts/config/legacy-aliases.json:966"
+          "source": "contracts/config/legacy-aliases.json:922"
         }
       ],
       "sample_value": null
@@ -851,7 +807,7 @@
       "occurrences": [
         {
           "kind": "compatibility-alias",
-          "source": "contracts/config/legacy-aliases.json:979"
+          "source": "contracts/config/legacy-aliases.json:935"
         },
         {
           "kind": "sample-declaration",
@@ -866,7 +822,7 @@
       "occurrences": [
         {
           "kind": "compatibility-alias",
-          "source": "contracts/config/legacy-aliases.json:996"
+          "source": "contracts/config/legacy-aliases.json:952"
         },
         {
           "kind": "sample-declaration",
@@ -881,7 +837,7 @@
       "occurrences": [
         {
           "kind": "compatibility-alias",
-          "source": "contracts/config/legacy-aliases.json:1013"
+          "source": "contracts/config/legacy-aliases.json:969"
         },
         {
           "kind": "sample-declaration",
@@ -896,7 +852,7 @@
       "occurrences": [
         {
           "kind": "compatibility-alias",
-          "source": "contracts/config/legacy-aliases.json:1030"
+          "source": "contracts/config/legacy-aliases.json:986"
         }
       ],
       "sample_value": null
@@ -907,7 +863,7 @@
       "occurrences": [
         {
           "kind": "compatibility-alias",
-          "source": "contracts/config/legacy-aliases.json:1043"
+          "source": "contracts/config/legacy-aliases.json:999"
         }
       ],
       "sample_value": null
@@ -918,7 +874,7 @@
       "occurrences": [
         {
           "kind": "compatibility-alias",
-          "source": "contracts/config/legacy-aliases.json:1056"
+          "source": "contracts/config/legacy-aliases.json:1012"
         },
         {
           "kind": "sample-declaration",
@@ -933,7 +889,7 @@
       "occurrences": [
         {
           "kind": "compatibility-alias",
-          "source": "contracts/config/legacy-aliases.json:1073"
+          "source": "contracts/config/legacy-aliases.json:1029"
         },
         {
           "kind": "sample-declaration",
@@ -948,7 +904,7 @@
       "occurrences": [
         {
           "kind": "compatibility-alias",
-          "source": "contracts/config/legacy-aliases.json:1090"
+          "source": "contracts/config/legacy-aliases.json:1046"
         },
         {
           "kind": "sample-declaration",
@@ -963,7 +919,7 @@
       "occurrences": [
         {
           "kind": "compatibility-alias",
-          "source": "contracts/config/legacy-aliases.json:1107"
+          "source": "contracts/config/legacy-aliases.json:1063"
         },
         {
           "kind": "sample-declaration",
@@ -978,7 +934,7 @@
       "occurrences": [
         {
           "kind": "compatibility-alias",
-          "source": "contracts/config/legacy-aliases.json:1124"
+          "source": "contracts/config/legacy-aliases.json:1080"
         },
         {
           "kind": "sample-declaration",
@@ -993,7 +949,7 @@
       "occurrences": [
         {
           "kind": "compatibility-alias",
-          "source": "contracts/config/legacy-aliases.json:1141"
+          "source": "contracts/config/legacy-aliases.json:1097"
         }
       ],
       "sample_value": null
@@ -1004,7 +960,7 @@
       "occurrences": [
         {
           "kind": "compatibility-alias",
-          "source": "contracts/config/legacy-aliases.json:1154"
+          "source": "contracts/config/legacy-aliases.json:1110"
         },
         {
           "kind": "sample-declaration",
@@ -1019,7 +975,7 @@
       "occurrences": [
         {
           "kind": "compatibility-alias",
-          "source": "contracts/config/legacy-aliases.json:1171"
+          "source": "contracts/config/legacy-aliases.json:1127"
         },
         {
           "kind": "sample-declaration",
@@ -1034,7 +990,7 @@
       "occurrences": [
         {
           "kind": "compatibility-alias",
-          "source": "contracts/config/legacy-aliases.json:1188"
+          "source": "contracts/config/legacy-aliases.json:1144"
         },
         {
           "kind": "sample-declaration",
@@ -1049,7 +1005,7 @@
       "occurrences": [
         {
           "kind": "compatibility-alias",
-          "source": "contracts/config/legacy-aliases.json:1205"
+          "source": "contracts/config/legacy-aliases.json:1161"
         }
       ],
       "sample_value": null
@@ -1060,15 +1016,11 @@
       "occurrences": [
         {
           "kind": "compatibility-alias",
-          "source": "contracts/config/legacy-aliases.json:1218"
+          "source": "contracts/config/legacy-aliases.json:1174"
         },
         {
           "kind": "sample-declaration",
           "source": "deploy/legacy/sample.env:14"
-        },
-        {
-          "kind": "deployment-write",
-          "source": "run-nodes.sh:1291"
         }
       ],
       "sample_value": ""
@@ -1079,15 +1031,11 @@
       "occurrences": [
         {
           "kind": "compatibility-alias",
-          "source": "contracts/config/legacy-aliases.json:1239"
+          "source": "contracts/config/legacy-aliases.json:1191"
         },
         {
           "kind": "sample-declaration",
           "source": "deploy/legacy/sample.env:1"
-        },
-        {
-          "kind": "deployment-write",
-          "source": "run-nodes.sh:1277"
         }
       ],
       "sample_value": ""
@@ -1098,15 +1046,11 @@
       "occurrences": [
         {
           "kind": "compatibility-alias",
-          "source": "contracts/config/legacy-aliases.json:1260"
+          "source": "contracts/config/legacy-aliases.json:1208"
         },
         {
           "kind": "sample-declaration",
           "source": "deploy/legacy/sample.env:2"
-        },
-        {
-          "kind": "deployment-write",
-          "source": "run-nodes.sh:1278"
         }
       ],
       "sample_value": ""
@@ -1117,7 +1061,7 @@
       "occurrences": [
         {
           "kind": "compatibility-alias",
-          "source": "contracts/config/legacy-aliases.json:1281"
+          "source": "contracts/config/legacy-aliases.json:1225"
         },
         {
           "kind": "read",
@@ -1132,11 +1076,7 @@
       "occurrences": [
         {
           "kind": "compatibility-alias",
-          "source": "contracts/config/legacy-aliases.json:1298"
-        },
-        {
-          "kind": "deployment-write",
-          "source": "run-nodes.sh:1290"
+          "source": "contracts/config/legacy-aliases.json:1242"
         }
       ],
       "sample_value": null
@@ -1147,7 +1087,7 @@
       "occurrences": [
         {
           "kind": "compatibility-alias",
-          "source": "contracts/config/legacy-aliases.json:1315"
+          "source": "contracts/config/legacy-aliases.json:1255"
         }
       ],
       "sample_value": null
@@ -1158,7 +1098,7 @@
       "occurrences": [
         {
           "kind": "compatibility-alias",
-          "source": "contracts/config/legacy-aliases.json:1328"
+          "source": "contracts/config/legacy-aliases.json:1268"
         }
       ],
       "sample_value": null
@@ -1169,7 +1109,7 @@
       "occurrences": [
         {
           "kind": "compatibility-alias",
-          "source": "contracts/config/legacy-aliases.json:1341"
+          "source": "contracts/config/legacy-aliases.json:1281"
         }
       ],
       "sample_value": null
@@ -1180,11 +1120,7 @@
       "occurrences": [
         {
           "kind": "compatibility-alias",
-          "source": "contracts/config/legacy-aliases.json:1354"
-        },
-        {
-          "kind": "deployment-write",
-          "source": "run-nodes.sh:1308"
+          "source": "contracts/config/legacy-aliases.json:1294"
         }
       ],
       "sample_value": null
@@ -1195,11 +1131,7 @@
       "occurrences": [
         {
           "kind": "compatibility-alias",
-          "source": "contracts/config/legacy-aliases.json:1371"
-        },
-        {
-          "kind": "deployment-write",
-          "source": "run-nodes.sh:1306"
+          "source": "contracts/config/legacy-aliases.json:1307"
         }
       ],
       "sample_value": null
@@ -1210,11 +1142,7 @@
       "occurrences": [
         {
           "kind": "compatibility-alias",
-          "source": "contracts/config/legacy-aliases.json:1388"
-        },
-        {
-          "kind": "deployment-write",
-          "source": "run-nodes.sh:1305"
+          "source": "contracts/config/legacy-aliases.json:1320"
         }
       ],
       "sample_value": null
@@ -1225,11 +1153,7 @@
       "occurrences": [
         {
           "kind": "compatibility-alias",
-          "source": "contracts/config/legacy-aliases.json:1405"
-        },
-        {
-          "kind": "deployment-write",
-          "source": "run-nodes.sh:1307"
+          "source": "contracts/config/legacy-aliases.json:1333"
         }
       ],
       "sample_value": null
@@ -1240,11 +1164,7 @@
       "occurrences": [
         {
           "kind": "compatibility-alias",
-          "source": "contracts/config/legacy-aliases.json:1422"
-        },
-        {
-          "kind": "deployment-write",
-          "source": "run-nodes.sh:1304"
+          "source": "contracts/config/legacy-aliases.json:1346"
         }
       ],
       "sample_value": null
@@ -1255,7 +1175,7 @@
       "occurrences": [
         {
           "kind": "compatibility-alias",
-          "source": "contracts/config/legacy-aliases.json:1439"
+          "source": "contracts/config/legacy-aliases.json:1359"
         },
         {
           "kind": "sample-declaration",
@@ -1270,7 +1190,7 @@
       "occurrences": [
         {
           "kind": "compatibility-alias",
-          "source": "contracts/config/legacy-aliases.json:1456"
+          "source": "contracts/config/legacy-aliases.json:1376"
         },
         {
           "kind": "sample-declaration",
@@ -1285,7 +1205,7 @@
       "occurrences": [
         {
           "kind": "compatibility-alias",
-          "source": "contracts/config/legacy-aliases.json:1473"
+          "source": "contracts/config/legacy-aliases.json:1393"
         },
         {
           "kind": "sample-declaration",
@@ -1300,7 +1220,7 @@
       "occurrences": [
         {
           "kind": "compatibility-alias",
-          "source": "contracts/config/legacy-aliases.json:1490"
+          "source": "contracts/config/legacy-aliases.json:1410"
         },
         {
           "kind": "sample-declaration",
@@ -1315,7 +1235,7 @@
       "occurrences": [
         {
           "kind": "compatibility-alias",
-          "source": "contracts/config/legacy-aliases.json:1507"
+          "source": "contracts/config/legacy-aliases.json:1427"
         },
         {
           "kind": "sample-declaration",
@@ -1330,7 +1250,7 @@
       "occurrences": [
         {
           "kind": "compatibility-alias",
-          "source": "contracts/config/legacy-aliases.json:1524"
+          "source": "contracts/config/legacy-aliases.json:1444"
         },
         {
           "kind": "sample-declaration",
@@ -1345,7 +1265,7 @@
       "occurrences": [
         {
           "kind": "compatibility-alias",
-          "source": "contracts/config/legacy-aliases.json:1541"
+          "source": "contracts/config/legacy-aliases.json:1461"
         },
         {
           "kind": "sample-declaration",
@@ -1360,7 +1280,7 @@
       "occurrences": [
         {
           "kind": "compatibility-alias",
-          "source": "contracts/config/legacy-aliases.json:1558"
+          "source": "contracts/config/legacy-aliases.json:1478"
         },
         {
           "kind": "sample-declaration",
@@ -1375,15 +1295,11 @@
       "occurrences": [
         {
           "kind": "compatibility-alias",
-          "source": "contracts/config/legacy-aliases.json:1575"
+          "source": "contracts/config/legacy-aliases.json:1495"
         },
         {
           "kind": "sample-declaration",
           "source": "deploy/legacy/sample.env:16"
-        },
-        {
-          "kind": "deployment-write",
-          "source": "run-nodes.sh:1293"
         }
       ],
       "sample_value": ""
@@ -1394,15 +1310,11 @@
       "occurrences": [
         {
           "kind": "compatibility-alias",
-          "source": "contracts/config/legacy-aliases.json:1596"
+          "source": "contracts/config/legacy-aliases.json:1512"
         },
         {
           "kind": "sample-declaration",
           "source": "deploy/legacy/sample.env:6"
-        },
-        {
-          "kind": "deployment-write",
-          "source": "run-nodes.sh:1282"
         }
       ],
       "sample_value": ""
@@ -1413,15 +1325,11 @@
       "occurrences": [
         {
           "kind": "compatibility-alias",
-          "source": "contracts/config/legacy-aliases.json:1617"
+          "source": "contracts/config/legacy-aliases.json:1529"
         },
         {
           "kind": "sample-declaration",
           "source": "deploy/legacy/sample.env:3"
-        },
-        {
-          "kind": "deployment-write",
-          "source": "run-nodes.sh:1279"
         }
       ],
       "sample_value": ""
@@ -1432,15 +1340,11 @@
       "occurrences": [
         {
           "kind": "compatibility-alias",
-          "source": "contracts/config/legacy-aliases.json:1638"
+          "source": "contracts/config/legacy-aliases.json:1546"
         },
         {
           "kind": "sample-declaration",
           "source": "deploy/legacy/sample.env:7"
-        },
-        {
-          "kind": "deployment-write",
-          "source": "run-nodes.sh:1283"
         }
       ],
       "sample_value": ""
@@ -1451,15 +1355,11 @@
       "occurrences": [
         {
           "kind": "compatibility-alias",
-          "source": "contracts/config/legacy-aliases.json:1659"
+          "source": "contracts/config/legacy-aliases.json:1563"
         },
         {
           "kind": "sample-declaration",
           "source": "deploy/legacy/sample.env:38"
-        },
-        {
-          "kind": "deployment-write",
-          "source": "run-nodes.sh:1300"
         }
       ],
       "sample_value": "9099"
@@ -1470,15 +1370,11 @@
       "occurrences": [
         {
           "kind": "compatibility-alias",
-          "source": "contracts/config/legacy-aliases.json:1680"
+          "source": "contracts/config/legacy-aliases.json:1580"
         },
         {
           "kind": "sample-declaration",
           "source": "deploy/legacy/sample.env:39"
-        },
-        {
-          "kind": "deployment-write",
-          "source": "run-nodes.sh:1301"
         }
       ],
       "sample_value": ""
@@ -1489,7 +1385,7 @@
       "occurrences": [
         {
           "kind": "compatibility-alias",
-          "source": "contracts/config/legacy-aliases.json:1701"
+          "source": "contracts/config/legacy-aliases.json:1597"
         }
       ],
       "sample_value": null
@@ -1500,7 +1396,7 @@
       "occurrences": [
         {
           "kind": "compatibility-alias",
-          "source": "contracts/config/legacy-aliases.json:1714"
+          "source": "contracts/config/legacy-aliases.json:1610"
         }
       ],
       "sample_value": null
@@ -1511,7 +1407,7 @@
       "occurrences": [
         {
           "kind": "compatibility-alias",
-          "source": "contracts/config/legacy-aliases.json:1727"
+          "source": "contracts/config/legacy-aliases.json:1623"
         },
         {
           "kind": "read",
@@ -1526,15 +1422,11 @@
       "occurrences": [
         {
           "kind": "compatibility-alias",
-          "source": "contracts/config/legacy-aliases.json:1744"
+          "source": "contracts/config/legacy-aliases.json:1640"
         },
         {
           "kind": "sample-declaration",
           "source": "deploy/legacy/sample.env:13"
-        },
-        {
-          "kind": "deployment-write",
-          "source": "run-nodes.sh:1289"
         }
       ],
       "sample_value": ""
@@ -1545,15 +1437,11 @@
       "occurrences": [
         {
           "kind": "compatibility-alias",
-          "source": "contracts/config/legacy-aliases.json:1765"
+          "source": "contracts/config/legacy-aliases.json:1657"
         },
         {
           "kind": "sample-declaration",
           "source": "deploy/legacy/sample.env:21"
-        },
-        {
-          "kind": "deployment-write",
-          "source": "run-nodes.sh:1298"
         }
       ],
       "sample_value": ""
@@ -1564,15 +1452,11 @@
       "occurrences": [
         {
           "kind": "compatibility-alias",
-          "source": "contracts/config/legacy-aliases.json:1786"
+          "source": "contracts/config/legacy-aliases.json:1674"
         },
         {
           "kind": "sample-declaration",
           "source": "deploy/legacy/sample.env:22"
-        },
-        {
-          "kind": "deployment-write",
-          "source": "run-nodes.sh:1299"
         }
       ],
       "sample_value": ""
@@ -1583,15 +1467,11 @@
       "occurrences": [
         {
           "kind": "compatibility-alias",
-          "source": "contracts/config/legacy-aliases.json:1807"
+          "source": "contracts/config/legacy-aliases.json:1691"
         },
         {
           "kind": "sample-declaration",
           "source": "deploy/legacy/sample.env:19"
-        },
-        {
-          "kind": "deployment-write",
-          "source": "run-nodes.sh:1296"
         }
       ],
       "sample_value": ""
@@ -1602,7 +1482,7 @@
       "occurrences": [
         {
           "kind": "compatibility-alias",
-          "source": "contracts/config/legacy-aliases.json:1828"
+          "source": "contracts/config/legacy-aliases.json:1708"
         }
       ],
       "sample_value": null
@@ -1613,15 +1493,11 @@
       "occurrences": [
         {
           "kind": "compatibility-alias",
-          "source": "contracts/config/legacy-aliases.json:1841"
+          "source": "contracts/config/legacy-aliases.json:1721"
         },
         {
           "kind": "sample-declaration",
           "source": "deploy/legacy/sample.env:20"
-        },
-        {
-          "kind": "deployment-write",
-          "source": "run-nodes.sh:1297"
         }
       ],
       "sample_value": ""
@@ -1632,7 +1508,7 @@
       "occurrences": [
         {
           "kind": "compatibility-alias",
-          "source": "contracts/config/legacy-aliases.json:1862"
+          "source": "contracts/config/legacy-aliases.json:1738"
         },
         {
           "kind": "docker-env",

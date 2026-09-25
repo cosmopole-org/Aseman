@@ -7,7 +7,7 @@ import json
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-CATALOG = ROOT / "evals" / "agent" / "cases.json"
+CATALOG = ROOT / "tests" / "evals" / "agent" / "cases.json"
 
 
 def main() -> None:

@@ -18,9 +18,8 @@
     "contracts",
     "deploy",
     "docs",
-    "examples",
     "tests",
-    "evals/agent",
+    "tests/evals/agent",
     "xtask"
   ],
   "target_packages": [

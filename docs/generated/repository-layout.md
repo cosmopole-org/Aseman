@@ -30,9 +30,8 @@ Legacy roots remain until their removal-ledger gates pass.
 | `contracts` | ownership root | PRESENT |
 | `deploy` | ownership root | PRESENT |
 | `docs` | ownership root | PRESENT |
-| `examples` | ownership root | PRESENT |
 | `tests` | ownership root | PRESENT |
-| `evals/agent` | ownership root | PRESENT |
+| `tests/evals/agent` | ownership root | PRESENT |
 | `xtask` | ownership root | PRESENT |
 | `apps/aseman-node` | target package | PRESENT |
 | `apps/asemanctl` | target package | PRESENT |

@@ -13,7 +13,7 @@
 //! * `casparctl vms new <key>`       — scaffold a new VM plugin project
 //!
 //! The enable/disable selection is stored in `modules/runtime/vms.state.json`; `sync` is
-//! run automatically by `build-dist.sh` before compiling the node, so the
+//! run automatically by `scripts/build-dist.sh` before compiling the node, so the
 //! generated registration code always reflects the current selection and is
 //! never edited by hand.
 
@@ -290,7 +290,7 @@ fn cmd_list(args: &[String]) -> Result<()> {
     }
     println!(
         "\nUse `casparctl vms enable|disable <key>` to change the selection,\n\
-         then `casparctl vms sync` (run automatically by build-dist.sh) to apply it."
+         then `casparctl vms sync` (run automatically by scripts/build-dist.sh) to apply it."
     );
     Ok(())
 }
@@ -339,7 +339,7 @@ fn cmd_set_enabled(args: &[String], enable: bool) -> Result<()> {
     }
     write_disabled(&vms_dir, &disabled)?;
     println!(
-        "\nSelection saved to {}.\nRun `casparctl vms sync` (or build-dist.sh) to apply it to the node build.",
+        "\nSelection saved to {}.\nRun `casparctl vms sync` (or scripts/build-dist.sh) to apply it to the node build.",
         vms_dir.join(STATE_FILE_NAME).display()
     );
     Ok(())
@@ -609,7 +609,7 @@ fn cmd_new(args: &[String]) -> Result<()> {
          1. implement src/controller.rs against the caspar-vm-sdk traits\n  \
          2. fill in vm.config.json (aliases, deploy behaviour, ...)\n  \
          3. `casparctl vms list` to verify discovery\n  \
-         4. `casparctl vms sync` + rebuild the node (build-dist.sh)",
+         4. `casparctl vms sync` + rebuild the node (scripts/build-dist.sh)",
         dir.display()
     );
     Ok(())

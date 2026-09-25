@@ -263,12 +263,12 @@
     }
   },
   "source": {
-    "file_count": 607,
+    "file_count": 602,
     "files_by_suffix": {
-      ".js": 4,
+      ".js": 2,
       ".py": 33,
       ".rs": 564,
-      ".sh": 5,
+      ".sh": 2,
       ".ts": 1
     },
     "largest_files": [
@@ -325,10 +325,6 @@
         "path": "crates/aseman-contracts/src/capsule.rs"
       },
       {
-        "lines": 1585,
-        "path": "run-nodes.sh"
-      },
-      {
         "lines": 1581,
         "path": "crates/aseman-module-runtime/src/lib.rs"
       },
@@ -351,9 +347,13 @@
       {
         "lines": 1324,
         "path": "modules/runtime/elpify/crates/elpify-lang/src/compiler.rs"
+      },
+      {
+        "lines": 1304,
+        "path": "modules/storage/postgres/src/lib.rs"
       }
     ],
-    "nonblank_lines": 161319,
-    "physical_lines": 173025
+    "nonblank_lines": 159321,
+    "physical_lines": 170817
   }
 }
