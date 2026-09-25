@@ -1,0 +1,27 @@
+[package]
+name = "asemanctl"
+description = "Canonical Aseman administrative CLI implementation."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[[bin]]
+name = "casparctl"
+path = "src/bin/casparctl.rs"
+
+[dependencies]
+aseman-config = { path = "../../crates/aseman-config" }
+anyhow.workspace = true
+base64.workspace = true
+chrono = { version = "0.4", default-features = false, features = ["clock", "std"] }
+ctrlc = "3.4"
+clap = { version = "4", features = ["derive"] }
+regex.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+
+[lints]
+workspace = true

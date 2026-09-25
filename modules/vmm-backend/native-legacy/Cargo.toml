@@ -18,8 +18,8 @@ aseman-domain = { path = "../../../crates/aseman-domain" }
 aseman-guest-http = { path = "../../guest-http" }
 aseman-ports = { path = "../../../crates/aseman-ports" }
 aseman-vmm-backend-grpc = { path = "../../vmm-backend-grpc" }
-caspar-vm-plugins = { path = "../../../node/crates/caspar-vm-plugins" }
-caspar-vm-sdk = { path = "../../../vm-sdk" }
+caspar-vm-plugins = { path = "crates/caspar-vm-plugins" }
+caspar-vm-sdk = { path = "../../runtime/sdk-legacy" }
 base64.workspace = true
 dashmap = "6"
 serde.workspace = true
@@ -36,7 +36,7 @@ rcgen = { version = "0.14", default-features = false, features = ["crypto", "pem
 rustls = { version = "0.23", default-features = false, features = ["std", "ring", "tls12"] }
 aseman-guest-http = { path = "../../guest-http" }
 aseman-application = { path = "../../../crates/aseman-application" }
-aseman-storage-postgres = { path = "../../storage-postgres" }
+aseman-storage-postgres = { path = "../../storage/postgres" }
 aseman-vmm-http = { path = "../../vmm-http" }
 postgres = { workspace = true }
 reqwest = { version = "0.12", default-features = false, features = ["blocking", "rustls-tls"] }

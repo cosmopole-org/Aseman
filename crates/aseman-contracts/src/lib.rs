@@ -16,6 +16,7 @@ pub mod migration;
 pub mod module;
 pub mod security;
 pub mod vmm;
+pub mod vmm_agent;
 
 // Tonic's generated service signatures return its fixed `Status` error by value.
 // This boundary code cannot change that ABI; application code maps it immediately.
@@ -45,6 +46,11 @@ pub mod aseman {
             }
         }
     }
+    pub mod gateway {
+        pub mod v1 {
+            tonic::include_proto!("aseman.gateway.v1");
+        }
+    }
     pub mod vmm {
         pub mod backend {
             pub mod v1 {
@@ -55,6 +61,7 @@ pub mod aseman {
 }
 
 pub use aseman::capsule::provider::v1 as capsule_provider_v1;
+pub use aseman::gateway::v1 as gateway_v1;
 pub use aseman::module::control::v1 as module_control_v1;
 pub use aseman::module::provider::v1 as module_provider_v1;
 pub use aseman::module::sample::v1 as module_sample_v1;

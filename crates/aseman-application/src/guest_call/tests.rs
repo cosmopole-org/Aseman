@@ -203,6 +203,9 @@ impl VmmClient for World {
     fn forward_http(&self, _: WorkloadId, _: &str, _: &str) -> PortResult<String> {
         unreachable!()
     }
+    fn usage(&self, _: WorkloadId) -> PortResult<aseman_domain::vmm::Usage> {
+        unreachable!()
+    }
     fn operation(&self, _: OperationId) -> PortResult<Option<OperationRecord>> {
         unreachable!()
     }

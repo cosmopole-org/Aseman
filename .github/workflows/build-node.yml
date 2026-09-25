@@ -33,10 +33,10 @@ on:
   push:
     branches: [Main]
     paths:
-      - 'node/**'
-      - 'vms/**'
-      - 'vm-sdk/**'
-      - 'cmd/casparctl/**'
+      - 'apps/aseman-node/**'
+      - 'apps/asemanctl/**'
+      - 'modules/runtime/**'
+      - 'modules/vmm-backend/native-legacy/**'
       - 'build-dist.sh'
       - '.github/workflows/build-node.yml'
 
@@ -88,9 +88,7 @@ jobs:
       - name: Cache cargo build
         uses: Swatinem/rust-cache@v2
         with:
-          workspaces: |
-            node
-            cmd/casparctl
+          workspaces: .
           # Per-arch cache. Bump if a clean rebuild is ever needed.
           key: caspar-dist-${{ matrix.arch }}-v1
 

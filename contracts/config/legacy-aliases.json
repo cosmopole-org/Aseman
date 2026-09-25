@@ -3,7 +3,7 @@
     "artifact": "A103",
     "generator": "scripts/generate_phase1_contracts.py",
     "last_verified_commit": "800df24076c794f9b33c29a9f301dd9d674f47d6",
-    "legacy_key_count": 117,
+    "legacy_key_count": 116,
     "status": "ACCEPTED"
   },
   "aliases": [
@@ -20,11 +20,11 @@
         },
         {
           "kind": "sample-declaration",
-          "source": "node/sample.env:5"
+          "source": "deploy/legacy/sample.env:5"
         },
         {
           "kind": "deployment-write",
-          "source": "run-nodes.sh:1282"
+          "source": "run-nodes.sh:1281"
         }
       ]
     },
@@ -41,7 +41,7 @@
         },
         {
           "kind": "read",
-          "source": "crates/aseman-config/src/lib.rs:337"
+          "source": "crates/aseman-config/src/lib.rs:336"
         }
       ]
     },
@@ -58,7 +58,7 @@
         },
         {
           "kind": "read",
-          "source": "crates/aseman-config/src/lib.rs:334"
+          "source": "crates/aseman-config/src/lib.rs:333"
         }
       ]
     },
@@ -75,7 +75,7 @@
         },
         {
           "kind": "deployment-write",
-          "source": "run-nodes.sh:1304"
+          "source": "run-nodes.sh:1303"
         }
       ]
     },
@@ -92,7 +92,7 @@
         },
         {
           "kind": "deployment-write",
-          "source": "run-nodes.sh:1303"
+          "source": "run-nodes.sh:1302"
         }
       ]
     },
@@ -109,11 +109,11 @@
         },
         {
           "kind": "sample-declaration",
-          "source": "node/sample.env:4"
+          "source": "deploy/legacy/sample.env:4"
         },
         {
           "kind": "deployment-write",
-          "source": "run-nodes.sh:1281"
+          "source": "run-nodes.sh:1280"
         }
       ]
     },
@@ -130,11 +130,11 @@
         },
         {
           "kind": "sample-declaration",
-          "source": "node/sample.env:11"
+          "source": "deploy/legacy/sample.env:11"
         },
         {
           "kind": "deployment-write",
-          "source": "run-nodes.sh:1288"
+          "source": "run-nodes.sh:1287"
         }
       ]
     },
@@ -264,7 +264,7 @@
       "occurrences": [
         {
           "kind": "typescript-read",
-          "source": "client-cli/index.ts:1200"
+          "source": "apps/aseman-client/index.ts:1200"
         },
         {
           "kind": "compatibility-alias",
@@ -281,7 +281,7 @@
       "occurrences": [
         {
           "kind": "typescript-read",
-          "source": "client-cli/index.ts:78"
+          "source": "apps/aseman-client/index.ts:78"
         },
         {
           "kind": "compatibility-alias",
@@ -363,7 +363,7 @@
       "occurrences": [
         {
           "kind": "typescript-read",
-          "source": "client-cli/index.ts:1202"
+          "source": "apps/aseman-client/index.ts:1202"
         },
         {
           "kind": "compatibility-alias",
@@ -380,7 +380,7 @@
       "occurrences": [
         {
           "kind": "typescript-read",
-          "source": "client-cli/index.ts:1201"
+          "source": "apps/aseman-client/index.ts:1201"
         },
         {
           "kind": "compatibility-alias",
@@ -436,7 +436,7 @@
       "occurrences": [
         {
           "kind": "typescript-read",
-          "source": "client-cli/index.ts:572"
+          "source": "apps/aseman-client/index.ts:572"
         },
         {
           "kind": "compatibility-alias",
@@ -479,7 +479,7 @@
       "occurrences": [
         {
           "kind": "typescript-read",
-          "source": "client-cli/index.ts:51"
+          "source": "apps/aseman-client/index.ts:51"
         },
         {
           "kind": "compatibility-alias",
@@ -565,11 +565,11 @@
         },
         {
           "kind": "sample-declaration",
-          "source": "node/sample.env:9"
+          "source": "deploy/legacy/sample.env:9"
         },
         {
           "kind": "deployment-write",
-          "source": "run-nodes.sh:1286"
+          "source": "run-nodes.sh:1285"
         }
       ]
     },
@@ -586,11 +586,11 @@
         },
         {
           "kind": "sample-declaration",
-          "source": "node/sample.env:8"
+          "source": "deploy/legacy/sample.env:8"
         },
         {
           "kind": "deployment-write",
-          "source": "run-nodes.sh:1285"
+          "source": "run-nodes.sh:1284"
         }
       ]
     },
@@ -724,7 +724,7 @@
         },
         {
           "kind": "docker-env",
-          "source": "node/Dockerfile:24"
+          "source": "deploy/legacy/node.Dockerfile:24"
         }
       ]
     },
@@ -767,11 +767,11 @@
         },
         {
           "kind": "sample-declaration",
-          "source": "node/sample.env:12"
+          "source": "deploy/legacy/sample.env:12"
         },
         {
           "kind": "deployment-write",
-          "source": "run-nodes.sh:1289"
+          "source": "run-nodes.sh:1288"
         }
       ]
     },
@@ -788,7 +788,7 @@
         },
         {
           "kind": "docker-arg",
-          "source": "node/Dockerfile:78"
+          "source": "deploy/legacy/node.Dockerfile:84"
         }
       ]
     },
@@ -805,11 +805,11 @@
         },
         {
           "kind": "sample-declaration",
-          "source": "node/sample.env:10"
+          "source": "deploy/legacy/sample.env:10"
         },
         {
           "kind": "deployment-write",
-          "source": "run-nodes.sh:1287"
+          "source": "run-nodes.sh:1286"
         }
       ]
     },
@@ -878,7 +878,7 @@
         },
         {
           "kind": "read",
-          "source": "crates/aseman-config/src/lib.rs:395"
+          "source": "crates/aseman-config/src/lib.rs:402"
         }
       ]
     },
@@ -895,7 +895,7 @@
         },
         {
           "kind": "docker-arg",
-          "source": "node/Dockerfile:77"
+          "source": "deploy/legacy/node.Dockerfile:83"
         }
       ]
     },
@@ -912,11 +912,11 @@
         },
         {
           "kind": "sample-declaration",
-          "source": "node/sample.env:15"
+          "source": "deploy/legacy/sample.env:15"
         },
         {
           "kind": "deployment-write",
-          "source": "run-nodes.sh:1293"
+          "source": "run-nodes.sh:1292"
         }
       ]
     },
@@ -933,11 +933,11 @@
         },
         {
           "kind": "sample-declaration",
-          "source": "node/sample.env:17"
+          "source": "deploy/legacy/sample.env:17"
         },
         {
           "kind": "deployment-write",
-          "source": "run-nodes.sh:1295"
+          "source": "run-nodes.sh:1294"
         }
       ]
     },
@@ -954,7 +954,7 @@
         },
         {
           "kind": "docker-env",
-          "source": "node/Dockerfile:50"
+          "source": "deploy/legacy/node.Dockerfile:50"
         }
       ]
     },
@@ -984,7 +984,7 @@
         },
         {
           "kind": "sample-declaration",
-          "source": "node/sample.env:46"
+          "source": "deploy/legacy/sample.env:46"
         }
       ]
     },
@@ -1001,7 +1001,7 @@
         },
         {
           "kind": "sample-declaration",
-          "source": "node/sample.env:55"
+          "source": "deploy/legacy/sample.env:55"
         }
       ]
     },
@@ -1018,7 +1018,7 @@
         },
         {
           "kind": "sample-declaration",
-          "source": "node/sample.env:58"
+          "source": "deploy/legacy/sample.env:58"
         }
       ]
     },
@@ -1061,7 +1061,7 @@
         },
         {
           "kind": "sample-declaration",
-          "source": "node/sample.env:60"
+          "source": "deploy/legacy/sample.env:60"
         }
       ]
     },
@@ -1078,7 +1078,7 @@
         },
         {
           "kind": "sample-declaration",
-          "source": "node/sample.env:50"
+          "source": "deploy/legacy/sample.env:50"
         }
       ]
     },
@@ -1095,7 +1095,7 @@
         },
         {
           "kind": "sample-declaration",
-          "source": "node/sample.env:66"
+          "source": "deploy/legacy/sample.env:66"
         }
       ]
     },
@@ -1112,7 +1112,7 @@
         },
         {
           "kind": "sample-declaration",
-          "source": "node/sample.env:64"
+          "source": "deploy/legacy/sample.env:64"
         }
       ]
     },
@@ -1129,7 +1129,7 @@
         },
         {
           "kind": "sample-declaration",
-          "source": "node/sample.env:52"
+          "source": "deploy/legacy/sample.env:52"
         }
       ]
     },
@@ -1159,7 +1159,7 @@
         },
         {
           "kind": "sample-declaration",
-          "source": "node/sample.env:47"
+          "source": "deploy/legacy/sample.env:47"
         }
       ]
     },
@@ -1176,7 +1176,7 @@
         },
         {
           "kind": "sample-declaration",
-          "source": "node/sample.env:48"
+          "source": "deploy/legacy/sample.env:48"
         }
       ]
     },
@@ -1193,7 +1193,7 @@
         },
         {
           "kind": "sample-declaration",
-          "source": "node/sample.env:62"
+          "source": "deploy/legacy/sample.env:62"
         }
       ]
     },
@@ -1223,11 +1223,11 @@
         },
         {
           "kind": "sample-declaration",
-          "source": "node/sample.env:14"
+          "source": "deploy/legacy/sample.env:14"
         },
         {
           "kind": "deployment-write",
-          "source": "run-nodes.sh:1292"
+          "source": "run-nodes.sh:1291"
         }
       ]
     },
@@ -1244,11 +1244,11 @@
         },
         {
           "kind": "sample-declaration",
-          "source": "node/sample.env:1"
+          "source": "deploy/legacy/sample.env:1"
         },
         {
           "kind": "deployment-write",
-          "source": "run-nodes.sh:1278"
+          "source": "run-nodes.sh:1277"
         }
       ]
     },
@@ -1265,11 +1265,11 @@
         },
         {
           "kind": "sample-declaration",
-          "source": "node/sample.env:2"
+          "source": "deploy/legacy/sample.env:2"
         },
         {
           "kind": "deployment-write",
-          "source": "run-nodes.sh:1279"
+          "source": "run-nodes.sh:1278"
         }
       ]
     },
@@ -1286,7 +1286,7 @@
         },
         {
           "kind": "read",
-          "source": "crates/aseman-config/src/lib.rs:363"
+          "source": "crates/aseman-config/src/lib.rs:362"
         }
       ]
     },
@@ -1303,7 +1303,7 @@
         },
         {
           "kind": "deployment-write",
-          "source": "run-nodes.sh:1291"
+          "source": "run-nodes.sh:1290"
         }
       ]
     },
@@ -1359,7 +1359,7 @@
         },
         {
           "kind": "deployment-write",
-          "source": "run-nodes.sh:1309"
+          "source": "run-nodes.sh:1308"
         }
       ]
     },
@@ -1376,7 +1376,7 @@
         },
         {
           "kind": "deployment-write",
-          "source": "run-nodes.sh:1307"
+          "source": "run-nodes.sh:1306"
         }
       ]
     },
@@ -1393,7 +1393,7 @@
         },
         {
           "kind": "deployment-write",
-          "source": "run-nodes.sh:1306"
+          "source": "run-nodes.sh:1305"
         }
       ]
     },
@@ -1410,7 +1410,7 @@
         },
         {
           "kind": "deployment-write",
-          "source": "run-nodes.sh:1308"
+          "source": "run-nodes.sh:1307"
         }
       ]
     },
@@ -1427,7 +1427,7 @@
         },
         {
           "kind": "deployment-write",
-          "source": "run-nodes.sh:1305"
+          "source": "run-nodes.sh:1304"
         }
       ]
     },
@@ -1444,7 +1444,7 @@
         },
         {
           "kind": "sample-declaration",
-          "source": "node/sample.env:33"
+          "source": "deploy/legacy/sample.env:33"
         }
       ]
     },
@@ -1461,7 +1461,7 @@
         },
         {
           "kind": "sample-declaration",
-          "source": "node/sample.env:32"
+          "source": "deploy/legacy/sample.env:32"
         }
       ]
     },
@@ -1478,7 +1478,7 @@
         },
         {
           "kind": "sample-declaration",
-          "source": "node/sample.env:31"
+          "source": "deploy/legacy/sample.env:31"
         }
       ]
     },
@@ -1495,7 +1495,7 @@
         },
         {
           "kind": "sample-declaration",
-          "source": "node/sample.env:30"
+          "source": "deploy/legacy/sample.env:30"
         }
       ]
     },
@@ -1512,7 +1512,7 @@
         },
         {
           "kind": "sample-declaration",
-          "source": "node/sample.env:29"
+          "source": "deploy/legacy/sample.env:29"
         }
       ]
     },
@@ -1529,7 +1529,7 @@
         },
         {
           "kind": "sample-declaration",
-          "source": "node/sample.env:35"
+          "source": "deploy/legacy/sample.env:35"
         }
       ]
     },
@@ -1546,7 +1546,7 @@
         },
         {
           "kind": "sample-declaration",
-          "source": "node/sample.env:34"
+          "source": "deploy/legacy/sample.env:34"
         }
       ]
     },
@@ -1563,7 +1563,7 @@
         },
         {
           "kind": "sample-declaration",
-          "source": "node/sample.env:36"
+          "source": "deploy/legacy/sample.env:36"
         }
       ]
     },
@@ -1580,11 +1580,11 @@
         },
         {
           "kind": "sample-declaration",
-          "source": "node/sample.env:16"
+          "source": "deploy/legacy/sample.env:16"
         },
         {
           "kind": "deployment-write",
-          "source": "run-nodes.sh:1294"
+          "source": "run-nodes.sh:1293"
         }
       ]
     },
@@ -1601,24 +1601,11 @@
         },
         {
           "kind": "sample-declaration",
-          "source": "node/sample.env:6"
+          "source": "deploy/legacy/sample.env:6"
         },
         {
           "kind": "deployment-write",
-          "source": "run-nodes.sh:1283"
-        }
-      ]
-    },
-    {
-      "canonical": "ASEMAN_LEGACY_SHARDCHAIN_SCRIPT",
-      "category": "runtime-or-storage",
-      "conflict_policy": "fail",
-      "expiry": "ADR-0004 window after canonical replacement",
-      "legacy": "SHARDCHAIN_SCRIPT",
-      "occurrences": [
-        {
-          "kind": "compatibility-alias",
-          "source": "contracts/config/legacy-aliases.json:1617"
+          "source": "run-nodes.sh:1282"
         }
       ]
     },
@@ -1631,15 +1618,15 @@
       "occurrences": [
         {
           "kind": "compatibility-alias",
-          "source": "contracts/config/legacy-aliases.json:1630"
+          "source": "contracts/config/legacy-aliases.json:1617"
         },
         {
           "kind": "sample-declaration",
-          "source": "node/sample.env:3"
+          "source": "deploy/legacy/sample.env:3"
         },
         {
           "kind": "deployment-write",
-          "source": "run-nodes.sh:1280"
+          "source": "run-nodes.sh:1279"
         }
       ]
     },
@@ -1652,15 +1639,15 @@
       "occurrences": [
         {
           "kind": "compatibility-alias",
-          "source": "contracts/config/legacy-aliases.json:1651"
+          "source": "contracts/config/legacy-aliases.json:1638"
         },
         {
           "kind": "sample-declaration",
-          "source": "node/sample.env:7"
+          "source": "deploy/legacy/sample.env:7"
         },
         {
           "kind": "deployment-write",
-          "source": "run-nodes.sh:1284"
+          "source": "run-nodes.sh:1283"
         }
       ]
     },
@@ -1673,15 +1660,15 @@
       "occurrences": [
         {
           "kind": "compatibility-alias",
-          "source": "contracts/config/legacy-aliases.json:1672"
+          "source": "contracts/config/legacy-aliases.json:1659"
         },
         {
           "kind": "sample-declaration",
-          "source": "node/sample.env:38"
+          "source": "deploy/legacy/sample.env:38"
         },
         {
           "kind": "deployment-write",
-          "source": "run-nodes.sh:1301"
+          "source": "run-nodes.sh:1300"
         }
       ]
     },
@@ -1694,15 +1681,15 @@
       "occurrences": [
         {
           "kind": "compatibility-alias",
-          "source": "contracts/config/legacy-aliases.json:1693"
+          "source": "contracts/config/legacy-aliases.json:1680"
         },
         {
           "kind": "sample-declaration",
-          "source": "node/sample.env:39"
+          "source": "deploy/legacy/sample.env:39"
         },
         {
           "kind": "deployment-write",
-          "source": "run-nodes.sh:1302"
+          "source": "run-nodes.sh:1301"
         }
       ]
     },
@@ -1715,7 +1702,7 @@
       "occurrences": [
         {
           "kind": "compatibility-alias",
-          "source": "contracts/config/legacy-aliases.json:1714"
+          "source": "contracts/config/legacy-aliases.json:1701"
         }
       ]
     },
@@ -1728,7 +1715,7 @@
       "occurrences": [
         {
           "kind": "compatibility-alias",
-          "source": "contracts/config/legacy-aliases.json:1727"
+          "source": "contracts/config/legacy-aliases.json:1714"
         }
       ]
     },
@@ -1741,11 +1728,11 @@
       "occurrences": [
         {
           "kind": "compatibility-alias",
-          "source": "contracts/config/legacy-aliases.json:1740"
+          "source": "contracts/config/legacy-aliases.json:1727"
         },
         {
           "kind": "read",
-          "source": "crates/aseman-config/src/lib.rs:399"
+          "source": "crates/aseman-config/src/lib.rs:406"
         }
       ]
     },
@@ -1758,15 +1745,15 @@
       "occurrences": [
         {
           "kind": "compatibility-alias",
-          "source": "contracts/config/legacy-aliases.json:1757"
+          "source": "contracts/config/legacy-aliases.json:1744"
         },
         {
           "kind": "sample-declaration",
-          "source": "node/sample.env:13"
+          "source": "deploy/legacy/sample.env:13"
         },
         {
           "kind": "deployment-write",
-          "source": "run-nodes.sh:1290"
+          "source": "run-nodes.sh:1289"
         }
       ]
     },
@@ -1779,15 +1766,15 @@
       "occurrences": [
         {
           "kind": "compatibility-alias",
-          "source": "contracts/config/legacy-aliases.json:1778"
+          "source": "contracts/config/legacy-aliases.json:1765"
         },
         {
           "kind": "sample-declaration",
-          "source": "node/sample.env:21"
+          "source": "deploy/legacy/sample.env:21"
         },
         {
           "kind": "deployment-write",
-          "source": "run-nodes.sh:1299"
+          "source": "run-nodes.sh:1298"
         }
       ]
     },
@@ -1800,15 +1787,15 @@
       "occurrences": [
         {
           "kind": "compatibility-alias",
-          "source": "contracts/config/legacy-aliases.json:1799"
+          "source": "contracts/config/legacy-aliases.json:1786"
         },
         {
           "kind": "sample-declaration",
-          "source": "node/sample.env:22"
+          "source": "deploy/legacy/sample.env:22"
         },
         {
           "kind": "deployment-write",
-          "source": "run-nodes.sh:1300"
+          "source": "run-nodes.sh:1299"
         }
       ]
     },
@@ -1821,15 +1808,15 @@
       "occurrences": [
         {
           "kind": "compatibility-alias",
-          "source": "contracts/config/legacy-aliases.json:1820"
+          "source": "contracts/config/legacy-aliases.json:1807"
         },
         {
           "kind": "sample-declaration",
-          "source": "node/sample.env:19"
+          "source": "deploy/legacy/sample.env:19"
         },
         {
           "kind": "deployment-write",
-          "source": "run-nodes.sh:1297"
+          "source": "run-nodes.sh:1296"
         }
       ]
     },
@@ -1842,7 +1829,7 @@
       "occurrences": [
         {
           "kind": "compatibility-alias",
-          "source": "contracts/config/legacy-aliases.json:1841"
+          "source": "contracts/config/legacy-aliases.json:1828"
         }
       ]
     },
@@ -1855,15 +1842,15 @@
       "occurrences": [
         {
           "kind": "compatibility-alias",
-          "source": "contracts/config/legacy-aliases.json:1854"
+          "source": "contracts/config/legacy-aliases.json:1841"
         },
         {
           "kind": "sample-declaration",
-          "source": "node/sample.env:20"
+          "source": "deploy/legacy/sample.env:20"
         },
         {
           "kind": "deployment-write",
-          "source": "run-nodes.sh:1298"
+          "source": "run-nodes.sh:1297"
         }
       ]
     },
@@ -1876,11 +1863,11 @@
       "occurrences": [
         {
           "kind": "compatibility-alias",
-          "source": "contracts/config/legacy-aliases.json:1875"
+          "source": "contracts/config/legacy-aliases.json:1862"
         },
         {
           "kind": "docker-env",
-          "source": "node/Dockerfile:51"
+          "source": "deploy/legacy/node.Dockerfile:51"
         }
       ]
     }

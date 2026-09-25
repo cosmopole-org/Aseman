@@ -1,0 +1,63 @@
+{
+  "version": 1,
+  "required_files": [
+    "Cargo.toml",
+    "Cargo.lock",
+    "rust-toolchain.toml",
+    "README.md",
+    "AGENTS.md",
+    "ARCHITECTURE.md",
+    "CONTRIBUTING.md",
+    "SECURITY.md",
+    "CHANGELOG.md"
+  ],
+  "ownership_roots": [
+    "apps",
+    "crates",
+    "modules",
+    "contracts",
+    "deploy",
+    "docs",
+    "examples",
+    "tests",
+    "evals/agent",
+    "xtask"
+  ],
+  "target_packages": [
+    "apps/aseman-node",
+    "apps/asemanctl",
+    "apps/aseman-vmm",
+    "apps/aseman-vmm-agent",
+    "apps/aseman-meter",
+    "crates/aseman-domain",
+    "crates/aseman-ports",
+    "crates/aseman-application",
+    "crates/aseman-contracts",
+    "crates/aseman-capsule",
+    "crates/aseman-config",
+    "crates/aseman-observability",
+    "crates/aseman-module-runtime",
+    "crates/aseman-guest-sdk",
+    "modules/storage/postgres",
+    "modules/storage/rocksdb-legacy",
+    "modules/network/http",
+    "modules/network/legacy",
+    "modules/federation/http",
+    "modules/realtime/durable",
+    "modules/security/capabilities",
+    "modules/finance/ledger",
+    "modules/consensus/hashgraph",
+    "modules/vmm-backend/nomad",
+    "modules/vmm-backend/native-legacy",
+    "modules/runtime/docker",
+    "modules/runtime/firecracker",
+    "modules/runtime/wasm",
+    "modules/runtime/javascript",
+    "modules/runtime/elpian",
+    "modules/runtime/elpify",
+    "modules/runtime/modal"
+  ],
+  "legacy_roots": [
+    "dist"
+  ]
+}

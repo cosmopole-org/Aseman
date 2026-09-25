@@ -3,7 +3,7 @@ status: ACCEPTED
 owner: migration/phase-1
 source_of_truth: plan/migration/15-agent-execution-guide.md
 last_verified_commit: 800df24076c7
-verification: cargo xtask fast plus cargo test -p caspar-node --lib
+verification: cargo xtask fast plus cargo test -p aseman-node --lib
 ---
 
 # Phase 1 boundary work record

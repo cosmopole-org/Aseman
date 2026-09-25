@@ -5,6 +5,7 @@
 
 pub mod coordination;
 pub mod federation;
+pub mod public_action;
 pub mod realtime;
 pub mod vmm;
 

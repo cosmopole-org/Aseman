@@ -95,15 +95,15 @@ fn targets(
         Some(requested.to_string())
     };
     let mut out = Vec::new();
-    if VM_TARGET_OPS.contains(&op) {
-        if let Some(target) = named_other("vmId", &identity.vm_id) {
-            out.push((TARGET_VM_ID_KEY, target));
-        }
+    if VM_TARGET_OPS.contains(&op)
+        && let Some(target) = named_other("vmId", &identity.vm_id)
+    {
+        out.push((TARGET_VM_ID_KEY, target));
     }
-    if PROGRAM_TARGET_OPS.contains(&op) {
-        if let Some(target) = named_other("programId", &identity.program_id) {
-            out.push((TARGET_PROGRAM_ID_KEY, target));
-        }
+    if PROGRAM_TARGET_OPS.contains(&op)
+        && let Some(target) = named_other("programId", &identity.program_id)
+    {
+        out.push((TARGET_PROGRAM_ID_KEY, target));
     }
     out
 }

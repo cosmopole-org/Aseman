@@ -31,7 +31,7 @@ use rcgen::{BasicConstraints, CertificateParams, CertifiedIssuer, IsCa, KeyPair}
 use rustls::pki_types::{CertificateDer, PrivateKeyDer, PrivatePkcs8KeyDer};
 use sha2::{Digest, Sha256};
 
-const COUNTER: &[u8] = include_bytes!("../../../../vms/javascript/examples/counter.js");
+const COUNTER: &[u8] = include_bytes!("../../../../modules/runtime/javascript/examples/counter.js");
 const BACKEND: &str = env!("CARGO_BIN_EXE_aseman-vmm-backend-native");
 
 fn digest(bytes: &[u8]) -> String {

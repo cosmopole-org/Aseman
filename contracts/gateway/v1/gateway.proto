@@ -1,0 +1,85 @@
+syntax = "proto3";
+
+package aseman.gateway.v1;
+
+import "module/control/v1/control.proto";
+
+// A702 is the transport-neutral path used by public network modules. A module
+// forwards credentials; it never turns their presence into an authenticated subject.
+message SessionCredential { string token = 1; }
+message ProofCredential { bytes canonical_proof = 1; }
+
+enum ActionClass {
+  ACTION_CLASS_UNSPECIFIED = 0;
+  ACTION_CLASS_READ = 1;
+  ACTION_CLASS_WRITE = 2;
+  ACTION_CLASS_ADMINISTRATIVE = 3;
+}
+
+message InvokeRequest {
+  aseman.module.control.v1.RequestMetadata meta = 1;
+  string route = 2;
+  string action = 3;
+  ActionClass action_class = 4;
+  oneof credential {
+    SessionCredential session = 5;
+    ProofCredential proof = 6;
+  }
+  string content_type = 7;
+  bytes body = 8;
+}
+
+message InvokeResponse {
+  uint32 status = 1;
+  string content_type = 2;
+  bytes body = 3;
+  aseman.module.control.v1.ModuleError error = 4;
+}
+
+message SubscribeRequest {
+  InvokeRequest admission = 1;
+  string stream = 2;
+  string after_event_id = 3;
+  uint32 max_events = 4;
+}
+
+message EventFrame {
+  string event_id = 1;
+  uint64 sequence = 2;
+  string content_type = 3;
+  bytes body = 4;
+  aseman.module.control.v1.ModuleError error = 5;
+}
+
+message TerminalOpen {
+  InvokeRequest admission = 1;
+  string workload_id = 2;
+  uint32 columns = 3;
+  uint32 rows = 4;
+}
+
+message TerminalInput { bytes data = 1; }
+message TerminalResize { uint32 columns = 1; uint32 rows = 2; }
+message TerminalOutput { string channel = 1; bytes data = 2; }
+message TerminalExit { int32 code = 1; }
+
+message TerminalFrame {
+  oneof frame {
+    TerminalOpen open = 1;
+    TerminalInput input = 2;
+    TerminalResize resize = 3;
+    TerminalOutput output = 4;
+    TerminalExit exit = 5;
+    aseman.module.control.v1.ModuleError error = 6;
+  }
+}
+
+service Gateway {
+  rpc Negotiate(aseman.module.control.v1.Handshake)
+      returns (aseman.module.control.v1.Handshake);
+  rpc Invoke(InvokeRequest) returns (InvokeResponse);
+  rpc Subscribe(SubscribeRequest) returns (stream EventFrame);
+  rpc Terminal(stream TerminalFrame) returns (stream TerminalFrame);
+  rpc Cancel(aseman.module.control.v1.CancelRequest)
+      returns (aseman.module.control.v1.CancelResponse);
+}

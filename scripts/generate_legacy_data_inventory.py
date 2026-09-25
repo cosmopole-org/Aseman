@@ -93,7 +93,9 @@ def production_source(path: Path) -> str:
 
 
 def rust_sources() -> list[Path]:
-    paths = list((ROOT / "node/src").rglob("*.rs")) + list((ROOT / "vms").rglob("*.rs"))
+    paths = list((ROOT / "apps/aseman-node/src").rglob("*.rs")) + list(
+        (ROOT / "modules/runtime").rglob("*.rs")
+    )
     return sorted(
         path
         for path in paths
@@ -186,7 +188,7 @@ def logical_accesses() -> tuple[list[dict[str, str]], list[dict[str, str]]]:
 
 def core_objects() -> list[dict[str, Any]]:
     rows: list[dict[str, Any]] = []
-    model_dir = ROOT / "node/src/shell/api/model"
+    model_dir = ROOT / "apps/aseman-node/src/shell/api/model"
     for path in sorted(model_dir.glob("*.rs")):
         value = production_source(path)
         for found in re.finditer(
@@ -213,7 +215,7 @@ def core_objects() -> list[dict[str, Any]]:
 def questdb_tables() -> list[dict[str, Any]]:
     # The legacy QuestDB client moved into the legacy storage provider (P3-06); the
     # physical tables it creates are unchanged.
-    path = ROOT / "modules/storage-legacy/src/questdb.rs"
+    path = ROOT / "modules/storage/rocksdb-legacy/src/questdb.rs"
     value = production_source(path)
     creates: dict[str, dict[str, Any]] = {}
     for found in re.finditer(
@@ -249,7 +251,7 @@ def questdb_tables() -> list[dict[str, Any]]:
 
 
 def hashgraph_families() -> list[dict[str, str]]:
-    path = ROOT / "node/src/drivers/network/chain/hashgraph/rocks_store.rs"
+    path = ROOT / "modules/consensus/hashgraph/src/hashgraph/rocks_store.rs"
     value = production_source(path)
     rows = [
         ("repertoire", "rep_{public_key}", "Peer marshal bytes"),
@@ -274,7 +276,7 @@ def hashgraph_families() -> list[dict[str, str]]:
 
 
 def cluster_store() -> dict[str, Any]:
-    path = ROOT / "node/src/drivers/cluster/store.rs"
+    path = ROOT / "apps/aseman-node/src/drivers/cluster/store.rs"
     value = production_source(path)
     cfs = re.findall(r'ColumnFamilyDescriptor::new\("([^\"]+)"', value)
     metadata = sorted(set(re.findall(r'(?:get_meta|put_meta)\("([^\"]+)"', value)))
@@ -307,27 +309,27 @@ def inventory() -> dict[str, Any]:
             {
                 "family": "object-column",
                 "pattern": "obj::{type}::{object_id}::{column}",
-                "source": "node/src/core/actor/model/trx.rs:247",
+                "source": "apps/aseman-node/src/core/actor/model/trx.rs:247",
             },
             {
                 "family": "secondary-index",
                 "pattern": "index::{type}::{from_column}::{to_column}::{from_value}",
-                "source": "node/src/core/actor/model/trx.rs:264",
+                "source": "apps/aseman-node/src/core/actor/model/trx.rs:264",
             },
             {
                 "family": "link",
                 "pattern": "link::{logical_key}",
-                "source": "node/src/core/actor/model/trx.rs:325",
+                "source": "apps/aseman-node/src/core/actor/model/trx.rs:325",
             },
             {
                 "family": "json-document-and-leaves",
                 "pattern": "json::{logical_key}::{path}[.{descendant_path}]",
-                "source": "node/src/core/actor/model/trx.rs:430",
+                "source": "apps/aseman-node/src/core/actor/model/trx.rs:430",
             },
             {
                 "family": "raw",
                 "pattern": "caller-defined byte/string key",
-                "source": "node/src/core/actor/model/trx.rs:339",
+                "source": "apps/aseman-node/src/core/actor/model/trx.rs:339",
             },
         ],
         "core_objects": objects,

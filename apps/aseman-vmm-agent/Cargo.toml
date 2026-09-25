@@ -8,11 +8,26 @@ license.workspace = true
 repository.workspace = true
 
 [dependencies]
+aseman-config = { path = "../../crates/aseman-config" }
+aseman-contracts = { path = "../../crates/aseman-contracts" }
 aseman-domain = { path = "../../crates/aseman-domain" }
+axum = { version = "0.7.9", default-features = false, features = ["http1", "json", "tokio"] }
+base64.workspace = true
+hyper = { version = "1", features = ["http1", "server"] }
+hyper-util = { version = "0.1", features = ["server", "http1", "tokio", "service"] }
+hex.workspace = true
+ring.workspace = true
+rustls = { version = "0.23", default-features = false, features = ["std", "ring", "tls12"] }
+rustls-pemfile = "2"
 serde.workspace = true
 serde_json.workspace = true
+sha2.workspace = true
+tokio = { workspace = true, features = ["sync"] }
+tokio-rustls = { version = "0.26", default-features = false, features = ["ring", "tls12"] }
+tower = { version = "0.5", default-features = false, features = ["util"] }
 
 [dev-dependencies]
+rcgen = { version = "0.14", default-features = false, features = ["crypto", "pem", "ring"] }
 
 [lints]
 workspace = true

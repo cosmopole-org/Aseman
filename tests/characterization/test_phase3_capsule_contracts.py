@@ -121,7 +121,7 @@ class PhaseThreeCapsuleContractTests(unittest.TestCase):
             self.assertFalse(set(row["field_columns"].values()) & set(row["relationships"]))
 
         migration = (
-            ROOT / "modules/storage-postgres/migrations/0001_core.sql"
+            ROOT / "modules/storage/postgres/migrations/0001_core.sql"
         ).read_text()
         self.assertEqual(migration.count("CREATE TABLE IF NOT EXISTS"), len(core))
         self.assertIn("REVOKE ALL ON SCHEMA aseman_core FROM PUBLIC", migration)
@@ -239,7 +239,7 @@ class PhaseThreeCapsuleContractTests(unittest.TestCase):
         self.assertEqual(core_finance, class_finance)
 
         migration = (
-            ROOT / "modules/storage-postgres/migrations/0002_storage_classes.sql"
+            ROOT / "modules/storage/postgres/migrations/0002_storage_classes.sql"
         ).read_text()
         self.assertNotIn("JSONB", migration.upper())
         self.assertNotIn("guest_capsules", migration)

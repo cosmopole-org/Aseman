@@ -19,10 +19,10 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-SESSION = ROOT / "node/src/drivers/network/client/session.rs"
+SESSION = ROOT / "apps/aseman-node/src/drivers/network/client/session.rs"
 ADAPTERS = [
-    ROOT / "node/src/drivers/network/client/tcp.rs",
-    ROOT / "node/src/drivers/network/client/ws.rs",
+    ROOT / "apps/aseman-node/src/drivers/network/client/tcp.rs",
+    ROOT / "apps/aseman-node/src/drivers/network/client/ws.rs",
 ]
 
 # What an adapter must not do for itself. Each one, if it appeared, would mean the

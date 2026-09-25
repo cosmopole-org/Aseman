@@ -101,7 +101,7 @@ impl ServeFederatedRequest<'_> {
     pub fn serve(
         &self,
         envelope: &Envelope,
-        execute: impl FnOnce(&Envelope) -> String,
+        execute: impl FnOnce(&Envelope) -> Result<String, PortError>,
     ) -> Result<Served, PortError> {
         let now = self.clock.unix_millis();
 
@@ -159,7 +159,9 @@ impl ServeFederatedRequest<'_> {
             return Ok(Served::Refused(Refusal::Denied(decision.reason)));
         }
 
-        let answer = execute(envelope);
+        // A failed effect is not an answer and must not poison the durable replay
+        // record. The same request ID may be retried after its dependency recovers.
+        let answer = execute(envelope)?;
         self.guard
             .record_answer(envelope.request_id, &answer, envelope.expires_at_millis)?;
         Ok(Served::Executed(answer))

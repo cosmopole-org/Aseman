@@ -2,7 +2,9 @@
 #![forbid(unsafe_code)]
 
 use aseman_domain::Uuid;
-use aseman_domain::authority::{AuditRecord, AuditedDecision, PolicyDecision, PolicyRequest};
+use aseman_domain::authority::{
+    AuditRecord, AuditedDecision, Condition, PolicyDecision, PolicyRequest, ResourceRef,
+};
 use aseman_domain::blob::BlobEvidence;
 use aseman_domain::capability::Grant;
 use aseman_domain::creature::{CreatureRecord, MetadataKind};
@@ -439,6 +441,61 @@ pub trait DecisionAudit: Send + Sync {
     fn record(&self, record: &AuditRecord) -> PortResult<u64>;
     /// The actor's stream in sequence order.
     fn stream(&self, actor: &str) -> PortResult<Vec<AuditedDecision>>;
+}
+
+/// The durable idempotency of a public action mutation (A701). Keys are scoped by
+/// subject, so a key one subject uses never collides with another's. The digest is
+/// what the first request signed and must match on a retry.
+pub trait PublicActionIdempotency: Send + Sync {
+    /// Claim `key` for `subject` and `digest`.
+    ///
+    /// # Errors
+    ///
+    /// `Failed` when the store cannot answer; nothing was accepted.
+    fn claim(&self, subject: &str, key: &str, digest: [u8; 32]) -> PortResult<PublicActionClaim>;
+    /// Record the response a completed mutation returned, so a retry replays it.
+    fn complete(&self, subject: &str, key: &str, response: &[u8]) -> PortResult<()>;
+    /// Forget an unfinished claim so a failed mutation can be retried. A completed
+    /// claim is never released.
+    fn release(&self, subject: &str, key: &str) -> PortResult<()>;
+}
+
+/// The outcome of claiming a public action idempotency key.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub enum PublicActionClaim {
+    /// The caller owns the key and must run the mutation.
+    Claimed,
+    /// Another request with this key is still running.
+    InProgress,
+    /// The key completed; replay this response verbatim.
+    Completed(Vec<u8>),
+    /// The key was used for a different request.
+    Mismatch,
+}
+
+/// Resolves the resource an action targets and runs it (P7-06, RL-004). The node
+/// shell implements this seam over the migrated application use cases, so the
+/// transport and the composition never call a legacy handler directly.
+pub trait ActionExecutor: Send + Sync {
+    /// The resource `action` targets on `subject`'s behalf, and the facts about it,
+    /// resolved server-side from the request body (A402).
+    fn resolve(
+        &self,
+        subject: &Subject,
+        action: &str,
+        body: &[u8],
+    ) -> PortResult<(ResourceRef, std::collections::BTreeSet<Condition>)>;
+    /// Run the action. The caller has authenticated and authorized it.
+    fn execute(&self, subject: Subject, action: &str, body: &[u8]) -> PortResult<Vec<u8>>;
+}
+
+/// Session resolution (A701 "session" authentication). Sessions are legacy bearer
+/// credentials; the node resolves a live session to its subject through the legacy
+/// storage provider during the ADR 0004 window, and refuses unknown or expired ones.
+pub trait SessionDirectory: Send + Sync {
+    /// The subject a live session token names, or `None` for an unknown, expired, or
+    /// revoked session.
+    fn subject(&self, token: &str) -> PortResult<Option<Subject>>;
 }
 
 /// File bytes under provider-neutral keys (ADR 0027). Records keep only the

@@ -19,7 +19,7 @@ strength of an intention.
 | Criterion | State | Evidence |
 |---|---|---|
 | Domain and application import no concrete adapters | MET | `cargo xtask arch`, in every gate run |
-| The node contains no runtime implementation | MET | Phase 5 gate; `node/Cargo.toml` links no runtime crate |
+| The node contains no runtime implementation | MET | Phase 5 gate; `apps/aseman-node/Cargo.toml` links no runtime crate |
 | No dynamic library ABI for providers | MET | Providers are processes behind gRPC (A504) and HTTP (A501) |
 | Every provider publishes a manifest and passes its suite | MET | A504 kit passes for native and Nomad backends |
 | Module activation is health-checked, drainable, rollback-safe | MET | Phase 2, `aseman-sample-provider` |
@@ -75,13 +75,13 @@ strength of an intention.
 
 | Criterion | State | Evidence |
 |---|---|---|
-| HTTP is the shipped default | PARTIAL | The contract is generated and authoritative (A701); serving it is open |
+| HTTP is the shipped default | PARTIAL | The contract is generated and `modules/network/http` provides the hardened transport boundary; the composed service (`aseman-public-service` over `ServePublicAction`) owns A401 authentication, A402 authorization, execution, and durable idempotency behind it, with idempotency real over PostgreSQL (`aseman_core.public_idempotency`, migration 0010) and proven live (P7-06). Node composition supplying the remaining ports (RL-004), SSE/WebSocket streams, and making it the advertised default remain open |
 | Adapters pass the same application contract tests | MET | `check_legacy_transports.py`: they contain framing only |
 | Any workload resolves any target's minimal descriptor | MET | A704 |
 | Discovery grants no operational rights | MET | Phase 7 gate |
 | Authorized operations work across nodes | MET | `live_two_clusters` |
 | Realtime survives restart and deduplicates | MET | A707: the log is authoritative and durable; consumers deduplicate on event ID |
-| Partitions recover without duplicate execution or loops | MET | Request-ID deduplication and the 4-hop limit, both tested |
+| Partitions recover without duplicate execution or loops | MET | Request-ID deduplication, the 4-hop limit, bounded outbound retry/circuit breaking, and `docs/operations/federation-trust-and-partitions.md` |
 
 ## Finance and metering
 
@@ -92,13 +92,13 @@ strength of an intention.
 | Every ledger mutation balanced and idempotent | MET | `live_finance`; an unbalanced record leaves no half-entry |
 | Every charge traces to workload, interval, sample, price version | MET | The idempotency key *is* the settlement identity |
 | Insufficient funds uses policy and authorized operations | MET as rules | `enforcement`; the enforcement loop is open |
-| Consensus providers change only at a verified epoch | OPEN | `ConsensusProvider` is not yet extracted (RL-011), though finance no longer depends on any consensus type |
+| Consensus providers change only at a verified epoch | PARTIAL | `modules/consensus/hashgraph::HashgraphConsensusProvider` implements submission, committed-block finalization, pending checks, snapshots, checkpoints, and adoption over the real Babble proxy; node settlement composition and a live peer handoff remain (RL-011) |
 
 ## Packaging and operations
 
 | Criterion | State | Evidence |
 |---|---|---|
-| Node, VMM, meter have separate least-privilege artifacts | PARTIAL | Node, VMM, two backends, and the agent are separate binaries with separate privileges (A602); the meter is not a binary yet |
+| Node, VMM, meter have separate least-privilege artifacts | PARTIAL | Separate checked non-root images exist for node/VMM/meter/Nomad backend, and the authenticated privileged agent has a checked systemd profile; signed image publication and deployment-backed privilege inspection remain open |
 | Compact setup through one idempotent command | OPEN | Phase 9 gate: the rules exist, the command does not |
 | Re-running bootstrap is safe | MET as rules | P9-01: re-running a finished stage is an error |
 | Failed stages resume or roll back without destroying data | MET as rules | P9-01: roll-forward at and after the schema stage |
@@ -115,15 +115,18 @@ strength of an intention.
 | Machine-readable routes, kinds, contracts, config, topology | MET | `contracts/` and `docs/generated/`, all gate-checked |
 | CLI, API, schema, config references generated from source | MET | `generate_public_api.py`, `generate_current_surface_inventories.py`, and the rest |
 | Generated freshness passes CI | MET | Every generator runs `--check` in the gate |
+| Root documentation references no missing authoritative artifact | MET | `README.md` is the current Aseman entry point; the absent `reports/final` and `node.old` claims were removed in P9-05 |
+| Agent comprehension evaluations run as a release gate | PARTIAL | `evals/agent/cases.json` is versioned and its authority paths are checked by `check_agent_evals.py`; executing/scoring cold-agent runs remains open |
 | The removal ledger has no overdue item | MET | `check_removal_ledger_due.py`, which found eleven silent rows and now fails on any new one |
+| Requirements traceability is mechanically checked | MET | `generate_requirements_traceability.py` (A1005): 25 requirements, 0 violations, each with design authority, delivery phase, phase-gate status, and acceptance authority; runs `--check` in the gate |
 
 ## Clean code and structure
 
 | Criterion | State | Evidence |
 |---|---|---|
 | One workspace, lockfile, toolchain, lint policy, task runner | MET | Phase 1 |
-| Explicit `apps`/`crates`/`modules`/`contracts`/`docs`/`tests`/`xtask` ownership | MET | The tree |
-| No broad lint suppressions | MET | Quality baseline ratchet |
+| Explicit canonical hierarchy and ownership | PARTIAL | All ownership roots, app roots, canonical crates, and planned module package paths now exist and own implementation source; `docs/generated/repository-layout.md` reports 0 open target package paths and 8 gated legacy roots whose replacement/deletion windows remain |
+| No broad lint suppressions | PARTIAL | Clean crates deny warnings and the quality baseline ratchets exceptions; the legacy `caspar-node` library still has crate-wide suppressions |
 | Direct environment reads outside the config adapter rejected | MET | The ratchet; all four reads are in `aseman-config` |
 | Internal APIs avoid unvalidated JSON and stringly-typed states | PARTIAL | True of every new contract; the legacy action handlers still pass `serde_json::Value` |
 | Shared session behavior has one transport-neutral owner | MET | `check_legacy_transports.py` |
@@ -133,9 +136,13 @@ strength of an intention.
 ## Required suites
 
 Unit, architecture, capsule conformance, VMM conformance, policy property, contract, and
-integration suites all run. **Fuzz, load, and full chaos suites are open**; the chaos
+integration suites all run. A deterministic load-lite property suite covers the public
+action idempotency contract (50 mutations with retries: exactly one execution and one
+completed outcome per key). **Fuzz, load, and full chaos suites are open**; the chaos
 cases that the phase gates required — worker loss, drain, replica loss, backend crash,
-database unreachability — are implemented and pass.
+database unreachability — are implemented and pass. A real fuzzer needs a nightly
+`cargo-fuzz` toolchain, which the pinned stable channel (1.98.0) does not provide, so
+the property style is used instead until the toolchain decision changes.
 
 ## Honest summary
 

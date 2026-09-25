@@ -49,6 +49,14 @@
       "verifies": "the calling node's client certificate; the certificate's SHA-256 is the owner every record is scoped by",
       "privileges": "none: it schedules, it does not run workloads"
     },
+    "aseman-meter": {
+      "role": "usage collection, pricing, and idempotent settlement",
+      "ports": [],
+      "presents": "a dedicated VMM client certificate",
+      "verifies": "the VMM server certificate and PostgreSQL TLS identity",
+      "privileges": "none: no inbound listener, KVM, docker socket, or host mounts",
+      "outbound": "A501 usage reads and its restricted PostgreSQL meter role only"
+    },
     "aseman-vmm-backend": {
       "role": "an A504 backend (native-legacy or nomad)",
       "ports": [
@@ -138,6 +146,7 @@
       "postgres",
       "aseman-vmm-backend",
       "aseman-vmm",
+      "aseman-meter",
       "aseman-node"
     ],
     "migration": "the Phase 3 storage cutover, then the VMM rollout, then the VMM handoff, then the new node (ADR 0030): a remote VMM is refused under the legacy storage provider"

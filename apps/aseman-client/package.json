@@ -1,0 +1,47 @@
+{
+    "name": "caspar-client-cli",
+    "version": "1.0.0",
+    "description": "Caspar compatibility client for Aseman. Manage creatures and programs, send signals, and scaffold deployable projects for all seven runtimes.",
+    "keywords": [
+        "caspar",
+        "vm",
+        "wasm",
+        "blockchain",
+        "cli",
+        "typescript"
+    ],
+    "homepage": "https://github.com/cosmopole-org/caspar",
+    "bugs": {
+        "url": "https://github.com/cosmopole-org/caspar/issues"
+    },
+    "author": "Caspar",
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/cosmopole-org/caspar.git"
+    },
+    "files": [
+        "dist"
+    ],
+    "type": "module",
+    "bin": {
+        "caspar-client": "dist/index.cjs"
+    },
+    "main": "dist/index.js",
+    "dependencies": {
+        "json-bigint": "^1.0.0",
+        "ws": "^8.20.1"
+    },
+    "scripts": {
+        "dev": "npm run build && npm start",
+        "start": "cd dist && node index.cjs",
+        "typecheck": "tsc --noEmit",
+        "build": "tsc && mv dist/index.js dist/index.cjs && chmod +x dist/index.cjs",
+        "test": "echo \"Error: no test specified\" && exit 1"
+    },
+    "devDependencies": {
+        "@types/json-bigint": "^1.0.4",
+        "@types/node": "^24.12.4",
+        "@types/ws": "^8.18.1",
+        "typescript": "^5.8.3"
+    }
+}

@@ -54,5 +54,5 @@ Run the behavior-level ingress cases with:
 
 ```sh
 cargo test -p aseman-contracts
-cargo test -p caspar-node --lib storage_http::characterization_tests
+cargo test -p aseman-node --lib storage_http::characterization_tests
 ```

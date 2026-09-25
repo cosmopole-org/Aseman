@@ -17,10 +17,10 @@ CI runners and the Phase 10 load/soak manifests.
 
 | Surface | Command | Result | Wall time | Peak RSS |
 |---|---|---:|---:|---:|
-| Node workspace | `cargo test --manifest-path node/Cargo.toml --workspace` | 401 passed, 0 failed | 10.20 s (warm build) | 132,744 KiB |
-| Administrative CLI | `cargo test --manifest-path cmd/casparctl/Cargo.toml` | 33 passed, 0 failed | 13.43 s (cold dependency build) | 305,740 KiB |
+| Node package | `cargo test -p aseman-node --lib` | 401 passed, 0 failed at the Phase 0 baseline | 10.20 s (warm build) | 132,744 KiB |
+| Administrative CLI | `cargo test -p asemanctl --all-targets` | 33 passed, 0 failed | 13.43 s (historical cold dependency build) | 305,740 KiB |
 | Characterization manifest | `PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s tests/characterization -p 'test_*.py'` | 5 passed, 0 failed | recorded by P0 verification | not isolated |
-| TypeScript client | `npm --prefix client-cli run typecheck` | not runnable: dependencies are not installed | n/a | n/a |
+| TypeScript client | `npm --prefix apps/aseman-client run typecheck` | not runnable: dependencies are not installed | n/a | n/a |
 
 Known compiler warnings are one `unused_mut` in the node hashgraph store and one
 unused `description` field in `casparctl`. They are baseline debt, not accepted

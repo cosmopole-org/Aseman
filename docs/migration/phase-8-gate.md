@@ -69,14 +69,17 @@ why `scripts/check_artifact_register.py` now refuses a combined or non-standard 
 
 ## Owned by later phases
 
-- **The Hashgraph adapter**. The port and its rules are delivered
-  (`aseman-ports::consensus`, `aseman-domain::consensus`): a provider changes only at a
-  finalized epoch, its checkpoint must describe that epoch, nothing may be in flight,
-  a finalized epoch never reopens, a finalized order only ever extends, and a node whose
-  record disagrees with what was finalized reports rather than repairs. Wrapping the
-  embedded Hashgraph behind it is what remains (RL-011).
-- **The metering loop binary** (`aseman-meter`) that drives collection every minute; the
-  ports it composes are all here.
+- **Hashgraph composition and a live switch.** The engine and its
+  `ConsensusProvider` adapter are delivered at `modules/consensus/hashgraph`; the
+  adapter uses the real Babble proxy and committed blocks, and its 213 engine/adapter
+  tests pass. Wiring the provider into settlement and observing a checkpointed switch
+  on the live peer mesh remain (RL-011).
+- **Broader meter dimensions and enforcement composition.** `apps/aseman-meter` now
+  pages A501 workloads, collects the endpoint's cumulative CPU/network counters,
+  persists samples and intervals, backfills unsettled intervals, resolves the wallet
+  from the server-returned creature label, and commits idempotent settlements. A501's
+  memory/storage values are gauges, so the meter deliberately does not pretend they are
+  cumulative byte-seconds; those dimensions remain pending a richer provider sample.
 - **Reconciliation reports** as an operator command: `Reconciliation` is defined and
   deliberately reports rather than repairing, since destructive automatic repair of
   money is never right.

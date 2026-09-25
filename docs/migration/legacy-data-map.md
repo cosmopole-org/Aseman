@@ -18,11 +18,11 @@ inventory is in `docs/generated/current-storage-access.json`.
 
 | Family | Physical pattern | Source |
 |---|---|---|
-| object-column | `obj::{type}::{object_id}::{column}` | `node/src/core/actor/model/trx.rs:247` |
-| secondary-index | `index::{type}::{from_column}::{to_column}::{from_value}` | `node/src/core/actor/model/trx.rs:264` |
-| link | `link::{logical_key}` | `node/src/core/actor/model/trx.rs:325` |
-| json-document-and-leaves | `json::{logical_key}::{path}[.{descendant_path}]` | `node/src/core/actor/model/trx.rs:430` |
-| raw | `caller-defined byte/string key` | `node/src/core/actor/model/trx.rs:339` |
+| object-column | `obj::{type}::{object_id}::{column}` | `apps/aseman-node/src/core/actor/model/trx.rs:247` |
+| secondary-index | `index::{type}::{from_column}::{to_column}::{from_value}` | `apps/aseman-node/src/core/actor/model/trx.rs:264` |
+| link | `link::{logical_key}` | `apps/aseman-node/src/core/actor/model/trx.rs:325` |
+| json-document-and-leaves | `json::{logical_key}::{path}[.{descendant_path}]` | `apps/aseman-node/src/core/actor/model/trx.rs:430` |
+| raw | `caller-defined byte/string key` | `apps/aseman-node/src/core/actor/model/trx.rs:339` |
 
 The transaction wrapper is a write-back overlay committed as one RocksDB batch.
 Application commits may also be proposed to the embedded OpenRaft cluster.
@@ -56,7 +56,7 @@ Application commits may also be proposed to the embedded OpenRaft cluster.
 ## Access evidence
 
 - Direct transaction accesses with a recoverable literal/template: 188
-- Additional formatted key-template candidates requiring semantic review: 271
+- Additional formatted key-template candidates requiring semantic review: 266
 - Every row includes its reader/writer method and source location in the JSON artifact.
 
 ## Unresolved before capsule mapping

@@ -1,0 +1,9 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://aseman.example/modules/storage/postgres/config.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "apply_migrations": {"type": "boolean", "default": false}
+  }
+}

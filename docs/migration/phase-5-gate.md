@@ -31,7 +31,7 @@ the VMM (A502, A503); the node keeps signals, ingress, routes, locks, and the gu
 
 | Clause | Evidence |
 |---|---|
-| The node binary has no runtime-engine dependency | `node/Cargo.toml` names no `caspar-vm-*` crate; `cargo tree -p caspar-node` reaches no wasmedge, bollard, rquickjs, elpify, or elpian |
+| The node binary has no runtime-engine dependency | `apps/aseman-node/Cargo.toml` names no `caspar-vm-*` crate; `cargo tree -p aseman-node` reaches no wasmedge, bollard, rquickjs, elpify, or elpian |
 | No competing in-process VMM path | `IVmm`, the bridge, the packet router, the host bridge, `hostcall_global`, and bootstrap are deleted (P5-06); `IWorkloads` is the only workload surface and it calls `VmmClient` |
 | Obsolete runtime globals, code, and configuration are deleted | The P5-06 deletion table; `NetworkConfig.docker_gateway_port` moved to the runtimes |
 | The native provider passes parity | `docs/generated/vmm-native-parity.md`: 22 of the 27 runtime operations verified against the real engines, 46 node methods `deleted`, 5 `open` and owned by P6 |
@@ -73,6 +73,7 @@ cutover, VMM rollout, handoff, then the new node.
 - **Placement, scheduling, and the worker topology** are P6: the 5 `open` parity rows
   (pause, resume, snapshot, migrate, volume attach) are the P6 runtime module's, as is
   the privileged host work LD-28 names.
-- **Moving `node/crates/caspar-vm-plugins` under `modules/vmm-backend/`** is RL-014.
+- **Replacing `modules/vmm-backend/native-legacy/crates/caspar-vm-plugins` compile-time
+  aggregation with signed runtime loading** is RL-014.
 - **Public transports for VM operations** (terminal and log streaming to end users) are
   P7-01 and P7-04; the VMM already emits the events they carry.

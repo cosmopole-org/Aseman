@@ -115,13 +115,13 @@ def classify_access(row: dict[str, object]) -> dict[str, object]:
         status = "reviewed_no_persisted_record"
         target = None
         note = "ADR 0020 superuser flag has no writer; any record fails closed for review"
-    elif row["source"].startswith("node/src/core/core_orchestrator.rs") and (
+    elif row["source"].startswith("apps/aseman-node/src/core/core_orchestrator.rs") and (
         "|" in template or template.endswith(("::targetCount", "::tempCount"))
     ):
         status = "intentional_removal"
         target = None
         note = "ADR 0020 dead write-only chainCallback state; shape-checked, never migrated"
-    elif method == "get_by_prefix" and template == "{}::{}" and row["source"].startswith("vms/"):
+    elif method == "get_by_prefix" and template == "{}::{}" and row["source"].startswith("modules/runtime/"):
         status = "reviewed_no_persisted_record"
         target = None
         note = "ADR 0021 guest getByPrefix scans raw keys; committed guest pairs are link records"
@@ -228,26 +228,26 @@ OWNED_BLOCKED_PREFIXES: dict[str, str] = {}
 
 # Per-source review of generic `{}::{}` style candidates (template families carry no name).
 SOURCE_REVIEWS = {
-    "node/src/core/globe.rs": ("not_a_storage_key", "hash/seed input, never persisted"),
-    "node/src/drivers/network/chain/net/net_transport.rs": ("not_a_storage_key", "in-memory RPC channel map"),
-    "node/src/drivers/network/federation/netserver.rs": ("not_a_storage_key", "routing target label"),
-    "node/src/drivers/vmm/network/gateway_registry.rs": ("not_a_storage_key", "process-local gateway map"),
-    "node/src/drivers/vmm/network/gateway_types.rs": ("not_a_storage_key", "process-local gateway map key"),
-    "vms/elpify/src/queue.rs": ("not_a_storage_key", "process-local VM queue map"),
-    "vms/javascript/src/runtime.rs": ("not_a_storage_key", "process-local VM map"),
-    "vms/wasm/src/runtime.rs": ("not_a_storage_key", "process-local VM map"),
-    "vms/javascript/src/host_calls.rs": ("covered_by_reviewed_family", "ADR 0021 guest dbop namespace"),
-    "vms/wasm/src/host_calls.rs": ("covered_by_reviewed_family", "ADR 0021 guest dbop namespace"),
-    "node/src/drivers/vmm/host/vm_host_functions.rs": ("covered_by_reviewed_family", "ADR 0021 applet_db prefix composition"),
-    "node/src/core/actor/model/trx.rs": ("covered_by_reviewed_family", "json/link physical layout internals"),
-    "node/src/core/core_orchestrator.rs": ("covered_by_reviewed_family", "ADR 0020 dead chain-callback state"),
-    "node/src/shell/api/model/entity.rs": ("covered_by_reviewed_family", "typed Entity composite identity"),
-    "node/src/drivers/vmm/host/functions/login_grant.rs": ("covered_by_reviewed_family", "ADR 0023 login grant delete path"),
+    "apps/aseman-node/src/core/globe.rs": ("not_a_storage_key", "hash/seed input, never persisted"),
+    "modules/consensus/hashgraph/src/net/net_transport.rs": ("not_a_storage_key", "in-memory RPC channel map"),
+    "apps/aseman-node/src/drivers/network/federation/netserver.rs": ("not_a_storage_key", "routing target label"),
+    "apps/aseman-node/src/drivers/vmm/network/gateway_registry.rs": ("not_a_storage_key", "process-local gateway map"),
+    "apps/aseman-node/src/drivers/vmm/network/gateway_types.rs": ("not_a_storage_key", "process-local gateway map key"),
+    "modules/runtime/elpify/src/queue.rs": ("not_a_storage_key", "process-local VM queue map"),
+    "modules/runtime/javascript/src/runtime.rs": ("not_a_storage_key", "process-local VM map"),
+    "modules/runtime/wasm/src/runtime.rs": ("not_a_storage_key", "process-local VM map"),
+    "modules/runtime/javascript/src/host_calls.rs": ("covered_by_reviewed_family", "ADR 0021 guest dbop namespace"),
+    "modules/runtime/wasm/src/host_calls.rs": ("covered_by_reviewed_family", "ADR 0021 guest dbop namespace"),
+    "apps/aseman-node/src/drivers/vmm/host/vm_host_functions.rs": ("covered_by_reviewed_family", "ADR 0021 applet_db prefix composition"),
+    "apps/aseman-node/src/core/actor/model/trx.rs": ("covered_by_reviewed_family", "json/link physical layout internals"),
+    "apps/aseman-node/src/core/core_orchestrator.rs": ("covered_by_reviewed_family", "ADR 0020 dead chain-callback state"),
+    "apps/aseman-node/src/shell/api/model/entity.rs": ("covered_by_reviewed_family", "typed Entity composite identity"),
+    "apps/aseman-node/src/drivers/vmm/host/functions/login_grant.rs": ("covered_by_reviewed_family", "ADR 0023 login grant delete path"),
 }
 for _source in (
-    "node/src/drivers/vmm/hostcall_logs.rs", "node/src/shell/api/actions/program.rs",
-    "node/src/drivers/vmm/host/functions/vm_ownership.rs", "node/src/drivers/vmm/host_bridge.rs",
-    "node/src/drivers/vmm/proxy.rs", "node/src/drivers/vmm/hostcall_entities.rs",
+    "apps/aseman-node/src/drivers/vmm/hostcall_logs.rs", "apps/aseman-node/src/shell/api/actions/program.rs",
+    "apps/aseman-node/src/drivers/vmm/host/functions/vm_ownership.rs", "apps/aseman-node/src/drivers/vmm/host_bridge.rs",
+    "apps/aseman-node/src/drivers/vmm/proxy.rs", "apps/aseman-node/src/drivers/vmm/hostcall_entities.rs",
 ):
     SOURCE_REVIEWS[_source] = ("covered_by_reviewed_family", "ADR 0022 VM family key helper or delete path")
 GENERIC_OWNER = "unassigned source review"

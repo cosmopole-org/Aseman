@@ -1,0 +1,23 @@
+[package]
+name = "aseman-finance-ledger"
+description = "PostgreSQL-backed Aseman usage, pricing, and double-entry ledger provider."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+aseman-domain = { path = "../../../crates/aseman-domain" }
+aseman-ports = { path = "../../../crates/aseman-ports" }
+postgres = { workspace = true, features = ["with-uuid-1"] }
+r2d2.workspace = true
+r2d2_postgres.workspace = true
+serde_json.workspace = true
+
+[dev-dependencies]
+aseman-config = { path = "../../../crates/aseman-config" }
+uuid.workspace = true
+
+[lints]
+workspace = true

@@ -22,119 +22,119 @@ This records current legacy surfaces. It is not the target HTTP/VMM contract.
 
 | Path | Request type | Source |
 |---|---|---|
-| `/api/hello` | `HelloInput` | `node/src/shell/api/actions/dummy.rs:30` |
-| `/api/ping` | `HelloInput` | `node/src/shell/api/actions/dummy.rs:60` |
-| `/api/time` | `HelloInput` | `node/src/shell/api/actions/dummy.rs:45` |
-| `/auths/getServerPublicKey` | `GetServerKeyInput` | `node/src/shell/api/actions/auth.rs:41` |
-| `/auths/getServersMap` | `GetServersMapInput` | `node/src/shell/api/actions/auth.rs:57` |
-| `/creatures/authenticate` | `AuthenticateInput` | `node/src/shell/api/actions/creature.rs:501` |
-| `/creatures/checkSign` | `CheckSignInput` | `node/src/shell/api/actions/creature.rs:637` |
-| `/creatures/closePool` | `ClosePoolInput` | `node/src/shell/api/actions/creature/finance.rs:2526` |
-| `/creatures/consumeLock` | `ConsumeLockInput` | `node/src/shell/api/actions/creature.rs:1035` |
-| `/creatures/create` | `CreatureCreateInput` | `node/src/shell/api/actions/creature.rs:201` |
-| `/creatures/createHold` | `CreateHoldInput` | `node/src/shell/api/actions/creature/finance.rs:1121` |
-| `/creatures/debitPool` | `DebitPoolInput` | `node/src/shell/api/actions/creature/finance.rs:3071` |
-| `/creatures/delete` | `DeleteInput` | `node/src/shell/api/actions/creature.rs:1307` |
-| `/creatures/find` | `FindInput` | `node/src/shell/api/actions/creature.rs:1457` |
-| `/creatures/get` | `GetInput` | `node/src/shell/api/actions/creature.rs:252` |
-| `/creatures/getByUsername` | `GetByUsernameInput` | `node/src/shell/api/actions/creature.rs:1430` |
-| `/creatures/getFinancialAccount` | `GetFinancialAccountInput` | `node/src/shell/api/actions/creature/finance.rs:1979` |
-| `/creatures/getHold` | `GetHoldInput` | `node/src/shell/api/actions/creature/finance.rs:1848` |
-| `/creatures/list` | `ListInput` | `node/src/shell/api/actions/creature.rs:271` |
-| `/creatures/listPayouts` | `ListPayoutsInput` | `node/src/shell/api/actions/creature/finance.rs:2247` |
-| `/creatures/lockToken` | `LockTokenInput` | `node/src/shell/api/actions/creature.rs:948` |
-| `/creatures/login` | `LoginInput` | `node/src/shell/api/actions/creature.rs:1195` |
-| `/creatures/meta` | `MetaInput` | `node/src/shell/api/actions/creature.rs:1371` |
-| `/creatures/mint` | `MintInput` | `node/src/shell/api/actions/creature.rs:541` |
-| `/creatures/openPool` | `OpenPoolInput` | `node/src/shell/api/actions/creature/finance.rs:2314` |
-| `/creatures/paymentAdjustment` | `PaymentAdjustmentInput` | `node/src/shell/api/actions/creature/finance.rs:3983` |
-| `/creatures/publishFinanceCatalog` | `PublishFinanceCatalogInput` | `node/src/shell/api/actions/creature/finance.rs:432` |
-| `/creatures/publishFinanceQuote` | `PublishFinanceQuoteInput` | `node/src/shell/api/actions/creature/finance.rs:909` |
-| `/creatures/reconcileFinancialSystem` | `ReconcileFinancialSystemInput` | `node/src/shell/api/actions/creature/finance.rs:3315` |
-| `/creatures/refreshPool` | `RefreshPoolInput` | `node/src/shell/api/actions/creature/finance.rs:2419` |
-| `/creatures/registerFinanceNode` | `RegisterFinanceNodeInput` | `node/src/shell/api/actions/creature/finance.rs:549` |
-| `/creatures/registerFinanceResource` | `RegisterFinanceResourceInput` | `node/src/shell/api/actions/creature/finance.rs:668` |
-| `/creatures/releaseHold` | `ReleaseHoldInput` | `node/src/shell/api/actions/creature/finance.rs:1713` |
-| `/creatures/releasePool` | `ReleasePoolInput` | `node/src/shell/api/actions/creature/finance.rs:2958` |
-| `/creatures/requestPayout` | `RequestPayoutInput` | `node/src/shell/api/actions/creature/finance.rs:2019` |
-| `/creatures/reservePool` | `ReservePoolInput` | `node/src/shell/api/actions/creature/finance.rs:2627` |
-| `/creatures/resolvePayout` | `ResolvePayoutInput` | `node/src/shell/api/actions/creature/finance.rs:2125` |
-| `/creatures/retireFinanceNode` | `RetireFinanceNodeInput` | `node/src/shell/api/actions/creature/finance.rs:629` |
-| `/creatures/retireFinanceResource` | `RetireFinanceResourceInput` | `node/src/shell/api/actions/creature/finance.rs:819` |
-| `/creatures/reviewFinanceResource` | `ReviewFinanceResourceInput` | `node/src/shell/api/actions/creature/finance.rs:781` |
-| `/creatures/secretGet` | `SecretGetInput` | `node/src/shell/api/actions/creature.rs:747` |
-| `/creatures/secretGrant` | `SecretGrantInput` | `node/src/shell/api/actions/creature.rs:788` |
-| `/creatures/secretList` | `SecretListInput` | `node/src/shell/api/actions/creature.rs:868` |
-| `/creatures/secretListGranted` | `SecretListGrantedInput` | `node/src/shell/api/actions/creature.rs:852` |
-| `/creatures/secretPut` | `SecretPutInput` | `node/src/shell/api/actions/creature.rs:720` |
-| `/creatures/secretRevoke` | `SecretRevokeInput` | `node/src/shell/api/actions/creature.rs:827` |
-| `/creatures/settleHold` | `SettleHoldInput` | `node/src/shell/api/actions/creature/finance.rs:1455` |
-| `/creatures/settlePool` | `SettlePoolInput` | `node/src/shell/api/actions/creature/finance.rs:2732` |
-| `/creatures/signal` | `CreatureSignalInput` | `node/src/shell/api/actions/creature.rs:393` |
-| `/creatures/startHold` | `StartHoldInput` | `node/src/shell/api/actions/creature/finance.rs:1375` |
-| `/creatures/transfer` | `TransferInput` | `node/src/shell/api/actions/creature.rs:293` |
-| `/creatures/types` | `ListInput` | `node/src/shell/api/actions/creature.rs:1483` |
-| `/creatures/update` | `UpdateInput` | `node/src/shell/api/actions/creature.rs:1343` |
-| `/gateway/signal` | `GatewaySignalInput` | `node/src/shell/api/actions/gateway.rs:249` |
-| `/gateway/subscribe` | `GatewaySubscribeInput` | `node/src/shell/api/actions/gateway.rs:178` |
-| `/gateway/unsubscribe` | `GatewayUnsubscribeInput` | `node/src/shell/api/actions/gateway.rs:224` |
-| `/machines/closeVmTerminal` | `VmTerminalInput` | `node/src/shell/api/actions/program.rs:1080` |
-| `/machines/list` | `ListInput` | `node/src/shell/api/actions/program.rs:1437` |
-| `/machines/listEntityVms` | `RunProgramEntityInput` | `node/src/shell/api/actions/program.rs:933` |
-| `/machines/listProgramMachines` | `ListAppMachsInput` | `node/src/shell/api/actions/program.rs:1516` |
-| `/machines/openVmTerminal` | `VmTerminalInput` | `node/src/shell/api/actions/program.rs:1044` |
-| `/machines/readMachineBuilds` | `MachineBuildsInput` | `node/src/shell/api/actions/program.rs:1113` |
-| `/machines/readVmLogs` | `ReadVmLogsInput` | `node/src/shell/api/actions/program.rs:858` |
-| `/programs/create` | `CreateMachineInput` | `node/src/shell/api/actions/program.rs:474` |
-| `/programs/delete` | `DeleteProgramInput` | `node/src/shell/api/actions/program.rs:510` |
-| `/programs/deleteEntity` | `RunProgramEntityInput` | `node/src/shell/api/actions/program.rs:769` |
-| `/programs/deploy` | `DeployInput` | `node/src/shell/api/actions/program.rs:1187` |
-| `/programs/downloadEntity` | `DownloadEntityInput` | `node/src/shell/api/actions/program.rs:1395` |
-| `/programs/list` | `ListInput` | `node/src/shell/api/actions/program.rs:1494` |
-| `/programs/runEntity` | `RunProgramEntityInput` | `node/src/shell/api/actions/program.rs:566` |
-| `/programs/stopEntity` | `RunProgramEntityInput` | `node/src/shell/api/actions/program.rs:692` |
-| `/programs/update` | `UpdateProgramInput` | `node/src/shell/api/actions/program.rs:533` |
-| `/storage/upload` | `StorageUploadInput` | `node/src/shell/api/actions/creature.rs:896` |
-| `/stores/getAccess` | `GetAccessInput` | `node/src/shell/api/actions/store.rs:241` |
-| `/stores/history` | `HistoryInput` | `node/src/shell/api/actions/store.rs:172` |
-| `/stores/setAccess` | `SetAccessInput` | `node/src/shell/api/actions/store.rs:212` |
-| `/stores/signal` | `SignalInput` | `node/src/shell/api/actions/store.rs:95` |
+| `/api/hello` | `HelloInput` | `apps/aseman-node/src/shell/api/actions/dummy.rs:30` |
+| `/api/ping` | `HelloInput` | `apps/aseman-node/src/shell/api/actions/dummy.rs:60` |
+| `/api/time` | `HelloInput` | `apps/aseman-node/src/shell/api/actions/dummy.rs:45` |
+| `/auths/getServerPublicKey` | `GetServerKeyInput` | `apps/aseman-node/src/shell/api/actions/auth.rs:41` |
+| `/auths/getServersMap` | `GetServersMapInput` | `apps/aseman-node/src/shell/api/actions/auth.rs:57` |
+| `/creatures/authenticate` | `AuthenticateInput` | `apps/aseman-node/src/shell/api/actions/creature.rs:501` |
+| `/creatures/checkSign` | `CheckSignInput` | `apps/aseman-node/src/shell/api/actions/creature.rs:637` |
+| `/creatures/closePool` | `ClosePoolInput` | `apps/aseman-node/src/shell/api/actions/creature/finance.rs:2528` |
+| `/creatures/consumeLock` | `ConsumeLockInput` | `apps/aseman-node/src/shell/api/actions/creature.rs:1035` |
+| `/creatures/create` | `CreatureCreateInput` | `apps/aseman-node/src/shell/api/actions/creature.rs:201` |
+| `/creatures/createHold` | `CreateHoldInput` | `apps/aseman-node/src/shell/api/actions/creature/finance.rs:1123` |
+| `/creatures/debitPool` | `DebitPoolInput` | `apps/aseman-node/src/shell/api/actions/creature/finance.rs:3073` |
+| `/creatures/delete` | `DeleteInput` | `apps/aseman-node/src/shell/api/actions/creature.rs:1307` |
+| `/creatures/find` | `FindInput` | `apps/aseman-node/src/shell/api/actions/creature.rs:1457` |
+| `/creatures/get` | `GetInput` | `apps/aseman-node/src/shell/api/actions/creature.rs:252` |
+| `/creatures/getByUsername` | `GetByUsernameInput` | `apps/aseman-node/src/shell/api/actions/creature.rs:1430` |
+| `/creatures/getFinancialAccount` | `GetFinancialAccountInput` | `apps/aseman-node/src/shell/api/actions/creature/finance.rs:1981` |
+| `/creatures/getHold` | `GetHoldInput` | `apps/aseman-node/src/shell/api/actions/creature/finance.rs:1850` |
+| `/creatures/list` | `ListInput` | `apps/aseman-node/src/shell/api/actions/creature.rs:271` |
+| `/creatures/listPayouts` | `ListPayoutsInput` | `apps/aseman-node/src/shell/api/actions/creature/finance.rs:2249` |
+| `/creatures/lockToken` | `LockTokenInput` | `apps/aseman-node/src/shell/api/actions/creature.rs:948` |
+| `/creatures/login` | `LoginInput` | `apps/aseman-node/src/shell/api/actions/creature.rs:1195` |
+| `/creatures/meta` | `MetaInput` | `apps/aseman-node/src/shell/api/actions/creature.rs:1371` |
+| `/creatures/mint` | `MintInput` | `apps/aseman-node/src/shell/api/actions/creature.rs:541` |
+| `/creatures/openPool` | `OpenPoolInput` | `apps/aseman-node/src/shell/api/actions/creature/finance.rs:2316` |
+| `/creatures/paymentAdjustment` | `PaymentAdjustmentInput` | `apps/aseman-node/src/shell/api/actions/creature/finance.rs:3997` |
+| `/creatures/publishFinanceCatalog` | `PublishFinanceCatalogInput` | `apps/aseman-node/src/shell/api/actions/creature/finance.rs:434` |
+| `/creatures/publishFinanceQuote` | `PublishFinanceQuoteInput` | `apps/aseman-node/src/shell/api/actions/creature/finance.rs:911` |
+| `/creatures/reconcileFinancialSystem` | `ReconcileFinancialSystemInput` | `apps/aseman-node/src/shell/api/actions/creature/finance.rs:3317` |
+| `/creatures/refreshPool` | `RefreshPoolInput` | `apps/aseman-node/src/shell/api/actions/creature/finance.rs:2421` |
+| `/creatures/registerFinanceNode` | `RegisterFinanceNodeInput` | `apps/aseman-node/src/shell/api/actions/creature/finance.rs:551` |
+| `/creatures/registerFinanceResource` | `RegisterFinanceResourceInput` | `apps/aseman-node/src/shell/api/actions/creature/finance.rs:670` |
+| `/creatures/releaseHold` | `ReleaseHoldInput` | `apps/aseman-node/src/shell/api/actions/creature/finance.rs:1715` |
+| `/creatures/releasePool` | `ReleasePoolInput` | `apps/aseman-node/src/shell/api/actions/creature/finance.rs:2960` |
+| `/creatures/requestPayout` | `RequestPayoutInput` | `apps/aseman-node/src/shell/api/actions/creature/finance.rs:2021` |
+| `/creatures/reservePool` | `ReservePoolInput` | `apps/aseman-node/src/shell/api/actions/creature/finance.rs:2629` |
+| `/creatures/resolvePayout` | `ResolvePayoutInput` | `apps/aseman-node/src/shell/api/actions/creature/finance.rs:2127` |
+| `/creatures/retireFinanceNode` | `RetireFinanceNodeInput` | `apps/aseman-node/src/shell/api/actions/creature/finance.rs:631` |
+| `/creatures/retireFinanceResource` | `RetireFinanceResourceInput` | `apps/aseman-node/src/shell/api/actions/creature/finance.rs:821` |
+| `/creatures/reviewFinanceResource` | `ReviewFinanceResourceInput` | `apps/aseman-node/src/shell/api/actions/creature/finance.rs:783` |
+| `/creatures/secretGet` | `SecretGetInput` | `apps/aseman-node/src/shell/api/actions/creature.rs:747` |
+| `/creatures/secretGrant` | `SecretGrantInput` | `apps/aseman-node/src/shell/api/actions/creature.rs:788` |
+| `/creatures/secretList` | `SecretListInput` | `apps/aseman-node/src/shell/api/actions/creature.rs:868` |
+| `/creatures/secretListGranted` | `SecretListGrantedInput` | `apps/aseman-node/src/shell/api/actions/creature.rs:852` |
+| `/creatures/secretPut` | `SecretPutInput` | `apps/aseman-node/src/shell/api/actions/creature.rs:720` |
+| `/creatures/secretRevoke` | `SecretRevokeInput` | `apps/aseman-node/src/shell/api/actions/creature.rs:827` |
+| `/creatures/settleHold` | `SettleHoldInput` | `apps/aseman-node/src/shell/api/actions/creature/finance.rs:1457` |
+| `/creatures/settlePool` | `SettlePoolInput` | `apps/aseman-node/src/shell/api/actions/creature/finance.rs:2734` |
+| `/creatures/signal` | `CreatureSignalInput` | `apps/aseman-node/src/shell/api/actions/creature.rs:393` |
+| `/creatures/startHold` | `StartHoldInput` | `apps/aseman-node/src/shell/api/actions/creature/finance.rs:1377` |
+| `/creatures/transfer` | `TransferInput` | `apps/aseman-node/src/shell/api/actions/creature.rs:293` |
+| `/creatures/types` | `ListInput` | `apps/aseman-node/src/shell/api/actions/creature.rs:1483` |
+| `/creatures/update` | `UpdateInput` | `apps/aseman-node/src/shell/api/actions/creature.rs:1343` |
+| `/gateway/signal` | `GatewaySignalInput` | `apps/aseman-node/src/shell/api/actions/gateway.rs:249` |
+| `/gateway/subscribe` | `GatewaySubscribeInput` | `apps/aseman-node/src/shell/api/actions/gateway.rs:178` |
+| `/gateway/unsubscribe` | `GatewayUnsubscribeInput` | `apps/aseman-node/src/shell/api/actions/gateway.rs:224` |
+| `/machines/closeVmTerminal` | `VmTerminalInput` | `apps/aseman-node/src/shell/api/actions/program.rs:1076` |
+| `/machines/list` | `ListInput` | `apps/aseman-node/src/shell/api/actions/program.rs:1433` |
+| `/machines/listEntityVms` | `RunProgramEntityInput` | `apps/aseman-node/src/shell/api/actions/program.rs:929` |
+| `/machines/listProgramMachines` | `ListAppMachsInput` | `apps/aseman-node/src/shell/api/actions/program.rs:1512` |
+| `/machines/openVmTerminal` | `VmTerminalInput` | `apps/aseman-node/src/shell/api/actions/program.rs:1040` |
+| `/machines/readMachineBuilds` | `MachineBuildsInput` | `apps/aseman-node/src/shell/api/actions/program.rs:1109` |
+| `/machines/readVmLogs` | `ReadVmLogsInput` | `apps/aseman-node/src/shell/api/actions/program.rs:854` |
+| `/programs/create` | `CreateMachineInput` | `apps/aseman-node/src/shell/api/actions/program.rs:470` |
+| `/programs/delete` | `DeleteProgramInput` | `apps/aseman-node/src/shell/api/actions/program.rs:506` |
+| `/programs/deleteEntity` | `RunProgramEntityInput` | `apps/aseman-node/src/shell/api/actions/program.rs:765` |
+| `/programs/deploy` | `DeployInput` | `apps/aseman-node/src/shell/api/actions/program.rs:1183` |
+| `/programs/downloadEntity` | `DownloadEntityInput` | `apps/aseman-node/src/shell/api/actions/program.rs:1391` |
+| `/programs/list` | `ListInput` | `apps/aseman-node/src/shell/api/actions/program.rs:1490` |
+| `/programs/runEntity` | `RunProgramEntityInput` | `apps/aseman-node/src/shell/api/actions/program.rs:562` |
+| `/programs/stopEntity` | `RunProgramEntityInput` | `apps/aseman-node/src/shell/api/actions/program.rs:688` |
+| `/programs/update` | `UpdateProgramInput` | `apps/aseman-node/src/shell/api/actions/program.rs:529` |
+| `/storage/upload` | `StorageUploadInput` | `apps/aseman-node/src/shell/api/actions/creature.rs:896` |
+| `/stores/getAccess` | `GetAccessInput` | `apps/aseman-node/src/shell/api/actions/store.rs:241` |
+| `/stores/history` | `HistoryInput` | `apps/aseman-node/src/shell/api/actions/store.rs:172` |
+| `/stores/setAccess` | `SetAccessInput` | `apps/aseman-node/src/shell/api/actions/store.rs:212` |
+| `/stores/signal` | `SignalInput` | `apps/aseman-node/src/shell/api/actions/store.rs:95` |
 
 ## HTTP routes
 
 | Surface | Method | Path | Source |
 |---|---|---|---|
-| cluster-admin-and-raft | POST | `/cluster/add-peer` | `node/src/drivers/cluster/server.rs:240` |
-| cluster-admin-and-raft | GET | `/cluster/config` | `node/src/drivers/cluster/server.rs:245` |
-| cluster-admin-and-raft | POST | `/cluster/config` | `node/src/drivers/cluster/server.rs:248` |
-| cluster-admin-and-raft | POST | `/cluster/config/apply` | `node/src/drivers/cluster/server.rs:249` |
-| cluster-admin-and-raft | POST | `/cluster/init` | `node/src/drivers/cluster/server.rs:239` |
-| cluster-admin-and-raft | GET | `/cluster/nearest` | `node/src/drivers/cluster/server.rs:236` |
-| cluster-admin-and-raft | GET | `/cluster/peers` | `node/src/drivers/cluster/server.rs:232` |
-| cluster-admin-and-raft | GET | `/cluster/ping` | `node/src/drivers/cluster/server.rs:222` |
-| cluster-admin-and-raft | POST | `/cluster/promote` | `node/src/drivers/cluster/server.rs:242` |
-| cluster-admin-and-raft | POST | `/cluster/propose` | `node/src/drivers/cluster/server.rs:252` |
-| cluster-admin-and-raft | POST | `/cluster/remove-peer` | `node/src/drivers/cluster/server.rs:241` |
-| cluster-admin-and-raft | GET | `/cluster/status` | `node/src/drivers/cluster/server.rs:231` |
-| cluster-admin-and-raft | POST | `/raft/append` | `node/src/drivers/cluster/server.rs:212` |
-| cluster-admin-and-raft | POST | `/raft/snapshot` | `node/src/drivers/cluster/server.rs:216` |
-| cluster-admin-and-raft | POST | `/raft/vote` | `node/src/drivers/cluster/server.rs:208` |
-| profiling-http | GET | `/debug/pprof` | `node/src/telemetry/pprof.rs:86` |
-| profiling-http | GET | `/debug/pprof/` | `node/src/telemetry/pprof.rs:86` |
-| profiling-http | GET | `/debug/pprof/flamegraph` | `node/src/telemetry/pprof.rs:90` |
-| profiling-http | GET | `/debug/pprof/heap` | `node/src/telemetry/pprof.rs:88` |
-| profiling-http | GET | `/debug/pprof/profile` | `node/src/telemetry/pprof.rs:94` |
-| profiling-http | GET | `/debug/pprof/runtime` | `node/src/telemetry/pprof.rs:87` |
-| profiling-http | GET | `/debug/pprof/threads` | `node/src/telemetry/pprof.rs:89` |
-| public-storage-http | GET | `/storage/file/{id}` | `node/src/shell/storage_http.rs:110` |
-| public-storage-http | HEAD | `/storage/file/{id}` | `node/src/shell/storage_http.rs:110` |
-| public-storage-http | GET | `/storage/health` | `node/src/shell/storage_http.rs:104` |
-| public-storage-http | POST | `/storage/upload` | `node/src/shell/storage_http.rs:107` |
-| public-storage-http | PUT | `/storage/upload` | `node/src/shell/storage_http.rs:107` |
-| telemetry-http | GET | `/telemetry/health` | `node/src/telemetry/server.rs:131` |
-| telemetry-http | GET | `/telemetry/snapshot` | `node/src/telemetry/server.rs:132` |
-| vm-http-ingress | ANY | `/{creatureId}/{programId}/{entityId}/{vmId}/{path...}` | `node/src/drivers/vmm/network/ingress.rs:1` |
-| vm-http-ingress | ANY | `/{creatureUsername}/{customPath...}` | `node/src/drivers/vmm/http_route.rs:1` |
+| cluster-admin-and-raft | POST | `/cluster/add-peer` | `apps/aseman-node/src/drivers/cluster/server.rs:240` |
+| cluster-admin-and-raft | GET | `/cluster/config` | `apps/aseman-node/src/drivers/cluster/server.rs:245` |
+| cluster-admin-and-raft | POST | `/cluster/config` | `apps/aseman-node/src/drivers/cluster/server.rs:248` |
+| cluster-admin-and-raft | POST | `/cluster/config/apply` | `apps/aseman-node/src/drivers/cluster/server.rs:249` |
+| cluster-admin-and-raft | POST | `/cluster/init` | `apps/aseman-node/src/drivers/cluster/server.rs:239` |
+| cluster-admin-and-raft | GET | `/cluster/nearest` | `apps/aseman-node/src/drivers/cluster/server.rs:236` |
+| cluster-admin-and-raft | GET | `/cluster/peers` | `apps/aseman-node/src/drivers/cluster/server.rs:232` |
+| cluster-admin-and-raft | GET | `/cluster/ping` | `apps/aseman-node/src/drivers/cluster/server.rs:222` |
+| cluster-admin-and-raft | POST | `/cluster/promote` | `apps/aseman-node/src/drivers/cluster/server.rs:242` |
+| cluster-admin-and-raft | POST | `/cluster/propose` | `apps/aseman-node/src/drivers/cluster/server.rs:252` |
+| cluster-admin-and-raft | POST | `/cluster/remove-peer` | `apps/aseman-node/src/drivers/cluster/server.rs:241` |
+| cluster-admin-and-raft | GET | `/cluster/status` | `apps/aseman-node/src/drivers/cluster/server.rs:231` |
+| cluster-admin-and-raft | POST | `/raft/append` | `apps/aseman-node/src/drivers/cluster/server.rs:212` |
+| cluster-admin-and-raft | POST | `/raft/snapshot` | `apps/aseman-node/src/drivers/cluster/server.rs:216` |
+| cluster-admin-and-raft | POST | `/raft/vote` | `apps/aseman-node/src/drivers/cluster/server.rs:208` |
+| profiling-http | GET | `/debug/pprof` | `apps/aseman-node/src/telemetry/pprof.rs:86` |
+| profiling-http | GET | `/debug/pprof/` | `apps/aseman-node/src/telemetry/pprof.rs:86` |
+| profiling-http | GET | `/debug/pprof/flamegraph` | `apps/aseman-node/src/telemetry/pprof.rs:90` |
+| profiling-http | GET | `/debug/pprof/heap` | `apps/aseman-node/src/telemetry/pprof.rs:88` |
+| profiling-http | GET | `/debug/pprof/profile` | `apps/aseman-node/src/telemetry/pprof.rs:94` |
+| profiling-http | GET | `/debug/pprof/runtime` | `apps/aseman-node/src/telemetry/pprof.rs:87` |
+| profiling-http | GET | `/debug/pprof/threads` | `apps/aseman-node/src/telemetry/pprof.rs:89` |
+| public-storage-http | GET | `/storage/file/{id}` | `apps/aseman-node/src/shell/storage_http.rs:110` |
+| public-storage-http | HEAD | `/storage/file/{id}` | `apps/aseman-node/src/shell/storage_http.rs:110` |
+| public-storage-http | GET | `/storage/health` | `apps/aseman-node/src/shell/storage_http.rs:104` |
+| public-storage-http | POST | `/storage/upload` | `apps/aseman-node/src/shell/storage_http.rs:107` |
+| public-storage-http | PUT | `/storage/upload` | `apps/aseman-node/src/shell/storage_http.rs:107` |
+| telemetry-http | GET | `/telemetry/health` | `apps/aseman-node/src/telemetry/server.rs:131` |
+| telemetry-http | GET | `/telemetry/snapshot` | `apps/aseman-node/src/telemetry/server.rs:132` |
+| vm-http-ingress | ANY | `/{creatureId}/{programId}/{entityId}/{vmId}/{path...}` | `apps/aseman-node/src/drivers/vmm/network/ingress.rs:1` |
+| vm-http-ingress | ANY | `/{creatureUsername}/{customPath...}` | `apps/aseman-node/src/drivers/vmm/http_route.rs:1` |
 
 ## Guest gateway
 

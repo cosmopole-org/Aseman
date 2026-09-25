@@ -1,0 +1,19 @@
+[package]
+name = "aseman-public-service"
+description = "The composed public action service (P7-06): A401 auth, A402 authorization, execution, and durable idempotency behind the A701 transport contract."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+aseman-application = { path = "../../crates/aseman-application" }
+aseman-contracts = { path = "../../crates/aseman-contracts" }
+aseman-domain = { path = "../../crates/aseman-domain" }
+aseman-ports = { path = "../../crates/aseman-ports" }
+aseman-public-http = { path = "../network/http" }
+thiserror.workspace = true
+
+[lints]
+workspace = true

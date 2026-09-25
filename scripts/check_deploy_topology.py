@@ -20,10 +20,11 @@ CONTRACT = ROOT / "contracts/deploy/topology.json"
 
 # service name -> the crate manifest that builds it, when Aseman builds it at all.
 OWNED_BY = {
-    "aseman-node": "node/Cargo.toml",
+    "aseman-node": "apps/aseman-node/Cargo.toml",
     "aseman-vmm": "apps/aseman-vmm/Cargo.toml",
+    "aseman-meter": "apps/aseman-meter/Cargo.toml",
     "aseman-vmm-backend": None,  # one of several backends; checked separately
-    "aseman-vmm-agent": None,  # P6-05
+    "aseman-vmm-agent": "apps/aseman-vmm-agent/Cargo.toml",
     "nomad-server": None,  # the operator's (ADR 0002)
     "nomad-client": None,
     "postgres": None,
@@ -33,6 +34,16 @@ BACKEND_MAINS = [
     "modules/vmm-backend/native-legacy/src/main.rs",
     "modules/vmm-backend/nomad/src/main.rs",
 ]
+
+IMAGES = {
+    "aseman-node": ("deploy/images/node.Dockerfile", "aseman-node"),
+    "aseman-vmm": ("deploy/images/vmm.Dockerfile", "aseman-vmm"),
+    "aseman-meter": ("deploy/images/meter.Dockerfile", "aseman-meter"),
+    "aseman-vmm-backend": (
+        "deploy/images/nomad-backend.Dockerfile",
+        "aseman-vmm-backend-nomad",
+    ),
+}
 
 
 def fail(problems: list[str], message: str) -> None:
@@ -52,6 +63,43 @@ def check() -> list[str]:
     for name in services:
         if name not in OWNED_BY:
             fail(problems, f"the contract names {name}, which nothing deploys")
+
+    # Each unprivileged Aseman service is a separate, single-process, non-root image.
+    # The privileged agent deliberately has no image until its authenticated server
+    # executable exists; inventing a container for a library would be false evidence.
+    build_script = (ROOT / "build-dist.sh").read_text(encoding="utf-8")
+    for service, (dockerfile, binary) in IMAGES.items():
+        path = ROOT / dockerfile
+        if not path.exists():
+            fail(problems, f"{service} has no separate image at {dockerfile}")
+            continue
+        source = path.read_text(encoding="utf-8")
+        for required in ["USER 65532:65532", "HEALTHCHECK", f'ENTRYPOINT ["/usr/local/bin/{binary}"]']:
+            if required not in source:
+                fail(problems, f"{dockerfile} is missing {required}")
+        for forbidden in ["docker.sock", "/dev/kvm"]:
+            if forbidden in source:
+                fail(problems, f"{dockerfile} asks for forbidden privilege {forbidden}")
+        if binary not in build_script:
+            fail(problems, f"build-dist.sh does not publish {binary} for {dockerfile}")
+
+    agent_unit = ROOT / "deploy/systemd/aseman-vmm-agent.service"
+    if not agent_unit.exists():
+        fail(problems, "the host-profile agent has no systemd unit")
+    else:
+        unit = agent_unit.read_text(encoding="utf-8")
+        for required in [
+            "ExecStart=/usr/local/bin/aseman-vmm-agent",
+            "DevicePolicy=closed",
+            "DeviceAllow=/dev/kvm rw",
+            "ProtectSystem=strict",
+        ]:
+            if required not in unit:
+                fail(problems, f"the agent systemd unit is missing {required}")
+        if "docker.sock" in unit:
+            fail(problems, "the agent systemd unit must not receive the Docker socket")
+    if "aseman-vmm-agent" not in build_script:
+        fail(problems, "build-dist.sh does not publish the host agent executable")
 
     # The A504 listener is the trust boundary: it must refuse a non-loopback address.
     a504 = next(
@@ -88,8 +136,9 @@ def check() -> list[str]:
         "kvm": re.compile(r"/dev/kvm"),
     }
     unprivileged = {
-        "aseman-node": ["node/src"],
+        "aseman-node": ["apps/aseman-node/src"],
         "aseman-vmm": ["apps/aseman-vmm/src"],
+        "aseman-meter": ["apps/aseman-meter/src"],
     }
     for name, directories in unprivileged.items():
         if "none" not in services[name]["privileges"]:

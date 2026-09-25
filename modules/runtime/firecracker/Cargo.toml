@@ -1,0 +1,14 @@
+[package]
+name = "caspar-vm-fire"
+version = "0.1.0"
+edition = "2021"
+description = "Caspar VM plugin: Firecracker microVM runtime (key: fire)"
+
+[lib]
+name = "caspar_vm_fire"
+path = "src/lib.rs"
+
+[dependencies]
+aseman-config = { path = "../../../crates/aseman-config" }
+caspar-vm-sdk = { path = "../sdk-legacy" }
+serde_json = "1"

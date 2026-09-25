@@ -10,9 +10,11 @@ The Rust codebase is approximately 87,000 lines, with approximately 55,000 in th
 
 ### VMM
 
-- `node/src/drivers/mod.rs` explicitly describes the VMM as in-process.
-- `node/src/models/ports/vmm.rs::IVmm` combines lifecycle, runtime discovery, Docker identity, signalling, database operations, locks, host calls, and HTTP forwarding.
-- Runtime plugins are statically registered in `node/crates/caspar-vm-plugins/src/lib.rs`.
+- `apps/aseman-node/src/drivers/mod.rs` explicitly describes the VMM as in-process.
+- `apps/aseman-node/src/models/ports/vmm.rs::IVmm` combines lifecycle, runtime discovery, Docker identity, signalling, database operations, locks, host calls, and HTTP forwarding.
+- Runtime plugins are statically registered by the native backend at
+  `modules/vmm-backend/native-legacy/crates/caspar-vm-plugins/src/lib.rs`; no runtime
+  implementation is linked into the node.
 - `casparctl vms enable/disable/sync` changes the generated compile-time aggregation and therefore does not provide runtime module replacement.
 - The existing VMM HTTP listener is guest workload ingress, not an Aseman-to-VMM control API.
 

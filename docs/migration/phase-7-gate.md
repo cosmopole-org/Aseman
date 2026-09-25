@@ -51,7 +51,9 @@ execution count stays at one.
 
 - **Serving the contract**: the hardened HTTP stack, its middleware (rate, concurrency,
   body and duration limits, CORS, draining), and the SSE and WebSocket streams.
-- **The federation transport**: the HTTP endpoint, signature verification over the
-  envelope, backoff, and circuit breakers. The rules they enforce are fixed here.
-- **Trust bootstrap and partition runbooks** (A706) need that transport.
+- **Federation node composition and deployed evidence**: the package now delivers the
+  mandatory-mTLS endpoint/client, A401 verification, signed responses, backoff, and
+  circuit breaker, plus the A706 trust/partition runbook. The node must supply the
+  concrete signer, descriptor verifier, executor, and listener configuration, then the
+  rotation/partition drill must be observed between deployed clusters.
 - **Retiring the legacy transports** is ADR 0004's window and the removal ledger's.

@@ -284,6 +284,8 @@ pub trait VmmClient: Send + Sync {
     ) -> PortResult<()>;
     fn get_file(&self, id: WorkloadId, path: &str) -> PortResult<Vec<u8>>;
     fn endpoints(&self, id: WorkloadId) -> PortResult<Vec<Endpoint>>;
+    /// Normalized cumulative usage from A501.
+    fn usage(&self, id: WorkloadId) -> PortResult<Usage>;
     /// Verify an A501 `VerificationRequest`; returns the A501 `VerificationResult`.
     fn verify(&self, runtime: &str, request: &str, idempotency_key: &str) -> PortResult<String>;
     /// Log records with a sequence above `after`.

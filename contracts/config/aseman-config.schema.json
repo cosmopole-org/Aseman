@@ -586,13 +586,6 @@
         "SEARCH_INDEX_PATH"
       ]
     },
-    "ASEMAN_LEGACY_SHARDCHAIN_SCRIPT": {
-      "description": "Typed replacement for legacy SHARDCHAIN_SCRIPT (runtime-or-storage).",
-      "type": "string",
-      "x-legacy-aliases": [
-        "SHARDCHAIN_SCRIPT"
-      ]
-    },
     "ASEMAN_LEGACY_STORAGE_ROOT_PATH": {
       "description": "Typed replacement for legacy STORAGE_ROOT_PATH (runtime-or-storage).",
       "type": "string",

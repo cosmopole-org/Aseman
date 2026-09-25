@@ -1,0 +1,27 @@
+[package]
+name = "aseman-storage-legacy"
+description = "Read-only legacy storage source and canonical capsule migration bridge."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+aseman-config = { path = "../../../crates/aseman-config" }
+base64.workspace = true
+chacha20poly1305 = "0.10.1"
+aseman-contracts = { path = "../../../crates/aseman-contracts" }
+aseman-domain = { path = "../../../crates/aseman-domain" }
+postgres.workspace = true
+r2d2.workspace = true
+r2d2_postgres.workspace = true
+rocksdb.workspace = true
+rsa.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+sha2.workspace = true
+thiserror.workspace = true
+
+[lints]
+workspace = true

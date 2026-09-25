@@ -41,8 +41,8 @@ PYTHONDONTWRITEBYTECODE=1 python3 scripts/generate_support_manifest.py --check
 PYTHONDONTWRITEBYTECODE=1 python3 scripts/generate_quality_baseline.py --check
 PYTHONDONTWRITEBYTECODE=1 python3 scripts/generate_removal_ledger_children.py --check
 PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s tests/characterization -p 'test_*.py'
-cargo test --manifest-path node/Cargo.toml --workspace
-cargo test --manifest-path cmd/casparctl/Cargo.toml
+cargo test -p aseman-node --lib
+cargo test -p asemanctl --all-targets
 ```
 
 The TypeScript client typecheck remains explicitly unavailable until dependencies are

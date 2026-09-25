@@ -55,9 +55,8 @@ _native_docker_exists() {
 }
 
 REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-NODE_DIR="$REPO_DIR/node"
 # Prefer the pre-built dist binary; fall back to the cargo build output.
-BINARY="$NODE_DIR/target/release/caspar-node"
+BINARY="$REPO_DIR/target/release/caspar-node"
 [[ -x "$REPO_DIR/dist/bin/caspar-node" ]] && BINARY="$REPO_DIR/dist/bin/caspar-node"
 DATA_ROOT="/tmp/caspar"
 # Use the pre-built jar from dist/ if /opt/questdb/questdb.jar is absent
@@ -962,13 +961,13 @@ fi
 # ─── VM gateway network (kasper) ──────────────────────────────────────────────
 # Every docker/firecracker creature the node spawns is attached to the
 # user-defined ``kasper`` bridge network (see VmNetworkService::gateway_network_name
-# in node/src/drivers/vmm/network). The node does not create it, so we ensure it
+# in apps/aseman-node/src/drivers/vmm/network). The node does not create it, so we ensure it
 # exists here — otherwise container creation fails with "network kasper not found".
 #
 # We pin an explicit subnet/gateway so the bridge gateway IP is deterministic
 # (172.18.0.1). That address matters for more than NAT: the docker-host bridge
 # gateway authenticates each creature purely from its connection's *source IP*
-# (node/src/drivers/vmm/.../server.rs → find_container_name_by_ip, which matches
+# (apps/aseman-node/src/drivers/vmm/.../server.rs → find_container_name_by_ip, which matches
 # the container's kasper endpoint IP). A creature must therefore reach the
 # gateway over the SAME kasper bridge it is attached to — if it instead dials
 # `host.docker.internal` (Docker's `host-gateway`, the *default* docker0 bridge
@@ -1086,7 +1085,7 @@ _java_hint() {
 }
 
 # In docker mode each container starts its own QuestDB (see
-# node/scripts/docker-entrypoint.sh) so it has an isolated tsdb on the
+# deploy/legacy/docker-entrypoint.sh) so it has an isolated tsdb on the
 # host-network port assigned to that node. The host does not run QuestDB
 # at all in docker mode.
 #
@@ -1175,7 +1174,7 @@ if $USE_DOCKER; then
   fi
   info "Building $DOCKER_IMAGE from dist/ …"
   _fc_build_arg="true"; $SETUP_FIRECRACKER || _fc_build_arg="false"
-  docker build -f "$REPO_DIR/node/Dockerfile" \
+  docker build -f "$REPO_DIR/deploy/legacy/node.Dockerfile" \
     --build-arg "INSTALL_FIRECRACKER=${_fc_build_arg}" \
     -t "$DOCKER_IMAGE" "$REPO_DIR"
   ok "Docker image ready: $DOCKER_IMAGE"
@@ -1354,11 +1353,8 @@ local_start_node() {
     exit 1
   fi
   local launch_ld_path="${wasmedge_lib_dir}${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
-  # Override the /app/data container paths with per-node host paths, and point
-  # SHARDCHAIN_SCRIPT at the in-repo copy (the node defaults to the Docker path
-  # /app/scripts/shardchain.sh, which does not exist in local/--no-docker runs).
+  # Override the /app/data container paths with per-node host paths.
   LD_LIBRARY_PATH="$launch_ld_path" \
-  SHARDCHAIN_SCRIPT="$REPO_DIR/node/scripts/shardchain.sh" \
   BABBLE_DIR="$node_dir/babble" \
   BABBLE_DATA_DIR="$node_dir/babble" \
   STORAGE_ROOT_PATH="$node_dir/storage" \
@@ -1401,20 +1397,15 @@ docker_start_node() {
   )
   [[ -S /var/run/docker.sock ]] \
     && docker_args+=( -v /var/run/docker.sock:/var/run/docker.sock )
-  # Mount the shardchain.sh script so the node can bootstrap babble shards.
-  local scripts_dir="$REPO_DIR/node/scripts"
-  [[ -d "$scripts_dir" ]] \
-    && docker_args+=( -v "$scripts_dir":/app/scripts:ro )
-
   docker run -d "${docker_args[@]}" "$DOCKER_IMAGE" >/dev/null
   echo "$container"
 }
 
 # ─── Generate babble peers.genesis.json for all nodes ────────────────────────
-# The caspar node calls shardchain.sh to bootstrap each new babble shard.
-# shardchain.sh copies BABBLE_DATA_DIR/{priv_key,key.pub,peers.genesis.json}
-# into the shard directory.  We pre-generate the peer list here — before any
-# node starts — so every node can find it on first boot without a network call.
+# The node's Rust bootstrap copies
+# BABBLE_DATA_DIR/{priv_key,key.pub,peers.genesis.json} into each shard
+# directory. We pre-generate the peer list here before any node starts so every
+# node can find it on first boot without a network call.
 #
 # The pubkey is read from each node's already-written key.pub (produced by
 # caspar-keygen as SEC1-encoded uncompressed-point hex — exactly the format

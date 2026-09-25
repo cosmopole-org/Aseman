@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://aseman.dev/contracts/operations/operation-journal.schema.json",
+  "title": "Aseman resumable administrative operation journal",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["kind", "completed"],
+  "properties": {
+    "kind": { "enum": ["upgrade", "backup", "restore", "doctor", "support_bundle"] },
+    "completed": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/step" }
+    },
+    "failure": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["step", "reason"],
+      "properties": {
+        "step": { "$ref": "#/$defs/step" },
+        "reason": { "type": "string", "minLength": 1 }
+      }
+    }
+  },
+  "$defs": {
+    "step": {
+      "enum": [
+        "preflight", "verify_artifacts", "quiesce_writes", "snapshot_stores",
+        "capture_catalog", "hash_artifacts", "sign_manifest", "resume_writes",
+        "verify_manifest", "prepare_target", "restore_stores", "apply_catalog",
+        "verify_integrity", "drain_services", "apply_upgrade", "migrate_schema",
+        "start_services", "check_configuration", "check_dependencies", "check_storage",
+        "check_runtime", "check_security", "collect_diagnostics", "redact_secrets",
+        "package_bundle", "health"
+      ]
+    }
+  }
+}

@@ -132,10 +132,25 @@ impl Agent {
     ) -> Answer<MachineState> {
         authorize(grant, allocation, operation, now_millis)?;
         let mut machines = self.lock();
-        let machine = machines
-            .get_mut(allocation)
-            .ok_or(AgentError::UnknownAllocation)?;
+        let Some(machine) = machines.get_mut(allocation) else {
+            // Deletion is explicitly idempotent at the A603 boundary. A retry after
+            // the first delete must not turn success into an ambiguous failure.
+            return if operation == AgentOperation::Delete {
+                Ok(MachineState::Stopped)
+            } else {
+                Err(AgentError::UnknownAllocation.into())
+            };
+        };
         let state = machine.state();
+        if matches!(
+            (operation, state),
+            (AgentOperation::Start, MachineState::Running)
+                | (AgentOperation::Pause, MachineState::Paused)
+                | (AgentOperation::Resume, MachineState::Running)
+                | (AgentOperation::Stop, MachineState::Stopped)
+        ) {
+            return Ok(state);
+        }
         if !state.allows(operation) {
             // A pause that is not a pause would be worse than a refusal (A604).
             return Err(AgentError::WrongState.into());

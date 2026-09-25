@@ -1,0 +1,18 @@
+[package]
+name = "aseman-meter"
+description = "Independent Aseman usage collection and idempotent settlement process."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+aseman-application = { path = "../../crates/aseman-application" }
+aseman-config = { path = "../../crates/aseman-config" }
+aseman-finance-ledger = { path = "../../modules/finance/ledger" }
+aseman-vmm-http = { path = "../../modules/vmm-http" }
+postgres.workspace = true
+
+[lints]
+workspace = true

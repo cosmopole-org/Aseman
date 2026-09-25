@@ -16,7 +16,7 @@ ADR 0021.
 ## Context
 
 Guest programs store their own document state with the `putJson`, `getJson`,
-`getByPrefix`, and `delKey` host calls (for example `vms/javascript/examples/counter.js`),
+`getByPrefix`, and `delKey` host calls (for example `modules/runtime/javascript/examples/counter.js`),
 and read values with `getLink`. The host served these calls against arbitrary node keys.
 A guest could therefore read or overwrite anything in the node store: finance records,
 sessions, secrets, custodial private keys (`link::UserPrivateKey::*`), and core
@@ -29,7 +29,7 @@ program that stores documents.
 
 ## Decision
 
-1. **Confinement.** The calls exist only in `node/src/drivers/vmm/guest_state.rs`, for a
+1. **Confinement.** The calls exist only in `apps/aseman-node/src/drivers/vmm/guest_state.rs`, for a
    creature the node supplies. That creature is either the packet identity stamped by
    the runtime or the docker gateway, or the VM context registered for a runtime
    transaction. The guest's key only extends that creature's prefix:

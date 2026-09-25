@@ -11,6 +11,84 @@
       "callers": [
         "aseman-application",
         "aseman-config",
+        "aseman-finance-ledger",
+        "aseman-vmm-http",
+        "postgres"
+      ],
+      "current_owner": "apps/aseman-meter/Cargo.toml",
+      "disposition": "move-or-wrap-per-parent-ledger",
+      "expiry": "owning phase replacement/deletion gate",
+      "id": "rust-package:aseman-meter",
+      "replacement_evidence": "A001 plus architecture dependency checks",
+      "target_owner": "root Aseman workspace or isolated legacy provider"
+    },
+    {
+      "callers": [
+        "anyhow",
+        "aseman-application",
+        "aseman-capsule",
+        "aseman-config",
+        "aseman-consensus-hashgraph",
+        "aseman-contracts",
+        "aseman-domain",
+        "aseman-guest-http",
+        "aseman-identity-native",
+        "aseman-module-runtime",
+        "aseman-network-legacy",
+        "aseman-observability",
+        "aseman-policy-native",
+        "aseman-ports",
+        "aseman-storage-legacy",
+        "aseman-storage-postgres",
+        "aseman-vmm-http",
+        "base64",
+        "chacha20poly1305",
+        "chrono",
+        "crossbeam-channel",
+        "dashmap",
+        "futures-util",
+        "getrandom",
+        "hex",
+        "k256",
+        "libc",
+        "log",
+        "num-bigint",
+        "once_cell",
+        "openraft",
+        "postgres",
+        "pprof",
+        "r2d2",
+        "r2d2_postgres",
+        "rand",
+        "reqwest",
+        "rocksdb",
+        "rsa",
+        "rustls",
+        "rustls-pemfile",
+        "serde",
+        "serde_json",
+        "serde_repr",
+        "sha2",
+        "tar",
+        "thiserror",
+        "tokio",
+        "tonic",
+        "tungstenite",
+        "url",
+        "uuid",
+        "aseman-ports"
+      ],
+      "current_owner": "apps/aseman-node/Cargo.toml",
+      "disposition": "move-or-wrap-per-parent-ledger",
+      "expiry": "owning phase replacement/deletion gate",
+      "id": "rust-package:aseman-node",
+      "replacement_evidence": "A001 plus architecture dependency checks",
+      "target_owner": "root Aseman workspace or isolated legacy provider"
+    },
+    {
+      "callers": [
+        "aseman-application",
+        "aseman-config",
         "aseman-contracts",
         "aseman-domain",
         "aseman-ports",
@@ -31,9 +109,24 @@
     },
     {
       "callers": [
+        "aseman-config",
+        "aseman-contracts",
         "aseman-domain",
+        "axum",
+        "base64",
+        "hex",
+        "hyper",
+        "hyper-util",
+        "ring",
+        "rustls",
+        "rustls-pemfile",
         "serde",
-        "serde_json"
+        "serde_json",
+        "sha2",
+        "tokio",
+        "tokio-rustls",
+        "tower",
+        "rcgen"
       ],
       "current_owner": "apps/aseman-vmm-agent/Cargo.toml",
       "disposition": "move-or-wrap-per-parent-ledger",
@@ -52,12 +145,13 @@
         "ctrlc",
         "regex",
         "serde",
-        "serde_json"
+        "serde_json",
+        "thiserror"
       ],
-      "current_owner": "cmd/casparctl/Cargo.toml",
+      "current_owner": "apps/asemanctl/Cargo.toml",
       "disposition": "move-or-wrap-per-parent-ledger",
       "expiry": "owning phase replacement/deletion gate",
-      "id": "rust-package:casparctl",
+      "id": "rust-package:asemanctl",
       "replacement_evidence": "A001 plus architecture dependency checks",
       "target_owner": "root Aseman workspace or isolated legacy provider"
     },
@@ -84,10 +178,10 @@
         "thiserror",
         "uuid"
       ],
-      "current_owner": "crates/aseman-capsule-repositories/Cargo.toml",
+      "current_owner": "crates/aseman-capsule/Cargo.toml",
       "disposition": "move-or-wrap-per-parent-ledger",
       "expiry": "owning phase replacement/deletion gate",
-      "id": "rust-package:aseman-capsule-repositories",
+      "id": "rust-package:aseman-capsule",
       "replacement_evidence": "A001 plus architecture dependency checks",
       "target_owner": "root Aseman workspace or isolated legacy provider"
     },
@@ -144,6 +238,19 @@
     {
       "callers": [
         "aseman-contracts",
+        "aseman-domain",
+        "thiserror"
+      ],
+      "current_owner": "crates/aseman-guest-sdk/Cargo.toml",
+      "disposition": "move-or-wrap-per-parent-ledger",
+      "expiry": "owning phase replacement/deletion gate",
+      "id": "rust-package:aseman-guest-sdk",
+      "replacement_evidence": "A001 plus architecture dependency checks",
+      "target_owner": "root Aseman workspace or isolated legacy provider"
+    },
+    {
+      "callers": [
+        "aseman-contracts",
         "base64",
         "hex",
         "ring",
@@ -181,6 +288,90 @@
       "disposition": "move-or-wrap-per-parent-ledger",
       "expiry": "owning phase replacement/deletion gate",
       "id": "rust-package:aseman-ports",
+      "replacement_evidence": "A001 plus architecture dependency checks",
+      "target_owner": "root Aseman workspace or isolated legacy provider"
+    },
+    {
+      "callers": [
+        "anyhow",
+        "aseman-config",
+        "aseman-domain",
+        "aseman-ports",
+        "aseman-storage-legacy",
+        "base64",
+        "chrono",
+        "crossbeam-channel",
+        "getrandom",
+        "hex",
+        "k256",
+        "num-bigint",
+        "rand",
+        "rocksdb",
+        "serde",
+        "serde_json",
+        "serde_repr",
+        "sha2",
+        "thiserror",
+        "uuid"
+      ],
+      "current_owner": "modules/consensus/hashgraph/Cargo.toml",
+      "disposition": "move-or-wrap-per-parent-ledger",
+      "expiry": "owning phase replacement/deletion gate",
+      "id": "rust-package:aseman-consensus-hashgraph",
+      "replacement_evidence": "A001 plus architecture dependency checks",
+      "target_owner": "root Aseman workspace or isolated legacy provider"
+    },
+    {
+      "callers": [
+        "aseman-application",
+        "aseman-contracts",
+        "aseman-domain",
+        "aseman-ports",
+        "axum",
+        "base64",
+        "hex",
+        "hyper",
+        "hyper-util",
+        "postgres",
+        "r2d2",
+        "r2d2_postgres",
+        "reqwest",
+        "rustls",
+        "rustls-pemfile",
+        "serde",
+        "serde_json",
+        "sha2",
+        "thiserror",
+        "tokio",
+        "tokio-rustls",
+        "tower",
+        "aseman-config",
+        "aseman-policy-native",
+        "aseman-ports",
+        "uuid"
+      ],
+      "current_owner": "modules/federation/http/Cargo.toml",
+      "disposition": "move-or-wrap-per-parent-ledger",
+      "expiry": "owning phase replacement/deletion gate",
+      "id": "rust-package:aseman-federation-http",
+      "replacement_evidence": "A001 plus architecture dependency checks",
+      "target_owner": "root Aseman workspace or isolated legacy provider"
+    },
+    {
+      "callers": [
+        "aseman-domain",
+        "aseman-ports",
+        "postgres",
+        "r2d2",
+        "r2d2_postgres",
+        "serde_json",
+        "aseman-config",
+        "uuid"
+      ],
+      "current_owner": "modules/finance/ledger/Cargo.toml",
+      "disposition": "move-or-wrap-per-parent-ledger",
+      "expiry": "owning phase replacement/deletion gate",
+      "id": "rust-package:aseman-finance-ledger",
       "replacement_evidence": "A001 plus architecture dependency checks",
       "target_owner": "root Aseman workspace or isolated legacy provider"
     },
@@ -227,13 +418,223 @@
       "callers": [
         "aseman-contracts",
         "aseman-domain",
-        "aseman-ports",
-        "aseman-policy-conformance"
+        "axum",
+        "hyper",
+        "hyper-util",
+        "rustls",
+        "rustls-pemfile",
+        "serde",
+        "serde_json",
+        "tokio",
+        "tokio-rustls",
+        "tower",
+        "uuid"
       ],
-      "current_owner": "modules/policy-native/Cargo.toml",
+      "current_owner": "modules/network/http/Cargo.toml",
       "disposition": "move-or-wrap-per-parent-ledger",
       "expiry": "owning phase replacement/deletion gate",
-      "id": "rust-package:aseman-policy-native",
+      "id": "rust-package:aseman-public-http",
+      "replacement_evidence": "A001 plus architecture dependency checks",
+      "target_owner": "root Aseman workspace or isolated legacy provider"
+    },
+    {
+      "callers": [
+        "anyhow",
+        "rustls",
+        "rustls-pemfile",
+        "serde_json"
+      ],
+      "current_owner": "modules/network/legacy/Cargo.toml",
+      "disposition": "move-or-wrap-per-parent-ledger",
+      "expiry": "owning phase replacement/deletion gate",
+      "id": "rust-package:aseman-network-legacy",
+      "replacement_evidence": "A001 plus architecture dependency checks",
+      "target_owner": "root Aseman workspace or isolated legacy provider"
+    },
+    {
+      "callers": [
+        "aseman-application",
+        "aseman-contracts",
+        "aseman-domain",
+        "aseman-ports",
+        "aseman-public-http",
+        "thiserror"
+      ],
+      "current_owner": "modules/public-service/Cargo.toml",
+      "disposition": "move-or-wrap-per-parent-ledger",
+      "expiry": "owning phase replacement/deletion gate",
+      "id": "rust-package:aseman-public-service",
+      "replacement_evidence": "A001 plus architecture dependency checks",
+      "target_owner": "root Aseman workspace or isolated legacy provider"
+    },
+    {
+      "callers": [
+        "aseman-domain",
+        "aseman-ports",
+        "postgres",
+        "r2d2",
+        "r2d2_postgres",
+        "aseman-config",
+        "aseman-ports",
+        "uuid"
+      ],
+      "current_owner": "modules/realtime/durable/Cargo.toml",
+      "disposition": "move-or-wrap-per-parent-ledger",
+      "expiry": "owning phase replacement/deletion gate",
+      "id": "rust-package:aseman-realtime-durable",
+      "replacement_evidence": "A001 plus architecture dependency checks",
+      "target_owner": "root Aseman workspace or isolated legacy provider"
+    },
+    {
+      "callers": [
+        "aseman-config",
+        "base64",
+        "bollard",
+        "caspar-vm-sdk",
+        "chrono",
+        "futures-util",
+        "reqwest",
+        "serde_json",
+        "tar",
+        "tokio",
+        "uuid"
+      ],
+      "current_owner": "modules/runtime/docker/Cargo.toml",
+      "disposition": "move-or-wrap-per-parent-ledger",
+      "expiry": "owning phase replacement/deletion gate",
+      "id": "rust-package:caspar-vm-docker",
+      "replacement_evidence": "A001 plus architecture dependency checks",
+      "target_owner": "root Aseman workspace or isolated legacy provider"
+    },
+    {
+      "callers": [
+        "caspar-vm-sdk",
+        "elpian_vm",
+        "serde_json"
+      ],
+      "current_owner": "modules/runtime/elpian/Cargo.toml",
+      "disposition": "move-or-wrap-per-parent-ledger",
+      "expiry": "owning phase replacement/deletion gate",
+      "id": "rust-package:caspar-vm-elpian",
+      "replacement_evidence": "A001 plus architecture dependency checks",
+      "target_owner": "root Aseman workspace or isolated legacy provider"
+    },
+    {
+      "callers": [
+        "once_cell",
+        "serde",
+        "serde_json",
+        "wasm-bindgen"
+      ],
+      "current_owner": "modules/runtime/elpian/crates/elpian-vm/Cargo.toml",
+      "disposition": "move-or-wrap-per-parent-ledger",
+      "expiry": "owning phase replacement/deletion gate",
+      "id": "rust-package:elpian-vm",
+      "replacement_evidence": "A001 plus architecture dependency checks",
+      "target_owner": "root Aseman workspace or isolated legacy provider"
+    },
+    {
+      "callers": [
+        "base64",
+        "caspar-vm-sdk",
+        "elpify-lang",
+        "serde_json"
+      ],
+      "current_owner": "modules/runtime/elpify/Cargo.toml",
+      "disposition": "move-or-wrap-per-parent-ledger",
+      "expiry": "owning phase replacement/deletion gate",
+      "id": "rust-package:caspar-vm-elpify",
+      "replacement_evidence": "A001 plus architecture dependency checks",
+      "target_owner": "root Aseman workspace or isolated legacy provider"
+    },
+    {
+      "callers": [
+        "miden-vm"
+      ],
+      "current_owner": "modules/runtime/elpify/crates/elpify-lang/Cargo.toml",
+      "disposition": "move-or-wrap-per-parent-ledger",
+      "expiry": "owning phase replacement/deletion gate",
+      "id": "rust-package:elpify-lang",
+      "replacement_evidence": "A001 plus architecture dependency checks",
+      "target_owner": "root Aseman workspace or isolated legacy provider"
+    },
+    {
+      "callers": [
+        "aseman-config",
+        "caspar-vm-sdk",
+        "serde_json"
+      ],
+      "current_owner": "modules/runtime/firecracker/Cargo.toml",
+      "disposition": "move-or-wrap-per-parent-ledger",
+      "expiry": "owning phase replacement/deletion gate",
+      "id": "rust-package:caspar-vm-fire",
+      "replacement_evidence": "A001 plus architecture dependency checks",
+      "target_owner": "root Aseman workspace or isolated legacy provider"
+    },
+    {
+      "callers": [
+        "caspar-vm-sdk",
+        "elpify-lang",
+        "rquickjs",
+        "serde_json"
+      ],
+      "current_owner": "modules/runtime/javascript/Cargo.toml",
+      "disposition": "move-or-wrap-per-parent-ledger",
+      "expiry": "owning phase replacement/deletion gate",
+      "id": "rust-package:caspar-vm-javascript",
+      "replacement_evidence": "A001 plus architecture dependency checks",
+      "target_owner": "root Aseman workspace or isolated legacy provider"
+    },
+    {
+      "callers": [
+        "aseman-config",
+        "base64",
+        "caspar-vm-sdk",
+        "chrono",
+        "futures-util",
+        "prost",
+        "prost-types",
+        "reqwest",
+        "serde_json",
+        "tokio",
+        "tonic",
+        "uuid",
+        "protox",
+        "tonic-build"
+      ],
+      "current_owner": "modules/runtime/modal/Cargo.toml",
+      "disposition": "move-or-wrap-per-parent-ledger",
+      "expiry": "owning phase replacement/deletion gate",
+      "id": "rust-package:caspar-vm-modal",
+      "replacement_evidence": "A001 plus architecture dependency checks",
+      "target_owner": "root Aseman workspace or isolated legacy provider"
+    },
+    {
+      "callers": [
+        "base64",
+        "serde",
+        "serde_json"
+      ],
+      "current_owner": "modules/runtime/sdk-legacy/Cargo.toml",
+      "disposition": "move-or-wrap-per-parent-ledger",
+      "expiry": "owning phase replacement/deletion gate",
+      "id": "rust-package:caspar-vm-sdk",
+      "replacement_evidence": "A001 plus architecture dependency checks",
+      "target_owner": "root Aseman workspace or isolated legacy provider"
+    },
+    {
+      "callers": [
+        "aseman-config",
+        "caspar-vm-sdk",
+        "serde_json",
+        "wasmedge-sys",
+        "wasmedge-types",
+        "wat"
+      ],
+      "current_owner": "modules/runtime/wasm/Cargo.toml",
+      "disposition": "move-or-wrap-per-parent-ledger",
+      "expiry": "owning phase replacement/deletion gate",
+      "id": "rust-package:caspar-vm-wasm",
       "replacement_evidence": "A001 plus architecture dependency checks",
       "target_owner": "root Aseman workspace or isolated legacy provider"
     },
@@ -259,31 +660,21 @@
     },
     {
       "callers": [
-        "aseman-config",
         "aseman-contracts",
         "aseman-domain",
-        "base64",
-        "chacha20poly1305",
-        "postgres",
-        "r2d2",
-        "r2d2_postgres",
-        "rocksdb",
-        "rsa",
-        "serde",
-        "serde_json",
-        "sha2",
-        "thiserror"
+        "aseman-ports",
+        "aseman-policy-conformance"
       ],
-      "current_owner": "modules/storage-legacy/Cargo.toml",
+      "current_owner": "modules/security/capabilities/Cargo.toml",
       "disposition": "move-or-wrap-per-parent-ledger",
       "expiry": "owning phase replacement/deletion gate",
-      "id": "rust-package:aseman-storage-legacy",
+      "id": "rust-package:aseman-policy-native",
       "replacement_evidence": "A001 plus architecture dependency checks",
       "target_owner": "root Aseman workspace or isolated legacy provider"
     },
     {
       "callers": [
-        "aseman-capsule-repositories",
+        "aseman-capsule",
         "aseman-config",
         "aseman-contracts",
         "aseman-domain",
@@ -305,10 +696,34 @@
         "aseman-storage-conformance",
         "rsa"
       ],
-      "current_owner": "modules/storage-postgres/Cargo.toml",
+      "current_owner": "modules/storage/postgres/Cargo.toml",
       "disposition": "move-or-wrap-per-parent-ledger",
       "expiry": "owning phase replacement/deletion gate",
       "id": "rust-package:aseman-storage-postgres",
+      "replacement_evidence": "A001 plus architecture dependency checks",
+      "target_owner": "root Aseman workspace or isolated legacy provider"
+    },
+    {
+      "callers": [
+        "aseman-config",
+        "aseman-contracts",
+        "aseman-domain",
+        "base64",
+        "chacha20poly1305",
+        "postgres",
+        "r2d2",
+        "r2d2_postgres",
+        "rocksdb",
+        "rsa",
+        "serde",
+        "serde_json",
+        "sha2",
+        "thiserror"
+      ],
+      "current_owner": "modules/storage/rocksdb-legacy/Cargo.toml",
+      "disposition": "move-or-wrap-per-parent-ledger",
+      "expiry": "owning phase replacement/deletion gate",
+      "id": "rust-package:aseman-storage-legacy",
       "replacement_evidence": "A001 plus architecture dependency checks",
       "target_owner": "root Aseman workspace or isolated legacy provider"
     },
@@ -345,6 +760,24 @@
       "disposition": "move-or-wrap-per-parent-ledger",
       "expiry": "owning phase replacement/deletion gate",
       "id": "rust-package:aseman-vmm-backend-native",
+      "replacement_evidence": "A001 plus architecture dependency checks",
+      "target_owner": "root Aseman workspace or isolated legacy provider"
+    },
+    {
+      "callers": [
+        "caspar-vm-docker",
+        "caspar-vm-elpian",
+        "caspar-vm-elpify",
+        "caspar-vm-fire",
+        "caspar-vm-javascript",
+        "caspar-vm-modal",
+        "caspar-vm-sdk",
+        "caspar-vm-wasm"
+      ],
+      "current_owner": "modules/vmm-backend/native-legacy/crates/caspar-vm-plugins/Cargo.toml",
+      "disposition": "move-or-wrap-per-parent-ledger",
+      "expiry": "owning phase replacement/deletion gate",
+      "id": "rust-package:caspar-vm-plugins",
       "replacement_evidence": "A001 plus architecture dependency checks",
       "target_owner": "root Aseman workspace or isolated legacy provider"
     },
@@ -424,85 +857,6 @@
     },
     {
       "callers": [
-        "anyhow",
-        "aseman-application",
-        "aseman-capsule-repositories",
-        "aseman-config",
-        "aseman-contracts",
-        "aseman-domain",
-        "aseman-guest-http",
-        "aseman-identity-native",
-        "aseman-module-runtime",
-        "aseman-observability",
-        "aseman-policy-native",
-        "aseman-ports",
-        "aseman-storage-legacy",
-        "aseman-storage-postgres",
-        "aseman-vmm-http",
-        "base64",
-        "chacha20poly1305",
-        "chrono",
-        "crossbeam-channel",
-        "dashmap",
-        "futures-util",
-        "getrandom",
-        "hex",
-        "k256",
-        "libc",
-        "log",
-        "num-bigint",
-        "once_cell",
-        "openraft",
-        "postgres",
-        "pprof",
-        "r2d2",
-        "r2d2_postgres",
-        "rand",
-        "reqwest",
-        "rocksdb",
-        "rsa",
-        "rustls",
-        "rustls-pemfile",
-        "serde",
-        "serde_json",
-        "serde_repr",
-        "sha2",
-        "tar",
-        "thiserror",
-        "tokio",
-        "tonic",
-        "tungstenite",
-        "url",
-        "uuid",
-        "aseman-ports"
-      ],
-      "current_owner": "node/Cargo.toml",
-      "disposition": "move-or-wrap-per-parent-ledger",
-      "expiry": "owning phase replacement/deletion gate",
-      "id": "rust-package:caspar-node",
-      "replacement_evidence": "A001 plus architecture dependency checks",
-      "target_owner": "root Aseman workspace or isolated legacy provider"
-    },
-    {
-      "callers": [
-        "caspar-vm-docker",
-        "caspar-vm-elpian",
-        "caspar-vm-elpify",
-        "caspar-vm-fire",
-        "caspar-vm-javascript",
-        "caspar-vm-modal",
-        "caspar-vm-sdk",
-        "caspar-vm-wasm"
-      ],
-      "current_owner": "node/crates/caspar-vm-plugins/Cargo.toml",
-      "disposition": "move-or-wrap-per-parent-ledger",
-      "expiry": "owning phase replacement/deletion gate",
-      "id": "rust-package:caspar-vm-plugins",
-      "replacement_evidence": "A001 plus architecture dependency checks",
-      "target_owner": "root Aseman workspace or isolated legacy provider"
-    },
-    {
-      "callers": [
         "aseman-contracts",
         "aseman-module-runtime"
       ],
@@ -575,159 +929,6 @@
     },
     {
       "callers": [
-        "base64",
-        "serde",
-        "serde_json"
-      ],
-      "current_owner": "vm-sdk/Cargo.toml",
-      "disposition": "move-or-wrap-per-parent-ledger",
-      "expiry": "owning phase replacement/deletion gate",
-      "id": "rust-package:caspar-vm-sdk",
-      "replacement_evidence": "A001 plus architecture dependency checks",
-      "target_owner": "root Aseman workspace or isolated legacy provider"
-    },
-    {
-      "callers": [
-        "aseman-config",
-        "base64",
-        "bollard",
-        "caspar-vm-sdk",
-        "chrono",
-        "futures-util",
-        "reqwest",
-        "serde_json",
-        "tar",
-        "tokio",
-        "uuid"
-      ],
-      "current_owner": "vms/docker/Cargo.toml",
-      "disposition": "move-or-wrap-per-parent-ledger",
-      "expiry": "owning phase replacement/deletion gate",
-      "id": "rust-package:caspar-vm-docker",
-      "replacement_evidence": "A001 plus architecture dependency checks",
-      "target_owner": "root Aseman workspace or isolated legacy provider"
-    },
-    {
-      "callers": [
-        "caspar-vm-sdk",
-        "elpian_vm",
-        "serde_json"
-      ],
-      "current_owner": "vms/elpian/Cargo.toml",
-      "disposition": "move-or-wrap-per-parent-ledger",
-      "expiry": "owning phase replacement/deletion gate",
-      "id": "rust-package:caspar-vm-elpian",
-      "replacement_evidence": "A001 plus architecture dependency checks",
-      "target_owner": "root Aseman workspace or isolated legacy provider"
-    },
-    {
-      "callers": [
-        "once_cell",
-        "serde",
-        "serde_json",
-        "wasm-bindgen"
-      ],
-      "current_owner": "vms/elpian/crates/elpian-vm/Cargo.toml",
-      "disposition": "move-or-wrap-per-parent-ledger",
-      "expiry": "owning phase replacement/deletion gate",
-      "id": "rust-package:elpian-vm",
-      "replacement_evidence": "A001 plus architecture dependency checks",
-      "target_owner": "root Aseman workspace or isolated legacy provider"
-    },
-    {
-      "callers": [
-        "base64",
-        "caspar-vm-sdk",
-        "elpify-lang",
-        "serde_json"
-      ],
-      "current_owner": "vms/elpify/Cargo.toml",
-      "disposition": "move-or-wrap-per-parent-ledger",
-      "expiry": "owning phase replacement/deletion gate",
-      "id": "rust-package:caspar-vm-elpify",
-      "replacement_evidence": "A001 plus architecture dependency checks",
-      "target_owner": "root Aseman workspace or isolated legacy provider"
-    },
-    {
-      "callers": [
-        "miden-vm"
-      ],
-      "current_owner": "vms/elpify/crates/elpify-lang/Cargo.toml",
-      "disposition": "move-or-wrap-per-parent-ledger",
-      "expiry": "owning phase replacement/deletion gate",
-      "id": "rust-package:elpify-lang",
-      "replacement_evidence": "A001 plus architecture dependency checks",
-      "target_owner": "root Aseman workspace or isolated legacy provider"
-    },
-    {
-      "callers": [
-        "aseman-config",
-        "caspar-vm-sdk",
-        "serde_json"
-      ],
-      "current_owner": "vms/fire/Cargo.toml",
-      "disposition": "move-or-wrap-per-parent-ledger",
-      "expiry": "owning phase replacement/deletion gate",
-      "id": "rust-package:caspar-vm-fire",
-      "replacement_evidence": "A001 plus architecture dependency checks",
-      "target_owner": "root Aseman workspace or isolated legacy provider"
-    },
-    {
-      "callers": [
-        "caspar-vm-sdk",
-        "elpify-lang",
-        "rquickjs",
-        "serde_json"
-      ],
-      "current_owner": "vms/javascript/Cargo.toml",
-      "disposition": "move-or-wrap-per-parent-ledger",
-      "expiry": "owning phase replacement/deletion gate",
-      "id": "rust-package:caspar-vm-javascript",
-      "replacement_evidence": "A001 plus architecture dependency checks",
-      "target_owner": "root Aseman workspace or isolated legacy provider"
-    },
-    {
-      "callers": [
-        "aseman-config",
-        "base64",
-        "caspar-vm-sdk",
-        "chrono",
-        "futures-util",
-        "prost",
-        "prost-types",
-        "reqwest",
-        "serde_json",
-        "tokio",
-        "tonic",
-        "uuid",
-        "protox",
-        "tonic-build"
-      ],
-      "current_owner": "vms/modal/Cargo.toml",
-      "disposition": "move-or-wrap-per-parent-ledger",
-      "expiry": "owning phase replacement/deletion gate",
-      "id": "rust-package:caspar-vm-modal",
-      "replacement_evidence": "A001 plus architecture dependency checks",
-      "target_owner": "root Aseman workspace or isolated legacy provider"
-    },
-    {
-      "callers": [
-        "aseman-config",
-        "caspar-vm-sdk",
-        "serde_json",
-        "wasmedge-sys",
-        "wasmedge-types",
-        "wat"
-      ],
-      "current_owner": "vms/wasm/Cargo.toml",
-      "disposition": "move-or-wrap-per-parent-ledger",
-      "expiry": "owning phase replacement/deletion gate",
-      "id": "rust-package:caspar-vm-wasm",
-      "replacement_evidence": "A001 plus architecture dependency checks",
-      "target_owner": "root Aseman workspace or isolated legacy provider"
-    },
-    {
-      "callers": [
         "anyhow",
         "serde_json"
       ],
@@ -746,7 +947,7 @@
         "test",
         "typecheck"
       ],
-      "current_owner": "client-cli/package.json",
+      "current_owner": "apps/aseman-client/package.json",
       "disposition": "rewrite/deprecate",
       "expiry": "Phase 9/10 compatibility gate",
       "id": "npm-package:caspar-client-cli",
@@ -758,8 +959,8 @@
     {
       "callers": [
         "contracts/config/legacy-aliases.json:15",
-        "node/sample.env:5",
-        "run-nodes.sh:1282"
+        "deploy/legacy/sample.env:5",
+        "run-nodes.sh:1281"
       ],
       "current_owner": "runtime-or-storage",
       "disposition": "move",
@@ -771,7 +972,7 @@
     {
       "callers": [
         "contracts/config/legacy-aliases.json:36",
-        "crates/aseman-config/src/lib.rs:337"
+        "crates/aseman-config/src/lib.rs:336"
       ],
       "current_owner": "network",
       "disposition": "move",
@@ -783,7 +984,7 @@
     {
       "callers": [
         "contracts/config/legacy-aliases.json:53",
-        "crates/aseman-config/src/lib.rs:334"
+        "crates/aseman-config/src/lib.rs:333"
       ],
       "current_owner": "network",
       "disposition": "move",
@@ -795,7 +996,7 @@
     {
       "callers": [
         "contracts/config/legacy-aliases.json:70",
-        "run-nodes.sh:1304"
+        "run-nodes.sh:1303"
       ],
       "current_owner": "runtime-or-storage",
       "disposition": "move",
@@ -807,7 +1008,7 @@
     {
       "callers": [
         "contracts/config/legacy-aliases.json:87",
-        "run-nodes.sh:1303"
+        "run-nodes.sh:1302"
       ],
       "current_owner": "runtime-or-storage",
       "disposition": "move",
@@ -819,8 +1020,8 @@
     {
       "callers": [
         "contracts/config/legacy-aliases.json:104",
-        "node/sample.env:4",
-        "run-nodes.sh:1281"
+        "deploy/legacy/sample.env:4",
+        "run-nodes.sh:1280"
       ],
       "current_owner": "runtime-or-storage",
       "disposition": "move",
@@ -832,8 +1033,8 @@
     {
       "callers": [
         "contracts/config/legacy-aliases.json:125",
-        "node/sample.env:11",
-        "run-nodes.sh:1288"
+        "deploy/legacy/sample.env:11",
+        "run-nodes.sh:1287"
       ],
       "current_owner": "network",
       "disposition": "move",
@@ -943,7 +1144,7 @@
     },
     {
       "callers": [
-        "client-cli/index.ts:1200",
+        "apps/aseman-client/index.ts:1200",
         "contracts/config/legacy-aliases.json:263"
       ],
       "current_owner": "network",
@@ -955,7 +1156,7 @@
     },
     {
       "callers": [
-        "client-cli/index.ts:78",
+        "apps/aseman-client/index.ts:78",
         "contracts/config/legacy-aliases.json:280"
       ],
       "current_owner": "application",
@@ -1022,7 +1223,7 @@
     },
     {
       "callers": [
-        "client-cli/index.ts:1202",
+        "apps/aseman-client/index.ts:1202",
         "contracts/config/legacy-aliases.json:362"
       ],
       "current_owner": "network",
@@ -1034,7 +1235,7 @@
     },
     {
       "callers": [
-        "client-cli/index.ts:1201",
+        "apps/aseman-client/index.ts:1201",
         "contracts/config/legacy-aliases.json:379"
       ],
       "current_owner": "application",
@@ -1079,7 +1280,7 @@
     },
     {
       "callers": [
-        "client-cli/index.ts:572",
+        "apps/aseman-client/index.ts:572",
         "contracts/config/legacy-aliases.json:435"
       ],
       "current_owner": "application",
@@ -1113,7 +1314,7 @@
     },
     {
       "callers": [
-        "client-cli/index.ts:51",
+        "apps/aseman-client/index.ts:51",
         "contracts/config/legacy-aliases.json:478"
       ],
       "current_owner": "application",
@@ -1181,8 +1382,8 @@
     {
       "callers": [
         "contracts/config/legacy-aliases.json:560",
-        "node/sample.env:9",
-        "run-nodes.sh:1286"
+        "deploy/legacy/sample.env:9",
+        "run-nodes.sh:1285"
       ],
       "current_owner": "network",
       "disposition": "move",
@@ -1194,8 +1395,8 @@
     {
       "callers": [
         "contracts/config/legacy-aliases.json:581",
-        "node/sample.env:8",
-        "run-nodes.sh:1285"
+        "deploy/legacy/sample.env:8",
+        "run-nodes.sh:1284"
       ],
       "current_owner": "network",
       "disposition": "move",
@@ -1306,7 +1507,7 @@
     {
       "callers": [
         "contracts/config/legacy-aliases.json:719",
-        "node/Dockerfile:24"
+        "deploy/legacy/node.Dockerfile:24"
       ],
       "current_owner": "runtime-or-storage",
       "disposition": "move",
@@ -1340,8 +1541,8 @@
     {
       "callers": [
         "contracts/config/legacy-aliases.json:762",
-        "node/sample.env:12",
-        "run-nodes.sh:1289"
+        "deploy/legacy/sample.env:12",
+        "run-nodes.sh:1288"
       ],
       "current_owner": "network",
       "disposition": "move",
@@ -1353,7 +1554,7 @@
     {
       "callers": [
         "contracts/config/legacy-aliases.json:783",
-        "node/Dockerfile:78"
+        "deploy/legacy/node.Dockerfile:84"
       ],
       "current_owner": "runtime-or-storage",
       "disposition": "move",
@@ -1365,8 +1566,8 @@
     {
       "callers": [
         "contracts/config/legacy-aliases.json:800",
-        "node/sample.env:10",
-        "run-nodes.sh:1287"
+        "deploy/legacy/sample.env:10",
+        "run-nodes.sh:1286"
       ],
       "current_owner": "network",
       "disposition": "move",
@@ -1422,7 +1623,7 @@
     {
       "callers": [
         "contracts/config/legacy-aliases.json:873",
-        "crates/aseman-config/src/lib.rs:395"
+        "crates/aseman-config/src/lib.rs:402"
       ],
       "current_owner": "process-environment",
       "disposition": "move",
@@ -1434,7 +1635,7 @@
     {
       "callers": [
         "contracts/config/legacy-aliases.json:890",
-        "node/Dockerfile:77"
+        "deploy/legacy/node.Dockerfile:83"
       ],
       "current_owner": "runtime-or-storage",
       "disposition": "move",
@@ -1446,8 +1647,8 @@
     {
       "callers": [
         "contracts/config/legacy-aliases.json:907",
-        "node/sample.env:15",
-        "run-nodes.sh:1293"
+        "deploy/legacy/sample.env:15",
+        "run-nodes.sh:1292"
       ],
       "current_owner": "network",
       "disposition": "move",
@@ -1459,8 +1660,8 @@
     {
       "callers": [
         "contracts/config/legacy-aliases.json:928",
-        "node/sample.env:17",
-        "run-nodes.sh:1295"
+        "deploy/legacy/sample.env:17",
+        "run-nodes.sh:1294"
       ],
       "current_owner": "runtime-or-storage",
       "disposition": "move",
@@ -1472,7 +1673,7 @@
     {
       "callers": [
         "contracts/config/legacy-aliases.json:949",
-        "node/Dockerfile:50"
+        "deploy/legacy/node.Dockerfile:50"
       ],
       "current_owner": "process-environment",
       "disposition": "move",
@@ -1495,7 +1696,7 @@
     {
       "callers": [
         "contracts/config/legacy-aliases.json:979",
-        "node/sample.env:46"
+        "deploy/legacy/sample.env:46"
       ],
       "current_owner": "secret-or-sensitive",
       "disposition": "move",
@@ -1507,7 +1708,7 @@
     {
       "callers": [
         "contracts/config/legacy-aliases.json:996",
-        "node/sample.env:55"
+        "deploy/legacy/sample.env:55"
       ],
       "current_owner": "application",
       "disposition": "move",
@@ -1519,7 +1720,7 @@
     {
       "callers": [
         "contracts/config/legacy-aliases.json:1013",
-        "node/sample.env:58"
+        "deploy/legacy/sample.env:58"
       ],
       "current_owner": "application",
       "disposition": "move",
@@ -1553,7 +1754,7 @@
     {
       "callers": [
         "contracts/config/legacy-aliases.json:1056",
-        "node/sample.env:60"
+        "deploy/legacy/sample.env:60"
       ],
       "current_owner": "application",
       "disposition": "move",
@@ -1565,7 +1766,7 @@
     {
       "callers": [
         "contracts/config/legacy-aliases.json:1073",
-        "node/sample.env:50"
+        "deploy/legacy/sample.env:50"
       ],
       "current_owner": "application",
       "disposition": "move",
@@ -1577,7 +1778,7 @@
     {
       "callers": [
         "contracts/config/legacy-aliases.json:1090",
-        "node/sample.env:66"
+        "deploy/legacy/sample.env:66"
       ],
       "current_owner": "application",
       "disposition": "move",
@@ -1589,7 +1790,7 @@
     {
       "callers": [
         "contracts/config/legacy-aliases.json:1107",
-        "node/sample.env:64"
+        "deploy/legacy/sample.env:64"
       ],
       "current_owner": "application",
       "disposition": "move",
@@ -1601,7 +1802,7 @@
     {
       "callers": [
         "contracts/config/legacy-aliases.json:1124",
-        "node/sample.env:52"
+        "deploy/legacy/sample.env:52"
       ],
       "current_owner": "network",
       "disposition": "move",
@@ -1624,7 +1825,7 @@
     {
       "callers": [
         "contracts/config/legacy-aliases.json:1154",
-        "node/sample.env:47"
+        "deploy/legacy/sample.env:47"
       ],
       "current_owner": "secret-or-sensitive",
       "disposition": "move",
@@ -1636,7 +1837,7 @@
     {
       "callers": [
         "contracts/config/legacy-aliases.json:1171",
-        "node/sample.env:48"
+        "deploy/legacy/sample.env:48"
       ],
       "current_owner": "secret-or-sensitive",
       "disposition": "move",
@@ -1648,7 +1849,7 @@
     {
       "callers": [
         "contracts/config/legacy-aliases.json:1188",
-        "node/sample.env:62"
+        "deploy/legacy/sample.env:62"
       ],
       "current_owner": "application",
       "disposition": "move",
@@ -1671,8 +1872,8 @@
     {
       "callers": [
         "contracts/config/legacy-aliases.json:1218",
-        "node/sample.env:14",
-        "run-nodes.sh:1292"
+        "deploy/legacy/sample.env:14",
+        "run-nodes.sh:1291"
       ],
       "current_owner": "network",
       "disposition": "move",
@@ -1684,8 +1885,8 @@
     {
       "callers": [
         "contracts/config/legacy-aliases.json:1239",
-        "node/sample.env:1",
-        "run-nodes.sh:1278"
+        "deploy/legacy/sample.env:1",
+        "run-nodes.sh:1277"
       ],
       "current_owner": "runtime-or-storage",
       "disposition": "move",
@@ -1697,8 +1898,8 @@
     {
       "callers": [
         "contracts/config/legacy-aliases.json:1260",
-        "node/sample.env:2",
-        "run-nodes.sh:1279"
+        "deploy/legacy/sample.env:2",
+        "run-nodes.sh:1278"
       ],
       "current_owner": "secret-or-sensitive",
       "disposition": "move",
@@ -1710,7 +1911,7 @@
     {
       "callers": [
         "contracts/config/legacy-aliases.json:1281",
-        "crates/aseman-config/src/lib.rs:363"
+        "crates/aseman-config/src/lib.rs:362"
       ],
       "current_owner": "process-environment",
       "disposition": "move",
@@ -1722,7 +1923,7 @@
     {
       "callers": [
         "contracts/config/legacy-aliases.json:1298",
-        "run-nodes.sh:1291"
+        "run-nodes.sh:1290"
       ],
       "current_owner": "network",
       "disposition": "move",
@@ -1767,7 +1968,7 @@
     {
       "callers": [
         "contracts/config/legacy-aliases.json:1354",
-        "run-nodes.sh:1309"
+        "run-nodes.sh:1308"
       ],
       "current_owner": "runtime-or-storage",
       "disposition": "move",
@@ -1779,7 +1980,7 @@
     {
       "callers": [
         "contracts/config/legacy-aliases.json:1371",
-        "run-nodes.sh:1307"
+        "run-nodes.sh:1306"
       ],
       "current_owner": "network",
       "disposition": "move",
@@ -1791,7 +1992,7 @@
     {
       "callers": [
         "contracts/config/legacy-aliases.json:1388",
-        "run-nodes.sh:1306"
+        "run-nodes.sh:1305"
       ],
       "current_owner": "network",
       "disposition": "move",
@@ -1803,7 +2004,7 @@
     {
       "callers": [
         "contracts/config/legacy-aliases.json:1405",
-        "run-nodes.sh:1308"
+        "run-nodes.sh:1307"
       ],
       "current_owner": "network",
       "disposition": "move",
@@ -1815,7 +2016,7 @@
     {
       "callers": [
         "contracts/config/legacy-aliases.json:1422",
-        "run-nodes.sh:1305"
+        "run-nodes.sh:1304"
       ],
       "current_owner": "network",
       "disposition": "move",
@@ -1827,7 +2028,7 @@
     {
       "callers": [
         "contracts/config/legacy-aliases.json:1439",
-        "node/sample.env:33"
+        "deploy/legacy/sample.env:33"
       ],
       "current_owner": "application",
       "disposition": "move",
@@ -1839,7 +2040,7 @@
     {
       "callers": [
         "contracts/config/legacy-aliases.json:1456",
-        "node/sample.env:32"
+        "deploy/legacy/sample.env:32"
       ],
       "current_owner": "application",
       "disposition": "move",
@@ -1851,7 +2052,7 @@
     {
       "callers": [
         "contracts/config/legacy-aliases.json:1473",
-        "node/sample.env:31"
+        "deploy/legacy/sample.env:31"
       ],
       "current_owner": "application",
       "disposition": "move",
@@ -1863,7 +2064,7 @@
     {
       "callers": [
         "contracts/config/legacy-aliases.json:1490",
-        "node/sample.env:30"
+        "deploy/legacy/sample.env:30"
       ],
       "current_owner": "application",
       "disposition": "move",
@@ -1875,7 +2076,7 @@
     {
       "callers": [
         "contracts/config/legacy-aliases.json:1507",
-        "node/sample.env:29"
+        "deploy/legacy/sample.env:29"
       ],
       "current_owner": "application",
       "disposition": "move",
@@ -1887,7 +2088,7 @@
     {
       "callers": [
         "contracts/config/legacy-aliases.json:1524",
-        "node/sample.env:35"
+        "deploy/legacy/sample.env:35"
       ],
       "current_owner": "application",
       "disposition": "move",
@@ -1899,7 +2100,7 @@
     {
       "callers": [
         "contracts/config/legacy-aliases.json:1541",
-        "node/sample.env:34"
+        "deploy/legacy/sample.env:34"
       ],
       "current_owner": "application",
       "disposition": "move",
@@ -1911,7 +2112,7 @@
     {
       "callers": [
         "contracts/config/legacy-aliases.json:1558",
-        "node/sample.env:36"
+        "deploy/legacy/sample.env:36"
       ],
       "current_owner": "application",
       "disposition": "move",
@@ -1923,8 +2124,8 @@
     {
       "callers": [
         "contracts/config/legacy-aliases.json:1575",
-        "node/sample.env:16",
-        "run-nodes.sh:1294"
+        "deploy/legacy/sample.env:16",
+        "run-nodes.sh:1293"
       ],
       "current_owner": "runtime-or-storage",
       "disposition": "move",
@@ -1936,8 +2137,8 @@
     {
       "callers": [
         "contracts/config/legacy-aliases.json:1596",
-        "node/sample.env:6",
-        "run-nodes.sh:1283"
+        "deploy/legacy/sample.env:6",
+        "run-nodes.sh:1282"
       ],
       "current_owner": "runtime-or-storage",
       "disposition": "move",
@@ -1948,20 +2149,9 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:1617"
-      ],
-      "current_owner": "runtime-or-storage",
-      "disposition": "move",
-      "expiry": "Phase 1 typed-config gate",
-      "id": "config:SHARDCHAIN_SCRIPT",
-      "replacement_evidence": "A003/A103 config inventory, alias, and startup fixtures",
-      "target_owner": "typed AsemanConfig schema/composition root"
-    },
-    {
-      "callers": [
-        "contracts/config/legacy-aliases.json:1630",
-        "node/sample.env:3",
-        "run-nodes.sh:1280"
+        "contracts/config/legacy-aliases.json:1617",
+        "deploy/legacy/sample.env:3",
+        "run-nodes.sh:1279"
       ],
       "current_owner": "runtime-or-storage",
       "disposition": "move",
@@ -1972,9 +2162,9 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:1651",
-        "node/sample.env:7",
-        "run-nodes.sh:1284"
+        "contracts/config/legacy-aliases.json:1638",
+        "deploy/legacy/sample.env:7",
+        "run-nodes.sh:1283"
       ],
       "current_owner": "runtime-or-storage",
       "disposition": "move",
@@ -1985,9 +2175,9 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:1672",
-        "node/sample.env:38",
-        "run-nodes.sh:1301"
+        "contracts/config/legacy-aliases.json:1659",
+        "deploy/legacy/sample.env:38",
+        "run-nodes.sh:1300"
       ],
       "current_owner": "network",
       "disposition": "move",
@@ -1998,9 +2188,9 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:1693",
-        "node/sample.env:39",
-        "run-nodes.sh:1302"
+        "contracts/config/legacy-aliases.json:1680",
+        "deploy/legacy/sample.env:39",
+        "run-nodes.sh:1301"
       ],
       "current_owner": "runtime-or-storage",
       "disposition": "move",
@@ -2011,7 +2201,7 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:1714"
+        "contracts/config/legacy-aliases.json:1701"
       ],
       "current_owner": "runtime-or-storage",
       "disposition": "move",
@@ -2022,7 +2212,7 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:1727"
+        "contracts/config/legacy-aliases.json:1714"
       ],
       "current_owner": "secret-or-sensitive",
       "disposition": "move",
@@ -2033,8 +2223,8 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:1740",
-        "crates/aseman-config/src/lib.rs:399"
+        "contracts/config/legacy-aliases.json:1727",
+        "crates/aseman-config/src/lib.rs:406"
       ],
       "current_owner": "process-environment",
       "disposition": "move",
@@ -2045,9 +2235,9 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:1757",
-        "node/sample.env:13",
-        "run-nodes.sh:1290"
+        "contracts/config/legacy-aliases.json:1744",
+        "deploy/legacy/sample.env:13",
+        "run-nodes.sh:1289"
       ],
       "current_owner": "network",
       "disposition": "move",
@@ -2058,9 +2248,9 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:1778",
-        "node/sample.env:21",
-        "run-nodes.sh:1299"
+        "contracts/config/legacy-aliases.json:1765",
+        "deploy/legacy/sample.env:21",
+        "run-nodes.sh:1298"
       ],
       "current_owner": "application",
       "disposition": "move",
@@ -2071,9 +2261,9 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:1799",
-        "node/sample.env:22",
-        "run-nodes.sh:1300"
+        "contracts/config/legacy-aliases.json:1786",
+        "deploy/legacy/sample.env:22",
+        "run-nodes.sh:1299"
       ],
       "current_owner": "application",
       "disposition": "move",
@@ -2084,9 +2274,9 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:1820",
-        "node/sample.env:19",
-        "run-nodes.sh:1297"
+        "contracts/config/legacy-aliases.json:1807",
+        "deploy/legacy/sample.env:19",
+        "run-nodes.sh:1296"
       ],
       "current_owner": "application",
       "disposition": "move",
@@ -2097,7 +2287,7 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:1841"
+        "contracts/config/legacy-aliases.json:1828"
       ],
       "current_owner": "network",
       "disposition": "move",
@@ -2108,9 +2298,9 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:1854",
-        "node/sample.env:20",
-        "run-nodes.sh:1298"
+        "contracts/config/legacy-aliases.json:1841",
+        "deploy/legacy/sample.env:20",
+        "run-nodes.sh:1297"
       ],
       "current_owner": "application",
       "disposition": "move",
@@ -2121,8 +2311,8 @@
     },
     {
       "callers": [
-        "contracts/config/legacy-aliases.json:1875",
-        "node/Dockerfile:51"
+        "contracts/config/legacy-aliases.json:1862",
+        "deploy/legacy/node.Dockerfile:51"
       ],
       "current_owner": "runtime-or-storage",
       "disposition": "move",
@@ -5041,7 +5231,7 @@
       "callers": [
         "caspar-client login"
       ],
-      "current_owner": "client-cli",
+      "current_owner": "apps/aseman-client",
       "disposition": "rewrite",
       "expiry": "ADR-0004 window after replacement acceptance",
       "id": "cli_and_scripts:caspar-client login",
@@ -5052,7 +5242,7 @@
       "callers": [
         "caspar-client logout"
       ],
-      "current_owner": "client-cli",
+      "current_owner": "apps/aseman-client",
       "disposition": "rewrite",
       "expiry": "ADR-0004 window after replacement acceptance",
       "id": "cli_and_scripts:caspar-client logout",
@@ -5063,7 +5253,7 @@
       "callers": [
         "caspar-client printPrivateKey"
       ],
-      "current_owner": "client-cli",
+      "current_owner": "apps/aseman-client",
       "disposition": "rewrite",
       "expiry": "ADR-0004 window after replacement acceptance",
       "id": "cli_and_scripts:caspar-client printPrivateKey",
@@ -5074,7 +5264,7 @@
       "callers": [
         "caspar-client creatures.me"
       ],
-      "current_owner": "client-cli",
+      "current_owner": "apps/aseman-client",
       "disposition": "rewrite",
       "expiry": "ADR-0004 window after replacement acceptance",
       "id": "cli_and_scripts:caspar-client creatures.me",
@@ -5085,7 +5275,7 @@
       "callers": [
         "caspar-client creatures.get"
       ],
-      "current_owner": "client-cli",
+      "current_owner": "apps/aseman-client",
       "disposition": "rewrite",
       "expiry": "ADR-0004 window after replacement acceptance",
       "id": "cli_and_scripts:caspar-client creatures.get",
@@ -5096,7 +5286,7 @@
       "callers": [
         "caspar-client creatures.lockToken"
       ],
-      "current_owner": "client-cli",
+      "current_owner": "apps/aseman-client",
       "disposition": "rewrite",
       "expiry": "ADR-0004 window after replacement acceptance",
       "id": "cli_and_scripts:caspar-client creatures.lockToken",
@@ -5107,7 +5297,7 @@
       "callers": [
         "caspar-client creatures.consumeLock"
       ],
-      "current_owner": "client-cli",
+      "current_owner": "apps/aseman-client",
       "disposition": "rewrite",
       "expiry": "ADR-0004 window after replacement acceptance",
       "id": "cli_and_scripts:caspar-client creatures.consumeLock",
@@ -5118,7 +5308,7 @@
       "callers": [
         "caspar-client creatures.list"
       ],
-      "current_owner": "client-cli",
+      "current_owner": "apps/aseman-client",
       "disposition": "rewrite",
       "expiry": "ADR-0004 window after replacement acceptance",
       "id": "cli_and_scripts:caspar-client creatures.list",
@@ -5129,7 +5319,7 @@
       "callers": [
         "caspar-client creatures.signal"
       ],
-      "current_owner": "client-cli",
+      "current_owner": "apps/aseman-client",
       "disposition": "rewrite",
       "expiry": "ADR-0004 window after replacement acceptance",
       "id": "cli_and_scripts:caspar-client creatures.signal",
@@ -5140,7 +5330,7 @@
       "callers": [
         "caspar-client creatures.createMachine"
       ],
-      "current_owner": "client-cli",
+      "current_owner": "apps/aseman-client",
       "disposition": "rewrite",
       "expiry": "ADR-0004 window after replacement acceptance",
       "id": "cli_and_scripts:caspar-client creatures.createMachine",
@@ -5151,7 +5341,7 @@
       "callers": [
         "caspar-client creatures.listMachines"
       ],
-      "current_owner": "client-cli",
+      "current_owner": "apps/aseman-client",
       "disposition": "rewrite",
       "expiry": "ADR-0004 window after replacement acceptance",
       "id": "cli_and_scripts:caspar-client creatures.listMachines",
@@ -5162,7 +5352,7 @@
       "callers": [
         "caspar-client programs.create"
       ],
-      "current_owner": "client-cli",
+      "current_owner": "apps/aseman-client",
       "disposition": "rewrite",
       "expiry": "ADR-0004 window after replacement acceptance",
       "id": "cli_and_scripts:caspar-client programs.create",
@@ -5173,7 +5363,7 @@
       "callers": [
         "caspar-client programs.delete"
       ],
-      "current_owner": "client-cli",
+      "current_owner": "apps/aseman-client",
       "disposition": "rewrite",
       "expiry": "ADR-0004 window after replacement acceptance",
       "id": "cli_and_scripts:caspar-client programs.delete",
@@ -5184,7 +5374,7 @@
       "callers": [
         "caspar-client programs.update"
       ],
-      "current_owner": "client-cli",
+      "current_owner": "apps/aseman-client",
       "disposition": "rewrite",
       "expiry": "ADR-0004 window after replacement acceptance",
       "id": "cli_and_scripts:caspar-client programs.update",
@@ -5195,7 +5385,7 @@
       "callers": [
         "caspar-client programs.deployRaw"
       ],
-      "current_owner": "client-cli",
+      "current_owner": "apps/aseman-client",
       "disposition": "rewrite",
       "expiry": "ADR-0004 window after replacement acceptance",
       "id": "cli_and_scripts:caspar-client programs.deployRaw",
@@ -5206,7 +5396,7 @@
       "callers": [
         "caspar-client programs.deploy"
       ],
-      "current_owner": "client-cli",
+      "current_owner": "apps/aseman-client",
       "disposition": "rewrite",
       "expiry": "ADR-0004 window after replacement acceptance",
       "id": "cli_and_scripts:caspar-client programs.deploy",
@@ -5217,7 +5407,7 @@
       "callers": [
         "caspar-client programs.run"
       ],
-      "current_owner": "client-cli",
+      "current_owner": "apps/aseman-client",
       "disposition": "rewrite",
       "expiry": "ADR-0004 window after replacement acceptance",
       "id": "cli_and_scripts:caspar-client programs.run",
@@ -5228,7 +5418,7 @@
       "callers": [
         "caspar-client programs.stop"
       ],
-      "current_owner": "client-cli",
+      "current_owner": "apps/aseman-client",
       "disposition": "rewrite",
       "expiry": "ADR-0004 window after replacement acceptance",
       "id": "cli_and_scripts:caspar-client programs.stop",
@@ -5239,7 +5429,7 @@
       "callers": [
         "caspar-client programs.list"
       ],
-      "current_owner": "client-cli",
+      "current_owner": "apps/aseman-client",
       "disposition": "rewrite",
       "expiry": "ADR-0004 window after replacement acceptance",
       "id": "cli_and_scripts:caspar-client programs.list",
@@ -5250,7 +5440,7 @@
       "callers": [
         "caspar-client programs.readBuildLogs"
       ],
-      "current_owner": "client-cli",
+      "current_owner": "apps/aseman-client",
       "disposition": "rewrite",
       "expiry": "ADR-0004 window after replacement acceptance",
       "id": "cli_and_scripts:caspar-client programs.readBuildLogs",
@@ -5261,7 +5451,7 @@
       "callers": [
         "caspar-client vm.types"
       ],
-      "current_owner": "client-cli",
+      "current_owner": "apps/aseman-client",
       "disposition": "rewrite",
       "expiry": "ADR-0004 window after replacement acceptance",
       "id": "cli_and_scripts:caspar-client vm.types",
@@ -5272,7 +5462,7 @@
       "callers": [
         "caspar-client vm.init"
       ],
-      "current_owner": "client-cli",
+      "current_owner": "apps/aseman-client",
       "disposition": "rewrite",
       "expiry": "ADR-0004 window after replacement acceptance",
       "id": "cli_and_scripts:caspar-client vm.init",
@@ -5327,9 +5517,9 @@
   "storage": [
     {
       "callers": [
-        "node/src/drivers/vmm/host/functions/vm_ownership.rs:127",
-        "node/src/drivers/vmm/host/functions/vm_ownership.rs:226",
-        "node/src/shell/api/actions/program.rs:868"
+        "apps/aseman-node/src/drivers/vmm/host/functions/vm_ownership.rs:127",
+        "apps/aseman-node/src/drivers/vmm/host/functions/vm_ownership.rs:226",
+        "apps/aseman-node/src/shell/api/actions/program.rs:864"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -5340,7 +5530,7 @@
     },
     {
       "callers": [
-        "node/src/shell/api/actions/gateway.rs:50"
+        "apps/aseman-node/src/shell/api/actions/gateway.rs:50"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -5351,7 +5541,7 @@
     },
     {
       "callers": [
-        "node/src/shell/api/model/creature_ports.rs:261"
+        "apps/aseman-node/src/shell/api/model/creature_ports.rs:261"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -5362,7 +5552,7 @@
     },
     {
       "callers": [
-        "node/src/shell/api/model/creature.rs:135"
+        "apps/aseman-node/src/shell/api/model/creature.rs:135"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -5373,8 +5563,8 @@
     },
     {
       "callers": [
-        "node/src/shell/api/actions/creature/finance.rs:183",
-        "node/src/shell/api/actions/creature/finance.rs:200"
+        "apps/aseman-node/src/shell/api/actions/creature/finance.rs:183",
+        "apps/aseman-node/src/shell/api/actions/creature/finance.rs:200"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -5385,10 +5575,10 @@
     },
     {
       "callers": [
-        "node/src/shell/api/actions/creature/finance.rs:1584",
-        "node/src/shell/api/actions/creature/finance.rs:1969",
-        "node/src/shell/api/actions/creature/finance.rs:2851",
-        "node/src/shell/api/actions/creature/finance.rs:3200"
+        "apps/aseman-node/src/shell/api/actions/creature/finance.rs:1586",
+        "apps/aseman-node/src/shell/api/actions/creature/finance.rs:1971",
+        "apps/aseman-node/src/shell/api/actions/creature/finance.rs:2853",
+        "apps/aseman-node/src/shell/api/actions/creature/finance.rs:3202"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -5399,8 +5589,8 @@
     },
     {
       "callers": [
-        "node/src/shell/api/actions/creature/finance.rs:161",
-        "node/src/shell/api/actions/creature/finance.rs:178"
+        "apps/aseman-node/src/shell/api/actions/creature/finance.rs:161",
+        "apps/aseman-node/src/shell/api/actions/creature/finance.rs:178"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -5411,7 +5601,7 @@
     },
     {
       "callers": [
-        "node/src/shell/api/actions/creature/finance.rs:1344"
+        "apps/aseman-node/src/shell/api/actions/creature/finance.rs:1346"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -5422,7 +5612,7 @@
     },
     {
       "callers": [
-        "node/src/shell/api/actions/creature/finance.rs:1933"
+        "apps/aseman-node/src/shell/api/actions/creature/finance.rs:1935"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -5433,7 +5623,7 @@
     },
     {
       "callers": [
-        "node/src/shell/api/actions/creature/finance.rs:1220"
+        "apps/aseman-node/src/shell/api/actions/creature/finance.rs:1222"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -5444,7 +5634,7 @@
     },
     {
       "callers": [
-        "node/src/shell/api/actions/creature/finance.rs:390"
+        "apps/aseman-node/src/shell/api/actions/creature/finance.rs:392"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -5455,7 +5645,7 @@
     },
     {
       "callers": [
-        "node/src/shell/api/actions/creature/finance.rs:1918"
+        "apps/aseman-node/src/shell/api/actions/creature/finance.rs:1920"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -5466,7 +5656,7 @@
     },
     {
       "callers": [
-        "node/src/shell/api/actions/creature/finance.rs:1897"
+        "apps/aseman-node/src/shell/api/actions/creature/finance.rs:1899"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -5477,7 +5667,7 @@
     },
     {
       "callers": [
-        "node/src/shell/api/actions/creature/finance.rs:2100"
+        "apps/aseman-node/src/shell/api/actions/creature/finance.rs:2102"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -5488,8 +5678,8 @@
     },
     {
       "callers": [
-        "node/src/shell/api/actions/creature/finance.rs:224",
-        "node/src/shell/api/actions/creature/finance.rs:232"
+        "apps/aseman-node/src/shell/api/actions/creature/finance.rs:224",
+        "apps/aseman-node/src/shell/api/actions/creature/finance.rs:232"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -5500,7 +5690,7 @@
     },
     {
       "callers": [
-        "node/src/shell/api/actions/creature/finance.rs:2036"
+        "apps/aseman-node/src/shell/api/actions/creature/finance.rs:2038"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -5511,7 +5701,7 @@
     },
     {
       "callers": [
-        "node/src/shell/api/actions/creature/finance.rs:2146"
+        "apps/aseman-node/src/shell/api/actions/creature/finance.rs:2148"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -5522,7 +5712,7 @@
     },
     {
       "callers": [
-        "node/src/shell/api/actions/creature/finance.rs:2402"
+        "apps/aseman-node/src/shell/api/actions/creature/finance.rs:2404"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -5533,7 +5723,7 @@
     },
     {
       "callers": [
-        "node/src/shell/api/actions/creature/finance.rs:1950"
+        "apps/aseman-node/src/shell/api/actions/creature/finance.rs:1952"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -5544,7 +5734,7 @@
     },
     {
       "callers": [
-        "node/src/shell/api/actions/creature/finance.rs:2554"
+        "apps/aseman-node/src/shell/api/actions/creature/finance.rs:2556"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -5555,7 +5745,7 @@
     },
     {
       "callers": [
-        "node/src/shell/api/actions/creature/finance.rs:3090"
+        "apps/aseman-node/src/shell/api/actions/creature/finance.rs:3092"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -5566,7 +5756,7 @@
     },
     {
       "callers": [
-        "node/src/shell/api/actions/creature/finance.rs:2336"
+        "apps/aseman-node/src/shell/api/actions/creature/finance.rs:2338"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -5577,7 +5767,7 @@
     },
     {
       "callers": [
-        "node/src/shell/api/actions/creature/finance.rs:2433"
+        "apps/aseman-node/src/shell/api/actions/creature/finance.rs:2435"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -5588,7 +5778,7 @@
     },
     {
       "callers": [
-        "node/src/shell/api/actions/creature/finance.rs:2749"
+        "apps/aseman-node/src/shell/api/actions/creature/finance.rs:2751"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -5599,7 +5789,7 @@
     },
     {
       "callers": [
-        "node/src/shell/api/actions/creature/finance.rs:1729"
+        "apps/aseman-node/src/shell/api/actions/creature/finance.rs:1731"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -5610,7 +5800,7 @@
     },
     {
       "callers": [
-        "node/src/shell/api/actions/creature/finance.rs:1391"
+        "apps/aseman-node/src/shell/api/actions/creature/finance.rs:1393"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -5621,7 +5811,7 @@
     },
     {
       "callers": [
-        "node/src/shell/api/actions/creature/finance.rs:1473"
+        "apps/aseman-node/src/shell/api/actions/creature/finance.rs:1475"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -5632,7 +5822,7 @@
     },
     {
       "callers": [
-        "node/src/shell/api/actions/creature/finance.rs:1970"
+        "apps/aseman-node/src/shell/api/actions/creature/finance.rs:1972"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -5643,9 +5833,9 @@
     },
     {
       "callers": [
-        "node/src/shell/api/actions/creature/finance.rs:1577",
-        "node/src/shell/api/actions/creature/finance.rs:2890",
-        "node/src/shell/api/actions/creature/finance.rs:3235"
+        "apps/aseman-node/src/shell/api/actions/creature/finance.rs:1579",
+        "apps/aseman-node/src/shell/api/actions/creature/finance.rs:2892",
+        "apps/aseman-node/src/shell/api/actions/creature/finance.rs:3237"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -5656,8 +5846,8 @@
     },
     {
       "callers": [
-        "node/src/shell/api/actions/creature/finance.rs:205",
-        "node/src/shell/api/actions/creature/finance.rs:217"
+        "apps/aseman-node/src/shell/api/actions/creature/finance.rs:205",
+        "apps/aseman-node/src/shell/api/actions/creature/finance.rs:217"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -5668,7 +5858,7 @@
     },
     {
       "callers": [
-        "node/src/shell/api/actions/creature/finance.rs:963"
+        "apps/aseman-node/src/shell/api/actions/creature/finance.rs:965"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -5679,7 +5869,7 @@
     },
     {
       "callers": [
-        "node/src/shell/api/actions/creature/finance.rs:521"
+        "apps/aseman-node/src/shell/api/actions/creature/finance.rs:523"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -5690,7 +5880,7 @@
     },
     {
       "callers": [
-        "node/src/shell/api/actions/creature/finance.rs:1099"
+        "apps/aseman-node/src/shell/api/actions/creature/finance.rs:1101"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -5701,10 +5891,10 @@
     },
     {
       "callers": [
-        "node/src/shell/api/actions/creature/finance.rs:1172",
-        "node/src/shell/api/actions/creature/finance.rs:2676",
-        "node/src/shell/api/actions/creature/finance.rs:2788",
-        "node/src/shell/api/actions/creature/finance.rs:3120"
+        "apps/aseman-node/src/shell/api/actions/creature/finance.rs:1174",
+        "apps/aseman-node/src/shell/api/actions/creature/finance.rs:2678",
+        "apps/aseman-node/src/shell/api/actions/creature/finance.rs:2790",
+        "apps/aseman-node/src/shell/api/actions/creature/finance.rs:3122"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -5715,7 +5905,7 @@
     },
     {
       "callers": [
-        "node/src/shell/api/actions/gateway.rs:44"
+        "apps/aseman-node/src/shell/api/actions/gateway.rs:44"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -5726,12 +5916,12 @@
     },
     {
       "callers": [
-        "node/src/drivers/vmm/hostcall_entities.rs:1826",
-        "node/src/shell/api/actions/creature.rs:1020",
-        "node/src/shell/api/actions/creature.rs:1055",
-        "node/src/shell/api/actions/creature.rs:1157",
-        "node/src/shell/api/actions/creature.rs:1178",
-        "node/src/shell/api/actions/program.rs:147"
+        "apps/aseman-node/src/drivers/vmm/hostcall_entities.rs:1826",
+        "apps/aseman-node/src/shell/api/actions/creature.rs:1020",
+        "apps/aseman-node/src/shell/api/actions/creature.rs:1055",
+        "apps/aseman-node/src/shell/api/actions/creature.rs:1157",
+        "apps/aseman-node/src/shell/api/actions/creature.rs:1178",
+        "apps/aseman-node/src/shell/api/actions/program.rs:143"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -5742,7 +5932,7 @@
     },
     {
       "callers": [
-        "node/src/shell/api/model/creature_ports.rs:342"
+        "apps/aseman-node/src/shell/api/model/creature_ports.rs:342"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -5753,9 +5943,9 @@
     },
     {
       "callers": [
-        "node/src/drivers/vmm/host/vm_host_functions.rs:1476",
-        "node/src/drivers/vmm/host/vm_host_functions.rs:1563",
-        "node/src/drivers/vmm/host/vm_host_functions.rs:1652"
+        "apps/aseman-node/src/drivers/vmm/host/vm_host_functions.rs:1476",
+        "apps/aseman-node/src/drivers/vmm/host/vm_host_functions.rs:1564",
+        "apps/aseman-node/src/drivers/vmm/host/vm_host_functions.rs:1653"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -5766,7 +5956,7 @@
     },
     {
       "callers": [
-        "node/src/shell/api/actions/creature/finance.rs:112"
+        "apps/aseman-node/src/shell/api/actions/creature/finance.rs:112"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -5777,8 +5967,8 @@
     },
     {
       "callers": [
-        "node/src/shell/api/actions/creature/finance.rs:1926",
-        "node/src/shell/api/actions/creature/finance.rs:378"
+        "apps/aseman-node/src/shell/api/actions/creature/finance.rs:1928",
+        "apps/aseman-node/src/shell/api/actions/creature/finance.rs:380"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -5789,7 +5979,7 @@
     },
     {
       "callers": [
-        "node/src/shell/api/actions/creature/finance.rs:157"
+        "apps/aseman-node/src/shell/api/actions/creature/finance.rs:157"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -5800,7 +5990,7 @@
     },
     {
       "callers": [
-        "node/src/shell/api/actions/creature/finance.rs:1887"
+        "apps/aseman-node/src/shell/api/actions/creature/finance.rs:1889"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -5811,7 +6001,7 @@
     },
     {
       "callers": [
-        "node/src/drivers/vmm/host/vm_host_functions.rs:1757"
+        "apps/aseman-node/src/drivers/vmm/host/vm_host_functions.rs:1758"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -5822,7 +6012,7 @@
     },
     {
       "callers": [
-        "node/src/shell/api/actions/creature/finance.rs:130"
+        "apps/aseman-node/src/shell/api/actions/creature/finance.rs:130"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -5833,7 +6023,7 @@
     },
     {
       "callers": [
-        "node/src/shell/api/actions/creature/finance.rs:148"
+        "apps/aseman-node/src/shell/api/actions/creature/finance.rs:148"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -5844,7 +6034,7 @@
     },
     {
       "callers": [
-        "node/src/shell/api/actions/creature/finance.rs:264"
+        "apps/aseman-node/src/shell/api/actions/creature/finance.rs:264"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -5855,7 +6045,7 @@
     },
     {
       "callers": [
-        "node/src/drivers/vmm/proxy.rs:70"
+        "apps/aseman-node/src/drivers/vmm/proxy.rs:70"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -5866,14 +6056,14 @@
     },
     {
       "callers": [
-        "node/src/drivers/vmm/host/functions/vm_ownership.rs:224",
-        "node/src/shell/api/actions/program.rs:246",
-        "node/src/shell/api/actions/program.rs:366",
-        "node/src/shell/api/actions/program.rs:421",
-        "node/src/shell/api/actions/program.rs:427",
-        "node/src/shell/api/actions/program.rs:651",
-        "node/src/shell/api/actions/program.rs:729",
-        "node/src/shell/api/actions/program.rs:837"
+        "apps/aseman-node/src/drivers/vmm/host/functions/vm_ownership.rs:224",
+        "apps/aseman-node/src/shell/api/actions/program.rs:242",
+        "apps/aseman-node/src/shell/api/actions/program.rs:362",
+        "apps/aseman-node/src/shell/api/actions/program.rs:417",
+        "apps/aseman-node/src/shell/api/actions/program.rs:423",
+        "apps/aseman-node/src/shell/api/actions/program.rs:647",
+        "apps/aseman-node/src/shell/api/actions/program.rs:725",
+        "apps/aseman-node/src/shell/api/actions/program.rs:833"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -5884,7 +6074,7 @@
     },
     {
       "callers": [
-        "node/src/shell/api/model/program_ports.rs:276"
+        "apps/aseman-node/src/shell/api/model/program_ports.rs:276"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -5895,7 +6085,7 @@
     },
     {
       "callers": [
-        "node/src/drivers/vmm/host/functions/login_grant.rs:20"
+        "apps/aseman-node/src/drivers/vmm/host/functions/login_grant.rs:20"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -5906,7 +6096,7 @@
     },
     {
       "callers": [
-        "node/src/shell/api/actions/creature.rs:567"
+        "apps/aseman-node/src/shell/api/actions/creature.rs:567"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -5917,8 +6107,8 @@
     },
     {
       "callers": [
-        "vms/modal/src/models.rs:63",
-        "vms/modal/src/models.rs:72"
+        "modules/runtime/modal/src/models.rs:63",
+        "modules/runtime/modal/src/models.rs:72"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -5929,7 +6119,7 @@
     },
     {
       "callers": [
-        "vms/modal/src/models.rs:67"
+        "modules/runtime/modal/src/models.rs:67"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -5940,7 +6130,7 @@
     },
     {
       "callers": [
-        "vms/modal/src/controller.rs:114"
+        "modules/runtime/modal/src/controller.rs:114"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -5951,7 +6141,7 @@
     },
     {
       "callers": [
-        "vms/modal/src/controller.rs:118"
+        "modules/runtime/modal/src/controller.rs:118"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -5962,7 +6152,7 @@
     },
     {
       "callers": [
-        "vms/modal/src/models.rs:55"
+        "modules/runtime/modal/src/models.rs:55"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -5973,7 +6163,7 @@
     },
     {
       "callers": [
-        "vms/modal/src/models.rs:59"
+        "modules/runtime/modal/src/models.rs:59"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -5984,7 +6174,7 @@
     },
     {
       "callers": [
-        "node/src/drivers/network/federation/fednet.rs:140"
+        "apps/aseman-node/src/drivers/network/federation/fednet.rs:140"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -5995,7 +6185,7 @@
     },
     {
       "callers": [
-        "node/src/shell/api/actions/creature/finance.rs:4012"
+        "apps/aseman-node/src/shell/api/actions/creature/finance.rs:4026"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -6006,7 +6196,7 @@
     },
     {
       "callers": [
-        "node/src/shell/api/model/program_ports.rs:158"
+        "apps/aseman-node/src/shell/api/model/program_ports.rs:158"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -6017,7 +6207,7 @@
     },
     {
       "callers": [
-        "node/src/drivers/vmm/proxy.rs:77"
+        "apps/aseman-node/src/drivers/vmm/proxy.rs:77"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -6028,7 +6218,7 @@
     },
     {
       "callers": [
-        "node/src/drivers/vmm/host/vm_host_functions.rs:857"
+        "apps/aseman-node/src/drivers/vmm/host/vm_host_functions.rs:857"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -6039,7 +6229,7 @@
     },
     {
       "callers": [
-        "node/src/drivers/vmm/host/vm_host_functions.rs:858"
+        "apps/aseman-node/src/drivers/vmm/host/vm_host_functions.rs:858"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -6050,7 +6240,7 @@
     },
     {
       "callers": [
-        "node/src/shell/api/model/store_ports.rs:196"
+        "apps/aseman-node/src/shell/api/model/store_ports.rs:196"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -6061,7 +6251,7 @@
     },
     {
       "callers": [
-        "node/src/shell/api/model/store.rs:73"
+        "apps/aseman-node/src/shell/api/model/store.rs:73"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -6072,7 +6262,7 @@
     },
     {
       "callers": [
-        "node/src/drivers/vmm/hostcall_entities.rs:1818"
+        "apps/aseman-node/src/drivers/vmm/hostcall_entities.rs:1818"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -6083,9 +6273,9 @@
     },
     {
       "callers": [
-        "node/src/shell/api/actions/creature.rs:1228",
-        "node/src/shell/api/actions/creature.rs:1295",
-        "node/src/shell/api/actions/creature.rs:582"
+        "apps/aseman-node/src/shell/api/actions/creature.rs:1228",
+        "apps/aseman-node/src/shell/api/actions/creature.rs:1295",
+        "apps/aseman-node/src/shell/api/actions/creature.rs:582"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -6096,10 +6286,10 @@
     },
     {
       "callers": [
-        "node/src/drivers/vmm/hostcall_entities.rs:173",
-        "node/src/shell/api/actions/creature.rs:1296",
-        "node/src/shell/api/actions/creature.rs:1331",
-        "node/src/shell/api/actions/creature.rs:660"
+        "apps/aseman-node/src/drivers/vmm/hostcall_entities.rs:173",
+        "apps/aseman-node/src/shell/api/actions/creature.rs:1296",
+        "apps/aseman-node/src/shell/api/actions/creature.rs:1331",
+        "apps/aseman-node/src/shell/api/actions/creature.rs:660"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -6110,7 +6300,7 @@
     },
     {
       "callers": [
-        "node/src/shell/api/model/creature_ports.rs:262"
+        "apps/aseman-node/src/shell/api/model/creature_ports.rs:262"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -6121,8 +6311,8 @@
     },
     {
       "callers": [
-        "node/src/shell/api/actions/creature.rs:1243",
-        "node/src/shell/api/actions/creature.rs:1294"
+        "apps/aseman-node/src/shell/api/actions/creature.rs:1243",
+        "apps/aseman-node/src/shell/api/actions/creature.rs:1294"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -6133,7 +6323,7 @@
     },
     {
       "callers": [
-        "node/src/shell/api/actions/program.rs:649"
+        "apps/aseman-node/src/shell/api/actions/program.rs:645"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -6144,7 +6334,7 @@
     },
     {
       "callers": [
-        "node/src/shell/api/actions/program.rs:1118"
+        "apps/aseman-node/src/shell/api/actions/program.rs:1114"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -6155,8 +6345,8 @@
     },
     {
       "callers": [
-        "vms/docker/src/controller.rs:1019",
-        "vms/docker/src/controller.rs:998"
+        "modules/runtime/docker/src/controller.rs:1019",
+        "modules/runtime/docker/src/controller.rs:998"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -6167,8 +6357,8 @@
     },
     {
       "callers": [
-        "node/src/drivers/vmm/host/functions/vm_ownership.rs:126",
-        "node/src/drivers/vmm/host/functions/vm_ownership.rs:212"
+        "apps/aseman-node/src/drivers/vmm/host/functions/vm_ownership.rs:126",
+        "apps/aseman-node/src/drivers/vmm/host/functions/vm_ownership.rs:212"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -6179,7 +6369,7 @@
     },
     {
       "callers": [
-        "node/src/shell/api/actions/program.rs:965"
+        "apps/aseman-node/src/shell/api/actions/program.rs:961"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -6190,8 +6380,8 @@
     },
     {
       "callers": [
-        "node/src/shell/api/actions/program.rs:668",
-        "node/src/shell/api/actions/program.rs:805"
+        "apps/aseman-node/src/shell/api/actions/program.rs:664",
+        "apps/aseman-node/src/shell/api/actions/program.rs:801"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -6202,7 +6392,7 @@
     },
     {
       "callers": [
-        "node/src/drivers/vmm/host/functions/vm_ownership.rs:24"
+        "apps/aseman-node/src/drivers/vmm/host/functions/vm_ownership.rs:24"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -6213,8 +6403,8 @@
     },
     {
       "callers": [
-        "node/src/shell/api/actions/program.rs:600",
-        "node/src/shell/api/actions/program.rs:976"
+        "apps/aseman-node/src/shell/api/actions/program.rs:596",
+        "apps/aseman-node/src/shell/api/actions/program.rs:972"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -6225,9 +6415,9 @@
     },
     {
       "callers": [
-        "node/src/shell/api/actions/program.rs:243",
-        "node/src/shell/api/actions/program.rs:598",
-        "node/src/shell/api/actions/program.rs:974"
+        "apps/aseman-node/src/shell/api/actions/program.rs:239",
+        "apps/aseman-node/src/shell/api/actions/program.rs:594",
+        "apps/aseman-node/src/shell/api/actions/program.rs:970"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -6238,7 +6428,7 @@
     },
     {
       "callers": [
-        "node/src/shell/api/actions/program.rs:1066"
+        "apps/aseman-node/src/shell/api/actions/program.rs:1062"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -6249,7 +6439,7 @@
     },
     {
       "callers": [
-        "node/src/core/core_orchestrator.rs:597"
+        "apps/aseman-node/src/core/core_orchestrator.rs:597"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -6260,7 +6450,7 @@
     },
     {
       "callers": [
-        "node/src/shell/api/model/store_ports.rs:152"
+        "apps/aseman-node/src/shell/api/model/store_ports.rs:152"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -6271,7 +6461,7 @@
     },
     {
       "callers": [
-        "node/src/drivers/security.rs:206"
+        "apps/aseman-node/src/drivers/security.rs:206"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -6282,7 +6472,7 @@
     },
     {
       "callers": [
-        "node/src/shell/api/model/store_ports.rs:279"
+        "apps/aseman-node/src/shell/api/model/store_ports.rs:279"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -6293,8 +6483,8 @@
     },
     {
       "callers": [
-        "node/src/shell/api/model/store_ports.rs:255",
-        "node/src/shell/api/model/store_ports.rs:301"
+        "apps/aseman-node/src/shell/api/model/store_ports.rs:255",
+        "apps/aseman-node/src/shell/api/model/store_ports.rs:301"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -6305,7 +6495,7 @@
     },
     {
       "callers": [
-        "node/src/core/actor/model/trx.rs:464"
+        "apps/aseman-node/src/core/actor/model/trx.rs:464"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -6316,10 +6506,10 @@
     },
     {
       "callers": [
-        "node/src/core/actor/model/trx.rs:266",
-        "node/src/core/actor/model/trx.rs:281",
-        "node/src/core/actor/model/trx.rs:293",
-        "node/src/core/actor/model/trx.rs:307"
+        "apps/aseman-node/src/core/actor/model/trx.rs:266",
+        "apps/aseman-node/src/core/actor/model/trx.rs:281",
+        "apps/aseman-node/src/core/actor/model/trx.rs:293",
+        "apps/aseman-node/src/core/actor/model/trx.rs:307"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -6330,9 +6520,9 @@
     },
     {
       "callers": [
-        "node/src/core/actor/model/trx.rs:425",
-        "node/src/core/actor/model/trx.rs:646",
-        "node/src/core/actor/model/trx.rs:668"
+        "apps/aseman-node/src/core/actor/model/trx.rs:425",
+        "apps/aseman-node/src/core/actor/model/trx.rs:646",
+        "apps/aseman-node/src/core/actor/model/trx.rs:668"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -6343,7 +6533,7 @@
     },
     {
       "callers": [
-        "node/src/core/actor/model/trx.rs:669"
+        "apps/aseman-node/src/core/actor/model/trx.rs:669"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -6354,7 +6544,7 @@
     },
     {
       "callers": [
-        "node/src/core/actor/model/trx.rs:659"
+        "apps/aseman-node/src/core/actor/model/trx.rs:659"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -6365,9 +6555,9 @@
     },
     {
       "callers": [
-        "node/src/drivers/vmm/hostcall_entities.rs:175",
-        "node/src/shell/api/actions/creature.rs:1252",
-        "node/src/shell/api/actions/creature.rs:1334"
+        "apps/aseman-node/src/drivers/vmm/hostcall_entities.rs:175",
+        "apps/aseman-node/src/shell/api/actions/creature.rs:1252",
+        "apps/aseman-node/src/shell/api/actions/creature.rs:1334"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -6378,8 +6568,8 @@
     },
     {
       "callers": [
-        "node/src/drivers/vmm/hostcall_entities.rs:177",
-        "node/src/shell/api/actions/creature.rs:1332"
+        "apps/aseman-node/src/drivers/vmm/hostcall_entities.rs:177",
+        "apps/aseman-node/src/shell/api/actions/creature.rs:1332"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -6390,8 +6580,8 @@
     },
     {
       "callers": [
-        "node/src/drivers/vmm/hostcall_entities.rs:178",
-        "node/src/shell/api/actions/creature.rs:1336"
+        "apps/aseman-node/src/drivers/vmm/hostcall_entities.rs:178",
+        "apps/aseman-node/src/shell/api/actions/creature.rs:1336"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -6402,10 +6592,10 @@
     },
     {
       "callers": [
-        "node/src/drivers/vmm/host/functions/vm_ownership.rs:222",
-        "node/src/shell/api/actions/program.rs:364",
-        "node/src/shell/api/actions/program.rs:728",
-        "node/src/shell/api/actions/program.rs:836"
+        "apps/aseman-node/src/drivers/vmm/host/functions/vm_ownership.rs:222",
+        "apps/aseman-node/src/shell/api/actions/program.rs:360",
+        "apps/aseman-node/src/shell/api/actions/program.rs:724",
+        "apps/aseman-node/src/shell/api/actions/program.rs:832"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -6416,7 +6606,7 @@
     },
     {
       "callers": [
-        "node/src/shell/api/actions/program.rs:840"
+        "apps/aseman-node/src/shell/api/actions/program.rs:836"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -6427,8 +6617,8 @@
     },
     {
       "callers": [
-        "node/src/shell/api/actions/program.rs:360",
-        "node/src/shell/api/actions/program.rs:724"
+        "apps/aseman-node/src/shell/api/actions/program.rs:356",
+        "apps/aseman-node/src/shell/api/actions/program.rs:720"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -6439,7 +6629,7 @@
     },
     {
       "callers": [
-        "node/src/shell/api/actions/program.rs:839"
+        "apps/aseman-node/src/shell/api/actions/program.rs:835"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -6450,9 +6640,9 @@
     },
     {
       "callers": [
-        "node/src/drivers/vmm/host/functions/vm_ownership.rs:221",
-        "node/src/shell/api/actions/program.rs:723",
-        "node/src/shell/api/actions/program.rs:834"
+        "apps/aseman-node/src/drivers/vmm/host/functions/vm_ownership.rs:221",
+        "apps/aseman-node/src/shell/api/actions/program.rs:719",
+        "apps/aseman-node/src/shell/api/actions/program.rs:830"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -6463,10 +6653,10 @@
     },
     {
       "callers": [
-        "node/src/drivers/vmm/host/functions/vm_ownership.rs:220",
-        "node/src/shell/api/actions/program.rs:359",
-        "node/src/shell/api/actions/program.rs:722",
-        "node/src/shell/api/actions/program.rs:833"
+        "apps/aseman-node/src/drivers/vmm/host/functions/vm_ownership.rs:220",
+        "apps/aseman-node/src/shell/api/actions/program.rs:355",
+        "apps/aseman-node/src/shell/api/actions/program.rs:718",
+        "apps/aseman-node/src/shell/api/actions/program.rs:829"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -6477,7 +6667,7 @@
     },
     {
       "callers": [
-        "node/src/shell/api/actions/program.rs:1101"
+        "apps/aseman-node/src/shell/api/actions/program.rs:1097"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -6488,7 +6678,7 @@
     },
     {
       "callers": [
-        "node/src/shell/api/model/store_ports.rs:190"
+        "apps/aseman-node/src/shell/api/model/store_ports.rs:190"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -6499,7 +6689,7 @@
     },
     {
       "callers": [
-        "node/src/shell/api/model/store_ports.rs:182"
+        "apps/aseman-node/src/shell/api/model/store_ports.rs:182"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -6510,7 +6700,7 @@
     },
     {
       "callers": [
-        "node/src/shell/api/model/store_ports.rs:309"
+        "apps/aseman-node/src/shell/api/model/store_ports.rs:309"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -6521,7 +6711,7 @@
     },
     {
       "callers": [
-        "node/src/shell/api/model/program_ports.rs:55"
+        "apps/aseman-node/src/shell/api/model/program_ports.rs:55"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -6532,7 +6722,7 @@
     },
     {
       "callers": [
-        "node/src/shell/api/model/store_ports.rs:307"
+        "apps/aseman-node/src/shell/api/model/store_ports.rs:307"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -6543,7 +6733,7 @@
     },
     {
       "callers": [
-        "node/src/shell/api/model/creature_ports.rs:85"
+        "apps/aseman-node/src/shell/api/model/creature_ports.rs:85"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -6554,7 +6744,7 @@
     },
     {
       "callers": [
-        "node/src/shell/api/model/program_ports.rs:266"
+        "apps/aseman-node/src/shell/api/model/program_ports.rs:266"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -6565,7 +6755,7 @@
     },
     {
       "callers": [
-        "node/src/shell/api/model/program_ports.rs:268"
+        "apps/aseman-node/src/shell/api/model/program_ports.rs:268"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -6576,7 +6766,7 @@
     },
     {
       "callers": [
-        "node/src/shell/api/model/program_ports.rs:264"
+        "apps/aseman-node/src/shell/api/model/program_ports.rs:264"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -6587,7 +6777,7 @@
     },
     {
       "callers": [
-        "node/src/shell/api/model/program_ports.rs:270"
+        "apps/aseman-node/src/shell/api/model/program_ports.rs:270"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -6598,8 +6788,8 @@
     },
     {
       "callers": [
-        "node/src/drivers/vmm/host/functions/vm_ownership.rs:223",
-        "node/src/shell/api/actions/program.rs:838"
+        "apps/aseman-node/src/drivers/vmm/host/functions/vm_ownership.rs:223",
+        "apps/aseman-node/src/shell/api/actions/program.rs:834"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -6610,8 +6800,8 @@
     },
     {
       "callers": [
-        "node/src/shell/api/model/program_ports.rs:360",
-        "node/src/shell/api/model/program_ports.rs:378"
+        "apps/aseman-node/src/shell/api/model/program_ports.rs:360",
+        "apps/aseman-node/src/shell/api/model/program_ports.rs:378"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -6622,8 +6812,8 @@
     },
     {
       "callers": [
-        "node/src/shell/api/actions/program.rs:734",
-        "node/src/shell/api/actions/program.rs:848"
+        "apps/aseman-node/src/shell/api/actions/program.rs:730",
+        "apps/aseman-node/src/shell/api/actions/program.rs:844"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -6634,8 +6824,8 @@
     },
     {
       "callers": [
-        "node/src/shell/api/actions/program.rs:730",
-        "node/src/shell/api/actions/program.rs:844"
+        "apps/aseman-node/src/shell/api/actions/program.rs:726",
+        "apps/aseman-node/src/shell/api/actions/program.rs:840"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -6646,14 +6836,14 @@
     },
     {
       "callers": [
-        "node/src/core/actor/model/trx.rs:315",
-        "node/src/core/actor/model/trx.rs:320",
-        "node/src/core/actor/model/trx.rs:441",
-        "node/src/core/actor/model/trx.rs:506",
-        "node/src/drivers/vmm/host/functions/login_grant.rs:85",
-        "node/src/drivers/vmm/host/functions/vm_ownership.rs:219",
-        "node/src/drivers/vmm/host/functions/vm_ownership.rs:230",
-        "node/src/drivers/vmm/proxy.rs:90"
+        "apps/aseman-node/src/core/actor/model/trx.rs:315",
+        "apps/aseman-node/src/core/actor/model/trx.rs:320",
+        "apps/aseman-node/src/core/actor/model/trx.rs:441",
+        "apps/aseman-node/src/core/actor/model/trx.rs:506",
+        "apps/aseman-node/src/drivers/vmm/host/functions/login_grant.rs:85",
+        "apps/aseman-node/src/drivers/vmm/host/functions/vm_ownership.rs:219",
+        "apps/aseman-node/src/drivers/vmm/host/functions/vm_ownership.rs:230",
+        "apps/aseman-node/src/drivers/vmm/proxy.rs:90"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -6664,7 +6854,7 @@
     },
     {
       "callers": [
-        "node/src/shell/api/model/program_ports.rs:107"
+        "apps/aseman-node/src/shell/api/model/program_ports.rs:107"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -6675,7 +6865,7 @@
     },
     {
       "callers": [
-        "node/src/shell/api/model/program_ports.rs:48"
+        "apps/aseman-node/src/shell/api/model/program_ports.rs:48"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -6686,7 +6876,7 @@
     },
     {
       "callers": [
-        "node/src/shell/api/model/program_ports.rs:150"
+        "apps/aseman-node/src/shell/api/model/program_ports.rs:150"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -6697,7 +6887,7 @@
     },
     {
       "callers": [
-        "node/src/shell/api/model/store_ports.rs:167"
+        "apps/aseman-node/src/shell/api/model/store_ports.rs:167"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -6708,7 +6898,7 @@
     },
     {
       "callers": [
-        "node/src/core/actor/model/trx.rs:569"
+        "apps/aseman-node/src/core/actor/model/trx.rs:569"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -6719,7 +6909,7 @@
     },
     {
       "callers": [
-        "node/src/shell/api/model/creature_ports.rs:395"
+        "apps/aseman-node/src/shell/api/model/creature_ports.rs:395"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -6730,7 +6920,7 @@
     },
     {
       "callers": [
-        "node/src/core/actor/model/trx.rs:361"
+        "apps/aseman-node/src/core/actor/model/trx.rs:361"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -6741,11 +6931,11 @@
     },
     {
       "callers": [
-        "node/src/core/actor/model/trx.rs:243",
-        "node/src/core/actor/model/trx.rs:375",
-        "node/src/shell/api/model/chain.rs:32",
-        "node/src/shell/api/model/creature.rs:130",
-        "node/src/shell/api/model/store.rs:71"
+        "apps/aseman-node/src/core/actor/model/trx.rs:243",
+        "apps/aseman-node/src/core/actor/model/trx.rs:375",
+        "apps/aseman-node/src/shell/api/model/chain.rs:32",
+        "apps/aseman-node/src/shell/api/model/creature.rs:130",
+        "apps/aseman-node/src/shell/api/model/store.rs:71"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -6756,7 +6946,7 @@
     },
     {
       "callers": [
-        "node/src/core/actor/model/trx.rs:255"
+        "apps/aseman-node/src/core/actor/model/trx.rs:255"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -6767,7 +6957,7 @@
     },
     {
       "callers": [
-        "node/src/shell/api/model/store_ports.rs:260"
+        "apps/aseman-node/src/shell/api/model/store_ports.rs:260"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -6778,9 +6968,9 @@
     },
     {
       "callers": [
-        "node/src/shell/api/model/access.rs:18",
-        "node/src/shell/api/model/store_ports.rs:248",
-        "node/src/shell/api/model/store_ports.rs:299"
+        "apps/aseman-node/src/shell/api/model/access.rs:18",
+        "apps/aseman-node/src/shell/api/model/store_ports.rs:248",
+        "apps/aseman-node/src/shell/api/model/store_ports.rs:299"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -6791,7 +6981,7 @@
     },
     {
       "callers": [
-        "node/src/shell/api/model/creature_ports.rs:80"
+        "apps/aseman-node/src/shell/api/model/creature_ports.rs:80"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -6802,7 +6992,7 @@
     },
     {
       "callers": [
-        "node/src/drivers/vmm/proxy.rs:562"
+        "apps/aseman-node/src/drivers/vmm/proxy.rs:562"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -6813,7 +7003,7 @@
     },
     {
       "callers": [
-        "node/src/drivers/vmm/proxy.rs:648"
+        "apps/aseman-node/src/drivers/vmm/proxy.rs:648"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -6824,8 +7014,8 @@
     },
     {
       "callers": [
-        "node/src/core/globe.rs:150",
-        "node/src/core/globe.rs:199"
+        "apps/aseman-node/src/core/globe.rs:150",
+        "apps/aseman-node/src/core/globe.rs:199"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -6836,8 +7026,8 @@
     },
     {
       "callers": [
-        "node/src/shell/api/model/program_ports.rs:239",
-        "node/src/shell/api/model/program_ports.rs:252"
+        "apps/aseman-node/src/shell/api/model/program_ports.rs:239",
+        "apps/aseman-node/src/shell/api/model/program_ports.rs:252"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -6848,8 +7038,8 @@
     },
     {
       "callers": [
-        "node/src/shell/api/model/program_ports.rs:230",
-        "node/src/shell/api/model/program_ports.rs:254"
+        "apps/aseman-node/src/shell/api/model/program_ports.rs:230",
+        "apps/aseman-node/src/shell/api/model/program_ports.rs:254"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -6860,8 +7050,8 @@
     },
     {
       "callers": [
-        "node/src/shell/api/model/program_ports.rs:226",
-        "node/src/shell/api/model/program_ports.rs:250"
+        "apps/aseman-node/src/shell/api/model/program_ports.rs:226",
+        "apps/aseman-node/src/shell/api/model/program_ports.rs:250"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -6872,8 +7062,8 @@
     },
     {
       "callers": [
-        "node/src/shell/api/model/program_ports.rs:236",
-        "node/src/shell/api/model/program_ports.rs:256"
+        "apps/aseman-node/src/shell/api/model/program_ports.rs:236",
+        "apps/aseman-node/src/shell/api/model/program_ports.rs:256"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -6884,7 +7074,7 @@
     },
     {
       "callers": [
-        "node/src/shell/api/actions/program.rs:628"
+        "apps/aseman-node/src/shell/api/actions/program.rs:624"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -6895,9 +7085,9 @@
     },
     {
       "callers": [
-        "node/src/drivers/cluster/mod.rs:455",
-        "node/src/shell/api/actions/program.rs:1355",
-        "node/src/shell/api/actions/program.rs:622"
+        "apps/aseman-node/src/drivers/cluster/mod.rs:457",
+        "apps/aseman-node/src/shell/api/actions/program.rs:1351",
+        "apps/aseman-node/src/shell/api/actions/program.rs:618"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -6908,9 +7098,9 @@
     },
     {
       "callers": [
-        "node/src/drivers/cluster/mod.rs:457",
-        "node/src/shell/api/actions/program.rs:1359",
-        "node/src/shell/api/actions/program.rs:623"
+        "apps/aseman-node/src/drivers/cluster/mod.rs:459",
+        "apps/aseman-node/src/shell/api/actions/program.rs:1355",
+        "apps/aseman-node/src/shell/api/actions/program.rs:619"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -6921,8 +7111,8 @@
     },
     {
       "callers": [
-        "vms/javascript/src/controller.rs:298",
-        "vms/wasm/src/controller.rs:272"
+        "modules/runtime/javascript/src/controller.rs:298",
+        "modules/runtime/wasm/src/controller.rs:272"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -6933,7 +7123,7 @@
     },
     {
       "callers": [
-        "node/src/shell/api/model/program_ports.rs:306"
+        "apps/aseman-node/src/shell/api/model/program_ports.rs:306"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -6944,7 +7134,7 @@
     },
     {
       "callers": [
-        "node/src/shell/api/model/program_ports.rs:366"
+        "apps/aseman-node/src/shell/api/model/program_ports.rs:366"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -6955,7 +7145,7 @@
     },
     {
       "callers": [
-        "node/src/shell/api/actions/creature.rs:698"
+        "apps/aseman-node/src/shell/api/actions/creature.rs:698"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -6966,7 +7156,7 @@
     },
     {
       "callers": [
-        "node/src/shell/api/actions/creature.rs:687"
+        "apps/aseman-node/src/shell/api/actions/creature.rs:687"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -6977,7 +7167,7 @@
     },
     {
       "callers": [
-        "node/src/shell/api/actions/creature.rs:683"
+        "apps/aseman-node/src/shell/api/actions/creature.rs:683"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -6988,7 +7178,7 @@
     },
     {
       "callers": [
-        "node/src/shell/api/actions/creature.rs:877"
+        "apps/aseman-node/src/shell/api/actions/creature.rs:877"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -6999,7 +7189,7 @@
     },
     {
       "callers": [
-        "node/src/shell/api/actions/creature.rs:680"
+        "apps/aseman-node/src/shell/api/actions/creature.rs:680"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -7010,8 +7200,8 @@
     },
     {
       "callers": [
-        "vms/elpify/src/queue.rs:187",
-        "vms/javascript/src/runtime.rs:92"
+        "modules/runtime/elpify/src/queue.rs:187",
+        "modules/runtime/javascript/src/runtime.rs:92"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -7022,7 +7212,7 @@
     },
     {
       "callers": [
-        "node/src/core/core_orchestrator.rs:614"
+        "apps/aseman-node/src/core/core_orchestrator.rs:614"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -7033,7 +7223,7 @@
     },
     {
       "callers": [
-        "node/src/core/core_orchestrator.rs:618"
+        "apps/aseman-node/src/core/core_orchestrator.rs:618"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -7044,33 +7234,28 @@
     },
     {
       "callers": [
-        "node/src/core/globe.rs:506",
-        "node/src/core/globe.rs:705",
-        "node/src/drivers/network/chain/net/net_transport.rs:139",
-        "node/src/drivers/network/chain/net/net_transport.rs:140",
-        "node/src/drivers/network/chain/net/net_transport.rs:141",
-        "node/src/drivers/network/chain/net/net_transport.rs:142",
-        "node/src/drivers/network/chain/net/net_transport.rs:311",
-        "node/src/drivers/network/federation/netserver.rs:136",
-        "node/src/drivers/vmm/host/vm_host_functions.rs:115",
-        "node/src/drivers/vmm/host/vm_host_functions.rs:129",
-        "node/src/drivers/vmm/host/vm_host_functions.rs:131",
-        "node/src/shell/api/model/entity.rs:27",
-        "vms/elpify/src/queue.rs:156",
-        "vms/javascript/src/host_calls.rs:116",
-        "vms/javascript/src/host_calls.rs:121",
-        "vms/javascript/src/host_calls.rs:126",
-        "vms/javascript/src/host_calls.rs:130",
-        "vms/javascript/src/runtime.rs:69",
-        "vms/wasm/src/host_calls.rs:100",
-        "vms/wasm/src/host_calls.rs:104",
-        "vms/wasm/src/host_calls.rs:109",
-        "vms/wasm/src/host_calls.rs:459",
-        "vms/wasm/src/host_calls.rs:471",
-        "vms/wasm/src/host_calls.rs:484",
-        "vms/wasm/src/host_calls.rs:499",
-        "vms/wasm/src/host_calls.rs:96",
-        "vms/wasm/src/runtime.rs:324"
+        "apps/aseman-node/src/core/globe.rs:506",
+        "apps/aseman-node/src/core/globe.rs:705",
+        "apps/aseman-node/src/drivers/network/federation/netserver.rs:136",
+        "apps/aseman-node/src/drivers/vmm/host/vm_host_functions.rs:115",
+        "apps/aseman-node/src/drivers/vmm/host/vm_host_functions.rs:129",
+        "apps/aseman-node/src/drivers/vmm/host/vm_host_functions.rs:131",
+        "apps/aseman-node/src/shell/api/model/entity.rs:27",
+        "modules/runtime/elpify/src/queue.rs:156",
+        "modules/runtime/javascript/src/host_calls.rs:116",
+        "modules/runtime/javascript/src/host_calls.rs:121",
+        "modules/runtime/javascript/src/host_calls.rs:126",
+        "modules/runtime/javascript/src/host_calls.rs:130",
+        "modules/runtime/javascript/src/runtime.rs:69",
+        "modules/runtime/wasm/src/host_calls.rs:100",
+        "modules/runtime/wasm/src/host_calls.rs:104",
+        "modules/runtime/wasm/src/host_calls.rs:109",
+        "modules/runtime/wasm/src/host_calls.rs:459",
+        "modules/runtime/wasm/src/host_calls.rs:471",
+        "modules/runtime/wasm/src/host_calls.rs:484",
+        "modules/runtime/wasm/src/host_calls.rs:499",
+        "modules/runtime/wasm/src/host_calls.rs:96",
+        "modules/runtime/wasm/src/runtime.rs:324"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -7081,9 +7266,9 @@
     },
     {
       "callers": [
-        "node/src/core/globe.rs:489",
-        "node/src/core/globe.rs:676",
-        "node/src/drivers/vmm/host/vm_host_functions.rs:110"
+        "apps/aseman-node/src/core/globe.rs:489",
+        "apps/aseman-node/src/core/globe.rs:676",
+        "apps/aseman-node/src/drivers/vmm/host/vm_host_functions.rs:110"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -7094,7 +7279,7 @@
     },
     {
       "callers": [
-        "node/src/drivers/vmm/host/vm_host_functions.rs:105"
+        "apps/aseman-node/src/drivers/vmm/host/vm_host_functions.rs:105"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -7105,7 +7290,7 @@
     },
     {
       "callers": [
-        "node/src/core/core_orchestrator.rs:609"
+        "apps/aseman-node/src/core/core_orchestrator.rs:609"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -7116,7 +7301,7 @@
     },
     {
       "callers": [
-        "node/src/core/core_orchestrator.rs:601"
+        "apps/aseman-node/src/core/core_orchestrator.rs:601"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -7127,7 +7312,7 @@
     },
     {
       "callers": [
-        "node/src/core/core_orchestrator.rs:605"
+        "apps/aseman-node/src/core/core_orchestrator.rs:605"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -7140,7 +7325,7 @@
       "callers": [
         "obj::{type}::{object_id}::{column}"
       ],
-      "current_owner": "node/src/core/actor/model/trx.rs:247",
+      "current_owner": "apps/aseman-node/src/core/actor/model/trx.rs:247",
       "disposition": "rewrite",
       "expiry": "Phase 3 deletion gate",
       "id": "storage-layout:object-column",
@@ -7151,7 +7336,7 @@
       "callers": [
         "index::{type}::{from_column}::{to_column}::{from_value}"
       ],
-      "current_owner": "node/src/core/actor/model/trx.rs:264",
+      "current_owner": "apps/aseman-node/src/core/actor/model/trx.rs:264",
       "disposition": "rewrite",
       "expiry": "Phase 3 deletion gate",
       "id": "storage-layout:secondary-index",
@@ -7162,7 +7347,7 @@
       "callers": [
         "link::{logical_key}"
       ],
-      "current_owner": "node/src/core/actor/model/trx.rs:325",
+      "current_owner": "apps/aseman-node/src/core/actor/model/trx.rs:325",
       "disposition": "rewrite",
       "expiry": "Phase 3 deletion gate",
       "id": "storage-layout:link",
@@ -7173,7 +7358,7 @@
       "callers": [
         "json::{logical_key}::{path}[.{descendant_path}]"
       ],
-      "current_owner": "node/src/core/actor/model/trx.rs:430",
+      "current_owner": "apps/aseman-node/src/core/actor/model/trx.rs:430",
       "disposition": "rewrite",
       "expiry": "Phase 3 deletion gate",
       "id": "storage-layout:json-document-and-leaves",
@@ -7184,7 +7369,7 @@
       "callers": [
         "caller-defined byte/string key"
       ],
-      "current_owner": "node/src/core/actor/model/trx.rs:339",
+      "current_owner": "apps/aseman-node/src/core/actor/model/trx.rs:339",
       "disposition": "rewrite",
       "expiry": "Phase 3 deletion gate",
       "id": "storage-layout:raw",
@@ -7193,11 +7378,11 @@
     },
     {
       "callers": [
-        "modules/storage-legacy/src/questdb.rs:217",
-        "modules/storage-legacy/src/questdb.rs:239",
-        "modules/storage-legacy/src/questdb.rs:244"
+        "modules/storage/rocksdb-legacy/src/questdb.rs:217",
+        "modules/storage/rocksdb-legacy/src/questdb.rs:239",
+        "modules/storage/rocksdb-legacy/src/questdb.rs:244"
       ],
-      "current_owner": "modules/storage-legacy/src/questdb.rs:86",
+      "current_owner": "modules/storage/rocksdb-legacy/src/questdb.rs:86",
       "disposition": "rewrite",
       "expiry": "Phase 3 deletion gate",
       "id": "questdb-table:buildlogs",
@@ -7206,14 +7391,14 @@
     },
     {
       "callers": [
-        "modules/storage-legacy/src/questdb.rs:67",
-        "modules/storage-legacy/src/questdb.rs:76",
-        "modules/storage-legacy/src/questdb.rs:112",
-        "modules/storage-legacy/src/questdb.rs:123",
-        "modules/storage-legacy/src/questdb.rs:181",
-        "modules/storage-legacy/src/questdb.rs:205"
+        "modules/storage/rocksdb-legacy/src/questdb.rs:67",
+        "modules/storage/rocksdb-legacy/src/questdb.rs:76",
+        "modules/storage/rocksdb-legacy/src/questdb.rs:112",
+        "modules/storage/rocksdb-legacy/src/questdb.rs:123",
+        "modules/storage/rocksdb-legacy/src/questdb.rs:181",
+        "modules/storage/rocksdb-legacy/src/questdb.rs:205"
       ],
-      "current_owner": "modules/storage-legacy/src/questdb.rs:15",
+      "current_owner": "modules/storage/rocksdb-legacy/src/questdb.rs:15",
       "disposition": "rewrite",
       "expiry": "Phase 3 deletion gate",
       "id": "questdb-table:storage",
@@ -7224,7 +7409,7 @@
       "callers": [
         "rep_{public_key}"
       ],
-      "current_owner": "node/src/drivers/network/chain/hashgraph/rocks_store.rs:35",
+      "current_owner": "modules/consensus/hashgraph/src/hashgraph/rocks_store.rs:35",
       "disposition": "move",
       "expiry": "Phase 8 provider gate",
       "id": "hashgraph-key:repertoire",
@@ -7235,7 +7420,7 @@
       "callers": [
         "peerset_{round:09}"
       ],
-      "current_owner": "node/src/drivers/network/chain/hashgraph/rocks_store.rs:35",
+      "current_owner": "modules/consensus/hashgraph/src/hashgraph/rocks_store.rs:35",
       "disposition": "move",
       "expiry": "Phase 8 provider gate",
       "id": "hashgraph-key:peer-set",
@@ -7246,7 +7431,7 @@
       "callers": [
         "topo_{index:09}"
       ],
-      "current_owner": "node/src/drivers/network/chain/hashgraph/rocks_store.rs:35",
+      "current_owner": "modules/consensus/hashgraph/src/hashgraph/rocks_store.rs:35",
       "disposition": "move",
       "expiry": "Phase 8 provider gate",
       "id": "hashgraph-key:topological-event",
@@ -7257,7 +7442,7 @@
       "callers": [
         "{participant}__event_{index:09}"
       ],
-      "current_owner": "node/src/drivers/network/chain/hashgraph/rocks_store.rs:35",
+      "current_owner": "modules/consensus/hashgraph/src/hashgraph/rocks_store.rs:35",
       "disposition": "move",
       "expiry": "Phase 8 provider gate",
       "id": "hashgraph-key:participant-event",
@@ -7268,7 +7453,7 @@
       "callers": [
         "{participant}_root"
       ],
-      "current_owner": "node/src/drivers/network/chain/hashgraph/rocks_store.rs:35",
+      "current_owner": "modules/consensus/hashgraph/src/hashgraph/rocks_store.rs:35",
       "disposition": "move",
       "expiry": "Phase 8 provider gate",
       "id": "hashgraph-key:participant-root",
@@ -7279,7 +7464,7 @@
       "callers": [
         "round_{index:09}"
       ],
-      "current_owner": "node/src/drivers/network/chain/hashgraph/rocks_store.rs:35",
+      "current_owner": "modules/consensus/hashgraph/src/hashgraph/rocks_store.rs:35",
       "disposition": "move",
       "expiry": "Phase 8 provider gate",
       "id": "hashgraph-key:round",
@@ -7290,7 +7475,7 @@
       "callers": [
         "block_{index:09}"
       ],
-      "current_owner": "node/src/drivers/network/chain/hashgraph/rocks_store.rs:35",
+      "current_owner": "modules/consensus/hashgraph/src/hashgraph/rocks_store.rs:35",
       "disposition": "move",
       "expiry": "Phase 8 provider gate",
       "id": "hashgraph-key:block",
@@ -7301,7 +7486,7 @@
       "callers": [
         "frame_{index:09}"
       ],
-      "current_owner": "node/src/drivers/network/chain/hashgraph/rocks_store.rs:35",
+      "current_owner": "modules/consensus/hashgraph/src/hashgraph/rocks_store.rs:35",
       "disposition": "move",
       "expiry": "Phase 8 provider gate",
       "id": "hashgraph-key:frame",
@@ -7312,7 +7497,7 @@
       "callers": [
         "<storage_root>/cluster/raft-db"
       ],
-      "current_owner": "node/src/drivers/cluster/store.rs:1",
+      "current_owner": "apps/aseman-node/src/drivers/cluster/store.rs:1",
       "disposition": "delete-after-migration",
       "expiry": "Phase 6 HA gate plus ADR-0004 window",
       "id": "openraft-column-family:meta",
@@ -7323,7 +7508,7 @@
       "callers": [
         "<storage_root>/cluster/raft-db"
       ],
-      "current_owner": "node/src/drivers/cluster/store.rs:1",
+      "current_owner": "apps/aseman-node/src/drivers/cluster/store.rs:1",
       "disposition": "delete-after-migration",
       "expiry": "Phase 6 HA gate plus ADR-0004 window",
       "id": "openraft-column-family:logs",
@@ -7334,7 +7519,7 @@
       "callers": [
         "<storage_root>/cluster/raft-db"
       ],
-      "current_owner": "node/src/drivers/cluster/store.rs:1",
+      "current_owner": "apps/aseman-node/src/drivers/cluster/store.rs:1",
       "disposition": "delete-after-migration",
       "expiry": "Phase 6 HA gate plus ADR-0004 window",
       "id": "openraft-column-family:sm",
@@ -7343,10 +7528,10 @@
     }
   ],
   "summary": {
-    "artifacts": 40,
-    "configuration": 117,
+    "artifacts": 49,
+    "configuration": 116,
     "protocol_and_compatibility": 290,
     "storage": 172,
-    "total": 619
+    "total": 627
   }
 }

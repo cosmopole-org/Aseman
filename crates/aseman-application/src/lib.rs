@@ -18,7 +18,9 @@ pub mod federation;
 pub mod guest;
 pub mod guest_call;
 pub mod identity;
+pub mod meter;
 pub mod program;
+pub mod public_action;
 pub mod singleton;
 pub mod storage_migration;
 pub mod store;
@@ -337,6 +339,9 @@ mod tests {
             unreachable!()
         }
         fn endpoints(&self, _: WorkloadId) -> PortResult<Vec<aseman_domain::vmm::Endpoint>> {
+            unreachable!()
+        }
+        fn usage(&self, _: WorkloadId) -> PortResult<aseman_domain::vmm::Usage> {
             unreachable!()
         }
         fn verify(&self, _: &str, _: &str, _: &str) -> PortResult<String> {

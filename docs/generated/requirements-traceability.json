@@ -1,0 +1,341 @@
+{
+  "_meta": {
+    "artifact": "A1005",
+    "generator": "generate_requirements_traceability.py",
+    "last_verified_commit": "27806f28b843f786fbf489852e19c0197c4af927",
+    "lifecycle_status": "GENERATED",
+    "source_of_truth": "plan/migration/14-plan-integrity-and-traceability.md",
+    "status": "CURRENT",
+    "verification": "python3 scripts/generate_requirements_traceability.py --check"
+  },
+  "requirements": [
+    {
+      "acceptance_authority": "`10` Architecture/Clean code",
+      "delivery_phase": "1",
+      "design_authority": "`01`, `13`",
+      "id": "R01",
+      "phase_status": {
+        "1": "MET"
+      },
+      "requirement": "Fine-grained modular, decoupled Rust architecture",
+      "status": "MET"
+    },
+    {
+      "acceptance_authority": "`10` Architecture/Operations",
+      "delivery_phase": "2, 9",
+      "design_authority": "`02`",
+      "id": "R02",
+      "phase_status": {
+        "2": "MET",
+        "9": "PARTIAL"
+      },
+      "requirement": "Runtime-installable signed provider modules through CLI",
+      "status": "PARTIAL"
+    },
+    {
+      "acceptance_authority": "`10` VMM",
+      "delivery_phase": "5",
+      "design_authority": "`04`",
+      "id": "R03",
+      "phase_status": {
+        "5": "MET"
+      },
+      "requirement": "VMM out of the node behind standard HTTP",
+      "status": "MET"
+    },
+    {
+      "acceptance_authority": "`10` VMM",
+      "delivery_phase": "5, 6",
+      "design_authority": "`04`",
+      "id": "R04",
+      "phase_status": {
+        "5": "MET",
+        "6": "MET"
+      },
+      "requirement": "Native, Nomad, and future VMM replaceability",
+      "status": "MET"
+    },
+    {
+      "acceptance_authority": "VMM conformance/runtime matrix",
+      "delivery_phase": "5, 6",
+      "design_authority": "`04`",
+      "id": "R05",
+      "phase_status": {
+        "5": "MET",
+        "6": "MET"
+      },
+      "requirement": "Docker, Firecracker, WASM, JavaScript, Elpian/Elpify and extensible runtimes",
+      "status": "MET"
+    },
+    {
+      "acceptance_authority": "`10` VMM/Operations",
+      "delivery_phase": "6, 9",
+      "design_authority": "`04`, `08`",
+      "id": "R06",
+      "phase_status": {
+        "6": "MET",
+        "9": "PARTIAL"
+      },
+      "requirement": "Compact single-host and scalable master-worker modes",
+      "status": "PARTIAL"
+    },
+    {
+      "acceptance_authority": "`10` Network",
+      "delivery_phase": "7",
+      "design_authority": "`02`, `06`",
+      "id": "R07",
+      "phase_status": {
+        "7": "MET"
+      },
+      "requirement": "HTTP default plus custom client/federation protocols",
+      "status": "MET"
+    },
+    {
+      "acceptance_authority": "`10` Network",
+      "delivery_phase": "7",
+      "design_authority": "`06`",
+      "id": "R08",
+      "phase_status": {
+        "7": "MET"
+      },
+      "requirement": "Universal authenticated VM identity resolution with home-node address, ID, and public key",
+      "status": "MET"
+    },
+    {
+      "acceptance_authority": "`10` Security/Network",
+      "delivery_phase": "4, 7",
+      "design_authority": "`05`, `06`",
+      "id": "R09",
+      "phase_status": {
+        "4": "MET",
+        "7": "MET"
+      },
+      "requirement": "Authorized cross-node VM operations",
+      "status": "MET"
+    },
+    {
+      "acceptance_authority": "`10` Capsule storage",
+      "delivery_phase": "3",
+      "design_authority": "`03`",
+      "id": "R10",
+      "phase_status": {
+        "3": "PARTIAL"
+      },
+      "requirement": "PostgreSQL default and database independence",
+      "status": "PARTIAL"
+    },
+    {
+      "acceptance_authority": "`10` Capsule storage",
+      "delivery_phase": "3",
+      "design_authority": "`03`",
+      "id": "R11",
+      "phase_status": {
+        "3": "PARTIAL"
+      },
+      "requirement": "Universal capsule persistence for every storage class",
+      "status": "PARTIAL"
+    },
+    {
+      "acceptance_authority": "`10` Capsule storage",
+      "delivery_phase": "3",
+      "design_authority": "`03`",
+      "id": "R12",
+      "phase_status": {
+        "3": "PARTIAL"
+      },
+      "requirement": "Separate native SQL table/collection per core entity kind",
+      "status": "PARTIAL"
+    },
+    {
+      "acceptance_authority": "`10` Capsule/Security",
+      "delivery_phase": "3, 4",
+      "design_authority": "`03`, `05`, ADR 0001",
+      "id": "R13",
+      "phase_status": {
+        "3": "PARTIAL",
+        "4": "MET"
+      },
+      "requirement": "One isolated guest database/namespace and role per creature, multi-table/collection control, shared within creature and isolated across creatures",
+      "status": "PARTIAL"
+    },
+    {
+      "acceptance_authority": "`10` Security",
+      "delivery_phase": "4",
+      "design_authority": "`05`",
+      "id": "R14",
+      "phase_status": {
+        "4": "MET"
+      },
+      "requirement": "Extensible security and zero-trust workloads",
+      "status": "MET"
+    },
+    {
+      "acceptance_authority": "`10` Security",
+      "delivery_phase": "4",
+      "design_authority": "`05`",
+      "id": "R15",
+      "phase_status": {
+        "4": "MET"
+      },
+      "requirement": "Attenuated administrator/parent-to-child rights",
+      "status": "MET"
+    },
+    {
+      "acceptance_authority": "`10` Network/Realtime",
+      "delivery_phase": "7",
+      "design_authority": "`06`",
+      "id": "R16",
+      "phase_status": {
+        "7": "MET"
+      },
+      "requirement": "Extensible durable realtime signalling",
+      "status": "MET"
+    },
+    {
+      "acceptance_authority": "`10` Finance",
+      "delivery_phase": "8",
+      "design_authority": "`07`",
+      "id": "R17",
+      "phase_status": {
+        "8": "MET"
+      },
+      "requirement": "Modular finance and replaceable consensus, Hashgraph initially",
+      "status": "MET"
+    },
+    {
+      "acceptance_authority": "`10` Finance",
+      "delivery_phase": "8",
+      "design_authority": "`07`",
+      "id": "R18",
+      "phase_status": {
+        "8": "MET"
+      },
+      "requirement": "Actual per-minute resource metering and wallet settlement",
+      "status": "MET"
+    },
+    {
+      "acceptance_authority": "`10` Operations",
+      "delivery_phase": "9",
+      "design_authority": "`08`",
+      "id": "R19",
+      "phase_status": {
+        "9": "PARTIAL"
+      },
+      "requirement": "Fault-tolerant containers, installer, upgrade, backup, restore",
+      "status": "PARTIAL"
+    },
+    {
+      "acceptance_authority": "CLI/E2E suites",
+      "delivery_phase": "2-9",
+      "design_authority": "`02`, `03`, `08`",
+      "id": "R20",
+      "phase_status": {
+        "2": "MET",
+        "3": "PARTIAL",
+        "4": "MET",
+        "5": "MET",
+        "6": "MET",
+        "7": "MET",
+        "8": "MET",
+        "9": "PARTIAL"
+      },
+      "requirement": "Comprehensive administrative CLI",
+      "status": "PARTIAL"
+    },
+    {
+      "acceptance_authority": "`10` Agent comprehension",
+      "delivery_phase": "all, 9-10",
+      "design_authority": "`12`",
+      "id": "R21",
+      "phase_status": {
+        "0": "MET",
+        "1": "MET",
+        "10": "PARTIAL",
+        "2": "MET",
+        "3": "PARTIAL",
+        "4": "MET",
+        "5": "MET",
+        "6": "MET",
+        "7": "MET",
+        "8": "MET",
+        "9": "PARTIAL"
+      },
+      "requirement": "LLM-readable architecture, docs, and workflows",
+      "status": "PARTIAL"
+    },
+    {
+      "acceptance_authority": "`10` Clean code",
+      "delivery_phase": "all, 10",
+      "design_authority": "`13`",
+      "id": "R22",
+      "phase_status": {
+        "0": "MET",
+        "1": "MET",
+        "10": "PARTIAL",
+        "2": "MET",
+        "3": "PARTIAL",
+        "4": "MET",
+        "5": "MET",
+        "6": "MET",
+        "7": "MET",
+        "8": "MET",
+        "9": "PARTIAL"
+      },
+      "requirement": "Dead/duplicate removal, standard hierarchy, algorithm quality",
+      "status": "PARTIAL"
+    },
+    {
+      "acceptance_authority": "Removal ledger/release gate",
+      "delivery_phase": "1, 10",
+      "design_authority": "`01`, `13`",
+      "id": "R23",
+      "phase_status": {
+        "1": "MET",
+        "10": "PARTIAL"
+      },
+      "requirement": "Caspar-to-Aseman compatibility and eventual cleanup",
+      "status": "PARTIAL"
+    },
+    {
+      "acceptance_authority": "`10` Agent comprehension/artifact gates",
+      "delivery_phase": "all",
+      "design_authority": "`12`, `15`, `16`",
+      "id": "R24",
+      "phase_status": {
+        "0": "MET",
+        "1": "MET",
+        "10": "PARTIAL",
+        "2": "MET",
+        "3": "PARTIAL",
+        "4": "MET",
+        "5": "MET",
+        "6": "MET",
+        "7": "MET",
+        "8": "MET",
+        "9": "PARTIAL"
+      },
+      "requirement": "Standalone agent execution without conversation context",
+      "status": "PARTIAL"
+    },
+    {
+      "acceptance_authority": "`10` VMM/Operations/chaos",
+      "delivery_phase": "6, 9",
+      "design_authority": "`01`, `04`, `08`",
+      "id": "R25",
+      "phase_status": {
+        "6": "MET",
+        "9": "PARTIAL"
+      },
+      "requirement": "One stable node identity across replicated control plane and scalable workers",
+      "status": "PARTIAL"
+    }
+  ],
+  "summary": {
+    "met": 12,
+    "open": 0,
+    "partial": 13,
+    "requirements": 25,
+    "violations": 0
+  },
+  "violations": []
+}

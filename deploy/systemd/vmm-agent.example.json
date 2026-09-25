@@ -1,0 +1,25 @@
+{
+  "listen": "127.0.0.1:9091",
+  "allocation_root": "/var/lib/aseman/allocations",
+  "firecracker": "/usr/local/bin/firecracker",
+  "firecracker_enabled": true,
+  "profiles": [
+    {
+      "name": "small",
+      "vcpu_count": 1,
+      "memory_mib": 512,
+      "kernel_image": "/var/lib/aseman/images/vmlinux",
+      "root_image": "/var/lib/aseman/images/rootfs.ext4",
+      "network_profile": "restricted"
+    }
+  ],
+  "tls_certificate": "/etc/aseman/pki/agent.pem",
+  "tls_key_secret": "/run/aseman-secrets/agent-key.pem",
+  "client_ca": "/etc/aseman/pki/vmm-ca.pem",
+  "clients": [
+    "local-backend=0000000000000000000000000000000000000000000000000000000000000000"
+  ],
+  "vmm_key_epoch": 1,
+  "vmm_public_key_secret": "/run/aseman-secrets/vmm-ed25519-public-key",
+  "max_body_bytes": 65536
+}

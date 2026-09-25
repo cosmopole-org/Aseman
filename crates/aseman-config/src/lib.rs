@@ -153,7 +153,6 @@ pub struct LegacyAdapterConfig {
     pub babble_frame_cache: usize,
     pub babble_frame_retention: i64,
     pub is_head: bool,
-    pub shardchain_script: String,
     pub blockchain_api_port: u16,
     pub ip_address: String,
     pub home_dir: Option<String>,
@@ -390,6 +389,14 @@ pub fn legacy_adapter_snapshot() -> Option<&'static LegacyAdapterConfig> {
     ACTIVE_CONFIG.get().map(|config| &config.legacy_adapters)
 }
 
+/// Root-node endpoint for legacy consensus bootstrap. This narrow accessor is
+/// retained only while the embedded Hashgraph adapter remains in the node.
+pub fn consensus_root_node() -> Option<&'static str> {
+    ACTIVE_CONFIG
+        .get()
+        .and_then(|config| config.core.root_node.as_deref())
+}
+
 /// Process home lookup for executables that do not load the full node configuration.
 pub fn process_home_dir() -> Option<String> {
     std::env::var("HOME")
@@ -605,11 +612,6 @@ impl AsemanConfig {
                     .get("ASEMAN_LEGACY_IS_HEAD")
                     .map(|value| value == "true")
                     .unwrap_or(false),
-                shardchain_script: values
-                    .get("ASEMAN_LEGACY_SHARDCHAIN_SCRIPT")
-                    .cloned()
-                    .filter(|value| !value.trim().is_empty())
-                    .unwrap_or_else(|| "/app/scripts/shardchain.sh".to_owned()),
                 blockchain_api_port: parse_or(&values, "ASEMAN_LEGACY_CONSENSUS_PORT", 1337)?,
                 ip_address: optional(&values, "ASEMAN_LEGACY_IPADDR"),
                 home_dir: nonempty(&values, "ASEMAN_LEGACY_HOME"),
@@ -774,6 +776,130 @@ impl VmmServiceConfig {
                 .unwrap_or_else(|| "aseman-vmm".to_owned()),
             lease_ttl_millis: parse_or(values, "ASEMAN_VMM_LEASE_TTL_MILLIS", 30_000)?,
             lease_margin_millis: parse_or(values, "ASEMAN_VMM_LEASE_MARGIN_MILLIS", 5_000)?,
+        })
+    }
+}
+
+/// Typed configuration for the hardened A701 public HTTP listener (P7-06).
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct PublicHttpListenerConfig {
+    /// The TLS listener, for example `0.0.0.0:443`.
+    pub listen: String,
+    /// PEM file: the server certificate chain.
+    pub tls_certificate: String,
+    /// Secret file: the server private key (PEM).
+    pub tls_key_secret: String,
+    /// The A401 verifier's audience, for example `node:{id}/public/v1`.
+    pub audience: String,
+    /// Allowed `Origin` headers; an empty set refuses cross-origin requests.
+    pub allowed_origins: Vec<String>,
+    pub max_body_bytes: usize,
+    pub max_in_flight: usize,
+    pub request_timeout_millis: u64,
+    pub requests_per_window: u32,
+    pub rate_window_seconds: u64,
+    pub max_rate_subjects: usize,
+    pub drain_timeout_seconds: u64,
+}
+
+/// Configuration for the independent Phase 8 metering process.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct MeterConfig {
+    pub database_url_secret: String,
+    pub database_pool_size: u32,
+    pub vmm_endpoint: String,
+    pub vmm_server_ca: String,
+    pub vmm_identity_secret: String,
+    pub vmm_owner: String,
+    pub vmm_deadline_millis: u64,
+    pub poll_interval_seconds: u64,
+    pub page_size: usize,
+    pub settlement_batch: usize,
+    pub revenue_account: String,
+}
+
+impl MeterConfig {
+    /// Read the meter configuration from the process environment.
+    ///
+    /// # Errors
+    ///
+    /// Required values are absent or invalid.
+    pub fn from_process() -> Result<Self, ConfigError> {
+        Self::from_map(&std::env::vars().collect())
+    }
+
+    /// Parse an already-collected environment map.
+    ///
+    /// # Errors
+    ///
+    /// Required values are absent or invalid.
+    pub fn from_map(values: &BTreeMap<String, String>) -> Result<Self, ConfigError> {
+        let vmm_endpoint = required(values, "ASEMAN_METER_VMM_ENDPOINT")?;
+        if !vmm_endpoint.starts_with("https://") {
+            return Err(ConfigError::Invalid {
+                key: "ASEMAN_METER_VMM_ENDPOINT",
+                reason: "the meter reaches the VMM over mutual TLS",
+            });
+        }
+        Ok(Self {
+            database_url_secret: required(values, "ASEMAN_METER_DATABASE_URL_SECRET")?,
+            database_pool_size: parse_or(values, "ASEMAN_METER_DATABASE_POOL_SIZE", 8)?,
+            vmm_endpoint: vmm_endpoint.trim_end_matches('/').to_owned(),
+            vmm_server_ca: required(values, "ASEMAN_METER_VMM_SERVER_CA")?,
+            vmm_identity_secret: required(values, "ASEMAN_METER_VMM_IDENTITY_SECRET")?,
+            vmm_owner: required(values, "ASEMAN_METER_VMM_OWNER")?,
+            vmm_deadline_millis: parse_or(values, "ASEMAN_METER_VMM_DEADLINE_MILLIS", 30_000)?,
+            poll_interval_seconds: parse_or(values, "ASEMAN_METER_POLL_INTERVAL_SECONDS", 60)?,
+            page_size: parse_or(values, "ASEMAN_METER_PAGE_SIZE", 100)?,
+            settlement_batch: parse_or(values, "ASEMAN_METER_SETTLEMENT_BATCH", 100)?,
+            revenue_account: value_or(values, "ASEMAN_METER_REVENUE_ACCOUNT", "revenue:compute"),
+        })
+    }
+}
+
+impl PublicHttpListenerConfig {
+    /// Read the listener configuration from the process environment.
+    ///
+    /// # Errors
+    ///
+    /// Missing or invalid keys.
+    pub fn from_process() -> Result<Self, ConfigError> {
+        Self::from_map(&std::env::vars().collect())
+    }
+
+    /// # Errors
+    ///
+    /// Missing or invalid keys.
+    pub fn from_map(values: &BTreeMap<String, String>) -> Result<Self, ConfigError> {
+        let allowed_origins = values
+            .get("ASEMAN_PUBLIC_HTTP_ALLOWED_ORIGINS")
+            .filter(|value| !value.trim().is_empty())
+            .map(|value| {
+                value
+                    .split(',')
+                    .map(str::trim)
+                    .filter(|origin| !origin.is_empty())
+                    .map(str::to_owned)
+                    .collect()
+            })
+            .unwrap_or_default();
+        Ok(Self {
+            listen: value_or(values, "ASEMAN_PUBLIC_HTTP_LISTEN", "0.0.0.0:443"),
+            tls_certificate: required(values, "ASEMAN_PUBLIC_HTTP_TLS_CERTIFICATE")?,
+            tls_key_secret: required(values, "ASEMAN_PUBLIC_HTTP_TLS_KEY_SECRET")?,
+            audience: required(values, "ASEMAN_PUBLIC_HTTP_AUDIENCE")?,
+            allowed_origins,
+            max_body_bytes: parse_or(values, "ASEMAN_PUBLIC_HTTP_MAX_BODY_BYTES", 1024 * 1024)?,
+            max_in_flight: parse_or(values, "ASEMAN_PUBLIC_HTTP_MAX_IN_FLIGHT", 256)?,
+            request_timeout_millis: parse_or(
+                values,
+                "ASEMAN_PUBLIC_HTTP_REQUEST_TIMEOUT_MILLIS",
+                30_000,
+            )?,
+            requests_per_window: parse_or(values, "ASEMAN_PUBLIC_HTTP_REQUESTS_PER_WINDOW", 120)?,
+            rate_window_seconds: parse_or(values, "ASEMAN_PUBLIC_HTTP_RATE_WINDOW_SECONDS", 60)?,
+            max_rate_subjects: parse_or(values, "ASEMAN_PUBLIC_HTTP_MAX_RATE_SUBJECTS", 8_192)?,
+            drain_timeout_seconds: parse_or(values, "ASEMAN_PUBLIC_HTTP_DRAIN_TIMEOUT_SECS", 10)?,
         })
     }
 }
@@ -1263,5 +1389,88 @@ mod tests {
             values.insert("ASEMAN_VMM_CLIENTS".to_owned(), bad.to_owned());
             assert!(VmmServiceConfig::from_map(&values).is_err(), "{bad}");
         }
+    }
+
+    #[test]
+    fn the_public_http_listener_is_typed_and_fail_closed_on_origins() {
+        let values = BTreeMap::from([
+            (
+                "ASEMAN_PUBLIC_HTTP_TLS_CERTIFICATE".to_owned(),
+                "/etc/aseman/public.pem".to_owned(),
+            ),
+            (
+                "ASEMAN_PUBLIC_HTTP_TLS_KEY_SECRET".to_owned(),
+                "/run/secrets/public-key".to_owned(),
+            ),
+            (
+                "ASEMAN_PUBLIC_HTTP_AUDIENCE".to_owned(),
+                "node:a/public/v1".to_owned(),
+            ),
+            (
+                "ASEMAN_PUBLIC_HTTP_ALLOWED_ORIGINS".to_owned(),
+                "https://console.example".to_owned(),
+            ),
+        ]);
+        let config = PublicHttpListenerConfig::from_map(&values).unwrap();
+        assert_eq!(config.listen, "0.0.0.0:443");
+        assert_eq!(config.audience, "node:a/public/v1");
+        assert_eq!(config.allowed_origins, vec!["https://console.example"]);
+        assert_eq!(config.max_body_bytes, 1024 * 1024);
+        assert_eq!(config.requests_per_window, 120);
+        // No configured origins refuses cross-origin requests (the empty set).
+        let mut closed = values.clone();
+        closed.remove("ASEMAN_PUBLIC_HTTP_ALLOWED_ORIGINS");
+        assert!(
+            PublicHttpListenerConfig::from_map(&closed)
+                .unwrap()
+                .allowed_origins
+                .is_empty()
+        );
+        // The TLS material and audience are required.
+        for key in [
+            "ASEMAN_PUBLIC_HTTP_TLS_CERTIFICATE",
+            "ASEMAN_PUBLIC_HTTP_TLS_KEY_SECRET",
+            "ASEMAN_PUBLIC_HTTP_AUDIENCE",
+        ] {
+            let mut missing = values.clone();
+            missing.remove(key);
+            assert!(
+                PublicHttpListenerConfig::from_map(&missing).is_err(),
+                "{key}"
+            );
+        }
+    }
+
+    #[test]
+    fn the_meter_requires_mtls_and_keeps_finance_limits_typed() {
+        let mut values = BTreeMap::from([
+            (
+                "ASEMAN_METER_DATABASE_URL_SECRET".to_owned(),
+                "/run/secrets/meter-db".to_owned(),
+            ),
+            (
+                "ASEMAN_METER_VMM_ENDPOINT".to_owned(),
+                "https://vmm:8443".to_owned(),
+            ),
+            (
+                "ASEMAN_METER_VMM_SERVER_CA".to_owned(),
+                "/etc/aseman/vmm-ca.pem".to_owned(),
+            ),
+            (
+                "ASEMAN_METER_VMM_IDENTITY_SECRET".to_owned(),
+                "/run/secrets/meter-identity".to_owned(),
+            ),
+            ("ASEMAN_METER_VMM_OWNER".to_owned(), "meter-1".to_owned()),
+            ("ASEMAN_METER_PAGE_SIZE".to_owned(), "64".to_owned()),
+        ]);
+        let config = MeterConfig::from_map(&values).unwrap();
+        assert_eq!(config.vmm_endpoint, "https://vmm:8443");
+        assert_eq!(config.page_size, 64);
+        assert_eq!(config.poll_interval_seconds, 60);
+        values.insert(
+            "ASEMAN_METER_VMM_ENDPOINT".to_owned(),
+            "http://vmm:8443".to_owned(),
+        );
+        assert!(MeterConfig::from_map(&values).is_err());
     }
 }

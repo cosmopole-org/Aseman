@@ -26,11 +26,11 @@
 //!
 //! * `op`             — [`Opcode`] identifying the message kind.
 //! * `message_id`     — unique per logical message; all chunks share it and are
-//!                      reassembled by the receiver.
+//!   reassembled by the receiver.
 //! * `correlation_id` — request id echoed back on the matching response so the
-//!                      caller can pair a `RESPONSE` with its `REQUEST`.
+//!   caller can pair a `RESPONSE` with its `REQUEST`.
 //! * `seq` / `total`  — chunk index (0-based) and the total number of chunks
-//!                      that make up this message.
+//!   that make up this message.
 //!
 //! A logical message whose payload fits in a single chunk uses `seq = 0`,
 //! `total = 1` — the common case for control frames and small host calls.

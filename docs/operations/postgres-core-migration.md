@@ -1,7 +1,7 @@
 ---
 status: CURRENT
 owner: storage/postgres
-source_of_truth: modules/storage-postgres/migrations and docs/decisions/0005-capsule-encoding-and-integrity.md
+source_of_truth: modules/storage/postgres/migrations and docs/decisions/0005-capsule-encoding-and-integrity.md
 last_verified_commit: 800df24076c7
 verification: cargo test -p aseman-storage-postgres
 ---

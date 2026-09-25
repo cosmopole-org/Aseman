@@ -8,21 +8,21 @@ verification: python3 scripts/generate_quality_baseline.py --check
 
 # Current static quality baseline
 
-Scanned 573 source files, 166401 physical lines, and 155182 nonblank lines.
+Scanned 607 source files, 173025 physical lines, and 161319 nonblank lines.
 
 ## Ratchet counts
 
 | Metric | Count |
 |---|---:|
 | `environment_reads` | 4 |
-| `rust_allow_attributes` | 34 |
-| `rust_expect_calls` | 591 |
-| `rust_json_value_mentions` | 1319 |
+| `rust_allow_attributes` | 36 |
+| `rust_expect_calls` | 592 |
+| `rust_json_value_mentions` | 1336 |
 | `rust_panic_macros` | 323 |
-| `rust_sleep_calls` | 75 |
-| `rust_spawn_calls` | 76 |
+| `rust_sleep_calls` | 78 |
+| `rust_spawn_calls` | 78 |
 | `rust_unsafe_tokens` | 43 |
-| `rust_unwrap_calls` | 3013 |
+| `rust_unwrap_calls` | 3210 |
 
 These lexical metrics include tests and comments. They establish a reproducible
 ratchet; they do not assert that every occurrence is defective.
@@ -31,26 +31,26 @@ ratchet; they do not assert that every occurrence is defective.
 
 | Path | Lines |
 |---|---:|
-| `vms/elpian/crates/elpian-vm/src/sdk/executor.rs` | 6591 |
-| `node/src/shell/api/actions/creature/finance.rs` | 4138 |
-| `modules/storage-legacy/src/tests.rs` | 3038 |
-| `node/src/drivers/network/chain/hashgraph/hashgraph.rs` | 2761 |
-| `vms/elpian/crates/elpian-vm/src/sdk/stdlib/mod.rs` | 2468 |
-| `node/src/drivers/vmm/hostcall_entities.rs` | 2311 |
-| `vms/modal/src/controller.rs` | 1918 |
-| `node/src/drivers/vmm/host/vm_host_functions.rs` | 1892 |
-| `cmd/casparctl/src/main.rs` | 1890 |
-| `vms/elpian/crates/elpian-vm/src/sdk/compiler.rs` | 1862 |
-| `client-cli/index.ts` | 1796 |
-| `node/src/shell/api/actions/program.rs` | 1683 |
+| `modules/runtime/elpian/crates/elpian-vm/src/sdk/executor.rs` | 6591 |
+| `apps/aseman-node/src/shell/api/actions/creature/finance.rs` | 4152 |
+| `modules/storage/rocksdb-legacy/src/tests.rs` | 3038 |
+| `modules/consensus/hashgraph/src/hashgraph/hashgraph.rs` | 2759 |
+| `modules/runtime/elpian/crates/elpian-vm/src/sdk/stdlib/mod.rs` | 2468 |
+| `apps/aseman-node/src/drivers/vmm/hostcall_entities.rs` | 2311 |
+| `modules/runtime/modal/src/controller.rs` | 1918 |
+| `apps/aseman-node/src/drivers/vmm/host/vm_host_functions.rs` | 1893 |
+| `apps/asemanctl/src/cli/mod.rs` | 1890 |
+| `modules/runtime/elpian/crates/elpian-vm/src/sdk/compiler.rs` | 1862 |
+| `apps/aseman-client/index.ts` | 1796 |
+| `apps/aseman-node/src/shell/api/actions/program.rs` | 1681 |
 | `crates/aseman-contracts/src/capsule.rs` | 1673 |
-| `run-nodes.sh` | 1594 |
+| `run-nodes.sh` | 1585 |
 | `crates/aseman-module-runtime/src/lib.rs` | 1581 |
-| `crates/aseman-ports/src/conformance.rs` | 1549 |
-| `node/src/shell/api/actions/creature.rs` | 1545 |
+| `crates/aseman-ports/src/conformance.rs` | 1550 |
+| `apps/aseman-node/src/shell/api/actions/creature.rs` | 1545 |
+| `crates/aseman-config/src/lib.rs` | 1476 |
 | `modules/vmm-http/src/server.rs` | 1439 |
-| `vms/elpify/crates/elpify-lang/src/compiler.rs` | 1324 |
-| `modules/storage-postgres/src/lib.rs` | 1309 |
+| `modules/runtime/elpify/crates/elpify-lang/src/compiler.rs` | 1324 |
 
 ## Limitations
 

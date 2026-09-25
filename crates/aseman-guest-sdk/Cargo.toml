@@ -1,0 +1,16 @@
+[package]
+name = "aseman-guest-sdk"
+description = "Guest-side construction of authenticated Aseman calls without tenancy selection."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+aseman-contracts = { path = "../aseman-contracts" }
+aseman-domain = { path = "../aseman-domain" }
+thiserror.workspace = true
+
+[lints]
+workspace = true

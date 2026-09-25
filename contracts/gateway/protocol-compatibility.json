@@ -1,0 +1,27 @@
+{
+  "protocol_major": 1,
+  "messages": {
+    "InvokeRequest": {
+      "meta": 1,
+      "route": 2,
+      "action": 3,
+      "action_class": 4,
+      "session": 5,
+      "proof": 6,
+      "content_type": 7,
+      "body": 8
+    },
+    "InvokeResponse": { "status": 1, "content_type": 2, "body": 3, "error": 4 },
+    "SubscribeRequest": { "admission": 1, "stream": 2, "after_event_id": 3, "max_events": 4 },
+    "EventFrame": { "event_id": 1, "sequence": 2, "content_type": 3, "body": 4, "error": 5 },
+    "TerminalFrame": { "open": 1, "input": 2, "resize": 3, "output": 4, "exit": 5, "error": 6 }
+  },
+  "rules": [
+    "A network module forwards credentials and never establishes a subject.",
+    "Invoke action and class must agree with the authoritative action registry.",
+    "Every mutating invocation carries RequestMetadata.idempotency_key.",
+    "Subscribe is bounded by max_events and resumes strictly after after_event_id.",
+    "The first client terminal frame is exactly one open frame; subsequent client frames are input or resize.",
+    "Unknown enum values return UNSUPPORTED and are never treated as a weaker default."
+  ]
+}

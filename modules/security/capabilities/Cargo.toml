@@ -1,0 +1,19 @@
+[package]
+name = "aseman-policy-native"
+description = "The ADR 0008 reference policy provider: the typed evaluator over the A402 registry."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+aseman-contracts = { path = "../../../crates/aseman-contracts" }
+aseman-domain = { path = "../../../crates/aseman-domain" }
+aseman-ports = { path = "../../../crates/aseman-ports" }
+
+[dev-dependencies]
+aseman-policy-conformance = { path = "../../../tests/contracts/policy" }
+
+[lints]
+workspace = true

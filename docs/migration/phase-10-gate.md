@@ -31,19 +31,34 @@ what stops a gate from being accepted for the sake of a tidy table.
 **A truthful acceptance assessment.** Every criterion from the acceptance document is
 marked MET with evidence or OPEN with the obstacle.
 
+**A mechanically checked requirements traceability report (A1005).**
+`scripts/generate_requirements_traceability.py` verifies every requirement in
+`plan/migration/14-plan-integrity-and-traceability.md` names a design authority, a
+delivery phase, and an acceptance authority, maps each requirement's phases to their
+phase-gate status, and runs `--check` in `cargo xtask fast`. The report records the
+truth as of this gate: 25 requirements, 0 violations, 12 MET, 13 PARTIAL (their phases
+3, 9, or 10 are not accepted), 0 OPEN.
+
+**A corrected Phase 3 record.** `status.md` previously listed Phase 3 as accepted while
+`phase-3-gate.md` correctly recorded it as in progress (the switch is an operator
+action). The status now agrees with the gate: Phase 3 is **ready, not switched**, and
+its requirements (R10–R13) are PARTIAL in the traceability report until the cutover.
+
 ## What remains
 
 | Item | Where it is recorded |
 |---|---|
 | Fuzz, load, and full chaos suites | Acceptance: "Required suites" |
 | Supply chain, SBOM, signing, provenance gates | Phase 9 packaging |
-| Shadow traffic and canary nodes | Needs a deployment |
-| Documentation drift and comprehension evaluations as release gates | Acceptance: "Documentation" |
+| Execute shadow traffic and canary nodes | A1003's machine-checked decision/abort contract is delivered; execution needs a deployment |
+| Execute and score cold-agent comprehension evaluations | The catalog and authority-path drift gate are delivered in P9-05; deployment-independent scored runs remain open |
 | Rollback and disaster-recovery drills | Needs a deployment |
+| The Phase 3 storage cutover | `phase-3-gate.md`: an operator action (runbook step 7) |
 | Deleting the legacy paths | The removal ledger's outstanding rows, each with its blocker |
 
-Every one needs either infrastructure outside this repository or a running deployment.
-None is blocked on design.
+Most need either infrastructure outside this repository or a running deployment. The
+remaining hierarchy and legacy cleanup additionally need their named replacement and
+deletion gates; none is blocked on undocumented design.
 
 ## The rule this phase exists to protect
 

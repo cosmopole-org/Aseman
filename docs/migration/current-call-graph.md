@@ -32,83 +32,83 @@ Registered actions: 77; distinct guard expressions: 5.
 
 | Path | Handler | Guard | Storage operations | Services | Direct VMM operations |
 |---|---|---|---|---|---|
-| `/api/hello` | `node/src/shell/api/actions/dummy.rs::hello` | `Guard::default()` | — | — | — |
-| `/api/ping` | `node/src/shell/api/actions/dummy.rs::ping` | `Guard::default()` | — | — | — |
-| `/api/time` | `node/src/shell/api/actions/dummy.rs::time` | `Guard::default()` | — | — | — |
-| `/auths/getServerPublicKey` | `node/src/shell/api/actions/auth.rs::get_server_public_key` | `Guard::default()` | — | — | — |
-| `/auths/getServersMap` | `node/src/shell/api/actions/auth.rs::get_servers_map` | `Guard::default()` | — | — | — |
-| `/creatures/authenticate` | `node/src/shell/api/actions/creature.rs::authenticate` | `user_guard()` | — | — | — |
-| `/creatures/checkSign` | `node/src/shell/api/actions/creature.rs::check_sign` | `user_guard()` | `get_link` | `security` | — |
-| `/creatures/closePool` | `node/src/shell/api/actions/creature/finance.rs::close_pool` | `finance_guard()` | `get_link`, `put_link` | — | — |
-| `/creatures/consumeLock` | `node/src/shell/api/actions/creature.rs::consume_lock` | `user_guard()` | `del_json`, `get_json`, `put_json` | `security` | — |
-| `/creatures/create` | `node/src/shell/api/actions/creature.rs::create` | `anon_guard()` | — | — | — |
-| `/creatures/createHold` | `node/src/shell/api/actions/creature/finance.rs::create_hold` | `finance_guard()` | `get_json`, `get_link`, `put_link` | — | — |
-| `/creatures/debitPool` | `node/src/shell/api/actions/creature/finance.rs::debit_pool` | `finance_guard()` | `get_json`, `get_link`, `put_json`, `put_link` | — | — |
-| `/creatures/delete` | `node/src/shell/api/actions/creature.rs::delete` | `user_guard()` | `del_key`, `get_link` | — | — |
-| `/creatures/find` | `node/src/shell/api/actions/creature.rs::find` | `user_guard()` | — | — | — |
-| `/creatures/get` | `node/src/shell/api/actions/creature.rs::get` | `user_guard()` | — | — | — |
-| `/creatures/getByUsername` | `node/src/shell/api/actions/creature.rs::get_by_username` | `user_guard()` | — | — | — |
-| `/creatures/getFinancialAccount` | `node/src/shell/api/actions/creature/finance.rs::get_financial_account` | `finance_guard()` | — | — | — |
-| `/creatures/getHold` | `node/src/shell/api/actions/creature/finance.rs::get_hold` | `finance_guard()` | — | — | — |
-| `/creatures/list` | `node/src/shell/api/actions/creature.rs::list` | `user_guard()` | — | — | — |
-| `/creatures/listPayouts` | `node/src/shell/api/actions/creature/finance.rs::list_payouts` | `finance_guard()` | `get_by_prefix` | — | — |
-| `/creatures/lockToken` | `node/src/shell/api/actions/creature.rs::lock_token` | `user_guard()` | `put_json` | — | — |
-| `/creatures/login` | `node/src/shell/api/actions/creature.rs::login` | `anon_guard()` | `del_key`, `get_index`, `get_link`, `put_link` | — | — |
-| `/creatures/meta` | `node/src/shell/api/actions/creature.rs::meta` | `user_guard()` | — | — | — |
-| `/creatures/mint` | `node/src/shell/api/actions/creature.rs::mint` | `user_guard()` | `get_link`, `put_link` | — | — |
-| `/creatures/openPool` | `node/src/shell/api/actions/creature/finance.rs::open_pool` | `finance_guard()` | `get_link`, `put_link` | — | — |
-| `/creatures/paymentAdjustment` | `node/src/shell/api/actions/creature/finance.rs::payment_adjustment` | `finance_guard()` | `get_link`, `put_link` | — | — |
-| `/creatures/publishFinanceCatalog` | `node/src/shell/api/actions/creature/finance.rs::publish_finance_catalog` | `finance_guard()` | `get_json`, `put_json` | — | — |
-| `/creatures/publishFinanceQuote` | `node/src/shell/api/actions/creature/finance.rs::publish_finance_quote` | `finance_guard()` | `get_json`, `put_json` | — | — |
-| `/creatures/reconcileFinancialSystem` | `node/src/shell/api/actions/creature/finance.rs::reconcile_financial_system` | `finance_guard()` | `get_by_prefix`, `get_json`, `get_link`, `get_links_list` | — | — |
-| `/creatures/refreshPool` | `node/src/shell/api/actions/creature/finance.rs::refresh_pool` | `finance_guard()` | `get_link`, `put_link` | — | — |
-| `/creatures/registerFinanceNode` | `node/src/shell/api/actions/creature/finance.rs::register_finance_node` | `finance_guard()` | `put_json` | — | — |
-| `/creatures/registerFinanceResource` | `node/src/shell/api/actions/creature/finance.rs::register_finance_resource` | `finance_guard()` | `get_json`, `put_json` | — | — |
-| `/creatures/releaseHold` | `node/src/shell/api/actions/creature/finance.rs::release_hold` | `finance_guard()` | `get_link`, `put_link` | — | — |
-| `/creatures/releasePool` | `node/src/shell/api/actions/creature/finance.rs::release_pool` | `finance_guard()` | `get_json`, `put_json` | — | — |
-| `/creatures/requestPayout` | `node/src/shell/api/actions/creature/finance.rs::request_payout` | `finance_guard()` | `get_link`, `put_json`, `put_link` | — | — |
-| `/creatures/reservePool` | `node/src/shell/api/actions/creature/finance.rs::reserve_pool` | `finance_guard()` | `get_json`, `put_json` | — | — |
-| `/creatures/resolvePayout` | `node/src/shell/api/actions/creature/finance.rs::resolve_payout` | `finance_guard()` | `get_link`, `put_json`, `put_link` | — | — |
-| `/creatures/retireFinanceNode` | `node/src/shell/api/actions/creature/finance.rs::retire_finance_node` | `finance_guard()` | `get_json`, `put_json` | — | — |
-| `/creatures/retireFinanceResource` | `node/src/shell/api/actions/creature/finance.rs::retire_finance_resource` | `finance_guard()` | `get_json`, `put_json` | — | — |
-| `/creatures/reviewFinanceResource` | `node/src/shell/api/actions/creature/finance.rs::review_finance_resource` | `finance_guard()` | `get_json`, `put_json` | — | — |
-| `/creatures/secretGet` | `node/src/shell/api/actions/creature.rs::secret_get` | `user_guard()` | `get_link` | `storage` | — |
-| `/creatures/secretGrant` | `node/src/shell/api/actions/creature.rs::secret_grant` | `user_guard()` | `get_link`, `put_link` | — | — |
-| `/creatures/secretList` | `node/src/shell/api/actions/creature.rs::secret_list` | `user_guard()` | `get_by_prefix` | — | — |
-| `/creatures/secretListGranted` | `node/src/shell/api/actions/creature.rs::secret_list_granted` | `user_guard()` | — | — | — |
-| `/creatures/secretPut` | `node/src/shell/api/actions/creature.rs::secret_put` | `user_guard()` | `put_link` | `storage` | — |
-| `/creatures/secretRevoke` | `node/src/shell/api/actions/creature.rs::secret_revoke` | `user_guard()` | `del_key` | — | — |
-| `/creatures/settleHold` | `node/src/shell/api/actions/creature/finance.rs::settle_hold` | `finance_guard()` | `get_link`, `put_link` | — | — |
-| `/creatures/settlePool` | `node/src/shell/api/actions/creature/finance.rs::settle_pool` | `finance_guard()` | `get_json`, `get_link`, `put_json`, `put_link` | — | — |
-| `/creatures/signal` | `node/src/shell/api/actions/creature.rs::signal` | `user_guard()` | — | `signaler` | — |
-| `/creatures/startHold` | `node/src/shell/api/actions/creature/finance.rs::start_hold` | `finance_guard()` | `get_link`, `put_link` | — | — |
-| `/creatures/transfer` | `node/src/shell/api/actions/creature.rs::transfer` | `finance_guard()` | — | — | — |
-| `/creatures/types` | `node/src/shell/api/actions/creature.rs::types` | `user_guard()` | — | — | — |
-| `/creatures/update` | `node/src/shell/api/actions/creature.rs::update` | `user_guard()` | — | — | — |
-| `/gateway/signal` | `node/src/shell/api/actions/gateway.rs::signal` | `Guard::default()` | — | — | — |
-| `/gateway/subscribe` | `node/src/shell/api/actions/gateway.rs::subscribe` | `Guard::default()` | — | — | — |
-| `/gateway/unsubscribe` | `node/src/shell/api/actions/gateway.rs::unsubscribe` | `Guard::default()` | — | — | — |
-| `/machines/closeVmTerminal` | `node/src/shell/api/actions/program.rs::close_vm_terminal` | `user_guard()` | `del_key` | — | — |
-| `/machines/list` | `node/src/shell/api/actions/program.rs::list_machines` | `user_guard()` | — | — | — |
-| `/machines/listEntityVms` | `node/src/shell/api/actions/program.rs::list_entity_vms` | `user_guard()` | `get_link`, `get_links_list` | `vmm` | `vm_host_call` |
-| `/machines/listProgramMachines` | `node/src/shell/api/actions/program.rs::list_program_machines` | `user_guard()` | — | — | — |
-| `/machines/openVmTerminal` | `node/src/shell/api/actions/program.rs::open_vm_terminal` | `user_guard()` | `put_link` | — | — |
-| `/machines/readMachineBuilds` | `node/src/shell/api/actions/program.rs::read_machine_builds` | `user_guard()` | `get_links_list` | — | — |
-| `/machines/readVmLogs` | `node/src/shell/api/actions/program.rs::read_vm_logs` | `user_guard()` | `get_links_list` | `vmm` | `logs` |
-| `/programs/create` | `node/src/shell/api/actions/program.rs::create_program` | `user_guard()` | — | — | — |
-| `/programs/delete` | `node/src/shell/api/actions/program.rs::delete_program` | `user_guard()` | — | — | — |
-| `/programs/deleteEntity` | `node/src/shell/api/actions/program.rs::delete_program_entity` | `user_guard()` | `del_json`, `del_key`, `get_link` | `vmm` | `set_state` |
-| `/programs/deploy` | `node/src/shell/api/actions/program.rs::deploy` | `user_guard()` | `put_link` | `storage`, `vmm`, `workloads` | `deploy_conventions`, `runtime_keys` |
-| `/programs/downloadEntity` | `node/src/shell/api/actions/program.rs::download_entity` | `user_guard()` | — | `storage` | — |
-| `/programs/list` | `node/src/shell/api/actions/program.rs::list_programs` | `user_guard()` | — | — | — |
-| `/programs/runEntity` | `node/src/shell/api/actions/program.rs::run_program_entity` | `user_guard()` | `get_link`, `put_json`, `put_link` | `vmm` | `launch`, `offers` |
-| `/programs/stopEntity` | `node/src/shell/api/actions/program.rs::stop_program_entity` | `user_guard()` | `del_json`, `del_key` | `vmm` | `set_state` |
-| `/programs/update` | `node/src/shell/api/actions/program.rs::update_program` | `user_guard()` | — | — | — |
-| `/storage/upload` | `node/src/shell/api/actions/creature.rs::storage_upload` | `user_guard()` | — | `storage` | — |
-| `/stores/getAccess` | `node/src/shell/api/actions/store.rs::get_access` | `store_guard()` | — | — | — |
-| `/stores/history` | `node/src/shell/api/actions/store.rs::history` | `store_guard()` | — | `storage` | — |
-| `/stores/setAccess` | `node/src/shell/api/actions/store.rs::set_access` | `store_guard()` | — | — | — |
-| `/stores/signal` | `node/src/shell/api/actions/store.rs::signal` | `store_guard()` | — | `storage` | — |
+| `/api/hello` | `apps/aseman-node/src/shell/api/actions/dummy.rs::hello` | `Guard::default()` | — | — | — |
+| `/api/ping` | `apps/aseman-node/src/shell/api/actions/dummy.rs::ping` | `Guard::default()` | — | — | — |
+| `/api/time` | `apps/aseman-node/src/shell/api/actions/dummy.rs::time` | `Guard::default()` | — | — | — |
+| `/auths/getServerPublicKey` | `apps/aseman-node/src/shell/api/actions/auth.rs::get_server_public_key` | `Guard::default()` | — | — | — |
+| `/auths/getServersMap` | `apps/aseman-node/src/shell/api/actions/auth.rs::get_servers_map` | `Guard::default()` | — | — | — |
+| `/creatures/authenticate` | `apps/aseman-node/src/shell/api/actions/creature.rs::authenticate` | `user_guard()` | — | — | — |
+| `/creatures/checkSign` | `apps/aseman-node/src/shell/api/actions/creature.rs::check_sign` | `user_guard()` | `get_link` | `security` | — |
+| `/creatures/closePool` | `apps/aseman-node/src/shell/api/actions/creature/finance.rs::close_pool` | `finance_guard()` | `get_link`, `put_link` | — | — |
+| `/creatures/consumeLock` | `apps/aseman-node/src/shell/api/actions/creature.rs::consume_lock` | `user_guard()` | `del_json`, `get_json`, `put_json` | `security` | — |
+| `/creatures/create` | `apps/aseman-node/src/shell/api/actions/creature.rs::create` | `anon_guard()` | — | — | — |
+| `/creatures/createHold` | `apps/aseman-node/src/shell/api/actions/creature/finance.rs::create_hold` | `finance_guard()` | `get_json`, `get_link`, `put_link` | — | — |
+| `/creatures/debitPool` | `apps/aseman-node/src/shell/api/actions/creature/finance.rs::debit_pool` | `finance_guard()` | `get_json`, `get_link`, `put_json`, `put_link` | — | — |
+| `/creatures/delete` | `apps/aseman-node/src/shell/api/actions/creature.rs::delete` | `user_guard()` | `del_key`, `get_link` | — | — |
+| `/creatures/find` | `apps/aseman-node/src/shell/api/actions/creature.rs::find` | `user_guard()` | — | — | — |
+| `/creatures/get` | `apps/aseman-node/src/shell/api/actions/creature.rs::get` | `user_guard()` | — | — | — |
+| `/creatures/getByUsername` | `apps/aseman-node/src/shell/api/actions/creature.rs::get_by_username` | `user_guard()` | — | — | — |
+| `/creatures/getFinancialAccount` | `apps/aseman-node/src/shell/api/actions/creature/finance.rs::get_financial_account` | `finance_guard()` | — | — | — |
+| `/creatures/getHold` | `apps/aseman-node/src/shell/api/actions/creature/finance.rs::get_hold` | `finance_guard()` | — | — | — |
+| `/creatures/list` | `apps/aseman-node/src/shell/api/actions/creature.rs::list` | `user_guard()` | — | — | — |
+| `/creatures/listPayouts` | `apps/aseman-node/src/shell/api/actions/creature/finance.rs::list_payouts` | `finance_guard()` | `get_by_prefix` | — | — |
+| `/creatures/lockToken` | `apps/aseman-node/src/shell/api/actions/creature.rs::lock_token` | `user_guard()` | `put_json` | — | — |
+| `/creatures/login` | `apps/aseman-node/src/shell/api/actions/creature.rs::login` | `anon_guard()` | `del_key`, `get_index`, `get_link`, `put_link` | — | — |
+| `/creatures/meta` | `apps/aseman-node/src/shell/api/actions/creature.rs::meta` | `user_guard()` | — | — | — |
+| `/creatures/mint` | `apps/aseman-node/src/shell/api/actions/creature.rs::mint` | `user_guard()` | `get_link`, `put_link` | — | — |
+| `/creatures/openPool` | `apps/aseman-node/src/shell/api/actions/creature/finance.rs::open_pool` | `finance_guard()` | `get_link`, `put_link` | — | — |
+| `/creatures/paymentAdjustment` | `apps/aseman-node/src/shell/api/actions/creature/finance.rs::payment_adjustment` | `finance_guard()` | `get_link`, `put_link` | — | — |
+| `/creatures/publishFinanceCatalog` | `apps/aseman-node/src/shell/api/actions/creature/finance.rs::publish_finance_catalog` | `finance_guard()` | `get_json`, `put_json` | — | — |
+| `/creatures/publishFinanceQuote` | `apps/aseman-node/src/shell/api/actions/creature/finance.rs::publish_finance_quote` | `finance_guard()` | `get_json`, `put_json` | — | — |
+| `/creatures/reconcileFinancialSystem` | `apps/aseman-node/src/shell/api/actions/creature/finance.rs::reconcile_financial_system` | `finance_guard()` | `get_by_prefix`, `get_json`, `get_link`, `get_links_list` | — | — |
+| `/creatures/refreshPool` | `apps/aseman-node/src/shell/api/actions/creature/finance.rs::refresh_pool` | `finance_guard()` | `get_link`, `put_link` | — | — |
+| `/creatures/registerFinanceNode` | `apps/aseman-node/src/shell/api/actions/creature/finance.rs::register_finance_node` | `finance_guard()` | `put_json` | — | — |
+| `/creatures/registerFinanceResource` | `apps/aseman-node/src/shell/api/actions/creature/finance.rs::register_finance_resource` | `finance_guard()` | `get_json`, `put_json` | — | — |
+| `/creatures/releaseHold` | `apps/aseman-node/src/shell/api/actions/creature/finance.rs::release_hold` | `finance_guard()` | `get_link`, `put_link` | — | — |
+| `/creatures/releasePool` | `apps/aseman-node/src/shell/api/actions/creature/finance.rs::release_pool` | `finance_guard()` | `get_json`, `put_json` | — | — |
+| `/creatures/requestPayout` | `apps/aseman-node/src/shell/api/actions/creature/finance.rs::request_payout` | `finance_guard()` | `get_link`, `put_json`, `put_link` | — | — |
+| `/creatures/reservePool` | `apps/aseman-node/src/shell/api/actions/creature/finance.rs::reserve_pool` | `finance_guard()` | `get_json`, `put_json` | — | — |
+| `/creatures/resolvePayout` | `apps/aseman-node/src/shell/api/actions/creature/finance.rs::resolve_payout` | `finance_guard()` | `get_link`, `put_json`, `put_link` | — | — |
+| `/creatures/retireFinanceNode` | `apps/aseman-node/src/shell/api/actions/creature/finance.rs::retire_finance_node` | `finance_guard()` | `get_json`, `put_json` | — | — |
+| `/creatures/retireFinanceResource` | `apps/aseman-node/src/shell/api/actions/creature/finance.rs::retire_finance_resource` | `finance_guard()` | `get_json`, `put_json` | — | — |
+| `/creatures/reviewFinanceResource` | `apps/aseman-node/src/shell/api/actions/creature/finance.rs::review_finance_resource` | `finance_guard()` | `get_json`, `put_json` | — | — |
+| `/creatures/secretGet` | `apps/aseman-node/src/shell/api/actions/creature.rs::secret_get` | `user_guard()` | `get_link` | `storage` | — |
+| `/creatures/secretGrant` | `apps/aseman-node/src/shell/api/actions/creature.rs::secret_grant` | `user_guard()` | `get_link`, `put_link` | — | — |
+| `/creatures/secretList` | `apps/aseman-node/src/shell/api/actions/creature.rs::secret_list` | `user_guard()` | `get_by_prefix` | — | — |
+| `/creatures/secretListGranted` | `apps/aseman-node/src/shell/api/actions/creature.rs::secret_list_granted` | `user_guard()` | — | — | — |
+| `/creatures/secretPut` | `apps/aseman-node/src/shell/api/actions/creature.rs::secret_put` | `user_guard()` | `put_link` | `storage` | — |
+| `/creatures/secretRevoke` | `apps/aseman-node/src/shell/api/actions/creature.rs::secret_revoke` | `user_guard()` | `del_key` | — | — |
+| `/creatures/settleHold` | `apps/aseman-node/src/shell/api/actions/creature/finance.rs::settle_hold` | `finance_guard()` | `get_link`, `put_link` | — | — |
+| `/creatures/settlePool` | `apps/aseman-node/src/shell/api/actions/creature/finance.rs::settle_pool` | `finance_guard()` | `get_json`, `get_link`, `put_json`, `put_link` | — | — |
+| `/creatures/signal` | `apps/aseman-node/src/shell/api/actions/creature.rs::signal` | `user_guard()` | — | `signaler` | — |
+| `/creatures/startHold` | `apps/aseman-node/src/shell/api/actions/creature/finance.rs::start_hold` | `finance_guard()` | `get_link`, `put_link` | — | — |
+| `/creatures/transfer` | `apps/aseman-node/src/shell/api/actions/creature.rs::transfer` | `finance_guard()` | — | — | — |
+| `/creatures/types` | `apps/aseman-node/src/shell/api/actions/creature.rs::types` | `user_guard()` | — | — | — |
+| `/creatures/update` | `apps/aseman-node/src/shell/api/actions/creature.rs::update` | `user_guard()` | — | — | — |
+| `/gateway/signal` | `apps/aseman-node/src/shell/api/actions/gateway.rs::signal` | `Guard::default()` | — | — | — |
+| `/gateway/subscribe` | `apps/aseman-node/src/shell/api/actions/gateway.rs::subscribe` | `Guard::default()` | — | — | — |
+| `/gateway/unsubscribe` | `apps/aseman-node/src/shell/api/actions/gateway.rs::unsubscribe` | `Guard::default()` | — | — | — |
+| `/machines/closeVmTerminal` | `apps/aseman-node/src/shell/api/actions/program.rs::close_vm_terminal` | `user_guard()` | `del_key` | — | — |
+| `/machines/list` | `apps/aseman-node/src/shell/api/actions/program.rs::list_machines` | `user_guard()` | — | — | — |
+| `/machines/listEntityVms` | `apps/aseman-node/src/shell/api/actions/program.rs::list_entity_vms` | `user_guard()` | `get_link`, `get_links_list` | `vmm` | `vm_host_call` |
+| `/machines/listProgramMachines` | `apps/aseman-node/src/shell/api/actions/program.rs::list_program_machines` | `user_guard()` | — | — | — |
+| `/machines/openVmTerminal` | `apps/aseman-node/src/shell/api/actions/program.rs::open_vm_terminal` | `user_guard()` | `put_link` | — | — |
+| `/machines/readMachineBuilds` | `apps/aseman-node/src/shell/api/actions/program.rs::read_machine_builds` | `user_guard()` | `get_links_list` | — | — |
+| `/machines/readVmLogs` | `apps/aseman-node/src/shell/api/actions/program.rs::read_vm_logs` | `user_guard()` | `get_links_list` | `vmm` | `logs` |
+| `/programs/create` | `apps/aseman-node/src/shell/api/actions/program.rs::create_program` | `user_guard()` | — | — | — |
+| `/programs/delete` | `apps/aseman-node/src/shell/api/actions/program.rs::delete_program` | `user_guard()` | — | — | — |
+| `/programs/deleteEntity` | `apps/aseman-node/src/shell/api/actions/program.rs::delete_program_entity` | `user_guard()` | `del_json`, `del_key`, `get_link` | `vmm` | `set_state` |
+| `/programs/deploy` | `apps/aseman-node/src/shell/api/actions/program.rs::deploy` | `user_guard()` | `put_link` | `storage`, `vmm`, `workloads` | `deploy_conventions`, `runtime_keys` |
+| `/programs/downloadEntity` | `apps/aseman-node/src/shell/api/actions/program.rs::download_entity` | `user_guard()` | — | `storage` | — |
+| `/programs/list` | `apps/aseman-node/src/shell/api/actions/program.rs::list_programs` | `user_guard()` | — | — | — |
+| `/programs/runEntity` | `apps/aseman-node/src/shell/api/actions/program.rs::run_program_entity` | `user_guard()` | `get_link`, `put_json`, `put_link` | `vmm` | `launch`, `offers` |
+| `/programs/stopEntity` | `apps/aseman-node/src/shell/api/actions/program.rs::stop_program_entity` | `user_guard()` | `del_json`, `del_key` | `vmm` | `set_state` |
+| `/programs/update` | `apps/aseman-node/src/shell/api/actions/program.rs::update_program` | `user_guard()` | — | — | — |
+| `/storage/upload` | `apps/aseman-node/src/shell/api/actions/creature.rs::storage_upload` | `user_guard()` | — | `storage` | — |
+| `/stores/getAccess` | `apps/aseman-node/src/shell/api/actions/store.rs::get_access` | `store_guard()` | — | — | — |
+| `/stores/history` | `apps/aseman-node/src/shell/api/actions/store.rs::history` | `store_guard()` | — | `storage` | — |
+| `/stores/setAccess` | `apps/aseman-node/src/shell/api/actions/store.rs::set_access` | `store_guard()` | — | — | — |
+| `/stores/signal` | `apps/aseman-node/src/shell/api/actions/store.rs::signal` | `store_guard()` | — | `storage` | — |
 
 ## Limitations and required follow-up
 

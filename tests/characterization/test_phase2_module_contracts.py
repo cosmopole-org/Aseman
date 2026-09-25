@@ -47,9 +47,9 @@ class PhaseTwoModuleContractTests(unittest.TestCase):
 
     def test_authenticated_admin_edge_is_composed(self) -> None:
         contract = (MODULE / "admin.openapi.yaml").read_text()
-        cli = (ROOT / "cmd/casparctl/src/modules.rs").read_text()
-        server = (ROOT / "node/src/drivers/cluster/server.rs").read_text()
-        backend = (ROOT / "node/src/drivers/module_admin.rs").read_text()
+        cli = (ROOT / "apps/asemanctl/src/cli/modules.rs").read_text()
+        server = (ROOT / "apps/aseman-node/src/drivers/cluster/server.rs").read_text()
+        backend = (ROOT / "apps/aseman-node/src/drivers/module_admin.rs").read_text()
         self.assertIn("bearerAuth", contract)
         self.assertIn("artifactBase64", cli)
         self.assertIn("/v1/admin/modules", server)

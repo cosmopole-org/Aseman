@@ -27,7 +27,7 @@ use rcgen::{CertificateParams, KeyPair};
 use rustls::pki_types::{PrivateKeyDer, PrivatePkcs8KeyDer};
 use sha2::{Digest, Sha256};
 
-const COUNTER: &[u8] = include_bytes!("../../../../vms/javascript/examples/counter.js");
+const COUNTER: &[u8] = include_bytes!("../../../../modules/runtime/javascript/examples/counter.js");
 
 #[derive(Default)]
 struct Node {

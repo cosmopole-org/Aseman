@@ -3,3 +3,12 @@ xtask = "run --package xtask --"
 
 [build]
 incremental = true
+
+# The pinned toolchain builds the native RocksDB dependency with clang. The GNU
+# assembler shipped with recent binutils (2.46) hits a BFD assertion while
+# assembling RocksDB's C++ objects, so gcc-based native builds are not reliable
+# on the supported host images. Keep every `cargo` invocation (fast and full)
+# using the same compiler so the native dependency is built once.
+[env]
+CC = "clang"
+CXX = "clang++"

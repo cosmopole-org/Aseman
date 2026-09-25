@@ -38,6 +38,15 @@ one machine profile, and a deadline. The agent checks:
 
 A request whose grant does not cover it is refused. There is no "trusted caller" path.
 
+The A603 request body is `{ "key_epoch", "grant", "signature" }`. `signature` is an
+unpadded-base64url Ed25519 signature over the bytes
+`UTF8("aseman-vmm-agent-grant-v1") || 0x00 || canonical_json({key_epoch, grant})`; the object field
+order is exactly the declared order and the grant uses its Rust/domain field order.
+The configured VMM epoch must match before signature verification. Requests are
+`POST /v1/allocations/{allocation}/{operation}` and are bounded to the configured body
+limit. The listener refuses non-loopback binds and closes an mTLS connection unless
+the leaf certificate SHA-256 appears in its explicit client allowlist.
+
 ## Operations
 
 | Operation | What it does |

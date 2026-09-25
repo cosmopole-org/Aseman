@@ -10,7 +10,7 @@ This document turns cleanliness into verifiable exit criteria rather than subjec
 
 The following are triage indicators, not standalone defect counts; matches include tests and legitimate low-level code:
 
-- `node/src/main.rs` globally allows dead code, unused imports, module inception, and type complexity.
+- `apps/aseman-node/src/main.rs` globally allows dead code, unused imports, module inception, and type complexity.
 - The repository contains 16 explicit `dead_code` allowances.
 - Textual scans find approximately 1,819 `unwrap`/`expect` calls and 35 `unsafe` references across Rust sources; each production occurrence requires classification.
 - The node contains approximately 39 thread sleeps and 54 direct thread spawns, including tests, background polling, and runtime logic.

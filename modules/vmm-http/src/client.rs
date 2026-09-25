@@ -10,7 +10,9 @@ use aseman_contracts::vmm::{
     LifecycleCommand as WireCommand, Operation, Page, Problem, ProblemCode, UpdateSpec, Workload,
     WorkloadEvent,
 };
-use aseman_domain::vmm::{Endpoint, LogRecord, OperationRecord, WorkloadRecord, WorkloadSpec};
+use aseman_domain::vmm::{
+    Endpoint, LogRecord, OperationRecord, Usage, WorkloadRecord, WorkloadSpec,
+};
 use aseman_domain::{Generation, OperationId, WorkloadId};
 use aseman_ports::vmm::{
     BackendDescription, EventBatch, LifecycleCommand, NewWorkload, VmmClient, WorkloadFilter,
@@ -478,6 +480,10 @@ impl VmmClient for HttpVmmClient {
     fn endpoints(&self, id: WorkloadId) -> PortResult<Vec<Endpoint>> {
         let list: EndpointList = self.get(&format!("/v1/workloads/{id}/endpoints"))?;
         Ok(list.items)
+    }
+
+    fn usage(&self, id: WorkloadId) -> PortResult<Usage> {
+        self.get(&format!("/v1/workloads/{id}/usage"))
     }
 
     fn verify(&self, runtime: &str, request: &str, idempotency_key: &str) -> PortResult<String> {

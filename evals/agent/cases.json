@@ -1,0 +1,42 @@
+{
+  "version": 1,
+  "cases": [
+    {
+      "id": "public-action-owner",
+      "question": "Where are public routes admitted, authenticated, authorized, and executed?",
+      "authorities": [
+        "contracts/public/openapi.json",
+        "modules/network/http/src/lib.rs",
+        "crates/aseman-application/src/public_action.rs"
+      ],
+      "verification": "cargo test -p aseman-public-http -p aseman-public-service"
+    },
+    {
+      "id": "guest-tenancy",
+      "question": "May a workload select a database or provider role?",
+      "authorities": [
+        "docs/decisions/0001-creature-isolated-guest-databases.md",
+        "crates/aseman-application/src/guest.rs"
+      ],
+      "verification": "cargo test -p aseman-application guest"
+    },
+    {
+      "id": "desired-observed-workload",
+      "question": "Which component owns desired workload state and which owns observed runtime state?",
+      "authorities": [
+        "docs/architecture/state-authority.md",
+        "crates/aseman-domain/src/vmm.rs"
+      ],
+      "verification": "cargo test -p aseman-domain vmm"
+    },
+    {
+      "id": "provider-dependency",
+      "question": "Can application code import a PostgreSQL or runtime adapter?",
+      "authorities": [
+        "docs/development/dependency-policy.md",
+        "xtask/src/main.rs"
+      ],
+      "verification": "cargo xtask arch"
+    }
+  ]
+}

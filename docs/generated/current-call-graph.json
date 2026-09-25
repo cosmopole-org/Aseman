@@ -11,85 +11,85 @@
   "actions": [
     {
       "guard_expression": "Guard::default()",
-      "handler": "node/src/shell/api/actions/dummy.rs::hello",
+      "handler": "apps/aseman-node/src/shell/api/actions/dummy.rs::hello",
       "models": [],
       "path": "/api/hello",
       "request_type": "HelloInput",
       "routes_via_chain": false,
       "services": [],
-      "source": "node/src/shell/api/actions/dummy.rs:28",
+      "source": "apps/aseman-node/src/shell/api/actions/dummy.rs:28",
       "spawns_background_work": false,
       "transaction_operations": [],
       "vmm_operations": []
     },
     {
       "guard_expression": "Guard::default()",
-      "handler": "node/src/shell/api/actions/dummy.rs::ping",
+      "handler": "apps/aseman-node/src/shell/api/actions/dummy.rs::ping",
       "models": [],
       "path": "/api/ping",
       "request_type": "HelloInput",
       "routes_via_chain": false,
       "services": [],
-      "source": "node/src/shell/api/actions/dummy.rs:58",
+      "source": "apps/aseman-node/src/shell/api/actions/dummy.rs:58",
       "spawns_background_work": true,
       "transaction_operations": [],
       "vmm_operations": []
     },
     {
       "guard_expression": "Guard::default()",
-      "handler": "node/src/shell/api/actions/dummy.rs::time",
+      "handler": "apps/aseman-node/src/shell/api/actions/dummy.rs::time",
       "models": [],
       "path": "/api/time",
       "request_type": "HelloInput",
       "routes_via_chain": false,
       "services": [],
-      "source": "node/src/shell/api/actions/dummy.rs:43",
+      "source": "apps/aseman-node/src/shell/api/actions/dummy.rs:43",
       "spawns_background_work": false,
       "transaction_operations": [],
       "vmm_operations": []
     },
     {
       "guard_expression": "Guard::default()",
-      "handler": "node/src/shell/api/actions/auth.rs::get_server_public_key",
+      "handler": "apps/aseman-node/src/shell/api/actions/auth.rs::get_server_public_key",
       "models": [],
       "path": "/auths/getServerPublicKey",
       "request_type": "GetServerKeyInput",
       "routes_via_chain": false,
       "services": [],
-      "source": "node/src/shell/api/actions/auth.rs:38",
+      "source": "apps/aseman-node/src/shell/api/actions/auth.rs:38",
       "spawns_background_work": false,
       "transaction_operations": [],
       "vmm_operations": []
     },
     {
       "guard_expression": "Guard::default()",
-      "handler": "node/src/shell/api/actions/auth.rs::get_servers_map",
+      "handler": "apps/aseman-node/src/shell/api/actions/auth.rs::get_servers_map",
       "models": [],
       "path": "/auths/getServersMap",
       "request_type": "GetServersMapInput",
       "routes_via_chain": false,
       "services": [],
-      "source": "node/src/shell/api/actions/auth.rs:54",
+      "source": "apps/aseman-node/src/shell/api/actions/auth.rs:54",
       "spawns_background_work": false,
       "transaction_operations": [],
       "vmm_operations": []
     },
     {
       "guard_expression": "user_guard()",
-      "handler": "node/src/shell/api/actions/creature.rs::authenticate",
+      "handler": "apps/aseman-node/src/shell/api/actions/creature.rs::authenticate",
       "models": [],
       "path": "/creatures/authenticate",
       "request_type": "AuthenticateInput",
       "routes_via_chain": false,
       "services": [],
-      "source": "node/src/shell/api/actions/creature.rs:498",
+      "source": "apps/aseman-node/src/shell/api/actions/creature.rs:498",
       "spawns_background_work": false,
       "transaction_operations": [],
       "vmm_operations": []
     },
     {
       "guard_expression": "user_guard()",
-      "handler": "node/src/shell/api/actions/creature.rs::check_sign",
+      "handler": "apps/aseman-node/src/shell/api/actions/creature.rs::check_sign",
       "models": [],
       "path": "/creatures/checkSign",
       "request_type": "CheckSignInput",
@@ -97,7 +97,7 @@
       "services": [
         "security"
       ],
-      "source": "node/src/shell/api/actions/creature.rs:634",
+      "source": "apps/aseman-node/src/shell/api/actions/creature.rs:634",
       "spawns_background_work": false,
       "transaction_operations": [
         "get_link"
@@ -106,13 +106,13 @@
     },
     {
       "guard_expression": "finance_guard()",
-      "handler": "node/src/shell/api/actions/creature/finance.rs::close_pool",
+      "handler": "apps/aseman-node/src/shell/api/actions/creature/finance.rs::close_pool",
       "models": [],
       "path": "/creatures/closePool",
       "request_type": "ClosePoolInput",
       "routes_via_chain": false,
       "services": [],
-      "source": "node/src/shell/api/actions/creature/finance.rs:2524",
+      "source": "apps/aseman-node/src/shell/api/actions/creature/finance.rs:2526",
       "spawns_background_work": false,
       "transaction_operations": [
         "get_link",
@@ -122,7 +122,7 @@
     },
     {
       "guard_expression": "user_guard()",
-      "handler": "node/src/shell/api/actions/creature.rs::consume_lock",
+      "handler": "apps/aseman-node/src/shell/api/actions/creature.rs::consume_lock",
       "models": [
         "Creature"
       ],
@@ -132,7 +132,7 @@
       "services": [
         "security"
       ],
-      "source": "node/src/shell/api/actions/creature.rs:1032",
+      "source": "apps/aseman-node/src/shell/api/actions/creature.rs:1032",
       "spawns_background_work": false,
       "transaction_operations": [
         "del_json",
@@ -143,7 +143,7 @@
     },
     {
       "guard_expression": "anon_guard()",
-      "handler": "node/src/shell/api/actions/creature.rs::create",
+      "handler": "apps/aseman-node/src/shell/api/actions/creature.rs::create",
       "models": [
         "Session"
       ],
@@ -151,20 +151,20 @@
       "request_type": "CreatureCreateInput",
       "routes_via_chain": false,
       "services": [],
-      "source": "node/src/shell/api/actions/creature.rs:198",
+      "source": "apps/aseman-node/src/shell/api/actions/creature.rs:198",
       "spawns_background_work": false,
       "transaction_operations": [],
       "vmm_operations": []
     },
     {
       "guard_expression": "finance_guard()",
-      "handler": "node/src/shell/api/actions/creature/finance.rs::create_hold",
+      "handler": "apps/aseman-node/src/shell/api/actions/creature/finance.rs::create_hold",
       "models": [],
       "path": "/creatures/createHold",
       "request_type": "CreateHoldInput",
       "routes_via_chain": false,
       "services": [],
-      "source": "node/src/shell/api/actions/creature/finance.rs:1118",
+      "source": "apps/aseman-node/src/shell/api/actions/creature/finance.rs:1120",
       "spawns_background_work": false,
       "transaction_operations": [
         "get_json",
@@ -175,13 +175,13 @@
     },
     {
       "guard_expression": "finance_guard()",
-      "handler": "node/src/shell/api/actions/creature/finance.rs::debit_pool",
+      "handler": "apps/aseman-node/src/shell/api/actions/creature/finance.rs::debit_pool",
       "models": [],
       "path": "/creatures/debitPool",
       "request_type": "DebitPoolInput",
       "routes_via_chain": false,
       "services": [],
-      "source": "node/src/shell/api/actions/creature/finance.rs:3070",
+      "source": "apps/aseman-node/src/shell/api/actions/creature/finance.rs:3072",
       "spawns_background_work": false,
       "transaction_operations": [
         "get_json",
@@ -193,7 +193,7 @@
     },
     {
       "guard_expression": "user_guard()",
-      "handler": "node/src/shell/api/actions/creature.rs::delete",
+      "handler": "apps/aseman-node/src/shell/api/actions/creature.rs::delete",
       "models": [
         "Store"
       ],
@@ -201,7 +201,7 @@
       "request_type": "DeleteInput",
       "routes_via_chain": false,
       "services": [],
-      "source": "node/src/shell/api/actions/creature.rs:1305",
+      "source": "apps/aseman-node/src/shell/api/actions/creature.rs:1305",
       "spawns_background_work": false,
       "transaction_operations": [
         "del_key",
@@ -211,91 +211,91 @@
     },
     {
       "guard_expression": "user_guard()",
-      "handler": "node/src/shell/api/actions/creature.rs::find",
+      "handler": "apps/aseman-node/src/shell/api/actions/creature.rs::find",
       "models": [],
       "path": "/creatures/find",
       "request_type": "FindInput",
       "routes_via_chain": false,
       "services": [],
-      "source": "node/src/shell/api/actions/creature.rs:1452",
+      "source": "apps/aseman-node/src/shell/api/actions/creature.rs:1452",
       "spawns_background_work": false,
       "transaction_operations": [],
       "vmm_operations": []
     },
     {
       "guard_expression": "user_guard()",
-      "handler": "node/src/shell/api/actions/creature.rs::get",
+      "handler": "apps/aseman-node/src/shell/api/actions/creature.rs::get",
       "models": [],
       "path": "/creatures/get",
       "request_type": "GetInput",
       "routes_via_chain": false,
       "services": [],
-      "source": "node/src/shell/api/actions/creature.rs:250",
+      "source": "apps/aseman-node/src/shell/api/actions/creature.rs:250",
       "spawns_background_work": false,
       "transaction_operations": [],
       "vmm_operations": []
     },
     {
       "guard_expression": "user_guard()",
-      "handler": "node/src/shell/api/actions/creature.rs::get_by_username",
+      "handler": "apps/aseman-node/src/shell/api/actions/creature.rs::get_by_username",
       "models": [],
       "path": "/creatures/getByUsername",
       "request_type": "GetByUsernameInput",
       "routes_via_chain": false,
       "services": [],
-      "source": "node/src/shell/api/actions/creature.rs:1425",
+      "source": "apps/aseman-node/src/shell/api/actions/creature.rs:1425",
       "spawns_background_work": false,
       "transaction_operations": [],
       "vmm_operations": []
     },
     {
       "guard_expression": "finance_guard()",
-      "handler": "node/src/shell/api/actions/creature/finance.rs::get_financial_account",
+      "handler": "apps/aseman-node/src/shell/api/actions/creature/finance.rs::get_financial_account",
       "models": [],
       "path": "/creatures/getFinancialAccount",
       "request_type": "GetFinancialAccountInput",
       "routes_via_chain": false,
       "services": [],
-      "source": "node/src/shell/api/actions/creature/finance.rs:1977",
+      "source": "apps/aseman-node/src/shell/api/actions/creature/finance.rs:1979",
       "spawns_background_work": false,
       "transaction_operations": [],
       "vmm_operations": []
     },
     {
       "guard_expression": "finance_guard()",
-      "handler": "node/src/shell/api/actions/creature/finance.rs::get_hold",
+      "handler": "apps/aseman-node/src/shell/api/actions/creature/finance.rs::get_hold",
       "models": [],
       "path": "/creatures/getHold",
       "request_type": "GetHoldInput",
       "routes_via_chain": false,
       "services": [],
-      "source": "node/src/shell/api/actions/creature/finance.rs:1846",
+      "source": "apps/aseman-node/src/shell/api/actions/creature/finance.rs:1848",
       "spawns_background_work": false,
       "transaction_operations": [],
       "vmm_operations": []
     },
     {
       "guard_expression": "user_guard()",
-      "handler": "node/src/shell/api/actions/creature.rs::list",
+      "handler": "apps/aseman-node/src/shell/api/actions/creature.rs::list",
       "models": [],
       "path": "/creatures/list",
       "request_type": "ListInput",
       "routes_via_chain": false,
       "services": [],
-      "source": "node/src/shell/api/actions/creature.rs:269",
+      "source": "apps/aseman-node/src/shell/api/actions/creature.rs:269",
       "spawns_background_work": false,
       "transaction_operations": [],
       "vmm_operations": []
     },
     {
       "guard_expression": "finance_guard()",
-      "handler": "node/src/shell/api/actions/creature/finance.rs::list_payouts",
+      "handler": "apps/aseman-node/src/shell/api/actions/creature/finance.rs::list_payouts",
       "models": [],
       "path": "/creatures/listPayouts",
       "request_type": "ListPayoutsInput",
       "routes_via_chain": false,
       "services": [],
-      "source": "node/src/shell/api/actions/creature/finance.rs:2245",
+      "source": "apps/aseman-node/src/shell/api/actions/creature/finance.rs:2247",
       "spawns_background_work": false,
       "transaction_operations": [
         "get_by_prefix"
@@ -304,7 +304,7 @@
     },
     {
       "guard_expression": "user_guard()",
-      "handler": "node/src/shell/api/actions/creature.rs::lock_token",
+      "handler": "apps/aseman-node/src/shell/api/actions/creature.rs::lock_token",
       "models": [
         "Creature"
       ],
@@ -312,7 +312,7 @@
       "request_type": "LockTokenInput",
       "routes_via_chain": false,
       "services": [],
-      "source": "node/src/shell/api/actions/creature.rs:946",
+      "source": "apps/aseman-node/src/shell/api/actions/creature.rs:946",
       "spawns_background_work": false,
       "transaction_operations": [
         "put_json"
@@ -321,7 +321,7 @@
     },
     {
       "guard_expression": "anon_guard()",
-      "handler": "node/src/shell/api/actions/creature.rs::login",
+      "handler": "apps/aseman-node/src/shell/api/actions/creature.rs::login",
       "models": [
         "Session"
       ],
@@ -329,7 +329,7 @@
       "request_type": "LoginInput",
       "routes_via_chain": false,
       "services": [],
-      "source": "node/src/shell/api/actions/creature.rs:1192",
+      "source": "apps/aseman-node/src/shell/api/actions/creature.rs:1192",
       "spawns_background_work": false,
       "transaction_operations": [
         "del_key",
@@ -341,26 +341,26 @@
     },
     {
       "guard_expression": "user_guard()",
-      "handler": "node/src/shell/api/actions/creature.rs::meta",
+      "handler": "apps/aseman-node/src/shell/api/actions/creature.rs::meta",
       "models": [],
       "path": "/creatures/meta",
       "request_type": "MetaInput",
       "routes_via_chain": false,
       "services": [],
-      "source": "node/src/shell/api/actions/creature.rs:1369",
+      "source": "apps/aseman-node/src/shell/api/actions/creature.rs:1369",
       "spawns_background_work": false,
       "transaction_operations": [],
       "vmm_operations": []
     },
     {
       "guard_expression": "user_guard()",
-      "handler": "node/src/shell/api/actions/creature.rs::mint",
+      "handler": "apps/aseman-node/src/shell/api/actions/creature.rs::mint",
       "models": [],
       "path": "/creatures/mint",
       "request_type": "MintInput",
       "routes_via_chain": false,
       "services": [],
-      "source": "node/src/shell/api/actions/creature.rs:539",
+      "source": "apps/aseman-node/src/shell/api/actions/creature.rs:539",
       "spawns_background_work": false,
       "transaction_operations": [
         "get_link",
@@ -370,13 +370,13 @@
     },
     {
       "guard_expression": "finance_guard()",
-      "handler": "node/src/shell/api/actions/creature/finance.rs::open_pool",
+      "handler": "apps/aseman-node/src/shell/api/actions/creature/finance.rs::open_pool",
       "models": [],
       "path": "/creatures/openPool",
       "request_type": "OpenPoolInput",
       "routes_via_chain": false,
       "services": [],
-      "source": "node/src/shell/api/actions/creature/finance.rs:2312",
+      "source": "apps/aseman-node/src/shell/api/actions/creature/finance.rs:2314",
       "spawns_background_work": false,
       "transaction_operations": [
         "get_link",
@@ -386,13 +386,13 @@
     },
     {
       "guard_expression": "finance_guard()",
-      "handler": "node/src/shell/api/actions/creature/finance.rs::payment_adjustment",
+      "handler": "apps/aseman-node/src/shell/api/actions/creature/finance.rs::payment_adjustment",
       "models": [],
       "path": "/creatures/paymentAdjustment",
       "request_type": "PaymentAdjustmentInput",
       "routes_via_chain": false,
       "services": [],
-      "source": "node/src/shell/api/actions/creature/finance.rs:3981",
+      "source": "apps/aseman-node/src/shell/api/actions/creature/finance.rs:3995",
       "spawns_background_work": false,
       "transaction_operations": [
         "get_link",
@@ -402,13 +402,13 @@
     },
     {
       "guard_expression": "finance_guard()",
-      "handler": "node/src/shell/api/actions/creature/finance.rs::publish_finance_catalog",
+      "handler": "apps/aseman-node/src/shell/api/actions/creature/finance.rs::publish_finance_catalog",
       "models": [],
       "path": "/creatures/publishFinanceCatalog",
       "request_type": "PublishFinanceCatalogInput",
       "routes_via_chain": false,
       "services": [],
-      "source": "node/src/shell/api/actions/creature/finance.rs:430",
+      "source": "apps/aseman-node/src/shell/api/actions/creature/finance.rs:432",
       "spawns_background_work": false,
       "transaction_operations": [
         "get_json",
@@ -418,13 +418,13 @@
     },
     {
       "guard_expression": "finance_guard()",
-      "handler": "node/src/shell/api/actions/creature/finance.rs::publish_finance_quote",
+      "handler": "apps/aseman-node/src/shell/api/actions/creature/finance.rs::publish_finance_quote",
       "models": [],
       "path": "/creatures/publishFinanceQuote",
       "request_type": "PublishFinanceQuoteInput",
       "routes_via_chain": false,
       "services": [],
-      "source": "node/src/shell/api/actions/creature/finance.rs:907",
+      "source": "apps/aseman-node/src/shell/api/actions/creature/finance.rs:909",
       "spawns_background_work": false,
       "transaction_operations": [
         "get_json",
@@ -434,13 +434,13 @@
     },
     {
       "guard_expression": "finance_guard()",
-      "handler": "node/src/shell/api/actions/creature/finance.rs::reconcile_financial_system",
+      "handler": "apps/aseman-node/src/shell/api/actions/creature/finance.rs::reconcile_financial_system",
       "models": [],
       "path": "/creatures/reconcileFinancialSystem",
       "request_type": "ReconcileFinancialSystemInput",
       "routes_via_chain": false,
       "services": [],
-      "source": "node/src/shell/api/actions/creature/finance.rs:3313",
+      "source": "apps/aseman-node/src/shell/api/actions/creature/finance.rs:3315",
       "spawns_background_work": false,
       "transaction_operations": [
         "get_by_prefix",
@@ -452,13 +452,13 @@
     },
     {
       "guard_expression": "finance_guard()",
-      "handler": "node/src/shell/api/actions/creature/finance.rs::refresh_pool",
+      "handler": "apps/aseman-node/src/shell/api/actions/creature/finance.rs::refresh_pool",
       "models": [],
       "path": "/creatures/refreshPool",
       "request_type": "RefreshPoolInput",
       "routes_via_chain": false,
       "services": [],
-      "source": "node/src/shell/api/actions/creature/finance.rs:2417",
+      "source": "apps/aseman-node/src/shell/api/actions/creature/finance.rs:2419",
       "spawns_background_work": false,
       "transaction_operations": [
         "get_link",
@@ -468,13 +468,13 @@
     },
     {
       "guard_expression": "finance_guard()",
-      "handler": "node/src/shell/api/actions/creature/finance.rs::register_finance_node",
+      "handler": "apps/aseman-node/src/shell/api/actions/creature/finance.rs::register_finance_node",
       "models": [],
       "path": "/creatures/registerFinanceNode",
       "request_type": "RegisterFinanceNodeInput",
       "routes_via_chain": false,
       "services": [],
-      "source": "node/src/shell/api/actions/creature/finance.rs:547",
+      "source": "apps/aseman-node/src/shell/api/actions/creature/finance.rs:549",
       "spawns_background_work": false,
       "transaction_operations": [
         "put_json"
@@ -483,13 +483,13 @@
     },
     {
       "guard_expression": "finance_guard()",
-      "handler": "node/src/shell/api/actions/creature/finance.rs::register_finance_resource",
+      "handler": "apps/aseman-node/src/shell/api/actions/creature/finance.rs::register_finance_resource",
       "models": [],
       "path": "/creatures/registerFinanceResource",
       "request_type": "RegisterFinanceResourceInput",
       "routes_via_chain": false,
       "services": [],
-      "source": "node/src/shell/api/actions/creature/finance.rs:666",
+      "source": "apps/aseman-node/src/shell/api/actions/creature/finance.rs:668",
       "spawns_background_work": false,
       "transaction_operations": [
         "get_json",
@@ -499,13 +499,13 @@
     },
     {
       "guard_expression": "finance_guard()",
-      "handler": "node/src/shell/api/actions/creature/finance.rs::release_hold",
+      "handler": "apps/aseman-node/src/shell/api/actions/creature/finance.rs::release_hold",
       "models": [],
       "path": "/creatures/releaseHold",
       "request_type": "ReleaseHoldInput",
       "routes_via_chain": false,
       "services": [],
-      "source": "node/src/shell/api/actions/creature/finance.rs:1711",
+      "source": "apps/aseman-node/src/shell/api/actions/creature/finance.rs:1713",
       "spawns_background_work": false,
       "transaction_operations": [
         "get_link",
@@ -515,13 +515,13 @@
     },
     {
       "guard_expression": "finance_guard()",
-      "handler": "node/src/shell/api/actions/creature/finance.rs::release_pool",
+      "handler": "apps/aseman-node/src/shell/api/actions/creature/finance.rs::release_pool",
       "models": [],
       "path": "/creatures/releasePool",
       "request_type": "ReleasePoolInput",
       "routes_via_chain": false,
       "services": [],
-      "source": "node/src/shell/api/actions/creature/finance.rs:2956",
+      "source": "apps/aseman-node/src/shell/api/actions/creature/finance.rs:2958",
       "spawns_background_work": false,
       "transaction_operations": [
         "get_json",
@@ -531,13 +531,13 @@
     },
     {
       "guard_expression": "finance_guard()",
-      "handler": "node/src/shell/api/actions/creature/finance.rs::request_payout",
+      "handler": "apps/aseman-node/src/shell/api/actions/creature/finance.rs::request_payout",
       "models": [],
       "path": "/creatures/requestPayout",
       "request_type": "RequestPayoutInput",
       "routes_via_chain": false,
       "services": [],
-      "source": "node/src/shell/api/actions/creature/finance.rs:2017",
+      "source": "apps/aseman-node/src/shell/api/actions/creature/finance.rs:2019",
       "spawns_background_work": false,
       "transaction_operations": [
         "get_link",
@@ -548,13 +548,13 @@
     },
     {
       "guard_expression": "finance_guard()",
-      "handler": "node/src/shell/api/actions/creature/finance.rs::reserve_pool",
+      "handler": "apps/aseman-node/src/shell/api/actions/creature/finance.rs::reserve_pool",
       "models": [],
       "path": "/creatures/reservePool",
       "request_type": "ReservePoolInput",
       "routes_via_chain": false,
       "services": [],
-      "source": "node/src/shell/api/actions/creature/finance.rs:2625",
+      "source": "apps/aseman-node/src/shell/api/actions/creature/finance.rs:2627",
       "spawns_background_work": false,
       "transaction_operations": [
         "get_json",
@@ -564,13 +564,13 @@
     },
     {
       "guard_expression": "finance_guard()",
-      "handler": "node/src/shell/api/actions/creature/finance.rs::resolve_payout",
+      "handler": "apps/aseman-node/src/shell/api/actions/creature/finance.rs::resolve_payout",
       "models": [],
       "path": "/creatures/resolvePayout",
       "request_type": "ResolvePayoutInput",
       "routes_via_chain": false,
       "services": [],
-      "source": "node/src/shell/api/actions/creature/finance.rs:2123",
+      "source": "apps/aseman-node/src/shell/api/actions/creature/finance.rs:2125",
       "spawns_background_work": false,
       "transaction_operations": [
         "get_link",
@@ -581,13 +581,13 @@
     },
     {
       "guard_expression": "finance_guard()",
-      "handler": "node/src/shell/api/actions/creature/finance.rs::retire_finance_node",
+      "handler": "apps/aseman-node/src/shell/api/actions/creature/finance.rs::retire_finance_node",
       "models": [],
       "path": "/creatures/retireFinanceNode",
       "request_type": "RetireFinanceNodeInput",
       "routes_via_chain": false,
       "services": [],
-      "source": "node/src/shell/api/actions/creature/finance.rs:627",
+      "source": "apps/aseman-node/src/shell/api/actions/creature/finance.rs:629",
       "spawns_background_work": false,
       "transaction_operations": [
         "get_json",
@@ -597,13 +597,13 @@
     },
     {
       "guard_expression": "finance_guard()",
-      "handler": "node/src/shell/api/actions/creature/finance.rs::retire_finance_resource",
+      "handler": "apps/aseman-node/src/shell/api/actions/creature/finance.rs::retire_finance_resource",
       "models": [],
       "path": "/creatures/retireFinanceResource",
       "request_type": "RetireFinanceResourceInput",
       "routes_via_chain": false,
       "services": [],
-      "source": "node/src/shell/api/actions/creature/finance.rs:817",
+      "source": "apps/aseman-node/src/shell/api/actions/creature/finance.rs:819",
       "spawns_background_work": false,
       "transaction_operations": [
         "get_json",
@@ -613,13 +613,13 @@
     },
     {
       "guard_expression": "finance_guard()",
-      "handler": "node/src/shell/api/actions/creature/finance.rs::review_finance_resource",
+      "handler": "apps/aseman-node/src/shell/api/actions/creature/finance.rs::review_finance_resource",
       "models": [],
       "path": "/creatures/reviewFinanceResource",
       "request_type": "ReviewFinanceResourceInput",
       "routes_via_chain": false,
       "services": [],
-      "source": "node/src/shell/api/actions/creature/finance.rs:779",
+      "source": "apps/aseman-node/src/shell/api/actions/creature/finance.rs:781",
       "spawns_background_work": false,
       "transaction_operations": [
         "get_json",
@@ -629,7 +629,7 @@
     },
     {
       "guard_expression": "user_guard()",
-      "handler": "node/src/shell/api/actions/creature.rs::secret_get",
+      "handler": "apps/aseman-node/src/shell/api/actions/creature.rs::secret_get",
       "models": [],
       "path": "/creatures/secretGet",
       "request_type": "SecretGetInput",
@@ -637,7 +637,7 @@
       "services": [
         "storage"
       ],
-      "source": "node/src/shell/api/actions/creature.rs:744",
+      "source": "apps/aseman-node/src/shell/api/actions/creature.rs:744",
       "spawns_background_work": false,
       "transaction_operations": [
         "get_link"
@@ -646,13 +646,13 @@
     },
     {
       "guard_expression": "user_guard()",
-      "handler": "node/src/shell/api/actions/creature.rs::secret_grant",
+      "handler": "apps/aseman-node/src/shell/api/actions/creature.rs::secret_grant",
       "models": [],
       "path": "/creatures/secretGrant",
       "request_type": "SecretGrantInput",
       "routes_via_chain": false,
       "services": [],
-      "source": "node/src/shell/api/actions/creature.rs:786",
+      "source": "apps/aseman-node/src/shell/api/actions/creature.rs:786",
       "spawns_background_work": false,
       "transaction_operations": [
         "get_link",
@@ -662,13 +662,13 @@
     },
     {
       "guard_expression": "user_guard()",
-      "handler": "node/src/shell/api/actions/creature.rs::secret_list",
+      "handler": "apps/aseman-node/src/shell/api/actions/creature.rs::secret_list",
       "models": [],
       "path": "/creatures/secretList",
       "request_type": "SecretListInput",
       "routes_via_chain": false,
       "services": [],
-      "source": "node/src/shell/api/actions/creature.rs:866",
+      "source": "apps/aseman-node/src/shell/api/actions/creature.rs:866",
       "spawns_background_work": false,
       "transaction_operations": [
         "get_by_prefix"
@@ -677,20 +677,20 @@
     },
     {
       "guard_expression": "user_guard()",
-      "handler": "node/src/shell/api/actions/creature.rs::secret_list_granted",
+      "handler": "apps/aseman-node/src/shell/api/actions/creature.rs::secret_list_granted",
       "models": [],
       "path": "/creatures/secretListGranted",
       "request_type": "SecretListGrantedInput",
       "routes_via_chain": false,
       "services": [],
-      "source": "node/src/shell/api/actions/creature.rs:851",
+      "source": "apps/aseman-node/src/shell/api/actions/creature.rs:851",
       "spawns_background_work": false,
       "transaction_operations": [],
       "vmm_operations": []
     },
     {
       "guard_expression": "user_guard()",
-      "handler": "node/src/shell/api/actions/creature.rs::secret_put",
+      "handler": "apps/aseman-node/src/shell/api/actions/creature.rs::secret_put",
       "models": [],
       "path": "/creatures/secretPut",
       "request_type": "SecretPutInput",
@@ -698,7 +698,7 @@
       "services": [
         "storage"
       ],
-      "source": "node/src/shell/api/actions/creature.rs:717",
+      "source": "apps/aseman-node/src/shell/api/actions/creature.rs:717",
       "spawns_background_work": false,
       "transaction_operations": [
         "put_link"
@@ -707,13 +707,13 @@
     },
     {
       "guard_expression": "user_guard()",
-      "handler": "node/src/shell/api/actions/creature.rs::secret_revoke",
+      "handler": "apps/aseman-node/src/shell/api/actions/creature.rs::secret_revoke",
       "models": [],
       "path": "/creatures/secretRevoke",
       "request_type": "SecretRevokeInput",
       "routes_via_chain": false,
       "services": [],
-      "source": "node/src/shell/api/actions/creature.rs:825",
+      "source": "apps/aseman-node/src/shell/api/actions/creature.rs:825",
       "spawns_background_work": false,
       "transaction_operations": [
         "del_key"
@@ -722,13 +722,13 @@
     },
     {
       "guard_expression": "finance_guard()",
-      "handler": "node/src/shell/api/actions/creature/finance.rs::settle_hold",
+      "handler": "apps/aseman-node/src/shell/api/actions/creature/finance.rs::settle_hold",
       "models": [],
       "path": "/creatures/settleHold",
       "request_type": "SettleHoldInput",
       "routes_via_chain": false,
       "services": [],
-      "source": "node/src/shell/api/actions/creature/finance.rs:1453",
+      "source": "apps/aseman-node/src/shell/api/actions/creature/finance.rs:1455",
       "spawns_background_work": false,
       "transaction_operations": [
         "get_link",
@@ -738,13 +738,13 @@
     },
     {
       "guard_expression": "finance_guard()",
-      "handler": "node/src/shell/api/actions/creature/finance.rs::settle_pool",
+      "handler": "apps/aseman-node/src/shell/api/actions/creature/finance.rs::settle_pool",
       "models": [],
       "path": "/creatures/settlePool",
       "request_type": "SettlePoolInput",
       "routes_via_chain": false,
       "services": [],
-      "source": "node/src/shell/api/actions/creature/finance.rs:2730",
+      "source": "apps/aseman-node/src/shell/api/actions/creature/finance.rs:2732",
       "spawns_background_work": false,
       "transaction_operations": [
         "get_json",
@@ -756,7 +756,7 @@
     },
     {
       "guard_expression": "user_guard()",
-      "handler": "node/src/shell/api/actions/creature.rs::signal",
+      "handler": "apps/aseman-node/src/shell/api/actions/creature.rs::signal",
       "models": [
         "Creature",
         "Store"
@@ -767,20 +767,20 @@
       "services": [
         "signaler"
       ],
-      "source": "node/src/shell/api/actions/creature.rs:390",
+      "source": "apps/aseman-node/src/shell/api/actions/creature.rs:390",
       "spawns_background_work": true,
       "transaction_operations": [],
       "vmm_operations": []
     },
     {
       "guard_expression": "finance_guard()",
-      "handler": "node/src/shell/api/actions/creature/finance.rs::start_hold",
+      "handler": "apps/aseman-node/src/shell/api/actions/creature/finance.rs::start_hold",
       "models": [],
       "path": "/creatures/startHold",
       "request_type": "StartHoldInput",
       "routes_via_chain": false,
       "services": [],
-      "source": "node/src/shell/api/actions/creature/finance.rs:1373",
+      "source": "apps/aseman-node/src/shell/api/actions/creature/finance.rs:1375",
       "spawns_background_work": false,
       "transaction_operations": [
         "get_link",
@@ -790,91 +790,91 @@
     },
     {
       "guard_expression": "finance_guard()",
-      "handler": "node/src/shell/api/actions/creature.rs::transfer",
+      "handler": "apps/aseman-node/src/shell/api/actions/creature.rs::transfer",
       "models": [],
       "path": "/creatures/transfer",
       "request_type": "TransferInput",
       "routes_via_chain": false,
       "services": [],
-      "source": "node/src/shell/api/actions/creature.rs:291",
+      "source": "apps/aseman-node/src/shell/api/actions/creature.rs:291",
       "spawns_background_work": false,
       "transaction_operations": [],
       "vmm_operations": []
     },
     {
       "guard_expression": "user_guard()",
-      "handler": "node/src/shell/api/actions/creature.rs::types",
+      "handler": "apps/aseman-node/src/shell/api/actions/creature.rs::types",
       "models": [],
       "path": "/creatures/types",
       "request_type": "ListInput",
       "routes_via_chain": false,
       "services": [],
-      "source": "node/src/shell/api/actions/creature.rs:1482",
+      "source": "apps/aseman-node/src/shell/api/actions/creature.rs:1482",
       "spawns_background_work": false,
       "transaction_operations": [],
       "vmm_operations": []
     },
     {
       "guard_expression": "user_guard()",
-      "handler": "node/src/shell/api/actions/creature.rs::update",
+      "handler": "apps/aseman-node/src/shell/api/actions/creature.rs::update",
       "models": [],
       "path": "/creatures/update",
       "request_type": "UpdateInput",
       "routes_via_chain": false,
       "services": [],
-      "source": "node/src/shell/api/actions/creature.rs:1341",
+      "source": "apps/aseman-node/src/shell/api/actions/creature.rs:1341",
       "spawns_background_work": false,
       "transaction_operations": [],
       "vmm_operations": []
     },
     {
       "guard_expression": "Guard::default()",
-      "handler": "node/src/shell/api/actions/gateway.rs::signal",
+      "handler": "apps/aseman-node/src/shell/api/actions/gateway.rs::signal",
       "models": [],
       "path": "/gateway/signal",
       "request_type": "GatewaySignalInput",
       "routes_via_chain": false,
       "services": [],
-      "source": "node/src/shell/api/actions/gateway.rs:247",
+      "source": "apps/aseman-node/src/shell/api/actions/gateway.rs:247",
       "spawns_background_work": true,
       "transaction_operations": [],
       "vmm_operations": []
     },
     {
       "guard_expression": "Guard::default()",
-      "handler": "node/src/shell/api/actions/gateway.rs::subscribe",
+      "handler": "apps/aseman-node/src/shell/api/actions/gateway.rs::subscribe",
       "models": [],
       "path": "/gateway/subscribe",
       "request_type": "GatewaySubscribeInput",
       "routes_via_chain": false,
       "services": [],
-      "source": "node/src/shell/api/actions/gateway.rs:177",
+      "source": "apps/aseman-node/src/shell/api/actions/gateway.rs:177",
       "spawns_background_work": false,
       "transaction_operations": [],
       "vmm_operations": []
     },
     {
       "guard_expression": "Guard::default()",
-      "handler": "node/src/shell/api/actions/gateway.rs::unsubscribe",
+      "handler": "apps/aseman-node/src/shell/api/actions/gateway.rs::unsubscribe",
       "models": [],
       "path": "/gateway/unsubscribe",
       "request_type": "GatewayUnsubscribeInput",
       "routes_via_chain": false,
       "services": [],
-      "source": "node/src/shell/api/actions/gateway.rs:223",
+      "source": "apps/aseman-node/src/shell/api/actions/gateway.rs:223",
       "spawns_background_work": false,
       "transaction_operations": [],
       "vmm_operations": []
     },
     {
       "guard_expression": "user_guard()",
-      "handler": "node/src/shell/api/actions/program.rs::close_vm_terminal",
+      "handler": "apps/aseman-node/src/shell/api/actions/program.rs::close_vm_terminal",
       "models": [],
       "path": "/machines/closeVmTerminal",
       "request_type": "VmTerminalInput",
       "routes_via_chain": false,
       "services": [],
-      "source": "node/src/shell/api/actions/program.rs:1078",
+      "source": "apps/aseman-node/src/shell/api/actions/program.rs:1074",
       "spawns_background_work": false,
       "transaction_operations": [
         "del_key"
@@ -883,20 +883,20 @@
     },
     {
       "guard_expression": "user_guard()",
-      "handler": "node/src/shell/api/actions/program.rs::list_machines",
+      "handler": "apps/aseman-node/src/shell/api/actions/program.rs::list_machines",
       "models": [],
       "path": "/machines/list",
       "request_type": "ListInput",
       "routes_via_chain": false,
       "services": [],
-      "source": "node/src/shell/api/actions/program.rs:1435",
+      "source": "apps/aseman-node/src/shell/api/actions/program.rs:1431",
       "spawns_background_work": false,
       "transaction_operations": [],
       "vmm_operations": []
     },
     {
       "guard_expression": "user_guard()",
-      "handler": "node/src/shell/api/actions/program.rs::list_entity_vms",
+      "handler": "apps/aseman-node/src/shell/api/actions/program.rs::list_entity_vms",
       "models": [],
       "path": "/machines/listEntityVms",
       "request_type": "RunProgramEntityInput",
@@ -904,7 +904,7 @@
       "services": [
         "vmm"
       ],
-      "source": "node/src/shell/api/actions/program.rs:931",
+      "source": "apps/aseman-node/src/shell/api/actions/program.rs:927",
       "spawns_background_work": false,
       "transaction_operations": [
         "get_link",
@@ -916,26 +916,26 @@
     },
     {
       "guard_expression": "user_guard()",
-      "handler": "node/src/shell/api/actions/program.rs::list_program_machines",
+      "handler": "apps/aseman-node/src/shell/api/actions/program.rs::list_program_machines",
       "models": [],
       "path": "/machines/listProgramMachines",
       "request_type": "ListAppMachsInput",
       "routes_via_chain": false,
       "services": [],
-      "source": "node/src/shell/api/actions/program.rs:1514",
+      "source": "apps/aseman-node/src/shell/api/actions/program.rs:1510",
       "spawns_background_work": false,
       "transaction_operations": [],
       "vmm_operations": []
     },
     {
       "guard_expression": "user_guard()",
-      "handler": "node/src/shell/api/actions/program.rs::open_vm_terminal",
+      "handler": "apps/aseman-node/src/shell/api/actions/program.rs::open_vm_terminal",
       "models": [],
       "path": "/machines/openVmTerminal",
       "request_type": "VmTerminalInput",
       "routes_via_chain": false,
       "services": [],
-      "source": "node/src/shell/api/actions/program.rs:1042",
+      "source": "apps/aseman-node/src/shell/api/actions/program.rs:1038",
       "spawns_background_work": false,
       "transaction_operations": [
         "put_link"
@@ -944,13 +944,13 @@
     },
     {
       "guard_expression": "user_guard()",
-      "handler": "node/src/shell/api/actions/program.rs::read_machine_builds",
+      "handler": "apps/aseman-node/src/shell/api/actions/program.rs::read_machine_builds",
       "models": [],
       "path": "/machines/readMachineBuilds",
       "request_type": "MachineBuildsInput",
       "routes_via_chain": false,
       "services": [],
-      "source": "node/src/shell/api/actions/program.rs:1111",
+      "source": "apps/aseman-node/src/shell/api/actions/program.rs:1107",
       "spawns_background_work": false,
       "transaction_operations": [
         "get_links_list"
@@ -959,7 +959,7 @@
     },
     {
       "guard_expression": "user_guard()",
-      "handler": "node/src/shell/api/actions/program.rs::read_vm_logs",
+      "handler": "apps/aseman-node/src/shell/api/actions/program.rs::read_vm_logs",
       "models": [],
       "path": "/machines/readVmLogs",
       "request_type": "ReadVmLogsInput",
@@ -967,7 +967,7 @@
       "services": [
         "vmm"
       ],
-      "source": "node/src/shell/api/actions/program.rs:856",
+      "source": "apps/aseman-node/src/shell/api/actions/program.rs:852",
       "spawns_background_work": false,
       "transaction_operations": [
         "get_links_list"
@@ -978,33 +978,33 @@
     },
     {
       "guard_expression": "user_guard()",
-      "handler": "node/src/shell/api/actions/program.rs::create_program",
+      "handler": "apps/aseman-node/src/shell/api/actions/program.rs::create_program",
       "models": [],
       "path": "/programs/create",
       "request_type": "CreateMachineInput",
       "routes_via_chain": false,
       "services": [],
-      "source": "node/src/shell/api/actions/program.rs:471",
+      "source": "apps/aseman-node/src/shell/api/actions/program.rs:467",
       "spawns_background_work": false,
       "transaction_operations": [],
       "vmm_operations": []
     },
     {
       "guard_expression": "user_guard()",
-      "handler": "node/src/shell/api/actions/program.rs::delete_program",
+      "handler": "apps/aseman-node/src/shell/api/actions/program.rs::delete_program",
       "models": [],
       "path": "/programs/delete",
       "request_type": "DeleteProgramInput",
       "routes_via_chain": false,
       "services": [],
-      "source": "node/src/shell/api/actions/program.rs:508",
+      "source": "apps/aseman-node/src/shell/api/actions/program.rs:504",
       "spawns_background_work": false,
       "transaction_operations": [],
       "vmm_operations": []
     },
     {
       "guard_expression": "user_guard()",
-      "handler": "node/src/shell/api/actions/program.rs::delete_program_entity",
+      "handler": "apps/aseman-node/src/shell/api/actions/program.rs::delete_program_entity",
       "models": [],
       "path": "/programs/deleteEntity",
       "request_type": "RunProgramEntityInput",
@@ -1012,7 +1012,7 @@
       "services": [
         "vmm"
       ],
-      "source": "node/src/shell/api/actions/program.rs:767",
+      "source": "apps/aseman-node/src/shell/api/actions/program.rs:763",
       "spawns_background_work": false,
       "transaction_operations": [
         "del_json",
@@ -1025,7 +1025,7 @@
     },
     {
       "guard_expression": "user_guard()",
-      "handler": "node/src/shell/api/actions/program.rs::deploy",
+      "handler": "apps/aseman-node/src/shell/api/actions/program.rs::deploy",
       "models": [],
       "path": "/programs/deploy",
       "request_type": "DeployInput",
@@ -1035,7 +1035,7 @@
         "vmm",
         "workloads"
       ],
-      "source": "node/src/shell/api/actions/program.rs:1184",
+      "source": "apps/aseman-node/src/shell/api/actions/program.rs:1180",
       "spawns_background_work": false,
       "transaction_operations": [
         "put_link"
@@ -1047,7 +1047,7 @@
     },
     {
       "guard_expression": "user_guard()",
-      "handler": "node/src/shell/api/actions/program.rs::download_entity",
+      "handler": "apps/aseman-node/src/shell/api/actions/program.rs::download_entity",
       "models": [],
       "path": "/programs/downloadEntity",
       "request_type": "DownloadEntityInput",
@@ -1055,27 +1055,27 @@
       "services": [
         "storage"
       ],
-      "source": "node/src/shell/api/actions/program.rs:1393",
+      "source": "apps/aseman-node/src/shell/api/actions/program.rs:1389",
       "spawns_background_work": false,
       "transaction_operations": [],
       "vmm_operations": []
     },
     {
       "guard_expression": "user_guard()",
-      "handler": "node/src/shell/api/actions/program.rs::list_programs",
+      "handler": "apps/aseman-node/src/shell/api/actions/program.rs::list_programs",
       "models": [],
       "path": "/programs/list",
       "request_type": "ListInput",
       "routes_via_chain": false,
       "services": [],
-      "source": "node/src/shell/api/actions/program.rs:1492",
+      "source": "apps/aseman-node/src/shell/api/actions/program.rs:1488",
       "spawns_background_work": false,
       "transaction_operations": [],
       "vmm_operations": []
     },
     {
       "guard_expression": "user_guard()",
-      "handler": "node/src/shell/api/actions/program.rs::run_program_entity",
+      "handler": "apps/aseman-node/src/shell/api/actions/program.rs::run_program_entity",
       "models": [],
       "path": "/programs/runEntity",
       "request_type": "RunProgramEntityInput",
@@ -1083,7 +1083,7 @@
       "services": [
         "vmm"
       ],
-      "source": "node/src/shell/api/actions/program.rs:563",
+      "source": "apps/aseman-node/src/shell/api/actions/program.rs:559",
       "spawns_background_work": false,
       "transaction_operations": [
         "get_link",
@@ -1097,7 +1097,7 @@
     },
     {
       "guard_expression": "user_guard()",
-      "handler": "node/src/shell/api/actions/program.rs::stop_program_entity",
+      "handler": "apps/aseman-node/src/shell/api/actions/program.rs::stop_program_entity",
       "models": [],
       "path": "/programs/stopEntity",
       "request_type": "RunProgramEntityInput",
@@ -1105,7 +1105,7 @@
       "services": [
         "vmm"
       ],
-      "source": "node/src/shell/api/actions/program.rs:689",
+      "source": "apps/aseman-node/src/shell/api/actions/program.rs:685",
       "spawns_background_work": false,
       "transaction_operations": [
         "del_json",
@@ -1117,20 +1117,20 @@
     },
     {
       "guard_expression": "user_guard()",
-      "handler": "node/src/shell/api/actions/program.rs::update_program",
+      "handler": "apps/aseman-node/src/shell/api/actions/program.rs::update_program",
       "models": [],
       "path": "/programs/update",
       "request_type": "UpdateProgramInput",
       "routes_via_chain": false,
       "services": [],
-      "source": "node/src/shell/api/actions/program.rs:531",
+      "source": "apps/aseman-node/src/shell/api/actions/program.rs:527",
       "spawns_background_work": false,
       "transaction_operations": [],
       "vmm_operations": []
     },
     {
       "guard_expression": "user_guard()",
-      "handler": "node/src/shell/api/actions/creature.rs::storage_upload",
+      "handler": "apps/aseman-node/src/shell/api/actions/creature.rs::storage_upload",
       "models": [],
       "path": "/storage/upload",
       "request_type": "StorageUploadInput",
@@ -1138,27 +1138,27 @@
       "services": [
         "storage"
       ],
-      "source": "node/src/shell/api/actions/creature.rs:894",
+      "source": "apps/aseman-node/src/shell/api/actions/creature.rs:894",
       "spawns_background_work": false,
       "transaction_operations": [],
       "vmm_operations": []
     },
     {
       "guard_expression": "store_guard()",
-      "handler": "node/src/shell/api/actions/store.rs::get_access",
+      "handler": "apps/aseman-node/src/shell/api/actions/store.rs::get_access",
       "models": [],
       "path": "/stores/getAccess",
       "request_type": "GetAccessInput",
       "routes_via_chain": false,
       "services": [],
-      "source": "node/src/shell/api/actions/store.rs:240",
+      "source": "apps/aseman-node/src/shell/api/actions/store.rs:240",
       "spawns_background_work": false,
       "transaction_operations": [],
       "vmm_operations": []
     },
     {
       "guard_expression": "store_guard()",
-      "handler": "node/src/shell/api/actions/store.rs::history",
+      "handler": "apps/aseman-node/src/shell/api/actions/store.rs::history",
       "models": [],
       "path": "/stores/history",
       "request_type": "HistoryInput",
@@ -1166,27 +1166,27 @@
       "services": [
         "storage"
       ],
-      "source": "node/src/shell/api/actions/store.rs:170",
+      "source": "apps/aseman-node/src/shell/api/actions/store.rs:170",
       "spawns_background_work": false,
       "transaction_operations": [],
       "vmm_operations": []
     },
     {
       "guard_expression": "store_guard()",
-      "handler": "node/src/shell/api/actions/store.rs::set_access",
+      "handler": "apps/aseman-node/src/shell/api/actions/store.rs::set_access",
       "models": [],
       "path": "/stores/setAccess",
       "request_type": "SetAccessInput",
       "routes_via_chain": false,
       "services": [],
-      "source": "node/src/shell/api/actions/store.rs:211",
+      "source": "apps/aseman-node/src/shell/api/actions/store.rs:211",
       "spawns_background_work": false,
       "transaction_operations": [],
       "vmm_operations": []
     },
     {
       "guard_expression": "store_guard()",
-      "handler": "node/src/shell/api/actions/store.rs::signal",
+      "handler": "apps/aseman-node/src/shell/api/actions/store.rs::signal",
       "models": [
         "Store"
       ],
@@ -1196,7 +1196,7 @@
       "services": [
         "storage"
       ],
-      "source": "node/src/shell/api/actions/store.rs:93",
+      "source": "apps/aseman-node/src/shell/api/actions/store.rs:93",
       "spawns_background_work": false,
       "transaction_operations": [],
       "vmm_operations": []
@@ -1209,13 +1209,13 @@
     "Guest host operations remain a separate surface recorded in A002 and need their own policy call-path audit."
   ],
   "shared_dispatch": {
-    "authorization": "node/src/core/actor/model/secured/guard.rs::Guard",
+    "authorization": "apps/aseman-node/src/core/actor/model/secured/guard.rs::Guard",
     "chain_routing": "SecureAction::dispatch_via_chain",
     "federation_routing": "SecureAction::dispatch_via_federation",
     "local_execution": "ICore::modify_state_securly",
     "note": "Guard authentication precedes local action execution, but action-specific authorization remains distributed through handlers and services.",
-    "registration": "node/src/shell/api/main.rs::plug_all",
-    "wrapper": "node/src/shell/api/actions/util.rs::build_secure_action"
+    "registration": "apps/aseman-node/src/shell/api/main.rs::plug_all",
+    "wrapper": "apps/aseman-node/src/shell/api/actions/util.rs::build_secure_action"
   },
   "summary": {
     "action_count": 77,

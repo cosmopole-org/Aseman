@@ -20,6 +20,8 @@ pub mod finance;
 pub mod gateway;
 pub mod guest;
 pub mod identity;
+pub mod listener;
+pub mod operations;
 pub mod program;
 pub mod realtime;
 pub mod signal_tags;

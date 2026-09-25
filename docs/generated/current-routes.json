@@ -12,749 +12,749 @@
     {
       "gateway": "unified-host-call",
       "operation": "buildDockerImage",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:612"
+      "source": "apps/aseman-node/src/drivers/vmm/host/vm_host_functions.rs:612"
     },
     {
       "gateway": "unified-host-call",
       "operation": "buildVmImage",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:612"
+      "source": "apps/aseman-node/src/drivers/vmm/host/vm_host_functions.rs:612"
     },
     {
       "gateway": "unified-host-call",
       "operation": "callProtocolApi",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:617"
+      "source": "apps/aseman-node/src/drivers/vmm/host/vm_host_functions.rs:617"
     },
     {
       "gateway": "unified-host-call",
       "operation": "commitTrx",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:587"
+      "source": "apps/aseman-node/src/drivers/vmm/host/vm_host_functions.rs:587"
     },
     {
       "gateway": "unified-host-call",
       "operation": "consoleLog",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:746"
+      "source": "apps/aseman-node/src/drivers/vmm/host/vm_host_functions.rs:746"
     },
     {
       "gateway": "unified-host-call",
       "operation": "consumeLock",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:687"
+      "source": "apps/aseman-node/src/drivers/vmm/host/vm_host_functions.rs:687"
     },
     {
       "gateway": "unified-host-call",
       "operation": "copyFromVm",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:611"
+      "source": "apps/aseman-node/src/drivers/vmm/host/vm_host_functions.rs:611"
     },
     {
       "gateway": "unified-host-call",
       "operation": "copyToDocker",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:610"
+      "source": "apps/aseman-node/src/drivers/vmm/host/vm_host_functions.rs:610"
     },
     {
       "gateway": "unified-host-call",
       "operation": "copyToVm",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:610"
+      "source": "apps/aseman-node/src/drivers/vmm/host/vm_host_functions.rs:610"
     },
     {
       "gateway": "unified-host-call",
       "operation": "createAccess",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:668"
+      "source": "apps/aseman-node/src/drivers/vmm/host/vm_host_functions.rs:668"
     },
     {
       "gateway": "unified-host-call",
       "operation": "createCreature",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:681"
+      "source": "apps/aseman-node/src/drivers/vmm/host/vm_host_functions.rs:681"
     },
     {
       "gateway": "unified-host-call",
       "operation": "createOwnedAccess",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:668"
+      "source": "apps/aseman-node/src/drivers/vmm/host/vm_host_functions.rs:668"
     },
     {
       "gateway": "unified-host-call",
       "operation": "createOwnedCreature",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:681"
+      "source": "apps/aseman-node/src/drivers/vmm/host/vm_host_functions.rs:681"
     },
     {
       "gateway": "unified-host-call",
       "operation": "createOwnedStore",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:672"
+      "source": "apps/aseman-node/src/drivers/vmm/host/vm_host_functions.rs:672"
     },
     {
       "gateway": "unified-host-call",
       "operation": "createProgram",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:729"
+      "source": "apps/aseman-node/src/drivers/vmm/host/vm_host_functions.rs:729"
     },
     {
       "gateway": "unified-host-call",
       "operation": "createResourceEntity",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:771"
+      "source": "apps/aseman-node/src/drivers/vmm/host/vm_host_functions.rs:771"
     },
     {
       "gateway": "unified-host-call",
       "operation": "createResourceStore",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:755"
+      "source": "apps/aseman-node/src/drivers/vmm/host/vm_host_functions.rs:755"
     },
     {
       "gateway": "unified-host-call",
       "operation": "createStore",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:672"
+      "source": "apps/aseman-node/src/drivers/vmm/host/vm_host_functions.rs:672"
     },
     {
       "gateway": "unified-host-call",
       "operation": "createVmOwnedStore",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:755"
+      "source": "apps/aseman-node/src/drivers/vmm/host/vm_host_functions.rs:755"
     },
     {
       "gateway": "unified-host-call",
       "operation": "dbOp",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:588"
+      "source": "apps/aseman-node/src/drivers/vmm/host/vm_host_functions.rs:588"
     },
     {
       "gateway": "unified-host-call",
       "operation": "debitPool",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:723"
+      "source": "apps/aseman-node/src/drivers/vmm/host/vm_host_functions.rs:723"
     },
     {
       "gateway": "unified-host-call",
       "operation": "delKey",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:750"
+      "source": "apps/aseman-node/src/drivers/vmm/host/vm_host_functions.rs:750"
     },
     {
       "gateway": "unified-host-call",
       "operation": "deleteAccess",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:669"
+      "source": "apps/aseman-node/src/drivers/vmm/host/vm_host_functions.rs:669"
     },
     {
       "gateway": "unified-host-call",
       "operation": "deleteCreature",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:739"
+      "source": "apps/aseman-node/src/drivers/vmm/host/vm_host_functions.rs:739"
     },
     {
       "gateway": "unified-host-call",
       "operation": "deleteOwnedAccess",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:669"
+      "source": "apps/aseman-node/src/drivers/vmm/host/vm_host_functions.rs:669"
     },
     {
       "gateway": "unified-host-call",
       "operation": "deleteOwnedCreature",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:739"
+      "source": "apps/aseman-node/src/drivers/vmm/host/vm_host_functions.rs:739"
     },
     {
       "gateway": "unified-host-call",
       "operation": "deleteOwnedProgram",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:730"
+      "source": "apps/aseman-node/src/drivers/vmm/host/vm_host_functions.rs:730"
     },
     {
       "gateway": "unified-host-call",
       "operation": "deleteOwnedStore",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:673"
+      "source": "apps/aseman-node/src/drivers/vmm/host/vm_host_functions.rs:673"
     },
     {
       "gateway": "unified-host-call",
       "operation": "deleteProgram",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:730"
+      "source": "apps/aseman-node/src/drivers/vmm/host/vm_host_functions.rs:730"
     },
     {
       "gateway": "unified-host-call",
       "operation": "deleteResourceEntity",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:772"
+      "source": "apps/aseman-node/src/drivers/vmm/host/vm_host_functions.rs:772"
     },
     {
       "gateway": "unified-host-call",
       "operation": "deleteResourceStore",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:761"
+      "source": "apps/aseman-node/src/drivers/vmm/host/vm_host_functions.rs:761"
     },
     {
       "gateway": "unified-host-call",
       "operation": "deleteStore",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:673"
+      "source": "apps/aseman-node/src/drivers/vmm/host/vm_host_functions.rs:673"
     },
     {
       "gateway": "unified-host-call",
       "operation": "deleteVm",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:592"
+      "source": "apps/aseman-node/src/drivers/vmm/host/vm_host_functions.rs:592"
     },
     {
       "gateway": "unified-host-call",
       "operation": "deleteVmOwnedStore",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:761"
+      "source": "apps/aseman-node/src/drivers/vmm/host/vm_host_functions.rs:761"
     },
     {
       "gateway": "unified-host-call",
       "operation": "deploy entity",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:738"
+      "source": "apps/aseman-node/src/drivers/vmm/host/vm_host_functions.rs:738"
     },
     {
       "gateway": "unified-host-call",
       "operation": "deployEntity",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:738"
+      "source": "apps/aseman-node/src/drivers/vmm/host/vm_host_functions.rs:738"
     },
     {
       "gateway": "unified-host-call",
       "operation": "destroyVm",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:592"
+      "source": "apps/aseman-node/src/drivers/vmm/host/vm_host_functions.rs:592"
     },
     {
       "gateway": "unified-host-call",
       "operation": "elpifyProof",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:614"
+      "source": "apps/aseman-node/src/drivers/vmm/host/vm_host_functions.rs:614"
     },
     {
       "gateway": "unified-host-call",
       "operation": "execDocker",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:601"
+      "source": "apps/aseman-node/src/drivers/vmm/host/vm_host_functions.rs:601"
     },
     {
       "gateway": "unified-host-call",
       "operation": "execShellAction",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:666"
+      "source": "apps/aseman-node/src/drivers/vmm/host/vm_host_functions.rs:666"
     },
     {
       "gateway": "unified-host-call",
       "operation": "execVm",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:601"
+      "source": "apps/aseman-node/src/drivers/vmm/host/vm_host_functions.rs:601"
     },
     {
       "gateway": "unified-host-call",
       "operation": "genId",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:753"
+      "source": "apps/aseman-node/src/drivers/vmm/host/vm_host_functions.rs:753"
     },
     {
       "gateway": "unified-host-call",
       "operation": "getByPrefix",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:750"
+      "source": "apps/aseman-node/src/drivers/vmm/host/vm_host_functions.rs:750"
     },
     {
       "gateway": "unified-host-call",
       "operation": "getCreature",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:682"
+      "source": "apps/aseman-node/src/drivers/vmm/host/vm_host_functions.rs:682"
     },
     {
       "gateway": "unified-host-call",
       "operation": "getJson",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:750"
+      "source": "apps/aseman-node/src/drivers/vmm/host/vm_host_functions.rs:750"
     },
     {
       "gateway": "unified-host-call",
       "operation": "getLink",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:750"
+      "source": "apps/aseman-node/src/drivers/vmm/host/vm_host_functions.rs:750"
     },
     {
       "gateway": "unified-host-call",
       "operation": "getProgram",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:734"
+      "source": "apps/aseman-node/src/drivers/vmm/host/vm_host_functions.rs:734"
     },
     {
       "gateway": "unified-host-call",
       "operation": "getResourceStore",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:764"
+      "source": "apps/aseman-node/src/drivers/vmm/host/vm_host_functions.rs:764"
     },
     {
       "gateway": "unified-host-call",
       "operation": "getStore",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:676"
+      "source": "apps/aseman-node/src/drivers/vmm/host/vm_host_functions.rs:676"
     },
     {
       "gateway": "unified-host-call",
       "operation": "getVmOwnedStore",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:764"
+      "source": "apps/aseman-node/src/drivers/vmm/host/vm_host_functions.rs:764"
     },
     {
       "gateway": "unified-host-call",
       "operation": "grantLogin",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:633"
+      "source": "apps/aseman-node/src/drivers/vmm/host/vm_host_functions.rs:633"
     },
     {
       "gateway": "unified-host-call",
       "operation": "hasAccessToStore",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:753"
+      "source": "apps/aseman-node/src/drivers/vmm/host/vm_host_functions.rs:753"
     },
     {
       "gateway": "unified-host-call",
       "operation": "httpPost",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:613"
+      "source": "apps/aseman-node/src/drivers/vmm/host/vm_host_functions.rs:613"
     },
     {
       "gateway": "unified-host-call",
       "operation": "httpRequest",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:613"
+      "source": "apps/aseman-node/src/drivers/vmm/host/vm_host_functions.rs:613"
     },
     {
       "gateway": "unified-host-call",
       "operation": "joinGroup",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:753"
+      "source": "apps/aseman-node/src/drivers/vmm/host/vm_host_functions.rs:753"
     },
     {
       "gateway": "unified-host-call",
       "operation": "listCreatures",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:683"
+      "source": "apps/aseman-node/src/drivers/vmm/host/vm_host_functions.rs:683"
     },
     {
       "gateway": "unified-host-call",
       "operation": "listProgramMachines",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:736"
+      "source": "apps/aseman-node/src/drivers/vmm/host/vm_host_functions.rs:736"
     },
     {
       "gateway": "unified-host-call",
       "operation": "listPrograms",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:735"
+      "source": "apps/aseman-node/src/drivers/vmm/host/vm_host_functions.rs:735"
     },
     {
       "gateway": "unified-host-call",
       "operation": "listResourceStores",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:767"
+      "source": "apps/aseman-node/src/drivers/vmm/host/vm_host_functions.rs:767"
     },
     {
       "gateway": "unified-host-call",
       "operation": "listStoreAccess",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:679"
+      "source": "apps/aseman-node/src/drivers/vmm/host/vm_host_functions.rs:679"
     },
     {
       "gateway": "unified-host-call",
       "operation": "listStoreMembers",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:679"
+      "source": "apps/aseman-node/src/drivers/vmm/host/vm_host_functions.rs:679"
     },
     {
       "gateway": "unified-host-call",
       "operation": "listStores",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:677"
+      "source": "apps/aseman-node/src/drivers/vmm/host/vm_host_functions.rs:677"
     },
     {
       "gateway": "unified-host-call",
       "operation": "listVmOwnedStores",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:767"
+      "source": "apps/aseman-node/src/drivers/vmm/host/vm_host_functions.rs:767"
     },
     {
       "gateway": "unified-host-call",
       "operation": "lockResource",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:744"
+      "source": "apps/aseman-node/src/drivers/vmm/host/vm_host_functions.rs:744"
     },
     {
       "gateway": "unified-host-call",
       "operation": "lockToken",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:688"
+      "source": "apps/aseman-node/src/drivers/vmm/host/vm_host_functions.rs:688"
     },
     {
       "gateway": "unified-host-call",
       "operation": "nodeIdentity",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:631"
+      "source": "apps/aseman-node/src/drivers/vmm/host/vm_host_functions.rs:631"
     },
     {
       "gateway": "unified-host-call",
       "operation": "plantTrigger",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:626"
+      "source": "apps/aseman-node/src/drivers/vmm/host/vm_host_functions.rs:626"
     },
     {
       "gateway": "unified-host-call",
       "operation": "protocolApi",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:617"
+      "source": "apps/aseman-node/src/drivers/vmm/host/vm_host_functions.rs:617"
     },
     {
       "gateway": "unified-host-call",
       "operation": "publishFinanceCatalog",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:640"
+      "source": "apps/aseman-node/src/drivers/vmm/host/vm_host_functions.rs:640"
     },
     {
       "gateway": "unified-host-call",
       "operation": "publishFinanceQuote",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:658"
+      "source": "apps/aseman-node/src/drivers/vmm/host/vm_host_functions.rs:658"
     },
     {
       "gateway": "unified-host-call",
       "operation": "publishUpdate",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:600"
+      "source": "apps/aseman-node/src/drivers/vmm/host/vm_host_functions.rs:600"
     },
     {
       "gateway": "unified-host-call",
       "operation": "putJson",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:750"
+      "source": "apps/aseman-node/src/drivers/vmm/host/vm_host_functions.rs:750"
     },
     {
       "gateway": "unified-host-call",
       "operation": "readMembers",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:679"
+      "source": "apps/aseman-node/src/drivers/vmm/host/vm_host_functions.rs:679"
     },
     {
       "gateway": "unified-host-call",
       "operation": "registerBridgeToken",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:598"
+      "source": "apps/aseman-node/src/drivers/vmm/host/vm_host_functions.rs:598"
     },
     {
       "gateway": "unified-host-call",
       "operation": "registerFinanceNode",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:645"
+      "source": "apps/aseman-node/src/drivers/vmm/host/vm_host_functions.rs:645"
     },
     {
       "gateway": "unified-host-call",
       "operation": "registerFinanceResource",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:647"
+      "source": "apps/aseman-node/src/drivers/vmm/host/vm_host_functions.rs:647"
     },
     {
       "gateway": "unified-host-call",
       "operation": "releaseHold",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:704"
+      "source": "apps/aseman-node/src/drivers/vmm/host/vm_host_functions.rs:704"
     },
     {
       "gateway": "unified-host-call",
       "operation": "releasePool",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:717"
+      "source": "apps/aseman-node/src/drivers/vmm/host/vm_host_functions.rs:717"
     },
     {
       "gateway": "unified-host-call",
       "operation": "removeAccess",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:669"
+      "source": "apps/aseman-node/src/drivers/vmm/host/vm_host_functions.rs:669"
     },
     {
       "gateway": "unified-host-call",
       "operation": "removeCreature",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:739"
+      "source": "apps/aseman-node/src/drivers/vmm/host/vm_host_functions.rs:739"
     },
     {
       "gateway": "unified-host-call",
       "operation": "removeOwnedAccess",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:669"
+      "source": "apps/aseman-node/src/drivers/vmm/host/vm_host_functions.rs:669"
     },
     {
       "gateway": "unified-host-call",
       "operation": "removeOwnedCreature",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:739"
+      "source": "apps/aseman-node/src/drivers/vmm/host/vm_host_functions.rs:739"
     },
     {
       "gateway": "unified-host-call",
       "operation": "removeOwnedStore",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:673"
+      "source": "apps/aseman-node/src/drivers/vmm/host/vm_host_functions.rs:673"
     },
     {
       "gateway": "unified-host-call",
       "operation": "removeStore",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:673"
+      "source": "apps/aseman-node/src/drivers/vmm/host/vm_host_functions.rs:673"
     },
     {
       "gateway": "unified-host-call",
       "operation": "reservePool",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:705"
+      "source": "apps/aseman-node/src/drivers/vmm/host/vm_host_functions.rs:705"
     },
     {
       "gateway": "unified-host-call",
       "operation": "retireFinanceNode",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:646"
+      "source": "apps/aseman-node/src/drivers/vmm/host/vm_host_functions.rs:646"
     },
     {
       "gateway": "unified-host-call",
       "operation": "retireFinanceResource",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:653"
+      "source": "apps/aseman-node/src/drivers/vmm/host/vm_host_functions.rs:653"
     },
     {
       "gateway": "unified-host-call",
       "operation": "reviewFinanceResource",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:648"
+      "source": "apps/aseman-node/src/drivers/vmm/host/vm_host_functions.rs:648"
     },
     {
       "gateway": "unified-host-call",
       "operation": "revokeBridgeToken",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:599"
+      "source": "apps/aseman-node/src/drivers/vmm/host/vm_host_functions.rs:599"
     },
     {
       "gateway": "unified-host-call",
       "operation": "runVm",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:590"
+      "source": "apps/aseman-node/src/drivers/vmm/host/vm_host_functions.rs:590"
     },
     {
       "gateway": "unified-host-call",
       "operation": "secretGet",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:662"
+      "source": "apps/aseman-node/src/drivers/vmm/host/vm_host_functions.rs:662"
     },
     {
       "gateway": "unified-host-call",
       "operation": "secretListGranted",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:667"
+      "source": "apps/aseman-node/src/drivers/vmm/host/vm_host_functions.rs:667"
     },
     {
       "gateway": "unified-host-call",
       "operation": "settleHold",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:703"
+      "source": "apps/aseman-node/src/drivers/vmm/host/vm_host_functions.rs:703"
     },
     {
       "gateway": "unified-host-call",
       "operation": "settlePool",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:711"
+      "source": "apps/aseman-node/src/drivers/vmm/host/vm_host_functions.rs:711"
     },
     {
       "gateway": "unified-host-call",
       "operation": "signal",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:620"
+      "source": "apps/aseman-node/src/drivers/vmm/host/vm_host_functions.rs:620"
     },
     {
       "gateway": "unified-host-call",
       "operation": "signalGroup",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:743"
+      "source": "apps/aseman-node/src/drivers/vmm/host/vm_host_functions.rs:743"
     },
     {
       "gateway": "unified-host-call",
       "operation": "signalUser",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:742"
+      "source": "apps/aseman-node/src/drivers/vmm/host/vm_host_functions.rs:742"
     },
     {
       "gateway": "unified-host-call",
       "operation": "startHold",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:702"
+      "source": "apps/aseman-node/src/drivers/vmm/host/vm_host_functions.rs:702"
     },
     {
       "gateway": "unified-host-call",
       "operation": "stateOp",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:589"
+      "source": "apps/aseman-node/src/drivers/vmm/host/vm_host_functions.rs:589"
     },
     {
       "gateway": "unified-host-call",
       "operation": "statusVm",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:605"
+      "source": "apps/aseman-node/src/drivers/vmm/host/vm_host_functions.rs:605"
     },
     {
       "gateway": "unified-host-call",
       "operation": "terminateVm",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:591"
+      "source": "apps/aseman-node/src/drivers/vmm/host/vm_host_functions.rs:591"
     },
     {
       "gateway": "unified-host-call",
       "operation": "transfer",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:686"
+      "source": "apps/aseman-node/src/drivers/vmm/host/vm_host_functions.rs:686"
     },
     {
       "gateway": "unified-host-call",
       "operation": "unlockResource",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:745"
+      "source": "apps/aseman-node/src/drivers/vmm/host/vm_host_functions.rs:745"
     },
     {
       "gateway": "unified-host-call",
       "operation": "updateCreature",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:684"
+      "source": "apps/aseman-node/src/drivers/vmm/host/vm_host_functions.rs:684"
     },
     {
       "gateway": "unified-host-call",
       "operation": "updateProgram",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:737"
+      "source": "apps/aseman-node/src/drivers/vmm/host/vm_host_functions.rs:737"
     },
     {
       "gateway": "unified-host-call",
       "operation": "updateResourceStore",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:758"
+      "source": "apps/aseman-node/src/drivers/vmm/host/vm_host_functions.rs:758"
     },
     {
       "gateway": "unified-host-call",
       "operation": "updateStore",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:680"
+      "source": "apps/aseman-node/src/drivers/vmm/host/vm_host_functions.rs:680"
     },
     {
       "gateway": "unified-host-call",
       "operation": "updateVmOwnedStore",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:758"
+      "source": "apps/aseman-node/src/drivers/vmm/host/vm_host_functions.rs:758"
     },
     {
       "gateway": "unified-host-call",
       "operation": "validateSign",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:685"
+      "source": "apps/aseman-node/src/drivers/vmm/host/vm_host_functions.rs:685"
     },
     {
       "gateway": "unified-host-call",
       "operation": "verifyProgramExecution",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:614"
+      "source": "apps/aseman-node/src/drivers/vmm/host/vm_host_functions.rs:614"
     },
     {
       "gateway": "unified-host-call",
       "operation": "vmEndpoints",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:593"
+      "source": "apps/aseman-node/src/drivers/vmm/host/vm_host_functions.rs:593"
     },
     {
       "gateway": "unified-host-call",
       "operation": "vmLog",
-      "source": "node/src/drivers/vmm/host/vm_host_functions.rs:746"
+      "source": "apps/aseman-node/src/drivers/vmm/host/vm_host_functions.rs:746"
     }
   ],
   "http_routes": [
     {
       "method": "POST",
       "path": "/cluster/add-peer",
-      "source": "node/src/drivers/cluster/server.rs:240",
+      "source": "apps/aseman-node/src/drivers/cluster/server.rs:240",
       "surface": "cluster-admin-and-raft"
     },
     {
       "method": "GET",
       "path": "/cluster/config",
-      "source": "node/src/drivers/cluster/server.rs:245",
+      "source": "apps/aseman-node/src/drivers/cluster/server.rs:245",
       "surface": "cluster-admin-and-raft"
     },
     {
       "method": "POST",
       "path": "/cluster/config",
-      "source": "node/src/drivers/cluster/server.rs:248",
+      "source": "apps/aseman-node/src/drivers/cluster/server.rs:248",
       "surface": "cluster-admin-and-raft"
     },
     {
       "method": "POST",
       "path": "/cluster/config/apply",
-      "source": "node/src/drivers/cluster/server.rs:249",
+      "source": "apps/aseman-node/src/drivers/cluster/server.rs:249",
       "surface": "cluster-admin-and-raft"
     },
     {
       "method": "POST",
       "path": "/cluster/init",
-      "source": "node/src/drivers/cluster/server.rs:239",
+      "source": "apps/aseman-node/src/drivers/cluster/server.rs:239",
       "surface": "cluster-admin-and-raft"
     },
     {
       "method": "GET",
       "path": "/cluster/nearest",
-      "source": "node/src/drivers/cluster/server.rs:236",
+      "source": "apps/aseman-node/src/drivers/cluster/server.rs:236",
       "surface": "cluster-admin-and-raft"
     },
     {
       "method": "GET",
       "path": "/cluster/peers",
-      "source": "node/src/drivers/cluster/server.rs:232",
+      "source": "apps/aseman-node/src/drivers/cluster/server.rs:232",
       "surface": "cluster-admin-and-raft"
     },
     {
       "method": "GET",
       "path": "/cluster/ping",
-      "source": "node/src/drivers/cluster/server.rs:222",
+      "source": "apps/aseman-node/src/drivers/cluster/server.rs:222",
       "surface": "cluster-admin-and-raft"
     },
     {
       "method": "POST",
       "path": "/cluster/promote",
-      "source": "node/src/drivers/cluster/server.rs:242",
+      "source": "apps/aseman-node/src/drivers/cluster/server.rs:242",
       "surface": "cluster-admin-and-raft"
     },
     {
       "method": "POST",
       "path": "/cluster/propose",
-      "source": "node/src/drivers/cluster/server.rs:252",
+      "source": "apps/aseman-node/src/drivers/cluster/server.rs:252",
       "surface": "cluster-admin-and-raft"
     },
     {
       "method": "POST",
       "path": "/cluster/remove-peer",
-      "source": "node/src/drivers/cluster/server.rs:241",
+      "source": "apps/aseman-node/src/drivers/cluster/server.rs:241",
       "surface": "cluster-admin-and-raft"
     },
     {
       "method": "GET",
       "path": "/cluster/status",
-      "source": "node/src/drivers/cluster/server.rs:231",
+      "source": "apps/aseman-node/src/drivers/cluster/server.rs:231",
       "surface": "cluster-admin-and-raft"
     },
     {
       "method": "POST",
       "path": "/raft/append",
-      "source": "node/src/drivers/cluster/server.rs:212",
+      "source": "apps/aseman-node/src/drivers/cluster/server.rs:212",
       "surface": "cluster-admin-and-raft"
     },
     {
       "method": "POST",
       "path": "/raft/snapshot",
-      "source": "node/src/drivers/cluster/server.rs:216",
+      "source": "apps/aseman-node/src/drivers/cluster/server.rs:216",
       "surface": "cluster-admin-and-raft"
     },
     {
       "method": "POST",
       "path": "/raft/vote",
-      "source": "node/src/drivers/cluster/server.rs:208",
+      "source": "apps/aseman-node/src/drivers/cluster/server.rs:208",
       "surface": "cluster-admin-and-raft"
     },
     {
       "method": "GET",
       "path": "/debug/pprof",
-      "source": "node/src/telemetry/pprof.rs:86",
+      "source": "apps/aseman-node/src/telemetry/pprof.rs:86",
       "surface": "profiling-http"
     },
     {
       "method": "GET",
       "path": "/debug/pprof/",
-      "source": "node/src/telemetry/pprof.rs:86",
+      "source": "apps/aseman-node/src/telemetry/pprof.rs:86",
       "surface": "profiling-http"
     },
     {
       "method": "GET",
       "path": "/debug/pprof/flamegraph",
-      "source": "node/src/telemetry/pprof.rs:90",
+      "source": "apps/aseman-node/src/telemetry/pprof.rs:90",
       "surface": "profiling-http"
     },
     {
       "method": "GET",
       "path": "/debug/pprof/heap",
-      "source": "node/src/telemetry/pprof.rs:88",
+      "source": "apps/aseman-node/src/telemetry/pprof.rs:88",
       "surface": "profiling-http"
     },
     {
       "method": "GET",
       "path": "/debug/pprof/profile",
-      "source": "node/src/telemetry/pprof.rs:94",
+      "source": "apps/aseman-node/src/telemetry/pprof.rs:94",
       "surface": "profiling-http"
     },
     {
       "method": "GET",
       "path": "/debug/pprof/runtime",
-      "source": "node/src/telemetry/pprof.rs:87",
+      "source": "apps/aseman-node/src/telemetry/pprof.rs:87",
       "surface": "profiling-http"
     },
     {
       "method": "GET",
       "path": "/debug/pprof/threads",
-      "source": "node/src/telemetry/pprof.rs:89",
+      "source": "apps/aseman-node/src/telemetry/pprof.rs:89",
       "surface": "profiling-http"
     },
     {
       "method": "GET",
       "path": "/storage/file/{id}",
-      "source": "node/src/shell/storage_http.rs:110",
+      "source": "apps/aseman-node/src/shell/storage_http.rs:110",
       "surface": "public-storage-http"
     },
     {
       "method": "HEAD",
       "path": "/storage/file/{id}",
-      "source": "node/src/shell/storage_http.rs:110",
+      "source": "apps/aseman-node/src/shell/storage_http.rs:110",
       "surface": "public-storage-http"
     },
     {
       "method": "GET",
       "path": "/storage/health",
-      "source": "node/src/shell/storage_http.rs:104",
+      "source": "apps/aseman-node/src/shell/storage_http.rs:104",
       "surface": "public-storage-http"
     },
     {
       "method": "POST",
       "path": "/storage/upload",
-      "source": "node/src/shell/storage_http.rs:107",
+      "source": "apps/aseman-node/src/shell/storage_http.rs:107",
       "surface": "public-storage-http"
     },
     {
       "method": "PUT",
       "path": "/storage/upload",
-      "source": "node/src/shell/storage_http.rs:107",
+      "source": "apps/aseman-node/src/shell/storage_http.rs:107",
       "surface": "public-storage-http"
     },
     {
       "method": "GET",
       "path": "/telemetry/health",
-      "source": "node/src/telemetry/server.rs:131",
+      "source": "apps/aseman-node/src/telemetry/server.rs:131",
       "surface": "telemetry-http"
     },
     {
       "method": "GET",
       "path": "/telemetry/snapshot",
-      "source": "node/src/telemetry/server.rs:132",
+      "source": "apps/aseman-node/src/telemetry/server.rs:132",
       "surface": "telemetry-http"
     },
     {
       "method": "ANY",
       "path": "/{creatureId}/{programId}/{entityId}/{vmId}/{path...}",
-      "source": "node/src/drivers/vmm/network/ingress.rs:1",
+      "source": "apps/aseman-node/src/drivers/vmm/network/ingress.rs:1",
       "surface": "vm-http-ingress"
     },
     {
       "method": "ANY",
       "path": "/{creatureUsername}/{customPath...}",
-      "source": "node/src/drivers/vmm/http_route.rs:1",
+      "source": "apps/aseman-node/src/drivers/vmm/http_route.rs:1",
       "surface": "vm-http-ingress"
     }
   ],
@@ -762,539 +762,539 @@
     {
       "path": "/api/hello",
       "request_type": "HelloInput",
-      "source": "node/src/shell/api/actions/dummy.rs:30",
+      "source": "apps/aseman-node/src/shell/api/actions/dummy.rs:30",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/api/ping",
       "request_type": "HelloInput",
-      "source": "node/src/shell/api/actions/dummy.rs:60",
+      "source": "apps/aseman-node/src/shell/api/actions/dummy.rs:60",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/api/time",
       "request_type": "HelloInput",
-      "source": "node/src/shell/api/actions/dummy.rs:45",
+      "source": "apps/aseman-node/src/shell/api/actions/dummy.rs:45",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/auths/getServerPublicKey",
       "request_type": "GetServerKeyInput",
-      "source": "node/src/shell/api/actions/auth.rs:41",
+      "source": "apps/aseman-node/src/shell/api/actions/auth.rs:41",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/auths/getServersMap",
       "request_type": "GetServersMapInput",
-      "source": "node/src/shell/api/actions/auth.rs:57",
+      "source": "apps/aseman-node/src/shell/api/actions/auth.rs:57",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/creatures/authenticate",
       "request_type": "AuthenticateInput",
-      "source": "node/src/shell/api/actions/creature.rs:501",
+      "source": "apps/aseman-node/src/shell/api/actions/creature.rs:501",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/creatures/checkSign",
       "request_type": "CheckSignInput",
-      "source": "node/src/shell/api/actions/creature.rs:637",
+      "source": "apps/aseman-node/src/shell/api/actions/creature.rs:637",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/creatures/closePool",
       "request_type": "ClosePoolInput",
-      "source": "node/src/shell/api/actions/creature/finance.rs:2526",
+      "source": "apps/aseman-node/src/shell/api/actions/creature/finance.rs:2528",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/creatures/consumeLock",
       "request_type": "ConsumeLockInput",
-      "source": "node/src/shell/api/actions/creature.rs:1035",
+      "source": "apps/aseman-node/src/shell/api/actions/creature.rs:1035",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/creatures/create",
       "request_type": "CreatureCreateInput",
-      "source": "node/src/shell/api/actions/creature.rs:201",
+      "source": "apps/aseman-node/src/shell/api/actions/creature.rs:201",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/creatures/createHold",
       "request_type": "CreateHoldInput",
-      "source": "node/src/shell/api/actions/creature/finance.rs:1121",
+      "source": "apps/aseman-node/src/shell/api/actions/creature/finance.rs:1123",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/creatures/debitPool",
       "request_type": "DebitPoolInput",
-      "source": "node/src/shell/api/actions/creature/finance.rs:3071",
+      "source": "apps/aseman-node/src/shell/api/actions/creature/finance.rs:3073",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/creatures/delete",
       "request_type": "DeleteInput",
-      "source": "node/src/shell/api/actions/creature.rs:1307",
+      "source": "apps/aseman-node/src/shell/api/actions/creature.rs:1307",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/creatures/find",
       "request_type": "FindInput",
-      "source": "node/src/shell/api/actions/creature.rs:1457",
+      "source": "apps/aseman-node/src/shell/api/actions/creature.rs:1457",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/creatures/get",
       "request_type": "GetInput",
-      "source": "node/src/shell/api/actions/creature.rs:252",
+      "source": "apps/aseman-node/src/shell/api/actions/creature.rs:252",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/creatures/getByUsername",
       "request_type": "GetByUsernameInput",
-      "source": "node/src/shell/api/actions/creature.rs:1430",
+      "source": "apps/aseman-node/src/shell/api/actions/creature.rs:1430",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/creatures/getFinancialAccount",
       "request_type": "GetFinancialAccountInput",
-      "source": "node/src/shell/api/actions/creature/finance.rs:1979",
+      "source": "apps/aseman-node/src/shell/api/actions/creature/finance.rs:1981",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/creatures/getHold",
       "request_type": "GetHoldInput",
-      "source": "node/src/shell/api/actions/creature/finance.rs:1848",
+      "source": "apps/aseman-node/src/shell/api/actions/creature/finance.rs:1850",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/creatures/list",
       "request_type": "ListInput",
-      "source": "node/src/shell/api/actions/creature.rs:271",
+      "source": "apps/aseman-node/src/shell/api/actions/creature.rs:271",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/creatures/listPayouts",
       "request_type": "ListPayoutsInput",
-      "source": "node/src/shell/api/actions/creature/finance.rs:2247",
+      "source": "apps/aseman-node/src/shell/api/actions/creature/finance.rs:2249",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/creatures/lockToken",
       "request_type": "LockTokenInput",
-      "source": "node/src/shell/api/actions/creature.rs:948",
+      "source": "apps/aseman-node/src/shell/api/actions/creature.rs:948",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/creatures/login",
       "request_type": "LoginInput",
-      "source": "node/src/shell/api/actions/creature.rs:1195",
+      "source": "apps/aseman-node/src/shell/api/actions/creature.rs:1195",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/creatures/meta",
       "request_type": "MetaInput",
-      "source": "node/src/shell/api/actions/creature.rs:1371",
+      "source": "apps/aseman-node/src/shell/api/actions/creature.rs:1371",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/creatures/mint",
       "request_type": "MintInput",
-      "source": "node/src/shell/api/actions/creature.rs:541",
+      "source": "apps/aseman-node/src/shell/api/actions/creature.rs:541",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/creatures/openPool",
       "request_type": "OpenPoolInput",
-      "source": "node/src/shell/api/actions/creature/finance.rs:2314",
+      "source": "apps/aseman-node/src/shell/api/actions/creature/finance.rs:2316",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/creatures/paymentAdjustment",
       "request_type": "PaymentAdjustmentInput",
-      "source": "node/src/shell/api/actions/creature/finance.rs:3983",
+      "source": "apps/aseman-node/src/shell/api/actions/creature/finance.rs:3997",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/creatures/publishFinanceCatalog",
       "request_type": "PublishFinanceCatalogInput",
-      "source": "node/src/shell/api/actions/creature/finance.rs:432",
+      "source": "apps/aseman-node/src/shell/api/actions/creature/finance.rs:434",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/creatures/publishFinanceQuote",
       "request_type": "PublishFinanceQuoteInput",
-      "source": "node/src/shell/api/actions/creature/finance.rs:909",
+      "source": "apps/aseman-node/src/shell/api/actions/creature/finance.rs:911",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/creatures/reconcileFinancialSystem",
       "request_type": "ReconcileFinancialSystemInput",
-      "source": "node/src/shell/api/actions/creature/finance.rs:3315",
+      "source": "apps/aseman-node/src/shell/api/actions/creature/finance.rs:3317",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/creatures/refreshPool",
       "request_type": "RefreshPoolInput",
-      "source": "node/src/shell/api/actions/creature/finance.rs:2419",
+      "source": "apps/aseman-node/src/shell/api/actions/creature/finance.rs:2421",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/creatures/registerFinanceNode",
       "request_type": "RegisterFinanceNodeInput",
-      "source": "node/src/shell/api/actions/creature/finance.rs:549",
+      "source": "apps/aseman-node/src/shell/api/actions/creature/finance.rs:551",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/creatures/registerFinanceResource",
       "request_type": "RegisterFinanceResourceInput",
-      "source": "node/src/shell/api/actions/creature/finance.rs:668",
+      "source": "apps/aseman-node/src/shell/api/actions/creature/finance.rs:670",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/creatures/releaseHold",
       "request_type": "ReleaseHoldInput",
-      "source": "node/src/shell/api/actions/creature/finance.rs:1713",
+      "source": "apps/aseman-node/src/shell/api/actions/creature/finance.rs:1715",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/creatures/releasePool",
       "request_type": "ReleasePoolInput",
-      "source": "node/src/shell/api/actions/creature/finance.rs:2958",
+      "source": "apps/aseman-node/src/shell/api/actions/creature/finance.rs:2960",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/creatures/requestPayout",
       "request_type": "RequestPayoutInput",
-      "source": "node/src/shell/api/actions/creature/finance.rs:2019",
+      "source": "apps/aseman-node/src/shell/api/actions/creature/finance.rs:2021",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/creatures/reservePool",
       "request_type": "ReservePoolInput",
-      "source": "node/src/shell/api/actions/creature/finance.rs:2627",
+      "source": "apps/aseman-node/src/shell/api/actions/creature/finance.rs:2629",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/creatures/resolvePayout",
       "request_type": "ResolvePayoutInput",
-      "source": "node/src/shell/api/actions/creature/finance.rs:2125",
+      "source": "apps/aseman-node/src/shell/api/actions/creature/finance.rs:2127",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/creatures/retireFinanceNode",
       "request_type": "RetireFinanceNodeInput",
-      "source": "node/src/shell/api/actions/creature/finance.rs:629",
+      "source": "apps/aseman-node/src/shell/api/actions/creature/finance.rs:631",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/creatures/retireFinanceResource",
       "request_type": "RetireFinanceResourceInput",
-      "source": "node/src/shell/api/actions/creature/finance.rs:819",
+      "source": "apps/aseman-node/src/shell/api/actions/creature/finance.rs:821",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/creatures/reviewFinanceResource",
       "request_type": "ReviewFinanceResourceInput",
-      "source": "node/src/shell/api/actions/creature/finance.rs:781",
+      "source": "apps/aseman-node/src/shell/api/actions/creature/finance.rs:783",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/creatures/secretGet",
       "request_type": "SecretGetInput",
-      "source": "node/src/shell/api/actions/creature.rs:747",
+      "source": "apps/aseman-node/src/shell/api/actions/creature.rs:747",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/creatures/secretGrant",
       "request_type": "SecretGrantInput",
-      "source": "node/src/shell/api/actions/creature.rs:788",
+      "source": "apps/aseman-node/src/shell/api/actions/creature.rs:788",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/creatures/secretList",
       "request_type": "SecretListInput",
-      "source": "node/src/shell/api/actions/creature.rs:868",
+      "source": "apps/aseman-node/src/shell/api/actions/creature.rs:868",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/creatures/secretListGranted",
       "request_type": "SecretListGrantedInput",
-      "source": "node/src/shell/api/actions/creature.rs:852",
+      "source": "apps/aseman-node/src/shell/api/actions/creature.rs:852",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/creatures/secretPut",
       "request_type": "SecretPutInput",
-      "source": "node/src/shell/api/actions/creature.rs:720",
+      "source": "apps/aseman-node/src/shell/api/actions/creature.rs:720",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/creatures/secretRevoke",
       "request_type": "SecretRevokeInput",
-      "source": "node/src/shell/api/actions/creature.rs:827",
+      "source": "apps/aseman-node/src/shell/api/actions/creature.rs:827",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/creatures/settleHold",
       "request_type": "SettleHoldInput",
-      "source": "node/src/shell/api/actions/creature/finance.rs:1455",
+      "source": "apps/aseman-node/src/shell/api/actions/creature/finance.rs:1457",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/creatures/settlePool",
       "request_type": "SettlePoolInput",
-      "source": "node/src/shell/api/actions/creature/finance.rs:2732",
+      "source": "apps/aseman-node/src/shell/api/actions/creature/finance.rs:2734",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/creatures/signal",
       "request_type": "CreatureSignalInput",
-      "source": "node/src/shell/api/actions/creature.rs:393",
+      "source": "apps/aseman-node/src/shell/api/actions/creature.rs:393",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/creatures/startHold",
       "request_type": "StartHoldInput",
-      "source": "node/src/shell/api/actions/creature/finance.rs:1375",
+      "source": "apps/aseman-node/src/shell/api/actions/creature/finance.rs:1377",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/creatures/transfer",
       "request_type": "TransferInput",
-      "source": "node/src/shell/api/actions/creature.rs:293",
+      "source": "apps/aseman-node/src/shell/api/actions/creature.rs:293",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/creatures/types",
       "request_type": "ListInput",
-      "source": "node/src/shell/api/actions/creature.rs:1483",
+      "source": "apps/aseman-node/src/shell/api/actions/creature.rs:1483",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/creatures/update",
       "request_type": "UpdateInput",
-      "source": "node/src/shell/api/actions/creature.rs:1343",
+      "source": "apps/aseman-node/src/shell/api/actions/creature.rs:1343",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/gateway/signal",
       "request_type": "GatewaySignalInput",
-      "source": "node/src/shell/api/actions/gateway.rs:249",
+      "source": "apps/aseman-node/src/shell/api/actions/gateway.rs:249",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/gateway/subscribe",
       "request_type": "GatewaySubscribeInput",
-      "source": "node/src/shell/api/actions/gateway.rs:178",
+      "source": "apps/aseman-node/src/shell/api/actions/gateway.rs:178",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/gateway/unsubscribe",
       "request_type": "GatewayUnsubscribeInput",
-      "source": "node/src/shell/api/actions/gateway.rs:224",
+      "source": "apps/aseman-node/src/shell/api/actions/gateway.rs:224",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/machines/closeVmTerminal",
       "request_type": "VmTerminalInput",
-      "source": "node/src/shell/api/actions/program.rs:1080",
+      "source": "apps/aseman-node/src/shell/api/actions/program.rs:1076",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/machines/list",
       "request_type": "ListInput",
-      "source": "node/src/shell/api/actions/program.rs:1437",
+      "source": "apps/aseman-node/src/shell/api/actions/program.rs:1433",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/machines/listEntityVms",
       "request_type": "RunProgramEntityInput",
-      "source": "node/src/shell/api/actions/program.rs:933",
+      "source": "apps/aseman-node/src/shell/api/actions/program.rs:929",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/machines/listProgramMachines",
       "request_type": "ListAppMachsInput",
-      "source": "node/src/shell/api/actions/program.rs:1516",
+      "source": "apps/aseman-node/src/shell/api/actions/program.rs:1512",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/machines/openVmTerminal",
       "request_type": "VmTerminalInput",
-      "source": "node/src/shell/api/actions/program.rs:1044",
+      "source": "apps/aseman-node/src/shell/api/actions/program.rs:1040",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/machines/readMachineBuilds",
       "request_type": "MachineBuildsInput",
-      "source": "node/src/shell/api/actions/program.rs:1113",
+      "source": "apps/aseman-node/src/shell/api/actions/program.rs:1109",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/machines/readVmLogs",
       "request_type": "ReadVmLogsInput",
-      "source": "node/src/shell/api/actions/program.rs:858",
+      "source": "apps/aseman-node/src/shell/api/actions/program.rs:854",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/programs/create",
       "request_type": "CreateMachineInput",
-      "source": "node/src/shell/api/actions/program.rs:474",
+      "source": "apps/aseman-node/src/shell/api/actions/program.rs:470",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/programs/delete",
       "request_type": "DeleteProgramInput",
-      "source": "node/src/shell/api/actions/program.rs:510",
+      "source": "apps/aseman-node/src/shell/api/actions/program.rs:506",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/programs/deleteEntity",
       "request_type": "RunProgramEntityInput",
-      "source": "node/src/shell/api/actions/program.rs:769",
+      "source": "apps/aseman-node/src/shell/api/actions/program.rs:765",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/programs/deploy",
       "request_type": "DeployInput",
-      "source": "node/src/shell/api/actions/program.rs:1187",
+      "source": "apps/aseman-node/src/shell/api/actions/program.rs:1183",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/programs/downloadEntity",
       "request_type": "DownloadEntityInput",
-      "source": "node/src/shell/api/actions/program.rs:1395",
+      "source": "apps/aseman-node/src/shell/api/actions/program.rs:1391",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/programs/list",
       "request_type": "ListInput",
-      "source": "node/src/shell/api/actions/program.rs:1494",
+      "source": "apps/aseman-node/src/shell/api/actions/program.rs:1490",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/programs/runEntity",
       "request_type": "RunProgramEntityInput",
-      "source": "node/src/shell/api/actions/program.rs:566",
+      "source": "apps/aseman-node/src/shell/api/actions/program.rs:562",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/programs/stopEntity",
       "request_type": "RunProgramEntityInput",
-      "source": "node/src/shell/api/actions/program.rs:692",
+      "source": "apps/aseman-node/src/shell/api/actions/program.rs:688",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/programs/update",
       "request_type": "UpdateProgramInput",
-      "source": "node/src/shell/api/actions/program.rs:533",
+      "source": "apps/aseman-node/src/shell/api/actions/program.rs:529",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/storage/upload",
       "request_type": "StorageUploadInput",
-      "source": "node/src/shell/api/actions/creature.rs:896",
+      "source": "apps/aseman-node/src/shell/api/actions/creature.rs:896",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/stores/getAccess",
       "request_type": "GetAccessInput",
-      "source": "node/src/shell/api/actions/store.rs:241",
+      "source": "apps/aseman-node/src/shell/api/actions/store.rs:241",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/stores/history",
       "request_type": "HistoryInput",
-      "source": "node/src/shell/api/actions/store.rs:172",
+      "source": "apps/aseman-node/src/shell/api/actions/store.rs:172",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/stores/setAccess",
       "request_type": "SetAccessInput",
-      "source": "node/src/shell/api/actions/store.rs:212",
+      "source": "apps/aseman-node/src/shell/api/actions/store.rs:212",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/stores/signal",
       "request_type": "SignalInput",
-      "source": "node/src/shell/api/actions/store.rs:95",
+      "source": "apps/aseman-node/src/shell/api/actions/store.rs:95",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     }

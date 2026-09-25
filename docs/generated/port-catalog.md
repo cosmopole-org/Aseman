@@ -10,6 +10,7 @@ verification: python3 scripts/generate_phase1_contracts.py --check
 
 | Behavioral port | Owning crate |
 |---|---|
+| `ActionExecutor` | `aseman-ports` |
 | `BlobStore` | `aseman-ports` |
 | `CanonicalRecordWriter` | `aseman-ports` |
 | `ChallengeStore` | `aseman-ports` |
@@ -33,8 +34,10 @@ verification: python3 scripts/generate_phase1_contracts.py --check
 | `ProgramAlarms` | `aseman-ports` |
 | `ProgramDirectory` | `aseman-ports` |
 | `ProgramMetadata` | `aseman-ports` |
+| `PublicActionIdempotency` | `aseman-ports` |
 | `ReplayGuard` | `aseman-ports` |
 | `ServerIdentityPort` | `aseman-ports` |
+| `SessionDirectory` | `aseman-ports` |
 | `SignalLog` | `aseman-ports` |
 | `StoreAccess` | `aseman-ports` |
 | `StoreDirectory` | `aseman-ports` |

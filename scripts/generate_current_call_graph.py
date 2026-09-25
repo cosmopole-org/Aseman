@@ -38,7 +38,7 @@ def vmm_client_methods() -> frozenset:
     from the client keeps the inventory honest when the client gains or loses one,
     instead of pinning a list that silently goes stale.
     """
-    source = (ROOT / "node/src/shell/workloads.rs").read_text(encoding="utf-8")
+    source = (ROOT / "apps/aseman-node/src/shell/workloads.rs").read_text(encoding="utf-8")
     blocks = [
         source[start : source.find("\n}\n", start)]
         for start in (
@@ -132,7 +132,7 @@ def action_rows() -> list[dict[str, Any]]:
     )
     # Action families are progressively partitioned into owned submodules.
     # The call graph follows the public registrations, not the old flat layout.
-    for path in sorted((ROOT / "node/src/shell/api/actions").rglob("*.rs")):
+    for path in sorted((ROOT / "apps/aseman-node/src/shell/api/actions").rglob("*.rs")):
         value = path.read_text(encoding="utf-8")
         for function in function_pattern.finditer(value):
             open_brace = value.find("{", function.end())
@@ -205,9 +205,9 @@ def inventory() -> dict[str, Any]:
             "generator": GENERATOR,
         },
         "shared_dispatch": {
-            "registration": "node/src/shell/api/main.rs::plug_all",
-            "wrapper": "node/src/shell/api/actions/util.rs::build_secure_action",
-            "authorization": "node/src/core/actor/model/secured/guard.rs::Guard",
+            "registration": "apps/aseman-node/src/shell/api/main.rs::plug_all",
+            "wrapper": "apps/aseman-node/src/shell/api/actions/util.rs::build_secure_action",
+            "authorization": "apps/aseman-node/src/core/actor/model/secured/guard.rs::Guard",
             "local_execution": "ICore::modify_state_securly",
             "chain_routing": "SecureAction::dispatch_via_chain",
             "federation_routing": "SecureAction::dispatch_via_federation",

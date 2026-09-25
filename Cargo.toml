@@ -1,31 +1,42 @@
 [workspace]
 resolver = "2"
 # The backend family directory holds member crates of its own.
-exclude = ["modules/vmm-backend"]
+exclude = ["modules/consensus", "modules/federation", "modules/finance", "modules/network", "modules/realtime", "modules/runtime", "modules/security", "modules/storage", "modules/vmm-backend"]
 members = [
-  "apps/*",
-  "cmd/casparctl",
+  "apps/aseman-meter",
+  "apps/aseman-node",
+  "apps/aseman-vmm",
+  "apps/aseman-vmm-agent",
+  "apps/asemanctl",
   "crates/*",
-  "node",
-  "node/crates/*",
   "modules/*",
+  "modules/network/http",
+  "modules/network/legacy",
+  "modules/federation/http",
+  "modules/consensus/hashgraph",
+  "modules/finance/ledger",
+  "modules/realtime/durable",
+  "modules/runtime/docker",
+  "modules/runtime/elpian",
+  "modules/runtime/elpian/crates/elpian-vm",
+  "modules/runtime/elpify",
+  "modules/runtime/elpify/crates/elpify-lang",
+  "modules/runtime/firecracker",
+  "modules/runtime/javascript",
+  "modules/runtime/modal",
+  "modules/runtime/sdk-legacy",
+  "modules/runtime/wasm",
+  "modules/security/capabilities",
+  "modules/storage/postgres",
+  "modules/storage/rocksdb-legacy",
   "modules/vmm-backend/native-legacy",
+  "modules/vmm-backend/native-legacy/crates/caspar-vm-plugins",
   "modules/vmm-backend/nomad",
   "tests/contracts/module",
   "tests/contracts/policy",
   "tests/contracts/vmm-backend",
   "tests/contracts/storage",
   "tests/migration",
-  "vm-sdk",
-  "vms/docker",
-  "vms/elpian",
-  "vms/elpian/crates/elpian-vm",
-  "vms/elpify",
-  "vms/elpify/crates/elpify-lang",
-  "vms/fire",
-  "vms/javascript",
-  "vms/modal",
-  "vms/wasm",
   "xtask",
 ]
 
@@ -45,6 +56,7 @@ prost = "0.13.5"
 postgres = "0.19.13"
 r2d2 = "0.8.10"
 r2d2_postgres = "0.18.2"
+regex = "1.12.3"
 rocksdb = "0.24.0"
 ring = "0.17.14"
 rsa = { version = "0.9.10", features = ["sha2"] }

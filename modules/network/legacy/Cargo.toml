@@ -1,0 +1,17 @@
+[package]
+name = "aseman-network-legacy"
+description = "Deprecated Caspar TCP/WebSocket TLS and binary framing compatibility implementation."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+anyhow.workspace = true
+rustls = { version = "0.23", default-features = false, features = ["std", "ring", "tls12"] }
+rustls-pemfile = "2"
+serde_json.workspace = true
+
+[lints]
+workspace = true

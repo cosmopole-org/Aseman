@@ -10,23 +10,23 @@
 #   ./build-dist.sh [OPTIONS]
 #
 # Options:
-#   --skip-node      Skip cargo build for caspar-node/keygen (use existing binary)
-#   --skip-ctl       Skip cargo build for casparctl
+#   --skip-node      Skip cargo build for aseman-node/keygen and aliases
+#   --skip-ctl       Skip cargo build for asemanctl and its casparctl alias
+#   --skip-services  Skip aseman-vmm, aseman-meter, and the Nomad backend
 #   --wasmedge-ver V Override WasmEdge version to install (default: 0.17.1)
 #   --disable-vm K   Disable a VM plugin for this node build (repeatable, or
-#                    comma-separated keys). Equivalent to `casparctl vms disable`.
+#                    comma-separated keys). Equivalent to `asemanctl vms disable`.
 #   --enable-vm K    Re-enable a previously disabled VM plugin (repeatable).
 #   --help           Show this help
 #
 # After this script succeeds, run:
-#   docker build -f node/Dockerfile -t caspar-node:latest .
+#   docker build -f deploy/legacy/node.Dockerfile -t caspar-node:latest .
 # =============================================================================
 
 set -euo pipefail
 
 REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-NODE_DIR="$REPO_DIR/node"
-CTL_DIR="$REPO_DIR/cmd/casparctl"
+NATIVE_BACKEND_DIR="$REPO_DIR/modules/vmm-backend/native-legacy"
 DIST_DIR="$REPO_DIR/dist"
 WASMEDGE_VERSION="0.17.1"
 WASMEDGE_HOME="${WASMEDGE_HOME:-$HOME/.wasmedge}"
@@ -53,6 +53,7 @@ _arch() {
 # ─── Args ────────────────────────────────────────────────────────────────────
 SKIP_NODE=false
 SKIP_CTL=false
+SKIP_SERVICES=false
 DISABLE_VMS=()
 ENABLE_VMS=()
 
@@ -60,6 +61,7 @@ while [[ $# -gt 0 ]]; do
   case "$1" in
     --skip-node)    SKIP_NODE=true ;;
     --skip-ctl)     SKIP_CTL=true ;;
+    --skip-services) SKIP_SERVICES=true ;;
     --wasmedge-ver) shift; WASMEDGE_VERSION="$1" ;;
     --disable-vm)   shift; IFS=',' read -ra _keys <<< "$1"; DISABLE_VMS+=("${_keys[@]}") ;;
     --enable-vm)    shift; IFS=',' read -ra _keys <<< "$1"; ENABLE_VMS+=("${_keys[@]}") ;;
@@ -152,71 +154,75 @@ export LD_LIBRARY_PATH="$WASMEDGE_LIB_DIR:${LD_LIBRARY_PATH:-}"
 export PATH="$(dirname "$WASMEDGE_LIB_DIR")/bin:$PATH"
 
 # =============================================================================
-# Step 3 — Build casparctl (needed first: it drives the VM plugin selection)
+# Step 3 — Build asemanctl (needed first: it drives the VM plugin selection)
 # =============================================================================
-step "Step 3: Build casparctl"
+step "Step 3: Build asemanctl and compatibility alias"
 
-CTL_BIN="$CTL_DIR/target/release/casparctl"
-if $SKIP_CTL && [[ -f "$CTL_BIN" ]]; then
-  ok "Skipping casparctl build (--skip-ctl), binary already present"
+CTL_BIN="$REPO_DIR/target/release/asemanctl"
+CASPAR_CTL_BIN="$REPO_DIR/target/release/casparctl"
+if $SKIP_CTL && [[ -f "$CTL_BIN" && -f "$CASPAR_CTL_BIN" ]]; then
+  ok "Skipping asemanctl build (--skip-ctl), binary already present"
 else
-  info "Running cargo build --release (casparctl)…"
+  info "Running cargo build --release (asemanctl + casparctl alias)…"
   CTL_START=$SECONDS
-  cd "$CTL_DIR"
+  cd "$REPO_DIR"
   CTL_LOG="${TMPDIR:-/tmp}/caspar-ctl-build.log"
   set +e
-  cargo build --release 2>&1 | tee "$CTL_LOG" | grep -E "^error|Compiling casparctl|Finished"
+  cargo build --release -p asemanctl 2>&1 | tee "$CTL_LOG" | grep -E "^error|Compiling asemanctl|Finished"
   CARGO_STATUS=${PIPESTATUS[0]}
   set -e
   if [[ $CARGO_STATUS -ne 0 ]]; then
     tail -n 60 "$CTL_LOG" >&2
-    die "cargo build failed for casparctl (exit $CARGO_STATUS) — full log: $CTL_LOG"
+    die "cargo build failed for asemanctl (exit $CARGO_STATUS) — full log: $CTL_LOG"
   fi
   cd "$REPO_DIR"
-  ok "casparctl built in $((SECONDS - CTL_START))s"
-  [[ -f "$CTL_BIN" ]] || die "casparctl binary not found"
+  ok "asemanctl built in $((SECONDS - CTL_START))s"
+  [[ -f "$CTL_BIN" ]] || die "asemanctl binary not found"
+  [[ -f "$CASPAR_CTL_BIN" ]] || die "casparctl compatibility binary not found"
 fi
 
 # =============================================================================
 # Step 4 — VM plugin selection + registration codegen
 # =============================================================================
-step "Step 4: Sync VM plugins (vms/ → generated registration crate)"
+step "Step 4: Sync VM plugins (modules/runtime → generated registration crate)"
 
 if [[ -f "$CTL_BIN" ]]; then
   # Apply one-shot selection flags first.
   for key in "${DISABLE_VMS[@]:-}"; do
     [[ -n "$key" ]] || continue
-    "$CTL_BIN" vms disable "$key" --vms-dir "$REPO_DIR/vms" || die "failed to disable VM '$key'"
+    "$CTL_BIN" vms disable "$key" --vms-dir "$REPO_DIR/modules/runtime" || die "failed to disable VM '$key'"
   done
   for key in "${ENABLE_VMS[@]:-}"; do
     [[ -n "$key" ]] || continue
-    "$CTL_BIN" vms enable "$key" --vms-dir "$REPO_DIR/vms" || die "failed to enable VM '$key'"
+    "$CTL_BIN" vms enable "$key" --vms-dir "$REPO_DIR/modules/runtime" || die "failed to enable VM '$key'"
   done
   # Regenerate the node's plugin registration code from the current selection
   # so the binary carries exactly the VM types the admin picked.
-  "$CTL_BIN" vms sync --vms-dir "$REPO_DIR/vms" --node-dir "$NODE_DIR" \
-    || die "casparctl vms sync failed"
+  "$CTL_BIN" vms sync --vms-dir "$REPO_DIR/modules/runtime" --node-dir "$NATIVE_BACKEND_DIR" \
+    || die "asemanctl vms sync failed"
   ok "VM plugin registration is in sync"
 else
-  warn "casparctl binary unavailable — skipping VM plugin sync (using committed registration)"
+  warn "asemanctl binary unavailable — skipping VM plugin sync (using committed registration)"
 fi
 
 # =============================================================================
-# Step 5 — Build caspar-node workspace
+# Step 5 — Build canonical node and compatibility aliases
 # =============================================================================
-step "Step 5: Build caspar-node workspace"
+step "Step 5: Build aseman-node and compatibility aliases"
+
+NODE_BIN_DIR="$REPO_DIR/target/release"
 
 if $SKIP_NODE; then
-  [[ -f "$NODE_DIR/target/release/caspar-node" ]] \
-    || die "--skip-node given but binary not found at $NODE_DIR/target/release/caspar-node"
+  [[ -f "$NODE_BIN_DIR/aseman-node" && -f "$NODE_BIN_DIR/caspar-node" ]] \
+    || die "--skip-node given but canonical node or alias is missing"
   ok "Skipping node build (--skip-node)"
 else
-  info "Running cargo build --release (node workspace)…"
+  info "Running cargo build --release (aseman-node + aliases)…"
   BUILD_START=$SECONDS
-  cd "$NODE_DIR"
+  cd "$REPO_DIR"
   NODE_LOG="${TMPDIR:-/tmp}/caspar-node-build.log"
   set +e
-  cargo build --release 2>&1 | tee "$NODE_LOG" | grep -E "^error|Compiling caspar|Finished"
+  cargo build --release -p aseman-node 2>&1 | tee "$NODE_LOG" | grep -E "^error|Compiling aseman-node|Finished"
   CARGO_STATUS=${PIPESTATUS[0]}
   set -e
   if [[ $CARGO_STATUS -ne 0 ]]; then
@@ -227,20 +233,43 @@ else
   ok "Node workspace built in $((SECONDS - BUILD_START))s"
 fi
 
-for bin in caspar-node caspar-keygen; do
-  [[ -f "$NODE_DIR/target/release/$bin" ]] || die "Expected binary missing: $NODE_DIR/target/release/$bin"
+for bin in aseman-node aseman-keygen caspar-node caspar-keygen; do
+  [[ -f "$NODE_BIN_DIR/$bin" ]] || die "Expected binary missing: $NODE_BIN_DIR/$bin"
 done
 
-# casparctl was already built in Step 3; nothing to do here beyond noting
+# =============================================================================
+# Step 6 — Build independent service artifacts
+# =============================================================================
+step "Step 6: Build independent service artifacts"
+
+SERVICE_BINS=(aseman-vmm aseman-meter aseman-vmm-backend-nomad aseman-vmm-agent)
+if $SKIP_SERVICES; then
+  for bin in "${SERVICE_BINS[@]}"; do
+    [[ -f "$NODE_BIN_DIR/$bin" ]] || die "--skip-services given but $bin is missing"
+  done
+  ok "Skipping independent service builds (--skip-services)"
+else
+  info "Running cargo build --release for VMM, meter, and Nomad backend…"
+  cargo build --release \
+    -p aseman-vmm \
+    -p aseman-meter \
+    -p aseman-vmm-backend-nomad \
+    -p aseman-vmm-agent
+  for bin in "${SERVICE_BINS[@]}"; do
+    [[ -f "$NODE_BIN_DIR/$bin" ]] || die "Expected binary missing: $NODE_BIN_DIR/$bin"
+  done
+fi
+
+# asemanctl and its alias were already built in Step 3; nothing to do here beyond noting
 # whether its binary is available for the dist copy.
-if [[ ! -f "$CTL_BIN" ]]; then
+if [[ ! -f "$CTL_BIN" || ! -f "$CASPAR_CTL_BIN" ]]; then
   SKIP_CTL_COPY=true
 fi
 
 # =============================================================================
-# Step 6 — Obtain QuestDB jar
+# Step 7 — Obtain QuestDB jar (legacy compatibility artifact)
 # =============================================================================
-step "Step 6: QuestDB jar"
+step "Step 7: QuestDB jar"
 
 QUESTDB_JAR_SRC="/opt/questdb/questdb.jar"
 
@@ -259,17 +288,23 @@ fi
 ok "QuestDB jar: $QUESTDB_JAR_SRC ($(ls -lh "$QUESTDB_JAR_SRC" | awk '{print $5}'))"
 
 # =============================================================================
-# Step 7 — Populate dist/
+# Step 8 — Populate dist/
 # =============================================================================
-step "Step 7: Populate dist/"
+step "Step 8: Populate dist/"
 
 mkdir -p "$DIST_DIR/bin" "$DIST_DIR/lib/wasmedge" "$DIST_DIR/questdb"
 
 info "Copying binaries…"
-cp "$NODE_DIR/target/release/caspar-node"   "$DIST_DIR/bin/caspar-node"
-cp "$NODE_DIR/target/release/caspar-keygen" "$DIST_DIR/bin/caspar-keygen"
+cp "$NODE_BIN_DIR/aseman-node"              "$DIST_DIR/bin/aseman-node"
+cp "$NODE_BIN_DIR/aseman-keygen"            "$DIST_DIR/bin/aseman-keygen"
+cp "$NODE_BIN_DIR/caspar-node"              "$DIST_DIR/bin/caspar-node"
+cp "$NODE_BIN_DIR/caspar-keygen"            "$DIST_DIR/bin/caspar-keygen"
+for bin in "${SERVICE_BINS[@]}"; do
+  cp "$NODE_BIN_DIR/$bin" "$DIST_DIR/bin/$bin"
+done
 if [[ "${SKIP_CTL_COPY:-false}" != "true" ]]; then
-  cp "$CTL_DIR/target/release/casparctl"     "$DIST_DIR/bin/casparctl"
+  cp "$CTL_BIN"                             "$DIST_DIR/bin/asemanctl"
+  cp "$CASPAR_CTL_BIN"                      "$DIST_DIR/bin/casparctl"
 fi
 chmod +x "$DIST_DIR/bin/"*
 
@@ -308,5 +343,5 @@ echo ""
 echo -e "  ${BOLD}Total time:${NC} ${ELAPSED}s"
 echo ""
 echo -e "  ${BOLD}Next step:${NC}"
-echo "    docker build -f node/Dockerfile -t caspar-node:latest ."
+echo "    docker build -f deploy/images/node.Dockerfile -t aseman-node:latest ."
 echo ""

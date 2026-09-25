@@ -3,7 +3,7 @@ import unittest
 
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
-CLIENT = ROOT / "node/src/drivers/network/client"
+CLIENT = ROOT / "apps/aseman-node/src/drivers/network/client"
 
 
 class PhaseOneBoundaryTests(unittest.TestCase):
@@ -22,7 +22,7 @@ class PhaseOneBoundaryTests(unittest.TestCase):
             self.assertIn("impl SessionTransport<Socket>", source, transport)
 
     def test_node_composition_uses_typed_configuration(self) -> None:
-        composition = (ROOT / "node/src/lib.rs").read_text()
+        composition = (ROOT / "apps/aseman-node/src/lib.rs").read_text()
         config = (ROOT / "crates/aseman-config/src/lib.rs").read_text()
         self.assertIn("AsemanConfig::from_process_with_dotenv", composition)
         self.assertNotIn("env::var(", composition)
@@ -30,7 +30,7 @@ class PhaseOneBoundaryTests(unittest.TestCase):
         self.assertIn("pub struct NetworkConfig", config)
         self.assertIn("pub struct LegacyStorageConfig", config)
 
-        for path in (ROOT / "node/src").rglob("*.rs"):
+        for path in (ROOT / "apps/aseman-node/src").rglob("*.rs"):
             source = path.read_text()
             self.assertNotIn("env::var(", source, str(path.relative_to(ROOT)))
             self.assertNotIn("env::var_os(", source, str(path.relative_to(ROOT)))
@@ -45,8 +45,8 @@ class PhaseOneBoundaryTests(unittest.TestCase):
             self.assertNotIn("env::var_os(", source, str(path.relative_to(ROOT)))
 
     def test_oversized_creature_owner_is_partitioned_by_action_family(self) -> None:
-        parent_path = ROOT / "node/src/shell/api/actions/creature.rs"
-        finance_path = ROOT / "node/src/shell/api/actions/creature/finance.rs"
+        parent_path = ROOT / "apps/aseman-node/src/shell/api/actions/creature.rs"
+        finance_path = ROOT / "apps/aseman-node/src/shell/api/actions/creature/finance.rs"
         parent = parent_path.read_text()
         finance = finance_path.read_text()
 

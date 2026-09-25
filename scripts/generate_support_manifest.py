@@ -116,7 +116,7 @@ def build() -> dict[str, Any]:
                 disposition = "rewrite-and-delete-openraft-command"
             cli.append(row(f"casparctl {group} {item['command']}", "casparctl", target, disposition))
     for item in fixture["cli"]["client_cli"]:
-        cli.append(row(f"caspar-client {item['command']}", "client-cli", "generated Aseman client/asemanctl", "rewrite"))
+        cli.append(row(f"caspar-client {item['command']}", "apps/aseman-client", "generated Aseman client/asemanctl", "rewrite"))
     for item in fixture["cli"]["root_scripts"]:
         cli.append(row(item["script"], "root script", "xtask/bootstrap/deploy workflow", "rewrite"))
 
@@ -137,9 +137,9 @@ def build() -> dict[str, Any]:
             "tests/characterization/test_surface_golden.py",
             "crates/aseman-contracts/src/legacy_gateway.rs::tests",
             "crates/aseman-contracts/src/legacy_storage_http.rs::tests",
-            "node/src/shell/storage_http.rs::characterization_tests",
-            "cargo test -p caspar-node --lib (401 tests at Phase 0 baseline; migrated pure cases move to clean crates)",
-            "cargo test -p casparctl (33 tests at baseline)",
+            "apps/aseman-node/src/shell/storage_http.rs::characterization_tests",
+            "cargo test -p aseman-node --lib (401 tests at Phase 0 baseline; migrated pure cases move to clean crates)",
+            "cargo test -p asemanctl --all-targets (33 tests at baseline)",
         ],
         "limitations": [
             "The golden proves names, dispatch ownership, declared capabilities, and persistence shapes; phase contracts add deeper semantic and adversarial cases before each replacement.",

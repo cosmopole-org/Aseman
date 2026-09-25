@@ -1,0 +1,21 @@
+{
+  "version": 1,
+  "replacement": "[REDACTED]",
+  "case_insensitive_key_fragments": [
+    "authorization", "cookie", "credential", "password", "private_key",
+    "secret", "session", "token"
+  ],
+  "value_patterns": [
+    "(?i)bearer[ ]+[a-z0-9._~+/-]+=*",
+    "-----BEGIN[ A-Z0-9_-]*PRIVATE KEY-----[\\s\\S]*?-----END[ A-Z0-9_-]*PRIVATE KEY-----",
+    "(?i)(postgres(?:ql)?://[^:/@[:space:]]+:)[^@[:space:]]+@"
+  ],
+  "never_collect": [
+    "raw secret files",
+    "private keys",
+    "environment variable values",
+    "guest database credentials",
+    "workload credentials",
+    "session or authorization headers"
+  ]
+}

@@ -25,19 +25,19 @@ Until a root `AGENTS.md` exists, this guide and the migration index govern migra
 
 | Current source | Current responsibility | Target owner | Removal proof |
 |---|---|---|---|
-| `node/src/main.rs` | Configuration, composition, startup, lifecycle | `apps/aseman-node` composition root plus `aseman-config` | No business rules or direct environment reads remain in `main`. |
-| `node/src/models/*` | Mixed domain, ports, packets, state, worker DTOs | `aseman-domain`, `aseman-ports`, `aseman-contracts` | No global model bucket; every type has one semantic owner. |
-| `node/src/core/*` | Transactions, orchestration, globe, actor registry | `aseman-application` use cases plus selected domain/services | No service locator or driver imports in application/domain. |
-| `node/src/shell/api/actions/*` | Routes, authorization, domain rules, persistence, VM and finance behavior | Application use cases plus gateway DTO adapters | Route handlers contain translation only; large action files deleted. |
-| `node/src/drivers/storage.rs` and RocksDB transaction code | KV and time-series persistence | Capsule ports, PostgreSQL module, legacy RocksDB migration module | Node/application no longer imports RocksDB/QuestDB types. |
-| `node/src/drivers/security.rs` | Signing and verification | Identity/crypto adapter plus policy/security module | All authorization passes one policy decision contract. |
-| `node/src/drivers/signaler.rs` | In-process realtime callbacks | Realtime port and durable/in-memory modules | No authoritative process-local subscription state in production. |
-| `node/src/drivers/network/client/*` | TCP/WS framing plus duplicated sessions | Network modules plus transport-neutral gateway/session application | Legacy adapters own framing only and expire on the removal ledger. |
-| `node/src/drivers/network/federation/*` | Peer transport and routing | Federation HTTP module and application federation use cases | All envelope types share signed verification and replay rules. |
-| `node/src/drivers/network/chain/hashgraph/*` | Hashgraph implementation/state | `modules/consensus/hashgraph` | Node finance depends only on consensus port/contract. |
-| `node/src/drivers/cluster/*` | OpenRaft instance mesh | Removed or isolated optional role decided by ADR | No overlap with Nomad scheduling/worker authority. |
-| `node/src/drivers/vmm/*` | Embedded VMM, host calls, runtime network and globals | `apps/aseman-vmm`, VMM-backend modules, worker agent, guest gateway | Node binary has no runtime dependencies/globals/direct calls. |
-| `node/src/telemetry/*` | Profiling and node metrics | `aseman-observability` plus telemetry capsule/provider paths | Telemetry persistence uses capsules; exporters remain non-authoritative. |
+| `apps/aseman-node/src/main.rs` | Configuration, composition, startup, lifecycle | `apps/aseman-node` composition root plus `aseman-config` | No business rules or direct environment reads remain in `main`. |
+| `apps/aseman-node/src/models/*` | Mixed domain, ports, packets, state, worker DTOs | `aseman-domain`, `aseman-ports`, `aseman-contracts` | No global model bucket; every type has one semantic owner. |
+| `apps/aseman-node/src/core/*` | Transactions, orchestration, globe, actor registry | `aseman-application` use cases plus selected domain/services | No service locator or driver imports in application/domain. |
+| `apps/aseman-node/src/shell/api/actions/*` | Routes, authorization, domain rules, persistence, VM and finance behavior | Application use cases plus gateway DTO adapters | Route handlers contain translation only; large action files deleted. |
+| `apps/aseman-node/src/drivers/storage.rs` and RocksDB transaction code | KV and time-series persistence | Capsule ports, PostgreSQL module, legacy RocksDB migration module | Node/application no longer imports RocksDB/QuestDB types. |
+| `apps/aseman-node/src/drivers/security.rs` | Signing and verification | Identity/crypto adapter plus policy/security module | All authorization passes one policy decision contract. |
+| `apps/aseman-node/src/drivers/signaler.rs` | In-process realtime callbacks | Realtime port and durable/in-memory modules | No authoritative process-local subscription state in production. |
+| `apps/aseman-node/src/drivers/network/client/*` | TCP/WS framing plus duplicated sessions | Network modules plus transport-neutral gateway/session application | Legacy adapters own framing only and expire on the removal ledger. |
+| `apps/aseman-node/src/drivers/network/federation/*` | Peer transport and routing | Federation HTTP module and application federation use cases | All envelope types share signed verification and replay rules. |
+| `modules/consensus/hashgraph` | Hashgraph implementation/state and A804 adapter (moved from the node) | `modules/consensus/hashgraph` | Node financial composition must depend only on the consensus port/contract. |
+| `apps/aseman-node/src/drivers/cluster/*` | OpenRaft instance mesh | Removed or isolated optional role decided by ADR | No overlap with Nomad scheduling/worker authority. |
+| `apps/aseman-node/src/drivers/vmm/*` | Embedded VMM, host calls, runtime network and globals | `apps/aseman-vmm`, VMM-backend modules, worker agent, guest gateway | Node binary has no runtime dependencies/globals/direct calls. |
+| `apps/aseman-node/src/telemetry/*` | Profiling and node metrics | `aseman-observability` plus telemetry capsule/provider paths | Telemetry persistence uses capsules; exporters remain non-authoritative. |
 | `cmd/casparctl/*` | Operator CLI | `apps/asemanctl` | Caspar binary/name remains only as expiring shim. |
 | `vm-sdk/*`, `vms/*` | Compile-time runtime plugin ABI and implementations | Versioned runtime contracts and `modules/runtime/*` | No generated compile-time aggregation in node. |
 | `client-cli/*`, `sdk/*` | Client tooling | Generated clients plus supported SDKs/examples | SDK behavior is generated/tested against OpenAPI contracts. |
@@ -187,10 +187,10 @@ Evidence and known limitations:
 Before `xtask` exists, use component-local commands and record their limits:
 
 ```text
-(cd node && cargo fmt --all -- --check)
-(cd node && cargo check --workspace --all-targets)
-(cd node && cargo test --workspace --all-targets)
-(cd cmd/casparctl && cargo test --all-targets)
+cargo fmt -p aseman-node -- --check
+cargo check -p aseman-node --all-targets
+cargo test -p aseman-node --all-targets
+cargo test -p asemanctl --all-targets
 ```
 
 Native RocksDB/runtime compilation is expensive; a timeout or interrupted build is not a passing result. Phase 1 replaces this ambiguity with targeted `cargo xtask check-fast --changed` and explicit full-suite CI.

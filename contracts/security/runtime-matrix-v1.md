@@ -3,7 +3,7 @@ status: ACCEPTED
 owner: security/runtime
 source_of_truth: this contract, plan/migration/05-security-and-authority.md (Network isolation), ADR 0008
 last_verified_commit: 5c6e6eb
-verification: cargo test -p caspar-node --lib authority; guest_state tests; vms runtime tests
+verification: cargo test -p aseman-node --lib authority; guest_state tests; vms runtime tests
 ---
 
 # A406: network, secret, and host-access enforcement per runtime (v1)
@@ -12,7 +12,7 @@ verification: cargo test -p caspar-node --lib authority; guest_state tests; vms 
 
 Every host call from every runtime goes through the unified host-call dispatcher.
 There, the caller is identified by the node-stamped packet (LD-27) and authorized as its
-registered action by the policy provider (`node/src/shell/authority.rs`, P4-05):
+registered action by the policy provider (`apps/aseman-node/src/shell/authority.rs`, P4-05):
 - The wasm and JavaScript runtimes send lifecycle, HTTP, and proof calls there. Before
   LD-14 was fixed, they had typed-packet shortcuts that bypassed identity.
 - Elpian wraps every guest call in the node-stamped envelope. It used to dispatch the

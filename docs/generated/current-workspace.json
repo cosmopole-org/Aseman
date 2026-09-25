@@ -20,7 +20,7 @@
           "@types/ws": "^8.18.1",
           "typescript": "^5.8.3"
         },
-        "manifest": "client-cli/package.json",
+        "manifest": "apps/aseman-client/package.json",
         "name": "caspar-client-cli",
         "scripts": {
           "build": "tsc && mv dist/index.js dist/index.cjs && chmod +x dist/index.cjs",
@@ -37,10 +37,10 @@
   "repository": {
     "lockfiles": [
       "Cargo.lock",
-      "client-cli/package-lock.json"
+      "apps/aseman-client/package-lock.json"
     ],
     "tracked_dist_file_count": 15,
-    "tracked_file_count": 846,
+    "tracked_file_count": 955,
     "tracked_files_by_top_level": {
       ".cargo": 1,
       ".gitattributes": 1,
@@ -51,40 +51,429 @@
       "Cargo.lock": 1,
       "Cargo.toml": 1,
       "README.md": 1,
-      "apps": 2,
+      "apps": 7,
       "bench-all.sh": 1,
       "build-dist.sh": 1,
       "client-cli": 6,
       "clippy.toml": 1,
       "cmd": 7,
-      "contracts": 70,
-      "crates": 82,
+      "contracts": 83,
+      "crates": 110,
       "dist": 15,
-      "docs": 101,
-      "modules": 102,
-      "node": 276,
+      "docs": 133,
+      "modules": 126,
+      "node": 277,
       "plan": 18,
       "run-nodes.sh": 1,
       "rust-toolchain.toml": 1,
       "rustfmt.toml": 1,
-      "scripts": 18,
+      "scripts": 23,
       "sdk": 10,
       "stop-nodes.sh": 1,
-      "tests": 21,
+      "tests": 22,
       "vm-sdk": 8,
       "vms": 80,
       "wiki": 11,
       "xtask": 3
     },
     "tracked_source_files_by_extension": {
-      ".py": 23,
-      ".rs": 482,
+      ".py": 28,
+      ".rs": 534,
       ".sh": 6,
       ".ts": 1
     }
   },
   "rust": {
     "packages": [
+      {
+        "dependencies": [
+          {
+            "name": "aseman-application",
+            "path": "crates/aseman-application",
+            "scope": "normal"
+          },
+          {
+            "name": "aseman-config",
+            "path": "crates/aseman-config",
+            "scope": "normal"
+          },
+          {
+            "name": "aseman-finance-ledger",
+            "path": "modules/finance/ledger",
+            "scope": "normal"
+          },
+          {
+            "name": "aseman-vmm-http",
+            "path": "modules/vmm-http",
+            "scope": "normal"
+          },
+          {
+            "name": "postgres",
+            "scope": "normal"
+          }
+        ],
+        "description": "Independent Aseman usage collection and idempotent settlement process.",
+        "edition": {
+          "workspace": true
+        },
+        "features": {},
+        "manifest": "apps/aseman-meter/Cargo.toml",
+        "name": "aseman-meter",
+        "targets": [
+          {
+            "kind": "bin",
+            "name": "aseman-meter",
+            "path": "src/main.rs"
+          }
+        ],
+        "version": {
+          "workspace": true
+        }
+      },
+      {
+        "dependencies": [
+          {
+            "name": "anyhow",
+            "scope": "normal",
+            "version": "1.0.102"
+          },
+          {
+            "name": "aseman-application",
+            "path": "crates/aseman-application",
+            "scope": "normal"
+          },
+          {
+            "name": "aseman-capsule",
+            "path": "crates/aseman-capsule",
+            "scope": "normal"
+          },
+          {
+            "name": "aseman-config",
+            "path": "crates/aseman-config",
+            "scope": "normal"
+          },
+          {
+            "name": "aseman-consensus-hashgraph",
+            "path": "modules/consensus/hashgraph",
+            "scope": "normal"
+          },
+          {
+            "name": "aseman-contracts",
+            "path": "crates/aseman-contracts",
+            "scope": "normal"
+          },
+          {
+            "name": "aseman-domain",
+            "path": "crates/aseman-domain",
+            "scope": "normal"
+          },
+          {
+            "name": "aseman-guest-http",
+            "path": "modules/guest-http",
+            "scope": "normal"
+          },
+          {
+            "name": "aseman-identity-native",
+            "path": "modules/identity-native",
+            "scope": "normal"
+          },
+          {
+            "name": "aseman-module-runtime",
+            "path": "crates/aseman-module-runtime",
+            "scope": "normal"
+          },
+          {
+            "name": "aseman-network-legacy",
+            "path": "modules/network/legacy",
+            "scope": "normal"
+          },
+          {
+            "name": "aseman-observability",
+            "path": "crates/aseman-observability",
+            "scope": "normal"
+          },
+          {
+            "name": "aseman-policy-native",
+            "path": "modules/security/capabilities",
+            "scope": "normal"
+          },
+          {
+            "name": "aseman-ports",
+            "path": "crates/aseman-ports",
+            "scope": "normal"
+          },
+          {
+            "name": "aseman-storage-legacy",
+            "path": "modules/storage/rocksdb-legacy",
+            "scope": "normal"
+          },
+          {
+            "name": "aseman-storage-postgres",
+            "path": "modules/storage/postgres",
+            "scope": "normal"
+          },
+          {
+            "name": "aseman-vmm-http",
+            "path": "modules/vmm-http",
+            "scope": "normal"
+          },
+          {
+            "name": "base64",
+            "scope": "normal",
+            "version": "0.22.1"
+          },
+          {
+            "name": "chacha20poly1305",
+            "scope": "normal",
+            "version": "0.10.1"
+          },
+          {
+            "default-features": false,
+            "features": [
+              "clock",
+              "std"
+            ],
+            "name": "chrono",
+            "scope": "normal",
+            "version": "0.4.44"
+          },
+          {
+            "name": "crossbeam-channel",
+            "scope": "normal",
+            "version": "0.5.15"
+          },
+          {
+            "name": "dashmap",
+            "scope": "normal",
+            "version": "6.2.1"
+          },
+          {
+            "name": "futures-util",
+            "scope": "normal",
+            "version": "0.3"
+          },
+          {
+            "name": "getrandom",
+            "scope": "normal",
+            "version": "0.2"
+          },
+          {
+            "name": "hex",
+            "scope": "normal",
+            "version": "0.4.3"
+          },
+          {
+            "features": [
+              "arithmetic",
+              "ecdsa"
+            ],
+            "name": "k256",
+            "scope": "normal",
+            "version": "0.13.4"
+          },
+          {
+            "name": "libc",
+            "scope": "normal",
+            "version": "0.2"
+          },
+          {
+            "name": "log",
+            "scope": "normal",
+            "version": "0.4.29"
+          },
+          {
+            "name": "num-bigint",
+            "scope": "normal",
+            "version": "0.4.6"
+          },
+          {
+            "name": "once_cell",
+            "scope": "normal",
+            "version": "1"
+          },
+          {
+            "features": [
+              "serde",
+              "storage-v2"
+            ],
+            "name": "openraft",
+            "scope": "normal",
+            "version": "0.9"
+          },
+          {
+            "name": "postgres",
+            "scope": "normal",
+            "version": "0.19.13"
+          },
+          {
+            "features": [
+              "flamegraph",
+              "protobuf-codec"
+            ],
+            "name": "pprof",
+            "scope": "normal",
+            "version": "0.13"
+          },
+          {
+            "name": "r2d2",
+            "scope": "normal",
+            "version": "0.8.10"
+          },
+          {
+            "name": "r2d2_postgres",
+            "scope": "normal",
+            "version": "0.18.2"
+          },
+          {
+            "name": "rand",
+            "scope": "normal",
+            "version": "0.10.1"
+          },
+          {
+            "default-features": false,
+            "features": [
+              "blocking",
+              "json",
+              "rustls-tls"
+            ],
+            "name": "reqwest",
+            "scope": "normal",
+            "version": "0.12"
+          },
+          {
+            "name": "rocksdb",
+            "scope": "normal"
+          },
+          {
+            "name": "rsa",
+            "scope": "normal"
+          },
+          {
+            "default-features": false,
+            "features": [
+              "ring",
+              "std",
+              "tls12"
+            ],
+            "name": "rustls",
+            "scope": "normal",
+            "version": "0.23"
+          },
+          {
+            "name": "rustls-pemfile",
+            "scope": "normal",
+            "version": "2"
+          },
+          {
+            "features": [
+              "derive"
+            ],
+            "name": "serde",
+            "scope": "normal",
+            "version": "1.0.228"
+          },
+          {
+            "name": "serde_json",
+            "scope": "normal",
+            "version": "1.0.149"
+          },
+          {
+            "name": "serde_repr",
+            "scope": "normal",
+            "version": "0.1.20"
+          },
+          {
+            "name": "sha2",
+            "scope": "normal",
+            "version": "0.11.0"
+          },
+          {
+            "name": "tar",
+            "scope": "normal",
+            "version": "0.4.46"
+          },
+          {
+            "name": "thiserror",
+            "scope": "normal",
+            "version": "2.0.18"
+          },
+          {
+            "features": [
+              "io-util",
+              "macros",
+              "net",
+              "rt",
+              "rt-multi-thread",
+              "sync",
+              "time"
+            ],
+            "name": "tokio",
+            "scope": "normal",
+            "version": "1"
+          },
+          {
+            "name": "tonic",
+            "scope": "normal"
+          },
+          {
+            "default-features": false,
+            "features": [
+              "handshake"
+            ],
+            "name": "tungstenite",
+            "scope": "normal",
+            "version": "0.24"
+          },
+          {
+            "name": "url",
+            "scope": "normal",
+            "version": "2.5.8"
+          },
+          {
+            "features": [
+              "v4"
+            ],
+            "name": "uuid",
+            "scope": "normal",
+            "version": "1.23.1"
+          },
+          {
+            "features": [
+              "conformance"
+            ],
+            "name": "aseman-ports",
+            "path": "crates/aseman-ports",
+            "scope": "dev"
+          }
+        ],
+        "description": "Canonical Aseman node implementation and composition root.",
+        "edition": {
+          "workspace": true
+        },
+        "features": {},
+        "manifest": "apps/aseman-node/Cargo.toml",
+        "name": "aseman-node",
+        "targets": [
+          {
+            "kind": "bin",
+            "name": "caspar-keygen",
+            "path": "src/bin/caspar-keygen.rs"
+          },
+          {
+            "kind": "bin",
+            "name": "caspar-node",
+            "path": "src/bin/caspar-node.rs"
+          },
+          {
+            "kind": "lib",
+            "name": "aseman-node",
+            "path": "src/lib.rs"
+          }
+        ],
+        "version": {
+          "workspace": true
+        }
+      },
       {
         "dependencies": [
           {
@@ -114,7 +503,7 @@
           },
           {
             "name": "aseman-storage-postgres",
-            "path": "modules/storage-postgres",
+            "path": "modules/storage/postgres",
             "scope": "normal"
           },
           {
@@ -185,9 +574,78 @@
       {
         "dependencies": [
           {
+            "name": "aseman-config",
+            "path": "crates/aseman-config",
+            "scope": "normal"
+          },
+          {
+            "name": "aseman-contracts",
+            "path": "crates/aseman-contracts",
+            "scope": "normal"
+          },
+          {
             "name": "aseman-domain",
             "path": "crates/aseman-domain",
             "scope": "normal"
+          },
+          {
+            "default-features": false,
+            "features": [
+              "http1",
+              "json",
+              "tokio"
+            ],
+            "name": "axum",
+            "scope": "normal",
+            "version": "0.7.9"
+          },
+          {
+            "name": "base64",
+            "scope": "normal"
+          },
+          {
+            "name": "hex",
+            "scope": "normal"
+          },
+          {
+            "features": [
+              "http1",
+              "server"
+            ],
+            "name": "hyper",
+            "scope": "normal",
+            "version": "1"
+          },
+          {
+            "features": [
+              "http1",
+              "server",
+              "service",
+              "tokio"
+            ],
+            "name": "hyper-util",
+            "scope": "normal",
+            "version": "0.1"
+          },
+          {
+            "name": "ring",
+            "scope": "normal"
+          },
+          {
+            "default-features": false,
+            "features": [
+              "ring",
+              "std",
+              "tls12"
+            ],
+            "name": "rustls",
+            "scope": "normal",
+            "version": "0.23"
+          },
+          {
+            "name": "rustls-pemfile",
+            "scope": "normal",
+            "version": "2"
           },
           {
             "name": "serde",
@@ -196,6 +654,47 @@
           {
             "name": "serde_json",
             "scope": "normal"
+          },
+          {
+            "name": "sha2",
+            "scope": "normal"
+          },
+          {
+            "features": [
+              "sync"
+            ],
+            "name": "tokio",
+            "scope": "normal"
+          },
+          {
+            "default-features": false,
+            "features": [
+              "ring",
+              "tls12"
+            ],
+            "name": "tokio-rustls",
+            "scope": "normal",
+            "version": "0.26"
+          },
+          {
+            "default-features": false,
+            "features": [
+              "util"
+            ],
+            "name": "tower",
+            "scope": "normal",
+            "version": "0.5"
+          },
+          {
+            "default-features": false,
+            "features": [
+              "crypto",
+              "pem",
+              "ring"
+            ],
+            "name": "rcgen",
+            "scope": "dev",
+            "version": "0.14"
           }
         ],
         "description": "The worker agent (A603, ADR 0010): the one component with host privilege, owning /dev/kvm and microVM lifecycle behind a narrow authenticated API.",
@@ -206,6 +705,11 @@
         "manifest": "apps/aseman-vmm-agent/Cargo.toml",
         "name": "aseman-vmm-agent",
         "targets": [
+          {
+            "kind": "bin",
+            "name": "aseman-vmm-agent",
+            "path": "src/main.rs"
+          },
           {
             "kind": "lib",
             "name": "aseman-vmm-agent",
@@ -220,8 +724,7 @@
         "dependencies": [
           {
             "name": "anyhow",
-            "scope": "normal",
-            "version": "1.0"
+            "scope": "normal"
           },
           {
             "name": "aseman-config",
@@ -230,8 +733,7 @@
           },
           {
             "name": "base64",
-            "scope": "normal",
-            "version": "0.22"
+            "scope": "normal"
           },
           {
             "default-features": false,
@@ -258,36 +760,43 @@
           },
           {
             "name": "regex",
-            "scope": "normal",
-            "version": "1"
+            "scope": "normal"
           },
           {
-            "features": [
-              "derive"
-            ],
             "name": "serde",
-            "scope": "normal",
-            "version": "1"
+            "scope": "normal"
           },
           {
             "name": "serde_json",
-            "scope": "normal",
-            "version": "1"
+            "scope": "normal"
+          },
+          {
+            "name": "thiserror",
+            "scope": "normal"
           }
         ],
-        "description": "Caspar control CLI \u2014 Docker lifecycle, multi-section telemetry dashboard, runtime profiling.",
-        "edition": "2021",
+        "description": "Canonical Aseman administrative CLI implementation.",
+        "edition": {
+          "workspace": true
+        },
         "features": {},
-        "manifest": "cmd/casparctl/Cargo.toml",
-        "name": "casparctl",
+        "manifest": "apps/asemanctl/Cargo.toml",
+        "name": "asemanctl",
         "targets": [
           {
             "kind": "bin",
             "name": "casparctl",
-            "path": "src/main.rs"
+            "path": "src/bin/casparctl.rs"
+          },
+          {
+            "kind": "lib",
+            "name": "asemanctl",
+            "path": "src/lib.rs"
           }
         ],
-        "version": "0.1.0"
+        "version": {
+          "workspace": true
+        }
       },
       {
         "dependencies": [
@@ -367,12 +876,12 @@
           "workspace": true
         },
         "features": {},
-        "manifest": "crates/aseman-capsule-repositories/Cargo.toml",
-        "name": "aseman-capsule-repositories",
+        "manifest": "crates/aseman-capsule/Cargo.toml",
+        "name": "aseman-capsule",
         "targets": [
           {
             "kind": "lib",
-            "name": "aseman-capsule-repositories",
+            "name": "aseman-capsule",
             "path": "src/lib.rs"
           }
         ],
@@ -534,6 +1043,41 @@
             "scope": "normal"
           },
           {
+            "name": "aseman-domain",
+            "path": "crates/aseman-domain",
+            "scope": "normal"
+          },
+          {
+            "name": "thiserror",
+            "scope": "normal"
+          }
+        ],
+        "description": "Guest-side construction of authenticated Aseman calls without tenancy selection.",
+        "edition": {
+          "workspace": true
+        },
+        "features": {},
+        "manifest": "crates/aseman-guest-sdk/Cargo.toml",
+        "name": "aseman-guest-sdk",
+        "targets": [
+          {
+            "kind": "lib",
+            "name": "aseman-guest-sdk",
+            "path": "src/lib.rs"
+          }
+        ],
+        "version": {
+          "workspace": true
+        }
+      },
+      {
+        "dependencies": [
+          {
+            "name": "aseman-contracts",
+            "path": "crates/aseman-contracts",
+            "scope": "normal"
+          },
+          {
             "name": "base64",
             "scope": "normal"
           },
@@ -638,6 +1182,372 @@
           {
             "kind": "lib",
             "name": "aseman-ports",
+            "path": "src/lib.rs"
+          }
+        ],
+        "version": {
+          "workspace": true
+        }
+      },
+      {
+        "dependencies": [
+          {
+            "name": "anyhow",
+            "scope": "normal"
+          },
+          {
+            "name": "aseman-config",
+            "path": "crates/aseman-config",
+            "scope": "normal"
+          },
+          {
+            "name": "aseman-domain",
+            "path": "crates/aseman-domain",
+            "scope": "normal"
+          },
+          {
+            "name": "aseman-ports",
+            "path": "crates/aseman-ports",
+            "scope": "normal"
+          },
+          {
+            "name": "aseman-storage-legacy",
+            "path": "modules/storage/rocksdb-legacy",
+            "scope": "normal"
+          },
+          {
+            "name": "base64",
+            "scope": "normal"
+          },
+          {
+            "default-features": false,
+            "features": [
+              "clock",
+              "std"
+            ],
+            "name": "chrono",
+            "scope": "normal",
+            "version": "0.4.44"
+          },
+          {
+            "name": "crossbeam-channel",
+            "scope": "normal",
+            "version": "0.5.15"
+          },
+          {
+            "name": "getrandom",
+            "scope": "normal",
+            "version": "0.2"
+          },
+          {
+            "name": "hex",
+            "scope": "normal"
+          },
+          {
+            "features": [
+              "arithmetic",
+              "ecdsa"
+            ],
+            "name": "k256",
+            "scope": "normal",
+            "version": "0.13.4"
+          },
+          {
+            "name": "num-bigint",
+            "scope": "normal",
+            "version": "0.4.6"
+          },
+          {
+            "name": "rand",
+            "scope": "normal",
+            "version": "0.10.1"
+          },
+          {
+            "name": "rocksdb",
+            "scope": "normal"
+          },
+          {
+            "name": "serde",
+            "scope": "normal"
+          },
+          {
+            "name": "serde_json",
+            "scope": "normal"
+          },
+          {
+            "name": "serde_repr",
+            "scope": "normal",
+            "version": "0.1.20"
+          },
+          {
+            "name": "sha2",
+            "scope": "normal",
+            "version": "0.11.0"
+          },
+          {
+            "name": "thiserror",
+            "scope": "normal"
+          },
+          {
+            "features": [
+              "v4"
+            ],
+            "name": "uuid",
+            "scope": "normal"
+          }
+        ],
+        "description": "The extracted legacy Hashgraph/Babble consensus engine for Aseman.",
+        "edition": {
+          "workspace": true
+        },
+        "features": {},
+        "manifest": "modules/consensus/hashgraph/Cargo.toml",
+        "name": "aseman-consensus-hashgraph",
+        "targets": [
+          {
+            "kind": "lib",
+            "name": "aseman-consensus-hashgraph",
+            "path": "src/lib.rs"
+          }
+        ],
+        "version": {
+          "workspace": true
+        }
+      },
+      {
+        "dependencies": [
+          {
+            "name": "aseman-application",
+            "path": "crates/aseman-application",
+            "scope": "normal"
+          },
+          {
+            "name": "aseman-contracts",
+            "path": "crates/aseman-contracts",
+            "scope": "normal"
+          },
+          {
+            "name": "aseman-domain",
+            "path": "crates/aseman-domain",
+            "scope": "normal"
+          },
+          {
+            "name": "aseman-ports",
+            "path": "crates/aseman-ports",
+            "scope": "normal"
+          },
+          {
+            "default-features": false,
+            "features": [
+              "http1",
+              "tokio"
+            ],
+            "name": "axum",
+            "scope": "normal",
+            "version": "0.7.9"
+          },
+          {
+            "name": "base64",
+            "scope": "normal"
+          },
+          {
+            "name": "hex",
+            "scope": "normal"
+          },
+          {
+            "features": [
+              "http1",
+              "server"
+            ],
+            "name": "hyper",
+            "scope": "normal",
+            "version": "1"
+          },
+          {
+            "features": [
+              "http1",
+              "server",
+              "service",
+              "tokio"
+            ],
+            "name": "hyper-util",
+            "scope": "normal",
+            "version": "0.1"
+          },
+          {
+            "features": [
+              "with-uuid-1"
+            ],
+            "name": "postgres",
+            "scope": "normal"
+          },
+          {
+            "name": "r2d2",
+            "scope": "normal"
+          },
+          {
+            "name": "r2d2_postgres",
+            "scope": "normal"
+          },
+          {
+            "default-features": false,
+            "features": [
+              "blocking",
+              "json",
+              "rustls-tls"
+            ],
+            "name": "reqwest",
+            "scope": "normal",
+            "version": "0.12"
+          },
+          {
+            "default-features": false,
+            "features": [
+              "ring",
+              "std",
+              "tls12"
+            ],
+            "name": "rustls",
+            "scope": "normal",
+            "version": "0.23"
+          },
+          {
+            "name": "rustls-pemfile",
+            "scope": "normal",
+            "version": "2"
+          },
+          {
+            "name": "serde",
+            "scope": "normal"
+          },
+          {
+            "name": "serde_json",
+            "scope": "normal"
+          },
+          {
+            "name": "sha2",
+            "scope": "normal"
+          },
+          {
+            "name": "thiserror",
+            "scope": "normal"
+          },
+          {
+            "name": "tokio",
+            "scope": "normal"
+          },
+          {
+            "default-features": false,
+            "features": [
+              "ring",
+              "tls12"
+            ],
+            "name": "tokio-rustls",
+            "scope": "normal",
+            "version": "0.26"
+          },
+          {
+            "default-features": false,
+            "features": [
+              "util"
+            ],
+            "name": "tower",
+            "scope": "normal",
+            "version": "0.5"
+          },
+          {
+            "name": "aseman-config",
+            "path": "crates/aseman-config",
+            "scope": "dev"
+          },
+          {
+            "name": "aseman-policy-native",
+            "path": "modules/security/capabilities",
+            "scope": "dev"
+          },
+          {
+            "features": [
+              "conformance"
+            ],
+            "name": "aseman-ports",
+            "path": "crates/aseman-ports",
+            "scope": "dev"
+          },
+          {
+            "name": "uuid",
+            "scope": "dev"
+          }
+        ],
+        "description": "Aseman federation HTTP transport and PostgreSQL directory/replay provider.",
+        "edition": {
+          "workspace": true
+        },
+        "features": {},
+        "manifest": "modules/federation/http/Cargo.toml",
+        "name": "aseman-federation-http",
+        "targets": [
+          {
+            "kind": "lib",
+            "name": "aseman-federation-http",
+            "path": "src/lib.rs"
+          }
+        ],
+        "version": {
+          "workspace": true
+        }
+      },
+      {
+        "dependencies": [
+          {
+            "name": "aseman-domain",
+            "path": "crates/aseman-domain",
+            "scope": "normal"
+          },
+          {
+            "name": "aseman-ports",
+            "path": "crates/aseman-ports",
+            "scope": "normal"
+          },
+          {
+            "features": [
+              "with-uuid-1"
+            ],
+            "name": "postgres",
+            "scope": "normal"
+          },
+          {
+            "name": "r2d2",
+            "scope": "normal"
+          },
+          {
+            "name": "r2d2_postgres",
+            "scope": "normal"
+          },
+          {
+            "name": "serde_json",
+            "scope": "normal"
+          },
+          {
+            "name": "aseman-config",
+            "path": "crates/aseman-config",
+            "scope": "dev"
+          },
+          {
+            "name": "uuid",
+            "scope": "dev"
+          }
+        ],
+        "description": "PostgreSQL-backed Aseman usage, pricing, and double-entry ledger provider.",
+        "edition": {
+          "workspace": true
+        },
+        "features": {},
+        "manifest": "modules/finance/ledger/Cargo.toml",
+        "name": "aseman-finance-ledger",
+        "targets": [
+          {
+            "kind": "lib",
+            "name": "aseman-finance-ledger",
             "path": "src/lib.rs"
           }
         ],
@@ -836,33 +1746,760 @@
             "scope": "normal"
           },
           {
-            "name": "aseman-ports",
-            "path": "crates/aseman-ports",
+            "default-features": false,
+            "features": [
+              "http1",
+              "tokio"
+            ],
+            "name": "axum",
+            "scope": "normal",
+            "version": "0.7.9"
+          },
+          {
+            "features": [
+              "http1",
+              "server"
+            ],
+            "name": "hyper",
+            "scope": "normal",
+            "version": "1"
+          },
+          {
+            "features": [
+              "http1",
+              "server",
+              "service",
+              "tokio"
+            ],
+            "name": "hyper-util",
+            "scope": "normal",
+            "version": "0.1"
+          },
+          {
+            "default-features": false,
+            "features": [
+              "ring",
+              "std",
+              "tls12"
+            ],
+            "name": "rustls",
+            "scope": "normal",
+            "version": "0.23"
+          },
+          {
+            "name": "rustls-pemfile",
+            "scope": "normal",
+            "version": "2"
+          },
+          {
+            "name": "serde",
             "scope": "normal"
           },
           {
-            "name": "aseman-policy-conformance",
-            "path": "tests/contracts/policy",
-            "scope": "dev"
+            "name": "serde_json",
+            "scope": "normal"
+          },
+          {
+            "features": [
+              "sync"
+            ],
+            "name": "tokio",
+            "scope": "normal"
+          },
+          {
+            "default-features": false,
+            "features": [
+              "ring",
+              "tls12"
+            ],
+            "name": "tokio-rustls",
+            "scope": "normal",
+            "version": "0.26"
+          },
+          {
+            "default-features": false,
+            "features": [
+              "util"
+            ],
+            "name": "tower",
+            "scope": "normal",
+            "version": "0.5"
+          },
+          {
+            "name": "uuid",
+            "scope": "normal"
           }
         ],
-        "description": "The ADR 0008 reference policy provider: the typed evaluator over the A402 registry.",
+        "description": "The A701 hardened public HTTP transport over Aseman's authenticated action service.",
         "edition": {
           "workspace": true
         },
         "features": {},
-        "manifest": "modules/policy-native/Cargo.toml",
-        "name": "aseman-policy-native",
+        "manifest": "modules/network/http/Cargo.toml",
+        "name": "aseman-public-http",
         "targets": [
           {
             "kind": "lib",
-            "name": "aseman-policy-native",
+            "name": "aseman-public-http",
             "path": "src/lib.rs"
           }
         ],
         "version": {
           "workspace": true
         }
+      },
+      {
+        "dependencies": [
+          {
+            "name": "anyhow",
+            "scope": "normal"
+          },
+          {
+            "default-features": false,
+            "features": [
+              "ring",
+              "std",
+              "tls12"
+            ],
+            "name": "rustls",
+            "scope": "normal",
+            "version": "0.23"
+          },
+          {
+            "name": "rustls-pemfile",
+            "scope": "normal",
+            "version": "2"
+          },
+          {
+            "name": "serde_json",
+            "scope": "normal"
+          }
+        ],
+        "description": "Deprecated Caspar TCP/WebSocket TLS and binary framing compatibility implementation.",
+        "edition": {
+          "workspace": true
+        },
+        "features": {},
+        "manifest": "modules/network/legacy/Cargo.toml",
+        "name": "aseman-network-legacy",
+        "targets": [
+          {
+            "kind": "lib",
+            "name": "aseman-network-legacy",
+            "path": "src/lib.rs"
+          }
+        ],
+        "version": {
+          "workspace": true
+        }
+      },
+      {
+        "dependencies": [
+          {
+            "name": "aseman-application",
+            "path": "crates/aseman-application",
+            "scope": "normal"
+          },
+          {
+            "name": "aseman-contracts",
+            "path": "crates/aseman-contracts",
+            "scope": "normal"
+          },
+          {
+            "name": "aseman-domain",
+            "path": "crates/aseman-domain",
+            "scope": "normal"
+          },
+          {
+            "name": "aseman-ports",
+            "path": "crates/aseman-ports",
+            "scope": "normal"
+          },
+          {
+            "name": "aseman-public-http",
+            "path": "modules/network/http",
+            "scope": "normal"
+          },
+          {
+            "name": "thiserror",
+            "scope": "normal"
+          }
+        ],
+        "description": "The composed public action service (P7-06): A401 auth, A402 authorization, execution, and durable idempotency behind the A701 transport contract.",
+        "edition": {
+          "workspace": true
+        },
+        "features": {},
+        "manifest": "modules/public-service/Cargo.toml",
+        "name": "aseman-public-service",
+        "targets": [
+          {
+            "kind": "lib",
+            "name": "aseman-public-service",
+            "path": "src/lib.rs"
+          }
+        ],
+        "version": {
+          "workspace": true
+        }
+      },
+      {
+        "dependencies": [
+          {
+            "name": "aseman-domain",
+            "path": "crates/aseman-domain",
+            "scope": "normal"
+          },
+          {
+            "name": "aseman-ports",
+            "path": "crates/aseman-ports",
+            "scope": "normal"
+          },
+          {
+            "features": [
+              "with-uuid-1"
+            ],
+            "name": "postgres",
+            "scope": "normal"
+          },
+          {
+            "name": "r2d2",
+            "scope": "normal"
+          },
+          {
+            "name": "r2d2_postgres",
+            "scope": "normal"
+          },
+          {
+            "name": "aseman-config",
+            "path": "crates/aseman-config",
+            "scope": "dev"
+          },
+          {
+            "features": [
+              "conformance"
+            ],
+            "name": "aseman-ports",
+            "path": "crates/aseman-ports",
+            "scope": "dev"
+          },
+          {
+            "name": "uuid",
+            "scope": "dev"
+          }
+        ],
+        "description": "PostgreSQL durable event log, outbox, and checkpoint provider for Aseman.",
+        "edition": {
+          "workspace": true
+        },
+        "features": {},
+        "manifest": "modules/realtime/durable/Cargo.toml",
+        "name": "aseman-realtime-durable",
+        "targets": [
+          {
+            "kind": "lib",
+            "name": "aseman-realtime-durable",
+            "path": "src/lib.rs"
+          }
+        ],
+        "version": {
+          "workspace": true
+        }
+      },
+      {
+        "dependencies": [
+          {
+            "name": "aseman-config",
+            "path": "crates/aseman-config",
+            "scope": "normal"
+          },
+          {
+            "name": "base64",
+            "scope": "normal",
+            "version": "0.22"
+          },
+          {
+            "name": "bollard",
+            "scope": "normal",
+            "version": "0.17"
+          },
+          {
+            "name": "caspar-vm-sdk",
+            "path": "modules/runtime/sdk-legacy",
+            "scope": "normal"
+          },
+          {
+            "default-features": false,
+            "features": [
+              "clock",
+              "std"
+            ],
+            "name": "chrono",
+            "scope": "normal",
+            "version": "0.4"
+          },
+          {
+            "name": "futures-util",
+            "scope": "normal",
+            "version": "0.3"
+          },
+          {
+            "default-features": false,
+            "features": [
+              "blocking",
+              "rustls-tls"
+            ],
+            "name": "reqwest",
+            "scope": "normal",
+            "version": "0.12"
+          },
+          {
+            "name": "serde_json",
+            "scope": "normal",
+            "version": "1"
+          },
+          {
+            "name": "tar",
+            "scope": "normal",
+            "version": "0.4"
+          },
+          {
+            "features": [
+              "macros",
+              "rt",
+              "time"
+            ],
+            "name": "tokio",
+            "scope": "normal",
+            "version": "1"
+          },
+          {
+            "features": [
+              "v4"
+            ],
+            "name": "uuid",
+            "scope": "normal",
+            "version": "1"
+          }
+        ],
+        "description": "Caspar VM plugin: Docker container runtime (key: docker)",
+        "edition": "2021",
+        "features": {},
+        "manifest": "modules/runtime/docker/Cargo.toml",
+        "name": "caspar-vm-docker",
+        "targets": [
+          {
+            "kind": "lib",
+            "name": "caspar_vm_docker",
+            "path": "src/lib.rs"
+          }
+        ],
+        "version": "0.1.0"
+      },
+      {
+        "dependencies": [
+          {
+            "name": "caspar-vm-sdk",
+            "path": "modules/runtime/sdk-legacy",
+            "scope": "normal"
+          },
+          {
+            "name": "elpian_vm",
+            "package": "elpian-vm",
+            "path": "modules/runtime/elpian/crates/elpian-vm",
+            "scope": "normal"
+          },
+          {
+            "name": "serde_json",
+            "scope": "normal",
+            "version": "1"
+          }
+        ],
+        "description": "Caspar VM plugin: Elpian AST interpreter runtime (key: elpian)",
+        "edition": "2021",
+        "features": {},
+        "manifest": "modules/runtime/elpian/Cargo.toml",
+        "name": "caspar-vm-elpian",
+        "targets": [
+          {
+            "kind": "lib",
+            "name": "caspar_vm_elpian",
+            "path": "src/lib.rs"
+          }
+        ],
+        "version": "0.1.0"
+      },
+      {
+        "dependencies": [
+          {
+            "name": "once_cell",
+            "scope": "normal",
+            "version": "1.19"
+          },
+          {
+            "features": [
+              "derive"
+            ],
+            "name": "serde",
+            "scope": "normal",
+            "version": "1.0"
+          },
+          {
+            "name": "serde_json",
+            "scope": "normal",
+            "version": "1.0"
+          },
+          {
+            "name": "wasm-bindgen",
+            "scope": "normal",
+            "target": "cfg(target_arch = \"wasm32\")",
+            "version": "0.2"
+          }
+        ],
+        "description": "Elpian AST-based bytecode VM \u2014 a pure executor. Ingests Elpian AST JSON / bytecode (produced by front-end crates such as js2elpian / dart2elpian) and executes it, yielding host calls to the embedding runtime.",
+        "edition": "2021",
+        "features": {},
+        "manifest": "modules/runtime/elpian/crates/elpian-vm/Cargo.toml",
+        "name": "elpian-vm",
+        "targets": [
+          {
+            "kind": "lib",
+            "name": "elpian-vm",
+            "path": "src/lib.rs"
+          }
+        ],
+        "version": "0.1.0"
+      },
+      {
+        "dependencies": [
+          {
+            "name": "base64",
+            "scope": "normal",
+            "version": "0.22"
+          },
+          {
+            "name": "caspar-vm-sdk",
+            "path": "modules/runtime/sdk-legacy",
+            "scope": "normal"
+          },
+          {
+            "name": "elpify-lang",
+            "path": "modules/runtime/elpify/crates/elpify-lang",
+            "scope": "normal"
+          },
+          {
+            "name": "serde_json",
+            "scope": "normal",
+            "version": "1"
+          }
+        ],
+        "description": "Caspar VM plugin: Elpify provable (MASM/STARK) runtime (key: elpify)",
+        "edition": "2021",
+        "features": {},
+        "manifest": "modules/runtime/elpify/Cargo.toml",
+        "name": "caspar-vm-elpify",
+        "targets": [
+          {
+            "kind": "lib",
+            "name": "caspar_vm_elpify",
+            "path": "src/lib.rs"
+          }
+        ],
+        "version": "0.1.0"
+      },
+      {
+        "dependencies": [
+          {
+            "git": "https://github.com/0xPolygonMiden/miden-vm",
+            "name": "miden-vm",
+            "scope": "normal",
+            "tag": "v0.18.3"
+          }
+        ],
+        "description": "JS-like to Miden MASM transpiler and execution engine with proof generation/verification",
+        "edition": "2024",
+        "features": {},
+        "manifest": "modules/runtime/elpify/crates/elpify-lang/Cargo.toml",
+        "name": "elpify-lang",
+        "targets": [
+          {
+            "kind": "lib",
+            "name": "elpify_lang",
+            "path": "src/lib.rs"
+          }
+        ],
+        "version": "0.1.0"
+      },
+      {
+        "dependencies": [
+          {
+            "name": "aseman-config",
+            "path": "crates/aseman-config",
+            "scope": "normal"
+          },
+          {
+            "name": "caspar-vm-sdk",
+            "path": "modules/runtime/sdk-legacy",
+            "scope": "normal"
+          },
+          {
+            "name": "serde_json",
+            "scope": "normal",
+            "version": "1"
+          }
+        ],
+        "description": "Caspar VM plugin: Firecracker microVM runtime (key: fire)",
+        "edition": "2021",
+        "features": {},
+        "manifest": "modules/runtime/firecracker/Cargo.toml",
+        "name": "caspar-vm-fire",
+        "targets": [
+          {
+            "kind": "lib",
+            "name": "caspar_vm_fire",
+            "path": "src/lib.rs"
+          }
+        ],
+        "version": "0.1.0"
+      },
+      {
+        "dependencies": [
+          {
+            "name": "caspar-vm-sdk",
+            "path": "modules/runtime/sdk-legacy",
+            "scope": "normal"
+          },
+          {
+            "name": "elpify-lang",
+            "path": "modules/runtime/elpify/crates/elpify-lang",
+            "scope": "normal"
+          },
+          {
+            "default-features": false,
+            "features": [
+              "bindgen",
+              "std"
+            ],
+            "name": "rquickjs",
+            "scope": "normal",
+            "version": "0.13"
+          },
+          {
+            "name": "serde_json",
+            "scope": "normal",
+            "version": "1"
+          }
+        ],
+        "description": "Caspar VM plugin: JavaScript runtime (key: javascript) \u2014 QuickJS, with the full Caspar host-call ABI",
+        "edition": "2021",
+        "features": {},
+        "manifest": "modules/runtime/javascript/Cargo.toml",
+        "name": "caspar-vm-javascript",
+        "targets": [
+          {
+            "kind": "lib",
+            "name": "caspar_vm_javascript",
+            "path": "src/lib.rs"
+          }
+        ],
+        "version": "0.1.0"
+      },
+      {
+        "dependencies": [
+          {
+            "name": "aseman-config",
+            "path": "crates/aseman-config",
+            "scope": "normal"
+          },
+          {
+            "name": "base64",
+            "scope": "normal",
+            "version": "0.22"
+          },
+          {
+            "name": "caspar-vm-sdk",
+            "path": "modules/runtime/sdk-legacy",
+            "scope": "normal"
+          },
+          {
+            "name": "chrono",
+            "scope": "normal",
+            "version": "0.4"
+          },
+          {
+            "name": "futures-util",
+            "scope": "normal",
+            "version": "0.3"
+          },
+          {
+            "name": "prost",
+            "scope": "normal",
+            "version": "0.13"
+          },
+          {
+            "name": "prost-types",
+            "scope": "normal",
+            "version": "0.13"
+          },
+          {
+            "default-features": false,
+            "features": [
+              "blocking",
+              "rustls-tls"
+            ],
+            "name": "reqwest",
+            "scope": "normal",
+            "version": "0.12"
+          },
+          {
+            "name": "serde_json",
+            "scope": "normal",
+            "version": "1"
+          },
+          {
+            "features": [
+              "macros",
+              "net",
+              "rt",
+              "rt-multi-thread",
+              "time"
+            ],
+            "name": "tokio",
+            "scope": "normal",
+            "version": "1"
+          },
+          {
+            "features": [
+              "tls",
+              "tls-webpki-roots"
+            ],
+            "name": "tonic",
+            "scope": "normal",
+            "version": "0.12"
+          },
+          {
+            "features": [
+              "v4"
+            ],
+            "name": "uuid",
+            "scope": "normal",
+            "version": "1"
+          },
+          {
+            "name": "protox",
+            "scope": "build",
+            "version": "0.7"
+          },
+          {
+            "default-features": false,
+            "features": [
+              "prost"
+            ],
+            "name": "tonic-build",
+            "scope": "build",
+            "version": "0.12"
+          }
+        ],
+        "description": "Caspar VM plugin: Modal cloud sandbox runtime (key: modal)",
+        "edition": "2021",
+        "features": {},
+        "manifest": "modules/runtime/modal/Cargo.toml",
+        "name": "caspar-vm-modal",
+        "targets": [
+          {
+            "kind": "lib",
+            "name": "caspar_vm_modal",
+            "path": "src/lib.rs"
+          }
+        ],
+        "version": "0.1.0"
+      },
+      {
+        "dependencies": [
+          {
+            "name": "base64",
+            "scope": "normal",
+            "version": "0.22"
+          },
+          {
+            "features": [
+              "derive"
+            ],
+            "name": "serde",
+            "scope": "normal",
+            "version": "1"
+          },
+          {
+            "name": "serde_json",
+            "scope": "normal",
+            "version": "1"
+          }
+        ],
+        "description": "Interface SDK for Caspar VM plugins \u2014 every VM type project imports this crate and implements its traits so the compiler can verify all interactions between the VM controller and the Caspar VMM.",
+        "edition": "2021",
+        "features": {},
+        "manifest": "modules/runtime/sdk-legacy/Cargo.toml",
+        "name": "caspar-vm-sdk",
+        "targets": [
+          {
+            "kind": "lib",
+            "name": "caspar_vm_sdk",
+            "path": "src/lib.rs"
+          }
+        ],
+        "version": "0.1.0"
+      },
+      {
+        "dependencies": [
+          {
+            "name": "aseman-config",
+            "path": "crates/aseman-config",
+            "scope": "normal"
+          },
+          {
+            "name": "caspar-vm-sdk",
+            "path": "modules/runtime/sdk-legacy",
+            "scope": "normal"
+          },
+          {
+            "name": "serde_json",
+            "scope": "normal",
+            "version": "1"
+          },
+          {
+            "features": [
+              "aot"
+            ],
+            "git": "https://github.com/WasmEdge/wasmedge-rust-sdk",
+            "name": "wasmedge-sys",
+            "rev": "3e7d3bf9ad1e0ee5324c05a9e3ba9ce596fd3c59",
+            "scope": "normal"
+          },
+          {
+            "git": "https://github.com/WasmEdge/wasmedge-rust-sdk",
+            "name": "wasmedge-types",
+            "rev": "3e7d3bf9ad1e0ee5324c05a9e3ba9ce596fd3c59",
+            "scope": "normal"
+          },
+          {
+            "name": "wat",
+            "scope": "dev",
+            "version": "1"
+          }
+        ],
+        "description": "Caspar VM plugin: WasmEdge-managed WebAssembly runtime (key: wasm, default runtime)",
+        "edition": "2021",
+        "features": {},
+        "manifest": "modules/runtime/wasm/Cargo.toml",
+        "name": "caspar-vm-wasm",
+        "targets": [
+          {
+            "kind": "lib",
+            "name": "caspar_vm_wasm",
+            "path": "src/lib.rs"
+          }
+        ],
+        "version": "0.1.0"
       },
       {
         "dependencies": [
@@ -936,11 +2573,6 @@
       {
         "dependencies": [
           {
-            "name": "aseman-config",
-            "path": "crates/aseman-config",
-            "scope": "normal"
-          },
-          {
             "name": "aseman-contracts",
             "path": "crates/aseman-contracts",
             "scope": "normal"
@@ -951,62 +2583,27 @@
             "scope": "normal"
           },
           {
-            "name": "base64",
+            "name": "aseman-ports",
+            "path": "crates/aseman-ports",
             "scope": "normal"
           },
           {
-            "name": "chacha20poly1305",
-            "scope": "normal",
-            "version": "0.10.1"
-          },
-          {
-            "name": "postgres",
-            "scope": "normal"
-          },
-          {
-            "name": "r2d2",
-            "scope": "normal"
-          },
-          {
-            "name": "r2d2_postgres",
-            "scope": "normal"
-          },
-          {
-            "name": "rocksdb",
-            "scope": "normal"
-          },
-          {
-            "name": "rsa",
-            "scope": "normal"
-          },
-          {
-            "name": "serde",
-            "scope": "normal"
-          },
-          {
-            "name": "serde_json",
-            "scope": "normal"
-          },
-          {
-            "name": "sha2",
-            "scope": "normal"
-          },
-          {
-            "name": "thiserror",
-            "scope": "normal"
+            "name": "aseman-policy-conformance",
+            "path": "tests/contracts/policy",
+            "scope": "dev"
           }
         ],
-        "description": "Read-only legacy storage source and canonical capsule migration bridge.",
+        "description": "The ADR 0008 reference policy provider: the typed evaluator over the A402 registry.",
         "edition": {
           "workspace": true
         },
         "features": {},
-        "manifest": "modules/storage-legacy/Cargo.toml",
-        "name": "aseman-storage-legacy",
+        "manifest": "modules/security/capabilities/Cargo.toml",
+        "name": "aseman-policy-native",
         "targets": [
           {
             "kind": "lib",
-            "name": "aseman-storage-legacy",
+            "name": "aseman-policy-native",
             "path": "src/lib.rs"
           }
         ],
@@ -1017,8 +2614,8 @@
       {
         "dependencies": [
           {
-            "name": "aseman-capsule-repositories",
-            "path": "crates/aseman-capsule-repositories",
+            "name": "aseman-capsule",
+            "path": "crates/aseman-capsule",
             "scope": "normal"
           },
           {
@@ -1096,7 +2693,7 @@
           },
           {
             "name": "aseman-policy-native",
-            "path": "modules/policy-native",
+            "path": "modules/security/capabilities",
             "scope": "dev"
           },
           {
@@ -1122,7 +2719,7 @@
           "workspace": true
         },
         "features": {},
-        "manifest": "modules/storage-postgres/Cargo.toml",
+        "manifest": "modules/storage/postgres/Cargo.toml",
         "name": "aseman-storage-postgres",
         "targets": [
           {
@@ -1133,6 +2730,87 @@
           {
             "kind": "lib",
             "name": "aseman-storage-postgres",
+            "path": "src/lib.rs"
+          }
+        ],
+        "version": {
+          "workspace": true
+        }
+      },
+      {
+        "dependencies": [
+          {
+            "name": "aseman-config",
+            "path": "crates/aseman-config",
+            "scope": "normal"
+          },
+          {
+            "name": "aseman-contracts",
+            "path": "crates/aseman-contracts",
+            "scope": "normal"
+          },
+          {
+            "name": "aseman-domain",
+            "path": "crates/aseman-domain",
+            "scope": "normal"
+          },
+          {
+            "name": "base64",
+            "scope": "normal"
+          },
+          {
+            "name": "chacha20poly1305",
+            "scope": "normal",
+            "version": "0.10.1"
+          },
+          {
+            "name": "postgres",
+            "scope": "normal"
+          },
+          {
+            "name": "r2d2",
+            "scope": "normal"
+          },
+          {
+            "name": "r2d2_postgres",
+            "scope": "normal"
+          },
+          {
+            "name": "rocksdb",
+            "scope": "normal"
+          },
+          {
+            "name": "rsa",
+            "scope": "normal"
+          },
+          {
+            "name": "serde",
+            "scope": "normal"
+          },
+          {
+            "name": "serde_json",
+            "scope": "normal"
+          },
+          {
+            "name": "sha2",
+            "scope": "normal"
+          },
+          {
+            "name": "thiserror",
+            "scope": "normal"
+          }
+        ],
+        "description": "Read-only legacy storage source and canonical capsule migration bridge.",
+        "edition": {
+          "workspace": true
+        },
+        "features": {},
+        "manifest": "modules/storage/rocksdb-legacy/Cargo.toml",
+        "name": "aseman-storage-legacy",
+        "targets": [
+          {
+            "kind": "lib",
+            "name": "aseman-storage-legacy",
             "path": "src/lib.rs"
           }
         ],
@@ -1178,12 +2856,12 @@
           },
           {
             "name": "caspar-vm-plugins",
-            "path": "node/crates/caspar-vm-plugins",
+            "path": "modules/vmm-backend/native-legacy/crates/caspar-vm-plugins",
             "scope": "normal"
           },
           {
             "name": "caspar-vm-sdk",
-            "path": "vm-sdk",
+            "path": "modules/runtime/sdk-legacy",
             "scope": "normal"
           },
           {
@@ -1243,7 +2921,7 @@
           },
           {
             "name": "aseman-storage-postgres",
-            "path": "modules/storage-postgres",
+            "path": "modules/storage/postgres",
             "scope": "dev"
           },
           {
@@ -1315,6 +2993,63 @@
         "version": {
           "workspace": true
         }
+      },
+      {
+        "dependencies": [
+          {
+            "name": "caspar-vm-docker",
+            "path": "modules/runtime/docker",
+            "scope": "normal"
+          },
+          {
+            "name": "caspar-vm-elpian",
+            "path": "modules/runtime/elpian",
+            "scope": "normal"
+          },
+          {
+            "name": "caspar-vm-elpify",
+            "path": "modules/runtime/elpify",
+            "scope": "normal"
+          },
+          {
+            "name": "caspar-vm-fire",
+            "path": "modules/runtime/firecracker",
+            "scope": "normal"
+          },
+          {
+            "name": "caspar-vm-javascript",
+            "path": "modules/runtime/javascript",
+            "scope": "normal"
+          },
+          {
+            "name": "caspar-vm-modal",
+            "path": "modules/runtime/modal",
+            "scope": "normal"
+          },
+          {
+            "name": "caspar-vm-sdk",
+            "path": "modules/runtime/sdk-legacy",
+            "scope": "normal"
+          },
+          {
+            "name": "caspar-vm-wasm",
+            "path": "modules/runtime/wasm",
+            "scope": "normal"
+          }
+        ],
+        "description": "GENERATED aggregation crate that compiles the enabled Caspar VM plugins into the node binary and registers them with the VMM.",
+        "edition": "2021",
+        "features": {},
+        "manifest": "modules/vmm-backend/native-legacy/crates/caspar-vm-plugins/Cargo.toml",
+        "name": "caspar-vm-plugins",
+        "targets": [
+          {
+            "kind": "lib",
+            "name": "caspar_vm_plugins",
+            "path": "src/lib.rs"
+          }
+        ],
+        "version": "0.1.0"
       },
       {
         "dependencies": [
@@ -1671,398 +3406,6 @@
       {
         "dependencies": [
           {
-            "name": "anyhow",
-            "scope": "normal",
-            "version": "1.0.102"
-          },
-          {
-            "name": "aseman-application",
-            "path": "crates/aseman-application",
-            "scope": "normal"
-          },
-          {
-            "name": "aseman-capsule-repositories",
-            "path": "crates/aseman-capsule-repositories",
-            "scope": "normal"
-          },
-          {
-            "name": "aseman-config",
-            "path": "crates/aseman-config",
-            "scope": "normal"
-          },
-          {
-            "name": "aseman-contracts",
-            "path": "crates/aseman-contracts",
-            "scope": "normal"
-          },
-          {
-            "name": "aseman-domain",
-            "path": "crates/aseman-domain",
-            "scope": "normal"
-          },
-          {
-            "name": "aseman-guest-http",
-            "path": "modules/guest-http",
-            "scope": "normal"
-          },
-          {
-            "name": "aseman-identity-native",
-            "path": "modules/identity-native",
-            "scope": "normal"
-          },
-          {
-            "name": "aseman-module-runtime",
-            "path": "crates/aseman-module-runtime",
-            "scope": "normal"
-          },
-          {
-            "name": "aseman-observability",
-            "path": "crates/aseman-observability",
-            "scope": "normal"
-          },
-          {
-            "name": "aseman-policy-native",
-            "path": "modules/policy-native",
-            "scope": "normal"
-          },
-          {
-            "name": "aseman-ports",
-            "path": "crates/aseman-ports",
-            "scope": "normal"
-          },
-          {
-            "name": "aseman-storage-legacy",
-            "path": "modules/storage-legacy",
-            "scope": "normal"
-          },
-          {
-            "name": "aseman-storage-postgres",
-            "path": "modules/storage-postgres",
-            "scope": "normal"
-          },
-          {
-            "name": "aseman-vmm-http",
-            "path": "modules/vmm-http",
-            "scope": "normal"
-          },
-          {
-            "name": "base64",
-            "scope": "normal",
-            "version": "0.22.1"
-          },
-          {
-            "name": "chacha20poly1305",
-            "scope": "normal",
-            "version": "0.10.1"
-          },
-          {
-            "default-features": false,
-            "features": [
-              "clock",
-              "std"
-            ],
-            "name": "chrono",
-            "scope": "normal",
-            "version": "0.4.44"
-          },
-          {
-            "name": "crossbeam-channel",
-            "scope": "normal",
-            "version": "0.5.15"
-          },
-          {
-            "name": "dashmap",
-            "scope": "normal",
-            "version": "6.2.1"
-          },
-          {
-            "name": "futures-util",
-            "scope": "normal",
-            "version": "0.3"
-          },
-          {
-            "name": "getrandom",
-            "scope": "normal",
-            "version": "0.2"
-          },
-          {
-            "name": "hex",
-            "scope": "normal",
-            "version": "0.4.3"
-          },
-          {
-            "features": [
-              "arithmetic",
-              "ecdsa"
-            ],
-            "name": "k256",
-            "scope": "normal",
-            "version": "0.13.4"
-          },
-          {
-            "name": "libc",
-            "scope": "normal",
-            "version": "0.2"
-          },
-          {
-            "name": "log",
-            "scope": "normal",
-            "version": "0.4.29"
-          },
-          {
-            "name": "num-bigint",
-            "scope": "normal",
-            "version": "0.4.6"
-          },
-          {
-            "name": "once_cell",
-            "scope": "normal",
-            "version": "1"
-          },
-          {
-            "features": [
-              "serde",
-              "storage-v2"
-            ],
-            "name": "openraft",
-            "scope": "normal",
-            "version": "0.9"
-          },
-          {
-            "name": "postgres",
-            "scope": "normal",
-            "version": "0.19.13"
-          },
-          {
-            "features": [
-              "flamegraph",
-              "protobuf-codec"
-            ],
-            "name": "pprof",
-            "scope": "normal",
-            "version": "0.13"
-          },
-          {
-            "name": "r2d2",
-            "scope": "normal",
-            "version": "0.8.10"
-          },
-          {
-            "name": "r2d2_postgres",
-            "scope": "normal",
-            "version": "0.18.2"
-          },
-          {
-            "name": "rand",
-            "scope": "normal",
-            "version": "0.10.1"
-          },
-          {
-            "default-features": false,
-            "features": [
-              "blocking",
-              "json",
-              "rustls-tls"
-            ],
-            "name": "reqwest",
-            "scope": "normal",
-            "version": "0.12"
-          },
-          {
-            "name": "rocksdb",
-            "scope": "normal"
-          },
-          {
-            "name": "rsa",
-            "scope": "normal"
-          },
-          {
-            "default-features": false,
-            "features": [
-              "ring",
-              "std",
-              "tls12"
-            ],
-            "name": "rustls",
-            "scope": "normal",
-            "version": "0.23"
-          },
-          {
-            "name": "rustls-pemfile",
-            "scope": "normal",
-            "version": "2"
-          },
-          {
-            "features": [
-              "derive"
-            ],
-            "name": "serde",
-            "scope": "normal",
-            "version": "1.0.228"
-          },
-          {
-            "name": "serde_json",
-            "scope": "normal",
-            "version": "1.0.149"
-          },
-          {
-            "name": "serde_repr",
-            "scope": "normal",
-            "version": "0.1.20"
-          },
-          {
-            "name": "sha2",
-            "scope": "normal",
-            "version": "0.11.0"
-          },
-          {
-            "name": "tar",
-            "scope": "normal",
-            "version": "0.4.46"
-          },
-          {
-            "name": "thiserror",
-            "scope": "normal",
-            "version": "2.0.18"
-          },
-          {
-            "features": [
-              "io-util",
-              "macros",
-              "net",
-              "rt",
-              "rt-multi-thread",
-              "sync",
-              "time"
-            ],
-            "name": "tokio",
-            "scope": "normal",
-            "version": "1"
-          },
-          {
-            "name": "tonic",
-            "scope": "normal"
-          },
-          {
-            "default-features": false,
-            "features": [
-              "handshake"
-            ],
-            "name": "tungstenite",
-            "scope": "normal",
-            "version": "0.24"
-          },
-          {
-            "name": "url",
-            "scope": "normal",
-            "version": "2.5.8"
-          },
-          {
-            "features": [
-              "v4"
-            ],
-            "name": "uuid",
-            "scope": "normal",
-            "version": "1.23.1"
-          },
-          {
-            "features": [
-              "conformance"
-            ],
-            "name": "aseman-ports",
-            "path": "crates/aseman-ports",
-            "scope": "dev"
-          }
-        ],
-        "description": "Caspar node \u2014 Rust translation of the Caspar (kasper) Go node",
-        "edition": "2021",
-        "features": {},
-        "manifest": "node/Cargo.toml",
-        "name": "caspar-node",
-        "targets": [
-          {
-            "kind": "bin",
-            "name": "aseman-node",
-            "path": "src/bin/aseman-node.rs"
-          },
-          {
-            "kind": "bin",
-            "name": "caspar-keygen",
-            "path": "src/bin/keygen.rs"
-          },
-          {
-            "kind": "bin",
-            "name": "caspar-node",
-            "path": "src/bin/caspar-node.rs"
-          },
-          {
-            "kind": "lib",
-            "name": "caspar-node",
-            "path": "src/lib.rs"
-          }
-        ],
-        "version": "0.1.0"
-      },
-      {
-        "dependencies": [
-          {
-            "name": "caspar-vm-docker",
-            "path": "vms/docker",
-            "scope": "normal"
-          },
-          {
-            "name": "caspar-vm-elpian",
-            "path": "vms/elpian",
-            "scope": "normal"
-          },
-          {
-            "name": "caspar-vm-elpify",
-            "path": "vms/elpify",
-            "scope": "normal"
-          },
-          {
-            "name": "caspar-vm-fire",
-            "path": "vms/fire",
-            "scope": "normal"
-          },
-          {
-            "name": "caspar-vm-javascript",
-            "path": "vms/javascript",
-            "scope": "normal"
-          },
-          {
-            "name": "caspar-vm-modal",
-            "path": "vms/modal",
-            "scope": "normal"
-          },
-          {
-            "name": "caspar-vm-sdk",
-            "path": "vm-sdk",
-            "scope": "normal"
-          },
-          {
-            "name": "caspar-vm-wasm",
-            "path": "vms/wasm",
-            "scope": "normal"
-          }
-        ],
-        "description": "GENERATED aggregation crate that compiles the enabled Caspar VM plugins into the node binary and registers them with the VMM.",
-        "edition": "2021",
-        "features": {},
-        "manifest": "node/crates/caspar-vm-plugins/Cargo.toml",
-        "name": "caspar-vm-plugins",
-        "targets": [
-          {
-            "kind": "lib",
-            "name": "caspar_vm_plugins",
-            "path": "src/lib.rs"
-          }
-        ],
-        "version": "0.1.0"
-      },
-      {
-        "dependencies": [
-          {
             "name": "aseman-contracts",
             "path": "crates/aseman-contracts",
             "scope": "normal"
@@ -2224,12 +3567,12 @@
           },
           {
             "name": "aseman-storage-legacy",
-            "path": "modules/storage-legacy",
+            "path": "modules/storage/rocksdb-legacy",
             "scope": "dev"
           },
           {
             "name": "aseman-storage-postgres",
-            "path": "modules/storage-postgres",
+            "path": "modules/storage/postgres",
             "scope": "dev"
           },
           {
@@ -2270,501 +3613,6 @@
       {
         "dependencies": [
           {
-            "name": "base64",
-            "scope": "normal",
-            "version": "0.22"
-          },
-          {
-            "features": [
-              "derive"
-            ],
-            "name": "serde",
-            "scope": "normal",
-            "version": "1"
-          },
-          {
-            "name": "serde_json",
-            "scope": "normal",
-            "version": "1"
-          }
-        ],
-        "description": "Interface SDK for Caspar VM plugins \u2014 every VM type project imports this crate and implements its traits so the compiler can verify all interactions between the VM controller and the Caspar VMM.",
-        "edition": "2021",
-        "features": {},
-        "manifest": "vm-sdk/Cargo.toml",
-        "name": "caspar-vm-sdk",
-        "targets": [
-          {
-            "kind": "lib",
-            "name": "caspar_vm_sdk",
-            "path": "src/lib.rs"
-          }
-        ],
-        "version": "0.1.0"
-      },
-      {
-        "dependencies": [
-          {
-            "name": "aseman-config",
-            "path": "crates/aseman-config",
-            "scope": "normal"
-          },
-          {
-            "name": "base64",
-            "scope": "normal",
-            "version": "0.22"
-          },
-          {
-            "name": "bollard",
-            "scope": "normal",
-            "version": "0.17"
-          },
-          {
-            "name": "caspar-vm-sdk",
-            "path": "vm-sdk",
-            "scope": "normal"
-          },
-          {
-            "default-features": false,
-            "features": [
-              "clock",
-              "std"
-            ],
-            "name": "chrono",
-            "scope": "normal",
-            "version": "0.4"
-          },
-          {
-            "name": "futures-util",
-            "scope": "normal",
-            "version": "0.3"
-          },
-          {
-            "default-features": false,
-            "features": [
-              "blocking",
-              "rustls-tls"
-            ],
-            "name": "reqwest",
-            "scope": "normal",
-            "version": "0.12"
-          },
-          {
-            "name": "serde_json",
-            "scope": "normal",
-            "version": "1"
-          },
-          {
-            "name": "tar",
-            "scope": "normal",
-            "version": "0.4"
-          },
-          {
-            "features": [
-              "macros",
-              "rt",
-              "time"
-            ],
-            "name": "tokio",
-            "scope": "normal",
-            "version": "1"
-          },
-          {
-            "features": [
-              "v4"
-            ],
-            "name": "uuid",
-            "scope": "normal",
-            "version": "1"
-          }
-        ],
-        "description": "Caspar VM plugin: Docker container runtime (key: docker)",
-        "edition": "2021",
-        "features": {},
-        "manifest": "vms/docker/Cargo.toml",
-        "name": "caspar-vm-docker",
-        "targets": [
-          {
-            "kind": "lib",
-            "name": "caspar_vm_docker",
-            "path": "src/lib.rs"
-          }
-        ],
-        "version": "0.1.0"
-      },
-      {
-        "dependencies": [
-          {
-            "name": "caspar-vm-sdk",
-            "path": "vm-sdk",
-            "scope": "normal"
-          },
-          {
-            "name": "elpian_vm",
-            "package": "elpian-vm",
-            "path": "vms/elpian/crates/elpian-vm",
-            "scope": "normal"
-          },
-          {
-            "name": "serde_json",
-            "scope": "normal",
-            "version": "1"
-          }
-        ],
-        "description": "Caspar VM plugin: Elpian AST interpreter runtime (key: elpian)",
-        "edition": "2021",
-        "features": {},
-        "manifest": "vms/elpian/Cargo.toml",
-        "name": "caspar-vm-elpian",
-        "targets": [
-          {
-            "kind": "lib",
-            "name": "caspar_vm_elpian",
-            "path": "src/lib.rs"
-          }
-        ],
-        "version": "0.1.0"
-      },
-      {
-        "dependencies": [
-          {
-            "name": "once_cell",
-            "scope": "normal",
-            "version": "1.19"
-          },
-          {
-            "features": [
-              "derive"
-            ],
-            "name": "serde",
-            "scope": "normal",
-            "version": "1.0"
-          },
-          {
-            "name": "serde_json",
-            "scope": "normal",
-            "version": "1.0"
-          },
-          {
-            "name": "wasm-bindgen",
-            "scope": "normal",
-            "target": "cfg(target_arch = \"wasm32\")",
-            "version": "0.2"
-          }
-        ],
-        "description": "Elpian AST-based bytecode VM \u2014 a pure executor. Ingests Elpian AST JSON / bytecode (produced by front-end crates such as js2elpian / dart2elpian) and executes it, yielding host calls to the embedding runtime.",
-        "edition": "2021",
-        "features": {},
-        "manifest": "vms/elpian/crates/elpian-vm/Cargo.toml",
-        "name": "elpian-vm",
-        "targets": [
-          {
-            "kind": "lib",
-            "name": "elpian-vm",
-            "path": "src/lib.rs"
-          }
-        ],
-        "version": "0.1.0"
-      },
-      {
-        "dependencies": [
-          {
-            "name": "base64",
-            "scope": "normal",
-            "version": "0.22"
-          },
-          {
-            "name": "caspar-vm-sdk",
-            "path": "vm-sdk",
-            "scope": "normal"
-          },
-          {
-            "name": "elpify-lang",
-            "path": "vms/elpify/crates/elpify-lang",
-            "scope": "normal"
-          },
-          {
-            "name": "serde_json",
-            "scope": "normal",
-            "version": "1"
-          }
-        ],
-        "description": "Caspar VM plugin: Elpify provable (MASM/STARK) runtime (key: elpify)",
-        "edition": "2021",
-        "features": {},
-        "manifest": "vms/elpify/Cargo.toml",
-        "name": "caspar-vm-elpify",
-        "targets": [
-          {
-            "kind": "lib",
-            "name": "caspar_vm_elpify",
-            "path": "src/lib.rs"
-          }
-        ],
-        "version": "0.1.0"
-      },
-      {
-        "dependencies": [
-          {
-            "git": "https://github.com/0xPolygonMiden/miden-vm",
-            "name": "miden-vm",
-            "scope": "normal",
-            "tag": "v0.18.3"
-          }
-        ],
-        "description": "JS-like to Miden MASM transpiler and execution engine with proof generation/verification",
-        "edition": "2024",
-        "features": {},
-        "manifest": "vms/elpify/crates/elpify-lang/Cargo.toml",
-        "name": "elpify-lang",
-        "targets": [
-          {
-            "kind": "lib",
-            "name": "elpify_lang",
-            "path": "src/lib.rs"
-          }
-        ],
-        "version": "0.1.0"
-      },
-      {
-        "dependencies": [
-          {
-            "name": "aseman-config",
-            "path": "crates/aseman-config",
-            "scope": "normal"
-          },
-          {
-            "name": "caspar-vm-sdk",
-            "path": "vm-sdk",
-            "scope": "normal"
-          },
-          {
-            "name": "serde_json",
-            "scope": "normal",
-            "version": "1"
-          }
-        ],
-        "description": "Caspar VM plugin: Firecracker microVM runtime (key: fire)",
-        "edition": "2021",
-        "features": {},
-        "manifest": "vms/fire/Cargo.toml",
-        "name": "caspar-vm-fire",
-        "targets": [
-          {
-            "kind": "lib",
-            "name": "caspar_vm_fire",
-            "path": "src/lib.rs"
-          }
-        ],
-        "version": "0.1.0"
-      },
-      {
-        "dependencies": [
-          {
-            "name": "caspar-vm-sdk",
-            "path": "vm-sdk",
-            "scope": "normal"
-          },
-          {
-            "name": "elpify-lang",
-            "path": "vms/elpify/crates/elpify-lang",
-            "scope": "normal"
-          },
-          {
-            "default-features": false,
-            "features": [
-              "bindgen",
-              "std"
-            ],
-            "name": "rquickjs",
-            "scope": "normal",
-            "version": "0.13"
-          },
-          {
-            "name": "serde_json",
-            "scope": "normal",
-            "version": "1"
-          }
-        ],
-        "description": "Caspar VM plugin: JavaScript runtime (key: javascript) \u2014 QuickJS, with the full Caspar host-call ABI",
-        "edition": "2021",
-        "features": {},
-        "manifest": "vms/javascript/Cargo.toml",
-        "name": "caspar-vm-javascript",
-        "targets": [
-          {
-            "kind": "lib",
-            "name": "caspar_vm_javascript",
-            "path": "src/lib.rs"
-          }
-        ],
-        "version": "0.1.0"
-      },
-      {
-        "dependencies": [
-          {
-            "name": "aseman-config",
-            "path": "crates/aseman-config",
-            "scope": "normal"
-          },
-          {
-            "name": "base64",
-            "scope": "normal",
-            "version": "0.22"
-          },
-          {
-            "name": "caspar-vm-sdk",
-            "path": "vm-sdk",
-            "scope": "normal"
-          },
-          {
-            "name": "chrono",
-            "scope": "normal",
-            "version": "0.4"
-          },
-          {
-            "name": "futures-util",
-            "scope": "normal",
-            "version": "0.3"
-          },
-          {
-            "name": "prost",
-            "scope": "normal",
-            "version": "0.13"
-          },
-          {
-            "name": "prost-types",
-            "scope": "normal",
-            "version": "0.13"
-          },
-          {
-            "default-features": false,
-            "features": [
-              "blocking",
-              "rustls-tls"
-            ],
-            "name": "reqwest",
-            "scope": "normal",
-            "version": "0.12"
-          },
-          {
-            "name": "serde_json",
-            "scope": "normal",
-            "version": "1"
-          },
-          {
-            "features": [
-              "macros",
-              "net",
-              "rt",
-              "rt-multi-thread",
-              "time"
-            ],
-            "name": "tokio",
-            "scope": "normal",
-            "version": "1"
-          },
-          {
-            "features": [
-              "tls",
-              "tls-webpki-roots"
-            ],
-            "name": "tonic",
-            "scope": "normal",
-            "version": "0.12"
-          },
-          {
-            "features": [
-              "v4"
-            ],
-            "name": "uuid",
-            "scope": "normal",
-            "version": "1"
-          },
-          {
-            "name": "protox",
-            "scope": "build",
-            "version": "0.7"
-          },
-          {
-            "default-features": false,
-            "features": [
-              "prost"
-            ],
-            "name": "tonic-build",
-            "scope": "build",
-            "version": "0.12"
-          }
-        ],
-        "description": "Caspar VM plugin: Modal cloud sandbox runtime (key: modal)",
-        "edition": "2021",
-        "features": {},
-        "manifest": "vms/modal/Cargo.toml",
-        "name": "caspar-vm-modal",
-        "targets": [
-          {
-            "kind": "lib",
-            "name": "caspar_vm_modal",
-            "path": "src/lib.rs"
-          }
-        ],
-        "version": "0.1.0"
-      },
-      {
-        "dependencies": [
-          {
-            "name": "aseman-config",
-            "path": "crates/aseman-config",
-            "scope": "normal"
-          },
-          {
-            "name": "caspar-vm-sdk",
-            "path": "vm-sdk",
-            "scope": "normal"
-          },
-          {
-            "name": "serde_json",
-            "scope": "normal",
-            "version": "1"
-          },
-          {
-            "features": [
-              "aot"
-            ],
-            "git": "https://github.com/WasmEdge/wasmedge-rust-sdk",
-            "name": "wasmedge-sys",
-            "rev": "3e7d3bf9ad1e0ee5324c05a9e3ba9ce596fd3c59",
-            "scope": "normal"
-          },
-          {
-            "git": "https://github.com/WasmEdge/wasmedge-rust-sdk",
-            "name": "wasmedge-types",
-            "rev": "3e7d3bf9ad1e0ee5324c05a9e3ba9ce596fd3c59",
-            "scope": "normal"
-          },
-          {
-            "name": "wat",
-            "scope": "dev",
-            "version": "1"
-          }
-        ],
-        "description": "Caspar VM plugin: WasmEdge-managed WebAssembly runtime (key: wasm, default runtime)",
-        "edition": "2021",
-        "features": {},
-        "manifest": "vms/wasm/Cargo.toml",
-        "name": "caspar-vm-wasm",
-        "targets": [
-          {
-            "kind": "lib",
-            "name": "caspar_vm_wasm",
-            "path": "src/lib.rs"
-          }
-        ],
-        "version": "0.1.0"
-      },
-      {
-        "dependencies": [
-          {
             "name": "anyhow",
             "scope": "normal"
           },
@@ -2795,33 +3643,52 @@
     "workspaces": [
       {
         "exclude": [
+          "modules/consensus",
+          "modules/federation",
+          "modules/finance",
+          "modules/network",
+          "modules/realtime",
+          "modules/runtime",
+          "modules/security",
+          "modules/storage",
           "modules/vmm-backend"
         ],
         "manifest": "Cargo.toml",
         "members": [
-          "apps/*",
-          "cmd/casparctl",
+          "apps/aseman-meter",
+          "apps/aseman-node",
+          "apps/aseman-vmm",
+          "apps/aseman-vmm-agent",
+          "apps/asemanctl",
           "crates/*",
           "modules/*",
+          "modules/consensus/hashgraph",
+          "modules/federation/http",
+          "modules/finance/ledger",
+          "modules/network/http",
+          "modules/network/legacy",
+          "modules/realtime/durable",
+          "modules/runtime/docker",
+          "modules/runtime/elpian",
+          "modules/runtime/elpian/crates/elpian-vm",
+          "modules/runtime/elpify",
+          "modules/runtime/elpify/crates/elpify-lang",
+          "modules/runtime/firecracker",
+          "modules/runtime/javascript",
+          "modules/runtime/modal",
+          "modules/runtime/sdk-legacy",
+          "modules/runtime/wasm",
+          "modules/security/capabilities",
+          "modules/storage/postgres",
+          "modules/storage/rocksdb-legacy",
           "modules/vmm-backend/native-legacy",
+          "modules/vmm-backend/native-legacy/crates/caspar-vm-plugins",
           "modules/vmm-backend/nomad",
-          "node",
-          "node/crates/*",
           "tests/contracts/module",
           "tests/contracts/policy",
           "tests/contracts/storage",
           "tests/contracts/vmm-backend",
           "tests/migration",
-          "vm-sdk",
-          "vms/docker",
-          "vms/elpian",
-          "vms/elpian/crates/elpian-vm",
-          "vms/elpify",
-          "vms/elpify/crates/elpify-lang",
-          "vms/fire",
-          "vms/javascript",
-          "vms/modal",
-          "vms/wasm",
           "xtask"
         ],
         "resolver": "2"

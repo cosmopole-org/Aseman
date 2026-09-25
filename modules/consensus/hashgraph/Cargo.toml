@@ -1,0 +1,33 @@
+[package]
+name = "aseman-consensus-hashgraph"
+description = "The extracted legacy Hashgraph/Babble consensus engine for Aseman."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+aseman-storage-legacy = { path = "../../storage/rocksdb-legacy" }
+aseman-config = { path = "../../../crates/aseman-config" }
+aseman-domain = { path = "../../../crates/aseman-domain" }
+aseman-ports = { path = "../../../crates/aseman-ports" }
+anyhow.workspace = true
+base64.workspace = true
+chrono = { version = "0.4.44", default-features = false, features = ["clock", "std"] }
+crossbeam-channel = "0.5.15"
+getrandom = "0.2"
+hex.workspace = true
+k256 = { version = "0.13.4", features = ["ecdsa", "arithmetic"] }
+num-bigint = "0.4.6"
+rocksdb.workspace = true
+rand = "0.10.1"
+serde.workspace = true
+serde_json.workspace = true
+serde_repr = "0.1.20"
+sha2 = "0.11.0"
+thiserror.workspace = true
+uuid = { workspace = true, features = ["v4"] }
+
+[lints]
+workspace = true

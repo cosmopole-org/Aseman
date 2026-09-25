@@ -1,0 +1,41 @@
+{
+  "schema_version": 1,
+  "owner": "release/operations",
+  "shadow": {
+    "minimum_duration_seconds": 86400,
+    "minimum_read_comparisons": 10000,
+    "minimum_mutation_comparisons": 1000,
+    "abort": {
+      "semantic_mismatches": 0,
+      "unauthorized_acceptances": 0,
+      "duplicate_effects": 0,
+      "missing_audit_records": 0,
+      "maximum_p95_regression_percent": 10
+    }
+  },
+  "canary": {
+    "traffic_percent_stages": [1, 5, 25, 100],
+    "minimum_stage_duration_seconds": 86400,
+    "minimum_requests_per_stage": 10000,
+    "abort": {
+      "unauthorized_acceptances": 0,
+      "duplicate_effects": 0,
+      "storage_semantic_mismatches": 0,
+      "unbalanced_finance_records": 0,
+      "maximum_error_rate_increase_basis_points": 50,
+      "maximum_p95_regression_percent": 10,
+      "maximum_not_ready_percent": 2
+    }
+  },
+  "rollback": {
+    "retain_previous_signed_release": true,
+    "retain_storage_rollback_generation": true,
+    "require_audit_correlation": true,
+    "require_operator_and_timestamp": true,
+    "verification_commands": [
+      "cargo xtask full",
+      "python3 scripts/generate_requirements_traceability.py --check",
+      "python3 scripts/check_removal_ledger_due.py --check"
+    ]
+  }
+}

@@ -3,7 +3,7 @@ status: IN_PROGRESS
 owner: migration/phase-3
 source_of_truth: plan/migration/09-migration-phases.md
 last_verified_commit: a3212a7
-verification: cargo xtask fast; cargo test -p caspar-node --lib; live aseman-storage-postgres and aseman-migration-e2e on PostgreSQL 16
+verification: cargo xtask fast; cargo test -p aseman-node --lib; live aseman-storage-postgres and aseman-migration-e2e on PostgreSQL 16
 ---
 
 # Phase 3 exit gate
@@ -45,10 +45,10 @@ and the capsule adapter is proven against the same use cases.
 | Family | Use cases | Legacy adapter | Capsule adapter |
 |---|---|---|---|
 | `/api/*` diagnostics and auth | Phase 1 | yes | n/a (stateless) |
-| `/stores/*` (signal, history, setAccess, getAccess) | `aseman-application::store` | `LegacyStorePorts` (node test) | `aseman-capsule-repositories::store` (live PostgreSQL test) |
+| `/stores/*` (signal, history, setAccess, getAccess) | `aseman-application::store` | `LegacyStorePorts` (node test) | `aseman-capsule::store` (live PostgreSQL test) |
 | Store membership, every reader and writer: guard, signaler fan-out, WS/TCP session join, VM run checks, program bootstrap, creature signal and delete, federation mirroring, VM host calls (create/delete store, createAccess/deleteAccess, list, listMembers, creature delete) | `StoreAccess` port | `LegacyMembership` (trx only; node test, including LD-12) | same `StoreAccess` implementation as above |
-| Creature identity (create, get, list, update, delete, meta, getByUsername, find, `/machines/list`, VM creature host calls, route lookup) | `aseman-application::creature` | `LegacyCreatures` (node conformance test) | `aseman-capsule-repositories::creature` (live PostgreSQL conformance test) |
-| Creature balances (transfer, mint, lock tokens, finance actions, reconciliation) | `CreatureBalances` port | `LegacyCreatures::account` (node test) | `finance.wallet` via `aseman-capsule-repositories::creature` (live conformance test) |
+| Creature identity (create, get, list, update, delete, meta, getByUsername, find, `/machines/list`, VM creature host calls, route lookup) | `aseman-application::creature` | `LegacyCreatures` (node conformance test) | `aseman-capsule::creature` (live PostgreSQL conformance test) |
+| Creature balances (transfer, mint, lock tokens, finance actions, reconciliation) | `CreatureBalances` port | `LegacyCreatures::account` (node test) | `finance.wallet` via `aseman-capsule::creature` (live conformance test) |
 | Finance ledger (journals, withdrawable, debt, holds, payouts) | P8 (ADR 0017/0026) | stays legacy-authoritative | checkpoint only |
 | Creature metadata (`CreatMeta`, `UserMeta`) | `CreatureMetadata` port | `LegacyCreatures` (node conformance test) | `core.creature_metadata` / `core.user_metadata` (live conformance test) |
 | Creature type registry | `CreatureTypes` port | `LegacyCreatures` (node conformance test) | `core.creature_type` (live conformance test) |

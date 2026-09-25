@@ -3,7 +3,7 @@ status: CURRENT
 owner: storage/postgres
 source_of_truth: ADR 0001 and contracts/capsule/guest
 last_verified_commit: 800df24076c7
-verification: modules/storage-postgres/tests/live_guest_isolation.rs
+verification: modules/storage/postgres/tests/live_guest_isolation.rs
 ---
 
 # PostgreSQL guest database lifecycle

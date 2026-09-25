@@ -3,7 +3,7 @@ status: CURRENT
 owner: storage/postgres
 source_of_truth: contracts/capsule/storage-class-semantics.json
 last_verified_commit: 800df24076c7
-verification: modules/storage-postgres/tests/live_postgres.rs
+verification: modules/storage/postgres/tests/live_postgres.rs
 ---
 
 # PostgreSQL non-core storage classes

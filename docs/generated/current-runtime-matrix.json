@@ -4,7 +4,7 @@
     "generator": "scripts/generate_current_surface_inventories.py",
     "last_verified_commit": "800df24076c794f9b33c29a9f301dd9d674f47d6",
     "lifecycle_status": "GENERATED",
-    "source_of_truth": "vms/*/vm.config.json, VmPlugin trait, controllers, and generated aggregator",
+    "source_of_truth": "modules/runtime and compatibility vms configs, VmPlugin trait, controllers, and generated aggregator",
     "status": "CURRENT",
     "verification": "python3 scripts/generate_current_surface_inventories.py --check"
   },
@@ -12,10 +12,10 @@
     {
       "aliases": [],
       "artifact_extensions": [],
-      "config": "vms/docker/vm.config.json",
+      "config": "modules/runtime/docker/vm.config.json",
       "default_runtime": false,
       "enabled_in_generated_aggregator": true,
-      "implementation": "vms/docker/src/controller.rs",
+      "implementation": "modules/runtime/docker/src/controller.rs",
       "in_process": false,
       "key": "docker",
       "name": "Docker Containers",
@@ -76,10 +76,10 @@
       "artifact_extensions": [
         ".elpian.json"
       ],
-      "config": "vms/elpian/vm.config.json",
+      "config": "modules/runtime/elpian/vm.config.json",
       "default_runtime": false,
       "enabled_in_generated_aggregator": true,
-      "implementation": "vms/elpian/src/controller.rs",
+      "implementation": "modules/runtime/elpian/src/controller.rs",
       "in_process": true,
       "key": "elpian",
       "name": "Elpian AST VM",
@@ -131,10 +131,10 @@
       "artifact_extensions": [
         ".masm"
       ],
-      "config": "vms/elpify/vm.config.json",
+      "config": "modules/runtime/elpify/vm.config.json",
       "default_runtime": false,
       "enabled_in_generated_aggregator": true,
-      "implementation": "vms/elpify/src/controller.rs",
+      "implementation": "modules/runtime/elpify/src/controller.rs",
       "in_process": true,
       "key": "elpify",
       "name": "Elpify Provable VM",
@@ -186,10 +186,10 @@
         "firecracker"
       ],
       "artifact_extensions": [],
-      "config": "vms/fire/vm.config.json",
+      "config": "modules/runtime/firecracker/vm.config.json",
       "default_runtime": false,
       "enabled_in_generated_aggregator": true,
-      "implementation": "vms/fire/src/controller.rs",
+      "implementation": "modules/runtime/firecracker/src/controller.rs",
       "in_process": true,
       "key": "fire",
       "name": "Firecracker microVM",
@@ -244,10 +244,10 @@
       "artifact_extensions": [
         ".js"
       ],
-      "config": "vms/javascript/vm.config.json",
+      "config": "modules/runtime/javascript/vm.config.json",
       "default_runtime": false,
       "enabled_in_generated_aggregator": true,
-      "implementation": "vms/javascript/src/controller.rs",
+      "implementation": "modules/runtime/javascript/src/controller.rs",
       "in_process": true,
       "key": "javascript",
       "name": "JavaScript VM",
@@ -301,10 +301,10 @@
         "modal-sandbox"
       ],
       "artifact_extensions": [],
-      "config": "vms/modal/vm.config.json",
+      "config": "modules/runtime/modal/vm.config.json",
       "default_runtime": false,
       "enabled_in_generated_aggregator": true,
-      "implementation": "vms/modal/src/controller.rs",
+      "implementation": "modules/runtime/modal/src/controller.rs",
       "in_process": false,
       "key": "modal",
       "name": "Modal Sandboxes",
@@ -365,10 +365,10 @@
       "artifact_extensions": [
         ".wasm"
       ],
-      "config": "vms/wasm/vm.config.json",
+      "config": "modules/runtime/wasm/vm.config.json",
       "default_runtime": true,
       "enabled_in_generated_aggregator": true,
-      "implementation": "vms/wasm/src/controller.rs",
+      "implementation": "modules/runtime/wasm/src/controller.rs",
       "in_process": true,
       "key": "wasm",
       "name": "WasmEdge WebAssembly VM",

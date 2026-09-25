@@ -65,6 +65,7 @@ fn check_architecture(root: &Path) -> Result<()> {
         "aseman-ports",
         "aseman-application",
         "aseman-contracts",
+        "aseman-guest-sdk",
         "aseman-config",
     ] {
         if !names.contains(required) {
@@ -109,6 +110,9 @@ fn check_architecture(root: &Path) -> Result<()> {
 fn fast(root: &Path) -> Result<()> {
     check_architecture(root)?;
     for package in [
+        "aseman-node",
+        "aseman-meter",
+        "asemanctl",
         "aseman-domain",
         "aseman-ports",
         "aseman-application",
@@ -122,10 +126,17 @@ fn fast(root: &Path) -> Result<()> {
         "aseman-storage-postgres",
         "aseman-storage-legacy",
         "aseman-migration-e2e",
-        "aseman-capsule-repositories",
+        "aseman-capsule",
         "aseman-identity-native",
         "aseman-policy-native",
+        "aseman-finance-ledger",
+        "aseman-realtime-durable",
+        "aseman-federation-http",
+        "aseman-consensus-hashgraph",
         "aseman-policy-conformance",
+        "aseman-public-http",
+        "aseman-network-legacy",
+        "aseman-public-service",
         "aseman-vmm-backend-nomad",
         "aseman-vmm-agent",
         "xtask",
@@ -150,9 +161,21 @@ fn fast(root: &Path) -> Result<()> {
         "generate_security_registry.py",
         "generate_vmm_parity.py",
         "generate_public_api.py",
+        // A1005: every requirement keeps a design authority, a delivery phase, an
+        // acceptance authority, and a phase-gate status, mechanically checked.
+        "generate_requirements_traceability.py",
+        // R22: the final hierarchy and remaining structural gaps stay explicit.
+        "generate_repository_layout.py",
         // Not a generator: it checks the deployment contract against the code that
         // decides the ports, the loopback boundary, and the privileges (A602).
         "check_deploy_topology.py",
+        // The cold-start evaluation catalog must name real authorities and commands.
+        "check_agent_evals.py",
+        // A1003: rollout decisions and zero-tolerance abort signals are explicit.
+        "check_rollout_policy.py",
+        // A902/A904: recovery journals cannot drift from the domain plan, and a
+        // support bundle must retain both collection and redaction boundaries.
+        "check_operations_contracts.py",
         // Not a generator either: the legacy transports must stay framing-only
         // (A701, P7-05).
         "check_legacy_transports.py",
@@ -183,6 +206,12 @@ fn fast(root: &Path) -> Result<()> {
         &[
             "test",
             "-p",
+            "aseman-node",
+            "-p",
+            "aseman-meter",
+            "-p",
+            "asemanctl",
+            "-p",
             "aseman-domain",
             "-p",
             "aseman-ports",
@@ -190,6 +219,8 @@ fn fast(root: &Path) -> Result<()> {
             "aseman-application",
             "-p",
             "aseman-contracts",
+            "-p",
+            "aseman-guest-sdk",
             "-p",
             "aseman-config",
             "-p",
@@ -209,13 +240,27 @@ fn fast(root: &Path) -> Result<()> {
             "-p",
             "aseman-migration-e2e",
             "-p",
-            "aseman-capsule-repositories",
+            "aseman-capsule",
             "-p",
             "aseman-identity-native",
             "-p",
             "aseman-policy-native",
             "-p",
+            "aseman-finance-ledger",
+            "-p",
+            "aseman-realtime-durable",
+            "-p",
+            "aseman-federation-http",
+            "-p",
+            "aseman-consensus-hashgraph",
+            "-p",
             "aseman-policy-conformance",
+            "-p",
+            "aseman-public-http",
+            "-p",
+            "aseman-network-legacy",
+            "-p",
+            "aseman-public-service",
             "-p",
             "aseman-vmm-http",
             "-p",
@@ -240,6 +285,10 @@ fn fast(root: &Path) -> Result<()> {
         &[
             "clippy",
             "-p",
+            "aseman-meter",
+            "-p",
+            "asemanctl",
+            "-p",
             "aseman-domain",
             "-p",
             "aseman-ports",
@@ -247,6 +296,8 @@ fn fast(root: &Path) -> Result<()> {
             "aseman-application",
             "-p",
             "aseman-contracts",
+            "-p",
+            "aseman-guest-sdk",
             "-p",
             "aseman-config",
             "-p",
@@ -266,13 +317,25 @@ fn fast(root: &Path) -> Result<()> {
             "-p",
             "aseman-migration-e2e",
             "-p",
-            "aseman-capsule-repositories",
+            "aseman-capsule",
             "-p",
             "aseman-identity-native",
             "-p",
             "aseman-policy-native",
             "-p",
+            "aseman-finance-ledger",
+            "-p",
+            "aseman-realtime-durable",
+            "-p",
+            "aseman-federation-http",
+            "-p",
             "aseman-policy-conformance",
+            "-p",
+            "aseman-public-http",
+            "-p",
+            "aseman-network-legacy",
+            "-p",
+            "aseman-public-service",
             "-p",
             "aseman-vmm-http",
             "-p",
@@ -296,8 +359,8 @@ fn fast(root: &Path) -> Result<()> {
 }
 
 fn full(root: &Path) -> Result<()> {
-    run(root, "cargo", &["check", "-p", "caspar-node", "--bins"])?;
-    run(root, "cargo", &["test", "-p", "caspar-node", "--lib"])?;
+    run(root, "cargo", &["check", "-p", "aseman-node", "--bins"])?;
+    run(root, "cargo", &["test", "-p", "aseman-node", "--lib"])?;
     // The native backend links every runtime plugin, as the node does.
     run(root, "cargo", &["test", "-p", "aseman-vmm-backend-native"])?;
     run(
@@ -314,5 +377,5 @@ fn full(root: &Path) -> Result<()> {
             "warnings",
         ],
     )?;
-    run(root, "cargo", &["test", "-p", "casparctl"])
+    Ok(())
 }

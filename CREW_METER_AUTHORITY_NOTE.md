@@ -1,6 +1,6 @@
 # The meter could never settle
 
-**Where:** `node/src/drivers/vmm/host/vm_host_functions.rs`, the dispatch for
+**Where:** `apps/aseman-node/src/drivers/vmm/host/vm_host_functions.rs`, the dispatch for
 `startHold` / `settleHold` / `releaseHold` / `reservePool` / `settlePool` /
 `releasePool` / `debitPool`.
 
