@@ -1,4 +1,4 @@
-//! Core types for the legacy `Core` orchestrator.
+//! Core types for the `Core` compatibility orchestrator.
 //!
 //! Translation of `core/module/core/core.go`: the `Core` struct and its
 //! supporting types (`Tools`, `ChainSubmission`, and the `WeakCoreView`
@@ -92,14 +92,14 @@ impl WeakCoreView {
     pub(crate) fn checked_trx(
         &self,
         readonly: bool,
-    ) -> Option<Arc<crate::legacy::trx::TrxWrapper>> {
+    ) -> Option<Arc<crate::adapters::rocksdb::trx::TrxWrapper>> {
         let tools = self.inner.tools.clone()?;
         let core_for_trx: Arc<dyn ICore> = Arc::new(WeakCoreView {
             inner: CoreWeakHandles {
                 ..clone_handles(&self.inner)
             },
         });
-        Some(crate::legacy::trx::TrxWrapper::new(
+        Some(crate::adapters::rocksdb::trx::TrxWrapper::new(
             core_for_trx,
             tools.storage(),
             readonly,

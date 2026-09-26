@@ -1,4 +1,4 @@
-//! The legacy actor subsystem — the `Actor` registry and its action model.
+//! The core actor compatibility subsystem — the `Actor` registry and its action model.
 //!
 //! - [`actor`] — the concrete [`Actor`] registry holding action tables.
 //! - [`action`] — the plain non-secured [`Action`] and its helper types.

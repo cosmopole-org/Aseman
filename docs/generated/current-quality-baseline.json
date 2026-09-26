@@ -38,17 +38,17 @@
         "apps/aseman-node/src/adapters/network/federation/fednet.rs:514",
         "apps/aseman-node/src/adapters/network/federation/netserver.rs:465",
         "apps/aseman-node/src/adapters/network/net.rs:92",
+        "apps/aseman-node/src/adapters/rocksdb/trx.rs:1193",
         "apps/aseman-node/src/adapters/signaler.rs:443",
         "apps/aseman-node/src/api/actions/program.rs:253",
         "apps/aseman-node/src/api/utils/timer.rs:54",
         "apps/aseman-node/src/api/workloads.rs:147",
         "apps/aseman-node/src/api/workloads.rs:293",
-        "apps/aseman-node/src/legacy/globe/mod.rs:36",
-        "apps/aseman-node/src/legacy/globe/transport.rs:57",
-        "apps/aseman-node/src/legacy/globe/transport.rs:109",
-        "apps/aseman-node/src/legacy/globe/types.rs:33",
-        "apps/aseman-node/src/legacy/orchestrator/load.rs:35",
-        "apps/aseman-node/src/legacy/trx.rs:1193",
+        "apps/aseman-node/src/core/globe/mod.rs:36",
+        "apps/aseman-node/src/core/globe/transport.rs:57",
+        "apps/aseman-node/src/core/globe/transport.rs:109",
+        "apps/aseman-node/src/core/globe/types.rs:33",
+        "apps/aseman-node/src/core/orchestrator/load.rs:35",
         "apps/aseman-node/src/lib.rs:16",
         "apps/aseman-node/src/lib.rs:23"
       ]
@@ -72,6 +72,7 @@
         "apps/aseman-node/src/adapters/cluster/tests.rs:425",
         "apps/aseman-node/src/adapters/cluster/tests.rs:582",
         "apps/aseman-node/src/adapters/cluster/tests.rs:680",
+        "apps/aseman-node/src/adapters/rocksdb/trx.rs:850",
         "apps/aseman-node/src/adapters/signaler.rs:187",
         "apps/aseman-node/src/adapters/vmm/proxy.rs:759",
         "apps/aseman-node/src/adapters/vmm/proxy.rs:803",
@@ -79,12 +80,11 @@
         "apps/aseman-node/src/api/storage_http.rs:260",
         "apps/aseman-node/src/api/storage_http.rs:261",
         "apps/aseman-node/src/api/storage_http.rs:263",
-        "apps/aseman-node/src/api/storage_http.rs:270",
-        "apps/aseman-node/src/api/storage_http.rs:273"
+        "apps/aseman-node/src/api/storage_http.rs:270"
       ]
     },
     "rust_json_value_mentions": {
-      "count": 1716,
+      "count": 1731,
       "sample_locations": [
         "apps/aseman-node/src/adapters/cluster/command.rs:24",
         "apps/aseman-node/src/adapters/cluster/command.rs:112",
@@ -123,6 +123,9 @@
         "apps/aseman-node/src/adapters/cluster/tests.rs:342",
         "apps/aseman-node/src/adapters/cluster/tests.rs:436",
         "apps/aseman-node/src/adapters/ratelimit.rs:511",
+        "apps/aseman-node/src/adapters/rocksdb/trx.rs:769",
+        "apps/aseman-node/src/adapters/rocksdb/trx.rs:776",
+        "apps/aseman-node/src/adapters/rocksdb/trx.rs:828",
         "apps/aseman-node/src/adapters/signaler.rs:421",
         "apps/aseman-node/src/adapters/signaler.rs:446",
         "apps/aseman-node/src/adapters/signaler.rs:452",
@@ -137,10 +140,7 @@
         "apps/aseman-node/src/adapters/signaler.rs:487",
         "apps/aseman-node/src/adapters/signaler.rs:499",
         "apps/aseman-node/src/adapters/signaler.rs:507",
-        "apps/aseman-node/src/adapters/signaler.rs:510",
-        "apps/aseman-node/src/adapters/signaler.rs:513",
-        "apps/aseman-node/src/adapters/signaler.rs:516",
-        "apps/aseman-node/src/adapters/signaler.rs:519"
+        "apps/aseman-node/src/adapters/signaler.rs:510"
       ]
     },
     "rust_sleep_calls": {
@@ -234,7 +234,7 @@
       ]
     },
     "rust_unwrap_calls": {
-      "count": 3318,
+      "count": 3367,
       "sample_locations": [
         "apps/aseman-node/src/adapters/blob_store.rs:128",
         "apps/aseman-node/src/adapters/blob_store.rs:136",
@@ -265,11 +265,11 @@
     }
   },
   "source": {
-    "file_count": 589,
+    "file_count": 594,
     "files_by_suffix": {
       ".js": 2,
       ".py": 33,
-      ".rs": 551,
+      ".rs": 556,
       ".sh": 2,
       ".ts": 1
     },
@@ -287,7 +287,7 @@
         "path": "crates/aseman-application/src/finance_actions.rs"
       },
       {
-        "lines": 3038,
+        "lines": 3039,
         "path": "modules/storage/rocksdb-legacy/src/tests.rs"
       },
       {
@@ -355,7 +355,7 @@
         "path": "modules/vmm-http/src/server.rs"
       }
     ],
-    "nonblank_lines": 168726,
-    "physical_lines": 180660
+    "nonblank_lines": 169880,
+    "physical_lines": 181917
   }
 }

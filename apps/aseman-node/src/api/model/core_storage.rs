@@ -152,9 +152,9 @@ fn compensate(factory: &PostgresUnitOfWorkFactory, compensations: Vec<Compensati
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::adapters::rocksdb::trx::TrxWrapper;
+    use crate::adapters::rocksdb::trx::tests::{StubCore, StubStorage};
     use crate::api::model::creature_ports::CreaturePorts;
-    use crate::legacy::trx::TrxWrapper;
-    use crate::legacy::trx::tests::{StubCore, StubStorage};
     use crate::models::ports::IStorage;
     use crate::models::transaction::ITrx;
     use aseman_application::creature::{CreateCreature, NewCreature};

@@ -1184,7 +1184,7 @@
     "Guest host operations remain a separate surface recorded in A002 and need their own policy call-path audit."
   ],
   "shared_dispatch": {
-    "authorization": "apps/aseman-node/src/legacy/actor/guard.rs::Guard",
+    "authorization": "apps/aseman-node/src/core/actor/guard.rs::Guard",
     "chain_routing": "SecureAction::dispatch_via_chain",
     "federation_routing": "SecureAction::dispatch_via_federation",
     "local_execution": "ICore::modify_state_securly",

@@ -1,4 +1,4 @@
-//! The gated legacy translation (RL-002, RL-003).
+//! Node core orchestration and compatibility surface (RL-002, RL-003).
 //!
 //! Everything under this module is the not-yet-replaced translation of the Go node.
 //! It is organized by concern:
@@ -7,7 +7,6 @@
 //!   secured wrapper + guard, and the state carrier).
 //! - [`orchestrator`] — the `Core` orchestrator.
 //! - [`globe`] — the `Globe` validator coordinator.
-//! - [`trx`] — the RocksDB-backed transaction wrapper.
 //! - [`utils`] — small shared helpers (`GoError`, `AnyVal`) and compatibility
 //!   aliases used across the translation.
 //!
@@ -17,7 +16,6 @@
 pub mod actor;
 pub mod globe;
 pub mod orchestrator;
-pub mod trx;
 pub mod utils;
 
 pub use actor::{Info, State};

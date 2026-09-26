@@ -1,4 +1,4 @@
-//! Chain packet handling for the legacy `Core` orchestrator: message /
+//! Chain packet handling for the `Core` compatibility orchestrator: message /
 //! base-request dispatch, the vm.execute flow, pay-lock consumption, and
 //! chain-op submission.
 //!
@@ -15,9 +15,9 @@ use serde_json::Value;
 use crate::api::packets::creatures::ConsumeLockInput;
 use crate::api::utils::crypto::secure_unique_string;
 use crate::api::workloads;
-use crate::legacy::globe::ChainPacketOp;
-use crate::legacy::orchestrator::types::Core;
-use crate::legacy::utils::compat::GoError;
+use crate::core::globe::ChainPacketOp;
+use crate::core::orchestrator::types::Core;
+use crate::core::utils::compat::GoError;
 use crate::models::action::TrxClosure;
 use crate::models::chain::{ChainBaseRequest, ChainMessage, ChainPayPacket};
 use crate::models::core::ICore;

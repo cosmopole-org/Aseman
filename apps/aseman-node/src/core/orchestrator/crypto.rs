@@ -1,4 +1,4 @@
-//! RSA signing helpers for the legacy `Core` orchestrator.
+//! RSA signing helpers for the `Core` compatibility orchestrator.
 //!
 //! Translation of `core/module/core/core.go`: private-key parsing and
 //! PSS-SHA256 signature production matching Go's salt-length behaviour.
@@ -12,7 +12,7 @@ use rsa::rand_core::OsRng;
 use rsa::sha2::Sha256;
 use rsa::signature::{RandomizedSigner, SignatureEncoding};
 
-use crate::legacy::orchestrator::types::Core;
+use crate::core::orchestrator::types::Core;
 
 impl Core {
     pub(crate) fn parse_private_key(pem_bytes: &[u8]) -> anyhow::Result<RsaPrivateKey> {

@@ -25,7 +25,7 @@ use std::time::{Duration, Instant};
 use anyhow::Result;
 use serde_json::{Value, json};
 
-use crate::legacy::trx::TrxWrapper;
+use crate::adapters::rocksdb::trx::TrxWrapper;
 use crate::models::core::ICore;
 use crate::models::ports::IStorage;
 use crate::models::ports::ITools;

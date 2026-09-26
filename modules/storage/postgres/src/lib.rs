@@ -17,6 +17,7 @@ use uuid::Uuid;
 pub mod service;
 pub use service::PostgresStorageService;
 pub mod capsule_store;
+pub mod compatibility;
 pub mod coordination;
 pub mod guest;
 pub mod migration;
@@ -39,6 +40,8 @@ pub const IDENTITY_KEYS_MIGRATION: &str = include_str!("../migrations/0005_ident
 pub const COORDINATION_MIGRATION: &str = include_str!("../migrations/0006_coordination.sql");
 pub const PUBLIC_IDEMPOTENCY_MIGRATION: &str =
     include_str!("../migrations/0010_public_idempotency.sql");
+pub const COMPATIBILITY_STATE_MIGRATION: &str =
+    include_str!("../migrations/0011_compatibility_state.sql");
 pub(crate) const SCHEMA: &str = "aseman_core";
 /// The most capsules one [`PostgresCapsuleRepository::put_all`] transaction holds.
 pub const MAX_TRANSACTION_CAPSULES: usize = 64;
@@ -380,7 +383,8 @@ impl PostgresCapsuleRepository {
             client.batch_execute(PROGRAM_MACHINE_MIGRATION)?;
             client.batch_execute(IDENTITY_KEYS_MIGRATION)?;
             client.batch_execute(COORDINATION_MIGRATION)?;
-            client.batch_execute(PUBLIC_IDEMPOTENCY_MIGRATION)
+            client.batch_execute(PUBLIC_IDEMPOTENCY_MIGRATION)?;
+            client.batch_execute(COMPATIBILITY_STATE_MIGRATION)
         })
     }
 
@@ -1146,6 +1150,31 @@ mod tests {
                 .contains("jsonb")
         );
         assert!(!STORAGE_CLASS_MIGRATION.contains("guest_capsules"));
+    }
+
+    #[test]
+    fn compatibility_schema_separates_storage_semantics() {
+        for table in [
+            "object_columns",
+            "secondary_indexes",
+            "relations",
+            "documents",
+            "opaque_values",
+        ] {
+            assert!(
+                COMPATIBILITY_STATE_MIGRATION
+                    .contains(&format!("CREATE TABLE IF NOT EXISTS aseman_compat.{table}")),
+                "missing {table}"
+            );
+        }
+        assert!(COMPATIBILITY_STATE_MIGRATION.contains("relation_type, scope, member"));
+        assert!(COMPATIBILITY_STATE_MIGRATION.contains("USING gin (document jsonb_path_ops)"));
+        assert!(
+            COMPATIBILITY_STATE_MIGRATION.contains("CHECK (\n        legacy_key NOT LIKE 'obj::%'")
+        );
+        assert!(
+            !COMPATIBILITY_STATE_MIGRATION.contains("CREATE TABLE IF NOT EXISTS aseman_compat.kv")
+        );
     }
 
     #[test]

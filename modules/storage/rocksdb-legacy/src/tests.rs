@@ -671,7 +671,8 @@ fn legacy_creature_splits_human_boundary_and_configured_wallet() {
     );
 }
 
-/// Mirrors legacy `TrxWrapper::index_json` (apps/aseman-node/src/legacy/core/actor/model/trx.rs)
+/// Mirrors legacy `TrxWrapper::index_json`
+/// (`apps/aseman-node/src/adapters/rocksdb/trx.rs`).
 /// for a first write: the document plus every non-null member splat.
 fn legacy_put_json(
     records: &mut Vec<LegacyPhysicalRecord>,

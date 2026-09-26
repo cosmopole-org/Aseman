@@ -207,7 +207,7 @@ def inventory() -> dict[str, Any]:
         "shared_dispatch": {
             "registration": "apps/aseman-node/src/api/main_api.rs::plug_all",
             "wrapper": "apps/aseman-node/src/api/actions/util.rs::build_secure_action",
-            "authorization": "apps/aseman-node/src/legacy/actor/guard.rs::Guard",
+            "authorization": "apps/aseman-node/src/core/actor/guard.rs::Guard",
             "local_execution": "ICore::modify_state_securly",
             "chain_routing": "SecureAction::dispatch_via_chain",
             "federation_routing": "SecureAction::dispatch_via_federation",

@@ -8,7 +8,7 @@ verification: python3 scripts/generate_quality_baseline.py --check
 
 # Current static quality baseline
 
-Scanned 589 source files, 180660 physical lines, and 168726 nonblank lines.
+Scanned 594 source files, 181917 physical lines, and 169880 nonblank lines.
 
 ## Ratchet counts
 
@@ -17,12 +17,12 @@ Scanned 589 source files, 180660 physical lines, and 168726 nonblank lines.
 | `environment_reads` | 6 |
 | `rust_allow_attributes` | 53 |
 | `rust_expect_calls` | 603 |
-| `rust_json_value_mentions` | 1716 |
+| `rust_json_value_mentions` | 1731 |
 | `rust_panic_macros` | 321 |
 | `rust_sleep_calls` | 78 |
 | `rust_spawn_calls` | 78 |
 | `rust_unsafe_tokens` | 43 |
-| `rust_unwrap_calls` | 3318 |
+| `rust_unwrap_calls` | 3367 |
 
 These lexical metrics include tests and comments. They establish a reproducible
 ratchet; they do not assert that every occurrence is defective.
@@ -34,7 +34,7 @@ ratchet; they do not assert that every occurrence is defective.
 | `modules/runtime/elpian/crates/elpian-vm/src/sdk/executor.rs` | 6591 |
 | `apps/aseman-node/src/api/actions/creature/finance.rs` | 4144 |
 | `crates/aseman-application/src/finance_actions.rs` | 3274 |
-| `modules/storage/rocksdb-legacy/src/tests.rs` | 3038 |
+| `modules/storage/rocksdb-legacy/src/tests.rs` | 3039 |
 | `modules/consensus/hashgraph/src/hashgraph/hashgraph.rs` | 2749 |
 | `apps/aseman-node/src/api/actions/program.rs` | 2484 |
 | `modules/runtime/elpian/crates/elpian-vm/src/sdk/stdlib/mod.rs` | 2468 |

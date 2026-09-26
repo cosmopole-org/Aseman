@@ -1,4 +1,4 @@
-//! Translation of `core/module/actor/model/trx/trx.go`.
+//! RocksDB transaction adapter translated from `core/module/actor/model/trx/trx.go`.
 //!
 //! `TrxWrapper` implements [`ITrx`] on top of the legacy key/value store, reached only
 //! through the provider seam `aseman_storage_legacy::LegacyKvStore` (RocksDB types stay

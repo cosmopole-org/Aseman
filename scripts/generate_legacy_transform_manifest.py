@@ -115,7 +115,7 @@ def classify_access(row: dict[str, object]) -> dict[str, object]:
         status = "reviewed_no_persisted_record"
         target = None
         note = "ADR 0020 superuser flag has no writer; any record fails closed for review"
-    elif row["source"].startswith("apps/aseman-node/src/legacy/orchestrator/icore.rs") and (
+    elif row["source"].startswith("apps/aseman-node/src/core/orchestrator/icore.rs") and (
         "|" in template or template.endswith(("::targetCount", "::tempCount"))
     ):
         status = "intentional_removal"
@@ -228,7 +228,7 @@ OWNED_BLOCKED_PREFIXES: dict[str, str] = {}
 
 # Per-source review of generic `{}::{}` style candidates (template families carry no name).
 SOURCE_REVIEWS = {
-    "apps/aseman-node/src/legacy/globe/mod.rs": ("not_a_storage_key", "hash/seed input, never persisted"),
+    "apps/aseman-node/src/core/globe/mod.rs": ("not_a_storage_key", "hash/seed input, never persisted"),
     "modules/consensus/hashgraph/src/net/net_transport.rs": ("not_a_storage_key", "in-memory RPC channel map"),
     "apps/aseman-node/src/adapters/network/federation/netserver.rs": ("not_a_storage_key", "routing target label"),
     "apps/aseman-node/src/adapters/vmm/network/gateway_registry.rs": ("not_a_storage_key", "process-local gateway map"),
@@ -239,10 +239,15 @@ SOURCE_REVIEWS = {
     "modules/runtime/javascript/src/host_calls.rs": ("covered_by_reviewed_family", "ADR 0021 guest dbop namespace"),
     "modules/runtime/wasm/src/host_calls.rs": ("covered_by_reviewed_family", "ADR 0021 guest dbop namespace"),
     "apps/aseman-node/src/adapters/vmm/host/vm_host_functions.rs": ("covered_by_reviewed_family", "ADR 0021 applet_db prefix composition"),
-    "apps/aseman-node/src/legacy/trx.rs": ("covered_by_reviewed_family", "json/link physical layout internals"),
-    "apps/aseman-node/src/legacy/orchestrator/load.rs": ("covered_by_reviewed_family", "ADR 0020 dead chain-callback state"),
+    "apps/aseman-node/src/adapters/rocksdb/trx.rs": ("covered_by_reviewed_family", "json/link physical layout internals"),
+    "apps/aseman-node/src/adapters/postgres/trx.rs": ("covered_by_reviewed_family", "ADR 0031 PostgreSQL compatibility classification"),
+    "apps/aseman-node/src/core/orchestrator/load.rs": ("covered_by_reviewed_family", "ADR 0020 dead chain-callback state"),
     "apps/aseman-node/src/api/model/entity.rs": ("covered_by_reviewed_family", "typed Entity composite identity"),
     "apps/aseman-node/src/adapters/vmm/host/functions/login_grant.rs": ("covered_by_reviewed_family", "ADR 0023 login grant delete path"),
+}
+SOURCE_FAMILY_REVIEWS = {
+    ("apps/aseman-node/src/adapters/postgres/trx.rs", "{key}"):
+        ("covered_by_reviewed_family", "ADR 0031 PostgreSQL relation/document classification"),
 }
 for _source in (
     "apps/aseman-node/src/adapters/vmm/hostcall_logs.rs", "apps/aseman-node/src/api/actions/program.rs",
@@ -255,13 +260,13 @@ for _source in (
 # through the ledger port instead of the legacy transaction closures.
 SOURCE_REVIEWS["apps/aseman-node/src/api/model/finance_ports.rs"] = (
     "covered_by_reviewed_family", "ADR 0017 finance epoch ledger port helper")
-SOURCE_REVIEWS["apps/aseman-node/src/legacy/globe/election.rs"] = (
+SOURCE_REVIEWS["apps/aseman-node/src/core/globe/election.rs"] = (
     "not_a_storage_key", "hash/seed input, never persisted")
-SOURCE_REVIEWS["apps/aseman-node/src/legacy/orchestrator/icore.rs"] = (
+SOURCE_REVIEWS["apps/aseman-node/src/core/orchestrator/icore.rs"] = (
     "covered_by_reviewed_family", "ADR 0020 dead chain-callback state")
-SOURCE_REVIEWS["apps/aseman-node/src/legacy/orchestrator/chain.rs"] = (
+SOURCE_REVIEWS["apps/aseman-node/src/core/orchestrator/chain.rs"] = (
     "covered_by_reviewed_family", "ADR 0020 chain-callback / chain-message state")
-SOURCE_REVIEWS["apps/aseman-node/src/legacy/globe/transport.rs"] = (
+SOURCE_REVIEWS["apps/aseman-node/src/core/globe/transport.rs"] = (
     "not_a_storage_key", "hash/seed input, never persisted")
 GENERIC_OWNER = "unassigned source review"
 
@@ -278,6 +283,7 @@ def candidate_family(template: str) -> str:
 def classify_candidate(row: dict[str, object]) -> dict[str, object]:
     template = row["logical_template"]
     family = candidate_family(template)
+    source = row["source"].rsplit(":", 1)[0]
     if " " in template or family == "user":
         # Human-readable messages and event author labels, not storage keys.
         return {**row, "disposition": "not_a_storage_key",
@@ -288,8 +294,10 @@ def classify_candidate(row: dict[str, object]) -> dict[str, object]:
     if family in COVERED_CANDIDATE_FAMILIES:
         return {**row, "disposition": "covered_by_reviewed_family",
                 "note": f"heuristic match of a reviewed family: {COVERED_CANDIDATE_FAMILIES[family]}"}
+    if review := SOURCE_FAMILY_REVIEWS.get((source, family)):
+        disposition, note = review
+        return {**row, "disposition": disposition, "note": note}
     if family in {"{}", "", "{prefix}"}:
-        source = row["source"].rsplit(":", 1)[0]
         disposition, note = SOURCE_REVIEWS.get(
             source,
             ("blocked_candidate_review", f"unreviewed family owned by {GENERIC_OWNER}; fails closed at export"),

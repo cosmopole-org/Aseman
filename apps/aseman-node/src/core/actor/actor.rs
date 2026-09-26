@@ -4,7 +4,7 @@ use std::sync::{Arc, Mutex};
 
 use dashmap::DashMap;
 
-use crate::legacy::utils::compat::AnyVal;
+use crate::core::utils::compat::AnyVal;
 use crate::models::action::IActor;
 use crate::models::action::{IAction, ISecureAction};
 

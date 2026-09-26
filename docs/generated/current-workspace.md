@@ -15,8 +15,8 @@ The complete dependency and feature data is in `current-workspace.json`.
 
 ## Repository summary
 
-- Tracked files: 993
-- Tracked files under `dist/`: 15
+- Tracked files: 1024
+- Tracked files under `dist/`: 29
 - Rust package manifests: 50
 - Declared Cargo workspace roots: 1
 - npm package manifests: 1

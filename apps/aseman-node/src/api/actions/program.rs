@@ -32,7 +32,7 @@ use crate::api::packets::program::{
     VmResourcesInput, VmTerminalInput,
 };
 use crate::api::utils::future::async_once;
-use crate::legacy::actor::Guard;
+use crate::core::actor::Guard;
 use crate::models::action::ISecureAction;
 use crate::models::core::ICore;
 use crate::models::state::IState;

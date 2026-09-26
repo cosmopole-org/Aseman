@@ -1138,7 +1138,7 @@
       "method": "put_bytes",
       "mode": "write",
       "note": "legacy JSON layout writer; reviewed families aggregate per key, others fail closed",
-      "source": "apps/aseman-node/src/legacy/trx.rs:644",
+      "source": "apps/aseman-node/src/adapters/rocksdb/trx.rs:644",
       "target_kind": null
     },
     {
@@ -1147,7 +1147,7 @@
       "method": "del_key",
       "mode": "write",
       "note": "legacy JSON layout writer; reviewed families aggregate per key, others fail closed",
-      "source": "apps/aseman-node/src/legacy/trx.rs:666",
+      "source": "apps/aseman-node/src/adapters/rocksdb/trx.rs:666",
       "target_kind": null
     },
     {
@@ -1156,7 +1156,7 @@
       "method": "put_bytes",
       "mode": "write",
       "note": "legacy JSON layout writer; reviewed families aggregate per key, others fail closed",
-      "source": "apps/aseman-node/src/legacy/trx.rs:657",
+      "source": "apps/aseman-node/src/adapters/rocksdb/trx.rs:657",
       "target_kind": null
     },
     {
@@ -2002,7 +2002,7 @@
       "method": "put_bytes",
       "mode": "write",
       "note": "ADR 0020 dead write-only chainCallback state; shape-checked, never migrated",
-      "source": "apps/aseman-node/src/legacy/orchestrator/icore.rs:110",
+      "source": "apps/aseman-node/src/core/orchestrator/icore.rs:110",
       "target_kind": null
     },
     {
@@ -2011,7 +2011,7 @@
       "method": "put_bytes",
       "mode": "write",
       "note": "ADR 0020 dead write-only chainCallback state; shape-checked, never migrated",
-      "source": "apps/aseman-node/src/legacy/orchestrator/icore.rs:114",
+      "source": "apps/aseman-node/src/core/orchestrator/icore.rs:114",
       "target_kind": null
     },
     {
@@ -2047,7 +2047,7 @@
       "method": "get_by_prefix",
       "mode": "read",
       "note": "ADR 0020 dead write-only chainCallback state; shape-checked, never migrated",
-      "source": "apps/aseman-node/src/legacy/orchestrator/icore.rs:95",
+      "source": "apps/aseman-node/src/core/orchestrator/icore.rs:95",
       "target_kind": null
     },
     {
@@ -2056,7 +2056,7 @@
       "method": "put_bytes",
       "mode": "write",
       "note": "ADR 0020 dead write-only chainCallback state; shape-checked, never migrated",
-      "source": "apps/aseman-node/src/legacy/orchestrator/icore.rs:96",
+      "source": "apps/aseman-node/src/core/orchestrator/icore.rs:96",
       "target_kind": null
     },
     {
@@ -2065,7 +2065,7 @@
       "method": "put_bytes",
       "mode": "write",
       "note": "ADR 0020 dead write-only chainCallback state; shape-checked, never migrated",
-      "source": "apps/aseman-node/src/legacy/orchestrator/icore.rs:105",
+      "source": "apps/aseman-node/src/core/orchestrator/icore.rs:105",
       "target_kind": null
     },
     {
@@ -2074,7 +2074,7 @@
       "method": "put_bytes",
       "mode": "write",
       "note": "ADR 0020 dead write-only chainCallback state; shape-checked, never migrated",
-      "source": "apps/aseman-node/src/legacy/orchestrator/icore.rs:97",
+      "source": "apps/aseman-node/src/core/orchestrator/icore.rs:97",
       "target_kind": null
     },
     {
@@ -2083,7 +2083,7 @@
       "method": "put_bytes",
       "mode": "write",
       "note": "ADR 0020 dead write-only chainCallback state; shape-checked, never migrated",
-      "source": "apps/aseman-node/src/legacy/orchestrator/icore.rs:101",
+      "source": "apps/aseman-node/src/core/orchestrator/icore.rs:101",
       "target_kind": null
     }
   ],
@@ -3318,7 +3318,7 @@
       "logical_template": "chainCallback::{}_{}",
       "note": "heuristic match of a reviewed family: ADR 0020 dead chain-callback state",
       "review_status": "candidate; caller association may be indirect",
-      "source": "apps/aseman-node/src/legacy/orchestrator/icore.rs:94"
+      "source": "apps/aseman-node/src/core/orchestrator/icore.rs:94"
     },
     {
       "disposition": "covered_by_reviewed_family",
@@ -3357,73 +3357,94 @@
     },
     {
       "disposition": "covered_by_reviewed_family",
+      "logical_template": "index::{typ}::{from}::{to}::{value}",
+      "note": "heuristic match of a reviewed family: verified index layout",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "apps/aseman-node/src/adapters/postgres/trx.rs:512"
+    },
+    {
+      "disposition": "covered_by_reviewed_family",
       "logical_template": "index::{}::{}::{}::",
       "note": "heuristic match of a reviewed family: verified index layout",
       "review_status": "candidate; caller association may be indirect",
-      "source": "apps/aseman-node/src/legacy/trx.rs:464"
+      "source": "apps/aseman-node/src/adapters/rocksdb/trx.rs:464"
     },
     {
       "disposition": "covered_by_reviewed_family",
       "logical_template": "index::{}::{}::{}::{}",
       "note": "heuristic match of a reviewed family: verified index layout",
       "review_status": "candidate; caller association may be indirect",
-      "source": "apps/aseman-node/src/legacy/trx.rs:266"
+      "source": "apps/aseman-node/src/adapters/rocksdb/trx.rs:266"
     },
     {
       "disposition": "covered_by_reviewed_family",
       "logical_template": "index::{}::{}::{}::{}",
       "note": "heuristic match of a reviewed family: verified index layout",
       "review_status": "candidate; caller association may be indirect",
-      "source": "apps/aseman-node/src/legacy/trx.rs:281"
+      "source": "apps/aseman-node/src/adapters/rocksdb/trx.rs:281"
     },
     {
       "disposition": "covered_by_reviewed_family",
       "logical_template": "index::{}::{}::{}::{}",
       "note": "heuristic match of a reviewed family: verified index layout",
       "review_status": "candidate; caller association may be indirect",
-      "source": "apps/aseman-node/src/legacy/trx.rs:293"
+      "source": "apps/aseman-node/src/adapters/rocksdb/trx.rs:293"
     },
     {
       "disposition": "covered_by_reviewed_family",
       "logical_template": "index::{}::{}::{}::{}",
       "note": "heuristic match of a reviewed family: verified index layout",
       "review_status": "candidate; caller association may be indirect",
-      "source": "apps/aseman-node/src/legacy/trx.rs:307"
+      "source": "apps/aseman-node/src/adapters/rocksdb/trx.rs:307"
+    },
+    {
+      "disposition": "covered_by_reviewed_family",
+      "logical_template": "json::{key}::{path}",
+      "note": "ADR 0031 PostgreSQL relation/document classification",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "apps/aseman-node/src/adapters/postgres/trx.rs:138"
+    },
+    {
+      "disposition": "covered_by_reviewed_family",
+      "logical_template": "json::{key}::{path}",
+      "note": "ADR 0031 PostgreSQL relation/document classification",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "apps/aseman-node/src/adapters/postgres/trx.rs:480"
     },
     {
       "disposition": "covered_by_reviewed_family",
       "logical_template": "json::{}::{}",
       "note": "json/link physical layout internals",
       "review_status": "candidate; caller association may be indirect",
-      "source": "apps/aseman-node/src/legacy/trx.rs:425"
+      "source": "apps/aseman-node/src/adapters/rocksdb/trx.rs:425"
     },
     {
       "disposition": "covered_by_reviewed_family",
       "logical_template": "json::{}::{}",
       "note": "json/link physical layout internals",
       "review_status": "candidate; caller association may be indirect",
-      "source": "apps/aseman-node/src/legacy/trx.rs:644"
+      "source": "apps/aseman-node/src/adapters/rocksdb/trx.rs:644"
     },
     {
       "disposition": "covered_by_reviewed_family",
       "logical_template": "json::{}::{}",
       "note": "json/link physical layout internals",
       "review_status": "candidate; caller association may be indirect",
-      "source": "apps/aseman-node/src/legacy/trx.rs:666"
+      "source": "apps/aseman-node/src/adapters/rocksdb/trx.rs:666"
     },
     {
       "disposition": "covered_by_reviewed_family",
       "logical_template": "json::{}::{}.",
       "note": "json/link physical layout internals",
       "review_status": "candidate; caller association may be indirect",
-      "source": "apps/aseman-node/src/legacy/trx.rs:667"
+      "source": "apps/aseman-node/src/adapters/rocksdb/trx.rs:667"
     },
     {
       "disposition": "covered_by_reviewed_family",
       "logical_template": "json::{}::{}.{}",
       "note": "json/link physical layout internals",
       "review_status": "candidate; caller association may be indirect",
-      "source": "apps/aseman-node/src/legacy/trx.rs:657"
+      "source": "apps/aseman-node/src/adapters/rocksdb/trx.rs:657"
     },
     {
       "disposition": "covered_by_reviewed_family",
@@ -3819,6 +3840,62 @@
     },
     {
       "disposition": "covered_by_reviewed_family",
+      "logical_template": "link::{key}",
+      "note": "ADR 0031 PostgreSQL relation/document classification",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "apps/aseman-node/src/adapters/postgres/trx.rs:420"
+    },
+    {
+      "disposition": "covered_by_reviewed_family",
+      "logical_template": "link::{key}",
+      "note": "ADR 0031 PostgreSQL relation/document classification",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "apps/aseman-node/src/adapters/postgres/trx.rs:429"
+    },
+    {
+      "disposition": "covered_by_reviewed_family",
+      "logical_template": "link::{prefix}",
+      "note": "ADR 0031 PostgreSQL compatibility classification",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "apps/aseman-node/src/adapters/postgres/trx.rs:322"
+    },
+    {
+      "disposition": "covered_by_reviewed_family",
+      "logical_template": "link::{prefix}",
+      "note": "ADR 0031 PostgreSQL compatibility classification",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "apps/aseman-node/src/adapters/postgres/trx.rs:368"
+    },
+    {
+      "disposition": "covered_by_reviewed_family",
+      "logical_template": "link::{}",
+      "note": "json/link physical layout internals",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "apps/aseman-node/src/adapters/rocksdb/trx.rs:315"
+    },
+    {
+      "disposition": "covered_by_reviewed_family",
+      "logical_template": "link::{}",
+      "note": "json/link physical layout internals",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "apps/aseman-node/src/adapters/rocksdb/trx.rs:320"
+    },
+    {
+      "disposition": "covered_by_reviewed_family",
+      "logical_template": "link::{}",
+      "note": "json/link physical layout internals",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "apps/aseman-node/src/adapters/rocksdb/trx.rs:441"
+    },
+    {
+      "disposition": "covered_by_reviewed_family",
+      "logical_template": "link::{}",
+      "note": "json/link physical layout internals",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "apps/aseman-node/src/adapters/rocksdb/trx.rs:506"
+    },
+    {
+      "disposition": "covered_by_reviewed_family",
       "logical_template": "link::{}",
       "note": "ADR 0023 login grant delete path",
       "review_status": "candidate; caller association may be indirect",
@@ -3844,34 +3921,6 @@
       "note": "ADR 0022 VM family key helper or delete path",
       "review_status": "candidate; caller association may be indirect",
       "source": "apps/aseman-node/src/adapters/vmm/proxy.rs:90"
-    },
-    {
-      "disposition": "covered_by_reviewed_family",
-      "logical_template": "link::{}",
-      "note": "json/link physical layout internals",
-      "review_status": "candidate; caller association may be indirect",
-      "source": "apps/aseman-node/src/legacy/trx.rs:315"
-    },
-    {
-      "disposition": "covered_by_reviewed_family",
-      "logical_template": "link::{}",
-      "note": "json/link physical layout internals",
-      "review_status": "candidate; caller association may be indirect",
-      "source": "apps/aseman-node/src/legacy/trx.rs:320"
-    },
-    {
-      "disposition": "covered_by_reviewed_family",
-      "logical_template": "link::{}",
-      "note": "json/link physical layout internals",
-      "review_status": "candidate; caller association may be indirect",
-      "source": "apps/aseman-node/src/legacy/trx.rs:441"
-    },
-    {
-      "disposition": "covered_by_reviewed_family",
-      "logical_template": "link::{}",
-      "note": "json/link physical layout internals",
-      "review_status": "candidate; caller association may be indirect",
-      "source": "apps/aseman-node/src/legacy/trx.rs:506"
     },
     {
       "disposition": "covered_by_reviewed_family",
@@ -3903,10 +3952,31 @@
     },
     {
       "disposition": "covered_by_reviewed_family",
+      "logical_template": "obj::{typ}::{key}::{column}",
+      "note": "heuristic match of a reviewed family: typed object layout",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "apps/aseman-node/src/adapters/postgres/trx.rs:460"
+    },
+    {
+      "disposition": "covered_by_reviewed_family",
+      "logical_template": "obj::{typ}::{key}::|",
+      "note": "heuristic match of a reviewed family: typed object layout",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "apps/aseman-node/src/adapters/postgres/trx.rs:254"
+    },
+    {
+      "disposition": "covered_by_reviewed_family",
+      "logical_template": "obj::{typ}::{object_id}::{column}",
+      "note": "heuristic match of a reviewed family: typed object layout",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "apps/aseman-node/src/adapters/postgres/trx.rs:310"
+    },
+    {
+      "disposition": "covered_by_reviewed_family",
       "logical_template": "obj::{}::",
       "note": "heuristic match of a reviewed family: typed object layout",
       "review_status": "candidate; caller association may be indirect",
-      "source": "apps/aseman-node/src/legacy/trx.rs:569"
+      "source": "apps/aseman-node/src/adapters/rocksdb/trx.rs:569"
     },
     {
       "disposition": "covered_by_reviewed_family",
@@ -3920,7 +3990,21 @@
       "logical_template": "obj::{}::{}::",
       "note": "heuristic match of a reviewed family: typed object layout",
       "review_status": "candidate; caller association may be indirect",
-      "source": "apps/aseman-node/src/legacy/trx.rs:361"
+      "source": "apps/aseman-node/src/adapters/rocksdb/trx.rs:361"
+    },
+    {
+      "disposition": "covered_by_reviewed_family",
+      "logical_template": "obj::{}::{}::{}",
+      "note": "heuristic match of a reviewed family: typed object layout",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "apps/aseman-node/src/adapters/rocksdb/trx.rs:243"
+    },
+    {
+      "disposition": "covered_by_reviewed_family",
+      "logical_template": "obj::{}::{}::{}",
+      "note": "heuristic match of a reviewed family: typed object layout",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "apps/aseman-node/src/adapters/rocksdb/trx.rs:375"
     },
     {
       "disposition": "covered_by_reviewed_family",
@@ -3945,24 +4029,10 @@
     },
     {
       "disposition": "covered_by_reviewed_family",
-      "logical_template": "obj::{}::{}::{}",
-      "note": "heuristic match of a reviewed family: typed object layout",
-      "review_status": "candidate; caller association may be indirect",
-      "source": "apps/aseman-node/src/legacy/trx.rs:243"
-    },
-    {
-      "disposition": "covered_by_reviewed_family",
-      "logical_template": "obj::{}::{}::{}",
-      "note": "heuristic match of a reviewed family: typed object layout",
-      "review_status": "candidate; caller association may be indirect",
-      "source": "apps/aseman-node/src/legacy/trx.rs:375"
-    },
-    {
-      "disposition": "covered_by_reviewed_family",
       "logical_template": "obj::{}::{}::|",
       "note": "heuristic match of a reviewed family: typed object layout",
       "review_status": "candidate; caller association may be indirect",
-      "source": "apps/aseman-node/src/legacy/trx.rs:255"
+      "source": "apps/aseman-node/src/adapters/rocksdb/trx.rs:255"
     },
     {
       "disposition": "covered_by_reviewed_family",
@@ -4018,14 +4088,14 @@
       "logical_template": "user::{}",
       "note": "format string is message/label text, never passed to storage",
       "review_status": "candidate; caller association may be indirect",
-      "source": "apps/aseman-node/src/legacy/globe/transport.rs:47"
+      "source": "apps/aseman-node/src/core/globe/transport.rs:47"
     },
     {
       "disposition": "not_a_storage_key",
       "logical_template": "user::{}",
       "note": "format string is message/label text, never passed to storage",
       "review_status": "candidate; caller association may be indirect",
-      "source": "apps/aseman-node/src/legacy/globe/transport.rs:96"
+      "source": "apps/aseman-node/src/core/globe/transport.rs:96"
     },
     {
       "disposition": "covered_by_reviewed_family",
@@ -4256,14 +4326,14 @@
       "logical_template": "{}::targetCount",
       "note": "ADR 0020 dead chain-callback state",
       "review_status": "candidate; caller association may be indirect",
-      "source": "apps/aseman-node/src/legacy/orchestrator/icore.rs:111"
+      "source": "apps/aseman-node/src/core/orchestrator/icore.rs:111"
     },
     {
       "disposition": "covered_by_reviewed_family",
       "logical_template": "{}::tempCount",
       "note": "ADR 0020 dead chain-callback state",
       "review_status": "candidate; caller association may be indirect",
-      "source": "apps/aseman-node/src/legacy/orchestrator/icore.rs:115"
+      "source": "apps/aseman-node/src/core/orchestrator/icore.rs:115"
     },
     {
       "disposition": "not_a_storage_key",
@@ -4424,21 +4494,21 @@
       "logical_template": "{}|{}::attachment",
       "note": "heuristic match of a reviewed family: ADR 0020 dead chain-callback state",
       "review_status": "candidate; caller association may be indirect",
-      "source": "apps/aseman-node/src/legacy/orchestrator/icore.rs:106"
+      "source": "apps/aseman-node/src/core/orchestrator/icore.rs:106"
     },
     {
       "disposition": "covered_by_reviewed_family",
       "logical_template": "{}|{}::machineId",
       "note": "heuristic match of a reviewed family: ADR 0020 dead chain-callback state",
       "review_status": "candidate; caller association may be indirect",
-      "source": "apps/aseman-node/src/legacy/orchestrator/icore.rs:98"
+      "source": "apps/aseman-node/src/core/orchestrator/icore.rs:98"
     },
     {
       "disposition": "covered_by_reviewed_family",
       "logical_template": "{}|{}::storeId",
       "note": "heuristic match of a reviewed family: ADR 0020 dead chain-callback state",
       "review_status": "candidate; caller association may be indirect",
-      "source": "apps/aseman-node/src/legacy/orchestrator/icore.rs:102"
+      "source": "apps/aseman-node/src/core/orchestrator/icore.rs:102"
     }
   ],
   "cluster_rocksdb": {
@@ -4667,27 +4737,27 @@
     {
       "family": "object-column",
       "pattern": "obj::{type}::{object_id}::{column}",
-      "source": "apps/aseman-node/src/legacy/trx.rs:247"
+      "source": "apps/aseman-node/src/adapters/rocksdb/trx.rs:247"
     },
     {
       "family": "secondary-index",
       "pattern": "index::{type}::{from_column}::{to_column}::{from_value}",
-      "source": "apps/aseman-node/src/legacy/trx.rs:264"
+      "source": "apps/aseman-node/src/adapters/rocksdb/trx.rs:264"
     },
     {
       "family": "link",
       "pattern": "link::{logical_key}",
-      "source": "apps/aseman-node/src/legacy/trx.rs:325"
+      "source": "apps/aseman-node/src/adapters/rocksdb/trx.rs:325"
     },
     {
       "family": "json-document-and-leaves",
       "pattern": "json::{logical_key}::{path}[.{descendant_path}]",
-      "source": "apps/aseman-node/src/legacy/trx.rs:430"
+      "source": "apps/aseman-node/src/adapters/rocksdb/trx.rs:430"
     },
     {
       "family": "raw",
       "pattern": "caller-defined byte/string key",
-      "source": "apps/aseman-node/src/legacy/trx.rs:339"
+      "source": "apps/aseman-node/src/adapters/rocksdb/trx.rs:339"
     }
   ],
   "questdb_tables": [
@@ -4810,7 +4880,7 @@
   "summary": {
     "application_accesses": 231,
     "blocked_rows": 0,
-    "candidate_key_templates": 336
+    "candidate_key_templates": 346
   },
   "unknown_record_policy": "fail_closed"
 }

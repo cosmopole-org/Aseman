@@ -9,7 +9,7 @@ use serde_json::{Value, json};
 
 use crate::api::packets::simple::HelloInput;
 use crate::api::utils::future::async_once;
-use crate::legacy::actor::Guard;
+use crate::core::actor::Guard;
 use crate::models::action::ISecureAction;
 use crate::models::core::ICore;
 use crate::models::state::IState;

@@ -62,7 +62,8 @@ single entry point for every client and federation request.
 
 ## Core transactions
 
-`apps/aseman-node/src/legacy` owns the transaction lifecycle, the `ICore` context, callbacks,
+`apps/aseman-node/src/core` owns the `ICore` context and callbacks, while
+`apps/aseman-node/src/adapters/rocksdb/trx.rs` owns the transaction lifecycle
 and update propagation. Actions whose input declares `origin == "global"` are
 consensus-bound; `origin == ""` runs locally. The `ICore` context also holds the
 per-VM transaction registry (`Mutex<HashMap<VmId, Arc<dyn ITrx>>>`).

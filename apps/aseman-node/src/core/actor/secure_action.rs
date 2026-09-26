@@ -12,7 +12,7 @@ use std::sync::{Arc, Mutex};
 use anyhow::{Result, anyhow};
 use serde_json::{Map, Value};
 
-use crate::legacy::utils::compat::GoError;
+use crate::core::utils::compat::GoError;
 use crate::models::action::{IAction, ISecureAction};
 use crate::models::core::{ICore, StateClosure};
 use crate::models::globe::BaseResponseCallback;

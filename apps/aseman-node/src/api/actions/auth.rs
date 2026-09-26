@@ -9,7 +9,7 @@ use serde_json::{Value, json};
 
 use crate::api::packets::auth::{GetServerKeyInput, GetServersMapInput};
 use crate::api::packets::auth::{GetServerKeyOutput, GetServersMapOutput};
-use crate::legacy::actor::Guard;
+use crate::core::actor::Guard;
 use crate::models::action::ISecureAction;
 use crate::models::core::ICore;
 use crate::models::state::IState;

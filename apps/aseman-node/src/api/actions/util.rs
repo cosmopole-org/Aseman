@@ -13,9 +13,9 @@ use anyhow::{Result, anyhow};
 use serde::de::DeserializeOwned;
 use serde_json::Value;
 
-use crate::legacy::actor::Guard;
-use crate::legacy::actor::action::{Action, ActionFn, StateModifierShared};
-use crate::legacy::actor::secure_action::{Parse, SecureAction};
+use crate::core::actor::Guard;
+use crate::core::actor::action::{Action, ActionFn, StateModifierShared};
+use crate::core::actor::secure_action::{Parse, SecureAction};
 use crate::models::action::{IAction, ISecureAction};
 use crate::models::core::ICore;
 use crate::models::input::IInput;

@@ -8,7 +8,7 @@ pub use aseman_contracts::legacy_wire::chain::*;
 use std::collections::HashMap;
 use std::sync::Arc;
 
-use crate::legacy::utils::compat::GoError;
+use crate::core::utils::compat::GoError;
 
 /// A chain callback invoked when a transaction settles.
 pub type ChainCallbackFn = Arc<dyn Fn(Vec<u8>, i64, Option<GoError>) + Send + Sync>;

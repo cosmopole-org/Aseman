@@ -309,27 +309,27 @@ def inventory() -> dict[str, Any]:
             {
                 "family": "object-column",
                 "pattern": "obj::{type}::{object_id}::{column}",
-                "source": "apps/aseman-node/src/legacy/trx.rs:247",
+                "source": "apps/aseman-node/src/adapters/rocksdb/trx.rs:247",
             },
             {
                 "family": "secondary-index",
                 "pattern": "index::{type}::{from_column}::{to_column}::{from_value}",
-                "source": "apps/aseman-node/src/legacy/trx.rs:264",
+                "source": "apps/aseman-node/src/adapters/rocksdb/trx.rs:264",
             },
             {
                 "family": "link",
                 "pattern": "link::{logical_key}",
-                "source": "apps/aseman-node/src/legacy/trx.rs:325",
+                "source": "apps/aseman-node/src/adapters/rocksdb/trx.rs:325",
             },
             {
                 "family": "json-document-and-leaves",
                 "pattern": "json::{logical_key}::{path}[.{descendant_path}]",
-                "source": "apps/aseman-node/src/legacy/trx.rs:430",
+                "source": "apps/aseman-node/src/adapters/rocksdb/trx.rs:430",
             },
             {
                 "family": "raw",
                 "pattern": "caller-defined byte/string key",
-                "source": "apps/aseman-node/src/legacy/trx.rs:339",
+                "source": "apps/aseman-node/src/adapters/rocksdb/trx.rs:339",
             },
         ],
         "core_objects": objects,

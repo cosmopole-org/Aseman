@@ -7,7 +7,7 @@
 //! - [`IActor`] — the per-node registry that holds both flavours.
 //! - [`IPlugger`] — entry point a plugin uses to expose its actions.
 
-use crate::legacy::utils::compat::AnyVal;
+use crate::core::utils::compat::AnyVal;
 use crate::models::input::IInput;
 use crate::models::state::IState;
 use crate::models::transaction::ITrx;

@@ -1,4 +1,4 @@
-//! Go-translation compatibility aliases used by the gated legacy translation.
+//! Go-translation compatibility aliases used by the node core compatibility surface.
 //!
 //! These types mirror Go idioms for the translated node code; they belong to the
 //! legacy surface and are replaced as the families they support are migrated.

@@ -39,8 +39,8 @@
       "Cargo.lock",
       "apps/aseman-client/package-lock.json"
     ],
-    "tracked_dist_file_count": 15,
-    "tracked_file_count": 993,
+    "tracked_dist_file_count": 29,
+    "tracked_file_count": 1024,
     "tracked_files_by_top_level": {
       ".cargo": 1,
       ".gitattributes": 1,
@@ -54,14 +54,14 @@
       "Cargo.toml": 1,
       "README.md": 1,
       "SECURITY.md": 1,
-      "apps": 200,
+      "apps": 207,
       "clippy.toml": 1,
       "contracts": 93,
-      "crates": 121,
+      "crates": 128,
       "deploy": 11,
-      "dist": 15,
+      "dist": 29,
       "docs": 155,
-      "modules": 308,
+      "modules": 311,
       "plan": 18,
       "rust-toolchain.toml": 1,
       "rustfmt.toml": 1,
@@ -71,7 +71,7 @@
     },
     "tracked_source_files_by_extension": {
       ".py": 33,
-      ".rs": 536,
+      ".rs": 551,
       ".sh": 2,
       ".ts": 1
     }

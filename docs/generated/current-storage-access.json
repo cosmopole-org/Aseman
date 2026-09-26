@@ -763,19 +763,19 @@
       "logical_template": "json::{}::{}",
       "method": "put_bytes",
       "mode": "write",
-      "source": "apps/aseman-node/src/legacy/trx.rs:644"
+      "source": "apps/aseman-node/src/adapters/rocksdb/trx.rs:644"
     },
     {
       "logical_template": "json::{}::{}",
       "method": "del_key",
       "mode": "write",
-      "source": "apps/aseman-node/src/legacy/trx.rs:666"
+      "source": "apps/aseman-node/src/adapters/rocksdb/trx.rs:666"
     },
     {
       "logical_template": "json::{}::{}.{}",
       "method": "put_bytes",
       "mode": "write",
-      "source": "apps/aseman-node/src/legacy/trx.rs:657"
+      "source": "apps/aseman-node/src/adapters/rocksdb/trx.rs:657"
     },
     {
       "logical_template": "link::UserEmailToId::{}",
@@ -1339,13 +1339,13 @@
       "logical_template": "{}::targetCount",
       "method": "put_bytes",
       "mode": "write",
-      "source": "apps/aseman-node/src/legacy/orchestrator/icore.rs:110"
+      "source": "apps/aseman-node/src/core/orchestrator/icore.rs:110"
     },
     {
       "logical_template": "{}::tempCount",
       "method": "put_bytes",
       "mode": "write",
-      "source": "apps/aseman-node/src/legacy/orchestrator/icore.rs:114"
+      "source": "apps/aseman-node/src/core/orchestrator/icore.rs:114"
     },
     {
       "logical_template": "{}::{}",
@@ -1369,31 +1369,31 @@
       "logical_template": "{}|>",
       "method": "get_by_prefix",
       "mode": "read",
-      "source": "apps/aseman-node/src/legacy/orchestrator/icore.rs:95"
+      "source": "apps/aseman-node/src/core/orchestrator/icore.rs:95"
     },
     {
       "logical_template": "{}|>{}",
       "method": "put_bytes",
       "mode": "write",
-      "source": "apps/aseman-node/src/legacy/orchestrator/icore.rs:96"
+      "source": "apps/aseman-node/src/core/orchestrator/icore.rs:96"
     },
     {
       "logical_template": "{}|{}::attachment",
       "method": "put_bytes",
       "mode": "write",
-      "source": "apps/aseman-node/src/legacy/orchestrator/icore.rs:105"
+      "source": "apps/aseman-node/src/core/orchestrator/icore.rs:105"
     },
     {
       "logical_template": "{}|{}::machineId",
       "method": "put_bytes",
       "mode": "write",
-      "source": "apps/aseman-node/src/legacy/orchestrator/icore.rs:97"
+      "source": "apps/aseman-node/src/core/orchestrator/icore.rs:97"
     },
     {
       "logical_template": "{}|{}::storeId",
       "method": "put_bytes",
       "mode": "write",
-      "source": "apps/aseman-node/src/legacy/orchestrator/icore.rs:101"
+      "source": "apps/aseman-node/src/core/orchestrator/icore.rs:101"
     }
   ],
   "candidate_key_templates": [
@@ -2275,7 +2275,7 @@
     {
       "logical_template": "chainCallback::{}_{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "apps/aseman-node/src/legacy/orchestrator/icore.rs:94"
+      "source": "apps/aseman-node/src/core/orchestrator/icore.rs:94"
     },
     {
       "logical_template": "creatorof::{creator_id}::{}",
@@ -2303,54 +2303,69 @@
       "source": "apps/aseman-node/src/api/model/store_ports.rs:301"
     },
     {
+      "logical_template": "index::{typ}::{from}::{to}::{value}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "apps/aseman-node/src/adapters/postgres/trx.rs:512"
+    },
+    {
       "logical_template": "index::{}::{}::{}::",
       "review_status": "candidate; caller association may be indirect",
-      "source": "apps/aseman-node/src/legacy/trx.rs:464"
+      "source": "apps/aseman-node/src/adapters/rocksdb/trx.rs:464"
     },
     {
       "logical_template": "index::{}::{}::{}::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "apps/aseman-node/src/legacy/trx.rs:266"
+      "source": "apps/aseman-node/src/adapters/rocksdb/trx.rs:266"
     },
     {
       "logical_template": "index::{}::{}::{}::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "apps/aseman-node/src/legacy/trx.rs:281"
+      "source": "apps/aseman-node/src/adapters/rocksdb/trx.rs:281"
     },
     {
       "logical_template": "index::{}::{}::{}::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "apps/aseman-node/src/legacy/trx.rs:293"
+      "source": "apps/aseman-node/src/adapters/rocksdb/trx.rs:293"
     },
     {
       "logical_template": "index::{}::{}::{}::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "apps/aseman-node/src/legacy/trx.rs:307"
+      "source": "apps/aseman-node/src/adapters/rocksdb/trx.rs:307"
+    },
+    {
+      "logical_template": "json::{key}::{path}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "apps/aseman-node/src/adapters/postgres/trx.rs:138"
+    },
+    {
+      "logical_template": "json::{key}::{path}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "apps/aseman-node/src/adapters/postgres/trx.rs:480"
     },
     {
       "logical_template": "json::{}::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "apps/aseman-node/src/legacy/trx.rs:425"
+      "source": "apps/aseman-node/src/adapters/rocksdb/trx.rs:425"
     },
     {
       "logical_template": "json::{}::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "apps/aseman-node/src/legacy/trx.rs:644"
+      "source": "apps/aseman-node/src/adapters/rocksdb/trx.rs:644"
     },
     {
       "logical_template": "json::{}::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "apps/aseman-node/src/legacy/trx.rs:666"
+      "source": "apps/aseman-node/src/adapters/rocksdb/trx.rs:666"
     },
     {
       "logical_template": "json::{}::{}.",
       "review_status": "candidate; caller association may be indirect",
-      "source": "apps/aseman-node/src/legacy/trx.rs:667"
+      "source": "apps/aseman-node/src/adapters/rocksdb/trx.rs:667"
     },
     {
       "logical_template": "json::{}::{}.{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "apps/aseman-node/src/legacy/trx.rs:657"
+      "source": "apps/aseman-node/src/adapters/rocksdb/trx.rs:657"
     },
     {
       "logical_template": "link::UserEmailToId::{}",
@@ -2633,6 +2648,46 @@
       "source": "apps/aseman-node/src/api/actions/program.rs:878"
     },
     {
+      "logical_template": "link::{key}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "apps/aseman-node/src/adapters/postgres/trx.rs:420"
+    },
+    {
+      "logical_template": "link::{key}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "apps/aseman-node/src/adapters/postgres/trx.rs:429"
+    },
+    {
+      "logical_template": "link::{prefix}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "apps/aseman-node/src/adapters/postgres/trx.rs:322"
+    },
+    {
+      "logical_template": "link::{prefix}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "apps/aseman-node/src/adapters/postgres/trx.rs:368"
+    },
+    {
+      "logical_template": "link::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "apps/aseman-node/src/adapters/rocksdb/trx.rs:315"
+    },
+    {
+      "logical_template": "link::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "apps/aseman-node/src/adapters/rocksdb/trx.rs:320"
+    },
+    {
+      "logical_template": "link::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "apps/aseman-node/src/adapters/rocksdb/trx.rs:441"
+    },
+    {
+      "logical_template": "link::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "apps/aseman-node/src/adapters/rocksdb/trx.rs:506"
+    },
+    {
       "logical_template": "link::{}",
       "review_status": "candidate; caller association may be indirect",
       "source": "apps/aseman-node/src/adapters/vmm/host/functions/login_grant.rs:85"
@@ -2651,26 +2706,6 @@
       "logical_template": "link::{}",
       "review_status": "candidate; caller association may be indirect",
       "source": "apps/aseman-node/src/adapters/vmm/proxy.rs:90"
-    },
-    {
-      "logical_template": "link::{}",
-      "review_status": "candidate; caller association may be indirect",
-      "source": "apps/aseman-node/src/legacy/trx.rs:315"
-    },
-    {
-      "logical_template": "link::{}",
-      "review_status": "candidate; caller association may be indirect",
-      "source": "apps/aseman-node/src/legacy/trx.rs:320"
-    },
-    {
-      "logical_template": "link::{}",
-      "review_status": "candidate; caller association may be indirect",
-      "source": "apps/aseman-node/src/legacy/trx.rs:441"
-    },
-    {
-      "logical_template": "link::{}",
-      "review_status": "candidate; caller association may be indirect",
-      "source": "apps/aseman-node/src/legacy/trx.rs:506"
     },
     {
       "logical_template": "machinePrograms::{machine_id}::",
@@ -2693,9 +2728,24 @@
       "source": "apps/aseman-node/src/api/model/store_ports.rs:167"
     },
     {
+      "logical_template": "obj::{typ}::{key}::{column}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "apps/aseman-node/src/adapters/postgres/trx.rs:460"
+    },
+    {
+      "logical_template": "obj::{typ}::{key}::|",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "apps/aseman-node/src/adapters/postgres/trx.rs:254"
+    },
+    {
+      "logical_template": "obj::{typ}::{object_id}::{column}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "apps/aseman-node/src/adapters/postgres/trx.rs:310"
+    },
+    {
       "logical_template": "obj::{}::",
       "review_status": "candidate; caller association may be indirect",
-      "source": "apps/aseman-node/src/legacy/trx.rs:569"
+      "source": "apps/aseman-node/src/adapters/rocksdb/trx.rs:569"
     },
     {
       "logical_template": "obj::{}::{creature_id}::balance",
@@ -2705,7 +2755,17 @@
     {
       "logical_template": "obj::{}::{}::",
       "review_status": "candidate; caller association may be indirect",
-      "source": "apps/aseman-node/src/legacy/trx.rs:361"
+      "source": "apps/aseman-node/src/adapters/rocksdb/trx.rs:361"
+    },
+    {
+      "logical_template": "obj::{}::{}::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "apps/aseman-node/src/adapters/rocksdb/trx.rs:243"
+    },
+    {
+      "logical_template": "obj::{}::{}::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "apps/aseman-node/src/adapters/rocksdb/trx.rs:375"
     },
     {
       "logical_template": "obj::{}::{}::{}",
@@ -2723,19 +2783,9 @@
       "source": "apps/aseman-node/src/api/model/store.rs:71"
     },
     {
-      "logical_template": "obj::{}::{}::{}",
-      "review_status": "candidate; caller association may be indirect",
-      "source": "apps/aseman-node/src/legacy/trx.rs:243"
-    },
-    {
-      "logical_template": "obj::{}::{}::{}",
-      "review_status": "candidate; caller association may be indirect",
-      "source": "apps/aseman-node/src/legacy/trx.rs:375"
-    },
-    {
       "logical_template": "obj::{}::{}::|",
       "review_status": "candidate; caller association may be indirect",
-      "source": "apps/aseman-node/src/legacy/trx.rs:255"
+      "source": "apps/aseman-node/src/adapters/rocksdb/trx.rs:255"
     },
     {
       "logical_template": "onaccess::{store_id}::",
@@ -2775,12 +2825,12 @@
     {
       "logical_template": "user::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "apps/aseman-node/src/legacy/globe/transport.rs:47"
+      "source": "apps/aseman-node/src/core/globe/transport.rs:47"
     },
     {
       "logical_template": "user::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "apps/aseman-node/src/legacy/globe/transport.rs:96"
+      "source": "apps/aseman-node/src/core/globe/transport.rs:96"
     },
     {
       "logical_template": "vmAlarmData::{program_id}",
@@ -2945,12 +2995,12 @@
     {
       "logical_template": "{}::targetCount",
       "review_status": "candidate; caller association may be indirect",
-      "source": "apps/aseman-node/src/legacy/orchestrator/icore.rs:111"
+      "source": "apps/aseman-node/src/core/orchestrator/icore.rs:111"
     },
     {
       "logical_template": "{}::tempCount",
       "review_status": "candidate; caller association may be indirect",
-      "source": "apps/aseman-node/src/legacy/orchestrator/icore.rs:115"
+      "source": "apps/aseman-node/src/core/orchestrator/icore.rs:115"
     },
     {
       "logical_template": "{}::{}",
@@ -3065,17 +3115,17 @@
     {
       "logical_template": "{}|{}::attachment",
       "review_status": "candidate; caller association may be indirect",
-      "source": "apps/aseman-node/src/legacy/orchestrator/icore.rs:106"
+      "source": "apps/aseman-node/src/core/orchestrator/icore.rs:106"
     },
     {
       "logical_template": "{}|{}::machineId",
       "review_status": "candidate; caller association may be indirect",
-      "source": "apps/aseman-node/src/legacy/orchestrator/icore.rs:98"
+      "source": "apps/aseman-node/src/core/orchestrator/icore.rs:98"
     },
     {
       "logical_template": "{}|{}::storeId",
       "review_status": "candidate; caller association may be indirect",
-      "source": "apps/aseman-node/src/legacy/orchestrator/icore.rs:102"
+      "source": "apps/aseman-node/src/core/orchestrator/icore.rs:102"
     }
   ],
   "cluster_rocksdb": {
@@ -3252,27 +3302,27 @@
     {
       "family": "object-column",
       "pattern": "obj::{type}::{object_id}::{column}",
-      "source": "apps/aseman-node/src/legacy/trx.rs:247"
+      "source": "apps/aseman-node/src/adapters/rocksdb/trx.rs:247"
     },
     {
       "family": "secondary-index",
       "pattern": "index::{type}::{from_column}::{to_column}::{from_value}",
-      "source": "apps/aseman-node/src/legacy/trx.rs:264"
+      "source": "apps/aseman-node/src/adapters/rocksdb/trx.rs:264"
     },
     {
       "family": "link",
       "pattern": "link::{logical_key}",
-      "source": "apps/aseman-node/src/legacy/trx.rs:325"
+      "source": "apps/aseman-node/src/adapters/rocksdb/trx.rs:325"
     },
     {
       "family": "json-document-and-leaves",
       "pattern": "json::{logical_key}::{path}[.{descendant_path}]",
-      "source": "apps/aseman-node/src/legacy/trx.rs:430"
+      "source": "apps/aseman-node/src/adapters/rocksdb/trx.rs:430"
     },
     {
       "family": "raw",
       "pattern": "caller-defined byte/string key",
-      "source": "apps/aseman-node/src/legacy/trx.rs:339"
+      "source": "apps/aseman-node/src/adapters/rocksdb/trx.rs:339"
     }
   ],
   "questdb_tables": [
@@ -3386,7 +3436,7 @@
     }
   ],
   "summary": {
-    "candidate_key_templates": 336,
+    "candidate_key_templates": 346,
     "core_object_types": 8,
     "direct_application_accesses": 231,
     "hashgraph_key_families": 8,

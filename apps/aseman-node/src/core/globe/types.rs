@@ -1,4 +1,4 @@
-//! Shared types and helpers for the legacy `Globe` coordinator.
+//! Shared types and helpers for the core `Globe` compatibility coordinator.
 //!
 //! Translation of `core/module/globe/globe.go`: the packet envelope and the
 //! injected closure signatures. Staking and election logic — including the

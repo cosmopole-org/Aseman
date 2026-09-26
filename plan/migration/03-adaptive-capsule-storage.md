@@ -179,6 +179,12 @@ The portable migration unit is a canonical `CapsuleEnvelope` stream, not raw row
 
 This permits a RocksDB entity represented by several keys to become one normalized SQL entity across its own table and relationships, without carrying the RocksDB layout into PostgreSQL.
 
+The transitional node transaction follows the same rule (ADR 0031). PostgreSQL maps
+its object columns, secondary indexes, grouped links, and documents to distinct native
+tables; only unclassified operational bytes enter a prefix-restricted fallback table.
+That compatibility adapter supports characterization and gated backfill but is not a
+new core API and cannot change a family's authority by itself.
+
 ## Storage CLI
 
 ```text

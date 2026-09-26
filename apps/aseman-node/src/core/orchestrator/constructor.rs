@@ -8,9 +8,9 @@ use std::sync::{Arc, Mutex};
 use aseman_config::AsemanConfig;
 use rsa::RsaPrivateKey;
 
-use crate::legacy::actor::Actor;
-use crate::legacy::orchestrator::finance::Finance;
-use crate::legacy::orchestrator::types::Core;
+use crate::core::actor::Actor;
+use crate::core::orchestrator::finance::Finance;
+use crate::core::orchestrator::types::Core;
 
 impl Core {
     /// `NewCore(origin, ownerId, ownerPrivateKey)`.

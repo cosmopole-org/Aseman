@@ -10,8 +10,8 @@ use std::collections::HashMap;
 use std::sync::Arc;
 
 use crate::api::utils::crypto::secure_unique_string;
-use crate::legacy::globe::Globe;
-use crate::legacy::globe::types::{ChainPacketOp, SubmitChainPacketFn};
+use crate::core::globe::Globe;
+use crate::core::globe::types::{ChainPacketOp, SubmitChainPacketFn};
 use crate::models::chain::{
     ChainBaseRequest, ChainCallback, ChainMessage, ChainPayPacket, ChainResponse, Effects,
     MessageCallback,

@@ -6,8 +6,8 @@
 // - [`api`] — inbound transport and API adapters (the shell surface, RL-004).
 // - [`adapters`] — concrete outbound/infrastructure adapters (storage, network,
 //   security, signaler, VMM, cluster, ...).
-// - [`legacy`] — the gated legacy translation (`core` orchestration and `models`
-//   state) that survives until the removal-ledger rows pass their gates.
+// - [`core`] — node orchestration and compatibility state that survives until
+//   the removal-ledger rows pass their gates.
 // - [`observability`] — telemetry, profiling, and resource reporting.
 // - [`encoding`], [`sync`] — small named helpers.
 //
@@ -25,8 +25,8 @@
 mod adapters;
 mod api;
 pub mod app;
+mod core;
 pub mod encoding;
-mod legacy;
 mod models;
 mod observability;
 mod sync;

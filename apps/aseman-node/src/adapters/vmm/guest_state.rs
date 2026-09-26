@@ -104,8 +104,8 @@ pub(crate) fn run(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::legacy::trx::TrxWrapper;
-    use crate::legacy::trx::tests::{StubCore, StubStorage};
+    use crate::adapters::rocksdb::trx::TrxWrapper;
+    use crate::adapters::rocksdb::trx::tests::{StubCore, StubStorage};
     use crate::models::ports::IStorage;
     use std::sync::Arc;
 

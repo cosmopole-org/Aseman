@@ -7,7 +7,7 @@
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 
-use crate::legacy::globe::{
+use crate::core::globe::{
     Globe, SetChainCallbackFn, SetMessageCbFn, SignPacketFn, SubmitChainPacketFn,
 };
 use crate::models::chain::MessageCallback;

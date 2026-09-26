@@ -41,6 +41,7 @@
 37. Legacy bridge grants migrate by token digest with topic claims (ADR 0024).
 38. The legacy Hashgraph store remains consensus-provider state with a block-digest checkpoint (ADR 0025).
 39. The Phase 3 cutover routes whole port families to one authoritative provider. Balances and the finance ledger stay on the legacy provider until P8, VMM observed runtime until RL-013, and cross-provider actions write capsules first and compensate on a failed legacy commit (ADR 0026).
+40. PostgreSQL implements the transitional `ITrx` needs independently with separate object, index, relation, document, and opaque tables; availability of that adapter does not change family authority before backfill and comparison (ADR 0031).
 
 ## Resolved blocking ADR set
 

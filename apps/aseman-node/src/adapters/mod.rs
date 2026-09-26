@@ -2,7 +2,9 @@
 //! in [`crate::models::ports`].
 //!
 //! - `blob_store` — storage-root [`aseman_ports::BlobStore`] provider (ADR 0027)
+//! - `postgres` — PostgreSQL compatibility transaction adapter
 //! - `ratelimit` — cross-protocol token-bucket request admission control
+//! - `rocksdb` — legacy RocksDB transaction adapter
 //! - `signaler` — in-process pub/sub event bus
 //! - `storage` — RocksDB + PostgreSQL persistence
 //! - `security` — RSA/ECDSA signing and verification
@@ -16,8 +18,10 @@ pub mod cluster;
 pub mod gateway_subs;
 pub mod module_admin;
 pub mod network;
+pub mod postgres;
 pub mod ratelimit;
 pub mod rocks_tuning;
+pub mod rocksdb;
 pub mod security;
 pub mod signaler;
 pub mod storage;

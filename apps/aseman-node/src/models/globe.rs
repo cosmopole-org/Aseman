@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use crate::legacy::utils::compat::GoError;
+use crate::core::utils::compat::GoError;
 use crate::models::chain::ChainPayPacket;
 use crate::models::update::Update;
 

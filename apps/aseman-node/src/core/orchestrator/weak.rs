@@ -1,4 +1,4 @@
-//! The `ICore` implementation for the legacy `Core` weak forwarding view.
+//! The `ICore` implementation for the `Core` compatibility weak forwarding view.
 //!
 //! `WeakCoreView` is a short-lived `Arc<dyn ICore>` shim built by
 //! `Core::weak_self` so the `modify_state` family can hand a transaction an
@@ -13,8 +13,8 @@ use anyhow::Result;
 use serde_json::Value;
 
 use crate::api::model::core_storage::StateFailure;
-use crate::legacy::orchestrator::icore::{run_state_closure, run_trx_closure};
-use crate::legacy::orchestrator::types::{Core, WeakCoreView};
+use crate::core::orchestrator::icore::{run_state_closure, run_trx_closure};
+use crate::core::orchestrator::types::{Core, WeakCoreView};
 use crate::models::action::IActor;
 use crate::models::action::TrxClosure;
 use crate::models::core::{ICore, StateClosure};

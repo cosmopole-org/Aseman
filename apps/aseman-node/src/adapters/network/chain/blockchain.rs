@@ -19,7 +19,7 @@ use dashmap::DashMap;
 use uuid::Uuid;
 
 use crate::api::model::{Chain, ChainShard};
-use crate::legacy::globe::ChainPacketOp;
+use crate::core::globe::ChainPacketOp;
 use crate::models::core::ICore;
 use crate::models::ports::{IChain, PipelineFn};
 use crate::models::transaction::ITrx;
@@ -43,7 +43,7 @@ fn peer_host(net_addr: &str) -> String {
 #[derive(Clone)]
 pub(crate) struct ChainSubmission {
     pub(crate) chain_id: String,
-    pub(crate) op: crate::legacy::globe::ChainPacketOp,
+    pub(crate) op: crate::core::globe::ChainPacketOp,
 }
 
 /// A work chain: one main shard + many sub-shards.

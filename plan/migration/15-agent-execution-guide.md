@@ -27,9 +27,9 @@ Until a root `AGENTS.md` exists, this guide and the migration index govern migra
 |---|---|---|---|
 | `apps/aseman-node/src/main.rs` | Configuration, composition, startup, lifecycle | `apps/aseman-node` composition root plus `aseman-config` | No business rules or direct environment reads remain in `main`. |
 | `apps/aseman-node/src/models/*` | Mixed domain, ports, packets, state, worker DTOs | `aseman-domain`, `aseman-ports`, `aseman-contracts` | No global model bucket; every type has one semantic owner. |
-| `apps/aseman-node/src/legacy/*` | Transactions, orchestration, globe, actor registry | `aseman-application` use cases plus selected domain/services | No service locator or driver imports in application/domain. |
+| `apps/aseman-node/src/core/*` | Orchestration, globe, actor registry | `aseman-application` use cases plus selected domain/services | No service locator or driver imports in application/domain. |
 | `apps/aseman-node/src/api/actions/*` | Routes, authorization, domain rules, persistence, VM and finance behavior | Application use cases plus gateway DTO adapters | Route handlers contain translation only; large action files deleted. |
-| `apps/aseman-node/src/adapters/storage.rs` and RocksDB transaction code | KV and time-series persistence | Capsule ports, PostgreSQL module, legacy RocksDB migration module | Node/application no longer imports RocksDB/QuestDB types. |
+| `apps/aseman-node/src/adapters/storage.rs` and `apps/aseman-node/src/adapters/rocksdb/trx.rs` | KV and time-series persistence | Capsule ports, PostgreSQL module, legacy RocksDB migration module | Node/application no longer imports RocksDB/QuestDB types. |
 | `apps/aseman-node/src/adapters/security.rs` | Signing and verification | Identity/crypto adapter plus policy/security module | All authorization passes one policy decision contract. |
 | `apps/aseman-node/src/adapters/signaler.rs` | In-process realtime callbacks | Realtime port and durable/in-memory modules | No authoritative process-local subscription state in production. |
 | `apps/aseman-node/src/adapters/network/client/*` | TCP/WS framing plus duplicated sessions | Network modules plus transport-neutral gateway/session application | Legacy adapters own framing only and expire on the removal ledger. |

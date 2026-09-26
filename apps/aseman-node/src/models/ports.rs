@@ -15,7 +15,7 @@ use dashmap::DashMap;
 use serde_json::Value;
 use serde_json::Value as JsonValue;
 
-use crate::legacy::utils::compat::GoError;
+use crate::core::utils::compat::GoError;
 use crate::models::packet::{LogPacket, LogQuery};
 use crate::models::transaction::ITrx;
 
@@ -437,7 +437,7 @@ pub trait IChain: Send + Sync {
 
     /// Submit a chain packet onto a chain (the chain module owns the outbound
     /// submission queue and framing; this is the sole entry point).
-    fn submit_chain_op(&self, chain_id: &str, op: crate::legacy::globe::ChainPacketOp);
+    fn submit_chain_op(&self, chain_id: &str, op: crate::core::globe::ChainPacketOp);
 
     /// The consensus provider installed as this chain's application handler, if
     /// any. Ownership lives with the chain module, not the core orchestrator.

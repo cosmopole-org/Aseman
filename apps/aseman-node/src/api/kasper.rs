@@ -10,7 +10,7 @@ use std::sync::Arc;
 use aseman_config::AsemanConfig;
 use rsa::RsaPrivateKey;
 
-use crate::legacy::orchestrator::Core;
+use crate::core::orchestrator::Core;
 use crate::models::core::ICore;
 
 pub type Kasper = Arc<dyn ICore>;

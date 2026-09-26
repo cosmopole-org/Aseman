@@ -1,4 +1,4 @@
-//! The `ICore` trait implementation for the legacy `Core` orchestrator, the
+//! The `ICore` trait implementation for the `Core` compatibility orchestrator, the
 //! ADR-0026 transaction/state-modification helpers, and the `checked_trx` /
 //! `weak_self` internals they share with the weak view.
 //!
@@ -11,10 +11,10 @@ use anyhow::Result;
 use rsa::RsaPrivateKey;
 use serde_json::Value;
 
+use crate::adapters::rocksdb::trx::TrxWrapper;
 use crate::api::model::core_storage::{StateFailure, run_action};
-use crate::legacy::orchestrator::types::{Core, CoreWeakHandles, WeakCoreView};
-use crate::legacy::trx::TrxWrapper;
-use crate::legacy::{Info as BaseInfo, State as ActorState};
+use crate::core::orchestrator::types::{Core, CoreWeakHandles, WeakCoreView};
+use crate::core::{Info as BaseInfo, State as ActorState};
 use crate::models::action::IActor;
 use crate::models::action::TrxClosure;
 use crate::models::core::{ICore, StateClosure};

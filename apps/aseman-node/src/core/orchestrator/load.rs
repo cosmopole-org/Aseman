@@ -1,4 +1,4 @@
-//! Runtime start phase for the legacy `Core` orchestrator: `run` and the
+//! Runtime start phase for the `Core` compatibility orchestrator: `run` and the
 //! strongly-typed `load_inner` that assembles drivers, tools, the globe, and
 //! the chain pipeline.
 //!
@@ -17,8 +17,8 @@ use crate::adapters::security::Security;
 use crate::adapters::signaler::Signaler;
 use crate::adapters::storage::Storage;
 use crate::adapters::vmm::NodeWorkloads;
-use crate::legacy::globe::{ChainPacketOp, Globe};
-use crate::legacy::orchestrator::types::{Core, Tools};
+use crate::core::globe::{ChainPacketOp, Globe};
+use crate::core::orchestrator::types::{Core, Tools};
 use crate::models::chain::{ChainCallback, MessageCallback};
 use crate::models::core::ICore;
 use crate::models::ports::{
@@ -145,23 +145,23 @@ impl Core {
 
         // Chain submission goes through the chain module's own queue.
         // Globe.
-        let sign_fn: crate::legacy::globe::SignPacketFn = {
+        let sign_fn: crate::core::globe::SignPacketFn = {
             let me = self.clone();
             Arc::new(move |data| me.sign_packet(data))
         };
-        let submit_fn: crate::legacy::globe::SubmitChainPacketFn = {
+        let submit_fn: crate::core::globe::SubmitChainPacketFn = {
             let chain_for_submit = chain.clone();
             Arc::new(move |chain_id: &str, op: ChainPacketOp| {
                 chain_for_submit.submit_chain_op(chain_id, op);
             })
         };
-        let set_chain_callback_fn: crate::legacy::globe::SetChainCallbackFn = {
+        let set_chain_callback_fn: crate::core::globe::SetChainCallbackFn = {
             let chain_for_cb = chain.clone();
             Arc::new(move |callback_id: &str, cb: ChainCallback| {
                 chain_for_cb.register_chain_callback(callback_id, cb);
             })
         };
-        let set_message_cb_fn: crate::legacy::globe::SetMessageCbFn = {
+        let set_message_cb_fn: crate::core::globe::SetMessageCbFn = {
             let chain_for_msg = chain.clone();
             Arc::new(move |callback_id: &str, cb: MessageCallback| {
                 chain_for_msg.register_message_callback(callback_id, cb);

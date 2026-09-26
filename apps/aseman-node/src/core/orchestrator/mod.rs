@@ -1,4 +1,4 @@
-//! Translation of `core/module/core/core.go` — the `Core` orchestrator.
+//! Translation of `core/module/core/core.go` — the `Core` compatibility orchestrator.
 //!
 //! `Core` is the `ICore` implementation, the central object that gives every
 //! action / driver access to the rest of the system. It owns the `ITools`

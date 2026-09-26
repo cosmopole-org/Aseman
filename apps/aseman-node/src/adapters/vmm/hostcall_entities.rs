@@ -9,7 +9,7 @@ use serde_json::{Map, Value, json};
 
 use crate::api::model::entity_ports::EntityPorts;
 use crate::api::model::{Creature, Program, Store, StorePermissions};
-use crate::legacy::actor::Info as BaseInfo;
+use crate::core::actor::Info as BaseInfo;
 use crate::models::core::StateClosure;
 use crate::models::info::IInfo;
 use crate::models::state::IState;

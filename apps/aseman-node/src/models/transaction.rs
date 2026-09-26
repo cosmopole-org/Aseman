@@ -92,7 +92,7 @@ pub trait IModel<T> {
 /// A storage transaction over the node's key/value database.
 ///
 /// Methods take `&self`; the concrete implementation
-/// ([`crate::legacy::trx`]) carries interior mutability so a
+/// ([`crate::adapters::rocksdb::trx`]) carries interior mutability so a
 /// transaction handle can be cloned and shared freely.
 pub trait ITrx: Send + Sync {
     fn del_key(&self, key: &str);

@@ -11,7 +11,7 @@ use serde::{Deserialize, Serialize};
 use crate::models::core::ICore;
 use crate::models::transaction::ITrx;
 
-use crate::legacy::actor::info::Info;
+use crate::core::actor::info::Info;
 
 /// Helper: read the `User.<id>.type` column inside a read-only state
 /// modification. Used by `check_validity*` to identify `machine` users that

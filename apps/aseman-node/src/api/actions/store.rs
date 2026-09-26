@@ -34,7 +34,7 @@ use crate::api::packets::stores::{
     GetAccessInput, HistoryInput, Send as StoresSend, SetAccessInput, SignalInput,
 };
 use crate::api::utils::future::async_once;
-use crate::legacy::actor::Guard;
+use crate::core::actor::Guard;
 use crate::models::action::ISecureAction;
 use crate::models::core::ICore;
 use crate::models::packet::LogQuery;
@@ -334,8 +334,8 @@ mod tests {
     /// The routed store ports on a real legacy transaction keep the legacy key encodings.
     mod legacy_ports {
         use super::super::*;
-        use crate::legacy::trx::TrxWrapper;
-        use crate::legacy::trx::tests::StubCore;
+        use crate::adapters::rocksdb::trx::TrxWrapper;
+        use crate::adapters::rocksdb::trx::tests::StubCore;
         use crate::models::packet::{LogPacket, LogQuery};
         use crate::models::ports::{IStorage, KvDb};
         use std::sync::Mutex;
