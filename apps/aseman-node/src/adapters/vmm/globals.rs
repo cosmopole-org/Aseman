@@ -1,4 +1,4 @@
-use crate::drivers::vmm::prelude::*;
+use crate::adapters::vmm::prelude::*;
 use crate::models::core::ICore;
 
 // ── Single global entry point ─────────────────────────────────────────────────

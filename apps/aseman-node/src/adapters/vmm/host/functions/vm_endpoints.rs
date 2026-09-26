@@ -1,7 +1,7 @@
-use crate::drivers::vmm::host::functions::vm_ownership::{
+use crate::adapters::vmm::host::functions::vm_ownership::{
     owns_vm_instance, program_owner_user, vm_owner_program,
 };
-use crate::drivers::vmm::prelude::*;
+use crate::adapters::vmm::prelude::*;
 
 /// `vmEndpoints` host op — the public URLs a running VM is reachable on.
 ///
@@ -39,5 +39,5 @@ pub(crate) fn host_fn_vm_endpoints(caller_program_id: &str, input: &JsonValue) -
         return json!({"ok": false, "error": "you are not the owner of this vm"}).to_string();
     }
 
-    crate::drivers::vmm::host::functions::vm_calls::remote_vm_call("vmEndpoints", &caller, input)
+    crate::adapters::vmm::host::functions::vm_calls::remote_vm_call("vmEndpoints", &caller, input)
 }

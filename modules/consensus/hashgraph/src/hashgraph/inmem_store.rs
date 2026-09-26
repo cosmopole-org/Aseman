@@ -13,17 +13,17 @@ use super::frame::Frame;
 use super::root::Root;
 use super::round_info::RoundInfo;
 use super::store::Store;
-use crate::common::{LRU, RollingIndex};
+use crate::common::{Lru, RollingIndex};
 use crate::common::{StoreErrType, is_store, new_store_err};
 use crate::peers::{Peer, PeerSet};
 
 /// The mutable state behind [`InmemStore`].
 struct InmemStoreInner {
     cache_size: i64,
-    event_cache: LRU<String, Event>,
-    round_cache: LRU<i64, RoundInfo>,
-    block_cache: LRU<i64, Block>,
-    frame_cache: LRU<i64, Frame>,
+    event_cache: Lru<String, Event>,
+    round_cache: Lru<i64, RoundInfo>,
+    block_cache: Lru<i64, Block>,
+    frame_cache: Lru<i64, Frame>,
     consensus_cache: RollingIndex<String>,
     tot_consensus_events: i64,
     peer_set_cache: PeerSetCache,
@@ -57,10 +57,10 @@ impl InmemStoreInner {
         let cs = cache_size.max(0) as usize;
         InmemStoreInner {
             cache_size,
-            event_cache: LRU::new(cs, None),
-            round_cache: LRU::new(cs, None),
-            block_cache: LRU::new(cs, None),
-            frame_cache: LRU::new(cs.min(max_frame_cache()), None),
+            event_cache: Lru::new(cs, None),
+            round_cache: Lru::new(cs, None),
+            block_cache: Lru::new(cs, None),
+            frame_cache: Lru::new(cs.min(max_frame_cache()), None),
             consensus_cache: RollingIndex::new("ConsensusCache", cs),
             tot_consensus_events: 0,
             peer_set_cache: PeerSetCache::new(),
@@ -162,10 +162,10 @@ impl InmemStoreInner {
 
     fn set_block(&mut self, block: &Block) -> Result<()> {
         let index = block.index();
-        if let Err(e) = self.get_block(index) {
-            if !is_store(&e, StoreErrType::KeyNotFound) {
-                return Err(e);
-            }
+        if let Err(e) = self.get_block(index)
+            && !is_store(&e, StoreErrType::KeyNotFound)
+        {
+            return Err(e);
         }
         self.block_cache.add(index, block.clone());
         if index > self.last_block {
@@ -185,10 +185,10 @@ impl InmemStoreInner {
 
     fn set_frame(&mut self, frame: &Frame) -> Result<()> {
         let index = frame.round;
-        if let Err(e) = self.get_frame(index) {
-            if !is_store(&e, StoreErrType::KeyNotFound) {
-                return Err(e);
-            }
+        if let Err(e) = self.get_frame(index)
+            && !is_store(&e, StoreErrType::KeyNotFound)
+        {
+            return Err(e);
         }
         self.frame_cache.add(index, frame.clone());
         Ok(())
@@ -197,10 +197,10 @@ impl InmemStoreInner {
     fn reset(&mut self, frame: &Frame) -> Result<()> {
         let cs = self.cache_size.max(0) as usize;
         self.peer_set_cache = PeerSetCache::new();
-        self.event_cache = LRU::new(cs, None);
-        self.round_cache = LRU::new(cs, None);
-        self.block_cache = LRU::new(cs, None);
-        self.frame_cache = LRU::new(cs.min(max_frame_cache()), None);
+        self.event_cache = Lru::new(cs, None);
+        self.round_cache = Lru::new(cs, None);
+        self.block_cache = Lru::new(cs, None);
+        self.frame_cache = Lru::new(cs.min(max_frame_cache()), None);
         self.participant_events_cache = ParticipantEventsCache::new(cs);
         self.roots = HashMap::new();
         self.last_round = -1;
@@ -482,7 +482,7 @@ mod tests {
             events.insert(p.hex.clone(), items);
         }
 
-        for (_p, evs) in &events {
+        for evs in events.values() {
             for ev in evs {
                 let rev = store.get_event(&ev.hex()).unwrap();
                 assert_eq!(ev.body, rev.body, "stored event body mismatch");

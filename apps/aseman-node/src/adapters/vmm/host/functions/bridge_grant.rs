@@ -21,13 +21,11 @@
 //! * The token is stored only as a SHA-256, so reading node state does not
 //!   yield a working credential.
 
-use crate::drivers::gateway_subs;
-use crate::drivers::vmm::globals::with_global_app;
-use crate::drivers::vmm::prelude::*;
+use crate::adapters::gateway_subs;
+use crate::adapters::vmm::globals::with_global_app;
+use crate::adapters::vmm::prelude::*;
+use crate::api::actions::gateway::{bridge_grant_key, bridge_topic_owner_key, hash_bridge_token};
 use crate::models::transaction::ITrx;
-use crate::shell::api::actions::gateway::{
-    bridge_grant_key, bridge_topic_owner_key, hash_bridge_token,
-};
 
 /// Whether two programs belong to the same owner.
 ///
@@ -202,10 +200,10 @@ pub(crate) fn host_fn_revoke_bridge_token(caller_program_id: &str, input: &JsonV
         app.modify_state(
             true,
             Box::new(move |trx: &dyn ITrx| {
-                if let Ok(grant) = trx.get_json(&key_read, "grant") {
-                    if let Some(id) = grant.get("creatureId").and_then(|v| v.as_str()) {
-                        *owner_c.lock().unwrap() = id.to_string();
-                    }
+                if let Ok(grant) = trx.get_json(&key_read, "grant")
+                    && let Some(id) = grant.get("creatureId").and_then(|v| v.as_str())
+                {
+                    *owner_c.lock().unwrap() = id.to_string();
                 }
                 Ok(())
             }),

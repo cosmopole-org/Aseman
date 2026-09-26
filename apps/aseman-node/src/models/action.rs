@@ -1,32 +1,38 @@
-use std::sync::Arc;
+//! The action layer.
+//!
+//! - [`IAction`] / [`IActions`] — pluggable units of work installed onto
+//!   a state machine.
+//! - [`ISecureAction`] — actions that perform their own
+//!   authentication/authorization.
+//! - [`IActor`] — the per-node registry that holds both flavours.
+//! - [`IPlugger`] — entry point a plugin uses to expose its actions.
 
-use anyhow::Result;
-use serde_json::{Map, Value};
-
+use crate::legacy::utils::compat::AnyVal;
 use crate::models::input::IInput;
 use crate::models::state::IState;
 use crate::models::transaction::ITrx;
-use crate::util::AnyVal;
+use anyhow::Result;
+use serde_json::{Map, Value};
+use std::sync::Arc;
 
+/// Optional per-field getter used by extended-field search.
+pub type GetValueFn =
+    Arc<dyn Fn(Arc<dyn IState>, Map<String, Value>) -> Result<Value> + Send + Sync>;
 /// Closure handed to a state modifier — operates on an [`ITrx`].
 pub type TrxClosure = Box<dyn FnMut(&dyn ITrx) -> Result<()> + Send>;
-
 /// Function used to schedule a state modification. The `bool` is the
 /// readonly flag; the closure runs against the opened transaction.
 pub type StateModifierFn = Box<dyn Fn(bool, TrxClosure) + Send + Sync>;
-
 /// A collection of actions that can be installed onto a state machine.
 pub trait IActions: Send + Sync {
     fn install(&self, state: Arc<dyn IState>, args: Vec<AnyVal>);
 }
-
 /// A single action.
 pub trait IAction: Send + Sync {
     fn state_modifier(&self) -> StateModifierFn;
     fn key(&self) -> String;
     fn act(&self, state: Arc<dyn IState>, input: Arc<dyn IInput>) -> Result<(i64, Value)>;
 }
-
 /// An action that performs its own authentication/authorization.
 pub trait ISecureAction: Send + Sync {
     fn key(&self) -> String;
@@ -66,7 +72,6 @@ pub trait ISecureAction: Send + Sync {
         input: Arc<dyn IInput>,
     ) -> Result<(i64, Value)>;
 }
-
 /// Describes a dynamically pluggable field on an entity (user, store, ...).
 #[derive(Clone, Default)]
 pub struct ExtendedField {
@@ -77,14 +82,11 @@ pub struct ExtendedField {
     pub required: bool,
     pub searchable: bool,
     pub primary_prop: bool,
-    pub get_value:
-        Option<Arc<dyn Fn(Arc<dyn IState>, Map<String, Value>) -> Result<Value> + Send + Sync>>,
+    pub get_value: Option<GetValueFn>,
 }
-
 #[cfg(test)]
 mod tests {
     use super::*;
-
     #[test]
     fn extended_field_default_is_empty_and_inactive() {
         let f = ExtendedField::default();
@@ -97,7 +99,6 @@ mod tests {
         assert!(!f.primary_prop);
         assert!(f.get_value.is_none());
     }
-
     #[test]
     fn extended_field_clones_preserve_flags_and_callbacks() {
         let f = ExtendedField {
@@ -119,4 +120,21 @@ mod tests {
         // the same callable.
         assert!(c.get_value.is_some());
     }
+}
+/// Registry of actions and services.
+///
+/// Secure actions are tracked on their own channel because
+/// `Arc<dyn IAction>` cannot be downcast to `Arc<dyn ISecureAction>` at
+/// runtime; callers register them with [`IActor::inject_secure_action`]
+/// and look them up with [`IActor::fetch_secure_action`].
+pub trait IActor: Send + Sync {
+    fn inject_action(&self, action: Arc<dyn IAction>);
+    fn inject_service(&self, service: AnyVal);
+    fn fetch_action(&self, key: &str) -> Option<Arc<dyn IAction>>;
+    fn inject_secure_action(&self, action: Arc<dyn ISecureAction>);
+    fn fetch_secure_action(&self, key: &str) -> Option<Arc<dyn ISecureAction>>;
+}
+/// A plugger exposes a set of actions to be installed onto the node.
+pub trait IPlugger: Send + Sync {
+    fn actions(&self) -> Arc<dyn IActions>;
 }

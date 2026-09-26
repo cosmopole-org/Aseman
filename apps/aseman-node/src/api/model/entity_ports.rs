@@ -18,10 +18,10 @@ use aseman_domain::program::{
 };
 use aseman_ports::{BlobStore, EntityDirectory, PortError, PortResult, VmResourceEntities};
 
-use crate::drivers::blob_store::StorageRootBlobStore;
+use crate::adapters::blob_store::StorageRootBlobStore;
+use crate::api::model::program_ports::resource_store_key;
+use crate::api::model::{Entity, Program};
 use crate::models::transaction::ITrx;
-use crate::shell::api::model::program_ports::resource_store_key;
-use crate::shell::api::model::{Entity, Program};
 
 fn failed(error: impl ToString) -> PortError {
     PortError::Failed(error.to_string())
@@ -284,7 +284,7 @@ pub(crate) struct EntityPorts<'a> {
 /// Run `$call` on the adapter for the current provider, bound as `$ports`.
 macro_rules! route {
     ($self:ident, |$ports:ident| $call:expr) => {
-        match crate::shell::api::model::core_storage::current_unit() {
+        match crate::api::model::core_storage::current_unit() {
             Some(unit) => {
                 let $ports = aseman_capsule::entity::CapsuleEntityPorts { repository: &*unit };
                 $call
@@ -371,9 +371,9 @@ impl VmResourceEntities for EntityPorts<'_> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::core::actor::model::trx::TrxWrapper;
-    use crate::core::actor::model::trx::tests::{StubCore, StubStorage};
-    use crate::models::ports::storage::IStorage;
+    use crate::legacy::trx::TrxWrapper;
+    use crate::legacy::trx::tests::{StubCore, StubStorage};
+    use crate::models::ports::IStorage;
     use std::sync::Arc;
 
     #[test]

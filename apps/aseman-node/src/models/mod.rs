@@ -1,25 +1,25 @@
-//! Shared domain models and driver-port traits.
+//! Legacy state abstractions and driver-port traits (RL-002/003).
 //!
-//! This crate follows a hexagonal architecture: the inner core depends
-//! only on the abstractions defined here, never on the concrete drivers
-//! that live under [`crate::drivers`] or the shell adapters under
-//! [`crate::shell`].
+//! The wire DTOs that used to live here (`update`, `worker`, the `packet`
+//! family, and the chain wire DTOs) have been migrated to
+//! `aseman_contracts::legacy_wire` and are re-exported here as compatibility
+//! shims until the legacy transports retire (RL-009).
 //!
-//! # Layout
+//! What remains is the legacy state/orchestration layer:
 //!
-//! - Domain traits — the contracts the node's core layer is built on:
-//!   [`core::ICore`], [`state::IState`], [`info::IInfo`],
-//!   [`input::IInput`], [`globe::IGlobe`].
-//! - [`action`] — the action layer (pluggable units of work, secured
-//!   actions, the action registry).
-//! - [`transaction`] — the storage transaction trait used by every
-//!   state-modifying code path.
-//! - [`packet`] — wire-level packet and request/response types.
-//! - [`chain`] — chain consensus, election and staking data types.
-//! - [`worker`] — the work item enqueued for VM execution.
-//! - [`update`] — a single key/value mutation produced by a transaction.
-//! - [`ports`] — the driver port traits (storage, security, signaler,
-//!   file, network, vmm) implemented under [`crate::drivers`].
+//! - [`ports`] — the legacy driver-port traits (`IStorage`, `ISecurity`,
+//!   `ISignaler`, `INetwork`, `IWorkloads`, `IRateLimiter`, …). They carry
+//!   framework types, so they stay here (replaced by the real `aseman-ports`
+//!   traits) rather than polluting the clean ports crate.
+//! - [`core`], [`state`], [`info`], [`input`], [`globe`], [`transaction`] —
+//!   the legacy orchestrator and state-transaction abstractions (`ICore`,
+//!   `IState`, `ITrx`, …). Their behavior migrates to `aseman-application` use
+//!   cases as the strangler proceeds (RL-003).
+//! - [`action`] — the legacy pluggable action layer (`IAction`,
+//!   `ISecureAction`, `IActor`); its handlers become translation-only adapters
+//!   over `aseman-application` use cases (RL-004).
+//!
+//! No new types should be added here; the bucket shrinks, it does not grow.
 
 pub mod action;
 pub mod chain;
@@ -32,4 +32,3 @@ pub mod ports;
 pub mod state;
 pub mod transaction;
 pub mod update;
-pub mod worker;

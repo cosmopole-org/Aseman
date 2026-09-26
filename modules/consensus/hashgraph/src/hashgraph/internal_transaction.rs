@@ -10,19 +10,14 @@ use crate::crypto::keys;
 use crate::peers::Peer;
 
 /// Denotes the nature of an [`InternalTransaction`].
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize_repr, Deserialize_repr)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize_repr, Deserialize_repr, Default)]
 #[repr(u8)]
 pub enum TransactionType {
     /// Add a peer.
+    #[default]
     PeerAdd = 0,
     /// Remove a peer.
     PeerRemove = 1,
-}
-
-impl Default for TransactionType {
-    fn default() -> Self {
-        TransactionType::PeerAdd
-    }
 }
 
 impl std::fmt::Display for TransactionType {

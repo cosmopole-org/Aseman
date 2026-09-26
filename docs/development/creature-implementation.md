@@ -1,7 +1,7 @@
 ---
 status: CURRENT
 owner: runtime/migration/P7-05
-source_of_truth: modules/runtime/*, apps/aseman-node/src/drivers/vmm/host/vm_host_functions.rs, crates/aseman-contracts/src/guest_api.rs
+source_of_truth: modules/runtime/*, apps/aseman-node/src/adapters/vmm/host/vm_host_functions.rs, crates/aseman-contracts/src/guest_api.rs
 verification: cargo xtask fast
 ---
 
@@ -26,7 +26,7 @@ The authoritative machine-readable inventory is
 - A workload never talks to storage, databases, providers, or other creatures
   directly. It issues a **host function call**; the node resolves the calling
   creature's identity from the VM runtime context (`resolve_host_hierarchy` in
-  `apps/aseman-node/src/drivers/vmm/host/vm_host_functions.rs`), never from guest
+  `apps/aseman-node/src/adapters/vmm/host/vm_host_functions.rs`), never from guest
   input.
 - The generic call envelope is
   `{"op": "<operation>", "input": {…}}`. The node stamps the caller's
@@ -65,7 +65,7 @@ The authoritative machine-readable inventory is
 | Refused | `protocolApi`/`callProtocolApi` (`node.protocol.call` is `never`) |
 
 The exact per-op request/response shapes live in
-`apps/aseman-node/src/drivers/vmm/host/vm_host_functions.rs` (`host_fn_*`) and the
+`apps/aseman-node/src/adapters/vmm/host/vm_host_functions.rs` (`host_fn_*`) and the
 guest SDK crate `crates/aseman-guest-sdk`.
 
 ## 2. Runtime-by-runtime implementation guide
@@ -202,7 +202,7 @@ guest SDK crate `crates/aseman-guest-sdk`.
 
 ## 4. Where to look
 
-- Host dispatcher and per-op shapes: `apps/aseman-node/src/drivers/vmm/host/vm_host_functions.rs`.
+- Host dispatcher and per-op shapes: `apps/aseman-node/src/adapters/vmm/host/vm_host_functions.rs`.
 - Guest contract and target rules: `crates/aseman-contracts/src/guest_api.rs`.
 - Guest SDK: `crates/aseman-guest-sdk`.
 - Per-runtime op tables: `modules/runtime/wasm/src/host_calls.rs`,

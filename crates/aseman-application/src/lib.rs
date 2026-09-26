@@ -13,8 +13,10 @@ use std::collections::BTreeSet;
 use thiserror::Error;
 
 pub mod capability;
+pub mod consensus;
 pub mod creature;
 pub mod federation;
+pub mod finance;
 pub mod guest;
 pub mod guest_call;
 pub mod identity;

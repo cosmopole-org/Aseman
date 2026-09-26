@@ -148,6 +148,7 @@ impl RocksDbStore {
     // DB methods
     // -----------------------------------------------------------------------
 
+    #[allow(dead_code)] // exercised by the store's own tests
     fn db_get_repertoire(&self) -> Result<std::collections::HashMap<String, Peer>> {
         let mut repertoire = std::collections::HashMap::new();
         let prefix = REPERTOIRE_PREFIX.as_bytes();
@@ -282,6 +283,7 @@ impl RocksDbStore {
         }
     }
 
+    #[allow(dead_code)] // exercised by the store's own tests
     fn db_get_round(&self, index: i64) -> Result<RoundInfo> {
         let key = round_key(index);
         match self.db.get(key.as_bytes())? {
@@ -666,7 +668,7 @@ mod tests {
             events.insert(p.hex.clone(), items);
         }
 
-        for (_p, evs) in &events {
+        for evs in events.values() {
             for ev in evs {
                 let rev = store.db_get_event(&ev.hex()).unwrap();
                 assert_eq!(ev.body, rev.body, "event body mismatch");
@@ -895,7 +897,7 @@ mod tests {
             events.insert(p.hex.clone(), items);
         }
 
-        for (_p, evs) in &events {
+        for evs in events.values() {
             for ev in evs {
                 let rev = store
                     .get_event(&ev.hex())

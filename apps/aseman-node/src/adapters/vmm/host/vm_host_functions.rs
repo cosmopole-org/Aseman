@@ -1,6 +1,6 @@
-use crate::drivers::vmm::globals::with_global_app;
-use crate::drivers::vmm::host::functions::*;
-use crate::drivers::vmm::prelude::*;
+use crate::adapters::vmm::globals::with_global_app;
+use crate::adapters::vmm::host::functions::*;
+use crate::adapters::vmm::prelude::*;
 use crate::models::core::ICore;
 
 pub(crate) struct HostHierarchy {
@@ -122,7 +122,7 @@ pub(crate) fn run_db_op(ctx: &HostHierarchy, input: &JsonValue) -> Result<String
 
     // On PostgreSQL the creature's own guest database serves it (ADR 0021): the
     // `applet_db` key is the remainder after `AppletDb::`.
-    if let Some(result) = crate::shell::api::model::guest_data::route_db_op(
+    if let Some(result) = crate::api::model::guest_data::route_db_op(
         &ctx.creature_id,
         aseman_domain::guest::LegacyKvNamespace::AppletDb,
         op,
@@ -348,15 +348,15 @@ fn aggregate_sse_stream(raw: &str) -> (JsonValue, usize) {
         events += 1;
         last_event = event.clone();
 
-        if let Some(value) = event["model"].as_str() {
-            if model.is_empty() {
-                model = value.to_string();
-            }
+        if let Some(value) = event["model"].as_str()
+            && model.is_empty()
+        {
+            model = value.to_string();
         }
-        if let Some(value) = event["id"].as_str() {
-            if id.is_empty() {
-                id = value.to_string();
-            }
+        if let Some(value) = event["id"].as_str()
+            && id.is_empty()
+        {
+            id = value.to_string();
         }
         // Anthropic.
         match event["type"].as_str().unwrap_or("") {
@@ -408,10 +408,10 @@ fn aggregate_sse_stream(raw: &str) -> (JsonValue, usize) {
         };
         for choice in choices {
             let delta = &choice["delta"];
-            if let Some(value) = delta["role"].as_str() {
-                if role.is_empty() {
-                    role = value.to_string();
-                }
+            if let Some(value) = delta["role"].as_str()
+                && role.is_empty()
+            {
+                role = value.to_string();
             }
             if let Some(text) = delta["content"].as_str() {
                 content.push_str(text);
@@ -506,15 +506,11 @@ fn authorize_guest(op: &str, ctx: &HostHierarchy, input: JsonValue) -> Result<Js
         app.modify_state(
             true,
             Box::new(move |trx| {
-                let lookups = crate::shell::authority::TrxLookups { trx };
-                let caller = crate::shell::authority::host_caller(
-                    &lookups,
-                    &vm_id,
-                    &program_id,
-                    &creature_id,
-                );
+                let lookups = crate::api::authority::TrxLookups { trx };
+                let caller =
+                    crate::api::authority::host_caller(&lookups, &vm_id, &program_id, &creature_id);
                 let mut shaped = input.clone();
-                *slot.lock().unwrap() = crate::shell::authority::authorize_host_call(
+                *slot.lock().unwrap() = crate::api::authority::authorize_host_call(
                     &lookups,
                     &op,
                     &caller,
@@ -526,8 +522,8 @@ fn authorize_guest(op: &str, ctx: &HostHierarchy, input: JsonValue) -> Result<Js
             }),
         );
     });
-    let outcome = outcome.lock().unwrap().clone();
-    outcome
+
+    outcome.lock().unwrap().clone()
 }
 
 pub(crate) fn handle_unified_host_call(packet: &JsonValue) -> String {
@@ -602,7 +598,7 @@ pub(crate) fn handle_unified_host_call(packet: &JsonValue) -> String {
         // Read-only: what the runtime says about a VM — provisioning, running,
         // stopped, or failed with the build/boot error. Without it a creature
         // could start a machine but never learn that it had failed to come up.
-        "statusVm" => crate::drivers::vmm::host::functions::vm_calls::remote_vm_call(
+        "statusVm" => crate::adapters::vmm::host::functions::vm_calls::remote_vm_call(
             "statusVm",
             &ctx.program_id,
             &input,
@@ -630,7 +626,7 @@ pub(crate) fn handle_unified_host_call(packet: &JsonValue) -> String {
         // make a remote program appear locally hosted.
         "nodeIdentity" => host_fn_node_identity(&ctx.program_id, &input),
         // Issues a single-use login grant; node-owner programs only.
-        "grantLogin" => crate::drivers::vmm::host::functions::login_grant::host_fn_grant_login(
+        "grantLogin" => crate::adapters::vmm::host::functions::login_grant::host_fn_grant_login(
             &ctx.program_id,
             &input,
         ),
@@ -752,21 +748,11 @@ pub(crate) fn handle_unified_host_call(packet: &JsonValue) -> String {
         }
         "genId" | "hasAccessToStore" | "joinGroup" => host_fn_micro(op, &input),
         // Resource (vm-scoped) store CRUD.
-        "createResourceStore" | "createVmOwnedStore" => {
-            host_fn_resource_store(&"create".to_string(), &input)
-        }
-        "updateResourceStore" | "updateVmOwnedStore" => {
-            host_fn_resource_store(&"update".to_string(), &input)
-        }
-        "deleteResourceStore" | "deleteVmOwnedStore" => {
-            host_fn_resource_store(&"delete".to_string(), &input)
-        }
-        "getResourceStore" | "getVmOwnedStore" => {
-            host_fn_resource_store(&"get".to_string(), &input)
-        }
-        "listResourceStores" | "listVmOwnedStores" => {
-            host_fn_resource_store(&"list".to_string(), &input)
-        }
+        "createResourceStore" | "createVmOwnedStore" => host_fn_resource_store("create", &input),
+        "updateResourceStore" | "updateVmOwnedStore" => host_fn_resource_store("update", &input),
+        "deleteResourceStore" | "deleteVmOwnedStore" => host_fn_resource_store("delete", &input),
+        "getResourceStore" | "getVmOwnedStore" => host_fn_resource_store("get", &input),
+        "listResourceStores" | "listVmOwnedStores" => host_fn_resource_store("list", &input),
         // Resource entities (file blobs etc.).
         "createResourceEntity" => host_fn_resource_entity_create(&input),
         "deleteResourceEntity" => host_fn_resource_entity_delete(&input),
@@ -796,7 +782,7 @@ fn host_fn_guest_state(creature: &str, op: &str, input: &JsonValue) -> String {
         app.modify_state(
             op == "getJson" || op == "getByPrefix" || op == "getLink",
             Box::new(move |trx| {
-                let outcome = crate::drivers::vmm::guest_state::run(trx, &creature, &op, &input);
+                let outcome = crate::adapters::vmm::guest_state::run(trx, &creature, &op, &input);
                 let failed = outcome.is_err();
                 *slot.lock().unwrap() = outcome;
                 if failed {
@@ -833,8 +819,8 @@ pub(crate) fn host_fn_micro(op: &str, input: &JsonValue) -> String {
 /// the key being baked into the creature image. put/grant/revoke/list stay on the
 /// signed routes (the app/operator perform those); a creature only ever reads.
 pub(crate) fn host_fn_secret_get(caller: &str, input: &JsonValue) -> String {
+    use crate::api::utils::secret_crypto;
     use crate::models::transaction::ITrx;
-    use crate::shell::utils::secret_crypto;
     use std::sync::{Arc, Mutex};
 
     let caller = caller.trim();
@@ -926,12 +912,12 @@ pub(crate) fn host_fn_secret_list_granted(caller: &str) -> String {
             true,
             Box::new(move |trx: &dyn ITrx| {
                 *slot_c.lock().unwrap() =
-                    crate::shell::api::actions::creature::list_granted_secrets(trx, &caller_c);
+                    crate::api::actions::creature::list_granted_secrets(trx, &caller_c);
                 Ok(())
             }),
         );
-        let v = slot.lock().unwrap().clone();
-        v
+
+        slot.lock().unwrap().clone()
     });
     match grants {
         Some(g) => json!({"ok": true, "grants": g}).to_string(),
@@ -1042,7 +1028,7 @@ pub(crate) fn host_fn_signal_user(input: &JsonValue) -> String {
     }
     let packet_str = input["packet"].as_str().unwrap_or("{}");
     let value = serde_json::from_str::<JsonValue>(packet_str).unwrap_or(JsonValue::Null);
-    let delivered = crate::drivers::vmm::globals::with_global_app(|app| {
+    let delivered = crate::adapters::vmm::globals::with_global_app(|app| {
         app.tools()
             .signaler()
             .signal_user(key, user_id, value, true);
@@ -1075,7 +1061,7 @@ pub(crate) fn host_fn_signal_group(input: &JsonValue) -> String {
                 .collect()
         })
         .unwrap_or_default();
-    let delivered = crate::drivers::vmm::globals::with_global_app(|app| {
+    let delivered = crate::adapters::vmm::globals::with_global_app(|app| {
         app.tools()
             .signaler()
             .signal_group(key, group_id, value, true, except);
@@ -1122,7 +1108,7 @@ pub(crate) fn host_fn_node_identity(caller_program_id: &str, input: &JsonValue) 
 // persisted host state; no owner value supplied by a guest is trusted.
 fn finance_program_binding(app: &Arc<dyn ICore>, program_id: &str) -> Option<(String, String)> {
     use crate::models::transaction::ITrx;
-    use crate::shell::api::model::{Creature, Program};
+
     use std::sync::Mutex;
 
     let program_id = program_id.trim().to_string();
@@ -1134,13 +1120,13 @@ fn finance_program_binding(app: &Arc<dyn ICore>, program_id: &str) -> Option<(St
     app.modify_state(
         true,
         Box::new(move |trx: &dyn ITrx| {
-            let program = (crate::shell::api::model::program_ports::ProgramPorts { trx })
+            let program = (crate::api::model::program_ports::ProgramPorts { trx })
                 .program_or_empty(&program_id.clone());
             if program.machine_id.is_empty() {
                 return Ok(());
             }
             let machine_id = program.machine_id;
-            let machine = (crate::shell::api::model::creature_ports::CreaturePorts { trx })
+            let machine = (crate::api::model::creature_ports::CreaturePorts { trx })
                 .creature_or_empty(&machine_id.clone());
             if !machine.owner_id.is_empty() {
                 *slot_c.lock().unwrap() = Some((machine_id, machine.owner_id));
@@ -1148,8 +1134,8 @@ fn finance_program_binding(app: &Arc<dyn ICore>, program_id: &str) -> Option<(St
             Ok(())
         }),
     );
-    let binding = slot.lock().unwrap().clone();
-    binding
+
+    slot.lock().unwrap().clone()
 }
 
 fn finance_program_owner(app: &Arc<dyn ICore>, program_id: &str) -> Option<String> {
@@ -1186,8 +1172,8 @@ fn finance_node_record(
             Ok(())
         }),
     );
-    let node = slot.lock().unwrap().clone();
-    node
+
+    slot.lock().unwrap().clone()
 }
 
 /// Submit a node-owner-signed finance mutation to the global chain. The guest
@@ -1453,8 +1439,8 @@ pub(crate) fn host_fn_publish_finance_quote(caller_program_id: &str, input: &Jso
 /// only then does the node sign and submit the settlement action.
 /// Atomically reserve an open hold for one authenticated metering run.
 pub(crate) fn host_fn_start_hold(caller_program_id: &str, input: &JsonValue) -> String {
+    use crate::api::packets::creatures::StartHoldInput;
     use crate::models::transaction::ITrx;
-    use crate::shell::api::packets::creatures::StartHoldInput;
     use std::sync::{Arc, Mutex, mpsc};
     use std::time::Duration;
 
@@ -1541,8 +1527,8 @@ pub(crate) fn host_fn_start_hold(caller_program_id: &str, input: &JsonValue) -> 
 }
 
 pub(crate) fn host_fn_release_hold(caller_program_id: &str, input: &JsonValue) -> String {
+    use crate::api::packets::creatures::ReleaseHoldInput;
     use crate::models::transaction::ITrx;
-    use crate::shell::api::packets::creatures::ReleaseHoldInput;
     use std::sync::{Arc, Mutex, mpsc};
     use std::time::Duration;
 
@@ -1629,8 +1615,8 @@ pub(crate) fn host_fn_release_hold(caller_program_id: &str, input: &JsonValue) -
 }
 
 pub(crate) fn host_fn_settle_hold(caller_program_id: &str, input: &JsonValue) -> String {
+    use crate::api::packets::creatures::SettleHoldInput;
     use crate::models::transaction::ITrx;
-    use crate::shell::api::packets::creatures::SettleHoldInput;
     use std::sync::{Arc, Mutex, mpsc};
     use std::time::Duration;
 

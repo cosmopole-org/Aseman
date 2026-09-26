@@ -6,7 +6,7 @@
 use std::any::Any;
 
 /// An action input payload. Concrete inputs live under
-/// [`crate::shell::api::packets`].
+/// [`crate::api::packets`].
 pub trait IInput: Send + Sync + Any {
     fn get_store_id(&self) -> String;
     fn origin(&self) -> String;

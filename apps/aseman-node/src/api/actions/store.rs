@@ -11,7 +11,7 @@
 //!
 //! Permissions are checked here, not in whatever creature happens to be calling:
 //! `signal` to post, `read` to replay, `manage` to change another member's
-//! grant. See [`crate::shell::api::model::access`] — an absent grant denies.
+//! grant. See [`crate::api::model::access`] — an absent grant denies.
 //!
 //! Every input carries an `origin`, so a member whose node is not this one has
 //! the whole action routed to the owning node by the federation driver
@@ -21,29 +21,33 @@
 
 use std::sync::Arc;
 
-use anyhow::{Result, anyhow};
+use anyhow::Result;
 use serde_json::{Value, json};
 
-use crate::shell::api::model::store_ports::{
+use crate::api::model::store_ports::{
     MembershipPorts, SignalPorts, StorePorts, SystemClock, legacy_error, log_packet,
 };
 use aseman_application::store::{GetStoreAccess, ReadStoreHistory, SetStoreAccess, SignalStore};
 
-use crate::core::actor::model::secured::guard::Guard;
-use crate::models::action::ISecureAction;
-use crate::models::core::ICore;
-use crate::models::packet::{LogPacket, LogQuery};
-use crate::models::ports::storage::IStorage;
-use crate::models::state::IState;
-use crate::models::transaction::ITrx;
-use crate::shell::api::model::access::{StorePermissions, access_link_key, read_permissions};
-use crate::shell::api::model::{Creature, Store};
-use crate::shell::api::packets::stores::{
+use crate::api::model::Store;
+use crate::api::packets::stores::{
     GetAccessInput, HistoryInput, Send as StoresSend, SetAccessInput, SignalInput,
 };
-use crate::shell::utils::future::async_once;
+use crate::api::utils::future::async_once;
+use crate::legacy::actor::Guard;
+use crate::models::action::ISecureAction;
+use crate::models::core::ICore;
+use crate::models::packet::LogQuery;
+use crate::models::state::IState;
 
 use super::util::build_secure_action;
+
+#[cfg(test)]
+use crate::api::model::access::{StorePermissions, access_link_key};
+#[cfg(test)]
+use crate::models::transaction::ITrx;
+#[cfg(test)]
+use aseman_application::store::DEFAULT_HISTORY_COUNT;
 
 /// Actions addressed to a store: the caller must be identified AND a member,
 /// which the guard checks against `hasaccess::<userId>::<storeId>` before the
@@ -56,8 +60,6 @@ fn store_guard() -> Guard {
         allow_applet_sign: true,
     }
 }
-
-use aseman_application::store::DEFAULT_HISTORY_COUNT;
 
 /// Fan a store signal out to every member of the store except the sender.
 ///
@@ -119,9 +121,8 @@ fn signal(app: Arc<dyn ICore>) -> Arc<dyn ISecureAction> {
             )
             .map_err(legacy_error)?;
 
-            let mut sender =
-                (crate::shell::api::model::creature_ports::CreaturePorts { trx: &*trx })
-                    .creature_or_empty(&sender_id.clone());
+            let mut sender = (crate::api::model::creature_ports::CreaturePorts { trx: &*trx })
+                .creature_or_empty(&sender_id.clone());
             // Balance is never leaked over the signalling channel.
             sender.balance = 0;
             let signal_id = outcome
@@ -276,8 +277,8 @@ pub fn install(app: Arc<dyn ICore>) {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::api::packets::stores::{HistoryInput, SignalInput};
     use crate::models::input::IInput;
-    use crate::shell::api::packets::stores::{HistoryInput, SignalInput};
 
     /// The store-scoped guard must demand BOTH an identified caller and store
     /// membership: the permission checks in each body assume the caller is a
@@ -333,10 +334,10 @@ mod tests {
     /// The routed store ports on a real legacy transaction keep the legacy key encodings.
     mod legacy_ports {
         use super::super::*;
-        use crate::core::actor::model::trx::TrxWrapper;
-        use crate::core::actor::model::trx::tests::StubCore;
+        use crate::legacy::trx::TrxWrapper;
+        use crate::legacy::trx::tests::StubCore;
         use crate::models::packet::{LogPacket, LogQuery};
-        use crate::models::ports::storage::{IStorage, KvDb};
+        use crate::models::ports::{IStorage, KvDb};
         use std::sync::Mutex;
 
         struct RecordingStorage {
@@ -528,7 +529,7 @@ mod tests {
                 }
                 .push(&*trx);
             }
-            let ports = crate::shell::api::model::store_ports::MembershipPorts { trx: &*trx };
+            let ports = crate::api::model::store_ports::MembershipPorts { trx: &*trx };
             let member = StorePermissions::member();
             aseman_ports::StoreAccess::join(&ports, "s1", "alice", member).unwrap();
             aseman_ports::StoreAccess::join(&ports, "s1", "bob", member).unwrap();

@@ -10,9 +10,7 @@ use aseman_ports::{BlobStore, PortError, PortResult};
 use sha2::{Digest, Sha256};
 
 /// The node's blob store: its storage root.
-pub(crate) fn node_blobs(
-    storage: &dyn crate::models::ports::storage::IStorage,
-) -> StorageRootBlobStore {
+pub(crate) fn node_blobs(storage: &dyn crate::models::ports::IStorage) -> StorageRootBlobStore {
     StorageRootBlobStore::new(storage.storage_root())
 }
 

@@ -8,12 +8,8 @@ license.workspace = true
 repository.workspace = true
 
 [[bin]]
-name = "caspar-node"
-path = "src/bin/caspar-node.rs"
-
-[[bin]]
-name = "caspar-keygen"
-path = "src/bin/caspar-keygen.rs"
+name = "runner"
+path = "src/runner.rs"
 
 [dependencies]
 aseman-application = { path = "../../crates/aseman-application" }
@@ -29,6 +25,8 @@ aseman-consensus-hashgraph = { path = "../../modules/consensus/hashgraph" }
 aseman-storage-legacy = { path = "../../modules/storage/rocksdb-legacy" }
 aseman-storage-postgres = { path = "../../modules/storage/postgres" }
 aseman-policy-native = { path = "../../modules/security/capabilities" }
+aseman-public-http = { path = "../../modules/network/http" }
+aseman-public-service = { path = "../../modules/public-service" }
 aseman-identity-native = { path = "../../modules/identity-native" }
 aseman-guest-http = { path = "../../modules/guest-http" }
 aseman-vmm-http = { path = "../../modules/vmm-http" }
@@ -40,7 +38,6 @@ crossbeam-channel = "0.5.15"
 dashmap = "6.2.1"
 getrandom = "0.2"
 hex = "0.4.3"
-k256 = { version = "0.13.4", features = ["ecdsa", "arithmetic"] }
 libc = "0.2"
 log = "0.4.29"
 num-bigint = "0.4.6"

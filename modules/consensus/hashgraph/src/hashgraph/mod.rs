@@ -16,6 +16,7 @@ pub mod caches;
 pub mod errors;
 pub mod event;
 pub mod frame;
+#[allow(clippy::module_inception)] // Go-translation module name matches its directory
 pub mod hashgraph;
 pub mod inmem_store;
 pub mod internal_transaction;

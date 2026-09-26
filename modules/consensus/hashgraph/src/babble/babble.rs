@@ -63,53 +63,46 @@ impl Babble {
         self.logger.debug("validateConfig");
         if let Err(e) = self.validate_config() {
             self.logger
-                .with_error(&e)
+                .with_error(e)
                 .error("babble.rs:init() validate_config");
         }
 
         self.logger.debug("initKey");
-        self.init_key().map_err(|e| {
-            self.logger
-                .with_error(&e)
-                .error("babble.rs:init() init_key");
-            e
+        self.init_key().inspect_err(|e| {
+            self.logger.with_error(e).error("babble.rs:init() init_key");
         })?;
 
         self.logger.debug("initPeers");
-        self.init_peers().map_err(|e| {
+        self.init_peers().inspect_err(|e| {
             self.logger
-                .with_error(&e)
+                .with_error(e)
                 .error("babble.rs:init() init_peers");
-            e
         })?;
 
         self.logger.debug("initStore");
-        self.init_store().map_err(|e| {
+        self.init_store().inspect_err(|e| {
             self.logger
-                .with_error(&e)
+                .with_error(e)
                 .error("babble.rs:init() init_store");
-            e
         })?;
 
         self.logger.debug("initTransport");
         if let Some(t) = transport {
             self.transport = Some(t);
         } else if !self.config.maintenance_mode {
-            self.init_transport().map_err(|e| {
+            self.init_transport().inspect_err(|e| {
                 self.logger
-                    .with_error(&e)
+                    .with_error(e)
                     .error("babble.rs:init() init_transport");
-                e
             })?;
         }
 
         self.logger.debug("initNode");
         self.init_node(work_chain_id, shard_chain_id, on_new_node_cb)
-            .map_err(|e| {
+            .inspect_err(|e| {
                 self.logger
-                    .with_error(&e)
+                    .with_error(e)
                     .error("babble.rs:init() init_node");
-                e
             })?;
 
         Ok(())
@@ -261,16 +254,15 @@ impl Babble {
         let mut validator = Validator::new(key, &self.config.moniker);
 
         // Borrow moniker override from peers.json, matching Go behaviour.
-        if let Some(peers) = &self.peers {
-            if let Some(p) = peers.by_id.get(&validator.id()) {
-                if p.moniker != validator.moniker {
-                    self.logger.debug(format!(
-                        "Using moniker `{}` from peers.json (was `{}`)",
-                        p.moniker, validator.moniker
-                    ));
-                    validator.moniker = p.moniker.clone();
-                }
-            }
+        if let Some(peers) = &self.peers
+            && let Some(p) = peers.by_id.get(&validator.id())
+            && p.moniker != validator.moniker
+        {
+            self.logger.debug(format!(
+                "Using moniker `{}` from peers.json (was `{}`)",
+                p.moniker, validator.moniker
+            ));
+            validator.moniker = p.moniker.clone();
         }
 
         let peers = self
@@ -354,7 +346,7 @@ pub fn load_key_for_config(config: &mut Config) -> Result<()> {
         if let Some(babble_dir) = aseman_config::legacy_adapter_snapshot()
             .and_then(|config| config.babble_data_dir.as_ref())
         {
-            let _ = fs::create_dir_all(&babble_dir);
+            let _ = fs::create_dir_all(babble_dir);
             let mirror_priv = SimpleKeyfile::new(&format!("{}/priv_key", babble_dir));
             let _ = mirror_priv.write_key(&new_key);
             let _ = fs::write(format!("{}/key.pub", babble_dir), derived_pub.as_bytes());

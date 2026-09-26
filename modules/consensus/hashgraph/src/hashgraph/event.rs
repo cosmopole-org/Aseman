@@ -508,7 +508,7 @@ pub struct FrameEvent {
 
 /// Sorts events by their private `topological_index` field.
 pub fn sort_by_topological_order(events: &mut [Event]) {
-    events.sort_by(|a, b| a.topological_index.cmp(&b.topological_index));
+    events.sort_by_key(|a| a.topological_index);
 }
 
 /// Compares two `FrameEvent`s for consensus total ordering.

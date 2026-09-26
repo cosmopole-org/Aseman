@@ -41,19 +41,22 @@ use std::sync::{Arc, Mutex};
 use std::thread;
 use std::time::{Duration, Instant};
 
+/// `user_id -> {socket.id -> socket}` for fan-out of signals.
+type UserSocketMap = Arc<DashMap<String, Arc<DashMap<String, Arc<Socket>>>>>;
+
 use dashmap::DashMap;
 use serde_json::Value;
 use tungstenite::protocol::Message;
 use tungstenite::{WebSocket, accept as ws_accept};
 
-use crate::drivers::gateway_subs;
-use crate::drivers::network::client::session::{self, SessionSocket, SessionTransport};
+use crate::adapters::gateway_subs;
+use crate::adapters::network::client::session::{self, SessionSocket, SessionTransport};
+use crate::api::utils::crypto::secure_unique_string;
 use crate::models::core::ICore;
-use crate::models::ports::network::ws::IWs;
-use crate::models::ports::ratelimit::Protocol;
-use crate::models::ports::signaler::Listener;
+use crate::models::ports::IWs;
+use crate::models::ports::Listener;
+use crate::models::ports::Protocol;
 use crate::models::transaction::ITrx;
-use crate::shell::utils::crypto::secure_unique_string;
 use aseman_network_legacy::TlsConfig;
 use aseman_network_legacy::{
     TlsStream, accept, bind_tls, encode_client_response_body, encode_client_update_body,
@@ -188,7 +191,7 @@ pub struct Ws {
     /// user_id, but the signaler keeps a single listener per user. We fan
     /// signal results out to every live socket of the user (`user_id ->
     /// {socket.id -> socket}`); clients de-dupe by correlationId.
-    user_sockets: Arc<DashMap<String, Arc<DashMap<String, Arc<Socket>>>>>,
+    user_sockets: UserSocketMap,
 }
 
 impl Ws {
@@ -243,10 +246,8 @@ impl Ws {
                     }),
                 });
             }
-            "/gateway/unsubscribe" => {
-                if result["gatewayUnsubscribe"].as_bool().unwrap_or(false) {
-                    gateway_subs::unsubscribe(&socket.id);
-                }
+            "/gateway/unsubscribe" if result["gatewayUnsubscribe"].as_bool().unwrap_or(false) => {
+                gateway_subs::unsubscribe(&socket.id);
             }
             _ => {}
         }
@@ -289,7 +290,7 @@ impl Ws {
             true,
             Box::new(move |trx: &dyn ITrx| {
                 // Membership goes through the store port (legacy adapter until cutover).
-                let ports = crate::shell::api::model::store_ports::MembershipPorts { trx };
+                let ports = crate::api::model::store_ports::MembershipPorts { trx };
                 if let Ok(ids) = aseman_ports::StoreAccess::stores_of(&ports, &member) {
                     *store_clone.lock().unwrap() = ids;
                 }
@@ -374,7 +375,7 @@ impl Ws {
                     let mut msg = Vec::with_capacity(4 + frame.len());
                     msg.extend_from_slice(&(frame.len() as u32).to_be_bytes());
                     msg.extend_from_slice(frame);
-                    match ws.send(Message::Binary(msg.into())) {
+                    match ws.send(Message::Binary(msg)) {
                         Ok(()) => {
                             last_activity = Instant::now();
                             buffered.pop_front();
@@ -390,7 +391,7 @@ impl Ws {
                 } else if last_activity.elapsed() >= KEEPALIVE_IDLE {
                     // Idle keepalive: WebSocket Ping so the OS detects
                     // half-open connections and clients can implement pong.
-                    match ws.send(Message::Ping(vec![].into())) {
+                    match ws.send(Message::Ping(vec![])) {
                         Ok(()) => last_activity = Instant::now(),
                         Err(_) => break 'io,
                     }

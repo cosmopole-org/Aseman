@@ -36,7 +36,7 @@ use serde_json::{Value, json};
 use super::ClusterService;
 use super::command::{ClusterCommand, TypeConfig};
 use super::config::PeerConfig;
-use crate::drivers::module_admin::ModuleAdministration;
+use crate::adapters::module_admin::ModuleAdministration;
 
 const MAX_BODY_BYTES: usize = 256 * 1024 * 1024;
 
@@ -108,10 +108,15 @@ fn read_request(stream: &TcpStream) -> Option<Request> {
             content_length = v.trim().parse().unwrap_or(0);
         }
         if lower.starts_with("x-caspar-cluster-token:") {
-            token = line.splitn(2, ':').nth(1).unwrap_or("").trim().to_string();
+            token = line
+                .split_once(':')
+                .map(|x| x.1)
+                .unwrap_or("")
+                .trim()
+                .to_string();
         }
         if lower.starts_with("authorization:") {
-            let value = line.splitn(2, ':').nth(1).unwrap_or("").trim();
+            let value = line.split_once(':').map(|x| x.1).unwrap_or("").trim();
             if let Some(value) = value.strip_prefix("Bearer ") {
                 token = value.to_owned();
             } else if let Some(value) = value.strip_prefix("bearer ") {
@@ -491,10 +496,10 @@ fn handle_config_apply(svc: &Arc<ClusterService>, body: &[u8]) -> (u16, Vec<u8>)
             .map(|p| p.id)
             .chain(std::iter::once(self_id))
             .collect();
-        if voters.len() > 1 {
-            if let Err(e) = svc.raft().change_membership(voters, false).await {
-                errors.push(format!("change_membership: {}", e));
-            }
+        if voters.len() > 1
+            && let Err(e) = svc.raft().change_membership(voters, false).await
+        {
+            errors.push(format!("change_membership: {}", e));
         }
         Ok::<(), anyhow::Error>(())
     });

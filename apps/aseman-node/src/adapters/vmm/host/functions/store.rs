@@ -8,8 +8,8 @@
 //! returning the resulting JSON body so the wasm program sees a real
 //! response instead of an "unsupported packet" stub.
 
-use crate::drivers::vmm::globals::with_global_app;
-use crate::drivers::vmm::prelude::*;
+use crate::adapters::vmm::globals::with_global_app;
+use crate::adapters::vmm::prelude::*;
 
 fn dispatch_store(op: &str, input: &JsonValue) -> String {
     match with_global_app(|app| app.tools().workloads().host_action_store(op, input, 0).0) {

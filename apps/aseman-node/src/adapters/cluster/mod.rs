@@ -29,7 +29,7 @@ use std::cell::Cell;
 use std::collections::{BTreeMap, HashMap};
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicU64, Ordering};
-use std::sync::{Arc, Mutex, RwLock};
+use std::sync::{Arc, RwLock};
 use std::time::{Duration, Instant};
 
 use anyhow::{Result, anyhow};
@@ -40,7 +40,7 @@ use once_cell::sync::OnceCell;
 use openraft::{BasicNode, Raft};
 use serde_json::{Value, json};
 
-use crate::drivers::module_admin::{ModuleAdminService, ModuleAdministration};
+use crate::adapters::module_admin::{ModuleAdminService, ModuleAdministration};
 use crate::models::core::ICore;
 use crate::models::transaction::ITrx;
 
@@ -434,7 +434,7 @@ fn apply_kv_batch(app: &Arc<dyn ICore>, ops: &[KvOp]) -> command::ClusterRespons
 /// and register the VMM listener — the same effects `/programs/deploy` had
 /// on the origin instance.
 fn apply_deploy_artifact(app: &Arc<dyn ICore>, artifact: &DeployArtifact) -> Result<()> {
-    let blobs = crate::drivers::blob_store::node_blobs(&*app.tools().storage());
+    let blobs = crate::adapters::blob_store::node_blobs(&*app.tools().storage());
     let mut primary = None;
     for (name, data_b64) in &artifact.files {
         let data = B64
@@ -462,7 +462,7 @@ fn apply_deploy_artifact(app: &Arc<dyn ICore>, artifact: &DeployArtifact) -> Res
                 // Mirror the origin's custom VM gateway route (reconciling any
                 // stale prior route) so the friendly path resolves on every
                 // instance the creature was propagated to.
-                crate::shell::api::actions::program::register_gateway_route(
+                crate::api::actions::program::register_gateway_route(
                     trx,
                     &art.machine_id,
                     &art.program_id,
@@ -473,7 +473,7 @@ fn apply_deploy_artifact(app: &Arc<dyn ICore>, artifact: &DeployArtifact) -> Res
                 )?;
                 // LD-17: the propagated program goes through the directory, so its
                 // `machinePrograms` link is written with it.
-                let programs = crate::shell::api::model::program_ports::ProgramPorts { trx };
+                let programs = crate::api::model::program_ports::ProgramPorts { trx };
                 let record = aseman_domain::program::ProgramRecord {
                     id: art.program_id.clone(),
                     machine_id: art.machine_id.clone(),
@@ -489,10 +489,7 @@ fn apply_deploy_artifact(app: &Arc<dyn ICore>, artifact: &DeployArtifact) -> Res
                 }
                 .map_err(|error| anyhow!("{error}"))?;
                 aseman_application::program::RecordEntityDeployment {
-                    entities: &crate::shell::api::model::entity_ports::EntityPorts {
-                        trx,
-                        blobs: &blobs,
-                    },
+                    entities: &crate::api::model::entity_ports::EntityPorts { trx, blobs: &blobs },
                 }
                 .execute(&aseman_application::program::EntityDeployment {
                     entity: aseman_domain::program::EntityRecord {

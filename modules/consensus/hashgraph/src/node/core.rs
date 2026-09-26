@@ -261,10 +261,10 @@ impl Core {
                 other_head = Some(ev.clone());
             }
 
-            if let Some(Some(h)) = self.heads.get(&we.body.creator_id) {
-                if we.body.index > h.index() {
-                    self.heads.remove(&we.body.creator_id);
-                }
+            if let Some(Some(h)) = self.heads.get(&we.body.creator_id)
+                && we.body.index > h.index()
+            {
+                self.heads.remove(&we.body.creator_id);
             }
         }
 
@@ -459,7 +459,7 @@ impl Core {
             }
         }
 
-        if self.peers.len() >= 1 {
+        if !self.peers.is_empty() {
             let deadline = Instant::now() + leave_timeout;
             loop {
                 if Instant::now() >= deadline {
@@ -651,7 +651,7 @@ impl Core {
     }
 
     /// Converts wire events to hashgraph events.
-    pub fn from_wire(&self, wire_events: Vec<WireEvent>) -> Result<Vec<Event>> {
+    pub fn convert_wire_events(&self, wire_events: Vec<WireEvent>) -> Result<Vec<Event>> {
         wire_events
             .iter()
             .map(|w| self.hg.read_wire_info(w))

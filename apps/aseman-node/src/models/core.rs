@@ -9,14 +9,13 @@ use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
+use crate::models::action::IActor;
 use crate::models::action::TrxClosure;
-use crate::models::action::actor::IActor;
 use crate::models::chain::Effects;
 use crate::models::globe::IGlobe;
 use crate::models::info::IInfo;
-use crate::models::ports::tools::ITools;
+use crate::models::ports::ITools;
 use crate::models::state::IState;
-use crate::models::transaction::ITrx;
 
 /// An empty action payload.
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
@@ -53,7 +52,6 @@ pub trait ICore: Send + Sync {
         store_id: &str,
         input: &str,
     );
-    fn app_pending_trxs(&self);
     fn ip_addr(&self) -> String;
     fn modify_state(&self, readonly: bool, fn_: TrxClosure);
     fn modify_state_securly_with_source(
@@ -83,4 +81,10 @@ pub trait ICore: Send + Sync {
     fn vm_cpu_core_cost_per_minute(&self) -> i64;
     fn vm_disk_cost_per_gb_per_minute(&self) -> i64;
     fn globe(&self) -> Arc<dyn IGlobe>;
+
+    /// The composed consensus provider, if the node installed one. Defaults to
+    /// `None` so test/standalone `ICore` implementations need not change.
+    fn consensus_provider(&self) -> Option<Arc<dyn aseman_ports::consensus::ConsensusProvider>> {
+        None
+    }
 }

@@ -1,7 +1,7 @@
-use crate::drivers::vmm::host::functions::vm_ownership::{
+use crate::adapters::vmm::host::functions::vm_ownership::{
     clear_vm_records, owns_vm_instance, program_owner_user, vm_owner_program,
 };
-use crate::drivers::vmm::prelude::*;
+use crate::adapters::vmm::prelude::*;
 
 /// Unified `deleteVm` host op — the destructive counterpart of `runVm`.
 ///
@@ -55,7 +55,7 @@ pub(crate) fn host_fn_delete_vm(caller_program_id: &str, input: &JsonValue) -> S
     }
 
     let raw =
-        crate::drivers::vmm::host::functions::vm_calls::remote_vm_call("deleteVm", &caller, input);
+        crate::adapters::vmm::host::functions::vm_calls::remote_vm_call("deleteVm", &caller, input);
     // Only forget the VM once the runtime actually destroyed it — clearing the
     // owner link after a failed delete would strand a live VM nobody may
     // delete any more.

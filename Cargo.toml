@@ -3,11 +3,13 @@ resolver = "2"
 # The backend family directory holds member crates of its own.
 exclude = ["modules/consensus", "modules/federation", "modules/finance", "modules/network", "modules/realtime", "modules/runtime", "modules/security", "modules/storage", "modules/vmm-backend"]
 members = [
+  "apps/aseman-keygen",
   "apps/aseman-meter",
   "apps/aseman-node",
   "apps/aseman-vmm",
   "apps/aseman-vmm-agent",
   "apps/asemanctl",
+  "apps/scan-vmdb",
   "crates/*",
   "modules/*",
   "modules/network/http",
@@ -68,6 +70,7 @@ thiserror = "2.0.18"
 tokio = { version = "1.50.0", features = ["macros", "rt-multi-thread", "net", "signal", "time"] }
 tonic = { version = "0.12.3", features = ["transport"] }
 toml = "1.1.6"
+url = "2.5.8"
 uuid = { version = "1.23.1", features = ["serde", "v7"] }
 
 [workspace.lints.rust]

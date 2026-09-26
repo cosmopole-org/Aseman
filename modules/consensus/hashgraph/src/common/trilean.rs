@@ -10,21 +10,17 @@
     Hash,
     serde_repr::Serialize_repr,
     serde_repr::Deserialize_repr,
+    Default,
 )]
 #[repr(i32)]
 pub enum Trilean {
     /// The value has not been defined yet.
+    #[default]
     Undefined = 0,
     /// The value is defined and true.
     True = 1,
     /// The value is defined and false.
     False = 2,
-}
-
-impl Default for Trilean {
-    fn default() -> Self {
-        Trilean::Undefined
-    }
 }
 
 impl std::fmt::Display for Trilean {

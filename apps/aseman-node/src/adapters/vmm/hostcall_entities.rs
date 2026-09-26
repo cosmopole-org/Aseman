@@ -7,13 +7,13 @@ use std::sync::{Arc, Mutex};
 use base64::Engine;
 use serde_json::{Map, Value, json};
 
-use crate::core::actor::model::base::info::Info as BaseInfo;
-use crate::models::core::{ICore, StateClosure};
+use crate::api::model::entity_ports::EntityPorts;
+use crate::api::model::{Creature, Program, Store, StorePermissions};
+use crate::legacy::actor::Info as BaseInfo;
+use crate::models::core::StateClosure;
 use crate::models::info::IInfo;
 use crate::models::state::IState;
 use crate::models::transaction::ITrx;
-use crate::shell::api::model::entity_ports::EntityPorts;
-use crate::shell::api::model::{Creature, Program, Store, StorePermissions};
 use aseman_domain::program::{EntityRecord, ResourceEntityRef};
 use aseman_ports::BlobStore;
 
@@ -65,8 +65,7 @@ impl NodeWorkloads {
                         };
                         // LD-14: an existing identity or username is refused instead
                         // of overwritten.
-                        let creatures =
-                            crate::shell::api::model::creature_ports::CreaturePorts { trx: t };
+                        let creatures = crate::api::model::creature_ports::CreaturePorts { trx: t };
                         match aseman_ports::CreatureDirectory::create(&creatures, &record) {
                             Err(aseman_ports::PortError::Conflict) => {
                                 *refused_slot.lock().unwrap() = true;
@@ -99,8 +98,7 @@ impl NodeWorkloads {
                 self.app.modify_state(
                     false,
                     Box::new(move |t: &dyn ITrx| {
-                        let creatures =
-                            crate::shell::api::model::creature_ports::CreaturePorts { trx: t };
+                        let creatures = crate::api::model::creature_ports::CreaturePorts { trx: t };
                         // LD-13: a missing creature is refused instead of being
                         // recreated as a partial record.
                         let Some(mut record) =
@@ -178,13 +176,11 @@ impl NodeWorkloads {
                         t.del_key(&format!("link::UserPrivateKey::{}", id_owned));
                         // Memberships go through the store port; the legacy
                         // `Store::list(.., -1, -1)` walk here was always empty (LD-12).
-                        let ports =
-                            crate::shell::api::model::store_ports::MembershipPorts { trx: t };
+                        let ports = crate::api::model::store_ports::MembershipPorts { trx: t };
                         ports
                             .remove_member_everywhere(&id_owned)
                             .map_err(|error| anyhow::anyhow!("{error}"))?;
-                        let creatures =
-                            crate::shell::api::model::creature_ports::CreaturePorts { trx: t };
+                        let creatures = crate::api::model::creature_ports::CreaturePorts { trx: t };
                         aseman_ports::CreatureDirectory::delete(&creatures, &id_owned)
                             .map_err(|error| anyhow::anyhow!("{error}"))?;
                         aseman_ports::CreatureBalances::close(&creatures, &id_owned)
@@ -205,8 +201,7 @@ impl NodeWorkloads {
                 self.app.modify_state(
                     true,
                     Box::new(move |t: &dyn ITrx| {
-                        let creatures =
-                            crate::shell::api::model::creature_ports::CreaturePorts { trx: t };
+                        let creatures = crate::api::model::creature_ports::CreaturePorts { trx: t };
                         // Legacy answers a missing id with an empty creature; kept.
                         let found = aseman_application::creature::GetCreature {
                             directory: &creatures,
@@ -214,7 +209,7 @@ impl NodeWorkloads {
                         }
                         .by_id(&id_owned);
                         *slot_clone.lock().unwrap() = match found {
-                            Ok(found) => crate::shell::api::model::creature_ports::creature_view(
+                            Ok(found) => crate::api::model::creature_ports::creature_view(
                                 found.record,
                                 found.balance,
                             ),
@@ -241,8 +236,7 @@ impl NodeWorkloads {
                 self.app.modify_state(
                     true,
                     Box::new(move |t: &dyn ITrx| {
-                        let creatures =
-                            crate::shell::api::model::creature_ports::CreaturePorts { trx: t };
+                        let creatures = crate::api::model::creature_ports::CreaturePorts { trx: t };
                         if let Ok(list) = (aseman_application::creature::GetCreature {
                             directory: &creatures,
                             balances: &creatures,
@@ -252,7 +246,7 @@ impl NodeWorkloads {
                             *slot_clone.lock().unwrap() = list
                                 .into_iter()
                                 .map(|found| {
-                                    crate::shell::api::model::creature_ports::creature_view(
+                                    crate::api::model::creature_ports::creature_view(
                                         found.record,
                                         found.balance,
                                     )
@@ -317,8 +311,7 @@ impl NodeWorkloads {
                 self.app.modify_state(
                     false,
                     Box::new(move |t: &dyn ITrx| {
-                        let programs =
-                            crate::shell::api::model::program_ports::ProgramPorts { trx: t };
+                        let programs = crate::api::model::program_ports::ProgramPorts { trx: t };
                         let record = aseman_domain::program::ProgramRecord {
                             id: id_owned.clone(),
                             machine_id: machine_id_owned.clone(),
@@ -369,8 +362,7 @@ impl NodeWorkloads {
                     false,
                     Box::new(move |t: &dyn ITrx| {
                         // LD-17: the program itself is removed, not only its relation.
-                        let programs =
-                            crate::shell::api::model::program_ports::ProgramPorts { trx: t };
+                        let programs = crate::api::model::program_ports::ProgramPorts { trx: t };
                         aseman_ports::ProgramDirectory::delete_program(&programs, &id_owned)
                             .map_err(|error| anyhow::anyhow!("{error}"))?;
                         aseman_ports::ProgramMetadata::delete_program_metadata(
@@ -401,12 +393,11 @@ impl NodeWorkloads {
                 self.app.modify_state(
                     true,
                     Box::new(move |t: &dyn ITrx| {
-                        let p = (crate::shell::api::model::program_ports::ProgramPorts { trx: t })
+                        let p = (crate::api::model::program_ports::ProgramPorts { trx: t })
                             .program_or_empty(&id_owned.clone());
                         *ps.lock().unwrap() = p;
-                        if let Some(m) =
-                            (crate::shell::api::model::program_ports::ProgramPorts { trx: t })
-                                .metadata_object(&id_owned, "metadata")
+                        if let Some(m) = (crate::api::model::program_ports::ProgramPorts { trx: t })
+                            .metadata_object(&id_owned, "metadata")
                         {
                             *ms.lock().unwrap() = m;
                         }
@@ -430,13 +421,13 @@ impl NodeWorkloads {
                     true,
                     Box::new(move |t: &dyn ITrx| {
                         if let Ok(list) = aseman_ports::ProgramDirectory::programs(
-                            &crate::shell::api::model::program_ports::ProgramPorts { trx: t },
+                            &crate::api::model::program_ports::ProgramPorts { trx: t },
                             offset,
                             Some(count),
                         ) {
                             *sc.lock().unwrap() = list
                                 .into_iter()
-                                .map(crate::shell::api::model::program_ports::program_view)
+                                .map(crate::api::model::program_ports::program_view)
                                 .collect();
                         }
                         Ok(())
@@ -467,12 +458,12 @@ impl NodeWorkloads {
                     true,
                     Box::new(move |t: &dyn ITrx| {
                         if let Ok(list) = aseman_ports::ProgramDirectory::programs_of_machine(
-                            &crate::shell::api::model::program_ports::ProgramPorts { trx: t },
+                            &crate::api::model::program_ports::ProgramPorts { trx: t },
                             &mid,
                         ) {
                             *sc.lock().unwrap() = list
                                 .into_iter()
-                                .map(crate::shell::api::model::program_ports::program_view)
+                                .map(crate::api::model::program_ports::program_view)
                                 .collect();
                         }
                         Ok(())
@@ -503,8 +494,7 @@ impl NodeWorkloads {
                 self.app.modify_state(
                     false,
                     Box::new(move |t: &dyn ITrx| {
-                        let programs =
-                            crate::shell::api::model::program_ports::ProgramPorts { trx: t };
+                        let programs = crate::api::model::program_ports::ProgramPorts { trx: t };
                         // LD-13: a missing program is refused instead of created partially.
                         let Some(mut p) =
                             aseman_ports::ProgramDirectory::program(&programs, &id_owned)
@@ -555,7 +545,7 @@ impl NodeWorkloads {
     /// `drivers::vmm::proxy`). Host-call deploys are always local — cluster
     /// distribution stays a shell-API concern.
     pub(crate) fn handle_deploy_entity(&self, input: &Value, req_id: i64) -> (String, i64) {
-        use crate::drivers::vmm::proxy;
+        use crate::adapters::vmm::proxy;
 
         let mut program_id = check_str(input, "programId", "");
         if program_id.is_empty() {
@@ -583,7 +573,7 @@ impl NodeWorkloads {
             true,
             Box::new(move |t: &dyn ITrx| {
                 *exists_slot.lock().unwrap() = aseman_ports::ProgramDirectory::program(
-                    &crate::shell::api::model::program_ports::ProgramPorts { trx: t },
+                    &crate::api::model::program_ports::ProgramPorts { trx: t },
                     &lookup_id,
                 )
                 .map_err(|error| anyhow::anyhow!("{error}"))?
@@ -629,7 +619,7 @@ impl NodeWorkloads {
                     );
                 }
             };
-            let blobs = crate::drivers::blob_store::node_blobs(&*self.app.tools().storage());
+            let blobs = crate::adapters::blob_store::node_blobs(&*self.app.tools().storage());
             let evidence = match blobs.put_entity_file(&program_id, &entity_id, "proxy.data", &data)
             {
                 Ok(evidence) => evidence,
@@ -672,10 +662,10 @@ impl NodeWorkloads {
             return (serde_json::to_string(&out).unwrap_or_default(), req_id);
         }
 
-        let Some(conventions) = crate::shell::workloads::remote()
+        let Some(conventions) = crate::api::workloads::remote()
             .and_then(|remote| remote.deploy_conventions(&entity_type))
         else {
-            let offered = crate::shell::workloads::remote()
+            let offered = crate::api::workloads::remote()
                 .map(|remote| remote.runtime_keys().join("|"))
                 .unwrap_or_default();
             return (
@@ -689,7 +679,7 @@ impl NodeWorkloads {
         };
         let primary_file_name = conventions.entity_file_name.clone();
         let accepts_extra_files = conventions.accepts_extra_files;
-        let blobs = crate::drivers::blob_store::node_blobs(&*self.app.tools().storage());
+        let blobs = crate::adapters::blob_store::node_blobs(&*self.app.tools().storage());
         let primary =
             match blobs.put_entity_file(&program_id, &entity_id, &primary_file_name, &data) {
                 Ok(evidence) => evidence,
@@ -703,37 +693,32 @@ impl NodeWorkloads {
                     );
                 }
             };
-        if accepts_extra_files {
-            if let Some(files) = metadata.get("files").and_then(Value::as_object) {
-                for (name, raw) in files {
-                    let Some(content_b64) = raw.as_str() else {
+        if accepts_extra_files && let Some(files) = metadata.get("files").and_then(Value::as_object)
+        {
+            for (name, raw) in files {
+                let Some(content_b64) = raw.as_str() else {
+                    return (
+                        r#"{"ok":false,"error":"file bytecode not string"}"#.into(),
+                        req_id,
+                    );
+                };
+                let bytes = match base64::engine::general_purpose::STANDARD.decode(content_b64) {
+                    Ok(b) => b,
+                    Err(e) => {
                         return (
-                            r#"{"ok":false,"error":"file bytecode not string"}"#.into(),
-                            req_id,
-                        );
-                    };
-                    let bytes = match base64::engine::general_purpose::STANDARD.decode(content_b64)
-                    {
-                        Ok(b) => b,
-                        Err(e) => {
-                            return (
-                                format!(
-                                    "{{\"ok\":false,\"error\":\"invalid file base64: {}\"}}",
-                                    e
-                                ),
-                                req_id,
-                            );
-                        }
-                    };
-                    if let Err(e) = blobs.put_entity_file(&program_id, &entity_id, name, &bytes) {
-                        return (
-                            format!(
-                                "{{\"ok\":false,\"error\":\"{}\"}}",
-                                e.to_string().replace('"', "\\\"")
-                            ),
+                            format!("{{\"ok\":false,\"error\":\"invalid file base64: {}\"}}", e),
                             req_id,
                         );
                     }
+                };
+                if let Err(e) = blobs.put_entity_file(&program_id, &entity_id, name, &bytes) {
+                    return (
+                        format!(
+                            "{{\"ok\":false,\"error\":\"{}\"}}",
+                            e.to_string().replace('"', "\\\"")
+                        ),
+                        req_id,
+                    );
                 }
             }
         }
@@ -745,7 +730,7 @@ impl NodeWorkloads {
             false,
             Box::new(move |t: &dyn ITrx| {
                 // LD-17: deploying never creates a bare program without a machine.
-                let programs = crate::shell::api::model::program_ports::ProgramPorts { trx: t };
+                let programs = crate::api::model::program_ports::ProgramPorts { trx: t };
                 let Some(mut program) =
                     aseman_ports::ProgramDirectory::program(&programs, &program_id_owned)
                         .map_err(|error| anyhow::anyhow!("{error}"))?
@@ -831,7 +816,7 @@ impl NodeWorkloads {
                             "{}".to_owned()
                         };
                         match aseman_ports::VmResourceStores::put_resource_store(
-                            &crate::shell::api::model::program_ports::ProgramPorts { trx: t },
+                            &crate::api::model::program_ports::ProgramPorts { trx: t },
                             &store_id_owned,
                             &name_owned,
                             &machine_id_owned,
@@ -868,7 +853,7 @@ impl NodeWorkloads {
                     Box::new(move |t: &dyn ITrx| {
                         // LD-06: the documents and the ownership link are really removed.
                         aseman_ports::VmResourceStores::delete_resource_store(
-                            &crate::shell::api::model::program_ports::ProgramPorts { trx: t },
+                            &crate::api::model::program_ports::ProgramPorts { trx: t },
                             &store_id_owned,
                         )
                         .map_err(|error| anyhow::anyhow!("{error}"))
@@ -896,7 +881,7 @@ impl NodeWorkloads {
                     true,
                     Box::new(move |t: &dyn ITrx| {
                         if let Some(store) = aseman_ports::VmResourceStores::resource_store(
-                            &crate::shell::api::model::program_ports::ProgramPorts { trx: t },
+                            &crate::api::model::program_ports::ProgramPorts { trx: t },
                             &store_id_owned,
                         )
                         .map_err(|error| anyhow::anyhow!("{error}"))?
@@ -927,8 +912,7 @@ impl NodeWorkloads {
                 self.app.modify_state(
                     true,
                     Box::new(move |t: &dyn ITrx| {
-                        let programs =
-                            crate::shell::api::model::program_ports::ProgramPorts { trx: t };
+                        let programs = crate::api::model::program_ports::ProgramPorts { trx: t };
                         let filter = (!machine_id.is_empty()).then_some(machine_id.as_str());
                         let mut listed = Vec::new();
                         for store_id in
@@ -984,7 +968,7 @@ impl NodeWorkloads {
             entity_type,
             entity_id: entity_id.clone(),
         };
-        let blobs = crate::drivers::blob_store::node_blobs(&*self.app.tools().storage());
+        let blobs = crate::adapters::blob_store::node_blobs(&*self.app.tools().storage());
         let path = blobs
             .local_path(&reference.data_key())
             .map(|path| path.to_string_lossy().into_owned())
@@ -1041,7 +1025,7 @@ impl NodeWorkloads {
             entity_type,
             entity_id,
         };
-        let blobs = crate::drivers::blob_store::node_blobs(&*self.app.tools().storage());
+        let blobs = crate::adapters::blob_store::node_blobs(&*self.app.tools().storage());
         let failure = Arc::new(Mutex::new(None));
         let failure_slot = failure.clone();
         self.app.modify_state(
@@ -1354,8 +1338,7 @@ impl NodeWorkloads {
                 self.app.modify_state(
                     false,
                     Box::new(move |t: &dyn ITrx| {
-                        let ports =
-                            crate::shell::api::model::store_ports::MembershipPorts { trx: t };
+                        let ports = crate::api::model::store_ports::MembershipPorts { trx: t };
                         aseman_ports::StoreAccess::join(
                             &ports,
                             &store_id_owned,
@@ -1388,8 +1371,7 @@ impl NodeWorkloads {
                 self.app.modify_state(
                     false,
                     Box::new(move |t: &dyn ITrx| {
-                        let ports =
-                            crate::shell::api::model::store_ports::MembershipPorts { trx: t };
+                        let ports = crate::api::model::store_ports::MembershipPorts { trx: t };
                         aseman_ports::StoreAccess::leave(&ports, &store_id_owned, &user_id_owned)
                             .map_err(|error| anyhow::anyhow!("{error}"))
                     }),
@@ -1551,7 +1533,7 @@ impl NodeWorkloads {
                 self.app.modify_state(
                     false,
                     Box::new(move |t: &dyn ITrx| {
-                        let stores = crate::shell::api::model::store_ports::StorePorts { trx: t };
+                        let stores = crate::api::model::store_ports::StorePorts { trx: t };
                         let record = aseman_domain::store::StoreRecord {
                             id: store_id_owned.clone(),
                             tag: tag.clone(),
@@ -1576,8 +1558,7 @@ impl NodeWorkloads {
                             .merge_metadata_value(&store_id_owned, &metadata_owned)
                             .map_err(|error| anyhow::anyhow!("{error}"))?;
                         // The creator administers the store they just made.
-                        let ports =
-                            crate::shell::api::model::store_ports::MembershipPorts { trx: t };
+                        let ports = crate::api::model::store_ports::MembershipPorts { trx: t };
                         aseman_ports::StoreAccess::join(
                             &ports,
                             &store_id_owned,
@@ -1608,7 +1589,7 @@ impl NodeWorkloads {
                 self.app.modify_state(
                     false,
                     Box::new(move |t: &dyn ITrx| {
-                        let stores = crate::shell::api::model::store_ports::StorePorts { trx: t };
+                        let stores = crate::api::model::store_ports::StorePorts { trx: t };
                         // A missing store stays a no-op, as before.
                         let Some(mut store) =
                             aseman_ports::StoreDirectory::store(&stores, &store_id_owned)
@@ -1653,7 +1634,7 @@ impl NodeWorkloads {
                     false,
                     Box::new(move |t: &dyn ITrx| {
                         // LD-06: the metadata document is really removed with the store.
-                        let stores = crate::shell::api::model::store_ports::StorePorts { trx: t };
+                        let stores = crate::api::model::store_ports::StorePorts { trx: t };
                         aseman_ports::StoreDirectory::delete_store(&stores, &store_id_owned)
                             .map_err(|error| anyhow::anyhow!("{error}"))?;
                         aseman_ports::StoreMetadata::delete_store_metadata(
@@ -1665,8 +1646,7 @@ impl NodeWorkloads {
                         // listStores walks hasaccess, and a later getStore still
                         // echoes the requested id, which is how a deleted space
                         // came back as an untitled project.
-                        let ports =
-                            crate::shell::api::model::store_ports::MembershipPorts { trx: t };
+                        let ports = crate::api::model::store_ports::MembershipPorts { trx: t };
                         let members = aseman_ports::StoreAccess::members(&ports, &store_id_owned)
                             .map_err(|error| anyhow::anyhow!("{error}"))?;
                         for (member_id, _) in members {
@@ -1697,7 +1677,7 @@ impl NodeWorkloads {
                 self.app.modify_state(
                     true,
                     Box::new(move |t: &dyn ITrx| {
-                        let stores = crate::shell::api::model::store_ports::StorePorts { trx: t };
+                        let stores = crate::api::model::store_ports::StorePorts { trx: t };
                         *store_clone.lock().unwrap() = stores.store_or_empty(&store_id_owned);
                         if let Some(m) = stores.metadata_object(&store_id_owned, "metadata") {
                             *meta_clone.lock().unwrap() = m;
@@ -1721,20 +1701,19 @@ impl NodeWorkloads {
                             // The legacy `Store::list("obj::Store::", ..)` searched links and
                             // was always empty; list the first 50 stores instead.
                             aseman_ports::StoreDirectory::stores(
-                                &crate::shell::api::model::store_ports::StorePorts { trx: t },
+                                &crate::api::model::store_ports::StorePorts { trx: t },
                                 0,
                                 Some(50),
                             )
                             .map(|records| {
                                 records
                                     .into_iter()
-                                    .map(crate::shell::api::model::store_ports::store_view)
+                                    .map(crate::api::model::store_ports::store_view)
                                     .collect()
                             })
                             .map_err(|error| anyhow::anyhow!("{error}"))
                         } else {
-                            let ports =
-                                crate::shell::api::model::store_ports::MembershipPorts { trx: t };
+                            let ports = crate::api::model::store_ports::MembershipPorts { trx: t };
                             ports
                                 .member_stores(&user_id, 50)
                                 .map_err(|error| anyhow::anyhow!("{error}"))
@@ -1768,16 +1747,13 @@ impl NodeWorkloads {
                 self.app.modify_state(
                     true,
                     Box::new(move |t: &dyn ITrx| {
-                        let ports =
-                            crate::shell::api::model::store_ports::MembershipPorts { trx: t };
+                        let ports = crate::api::model::store_ports::MembershipPorts { trx: t };
                         let members = aseman_ports::StoreAccess::members(&ports, &sid)
                             .map_err(|error| anyhow::anyhow!("{error}"))?;
                         let mut out: Vec<Creature> = Vec::new();
                         for (member_id, _) in members {
-                            let c = (crate::shell::api::model::creature_ports::CreaturePorts {
-                                trx: t,
-                            })
-                            .creature_or_empty(&member_id);
+                            let c = (crate::api::model::creature_ports::CreaturePorts { trx: t })
+                                .creature_or_empty(&member_id);
                             if c.id.is_empty() {
                                 continue;
                             }
@@ -1825,10 +1801,9 @@ impl NodeWorkloads {
                 if let Ok(m) = t.get_json(
                     &format!("Json::Creature::{}", token_owner_owned),
                     &format!("lockedTokens.{}", token_id_owned),
-                ) {
-                    if let Some(amount) = m.get("amount").and_then(Value::as_f64) {
-                        *gas_clone.lock().unwrap() = amount as i64;
-                    }
+                ) && let Some(amount) = m.get("amount").and_then(Value::as_f64)
+                {
+                    *gas_clone.lock().unwrap() = amount as i64;
                 }
                 Ok(())
             }),
@@ -1887,7 +1862,7 @@ impl NodeWorkloads {
                     false,
                     Box::new(move |t: &dyn ITrx| {
                         aseman_ports::ProgramAlarms::set_alarm(
-                            &crate::shell::api::model::program_ports::ProgramPorts { trx: t },
+                            &crate::api::model::program_ports::ProgramPorts { trx: t },
                             &machine_id_inner,
                             &planted,
                         )
@@ -1901,8 +1876,7 @@ impl NodeWorkloads {
                     Box::new(move |t: &dyn ITrx| {
                         // LD-19: clear only this alarm; a newer one planted while this
                         // thread slept stays for its own thread and for restart replay.
-                        let programs =
-                            crate::shell::api::model::program_ports::ProgramPorts { trx: t };
+                        let programs = crate::api::model::program_ports::ProgramPorts { trx: t };
                         let current =
                             aseman_ports::ProgramAlarms::alarm(&programs, &machine_id_drain)
                                 .map_err(|error| anyhow::anyhow!("{error}"))?;
@@ -1990,7 +1964,7 @@ impl NodeWorkloads {
             })
             .unwrap_or_default();
         // Build the SignalInput action call.
-        use crate::shell::api::packets::stores::SignalInput;
+        use crate::api::packets::stores::SignalInput;
         let signal_input = SignalInput {
             typ,
             data,
@@ -2102,8 +2076,8 @@ impl NodeWorkloads {
                 Ok(())
             }),
         );
-        let id = slot.lock().unwrap().clone();
-        id
+
+        slot.lock().unwrap().clone()
     }
 }
 
@@ -2131,9 +2105,7 @@ fn parse_chain_receivers(input: &Value) -> HashMap<String, HashMap<String, bool>
 }
 
 fn parse_chain_pay_packet(input: &Value) -> Option<crate::models::chain::ChainPayPacket> {
-    let Some(pay_obj) = input.get("pay").and_then(Value::as_object) else {
-        return None;
-    };
+    let pay_obj = input.get("pay").and_then(Value::as_object)?;
     use crate::models::chain::ChainPayPacket;
     let mut pay = ChainPayPacket::default();
     let s = |k: &str| pay_obj.get(k).and_then(Value::as_str).map(str::to_string);

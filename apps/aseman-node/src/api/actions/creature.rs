@@ -17,20 +17,10 @@ use chrono::Utc;
 use serde_json::{Map, Value, json};
 use sha2::{Digest, Sha256};
 
-use crate::core::actor::model::base::info::Info as BaseInfo;
-use crate::core::actor::model::secured::guard::Guard;
-use crate::core::actor::model::state::State as ActorState;
-use crate::models::action::ExtendedField;
-use crate::models::action::ISecureAction;
-use crate::models::core::ICore;
-use crate::models::input::IInput;
-use crate::models::state::IState;
-use crate::models::transaction::ITrx;
-use crate::models::transaction::object_to_map;
-use crate::shell::api::model::creature_ports::{CreaturePorts, creature_view};
-use crate::shell::api::model::store_ports::legacy_error;
-use crate::shell::api::model::{Creature, Session, Store};
-use crate::shell::api::packets::creatures::{
+use crate::api::model::creature_ports::{CreaturePorts, creature_view};
+use crate::api::model::store_ports::{MembershipPorts, legacy_error};
+use crate::api::model::{Creature, Session, Store};
+use crate::api::packets::creatures::{
     AuthenticateInput, AuthenticateOutput, CheckSignInput, ClosePoolInput, ConsumeLockInput,
     CreateHoldInput, CreateInput as CreatureCreateInput, DebitPoolInput, DeleteInput, FindInput,
     GetByUsernameInput, GetFinancialAccountInput, GetHoldInput, GetInput, GetOutput, ListInput,
@@ -44,10 +34,20 @@ use crate::shell::api::packets::creatures::{
     SignalInput as CreatureSignalInput, StartHoldInput, StorageUploadInput, TransferInput,
     UpdateInput,
 };
-use crate::shell::api::packets::stores::Send as StoresSend;
-use crate::shell::utils::crypto::{secure_key_pairs, secure_unique_string};
-use crate::shell::utils::future::async_once;
-use crate::shell::utils::secret_crypto;
+use crate::api::packets::stores::Send as StoresSend;
+use crate::api::utils::crypto::{secure_key_pairs, secure_unique_string};
+use crate::api::utils::future::async_once;
+use crate::api::utils::secret_crypto;
+use crate::legacy::actor::Guard;
+use crate::legacy::actor::Info as BaseInfo;
+use crate::legacy::actor::State as ActorState;
+use crate::models::action::ExtendedField;
+use crate::models::action::ISecureAction;
+use crate::models::core::ICore;
+use crate::models::input::IInput;
+use crate::models::state::IState;
+use crate::models::transaction::ITrx;
+use crate::models::transaction::object_to_map;
 use aseman_application::creature::{
     CreateCreature, CreaturePatch, DeleteCreature, GetCreature, NewCreature, UpdateCreature,
 };
@@ -88,7 +88,7 @@ fn as_i64(raw: &Value) -> Option<i64> {
     }
 }
 
-/// Build the `/creatures/create` action.
+// Build the `/creatures/create` action.
 // ─────────────────────────── Creature type registry ───────────────────────────
 //
 // A creature is the general model for every being on the network that can act
@@ -183,7 +183,7 @@ pub fn install_creature_types(app: Arc<dyn ICore>) {
 /// Resolve a creature type's initial balance from the registry. Falls back to
 /// the built-in seed values when the registry has not been seeded yet (the very
 /// first creature is created before `install` runs), and rejects unknown types.
-fn resolve_initial_balance(trx: &dyn ITrx, creature_type: &str) -> Result<i64> {
+pub(crate) fn resolve_initial_balance(trx: &dyn ITrx, creature_type: &str) -> Result<i64> {
     match get_creature_type(trx, creature_type) {
         Some(spec) => Ok(spec
             .get("initialBalance")
@@ -418,7 +418,7 @@ fn signal(app: Arc<dyn ICore>) -> Arc<dyn ISecureAction> {
                 }
                 // Posting into a store is a permission, not mere membership:
                 // a viewer holds `read` without `signal` and is refused here.
-                let ports = crate::shell::api::model::store_ports::MembershipPorts { trx: &*trx };
+                let ports = crate::api::model::store_ports::MembershipPorts { trx: &*trx };
                 let permissions = aseman_ports::StoreAccess::permissions(
                     &ports,
                     &store_id,
@@ -676,19 +676,19 @@ const SECRET_PREFIX: &str = "Secret::";
 const SECRET_GRANT_PREFIX: &str = "SecretGrant::";
 const SECRET_GRANTEE_PREFIX: &str = "SecretGrantee::";
 
-fn secret_key(owner: &str, name: &str) -> String {
+pub(crate) fn secret_key(owner: &str, name: &str) -> String {
     format!("{SECRET_PREFIX}{owner}::{name}")
 }
-fn secret_grant_key(owner: &str, name: &str, grantee: &str) -> String {
+pub(crate) fn secret_grant_key(owner: &str, name: &str, grantee: &str) -> String {
     format!("{SECRET_GRANT_PREFIX}{owner}::{name}::{grantee}")
 }
 /// Reverse index keyed by grantee, so a grantee can enumerate its grants.
-fn secret_grantee_key(grantee: &str, owner: &str, name: &str) -> String {
+pub(crate) fn secret_grantee_key(grantee: &str, owner: &str, name: &str) -> String {
     format!("{SECRET_GRANTEE_PREFIX}{grantee}::{owner}::{name}")
 }
 /// Names/ids are path components of the storage key, so a ':' would let a caller
 /// escape its own namespace. Reject it rather than sanitize silently.
-fn valid_component(s: &str) -> bool {
+pub(crate) fn valid_component(s: &str) -> bool {
     !s.is_empty() && !s.contains(':')
 }
 
@@ -921,8 +921,8 @@ fn storage_upload(app: Arc<dyn ICore>) -> Arc<dyn ISecureAction> {
                 }
             };
             let id = uuid::Uuid::new_v4().to_string();
-            let blobs = crate::drivers::blob_store::node_blobs(&*app_h.tools().storage());
-            let folder = crate::drivers::blob_store::PUBLIC_FILES;
+            let blobs = crate::adapters::blob_store::node_blobs(&*app_h.tools().storage());
+            let folder = crate::adapters::blob_store::PUBLIC_FILES;
             blobs
                 .put_blob(&[folder, "/", &id].concat(), &data, &ctype, true)
                 .map_err(|e| anyhow!("storage write failed: {e}"))?;
@@ -1204,13 +1204,13 @@ fn login(app: Arc<dyn ICore>) -> Arc<dyn ISecureAction> {
             // the raw email or fall back to a synthetic `username@dev.local`.
             let mut email = input.email_token.trim().to_string();
             let trx = state.trx();
-            if crate::drivers::vmm::host::functions::login_grant::grant_mode() {
+            if crate::adapters::vmm::host::functions::login_grant::grant_mode() {
                 // An email alone proves nothing, and for an existing account
                 // this path answers with its private key. In grant mode the
                 // caller must present a single-use grant a node-owner program
                 // issued after verifying the person (password, mail, Google).
                 email = email.to_lowercase();
-                crate::drivers::vmm::host::functions::login_grant::consume(
+                crate::adapters::vmm::host::functions::login_grant::consume(
                     &*trx,
                     &input.login_grant,
                     &email,
@@ -1324,7 +1324,7 @@ fn delete(app: Arc<dyn ICore>) -> Arc<dyn ISecureAction> {
             }
             // Memberships go through the store port; the legacy `Store::list(.., -1, -1)`
             // walk here always came back empty (LD-12).
-            let ports = crate::shell::api::model::store_ports::MembershipPorts { trx: &*trx };
+            let ports = crate::api::model::store_ports::MembershipPorts { trx: &*trx };
             ports
                 .remove_member_everywhere(&input.user_id)
                 .map_err(|error| anyhow!("{error}"))?;
@@ -1542,4 +1542,365 @@ pub fn install(
     for h in handlers {
         actor.inject_secure_action(h);
     }
+}
+
+// ── Public-executor entry points (RL-004) ─────────────────────────────────────
+// The identity/signal/lock families are driver-coupled (signaler, security). The
+// public executor wires them through these bodies, which reuse the exact legacy
+// handler logic with the caller's id resolved by the executor.
+
+/// `/creatures/types` (`creature.types.read`) body.
+pub(crate) fn serve_creature_types(
+    _app: &Arc<dyn ICore>,
+    trx: &dyn ITrx,
+    _user_id: &str,
+) -> Result<Value> {
+    let mut out: Vec<Value> = Vec::new();
+    for (name, spec) in aseman_ports::CreatureTypes::creature_types(&CreaturePorts { trx })
+        .map_err(|error| anyhow!("{error}"))?
+    {
+        let mut spec: Map<String, Value> = serde_json::from_str(&spec)?;
+        spec.insert("name".to_string(), json!(name));
+        out.push(Value::Object(spec));
+    }
+    Ok(json!({ "types": out }))
+}
+
+/// `/creatures/authenticate` (`identity.session.create`) body.
+pub(crate) fn serve_authenticate(
+    _app: &Arc<dyn ICore>,
+    trx: &dyn ITrx,
+    user_id: &str,
+) -> Result<Value> {
+    let creatures = CreaturePorts { trx };
+    let found = aseman_application::creature::GetCreature {
+        directory: &creatures,
+        balances: &creatures,
+    }
+    .by_id(user_id)
+    .map_err(legacy_error)?;
+    let creature = creature_view(found.record, found.balance);
+    let mut user_map: HashMap<String, Value> = HashMap::new();
+    user_map.insert("id".to_string(), json!(creature.id));
+    user_map.insert("type".to_string(), json!(creature.type_name));
+    user_map.insert("username".to_string(), json!(creature.username));
+    user_map.insert("publicKey".to_string(), json!(creature.public_key));
+    user_map.insert("balance".to_string(), json!(creature.balance));
+    Ok(serde_json::to_value(AuthenticateOutput {
+        authenticated: true,
+        user: user_map,
+    })?)
+}
+
+/// `/creatures/signal` (`creature.signal`) body.
+pub(crate) fn serve_creature_signal(
+    app: &Arc<dyn ICore>,
+    trx: &dyn ITrx,
+    user_id: &str,
+    store_id: &str,
+    input: CreatureSignalInput,
+) -> Result<Value> {
+    let sender_creature =
+        aseman_ports::CreatureDirectory::creature(&CreaturePorts { trx }, user_id)
+            .map_err(|error| anyhow!("{error}"))?
+            .map(|record| creature_view(record, 0))
+            .unwrap_or_else(|| Creature {
+                id: user_id.to_owned(),
+                ..Default::default()
+            });
+    let mut sender = sender_creature.clone();
+    sender.balance = 0;
+    if input.typ == "all" {
+        if store_id.is_empty() {
+            return Err(anyhow!("storeId is required for broadcast"));
+        }
+        let ports = MembershipPorts { trx };
+        let permissions = aseman_ports::StoreAccess::permissions(&ports, store_id, user_id)
+            .map_err(|error| anyhow!("{error}"))?;
+        if !permissions.signal {
+            return Err(anyhow!("not allowed to signal in this store"));
+        }
+        let packet = StoresSend {
+            action: "broadcast".to_string(),
+            user: sender.clone(),
+            data: input.data.clone(),
+            is_temp: input.temp,
+            ..Default::default()
+        };
+        let app_async = app.clone();
+        let store_id_async = store_id.to_string();
+        let exception_user_id = user_id.to_string();
+        let _ = async_once(move || {
+            app_async.tools().signaler().signal_group(
+                "creatures/signal",
+                &store_id_async,
+                serde_json::to_value(&packet).unwrap_or(Value::Null),
+                true,
+                vec![exception_user_id],
+            );
+        });
+        return Ok(json!({"passed": true}));
+    }
+    if input.typ != "pvp" {
+        return Err(anyhow!("unknown signal type"));
+    }
+    if input.creature_id.is_empty() {
+        return Err(anyhow!("creatureId is required for pvp"));
+    }
+    let target_id = if !input.program_id.is_empty() {
+        input.program_id.clone()
+    } else {
+        input.creature_id.clone()
+    };
+    let packet = StoresSend {
+        action: "single".to_string(),
+        user: sender,
+        store: Store {
+            id: input.store_id.clone(),
+            ..Default::default()
+        },
+        data: input.data.clone(),
+        is_temp: input.temp,
+        entity_id: input.entity_id.clone(),
+        correlation_id: input.correlation_id.clone(),
+        ..Default::default()
+    };
+    let app_async = app.clone();
+    let _ = async_once(move || {
+        app_async.tools().signaler().signal_user(
+            "creatures/signal",
+            &target_id,
+            serde_json::to_value(&packet).unwrap_or(Value::Null),
+            true,
+        );
+    });
+    Ok(json!({"passed": true}))
+}
+
+/// `/creatures/lockToken` (`finance.lock.create`) body.
+pub(crate) fn serve_lock_token(
+    _app: &Arc<dyn ICore>,
+    trx: &dyn ITrx,
+    user_id: &str,
+    input: LockTokenInput,
+) -> Result<Value> {
+    let mut user = (CreaturePorts { trx }).account_or_empty(user_id)?;
+    let mut steps: Vec<Value> = Vec::with_capacity(input.steps.len().max(1));
+    if !input.steps.is_empty() {
+        for (i, step) in input.steps.iter().enumerate() {
+            if step.amount <= 0 {
+                return Err(anyhow!("step {} amount must be greater than zero", i));
+            }
+            if step.unlock_at <= 0 {
+                return Err(anyhow!(
+                    "step {} unlockAt must be a unix timestamp in milliseconds",
+                    i
+                ));
+            }
+            steps.push(json!({
+                "amount": step.amount,
+                "unlockAt": step.unlock_at,
+                "consumed": false,
+            }));
+        }
+    } else {
+        if input.amount <= 0 {
+            return Err(anyhow!("amount must be greater than zero"));
+        }
+        if input.unlock_at <= 0 {
+            return Err(anyhow!("unlockAt must be a unix timestamp in milliseconds"));
+        }
+        steps.push(json!({
+            "amount": input.amount,
+            "unlockAt": input.unlock_at,
+            "consumed": false,
+        }));
+    }
+    let total_amount = steps.iter().try_fold(0_i64, |total, step| {
+        let amount = step.get("amount").and_then(|v| v.as_i64()).unwrap_or(0);
+        total
+            .checked_add(amount)
+            .ok_or_else(|| anyhow!("lock amount overflow"))
+    })?;
+    if user.balance < total_amount {
+        return Err(anyhow!("your balance is not enough"));
+    }
+    let lock_id = secure_unique_string();
+    if input.typ == "pay" {
+        if (CreaturePorts { trx }).account(&input.target)?.is_none() {
+            return Err(anyhow!("target user not acceptable"));
+        }
+        user.balance = user
+            .balance
+            .checked_sub(total_amount)
+            .ok_or_else(|| anyhow!("balance underflow"))?;
+        (CreaturePorts { trx }).store_account(&user)?;
+        let payload = json!({
+            "type": "pay",
+            "amount": total_amount,
+            "remainingAmount": total_amount,
+            "userId": input.target,
+            "steps": steps,
+        });
+        trx.put_json(
+            &format!("Json::Creature::{}", user_id),
+            &format!("lockedTokens.{}", lock_id),
+            &payload,
+            true,
+        )?;
+    } else {
+        return Err(anyhow!("unknown lock type"));
+    }
+    Ok(json!({"tokenId": lock_id}))
+}
+
+/// `/creatures/consumeLock` (`finance.lock.consume`) body.
+pub(crate) fn serve_consume_lock(
+    app: &Arc<dyn ICore>,
+    trx: &dyn ITrx,
+    user_id: &str,
+    input: ConsumeLockInput,
+) -> Result<Value> {
+    let mut receiver = (CreaturePorts { trx }).account_or_empty(user_id)?;
+    if input.typ != "pay" {
+        return Err(anyhow!("unknown lock type"));
+    }
+    if (CreaturePorts { trx }).account(&input.user_id)?.is_none() {
+        return Err(anyhow!("payer user not found"));
+    }
+    let sender = (CreaturePorts { trx }).account_or_empty(&input.user_id.clone())?;
+    let payment_map = match trx.get_json(
+        &format!("Json::Creature::{}", sender.id),
+        &format!("lockedTokens.{}", input.lock_id),
+    ) {
+        Ok(m) => m,
+        Err(_) => return Err(anyhow!("lock not found")),
+    };
+    let mut payment: Map<String, Value> = payment_map;
+    let steps_raw = match payment.get("steps") {
+        Some(Value::Array(arr)) if !arr.is_empty() => arr.clone(),
+        _ => return Err(anyhow!("lock does not include steps")),
+    };
+    let mut step_index: i64 = input.step.unwrap_or(-1);
+    let now = Utc::now().timestamp_millis();
+    let mut parsed_steps: Vec<Map<String, Value>> = Vec::with_capacity(steps_raw.len());
+    let mut parsed_amounts: Vec<i64> = Vec::with_capacity(steps_raw.len());
+    let mut parsed_unlocks: Vec<i64> = Vec::with_capacity(steps_raw.len());
+    for raw_step in steps_raw.iter() {
+        let step_map = match raw_step {
+            Value::Object(o) => o.clone(),
+            _ => return Err(anyhow!("invalid lock step")),
+        };
+        let step_amount = step_map.get("amount").and_then(as_i64).unwrap_or(0);
+        if step_amount <= 0 {
+            return Err(anyhow!("invalid lock step amount"));
+        }
+        let unlock_at = step_map.get("unlockAt").and_then(as_i64).unwrap_or(0);
+        if unlock_at <= 0 {
+            return Err(anyhow!("invalid lock step unlockAt"));
+        }
+        let consumed = step_map
+            .get("consumed")
+            .and_then(|v| v.as_bool())
+            .unwrap_or(false);
+        parsed_steps.push(step_map);
+        parsed_amounts.push(step_amount);
+        parsed_unlocks.push(unlock_at);
+        if step_index == -1 && !consumed && now >= unlock_at && step_amount == input.amount {
+            step_index = (parsed_steps.len() - 1) as i64;
+        }
+    }
+    if step_index < 0 || (step_index as usize) >= parsed_steps.len() {
+        return Err(anyhow!("lock step not found"));
+    }
+    let idx = step_index as usize;
+    let selected_step = &mut parsed_steps[idx];
+    let selected_amount = parsed_amounts[idx];
+    let selected_unlock_at = parsed_unlocks[idx];
+    if now < selected_unlock_at {
+        return Err(anyhow!("lock step is not consumable yet"));
+    }
+    if selected_step
+        .get("consumed")
+        .and_then(|v| v.as_bool())
+        .unwrap_or(false)
+    {
+        return Err(anyhow!("lock step already consumed"));
+    }
+    if input.amount != selected_amount {
+        return Err(anyhow!("amount of payment not matched"));
+    }
+    let sign_payload = format!(
+        "{}:{}:{}:{}:{}",
+        input.lock_id, idx, selected_unlock_at, selected_amount, receiver.id
+    );
+    let (success, _, _) = app.tools().security().auth_with_signature(
+        &input.user_id,
+        sign_payload.as_bytes(),
+        &input.signature,
+    );
+    if !success {
+        return Err(anyhow!("signature not verified"));
+    }
+    let typ = payment.get("type").and_then(|v| v.as_str()).unwrap_or("");
+    if typ != "pay" {
+        return Err(anyhow!("type is not payment"));
+    }
+    let target = payment.get("userId").and_then(|v| v.as_str()).unwrap_or("");
+    if target != receiver.id {
+        return Err(anyhow!("you are not target"));
+    }
+    selected_step.insert("consumed".to_string(), Value::Bool(true));
+    selected_step.insert("consumedAt".to_string(), json!(now));
+    receiver.balance = receiver
+        .balance
+        .checked_add(input.amount)
+        .ok_or_else(|| anyhow!("receiver balance overflow"))?;
+    (CreaturePorts { trx }).store_account(&receiver)?;
+    let mut remaining_amount: i64 = 0;
+    for (i, step_map) in parsed_steps.iter().enumerate() {
+        let consumed = step_map
+            .get("consumed")
+            .and_then(|v| v.as_bool())
+            .unwrap_or(false);
+        if !consumed {
+            remaining_amount = remaining_amount
+                .checked_add(parsed_amounts[i])
+                .ok_or_else(|| anyhow!("remaining lock amount overflow"))?;
+        }
+    }
+    if remaining_amount == 0 {
+        trx.del_json(
+            &format!("Json::Creature::{}", sender.id),
+            &format!("lockedTokens.{}", input.lock_id),
+        );
+    } else {
+        let total_amount = payment.get("amount").and_then(as_i64).unwrap_or(0);
+        if total_amount <= 0 {
+            return Err(anyhow!("invalid lock total amount"));
+        }
+        let steps_value: Value = Value::Array(
+            parsed_steps
+                .iter()
+                .map(|m| Value::Object(m.clone()))
+                .collect(),
+        );
+        payment.insert("steps".to_string(), steps_value);
+        payment.insert("remainingAmount".to_string(), json!(remaining_amount));
+        payment.insert(
+            "consumedAmount".to_string(),
+            json!(total_amount - remaining_amount),
+        );
+        trx.put_json(
+            &format!("Json::Creature::{}", sender.id),
+            &format!("lockedTokens.{}", input.lock_id),
+            &Value::Object(payment),
+            true,
+        )?;
+    }
+    Ok(json!({
+        "success": true,
+        "step": idx,
+        "remainingAmount": remaining_amount,
+    }))
 }

@@ -188,7 +188,7 @@ def logical_accesses() -> tuple[list[dict[str, str]], list[dict[str, str]]]:
 
 def core_objects() -> list[dict[str, Any]]:
     rows: list[dict[str, Any]] = []
-    model_dir = ROOT / "apps/aseman-node/src/shell/api/model"
+    model_dir = ROOT / "apps/aseman-node/src/api/model"
     for path in sorted(model_dir.glob("*.rs")):
         value = production_source(path)
         for found in re.finditer(
@@ -276,7 +276,7 @@ def hashgraph_families() -> list[dict[str, str]]:
 
 
 def cluster_store() -> dict[str, Any]:
-    path = ROOT / "apps/aseman-node/src/drivers/cluster/store.rs"
+    path = ROOT / "apps/aseman-node/src/adapters/cluster/store.rs"
     value = production_source(path)
     cfs = re.findall(r'ColumnFamilyDescriptor::new\("([^\"]+)"', value)
     metadata = sorted(set(re.findall(r'(?:get_meta|put_meta)\("([^\"]+)"', value)))
@@ -309,27 +309,27 @@ def inventory() -> dict[str, Any]:
             {
                 "family": "object-column",
                 "pattern": "obj::{type}::{object_id}::{column}",
-                "source": "apps/aseman-node/src/core/actor/model/trx.rs:247",
+                "source": "apps/aseman-node/src/legacy/trx.rs:247",
             },
             {
                 "family": "secondary-index",
                 "pattern": "index::{type}::{from_column}::{to_column}::{from_value}",
-                "source": "apps/aseman-node/src/core/actor/model/trx.rs:264",
+                "source": "apps/aseman-node/src/legacy/trx.rs:264",
             },
             {
                 "family": "link",
                 "pattern": "link::{logical_key}",
-                "source": "apps/aseman-node/src/core/actor/model/trx.rs:325",
+                "source": "apps/aseman-node/src/legacy/trx.rs:325",
             },
             {
                 "family": "json-document-and-leaves",
                 "pattern": "json::{logical_key}::{path}[.{descendant_path}]",
-                "source": "apps/aseman-node/src/core/actor/model/trx.rs:430",
+                "source": "apps/aseman-node/src/legacy/trx.rs:430",
             },
             {
                 "family": "raw",
                 "pattern": "caller-defined byte/string key",
-                "source": "apps/aseman-node/src/core/actor/model/trx.rs:339",
+                "source": "apps/aseman-node/src/legacy/trx.rs:339",
             },
         ],
         "core_objects": objects,

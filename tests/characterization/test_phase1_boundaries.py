@@ -3,7 +3,7 @@ import unittest
 
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
-CLIENT = ROOT / "apps/aseman-node/src/drivers/network/client"
+CLIENT = ROOT / "apps/aseman-node/src/adapters/network/client"
 
 
 class PhaseOneBoundaryTests(unittest.TestCase):
@@ -45,8 +45,8 @@ class PhaseOneBoundaryTests(unittest.TestCase):
             self.assertNotIn("env::var_os(", source, str(path.relative_to(ROOT)))
 
     def test_oversized_creature_owner_is_partitioned_by_action_family(self) -> None:
-        parent_path = ROOT / "apps/aseman-node/src/shell/api/actions/creature.rs"
-        finance_path = ROOT / "apps/aseman-node/src/shell/api/actions/creature/finance.rs"
+        parent_path = ROOT / "apps/aseman-node/src/api/actions/creature.rs"
+        finance_path = ROOT / "apps/aseman-node/src/api/actions/creature/finance.rs"
         parent = parent_path.read_text()
         finance = finance_path.read_text()
 

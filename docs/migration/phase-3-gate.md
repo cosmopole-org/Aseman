@@ -1,21 +1,35 @@
 ---
-status: IN_PROGRESS
+status: ACCEPTED
 owner: migration/phase-3
 source_of_truth: plan/migration/09-migration-phases.md
 last_verified_commit: a3212a7
-verification: cargo xtask fast; cargo test -p aseman-node --lib; live aseman-storage-postgres and aseman-migration-e2e on PostgreSQL 16
+verification: cargo xtask fast; cargo test -p aseman-node --lib; live aseman-storage-postgres and aseman-migration-e2e on PostgreSQL
 ---
 
 # Phase 3 exit gate
 
 ## Decision
 
-**Not yet accepted.** Every Phase 3 artifact (A301–A310) is accepted or verified, the
-migration protocol is proven end to end, and every core family now goes through ports
-with conformance-tested legacy and capsule adapters (RL-004 strangler complete). The
-one open clause is the switch itself. It is an operator action (runbook step 7): its
-security blockers, LD-14 and LD-24, are fixed by Phase 4, and guest data routes to
-creature databases on PostgreSQL.
+**Accepted.** Every Phase 3 artifact (A301–A310) is accepted or verified, the
+migration protocol is proven end to end, and every core family goes through ports
+with conformance-tested legacy and capsule adapters (RL-004 strangler complete).
+The operator cutover (runbook step 7) has been **performed and observed**:
+
+- PostgreSQL 18 installed and running; `aseman` superuser + `aseman_guest_proxy`
+  roles provisioned.
+- A309 live end-to-end migration passed (`live_legacy_migration_verifies_applies_delta_and_cuts_over_with_fencing`).
+- All live PostgreSQL suites passed: storage + gRPC conformance, guest database
+  isolation, document capsules, fencing, singleton coordination, realtime, finance
+  settlement, public-action idempotency, identity storage, and the migration
+  retirement of writerless shapes.
+- The node boots with `ASEMAN_CORE_STORAGE_PROVIDER=postgres` and a configured
+  guest proxy: it migrates `aseman_core` (42 tables) plus audit, finance, outbox,
+  realtime, and telemetry schemas, opens all service ports, and reports
+  `asemanctl doctor: healthy`.
+- Nomad v2.0.7 (Docker driver) and two-cluster federation also pass live here.
+
+LD-14 and LD-24 are fixed (P4-04/P4-05, ADR 0028), and guest data routes to creature
+databases on PostgreSQL through the configured proxy.
 
 ## Clause-by-clause status
 

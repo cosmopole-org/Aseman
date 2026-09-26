@@ -2,7 +2,7 @@
 //!
 //! Listening side of the federation channel — accept TLS TCP connections,
 //! parse `OriginPacket`s from the framed wire format, and dispatch them to
-//! a `FedApi` bridge supplied by [`crate::drivers::network::federation::FedNet`].
+//! a `FedApi` bridge supplied by [`crate::adapters::network::federation::FedNet`].
 //!
 //! ## Concurrency model — MPSC outbound queue
 //!
@@ -39,9 +39,9 @@ use std::time::Duration;
 use anyhow::Result;
 use dashmap::DashMap;
 
+use crate::api::utils::crypto::secure_unique_string;
 use crate::models::core::ICore;
 use crate::models::packet::OriginPacket;
-use crate::shell::utils::crypto::secure_unique_string;
 use aseman_network_legacy::TlsConfig;
 use aseman_network_legacy::{
     TlsStream, accept, bind_tls, decode_request_body, decode_response_body, decode_update_body,
@@ -174,14 +174,14 @@ impl Tcp {
         tls_config: Option<&TlsConfig>,
     ) -> Option<Arc<Socket>> {
         let mut cfg = tls_config.cloned();
-        if let Some(ref mut c) = cfg {
-            if c.server_name.is_empty() {
-                c.server_name = dest_address
-                    .split(':')
-                    .next()
-                    .unwrap_or(dest_address)
-                    .to_string();
-            }
+        if let Some(ref mut c) = cfg
+            && c.server_name.is_empty()
+        {
+            c.server_name = dest_address
+                .split(':')
+                .next()
+                .unwrap_or(dest_address)
+                .to_string();
         }
 
         let mut delay = Duration::from_millis(150);

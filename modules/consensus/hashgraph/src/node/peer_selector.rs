@@ -21,7 +21,6 @@ struct PeerSelectorItem {
 /// Selects the next peer at random, tracking each peer's connection status.
 pub struct RandomPeerSelector {
     peers: Arc<PeerSet>,
-    self_id: u32,
     selectable_peers_map: HashMap<u32, PeerSelectorItem>,
     selectable_peers_slice: Vec<u32>,
     last: u32,
@@ -49,7 +48,6 @@ impl RandomPeerSelector {
 
         RandomPeerSelector {
             peers: peer_set,
-            self_id,
             selectable_peers_map,
             selectable_peers_slice,
             last: 0,

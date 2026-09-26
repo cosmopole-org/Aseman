@@ -24,17 +24,20 @@ use std::sync::{Arc, Mutex};
 use std::thread;
 use std::time::{Duration, Instant};
 
+/// `user_id -> {socket.id -> socket}` for fan-out of signals.
+type UserSocketMap = Arc<DashMap<String, Arc<DashMap<String, Arc<Socket>>>>>;
+
 use dashmap::DashMap;
 use serde_json::Value;
 
-use crate::drivers::gateway_subs;
-use crate::drivers::network::client::session::{self, SessionSocket, SessionTransport};
+use crate::adapters::gateway_subs;
+use crate::adapters::network::client::session::{self, SessionSocket, SessionTransport};
+use crate::api::utils::crypto::secure_unique_string;
 use crate::models::core::ICore;
-use crate::models::ports::network::tcp::ITcp;
-use crate::models::ports::ratelimit::Protocol;
-use crate::models::ports::signaler::Listener;
+use crate::models::ports::ITcp;
+use crate::models::ports::Listener;
+use crate::models::ports::Protocol;
 use crate::models::transaction::ITrx;
-use crate::shell::utils::crypto::secure_unique_string;
 use aseman_network_legacy::TlsConfig;
 use aseman_network_legacy::{
     TlsStream, accept, bind_tls, encode_client_response_body, encode_client_update_body,
@@ -164,7 +167,7 @@ pub struct Tcp {
     /// disconnect would tear down the survivor's listener). We track every live
     /// socket per user (`user_id -> {socket.id -> socket}`) and fan signal
     /// results out to all of them; clients de-dupe by correlationId.
-    user_sockets: Arc<DashMap<String, Arc<DashMap<String, Arc<Socket>>>>>,
+    user_sockets: UserSocketMap,
 }
 
 impl Tcp {
@@ -216,10 +219,8 @@ impl Tcp {
                     }),
                 });
             }
-            "/gateway/unsubscribe" => {
-                if result["gatewayUnsubscribe"].as_bool().unwrap_or(false) {
-                    gateway_subs::unsubscribe(&socket.id);
-                }
+            "/gateway/unsubscribe" if result["gatewayUnsubscribe"].as_bool().unwrap_or(false) => {
+                gateway_subs::unsubscribe(&socket.id);
             }
             _ => {}
         }
@@ -263,7 +264,7 @@ impl Tcp {
             true,
             Box::new(move |trx: &dyn ITrx| {
                 // Membership goes through the store port (legacy adapter until cutover).
-                let ports = crate::shell::api::model::store_ports::MembershipPorts { trx };
+                let ports = crate::api::model::store_ports::MembershipPorts { trx };
                 if let Ok(ids) = aseman_ports::StoreAccess::stores_of(&ports, &member) {
                     *store_clone.lock().unwrap() = ids;
                 }

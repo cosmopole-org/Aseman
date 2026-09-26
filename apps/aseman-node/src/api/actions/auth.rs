@@ -7,17 +7,17 @@ use aseman_application::{GetServerPeers, GetServerPublicKey};
 use aseman_ports::{PeerDirectoryPort, PortResult, ServerIdentityPort};
 use serde_json::{Value, json};
 
-use crate::core::actor::model::secured::guard::Guard;
+use crate::api::packets::auth::{GetServerKeyInput, GetServersMapInput};
+use crate::api::packets::auth::{GetServerKeyOutput, GetServersMapOutput};
+use crate::legacy::actor::Guard;
 use crate::models::action::ISecureAction;
 use crate::models::core::ICore;
 use crate::models::state::IState;
-use crate::shell::api::packets::auth::{GetServerKeyInput, GetServersMapInput};
-use crate::shell::api::packets::auth::{GetServerKeyOutput, GetServersMapOutput};
 
 use super::util::build_secure_action;
 
-struct LegacyAuthPorts {
-    app: Arc<dyn ICore>,
+pub(crate) struct LegacyAuthPorts {
+    pub(crate) app: Arc<dyn ICore>,
 }
 
 impl ServerIdentityPort for LegacyAuthPorts {

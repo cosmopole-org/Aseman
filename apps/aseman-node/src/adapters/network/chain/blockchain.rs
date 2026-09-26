@@ -18,10 +18,11 @@ use dashmap::DashMap;
 
 use uuid::Uuid;
 
+use crate::api::model::{Chain, ChainShard};
+use crate::legacy::globe::ChainPacketOp;
 use crate::models::core::ICore;
-use crate::models::ports::network::chain::{IChain, PipelineFn};
+use crate::models::ports::{IChain, PipelineFn};
 use crate::models::transaction::ITrx;
-use crate::shell::api::model::{Chain, ChainShard, Creature, Program};
 use aseman_consensus_hashgraph::babble::{Babble, load_key_for_config};
 use aseman_consensus_hashgraph::config::Config;
 use aseman_consensus_hashgraph::hashgraph::{Block, InternalTransactionReceipt};
@@ -36,6 +37,13 @@ use super::shard_bootstrap::{self, Bootstrap, PeerMode};
 /// Extract the host portion of a peer's `net_addr` (`host:port` → `host`).
 fn peer_host(net_addr: &str) -> String {
     net_addr.split(':').next().unwrap_or(net_addr).to_string()
+}
+
+/// Submission envelope routed onto the chain dispatch channel (chain-module-owned).
+#[derive(Clone)]
+pub(crate) struct ChainSubmission {
+    pub(crate) chain_id: String,
+    pub(crate) op: crate::legacy::globe::ChainPacketOp,
 }
 
 /// A work chain: one main shard + many sub-shards.
@@ -61,8 +69,8 @@ struct ShardChain {
     ///   * the consensus run loop holds the `shard_ledger` mutex for the
     ///     engine's whole lifetime (`engine.run()` blocks until shutdown), and
     ///   * `Core::insert_event_and_run_consensus` holds the `core` mutex.
-    /// Re-locking either from `peers()` self-deadlocks the node (and, transi-
-    /// tively, every thread needing consensus / the core / the TCP API).
+    ///     Re-locking either from `peers()` self-deadlocks the node (and, transi-
+    ///     tively, every thread needing consensus / the core / the TCP API).
     ///
     /// The consensus `Core` updates this cache on every `set_peers`, so it
     /// tracks dynamic membership changes (joins/leaves) rather than freezing at
@@ -78,6 +86,18 @@ pub struct Blockchain {
     pipeline: Mutex<Option<Arc<PipelineFn>>>,
     trans: Mutex<Option<Arc<dyn Transport>>>,
     storage_root: String,
+    /// Outbound submission queue: chain packets are framed and pushed onto a
+    /// shard engine by the internal drain thread (RL-011, chain-module-owned).
+    chain_tx: crossbeam_channel::Sender<ChainSubmission>,
+    /// RL-011: the consensus provider whose application proxy owns governance
+    /// (staking/election) and finance on the main chain. Request/response/message
+    /// transactions are forwarded to the registered pipeline; everything else is
+    /// consumed by the provider.
+    consensus: Option<Arc<aseman_consensus_hashgraph::provider::HashgraphConsensusProvider>>,
+    /// Chain base-request response callbacks (chain-module-owned, RL-011).
+    callbacks: Mutex<HashMap<String, Arc<crate::models::chain::ChainCallback>>>,
+    /// Typed-message reply callbacks (chain-module-owned, RL-011).
+    message_callbacks: Mutex<HashMap<String, Arc<crate::models::chain::MessageCallback>>>,
     // Weak handle back to the original Arc<Blockchain>. WorkChains downgrade
     // from this rather than from the short-lived shim Arc produced by
     // self_clone(), which would otherwise be dropped immediately and leave
@@ -88,15 +108,93 @@ pub struct Blockchain {
 impl Blockchain {
     /// `NewChain(core, storageRoot)`.
     pub fn new(app: Arc<dyn ICore>, storage_root: &str) -> Arc<Blockchain> {
+        Self::with_consensus(app, storage_root, None)
+    }
+
+    /// `NewChain` with the RL-011 consensus provider installed as the main
+    /// chain's application handler.
+    pub fn with_consensus(
+        app: Arc<dyn ICore>,
+        storage_root: &str,
+        consensus: Option<Arc<aseman_consensus_hashgraph::provider::HashgraphConsensusProvider>>,
+    ) -> Arc<Blockchain> {
         let storage_root = storage_root.to_string();
-        Arc::new_cyclic(|weak| Blockchain {
+        let (chain_tx, chain_rx) = crossbeam_channel::unbounded::<ChainSubmission>();
+        let chain = Arc::new_cyclic(|weak| Blockchain {
             app,
             chains: Arc::new(DashMap::new()),
             pipeline: Mutex::new(None),
             trans: Mutex::new(None),
             storage_root,
+            chain_tx,
+            consensus,
+            callbacks: Mutex::new(HashMap::new()),
+            message_callbacks: Mutex::new(HashMap::new()),
             weak_self: weak.clone(),
-        })
+        });
+        chain.spawn_submission_drain(chain_rx);
+        chain
+    }
+
+    /// The chain module's own submission drain: frame each queued packet as
+    /// `typ::payload` and push it onto the target shard engine.
+    fn spawn_submission_drain(&self, chain_rx: crossbeam_channel::Receiver<ChainSubmission>) {
+        let me = self_clone(self);
+        std::thread::spawn(move || {
+            while let Ok(envelope) = chain_rx.recv() {
+                let chain_id = if envelope.chain_id.is_empty() {
+                    "main".to_string()
+                } else {
+                    envelope.chain_id.clone()
+                };
+                let (typ, payload) = match &envelope.op {
+                    ChainPacketOp::BaseRequest(req) => (
+                        "base".to_string(),
+                        serde_json::to_vec(req).unwrap_or_default(),
+                    ),
+                    ChainPacketOp::Message(m) => (
+                        "message".to_string(),
+                        serde_json::to_vec(m).unwrap_or_default(),
+                    ),
+                    ChainPacketOp::Response(r) => (
+                        "response".to_string(),
+                        serde_json::to_vec(r).unwrap_or_default(),
+                    ),
+                };
+                let machine_id = match &envelope.op {
+                    ChainPacketOp::Message(m) => me
+                        .chain_message_machine_ids(m)
+                        .into_keys()
+                        .next()
+                        .unwrap_or_default(),
+                    _ => String::new(),
+                };
+                let mut framed = Vec::new();
+                framed.extend_from_slice(typ.as_bytes());
+                framed.extend_from_slice(b"::");
+                framed.extend_from_slice(&payload);
+                me.submit_trx(&chain_id, &machine_id, &typ, framed);
+            }
+        });
+    }
+
+    /// The machine ids a chain message targets on this node.
+    fn chain_message_machine_ids(
+        &self,
+        packet: &crate::models::chain::ChainMessage,
+    ) -> HashMap<String, bool> {
+        let mut machine_ids = HashMap::new();
+        if let Some(map) = packet.recievers.get(&self.app.id()) {
+            for key in map.keys() {
+                machine_ids.insert(key.clone(), true);
+            }
+        }
+        if let Some(pay) = &packet.pay {
+            for machine_id in &pay.machine_ids {
+                machine_ids.insert(machine_id.clone(), true);
+            }
+        }
+        machine_ids
     }
 
     fn pipeline_callback(&self) -> Option<&'static PipelineFn> {
@@ -157,11 +255,28 @@ impl Blockchain {
         if let Some(existing) = wchain.shard_chains.get(chain_id) {
             return existing.value().clone();
         }
-        let handler: Arc<dyn ProxyHandler> = Arc::new(HgHandler {
-            chain: wchain.clone(),
-            state: Mutex::new(NodeState::default()),
-        });
-        let proxy = Arc::new(InmemProxy::new(handler, None));
+        // RL-011: the main chain's application handler is the consensus
+        // provider's proxy, which owns staking/election and finance from
+        // committed blocks and forwards only request/response/message to the
+        // registered pipeline. Sub-shards keep the legacy HgHandler.
+        let proxy = if wchain.id == "main" && chain_id == "shard-main" {
+            match self.consensus.as_ref() {
+                Some(provider) => provider.proxy(),
+                None => {
+                    let handler: Arc<dyn ProxyHandler> = Arc::new(HgHandler {
+                        chain: wchain.clone(),
+                        state: Mutex::new(NodeState::default()),
+                    });
+                    Arc::new(InmemProxy::new(handler, None))
+                }
+            }
+        } else {
+            let handler: Arc<dyn ProxyHandler> = Arc::new(HgHandler {
+                chain: wchain.clone(),
+                state: Mutex::new(NodeState::default()),
+            });
+            Arc::new(InmemProxy::new(handler, None))
+        };
 
         let data_dir = format!("{}/chains/{}/{}", self.storage_root, wchain.id, chain_id);
         let _ = fs::create_dir_all(&data_dir);
@@ -380,12 +495,12 @@ impl IChain for Blockchain {
             self.app.modify_state(
                 true,
                 Box::new(move |trx: &dyn ITrx| {
-                    let vm = (crate::shell::api::model::program_ports::ProgramPorts { trx })
+                    let vm = (crate::api::model::program_ports::ProgramPorts { trx })
                         .program_or_empty(&machine_id_owned.clone());
                     if vm.machine_id.is_empty() {
                         return Ok(());
                     }
-                    let app = (crate::shell::api::model::creature_ports::CreaturePorts { trx })
+                    let app = (crate::api::model::creature_ports::CreaturePorts { trx })
                         .creature_or_empty(&vm.machine_id.clone());
                     if app.chain_id == chain_id_owned && !app.subchain_id.is_empty() {
                         *target_clone.lock().unwrap() = app.subchain_id.clone();
@@ -405,8 +520,32 @@ impl IChain for Blockchain {
         let _ = target.value().shard_proxy.submit_tx(&payload);
     }
 
+    fn submit_chain_op(&self, chain_id: &str, op: ChainPacketOp) {
+        let _ = self.chain_tx.send(ChainSubmission {
+            chain_id: chain_id.to_string(),
+            op,
+        });
+    }
+
+    fn consensus_provider(&self) -> Option<Arc<dyn aseman_ports::consensus::ConsensusProvider>> {
+        self.consensus.as_ref().map(|provider| {
+            Arc::clone(provider) as Arc<dyn aseman_ports::consensus::ConsensusProvider>
+        })
+    }
+
     fn register_pipeline(&self, pipeline: PipelineFn) {
-        *self.pipeline.lock().unwrap() = Some(Arc::new(pipeline));
+        let pipeline = Arc::new(pipeline);
+        *self.pipeline.lock().unwrap() = Some(Arc::clone(&pipeline));
+        // RL-011: committed request/response/message transactions reach the
+        // node through the consensus provider's forwarder (the provider owns
+        // governance and finance internally).
+        if let Some(provider) = self.consensus.as_ref() {
+            let fwd = Arc::clone(&pipeline);
+            provider.set_chain_forwarder(Arc::new(move |txs: Vec<Vec<u8>>| -> Vec<String> {
+                let cb: Box<dyn Fn(Vec<u8>) + Send + Sync> = Box::new(|_| {});
+                fwd(txs, cb)
+            }));
+        }
     }
 
     fn notify_new_machine_created(&self, _chain_id: &str, _machine_id: &str) {
@@ -474,8 +613,8 @@ impl IChain for Blockchain {
         //
         // Bind to a local so the `MutexGuard` temporary is dropped before the
         // DashMap `Ref`s (`main_chain`/`main_shard`) at end of scope.
-        let hosts = main_shard.peer_hosts.lock().unwrap().clone();
-        hosts
+
+        main_shard.peer_hosts.lock().unwrap().clone()
     }
 
     fn user_owns_origin(&self, _user_id: &str, _origin: &str) -> bool {
@@ -499,6 +638,54 @@ impl IChain for Blockchain {
             }
         }
     }
+
+    fn register_chain_callback(
+        &self,
+        callback_id: &str,
+        callback: crate::models::chain::ChainCallback,
+    ) {
+        self.callbacks
+            .lock()
+            .unwrap()
+            .insert(callback_id.to_string(), Arc::new(callback));
+    }
+
+    fn park_chain_callback(&self, callback_id: &str) {
+        let mut cbs = self.callbacks.lock().unwrap();
+        cbs.entry(callback_id.to_string()).or_insert_with(|| {
+            Arc::new(crate::models::chain::ChainCallback {
+                fn_: Arc::new(|_, _, _| {}),
+                executors: HashMap::new(),
+                responses: HashMap::new(),
+                tag: String::new(),
+            })
+        });
+    }
+
+    fn take_chain_callback(
+        &self,
+        callback_id: &str,
+    ) -> Option<Arc<crate::models::chain::ChainCallback>> {
+        self.callbacks.lock().unwrap().remove(callback_id)
+    }
+
+    fn register_message_callback(
+        &self,
+        callback_id: &str,
+        callback: crate::models::chain::MessageCallback,
+    ) {
+        self.message_callbacks
+            .lock()
+            .unwrap()
+            .insert(callback_id.to_string(), Arc::new(callback));
+    }
+
+    fn take_message_callback(
+        &self,
+        callback_id: &str,
+    ) -> Option<Arc<crate::models::chain::MessageCallback>> {
+        self.message_callbacks.lock().unwrap().remove(callback_id)
+    }
 }
 
 /// Internal "fake `Arc<Self>`" used by the IChain trait methods that need an
@@ -518,6 +705,10 @@ fn self_clone(b: &Blockchain) -> Arc<Blockchain> {
         pipeline: Mutex::new(None),
         trans: Mutex::new(b.trans.lock().unwrap().clone()),
         storage_root: b.storage_root.clone(),
+        chain_tx: b.chain_tx.clone(),
+        consensus: b.consensus.clone(),
+        callbacks: Mutex::new(HashMap::new()),
+        message_callbacks: Mutex::new(HashMap::new()),
         weak_self: b.weak_self.clone(),
     })
 }

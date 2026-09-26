@@ -158,8 +158,8 @@ impl StorageHttp {
 
         let id = Uuid::new_v4().to_string();
         let ctype = sanitize_content_type(content_type);
-        let blobs = crate::drivers::blob_store::node_blobs(&*self.app.tools().storage());
-        let folder = crate::drivers::blob_store::PUBLIC_FILES;
+        let blobs = crate::adapters::blob_store::node_blobs(&*self.app.tools().storage());
+        let folder = crate::adapters::blob_store::PUBLIC_FILES;
         if let Err(e) = blobs.put_blob(&[folder, "/", &id].concat(), &data, &ctype, true) {
             write_response(
                 stream,
@@ -195,8 +195,8 @@ impl StorageHttp {
             );
             return;
         }
-        let blobs = crate::drivers::blob_store::node_blobs(&*self.app.tools().storage());
-        let folder = crate::drivers::blob_store::PUBLIC_FILES;
+        let blobs = crate::adapters::blob_store::node_blobs(&*self.app.tools().storage());
+        let folder = crate::adapters::blob_store::PUBLIC_FILES;
         let bytes = match blobs.blob(&[folder, "/", id].concat()) {
             Ok(Some(bytes)) => bytes,
             _ => {

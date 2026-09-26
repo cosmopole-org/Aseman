@@ -1,4 +1,4 @@
-use crate::drivers::vmm::prelude::*;
+use crate::adapters::vmm::prelude::*;
 
 /// The keyed host-API packets these host calls used to post went to the Go-era
 /// callback protocol, which carries no caller identity; since LD-14 it served none

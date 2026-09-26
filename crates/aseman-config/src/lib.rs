@@ -415,6 +415,38 @@ pub fn consensus_root_node() -> Option<&'static str> {
         .and_then(|config| config.core.root_node.as_deref())
 }
 
+/// Provider-specific consensus properties read from `ASEMAN_CONSENSUS_*`
+/// environment variables.
+///
+/// The core never couples to any one consensus provider's feature set. It reads
+/// environment variables as generic `key = value` pairs and forwards them through
+/// `ConsensusProvider::set`; each provider interprets the keys it understands and
+/// refuses the rest. The mapping below is an explicit allowlist: every variable is
+/// renamed to the lower-case dotted key this backend documents, so a provider with
+/// a different vocabulary simply refuses keys it does not know and the composition
+/// still works. A Hashgraph backend understands `staking.*` and `election.*` keys.
+#[must_use]
+pub fn consensus_env_properties() -> Vec<(String, String)> {
+    const PREFIX: &str = "ASEMAN_CONSENSUS_";
+    let mut properties = Vec::new();
+    for (env_key, value) in std::env::vars() {
+        let Some(rest) = env_key.strip_prefix(PREFIX) else {
+            continue;
+        };
+        let key = match rest {
+            "STAKING_MIN_VALIDATOR_STAKE" => "staking.min_validator_stake",
+            "STAKING_MAX_VALIDATOR_STAKE" => "staking.max_validator_stake",
+            "STAKING_UNBONDING_SECONDS" => "staking.unbonding_seconds",
+            "ELECTION_MAX_VALIDATOR_COUNT" => "election.max_validator_count",
+            "ELECTION_COMMIT_SECONDS" => "election.commit_seconds",
+            "ELECTION_REVEAL_SECONDS" => "election.reveal_seconds",
+            _ => continue,
+        };
+        properties.push((key.to_string(), value));
+    }
+    properties
+}
+
 /// Process home lookup for executables that do not load the full node configuration.
 pub fn process_home_dir() -> Option<String> {
     std::env::var("HOME")

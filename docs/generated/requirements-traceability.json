@@ -119,10 +119,10 @@
       "design_authority": "`03`",
       "id": "R10",
       "phase_status": {
-        "3": "PARTIAL"
+        "3": "MET"
       },
       "requirement": "PostgreSQL default and database independence",
-      "status": "PARTIAL"
+      "status": "MET"
     },
     {
       "acceptance_authority": "`10` Capsule storage",
@@ -130,10 +130,10 @@
       "design_authority": "`03`",
       "id": "R11",
       "phase_status": {
-        "3": "PARTIAL"
+        "3": "MET"
       },
       "requirement": "Universal capsule persistence for every storage class",
-      "status": "PARTIAL"
+      "status": "MET"
     },
     {
       "acceptance_authority": "`10` Capsule storage",
@@ -141,10 +141,10 @@
       "design_authority": "`03`",
       "id": "R12",
       "phase_status": {
-        "3": "PARTIAL"
+        "3": "MET"
       },
       "requirement": "Separate native SQL table/collection per core entity kind",
-      "status": "PARTIAL"
+      "status": "MET"
     },
     {
       "acceptance_authority": "`10` Capsule/Security",
@@ -152,11 +152,11 @@
       "design_authority": "`03`, `05`, ADR 0001",
       "id": "R13",
       "phase_status": {
-        "3": "PARTIAL",
+        "3": "MET",
         "4": "MET"
       },
       "requirement": "One isolated guest database/namespace and role per creature, multi-table/collection control, shared within creature and isolated across creatures",
-      "status": "PARTIAL"
+      "status": "MET"
     },
     {
       "acceptance_authority": "`10` Security",
@@ -231,7 +231,7 @@
       "id": "R20",
       "phase_status": {
         "2": "MET",
-        "3": "PARTIAL",
+        "3": "MET",
         "4": "MET",
         "5": "MET",
         "6": "MET",
@@ -252,7 +252,7 @@
         "1": "MET",
         "10": "PARTIAL",
         "2": "MET",
-        "3": "PARTIAL",
+        "3": "MET",
         "4": "MET",
         "5": "MET",
         "6": "MET",
@@ -273,7 +273,7 @@
         "1": "MET",
         "10": "PARTIAL",
         "2": "MET",
-        "3": "PARTIAL",
+        "3": "MET",
         "4": "MET",
         "5": "MET",
         "6": "MET",
@@ -306,7 +306,7 @@
         "1": "MET",
         "10": "PARTIAL",
         "2": "MET",
-        "3": "PARTIAL",
+        "3": "MET",
         "4": "MET",
         "5": "MET",
         "6": "MET",
@@ -331,9 +331,9 @@
     }
   ],
   "summary": {
-    "met": 12,
+    "met": 16,
     "open": 0,
-    "partial": 13,
+    "partial": 9,
     "requirements": 25,
     "violations": 0
   },

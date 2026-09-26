@@ -964,7 +964,7 @@ fn chain_stats_lines(t: Option<&TelemetrySnapshot>) -> Vec<String> {
     // fields — the same data the Babble chain `service.go` would have
     // returned from `/stats`, `/peers`, `/validators`, `/history`. The
     // node's telemetry collector already proxies the live chain endpoints
-    // into these fields (see `apps/aseman-node/src/telemetry/server.rs::collect`).
+    // into these fields (see `apps/aseman-node/src/observability/server.rs::collect`).
     let Some(t) = t else {
         return vec!["(no chain data)".to_string()];
     };

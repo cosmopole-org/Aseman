@@ -99,10 +99,10 @@ impl Creature {
         if let Some(v) = m.get("ownerId") {
             d.owner_id = String::from_utf8_lossy(v).into_owned();
         }
-        if let Some(v) = m.get("balance") {
-            if v.len() == 8 {
-                d.balance = i64::from_le_bytes(v.as_slice().try_into().unwrap());
-            }
+        if let Some(v) = m.get("balance")
+            && v.len() == 8
+        {
+            d.balance = i64::from_le_bytes(v.as_slice().try_into().unwrap());
         }
     }
 

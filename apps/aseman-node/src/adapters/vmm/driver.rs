@@ -10,13 +10,13 @@ use std::time::{SystemTime, UNIX_EPOCH};
 
 use serde_json::{Value, json};
 
-use crate::drivers::vmm::globals::ResourceLockRegistry;
+use crate::adapters::vmm::globals::ResourceLockRegistry;
+use crate::api::model::{Creature, Store};
+use crate::api::packets::stores;
 use crate::models::core::ICore;
-use crate::models::ports::signaler::Listener;
-use crate::models::ports::workloads::IWorkloads;
+use crate::models::ports::IWorkloads;
+use crate::models::ports::Listener;
 use crate::models::transaction::ITrx;
-use crate::shell::api::model::{Creature, Store};
-use crate::shell::api::packets::stores;
 
 pub struct NodeWorkloads {
     pub(super) app: Arc<dyn ICore>,
@@ -25,15 +25,15 @@ pub struct NodeWorkloads {
     /// `resource_id` for the life of the node.
     pub(crate) resource_locks: ResourceLockRegistry,
     /// The HTTP ingress server, owned here and reached through `tools().workloads()`.
-    pub(crate) http_ingress: Arc<crate::drivers::vmm::network::ingress::VmHttpIngress>,
+    pub(crate) http_ingress: Arc<crate::adapters::vmm::network::ingress::VmHttpIngress>,
 }
 
 impl NodeWorkloads {
     pub fn new(app: Arc<dyn ICore>) -> Arc<NodeWorkloads> {
         // Publish the core handle so stateless host-call handlers can reach the
         // signaler and storage tools.
-        crate::drivers::vmm::globals::set_global_app(app.clone());
-        let http_ingress = crate::drivers::vmm::network::ingress::VmHttpIngress::new(app.clone());
+        crate::adapters::vmm::globals::set_global_app(app.clone());
+        let http_ingress = crate::adapters::vmm::network::ingress::VmHttpIngress::new(app.clone());
         Arc::new(NodeWorkloads {
             app,
             resource_locks: ResourceLockRegistry::new(),
@@ -52,38 +52,36 @@ pub(crate) fn entity_runtime(app: &Arc<dyn ICore>, program: &str, entity: &str) 
     app.modify_state(
         true,
         Box::new(move |trx: &dyn ITrx| {
-            let record = (crate::shell::api::model::program_ports::ProgramPorts { trx })
-                .program_or_empty(&program);
+            let record =
+                (crate::api::model::program_ports::ProgramPorts { trx }).program_or_empty(&program);
             let mut runtime = record.runtime.trim().to_lowercase();
-            if !entity.is_empty() {
-                if let Ok(Some(found)) = aseman_ports::EntityDirectory::entity(
-                    &crate::shell::api::model::entity_ports::EntityPorts {
+            if !entity.is_empty()
+                && let Ok(Some(found)) = aseman_ports::EntityDirectory::entity(
+                    &crate::api::model::entity_ports::EntityPorts {
                         trx,
-                        blobs: &crate::drivers::blob_store::StorageRootBlobStore::new(""),
+                        blobs: &crate::adapters::blob_store::StorageRootBlobStore::new(""),
                     },
                     &program,
                     &entity,
-                ) {
-                    if !found.entity_type.trim().is_empty() {
-                        runtime = found.entity_type.trim().to_lowercase();
-                    }
-                }
+                )
+                && !found.entity_type.trim().is_empty()
+            {
+                runtime = found.entity_type.trim().to_lowercase();
             }
             *out.lock()
                 .unwrap_or_else(std::sync::PoisonError::into_inner) = runtime;
             Ok(())
         }),
     );
-    let runtime = slot
-        .lock()
+
+    slot.lock()
         .unwrap_or_else(std::sync::PoisonError::into_inner)
-        .clone();
-    runtime
+        .clone()
 }
 
 /// Deliver one signal to an entity of `program` through the node's VMM.
 fn deliver(app: &Arc<dyn ICore>, program: &str, entity: &str, store_id: &str, packet: Value) {
-    let Some(remote) = crate::shell::workloads::remote() else {
+    let Some(remote) = crate::api::workloads::remote() else {
         eprintln!(
             "signal to {program}/{entity} dropped: this node has no VMM (ASEMAN_VMM_ENDPOINT)"
         );
@@ -143,11 +141,11 @@ impl IWorkloads for NodeWorkloads {
                     .unwrap_or_default();
                 // Proxied response: routed back to the original sender through the
                 // proxy entity instead of running anything here.
-                if crate::drivers::vmm::proxy::try_route_proxy_response(&app, &machine, &value) {
+                if crate::adapters::vmm::proxy::try_route_proxy_response(&app, &machine, &value) {
                     return;
                 }
                 // Proxy entity request: forwarded to its target.
-                if crate::drivers::vmm::proxy::try_forward_through_proxy(
+                if crate::adapters::vmm::proxy::try_forward_through_proxy(
                     &app, &machine, &entity_id, &value,
                 ) {
                     return;
@@ -169,10 +167,9 @@ impl IWorkloads for NodeWorkloads {
         self.app.modify_state(
             true,
             Box::new(move |trx: &dyn ITrx| {
-                *store_out.lock().unwrap() =
-                    (crate::shell::api::model::store_ports::StorePorts { trx })
-                        .store_or_empty(&store_id_owned);
-                let ports = crate::shell::api::model::store_ports::MembershipPorts { trx };
+                *store_out.lock().unwrap() = (crate::api::model::store_ports::StorePorts { trx })
+                    .store_or_empty(&store_id_owned);
+                let ports = crate::api::model::store_ports::MembershipPorts { trx };
                 *member_out.lock().unwrap() =
                     aseman_ports::StoreAccess::is_member(&ports, &store_id_owned, &machine_owned)
                         .unwrap_or(false);
@@ -204,7 +201,7 @@ impl IWorkloads for NodeWorkloads {
     }
 
     fn forward_http(&self, request: &Value) -> Value {
-        let Some(remote) = crate::shell::workloads::remote() else {
+        let Some(remote) = crate::api::workloads::remote() else {
             return json!({"ok": false, "status": 503, "error": "this node has no VMM"});
         };
         match remote.forward_http(request) {
@@ -217,7 +214,7 @@ impl IWorkloads for NodeWorkloads {
     }
 
     fn resolve_http_route(&self, username: &str, path: &str) -> Option<Value> {
-        use crate::drivers::vmm::http_route;
+        use crate::adapters::vmm::http_route;
 
         let username = username.trim();
         if username.is_empty() {
@@ -252,7 +249,7 @@ impl IWorkloads for NodeWorkloads {
                 // itself as the creature id. Routes are stored keyed by creature
                 // id, so both address forms converge on the same lookup.
                 let mut candidates: Vec<String> = Vec::new();
-                let creatures = crate::shell::api::model::creature_ports::CreaturePorts { trx };
+                let creatures = crate::api::model::creature_ports::CreaturePorts { trx };
                 if let Some(via_username) =
                     aseman_ports::CreatureDirectory::creature_id_by_username(
                         &creatures,
@@ -264,14 +261,13 @@ impl IWorkloads for NodeWorkloads {
                 }
                 // Bare username local part (e.g. `m-tool-github`) → creature id,
                 // via the alias link written when the route was registered.
-                let routes = crate::shell::api::model::gateway_ports::GatewayPorts { trx };
+                let routes = crate::api::model::gateway_ports::GatewayPorts { trx };
                 if let Some(via_alias) =
                     aseman_ports::GatewayRoutes::alias(&routes, &username_owned)
                         .map_err(|error| anyhow::anyhow!("{error}"))?
+                    && !candidates.iter().any(|c| c == &via_alias)
                 {
-                    if !candidates.iter().any(|c| c == &via_alias) {
-                        candidates.push(via_alias);
-                    }
+                    candidates.push(via_alias);
                 }
                 if !candidates.iter().any(|c| c == &username_owned) {
                     candidates.push(username_owned.clone());
@@ -302,8 +298,8 @@ impl IWorkloads for NodeWorkloads {
                 Ok(())
             }),
         );
-        let out = result_slot.lock().unwrap().take();
-        out
+
+        result_slot.lock().unwrap().take()
     }
 
     fn acquire_resource_lock(&self, resource_id: &str, owner_id: &str) -> Result<(), String> {

@@ -19,10 +19,10 @@ use rsa::sha2::Sha256;
 use rsa::signature::Verifier;
 use rsa::{RsaPrivateKey, RsaPublicKey};
 
+use crate::api::utils::crypto as cryp;
 use crate::models::core::ICore;
-use crate::models::ports::security::ISecurity;
+use crate::models::ports::ISecurity;
 use crate::models::transaction::ITrx;
-use crate::shell::utils::crypto as cryp;
 
 const KEYS_FOLDER: &str = "keys";
 
@@ -152,7 +152,7 @@ impl ISecurity for Security {
             true,
             Box::new(move |trx: &dyn ITrx| {
                 *slot_clone.lock().unwrap() = aseman_ports::CreatureDirectory::creature(
-                    &crate::shell::api::model::creature_ports::CreaturePorts { trx },
+                    &crate::api::model::creature_ports::CreaturePorts { trx },
                     &user_id_owned,
                 )
                 .ok()
@@ -223,24 +223,24 @@ impl ISecurity for Security {
             true,
             Box::new(move |trx: &dyn ITrx| {
                 // Membership goes through the store port (legacy adapter until cutover).
-                let ports = crate::shell::api::model::store_ports::MembershipPorts { trx };
+                let ports = crate::api::model::store_ports::MembershipPorts { trx };
                 let member = aseman_ports::StoreAccess::is_member(&ports, &store_id, &user_id)
                     .unwrap_or(false);
                 *found_clone.lock().unwrap() = member;
                 Ok(())
             }),
         );
-        let res = *found.lock().unwrap();
-        res
+
+        *found.lock().unwrap()
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::core::actor::model::trx::TrxWrapper;
-    use crate::core::actor::model::trx::tests::{StubCore, StubStorage};
-    use crate::models::ports::storage::IStorage;
+    use crate::legacy::trx::TrxWrapper;
+    use crate::legacy::trx::tests::{StubCore, StubStorage};
+    use crate::models::ports::IStorage;
     use rsa::pkcs8::{EncodePublicKey, LineEnding};
     use rsa::pss::BlindedSigningKey;
     use rsa::signature::{RandomizedSigner, SignatureEncoding};
@@ -254,7 +254,7 @@ mod tests {
         let key = RsaPrivateKey::new(&mut OsRng, 1024).unwrap();
         let trx = TrxWrapper::new(app.clone(), storage.clone(), false);
         aseman_ports::CreatureDirectory::create(
-            &crate::shell::api::model::creature_ports::CreaturePorts { trx: &*trx },
+            &crate::api::model::creature_ports::CreaturePorts { trx: &*trx },
             &aseman_domain::creature::CreatureRecord {
                 id: "5@global".to_owned(),
                 creature_type: "human".to_owned(),

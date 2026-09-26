@@ -8,8 +8,8 @@ use aseman_ports::{
     PortError, PortResult, ProgramAlarms, ProgramDirectory, ProgramMetadata, VmResourceStores,
 };
 
+use crate::api::model::Program;
 use crate::models::transaction::ITrx;
-use crate::shell::api::model::Program;
 
 /// The legacy `Program` object columns, as `Program::push` writes them.
 const PROGRAM_COLUMNS: [&str; 6] = ["|", "id", "machineId", "runtime", "path", "comment"];
@@ -392,7 +392,7 @@ pub(crate) struct ProgramPorts<'a> {
 /// Run `$call` on the adapter for the current provider, bound as `$ports`.
 macro_rules! route {
     ($self:ident, |$ports:ident| $call:expr) => {
-        match crate::shell::api::model::core_storage::current_unit() {
+        match crate::api::model::core_storage::current_unit() {
             Some(unit) => {
                 let $ports = aseman_capsule::program::CapsuleProgramPorts { repository: &*unit };
                 $call
@@ -476,9 +476,9 @@ impl VmResourceStores for ProgramPorts<'_> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::core::actor::model::trx::TrxWrapper;
-    use crate::core::actor::model::trx::tests::{StubCore, StubStorage};
-    use crate::models::ports::storage::IStorage;
+    use crate::legacy::trx::TrxWrapper;
+    use crate::legacy::trx::tests::{StubCore, StubStorage};
+    use crate::models::ports::IStorage;
     use std::sync::Arc;
 
     #[test]

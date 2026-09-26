@@ -12,7 +12,7 @@
 //! a deployer bound to a VM entity at deploy time (metadata `gatewayPath`) —
 //! the leading segment is resolved as a creature username and the custom path
 //! prefix is matched against the routes registered for that creature (see
-//! [`crate::drivers::vmm::http_route`]).
+//! [`crate::adapters::vmm::http_route`]).
 //!
 //! The ingress is a *pure HTTP adapter*: it parses the request, resolves the
 //! identity segments (through the VMM for the custom-route form), and hands the
@@ -33,9 +33,13 @@ use std::io::{BufRead, BufReader, Read, Write};
 use std::net::{TcpListener, TcpStream};
 use std::sync::atomic::{AtomicBool, Ordering};
 
-use crate::drivers::vmm::prelude::*;
+/// The parsed HTTP-ingress route: port, program id, entity id,
+/// query pairs, and remaining path segments.
+type ParsedRoute = (u16, String, String, Option<Vec<(String, String)>>, Vec<u8>);
+
+use crate::adapters::vmm::prelude::*;
 use crate::models::core::ICore;
-use crate::models::ports::ratelimit::{Protocol, RateLimitDecision, RateLimitKey};
+use crate::models::ports::{Protocol, RateLimitDecision, RateLimitKey};
 
 /// Maximum request body the ingress will buffer (16 MiB).
 const MAX_BODY: usize = 16 * 1024 * 1024;
@@ -121,11 +125,7 @@ impl VmHttpIngress {
 
     /// Resolve, package, and forward a parsed request; returns the HTTP
     /// response tuple `(status, reason, content_type, extra_headers, body)`.
-    fn route(
-        &self,
-        req: &HttpRequest,
-        peer_ip: &str,
-    ) -> (u16, String, String, Option<Vec<(String, String)>>, Vec<u8>) {
+    fn route(&self, req: &HttpRequest, peer_ip: &str) -> ParsedRoute {
         // Cross-protocol admission control. The HTTP ingress is anonymous, so
         // requests are billed to the peer IP under the shared limiter's
         // anonymous tier — the same instance the TCP/WS transports use, so a
@@ -229,20 +229,20 @@ impl VmHttpIngress {
     /// directly, so the two forms coexist without ambiguity — a legacy request's
     /// leading segment is a creature *id*, which is never a username.
     fn resolve_identity(&self, path: &str) -> Option<IdentitySegments> {
-        if let Some((first, rest)) = split_first_segment(path) {
-            if let Some(route) = self.app.tools().workloads().resolve_http_route(first, rest) {
-                let program_id = route["programId"].as_str().unwrap_or("").to_string();
-                let entity_id = route["entityId"].as_str().unwrap_or("").to_string();
-                if !program_id.is_empty() && !entity_id.is_empty() {
-                    return Some(IdentitySegments {
-                        creature_id: route["creatureId"].as_str().unwrap_or("").to_string(),
-                        program_id,
-                        entity_id,
-                        vm_id: route["vmId"].as_str().unwrap_or("").to_string(),
-                        runtime: route["runtime"].as_str().unwrap_or("").to_string(),
-                        rest_path: route["path"].as_str().unwrap_or("/").to_string(),
-                    });
-                }
+        if let Some((first, rest)) = split_first_segment(path)
+            && let Some(route) = self.app.tools().workloads().resolve_http_route(first, rest)
+        {
+            let program_id = route["programId"].as_str().unwrap_or("").to_string();
+            let entity_id = route["entityId"].as_str().unwrap_or("").to_string();
+            if !program_id.is_empty() && !entity_id.is_empty() {
+                return Some(IdentitySegments {
+                    creature_id: route["creatureId"].as_str().unwrap_or("").to_string(),
+                    program_id,
+                    entity_id,
+                    vm_id: route["vmId"].as_str().unwrap_or("").to_string(),
+                    runtime: route["runtime"].as_str().unwrap_or("").to_string(),
+                    rest_path: route["path"].as_str().unwrap_or("/").to_string(),
+                });
             }
         }
         split_identity(path)
@@ -387,10 +387,10 @@ fn extract_headers(value: &JsonValue) -> (String, Option<Vec<(String, String)>>)
 
 /// Decode a plugin response body from `bodyBase64` (preferred) or `body`.
 fn decode_body(value: &JsonValue) -> Vec<u8> {
-    if let Some(b64) = value["bodyBase64"].as_str() {
-        if let Ok(bytes) = BASE64_STANDARD.decode(b64) {
-            return bytes;
-        }
+    if let Some(b64) = value["bodyBase64"].as_str()
+        && let Ok(bytes) = BASE64_STANDARD.decode(b64)
+    {
+        return bytes;
     }
     match value["body"].as_str() {
         Some(s) => s.as_bytes().to_vec(),

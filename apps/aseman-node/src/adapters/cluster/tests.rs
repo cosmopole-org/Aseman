@@ -17,7 +17,6 @@
 //! a production instance.
 
 use std::collections::HashMap;
-use std::io::Read as _;
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Arc, Mutex};
@@ -26,10 +25,10 @@ use std::time::{Duration, Instant};
 use anyhow::Result;
 use serde_json::{Value, json};
 
-use crate::core::actor::model::trx::TrxWrapper;
+use crate::legacy::trx::TrxWrapper;
 use crate::models::core::ICore;
-use crate::models::ports::storage::IStorage;
-use crate::models::ports::tools::ITools;
+use crate::models::ports::IStorage;
+use crate::models::ports::ITools;
 use crate::models::transaction::ITrx;
 
 use super::command::DeployArtifact;
@@ -39,13 +38,13 @@ use super::config::ClusterConfig;
 
 struct StubStorage {
     root: String,
-    kv: crate::models::ports::storage::KvDb,
+    kv: crate::models::ports::KvDb,
 }
 
 impl StubStorage {
     fn new(dir: &str) -> Arc<Self> {
         std::fs::create_dir_all(dir).unwrap();
-        let kv: crate::models::ports::storage::KvDb = Arc::new(
+        let kv: crate::models::ports::KvDb = Arc::new(
             aseman_storage_legacy::RocksDbKvStore::open_default(std::path::Path::new(dir))
                 .expect("stub kvdb"),
         );
@@ -60,7 +59,7 @@ impl IStorage for StubStorage {
     fn storage_root(&self) -> String {
         self.root.clone()
     }
-    fn kv_db(&self) -> crate::models::ports::storage::KvDb {
+    fn kv_db(&self) -> crate::models::ports::KvDb {
         self.kv.clone()
     }
     fn gen_id(&self, _t: &dyn ITrx, _: &str) -> String {
@@ -105,7 +104,7 @@ struct StubVmm {
     assigned: Mutex<Vec<String>>,
 }
 
-impl crate::models::ports::workloads::IWorkloads for StubVmm {
+impl crate::models::ports::IWorkloads for StubVmm {
     fn assign(&self, machine_id: &str) {
         self.assigned.lock().unwrap().push(machine_id.to_string());
     }
@@ -158,26 +157,26 @@ struct StubTools {
 }
 
 impl ITools for StubTools {
-    fn security(&self) -> Arc<dyn crate::models::ports::security::ISecurity> {
+    fn security(&self) -> Arc<dyn crate::models::ports::ISecurity> {
         unimplemented!("security unused by cluster tests")
     }
-    fn signaler(&self) -> Arc<dyn crate::models::ports::signaler::ISignaler> {
+    fn signaler(&self) -> Arc<dyn crate::models::ports::ISignaler> {
         unimplemented!("signaler unused by cluster tests")
     }
     fn storage(&self) -> Arc<dyn IStorage> {
         self.storage.clone()
     }
-    fn network(&self) -> Arc<dyn crate::models::ports::network::INetwork> {
+    fn network(&self) -> Arc<dyn crate::models::ports::INetwork> {
         unimplemented!("network unused by cluster tests")
     }
-    fn workloads(&self) -> Arc<dyn crate::models::ports::workloads::IWorkloads> {
+    fn workloads(&self) -> Arc<dyn crate::models::ports::IWorkloads> {
         self.vmm.clone()
     }
-    fn rate_limiter(&self) -> Arc<dyn crate::models::ports::ratelimit::IRateLimiter> {
+    fn rate_limiter(&self) -> Arc<dyn crate::models::ports::IRateLimiter> {
         // Cluster tests never exercise client-request admission; hand back a
         // real limiter so the trait is satisfied without a bespoke stub.
-        crate::drivers::ratelimit::RateLimiter::new(
-            crate::drivers::ratelimit::RateLimiterConfig::default(),
+        crate::adapters::ratelimit::RateLimiter::new(
+            crate::adapters::ratelimit::RateLimiterConfig::default(),
         )
     }
 }
@@ -227,7 +226,7 @@ impl IStorage for RootedStorage {
     fn storage_root(&self) -> String {
         self.root.clone()
     }
-    fn kv_db(&self) -> crate::models::ports::storage::KvDb {
+    fn kv_db(&self) -> crate::models::ports::KvDb {
         self.inner.kv_db()
     }
     fn gen_id(&self, t: &dyn ITrx, o: &str) -> String {
@@ -283,13 +282,12 @@ impl ICore for StubCore {
         HashMap::new()
     }
     fn add_free_node(&self, _: &str) {}
-    fn actor(&self) -> Arc<dyn crate::models::action::actor::IActor> {
+    fn actor(&self) -> Arc<dyn crate::models::action::IActor> {
         unimplemented!()
     }
     fn load(&self, _: Vec<String>, _: HashMap<String, Value>) {}
     fn close(&self) {}
     fn plant_chain_trigger(&self, _: i64, _: &str, _: &str, _: &str, _: &str, _: &str) {}
-    fn app_pending_trxs(&self) {}
     fn ip_addr(&self) -> String {
         String::new()
     }
@@ -369,20 +367,22 @@ fn boot_instance(node_id: u64, register_global: bool) -> Instance {
     std::fs::create_dir_all(&dir).unwrap();
     let (core, vmm) = StubCore::new(&format!("origin-{}", node_id), &dir);
 
-    let mut cfg = ClusterConfig::default();
-    cfg.enabled = true;
     // Only the seed instance bootstraps; joiners must stay pristine until
     // the seed introduces them (the production join flow).
-    cfg.bootstrap = node_id == 1;
-    cfg.node_id = node_id;
-    cfg.node_name = format!("test-node-{}", node_id);
-    cfg.region = format!("region-{}", node_id);
-    cfg.listen_addr = addr.clone();
-    cfg.advertise_addr = addr.clone();
-    cfg.heartbeat_interval_ms = 100;
-    cfg.election_timeout_min_ms = 300;
-    cfg.election_timeout_max_ms = 600;
-    cfg.rtt_probe_interval_secs = 3;
+    let cfg = ClusterConfig {
+        enabled: true,
+        bootstrap: node_id == 1,
+        node_id,
+        node_name: format!("test-node-{}", node_id),
+        region: format!("region-{}", node_id),
+        listen_addr: addr.clone(),
+        advertise_addr: addr.clone(),
+        heartbeat_interval_ms: 100,
+        election_timeout_min_ms: 300,
+        election_timeout_max_ms: 600,
+        rtt_probe_interval_secs: 3,
+        ..Default::default()
+    };
     let config_path = PathBuf::from(&dir).join("cluster.json");
 
     let app: Arc<dyn ICore> = core.clone();
@@ -712,13 +712,15 @@ fn cluster_listener_enforces_auth_token() {
     let dir = format!("/tmp/caspar-cluster-test-{}/auth-node", std::process::id());
     std::fs::create_dir_all(&dir).unwrap();
     let (core, _vmm) = StubCore::new("origin-auth", &dir);
-    let mut cfg = ClusterConfig::default();
-    cfg.enabled = true;
-    cfg.bootstrap = true;
-    cfg.node_id = 9;
-    cfg.listen_addr = addr.clone();
-    cfg.advertise_addr = addr.clone();
-    cfg.auth_token = "sekret".into();
+    let cfg = ClusterConfig {
+        enabled: true,
+        bootstrap: true,
+        node_id: 9,
+        listen_addr: addr.clone(),
+        advertise_addr: addr.clone(),
+        auth_token: "sekret".into(),
+        ..Default::default()
+    };
     let app: Arc<dyn ICore> = core;
     let _svc = super::start_service(app, cfg, PathBuf::from(&dir).join("cluster.json")).unwrap();
 

@@ -289,7 +289,7 @@ impl PendingRoundsCache {
     /// Returns the ordered list of `PendingRound`s.
     pub fn get_ordered_pending_rounds(&self) -> Vec<PendingRound> {
         let mut sorted: Vec<PendingRound> = self.items.values().copied().collect();
-        sorted.sort_by(|a, b| a.index.cmp(&b.index));
+        sorted.sort_by_key(|a| a.index);
         sorted
     }
 

@@ -3,6 +3,16 @@
 //! Finance never names a consensus implementation. It submits records for ordering and
 //! reads what has been finalized; which service does the ordering — Hashgraph today,
 //! something else tomorrow — is a composition decision.
+//!
+//! The core also does **not** drive provider-specific governance (staking thresholds,
+//! election timing, validator caps, …) through a fixed API. Each provider is free to
+//! decide which features it has and how it configures them. The port therefore exposes
+//! only a generic, environment-style **config modifier** ([`ConsensusProvider::set`]):
+//! the core writes provider-specific property/value pairs, and each provider interprets
+//! the keys it understands. Providers that do not implement a key refuse it with
+//! [`crate::PortError::Unsupported`], so a node can configure staking/election props
+//! on a Hashgraph backend and the same composition works — without those features —
+//! with a backend that does not have them.
 
 use aseman_domain::consensus::{Checkpoint, Epoch, Finalized};
 
@@ -57,4 +67,18 @@ pub trait ConsensusProvider: Send + Sync {
     /// [`crate::PortError::Conflict`] when this provider has already finalized
     /// something of its own — adopting then would fork the order.
     fn adopt(&self, checkpoint: &Checkpoint) -> PortResult<()>;
+
+    /// Set a provider-specific configuration property, environment-style.
+    ///
+    /// This is the one knob the core is allowed to turn on a consensus provider. Each
+    /// provider documents and interprets its own keys — for example a Hashgraph backend
+    /// understands staking thresholds and election timing, while a simpler backend may
+    /// have no such properties at all. The core never assumes a provider has a feature;
+    /// it writes the pair and the provider either applies it or refuses it.
+    ///
+    /// # Errors
+    ///
+    /// - [`crate::PortError::Unsupported`] when this provider has no such property.
+    /// - [`crate::PortError::Failed`] when the value cannot be parsed.
+    fn set(&self, key: &str, value: &str) -> PortResult<()>;
 }

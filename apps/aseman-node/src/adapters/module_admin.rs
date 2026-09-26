@@ -318,13 +318,13 @@ fn parse_module_operation(suffix: &str) -> Result<(&str, Option<&str>), AdminErr
     {
         return Err(AdminError::bad_request("invalid module key"));
     }
-    if let Some(operation) = parts.get(1) {
-        if !matches!(
+    if let Some(operation) = parts.get(1)
+        && !matches!(
             *operation,
             "configure" | "validate" | "stage" | "activate" | "drain" | "rollback"
-        ) {
-            return Err(AdminError::bad_request("invalid module operation"));
-        }
+        )
+    {
+        return Err(AdminError::bad_request("invalid module operation"));
     }
     Ok((parts[0], parts.get(1).copied()))
 }
@@ -472,15 +472,14 @@ impl ModuleProcess for LocalModuleProcess {
         let endpoint = format!("http://{}", self.endpoint);
         self.runtime.block_on(async move {
             for _ in 0..50 {
-                if let Ok(mut client) = ModuleControlClient::connect(endpoint.clone()).await {
-                    if client
+                if let Ok(mut client) = ModuleControlClient::connect(endpoint.clone()).await
+                    && client
                         .health(HealthRequest::default())
                         .await
                         .map(|response| response.into_inner().ready)
                         .unwrap_or(false)
-                    {
-                        return Ok(true);
-                    }
+                {
+                    return Ok(true);
                 }
                 tokio::time::sleep(Duration::from_millis(100)).await;
             }

@@ -29,7 +29,7 @@ program that stores documents.
 
 ## Decision
 
-1. **Confinement.** The calls exist only in `apps/aseman-node/src/drivers/vmm/guest_state.rs`, for a
+1. **Confinement.** The calls exist only in `apps/aseman-node/src/adapters/vmm/guest_state.rs`, for a
    creature the node supplies. That creature is either the packet identity stamped by
    the runtime or the docker gateway, or the VM context registered for a runtime
    transaction. The guest's key only extends that creature's prefix:

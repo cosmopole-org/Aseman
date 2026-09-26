@@ -27,15 +27,15 @@ use std::sync::Arc;
 use anyhow::{Result, anyhow};
 use serde_json::{Value, json};
 
-use crate::core::actor::model::secured::guard::Guard;
+use crate::api::packets::gateway::{
+    GatewaySignalInput, GatewaySubscribeInput, GatewayUnsubscribeInput,
+};
+use crate::api::utils::future::async_once;
+use crate::legacy::actor::Guard;
 use crate::models::action::ISecureAction;
 use crate::models::core::ICore;
 use crate::models::state::IState;
 use crate::models::transaction::ITrx;
-use crate::shell::api::packets::gateway::{
-    GatewaySignalInput, GatewaySubscribeInput, GatewayUnsubscribeInput,
-};
-use crate::shell::utils::future::async_once;
 
 use super::util::build_secure_action;
 
@@ -89,7 +89,11 @@ pub struct BridgeGrant {
 /// caller controls `payload`, so putting `bridge` beside that payload inside
 /// the user-shaped action object either loses it during normal signal
 /// unwrapping or makes an untrusted payload indistinguishable from provenance.
-fn bridge_signal_packet(input: &GatewaySignalInput, topic: &str, creature_id: &str) -> Value {
+pub(crate) fn bridge_signal_packet(
+    input: &GatewaySignalInput,
+    topic: &str,
+    creature_id: &str,
+) -> Value {
     let payload = json!({
         "action": input.action.trim(),
         "correlationId": input.correlation_id,

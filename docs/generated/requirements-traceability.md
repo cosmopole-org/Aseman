@@ -15,8 +15,8 @@ partial or in progress; OPEN means none is. A violation is a requirement that do
 not name a design authority, a delivery phase, or an acceptance authority.
 
 - Requirements: 25
-- MET: 12
-- PARTIAL: 13
+- MET: 16
+- PARTIAL: 9
 - OPEN: 0
 - Violations: 0
 
@@ -31,19 +31,19 @@ not name a design authority, a delivery phase, or an acceptance authority.
 | R07 HTTP default plus custom client/federation protocols | 7 | 7=MET | `10` Network | MET |
 | R08 Universal authenticated VM identity resolution with home-node address, ID, and public key | 7 | 7=MET | `10` Network | MET |
 | R09 Authorized cross-node VM operations | 4, 7 | 4=MET, 7=MET | `10` Security/Network | MET |
-| R10 PostgreSQL default and database independence | 3 | 3=PARTIAL | `10` Capsule storage | PARTIAL |
-| R11 Universal capsule persistence for every storage class | 3 | 3=PARTIAL | `10` Capsule storage | PARTIAL |
-| R12 Separate native SQL table/collection per core entity kind | 3 | 3=PARTIAL | `10` Capsule storage | PARTIAL |
-| R13 One isolated guest database/namespace and role per creature, multi-table/collection control, shared within creature and isolated across creatures | 3, 4 | 3=PARTIAL, 4=MET | `10` Capsule/Security | PARTIAL |
+| R10 PostgreSQL default and database independence | 3 | 3=MET | `10` Capsule storage | MET |
+| R11 Universal capsule persistence for every storage class | 3 | 3=MET | `10` Capsule storage | MET |
+| R12 Separate native SQL table/collection per core entity kind | 3 | 3=MET | `10` Capsule storage | MET |
+| R13 One isolated guest database/namespace and role per creature, multi-table/collection control, shared within creature and isolated across creatures | 3, 4 | 3=MET, 4=MET | `10` Capsule/Security | MET |
 | R14 Extensible security and zero-trust workloads | 4 | 4=MET | `10` Security | MET |
 | R15 Attenuated administrator/parent-to-child rights | 4 | 4=MET | `10` Security | MET |
 | R16 Extensible durable realtime signalling | 7 | 7=MET | `10` Network/Realtime | MET |
 | R17 Modular finance and replaceable consensus, Hashgraph initially | 8 | 8=MET | `10` Finance | MET |
 | R18 Actual per-minute resource metering and wallet settlement | 8 | 8=MET | `10` Finance | MET |
 | R19 Fault-tolerant containers, installer, upgrade, backup, restore | 9 | 9=PARTIAL | `10` Operations | PARTIAL |
-| R20 Comprehensive administrative CLI | 2-9 | 2=MET, 3=PARTIAL, 4=MET, 5=MET, 6=MET, 7=MET, 8=MET, 9=PARTIAL | CLI/E2E suites | PARTIAL |
-| R21 LLM-readable architecture, docs, and workflows | all, 9-10 | 0=MET, 1=MET, 2=MET, 3=PARTIAL, 4=MET, 5=MET, 6=MET, 7=MET, 8=MET, 9=PARTIAL, 10=PARTIAL | `10` Agent comprehension | PARTIAL |
-| R22 Dead/duplicate removal, standard hierarchy, algorithm quality | all, 10 | 0=MET, 1=MET, 2=MET, 3=PARTIAL, 4=MET, 5=MET, 6=MET, 7=MET, 8=MET, 9=PARTIAL, 10=PARTIAL | `10` Clean code | PARTIAL |
+| R20 Comprehensive administrative CLI | 2-9 | 2=MET, 3=MET, 4=MET, 5=MET, 6=MET, 7=MET, 8=MET, 9=PARTIAL | CLI/E2E suites | PARTIAL |
+| R21 LLM-readable architecture, docs, and workflows | all, 9-10 | 0=MET, 1=MET, 2=MET, 3=MET, 4=MET, 5=MET, 6=MET, 7=MET, 8=MET, 9=PARTIAL, 10=PARTIAL | `10` Agent comprehension | PARTIAL |
+| R22 Dead/duplicate removal, standard hierarchy, algorithm quality | all, 10 | 0=MET, 1=MET, 2=MET, 3=MET, 4=MET, 5=MET, 6=MET, 7=MET, 8=MET, 9=PARTIAL, 10=PARTIAL | `10` Clean code | PARTIAL |
 | R23 Caspar-to-Aseman compatibility and eventual cleanup | 1, 10 | 1=MET, 10=PARTIAL | Removal ledger/release gate | PARTIAL |
-| R24 Standalone agent execution without conversation context | all | 0=MET, 1=MET, 2=MET, 3=PARTIAL, 4=MET, 5=MET, 6=MET, 7=MET, 8=MET, 9=PARTIAL, 10=PARTIAL | `10` Agent comprehension/artifact gates | PARTIAL |
+| R24 Standalone agent execution without conversation context | all | 0=MET, 1=MET, 2=MET, 3=MET, 4=MET, 5=MET, 6=MET, 7=MET, 8=MET, 9=PARTIAL, 10=PARTIAL | `10` Agent comprehension/artifact gates | PARTIAL |
 | R25 One stable node identity across replicated control plane and scalable workers | 6, 9 | 6=MET, 9=PARTIAL | `10` VMM/Operations/chaos | PARTIAL |

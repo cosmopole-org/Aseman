@@ -11,10 +11,9 @@ use dashmap::DashMap;
 use serde_json::Value;
 
 use crate::models::core::ICore;
-use crate::models::ports::network::federation::IFederation;
-use crate::models::ports::signaler::{GlobalListener, Group, ISignaler, JoinListener, Listener};
+use crate::models::ports::IFederation;
+use crate::models::ports::{GlobalListener, Group, ISignaler, JoinListener, Listener};
 use crate::models::transaction::ITrx;
-use crate::shell::api::model::access::StorePermissions;
 
 /// Concrete [`ISignaler`] implementation. Owns per-listener / per-group
 /// `DashMap`s and a coarse-grained `Mutex` matching `Signaler.lock` from Go.
@@ -84,7 +83,7 @@ impl Signaler {
             true,
             Box::new(move |trx: &dyn ITrx| {
                 // Membership goes through the store port (legacy adapter until cutover).
-                let ports = crate::shell::api::model::store_ports::MembershipPorts { trx };
+                let ports = crate::api::model::store_ports::MembershipPorts { trx };
                 *out_clone.lock().unwrap() = aseman_ports::StoreAccess::members(&ports, &store_id)
                     .unwrap_or_default()
                     .into_iter()
@@ -94,8 +93,8 @@ impl Signaler {
                 Ok(())
             }),
         );
-        let members = out.lock().unwrap().clone();
-        members
+
+        out.lock().unwrap().clone()
     }
 
     /// Read `User.<id>.username` inside a read-only state modification.
@@ -107,7 +106,7 @@ impl Signaler {
             true,
             Box::new(move |trx: &dyn ITrx| {
                 *slot_clone.lock().unwrap() = aseman_ports::CreatureDirectory::creature(
-                    &crate::shell::api::model::creature_ports::CreaturePorts { trx },
+                    &crate::api::model::creature_ports::CreaturePorts { trx },
                     &user_id_owned,
                 )
                 .ok()
@@ -117,8 +116,8 @@ impl Signaler {
                 Ok(())
             }),
         );
-        let out = slot.lock().unwrap().clone();
-        out
+
+        slot.lock().unwrap().clone()
     }
 }
 
@@ -287,11 +286,10 @@ impl ISignaler for Signaler {
                 continue;
             };
             if user_origin == self.app.id() || user_origin == "global" {
-                if !exc.contains(&store_key) {
-                    if let Some(listener) = self.listeners.get(&user_id).map(|e| e.value().clone())
-                    {
-                        (listener.signal)(key.to_string(), packet.clone());
-                    }
+                if !exc.contains(&store_key)
+                    && let Some(listener) = self.listeners.get(&user_id).map(|e| e.value().clone())
+                {
+                    (listener.signal)(key.to_string(), packet.clone());
                 }
             } else {
                 let entry = foreigners.entry(user_origin).or_default();
@@ -415,7 +413,7 @@ const _: fn() -> Result<()> = || Ok(());
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::models::ports::signaler::{ISignaler, Listener, SignalFn};
+    use crate::models::ports::{ISignaler, Listener, SignalFn};
 
     // --- Minimal stubs so a `Signaler` can be constructed in isolation. The
     // group-registry paths under test (`join_group` / `leave_group` /
@@ -424,7 +422,7 @@ mod tests {
     struct StubCore;
     struct StubFed;
 
-    impl crate::models::ports::network::federation::IFederation for StubFed {
+    impl crate::models::ports::IFederation for StubFed {
         fn listen(&self, _port: i64, _tls: Option<aseman_network_legacy::TlsConfig>) {}
         fn send_fed_request(&self, _: &str, _: &str, _: &str, _: &str, _: Vec<u8>, _: &str) {}
         fn send_fed_response(&self, _: &str, _: &str, _: i64, _: Value) {}
@@ -437,7 +435,7 @@ mod tests {
             _: &str,
             _: Vec<u8>,
             _: &str,
-            _: crate::models::ports::network::federation::FedRequestCallback,
+            _: crate::models::ports::FedRequestCallback,
         ) {
         }
     }
@@ -456,7 +454,7 @@ mod tests {
         fn add_god(&self, username: &str) {
             unimplemented!()
         }
-        fn tools(&self) -> Arc<dyn crate::models::ports::tools::ITools> {
+        fn tools(&self) -> Arc<dyn crate::models::ports::ITools> {
             unimplemented!()
         }
         fn free_nodes(&self) -> std::collections::HashMap<String, bool> {
@@ -465,7 +463,7 @@ mod tests {
         fn add_free_node(&self, node_id: &str) {
             unimplemented!()
         }
-        fn actor(&self) -> Arc<dyn crate::models::action::actor::IActor> {
+        fn actor(&self) -> Arc<dyn crate::models::action::IActor> {
             unimplemented!()
         }
         fn load(&self, args: Vec<String>, config: std::collections::HashMap<String, Value>) {
@@ -483,9 +481,6 @@ mod tests {
             store_id: &str,
             input: &str,
         ) {
-            unimplemented!()
-        }
-        fn app_pending_trxs(&self) {
             unimplemented!()
         }
         fn ip_addr(&self) -> String {

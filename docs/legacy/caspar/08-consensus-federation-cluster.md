@@ -15,7 +15,7 @@ and the geo-distributed instance mesh. Each is its own section.
 ## Hashgraph chain (Babble)
 
 Consensus is an **embedded Babble (Rust) hashgraph** — leaderless, asynchronous,
-Byzantine-fault-tolerant. It lives in `apps/aseman-node/src/drivers/network/chain` and runs
+Byzantine-fault-tolerant. It lives in `apps/aseman-node/src/adapters/network/chain` and runs
 as a service on `BLOCKCHAIN_API_PORT`. The node registers a `commit_handler`
 that receives ordered blocks of transactions and fans them out to application
 state.

@@ -40,7 +40,7 @@
       "apps/aseman-client/package-lock.json"
     ],
     "tracked_dist_file_count": 15,
-    "tracked_file_count": 1020,
+    "tracked_file_count": 993,
     "tracked_files_by_top_level": {
       ".cargo": 1,
       ".gitattributes": 1,
@@ -48,12 +48,13 @@
       ".gitignore": 1,
       "AGENTS.md": 1,
       "ARCHITECTURE.md": 1,
+      "CHANGELOG.md": 1,
       "CONTRIBUTING.md": 1,
       "Cargo.lock": 1,
       "Cargo.toml": 1,
       "README.md": 1,
       "SECURITY.md": 1,
-      "apps": 228,
+      "apps": 200,
       "clippy.toml": 1,
       "contracts": 93,
       "crates": 121,
@@ -70,13 +71,58 @@
     },
     "tracked_source_files_by_extension": {
       ".py": 33,
-      ".rs": 564,
+      ".rs": 536,
       ".sh": 2,
       ".ts": 1
     }
   },
   "rust": {
     "packages": [
+      {
+        "dependencies": [
+          {
+            "name": "anyhow",
+            "scope": "normal",
+            "version": "1.0.102"
+          },
+          {
+            "name": "aseman-config",
+            "path": "crates/aseman-config",
+            "scope": "normal"
+          },
+          {
+            "name": "hex",
+            "scope": "normal",
+            "version": "0.4.3"
+          },
+          {
+            "features": [
+              "arithmetic",
+              "ecdsa"
+            ],
+            "name": "k256",
+            "scope": "normal",
+            "version": "0.13.4"
+          }
+        ],
+        "description": "Generate the legacy-compatible ECDSA key pair for an Aseman node.",
+        "edition": {
+          "workspace": true
+        },
+        "features": {},
+        "manifest": "apps/aseman-keygen/Cargo.toml",
+        "name": "aseman-keygen",
+        "targets": [
+          {
+            "kind": "bin",
+            "name": "aseman-keygen",
+            "path": "src/main.rs"
+          }
+        ],
+        "version": {
+          "workspace": true
+        }
+      },
       {
         "dependencies": [
           {
@@ -195,6 +241,16 @@
             "scope": "normal"
           },
           {
+            "name": "aseman-public-http",
+            "path": "modules/network/http",
+            "scope": "normal"
+          },
+          {
+            "name": "aseman-public-service",
+            "path": "modules/public-service",
+            "scope": "normal"
+          },
+          {
             "name": "aseman-storage-legacy",
             "path": "modules/storage/rocksdb-legacy",
             "scope": "normal"
@@ -253,15 +309,6 @@
             "name": "hex",
             "scope": "normal",
             "version": "0.4.3"
-          },
-          {
-            "features": [
-              "arithmetic",
-              "ecdsa"
-            ],
-            "name": "k256",
-            "scope": "normal",
-            "version": "0.13.4"
           },
           {
             "name": "libc",
@@ -448,13 +495,8 @@
         "targets": [
           {
             "kind": "bin",
-            "name": "caspar-keygen",
-            "path": "src/bin/caspar-keygen.rs"
-          },
-          {
-            "kind": "bin",
-            "name": "caspar-node",
-            "path": "src/bin/caspar-node.rs"
+            "name": "runner",
+            "path": "src/runner.rs"
           },
           {
             "kind": "lib",
@@ -810,6 +852,32 @@
       {
         "dependencies": [
           {
+            "name": "aseman-storage-legacy",
+            "path": "modules/storage/rocksdb-legacy",
+            "scope": "normal"
+          }
+        ],
+        "description": "Diagnostic: list legacy `vmEntityType` links in an application store.",
+        "edition": {
+          "workspace": true
+        },
+        "features": {},
+        "manifest": "apps/scan-vmdb/Cargo.toml",
+        "name": "scan-vmdb",
+        "targets": [
+          {
+            "kind": "bin",
+            "name": "scan-vmdb",
+            "path": "src/main.rs"
+          }
+        ],
+        "version": {
+          "workspace": true
+        }
+      },
+      {
+        "dependencies": [
+          {
             "name": "aseman-domain",
             "path": "crates/aseman-domain",
             "scope": "normal"
@@ -820,7 +888,27 @@
             "scope": "normal"
           },
           {
+            "name": "hex",
+            "scope": "normal"
+          },
+          {
+            "name": "serde",
+            "scope": "normal"
+          },
+          {
+            "name": "serde_json",
+            "scope": "normal"
+          },
+          {
+            "name": "sha2",
+            "scope": "normal"
+          },
+          {
             "name": "thiserror",
+            "scope": "normal"
+          },
+          {
+            "name": "url",
             "scope": "normal"
           },
           {
@@ -1174,6 +1262,10 @@
             "scope": "normal"
           },
           {
+            "name": "serde_json",
+            "scope": "normal"
+          },
+          {
             "name": "thiserror",
             "scope": "normal"
           }
@@ -1207,6 +1299,11 @@
           {
             "name": "aseman-config",
             "path": "crates/aseman-config",
+            "scope": "normal"
+          },
+          {
+            "name": "aseman-contracts",
+            "path": "crates/aseman-contracts",
             "scope": "normal"
           },
           {
@@ -3664,11 +3761,13 @@
         ],
         "manifest": "Cargo.toml",
         "members": [
+          "apps/aseman-keygen",
           "apps/aseman-meter",
           "apps/aseman-node",
           "apps/aseman-vmm",
           "apps/aseman-vmm-agent",
           "apps/asemanctl",
+          "apps/scan-vmdb",
           "crates/*",
           "modules/*",
           "modules/consensus/hashgraph",

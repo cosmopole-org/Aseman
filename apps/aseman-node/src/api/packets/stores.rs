@@ -6,8 +6,8 @@ use std::collections::HashMap;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
+use crate::api::model::{Creature, Store};
 use crate::models::input::IInput;
-use crate::shell::api::model::{Creature, Store};
 
 fn is_false(b: &bool) -> bool {
     !*b

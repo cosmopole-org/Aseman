@@ -1,0 +1,21 @@
+[package]
+name = "aseman-keygen"
+description = "Generate the legacy-compatible ECDSA key pair for an Aseman node."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[[bin]]
+name = "aseman-keygen"
+path = "src/main.rs"
+
+[dependencies]
+anyhow = "1.0.102"
+aseman-config = { path = "../../crates/aseman-config" }
+hex = "0.4.3"
+k256 = { version = "0.13.4", features = ["ecdsa", "arithmetic"] }
+
+[lints]
+workspace = true

@@ -75,7 +75,7 @@ strength of an intention.
 
 | Criterion | State | Evidence |
 |---|---|---|
-| HTTP is the shipped default | PARTIAL | The contract is generated and `modules/network/http` provides the hardened transport boundary; the composed service (`aseman-public-service` over `ServePublicAction`) owns A401 authentication, A402 authorization, execution, and durable idempotency behind it, with idempotency real over PostgreSQL (`aseman_core.public_idempotency`, migration 0010) and proven live (P7-06). Node composition supplying the remaining ports (RL-004), SSE/WebSocket streams, and making it the advertised default remain open |
+| HTTP is the shipped default | PARTIAL | The contract is generated, `modules/network/http` provides the hardened transport boundary, the composed service owns A401/A402/execution/durable idempotency, and the node now composes the gateway (RL-004): `PublicActionExecutor` + `LegacySessionDirectory` + the TLS listener from `app::NodeApp`, observed live. Three action families execute through `aseman-application` use cases; the rest fail closed. SSE/WebSocket streams and making HTTP the advertised default remain open |
 | Adapters pass the same application contract tests | MET | `check_legacy_transports.py`: they contain framing only |
 | Any workload resolves any target's minimal descriptor | MET | A704 |
 | Discovery grants no operational rights | MET | Phase 7 gate |
@@ -126,7 +126,7 @@ strength of an intention.
 |---|---|---|
 | One workspace, lockfile, toolchain, lint policy, task runner | MET | Phase 1 |
 | Explicit canonical hierarchy and ownership | PARTIAL | All ownership roots, app roots, canonical crates, and planned module package paths now exist and own implementation source; `docs/generated/repository-layout.md` reports 0 open target package paths and 8 gated legacy roots whose replacement/deletion windows remain |
-| No broad lint suppressions | PARTIAL | Clean crates deny warnings and the quality baseline ratchets exceptions; the legacy `caspar-node` library still has crate-wide suppressions |
+| No broad lint suppressions | PARTIAL | `apps/aseman-node` and `modules/consensus/hashgraph` now compile clippy-clean across all targets under a single crate-wide `#![allow(dead_code)]` in the node (strangler-gated on the A008 legacy surface). The `unused_imports`, `module_inception`, and `type_complexity` crate allows were removed and their warnings fixed with type aliases and scoped per-item allows; the hashgraph engine's warnings (collapsible-if, inspect-err, derivable defaults, unused fields) were fixed outright. The node's remaining suppression expires with the removal-ledger rows (RL-002..RL-012). |
 | Direct environment reads outside the config adapter rejected | MET | The ratchet; all four reads are in `aseman-config` |
 | Internal APIs avoid unvalidated JSON and stringly-typed states | PARTIAL | True of every new contract; the legacy action handlers still pass `serde_json::Value` |
 | Shared session behavior has one transport-neutral owner | MET | `check_legacy_transports.py` |

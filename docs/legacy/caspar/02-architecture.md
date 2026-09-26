@@ -53,7 +53,7 @@ On boot the node also restores in-memory VMM signaler listeners (one per unique
 
 ## Action Router
 
-`apps/aseman-node/src/shell/api` validates the signed packet, resolves the target route,
+`apps/aseman-node/src/api/api` validates the signed packet, resolves the target route,
 applies guard-based authorisation, and dispatches to a handler. Action handlers
 live in `shell/api/actions` (`auth`, `creature`, `program`, …). This is the
 single entry point for every client and federation request.
@@ -62,7 +62,7 @@ single entry point for every client and federation request.
 
 ## Core transactions
 
-`apps/aseman-node/src/core` owns the transaction lifecycle, the `ICore` context, callbacks,
+`apps/aseman-node/src/legacy` owns the transaction lifecycle, the `ICore` context, callbacks,
 and update propagation. Actions whose input declares `origin == "global"` are
 consensus-bound; `origin == ""` runs locally. The `ICore` context also holds the
 per-VM transaction registry (`Mutex<HashMap<VmId, Arc<dyn ITrx>>>`).
@@ -71,7 +71,7 @@ per-VM transaction registry (`Mutex<HashMap<VmId, Arc<dyn ITrx>>>`).
 
 ## Hashgraph chain
 
-`apps/aseman-node/src/drivers/network/chain` is an embedded Babble (Rust) implementation.
+`apps/aseman-node/src/adapters/network/chain` is an embedded Babble (Rust) implementation.
 The node registers a `commit_handler` that receives ordered blocks of
 transactions and fans them out to application state. See
 [Consensus](08-consensus-federation-cluster.md).
@@ -80,7 +80,7 @@ transactions and fans them out to application state. See
 
 ## VM Manager / VM Packet Router
 
-`apps/aseman-node/src/drivers/vmm` exposes a single `dispatch_packet` / `route_vm_packet`
+`apps/aseman-node/src/adapters/vmm` exposes a single `dispatch_packet` / `route_vm_packet`
 path that drives all seven runtimes. The controllers live in
 `drivers/vmm/controllers`. `task_graph.rs` is runtime-agnostic: each op injects
 a canonical `"type"` field and delegates to `dispatch_packet`, so the router is
@@ -100,7 +100,7 @@ in-process via WasmEdge.
 
 ## Storage drivers
 
-`apps/aseman-node/src/drivers/storage.rs` provides:
+`apps/aseman-node/src/adapters/storage.rs` provides:
 
 - **RocksDB** for creature and chain state, via the `TrxWrapper` abstraction
   (the per-VM transaction handle).
@@ -110,7 +110,7 @@ in-process via WasmEdge.
 
 ## Telemetry subsystem
 
-`apps/aseman-node/src/telemetry` maintains a cached snapshot served over HTTP and consumed
+`apps/aseman-node/src/observability` maintains a cached snapshot served over HTTP and consumed
 by `casparctl stats`. The collector also proxies the live chain endpoints
 (`/stats`, `/peers`, `/validators`, `/history`) into the snapshot's `chain`,
 `validators`, `staking`, and `election` fields.

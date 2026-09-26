@@ -5,10 +5,11 @@ use std::sync::{Arc, Mutex};
 use std::thread::JoinHandle;
 
 /// Captures the state of a Babble node.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
 #[repr(u32)]
 pub enum State {
     /// Gossips regularly as part of the hashgraph consensus algorithm.
+    #[default]
     Babbling = 0,
     /// Attempts to fast-forward to a future store (FastSync).
     CatchingUp = 1,
@@ -20,12 +21,6 @@ pub enum State {
     Shutdown = 4,
     /// Passively participates in gossip but processes no new events.
     Suspended = 5,
-}
-
-impl Default for State {
-    fn default() -> Self {
-        State::Babbling
-    }
 }
 
 impl State {

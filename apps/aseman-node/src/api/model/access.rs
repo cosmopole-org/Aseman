@@ -1,7 +1,7 @@
 //! Legacy transaction adapter for domain-owned store permissions.
 
+pub use aseman_domain::store_permissions::StorePermissions;
 use aseman_domain::store_permissions::legacy_access_link_key;
-pub use aseman_domain::store_permissions::{PERM_MANAGE, PERM_READ, PERM_SIGNAL, StorePermissions};
 
 /// The legacy `onaccess::<storeId>::<memberId>` link key.
 #[must_use]

@@ -14,7 +14,7 @@
 //! # Cross-protocol unification
 //!
 //! One `RateLimiter` instance is shared by the TCP, WebSocket, and HTTP-ingress
-//! transports (it is stored on [`ITools`](crate::models::ports::tools) and
+//! transports (it is stored on [`ITools`](crate::models::ports) and
 //! reachable from every driver via `ICore`). The bucket key is derived from the
 //! caller's *identity*, never the wire it came in on, so a client draws from a
 //! single quota no matter how it distributes load across protocols.
@@ -45,7 +45,7 @@ use std::time::{Duration, Instant};
 
 use dashmap::DashMap;
 
-use crate::models::ports::ratelimit::{
+use crate::models::ports::{
     IRateLimiter, LimitScope, RateLimitDecision, RateLimitKey, RateLimiterSnapshot,
 };
 
@@ -369,7 +369,7 @@ impl IRateLimiter for RateLimiter {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::models::ports::ratelimit::Protocol;
+    use crate::models::ports::Protocol;
 
     fn tier(rate: f64, burst: f64) -> TierConfig {
         TierConfig {
@@ -429,9 +429,11 @@ mod tests {
 
     #[test]
     fn disabled_limiter_always_allows() {
-        let mut cfg = RateLimiterConfig::default();
-        cfg.enabled = false;
-        cfg.authenticated = tier(1.0, 1.0);
+        let cfg = RateLimiterConfig {
+            enabled: false,
+            authenticated: tier(1.0, 1.0),
+            ..Default::default()
+        };
         let rl = RateLimiter::new(cfg);
         let key = RateLimitKey::authenticated(Protocol::Tcp, "u1", "1.2.3.4", "/x");
         for _ in 0..1000 {

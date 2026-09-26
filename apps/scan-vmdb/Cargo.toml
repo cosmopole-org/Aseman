@@ -1,0 +1,18 @@
+[package]
+name = "scan-vmdb"
+description = "Diagnostic: list legacy `vmEntityType` links in an application store."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[[bin]]
+name = "scan-vmdb"
+path = "src/main.rs"
+
+[dependencies]
+aseman-storage-legacy = { path = "../../modules/storage/rocksdb-legacy" }
+
+[lints]
+workspace = true

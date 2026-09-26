@@ -9,8 +9,8 @@
 //! NODE OWNER owns, after that program has verified the person by whatever means
 //! it offers (a password, a mailed code, a Google ID token).
 
-use crate::drivers::vmm::globals::with_global_app;
-use crate::drivers::vmm::prelude::*;
+use crate::adapters::vmm::globals::with_global_app;
+use crate::adapters::vmm::prelude::*;
 use crate::models::transaction::ITrx;
 
 /// The longest a grant may live. A login follows its grant within seconds.
@@ -40,7 +40,7 @@ pub(crate) fn host_fn_grant_login(caller_program_id: &str, input: &JsonValue) ->
         return json!({"ok": false, "error": "vmm not initialised"}).to_string();
     };
     let owner =
-        crate::drivers::vmm::host::functions::vm_ownership::program_owner_user(caller_program_id);
+        crate::adapters::vmm::host::functions::vm_ownership::program_owner_user(caller_program_id);
     if owner.is_empty() || owner != app.owner_id() {
         return json!({"ok": false, "error": "only a program owned by the node owner may grant a login"}).to_string();
     }

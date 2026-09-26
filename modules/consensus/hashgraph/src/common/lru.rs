@@ -1,4 +1,4 @@
-//! Translation of `chain/common/lru.go` (taken, in turn, from HashiCorp's LRU).
+//! Translation of `chain/common/lru.go` (taken, in turn, from HashiCorp's Lru).
 //!
 //! Go's implementation uses `container/list`; this translation uses an
 //! index-based doubly linked list stored in a slab `Vec`, which gives the same
@@ -19,8 +19,8 @@ struct Node<K, V> {
     next: Option<usize>,
 }
 
-/// A non-thread-safe fixed size LRU cache.
-pub struct LRU<K, V> {
+/// A non-thread-safe fixed size Lru cache.
+pub struct Lru<K, V> {
     size: usize,
     nodes: Vec<Option<Node<K, V>>>,
     free: Vec<usize>,
@@ -32,10 +32,10 @@ pub struct LRU<K, V> {
     on_evict: Option<EvictCallback<K, V>>,
 }
 
-impl<K: Eq + Hash + Clone, V: Clone> LRU<K, V> {
-    /// Constructs an LRU of the given size.
+impl<K: Eq + Hash + Clone, V: Clone> Lru<K, V> {
+    /// Constructs an Lru of the given size.
     pub fn new(size: usize, on_evict: Option<EvictCallback<K, V>>) -> Self {
-        LRU {
+        Lru {
             size,
             nodes: Vec::new(),
             free: Vec::new(),
@@ -115,10 +115,10 @@ impl<K: Eq + Hash + Clone, V: Clone> LRU<K, V> {
     pub fn purge(&mut self) {
         let keys: Vec<usize> = self.items.values().copied().collect();
         for idx in keys {
-            if let Some(node) = self.nodes[idx].take() {
-                if let Some(cb) = &self.on_evict {
-                    cb(node.key, node.value);
-                }
+            if let Some(node) = self.nodes[idx].take()
+                && let Some(cb) = &self.on_evict
+            {
+                cb(node.key, node.value);
             }
         }
         self.nodes.clear();
@@ -238,7 +238,7 @@ mod tests {
     use std::sync::Arc;
     use std::sync::atomic::{AtomicI64, Ordering};
 
-    // Translation of lru_test.go::TestLRU.
+    // Translation of lru_test.go::TestLru.
     #[test]
     fn test_lru() {
         let evict_counter = Arc::new(AtomicI64::new(0));
@@ -247,7 +247,7 @@ mod tests {
             assert_eq!(k, v, "Evict values not equal ({}!={})", k, v);
             ec.fetch_add(1, Ordering::SeqCst);
         });
-        let mut l: LRU<i64, i64> = LRU::new(128, Some(on_evicted));
+        let mut l: Lru<i64, i64> = Lru::new(128, Some(on_evicted));
 
         for i in 0..256 {
             l.add(i, i);
@@ -287,10 +287,10 @@ mod tests {
         assert!(l.get(&200).is_none(), "should contain nothing");
     }
 
-    // Translation of lru_test.go::TestLRU_GetOldest_RemoveOldest.
+    // Translation of lru_test.go::TestLru_GetOldest_RemoveOldest.
     #[test]
     fn test_lru_get_oldest_remove_oldest() {
-        let mut l: LRU<i64, i64> = LRU::new(128, None);
+        let mut l: Lru<i64, i64> = Lru::new(128, None);
         for i in 0..256 {
             l.add(i, i);
         }
@@ -304,7 +304,7 @@ mod tests {
         assert_eq!(k, 129, "bad");
     }
 
-    // Translation of lru_test.go::TestLRU_Add.
+    // Translation of lru_test.go::TestLru_Add.
     #[test]
     fn test_lru_add() {
         let evict_counter = Arc::new(AtomicI64::new(0));
@@ -312,7 +312,7 @@ mod tests {
         let on_evicted: EvictCallback<i64, i64> = Box::new(move |_, _| {
             ec.fetch_add(1, Ordering::SeqCst);
         });
-        let mut l: LRU<i64, i64> = LRU::new(1, Some(on_evicted));
+        let mut l: Lru<i64, i64> = Lru::new(1, Some(on_evicted));
 
         assert!(
             !(l.add(1, 1) || evict_counter.load(Ordering::SeqCst) != 0),
@@ -324,10 +324,10 @@ mod tests {
         );
     }
 
-    // Translation of lru_test.go::TestLRU_Contains.
+    // Translation of lru_test.go::TestLru_Contains.
     #[test]
     fn test_lru_contains() {
-        let mut l: LRU<i64, i64> = LRU::new(2, None);
+        let mut l: Lru<i64, i64> = Lru::new(2, None);
         l.add(1, 1);
         l.add(2, 2);
         assert!(l.contains(&1), "1 should be contained");
@@ -338,10 +338,10 @@ mod tests {
         );
     }
 
-    // Translation of lru_test.go::TestLRU_Peek.
+    // Translation of lru_test.go::TestLru_Peek.
     #[test]
     fn test_lru_peek() {
-        let mut l: LRU<i64, i64> = LRU::new(2, None);
+        let mut l: Lru<i64, i64> = Lru::new(2, None);
         l.add(1, 1);
         l.add(2, 2);
         assert_eq!(l.peek(&1), Some(1), "1 should be set to 1");

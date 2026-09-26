@@ -2,7 +2,7 @@
 
 use serde::{Deserialize, Serialize};
 
-use crate::shell::api::model::Creature;
+use crate::api::model::Creature;
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct AssignOutput {}

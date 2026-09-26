@@ -99,7 +99,7 @@ pub(crate) struct GatewayPorts<'a> {
 /// Run `$call` on the adapter for the current provider, bound as `$ports`.
 macro_rules! route {
     ($self:ident, |$ports:ident| $call:expr) => {
-        match crate::shell::api::model::core_storage::current_unit() {
+        match crate::api::model::core_storage::current_unit() {
             Some(unit) => {
                 let $ports = aseman_capsule::gateway::CapsuleGatewayRoutes { repository: &*unit };
                 $call
@@ -140,9 +140,9 @@ impl GatewayRoutes for GatewayPorts<'_> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::core::actor::model::trx::TrxWrapper;
-    use crate::core::actor::model::trx::tests::{StubCore, StubStorage};
-    use crate::models::ports::storage::IStorage;
+    use crate::legacy::trx::TrxWrapper;
+    use crate::legacy::trx::tests::{StubCore, StubStorage};
+    use crate::models::ports::IStorage;
     use std::sync::Arc;
 
     #[test]

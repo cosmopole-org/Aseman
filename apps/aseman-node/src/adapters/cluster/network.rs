@@ -32,6 +32,7 @@ pub struct HttpRaftClient {
 }
 
 impl HttpRaftClient {
+    #[allow(clippy::result_large_err)] // openraft's RPCError is a fat fixed-shape error
     async fn rpc<Req, Resp, Err>(
         &self,
         uri: &str,

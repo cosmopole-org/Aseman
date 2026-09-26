@@ -10,7 +10,7 @@ pub mod test_logger;
 pub mod trilean;
 
 pub use hex::{decode_from_string, encode_to_string};
-pub use lru::{EvictCallback, LRU};
+pub use lru::{EvictCallback, Lru};
 pub use median::median;
 pub use rolling_index::RollingIndex;
 pub use rolling_index_map::RollingIndexMap;

@@ -10,7 +10,7 @@ The Rust codebase is approximately 87,000 lines, with approximately 55,000 in th
 
 ### VMM
 
-- `apps/aseman-node/src/drivers/mod.rs` explicitly describes the VMM as in-process.
+- `apps/aseman-node/src/adapters/mod.rs` explicitly describes the VMM as in-process.
 - `apps/aseman-node/src/models/ports/vmm.rs::IVmm` combines lifecycle, runtime discovery, Docker identity, signalling, database operations, locks, host calls, and HTTP forwarding.
 - Runtime plugins are statically registered by the native backend at
   `modules/vmm-backend/native-legacy/crates/caspar-vm-plugins/src/lib.rs`; no runtime

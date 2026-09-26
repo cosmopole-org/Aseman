@@ -7,6 +7,7 @@
 pub mod control_timer;
 pub mod core;
 pub mod graph;
+#[allow(clippy::module_inception)] // Go-translation module name matches its directory
 pub mod node;
 pub mod node_rpc;
 pub mod peer_selector;

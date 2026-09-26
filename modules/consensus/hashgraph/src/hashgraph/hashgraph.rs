@@ -3,7 +3,7 @@
 //!
 //! The `Hashgraph` is accessed exclusively (the Go node serialised every call
 //! through `coreLock`), so every method here takes `&mut self`: the six
-//! memoization caches mutate on read (LRU recency) and the consensus methods
+//! memoization caches mutate on read (Lru recency) and the consensus methods
 //! mutate the DAG.
 
 use std::collections::HashMap;
@@ -21,7 +21,7 @@ use super::rocks_store::RocksDbStore;
 use super::root::Root;
 use super::round_info::RoundInfo;
 use super::store::Store;
-use crate::common::{self, LRU, StoreErrType, is_store};
+use crate::common::{self, Lru, StoreErrType, is_store};
 use crate::logrus::Entry;
 use crate::peers::PeerSet;
 
@@ -72,12 +72,12 @@ pub struct Hashgraph {
     /// Counter used to order events in topological order (node-local).
     topological_index: i64,
 
-    ancestor_cache: LRU<Key, bool>,
-    self_ancestor_cache: LRU<Key, bool>,
-    strongly_see_cache: LRU<TreKey, bool>,
-    round_cache: LRU<String, i64>,
-    timestamp_cache: LRU<String, i64>,
-    witness_cache: LRU<String, bool>,
+    ancestor_cache: Lru<Key, bool>,
+    self_ancestor_cache: Lru<Key, bool>,
+    strongly_see_cache: Lru<TreKey, bool>,
+    round_cache: Lru<String, i64>,
+    timestamp_cache: Lru<String, i64>,
+    witness_cache: Lru<String, bool>,
 
     logger: Entry,
 }
@@ -126,12 +126,12 @@ impl Hashgraph {
             pending_loaded_events: 0,
             commit_callback,
             topological_index: 0,
-            ancestor_cache: LRU::new(cs, None),
-            self_ancestor_cache: LRU::new(cs, None),
-            strongly_see_cache: LRU::new(cs, None),
-            round_cache: LRU::new(cs, None),
-            timestamp_cache: LRU::new(cs, None),
-            witness_cache: LRU::new(cs, None),
+            ancestor_cache: Lru::new(cs, None),
+            self_ancestor_cache: Lru::new(cs, None),
+            strongly_see_cache: Lru::new(cs, None),
+            round_cache: Lru::new(cs, None),
+            timestamp_cache: Lru::new(cs, None),
+            witness_cache: Lru::new(cs, None),
             logger,
         }
     }
@@ -173,6 +173,7 @@ impl Hashgraph {
     }
 
     /// True if `y` is a self-ancestor of `x`.
+    #[allow(dead_code)] // exercised by the engine's own tests
     fn self_ancestor(&mut self, x: &str, y: &str) -> Result<bool> {
         let k = Key::new(x, y);
         if let Some(c) = self.self_ancestor_cache.get(&k) {
@@ -216,10 +217,10 @@ impl Hashgraph {
         for p in peers.by_pub_key.keys() {
             let xla = ex.last_ancestors.get(p);
             let yfd = ey.first_descendants.get(p);
-            if let (Some(xla), Some(yfd)) = (xla, yfd) {
-                if xla.index >= yfd.index {
-                    c += 1;
-                }
+            if let (Some(xla), Some(yfd)) = (xla, yfd)
+                && xla.index >= yfd.index
+            {
+                c += 1;
             }
         }
         Ok(c >= peers.super_majority())
@@ -302,11 +303,6 @@ impl Hashgraph {
         Ok(x_round > sp_round)
     }
 
-    fn round_received(&mut self, x: &str) -> Result<i64> {
-        let ex = self.store.get_event(x)?;
-        Ok(ex.round_received.unwrap_or(-1))
-    }
-
     fn lamport_timestamp(&mut self, x: &str) -> Result<i64> {
         if let Some(c) = self.timestamp_cache.get(&x.to_string()) {
             return Ok(c);
@@ -338,6 +334,7 @@ impl Hashgraph {
     }
 
     /// `round(x) - round(y)`.
+    #[allow(dead_code)] // exercised by the engine's own tests
     fn round_diff(&mut self, x: &str, y: &str) -> Result<i64> {
         let x_round = self
             .round(x)
@@ -567,13 +564,6 @@ impl Hashgraph {
             creator.id(),
         );
         Ok(())
-    }
-
-    /// Removes processed signatures from the SigPool.
-    fn remove_processed_signatures(&mut self, processed_signatures: &HashMap<String, bool>) {
-        for k in processed_signatures.keys() {
-            self.pending_signatures.remove(k);
-        }
     }
 
     // -----------------------------------------------------------------------
@@ -1016,10 +1006,10 @@ impl Hashgraph {
         let mut roots: std::collections::BTreeMap<String, Root> = std::collections::BTreeMap::new();
         for ev in &events {
             let p = ev.core.creator();
-            if !roots.contains_key(&p) {
+            if let std::collections::btree_map::Entry::Vacant(entry) = roots.entry(p.clone()) {
                 let sp = ev.core.self_parent();
                 let r = self.create_root(&p, &sp)?;
-                roots.insert(p, r);
+                entry.insert(r);
             }
         }
 
@@ -1191,11 +1181,11 @@ impl Hashgraph {
         self.topological_index = 0;
 
         let cs = self.store.cache_size().max(0) as usize;
-        self.ancestor_cache = LRU::new(cs, None);
-        self.self_ancestor_cache = LRU::new(cs, None);
-        self.strongly_see_cache = LRU::new(cs, None);
-        self.round_cache = LRU::new(cs, None);
-        self.witness_cache = LRU::new(cs, None);
+        self.ancestor_cache = Lru::new(cs, None);
+        self.self_ancestor_cache = Lru::new(cs, None);
+        self.strongly_see_cache = Lru::new(cs, None);
+        self.round_cache = Lru::new(cs, None);
+        self.witness_cache = Lru::new(cs, None);
 
         self.store.reset(frame)?;
 
@@ -1268,10 +1258,10 @@ impl Hashgraph {
             self.process_sig_pool()?;
         }
 
-        if restore_maintenance {
-            if let Some(rocks) = self.store.as_any().downcast_ref::<RocksDbStore>() {
-                rocks.set_maintenance_mode(false);
-            }
+        if restore_maintenance
+            && let Some(rocks) = self.store.as_any().downcast_ref::<RocksDbStore>()
+        {
+            rocks.set_maintenance_mode(false);
         }
 
         Ok(())
@@ -2501,7 +2491,7 @@ mod tests {
         // Round 1
         {
             let frame = h.get_frame(1).unwrap();
-            for (_p, r) in &frame.roots {
+            for r in frame.roots.values() {
                 assert_eq!(*r, Root::new(), "Round 1 root should be empty");
             }
 

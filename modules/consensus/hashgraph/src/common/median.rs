@@ -11,7 +11,7 @@ pub fn median(input: &[i64]) -> i64 {
     let l = s.len();
     if l == 0 {
         0
-    } else if l % 2 == 0 {
+    } else if l.is_multiple_of(2) {
         let mid = l / 2 - 1;
         (s[mid] + s[mid + 1]) / 2
     } else {

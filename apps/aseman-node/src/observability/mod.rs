@@ -15,4 +15,4 @@ pub mod pprof;
 pub mod resources;
 pub mod server;
 
-pub use server::{Snapshot, TelemetryServer, start};
+pub use server::start;

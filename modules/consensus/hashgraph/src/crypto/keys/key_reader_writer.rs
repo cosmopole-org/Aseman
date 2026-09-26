@@ -49,10 +49,10 @@ impl KeyReaderWriter for SimpleKeyfile {
         let _guard = self.l.lock().unwrap();
         let raw_key = hex::encode(dump_private_key(key));
 
-        if let Some(parent) = Path::new(&self.keyfile).parent() {
-            if !parent.as_os_str().is_empty() {
-                fs::create_dir_all(parent)?;
-            }
+        if let Some(parent) = Path::new(&self.keyfile).parent()
+            && !parent.as_os_str().is_empty()
+        {
+            fs::create_dir_all(parent)?;
         }
 
         fs::write(&self.keyfile, raw_key)?;

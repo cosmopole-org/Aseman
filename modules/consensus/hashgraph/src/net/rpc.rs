@@ -19,6 +19,7 @@ pub enum RpcCommand {
 }
 
 /// An RPC response payload.
+#[allow(clippy::large_enum_variant)] // FastForward response is inherently large
 pub enum RpcResponseKind {
     Sync(SyncResponse),
     EagerSync(EagerSyncResponse),

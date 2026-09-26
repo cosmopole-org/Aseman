@@ -10,8 +10,8 @@ use aseman_ports::{
     CreatureBalances, CreatureDirectory, CreatureMetadata, CreatureTypes, PortError, PortResult,
 };
 
+use crate::api::model::Creature;
 use crate::models::transaction::ITrx;
-use crate::shell::api::model::Creature;
 
 /// The legacy adapter: the `Creature` object, its `username` index, its `balance`
 /// column, the `ownerof` link, `CreatMeta`/`UserMeta`, and the type registry.
@@ -449,7 +449,7 @@ impl<'a> CreaturePorts<'a> {
 /// Run `$call` on the adapter for the current provider, bound as `$ports`.
 macro_rules! route {
     ($self:ident, |$ports:ident| $call:expr) => {
-        match crate::shell::api::model::core_storage::current_unit() {
+        match crate::api::model::core_storage::current_unit() {
             Some(unit) => {
                 let $ports = capsule_creatures(&*unit);
                 $call
@@ -487,12 +487,12 @@ impl CreatureDirectory for CreaturePorts<'_> {
     /// On capsules, the balance opened next to the identity lives on legacy, so a
     /// failed legacy commit deletes the identity again (ADR 0026 point 4).
     fn create(&self, record: &CreatureRecord) -> PortResult<()> {
-        let Some(unit) = crate::shell::api::model::core_storage::current_unit() else {
+        let Some(unit) = crate::api::model::core_storage::current_unit() else {
             return self.legacy().create(record);
         };
         capsule_creatures(&*unit).create(record)?;
         let id = record.id.clone();
-        crate::shell::api::model::core_storage::register_compensation(Box::new(move |store| {
+        crate::api::model::core_storage::register_compensation(Box::new(move |store| {
             capsule_creatures(store)
                 .delete(&id)
                 .map_err(|error| anyhow::anyhow!("{error}"))
@@ -507,14 +507,14 @@ impl CreatureDirectory for CreaturePorts<'_> {
     /// On capsules, the balance closed next to the identity lives on legacy, so a
     /// failed legacy commit revives the identity (ADR 0026 point 4).
     fn delete(&self, creature_id: &str) -> PortResult<()> {
-        let Some(unit) = crate::shell::api::model::core_storage::current_unit() else {
+        let Some(unit) = crate::api::model::core_storage::current_unit() else {
             return self.legacy().delete(creature_id);
         };
         let ports = capsule_creatures(&*unit);
         let saved = ports.creature(creature_id)?;
         ports.delete(creature_id)?;
         if let Some(saved) = saved {
-            crate::shell::api::model::core_storage::register_compensation(Box::new(move |store| {
+            crate::api::model::core_storage::register_compensation(Box::new(move |store| {
                 capsule_creatures(store)
                     .create(&saved)
                     .map_err(|error| anyhow::anyhow!("{error}"))
@@ -600,9 +600,9 @@ impl CreatureBalances for CreaturePorts<'_> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::core::actor::model::trx::TrxWrapper;
-    use crate::core::actor::model::trx::tests::{StubCore, StubStorage};
-    use crate::models::ports::storage::IStorage;
+    use crate::legacy::trx::TrxWrapper;
+    use crate::legacy::trx::tests::{StubCore, StubStorage};
+    use crate::models::ports::IStorage;
     use std::sync::Arc;
 
     pub(crate) fn test_public_keys() -> [String; 4] {

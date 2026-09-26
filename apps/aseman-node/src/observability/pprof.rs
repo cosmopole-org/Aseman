@@ -22,7 +22,7 @@
 //! the steady-state cost when nobody is querying is zero.
 
 use std::fs;
-use std::io::{BufRead, BufReader, Read, Write};
+use std::io::{BufRead, BufReader, Write};
 use std::net::{TcpListener, TcpStream};
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::thread;
@@ -126,10 +126,10 @@ fn json_response(v: Value) -> (u16, &'static str, Vec<u8>) {
 
 fn parse_seconds(query: &str) -> u64 {
     for pair in query.split('&') {
-        if let Some(("seconds", v)) = pair.split_once('=') {
-            if let Ok(n) = v.parse::<u64>() {
-                return n.clamp(1, 60);
-            }
+        if let Some(("seconds", v)) = pair.split_once('=')
+            && let Ok(n) = v.parse::<u64>()
+        {
+            return n.clamp(1, 60);
         }
     }
     5

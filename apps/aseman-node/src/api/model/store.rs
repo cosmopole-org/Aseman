@@ -90,15 +90,15 @@ impl Store {
         if let Some(v) = m.get("parentId") {
             d.parent_id = String::from_utf8_lossy(v).into_owned();
         }
-        if let Some(v) = m.get("memberCount") {
-            if v.len() == 4 {
-                d.member_count = i32::from_le_bytes(v.as_slice().try_into().unwrap());
-            }
+        if let Some(v) = m.get("memberCount")
+            && v.len() == 4
+        {
+            d.member_count = i32::from_le_bytes(v.as_slice().try_into().unwrap());
         }
-        if let Some(v) = m.get("signalCount") {
-            if v.len() == 8 {
-                d.signal_count = i64::from_le_bytes(v.as_slice().try_into().unwrap());
-            }
+        if let Some(v) = m.get("signalCount")
+            && v.len() == 8
+        {
+            d.signal_count = i64::from_le_bytes(v.as_slice().try_into().unwrap());
         }
         if let Some(v) = m.get("isPublic") {
             d.is_public = v == &[0x01];

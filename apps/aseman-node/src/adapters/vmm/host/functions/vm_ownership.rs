@@ -17,7 +17,7 @@
 //!     that way is owned by its program, so that program (and the shell
 //!     action's own owner check) may delete it.
 
-use crate::drivers::vmm::globals::with_global_app;
+use crate::adapters::vmm::globals::with_global_app;
 use crate::models::transaction::ITrx;
 
 pub(crate) fn owner_link_key(vm_id: &str) -> String {
@@ -92,7 +92,7 @@ pub(crate) fn program_owner_user(program_id: &str) -> String {
             true,
             Box::new(move |trx: &dyn ITrx| {
                 if aseman_ports::ProgramDirectory::program(
-                    &crate::shell::api::model::program_ports::ProgramPorts { trx: &*trx },
+                    &crate::api::model::program_ports::ProgramPorts { trx },
                     &program_id,
                 )
                 .map_err(|error| anyhow::anyhow!("{error}"))?
@@ -100,11 +100,10 @@ pub(crate) fn program_owner_user(program_id: &str) -> String {
                 {
                     return Ok(());
                 }
-                let program = (crate::shell::api::model::program_ports::ProgramPorts { trx })
+                let program = (crate::api::model::program_ports::ProgramPorts { trx })
                     .program_or_empty(&program_id.clone());
-                let machine = crate::shell::api::actions::program::resolve_program_owner_machine(
-                    trx, &program,
-                );
+                let machine =
+                    crate::api::actions::program::resolve_program_owner_machine(trx, &program);
                 *slot_c.lock().unwrap() = machine.owner_id;
                 Ok(())
             }),
@@ -138,8 +137,8 @@ pub(crate) fn owns_vm_instance(program_id: &str, vm_id: &str) -> bool {
             }),
         );
     });
-    let hit = *found.lock().unwrap();
-    hit
+
+    *found.lock().unwrap()
 }
 
 pub(crate) use aseman_contracts::guest_api::{TARGET_VM_ID_KEY, VM_TARGET_OPS};

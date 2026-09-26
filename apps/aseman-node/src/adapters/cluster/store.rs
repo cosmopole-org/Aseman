@@ -26,7 +26,7 @@ use openraft::{
     BasicNode, Entry, EntryPayload, LogId, OptionalSend, RaftLogReader, RaftSnapshotBuilder,
     SnapshotMeta, StorageError, StorageIOError, StoredMembership, Vote,
 };
-use rocksdb::{ColumnFamily, ColumnFamilyDescriptor, DB, Options};
+use rocksdb::{ColumnFamily, ColumnFamilyDescriptor, DB};
 use serde::{Deserialize, Serialize};
 
 use super::command::{ClusterCommand, ClusterResponse, TypeConfig};
@@ -62,15 +62,15 @@ fn write_err(e: impl std::error::Error + 'static) -> StorageError<NodeId> {
 pub fn open_db(dir: &Path) -> anyhow::Result<Arc<DB>> {
     std::fs::create_dir_all(dir)?;
     // Bounded-memory options + shared block cache (see
-    // `crate::drivers::rocks_tuning`) so the raft log/state DB can't grow
+    // `crate::adapters::rocks_tuning`) so the raft log/state DB can't grow
     // resident memory without bound either.
-    let mut opts = crate::drivers::rocks_tuning::tuned_options();
+    let mut opts = crate::adapters::rocks_tuning::tuned_options();
     opts.create_missing_column_families(true);
     opts.create_if_missing(true);
     let cfs = vec![
-        ColumnFamilyDescriptor::new("meta", crate::drivers::rocks_tuning::tuned_options()),
-        ColumnFamilyDescriptor::new("logs", crate::drivers::rocks_tuning::tuned_options()),
-        ColumnFamilyDescriptor::new("sm", crate::drivers::rocks_tuning::tuned_options()),
+        ColumnFamilyDescriptor::new("meta", crate::adapters::rocks_tuning::tuned_options()),
+        ColumnFamilyDescriptor::new("logs", crate::adapters::rocks_tuning::tuned_options()),
+        ColumnFamilyDescriptor::new("sm", crate::adapters::rocks_tuning::tuned_options()),
     ];
     Ok(Arc::new(DB::open_cf_descriptors(&opts, dir, cfs)?))
 }
@@ -95,6 +95,7 @@ impl LogStore {
         self.db.cf_handle("logs").expect("logs column family")
     }
 
+    #[allow(clippy::result_large_err)] // openraft StorageError is a fixed-shape error
     fn get_meta<T: for<'de> Deserialize<'de>>(&self, key: &str) -> StorageResult<Option<T>> {
         let bytes = self.db.get_cf(self.cf_meta(), key).map_err(read_err)?;
         match bytes {
@@ -103,6 +104,7 @@ impl LogStore {
         }
     }
 
+    #[allow(clippy::result_large_err)]
     fn put_meta<T: Serialize>(&self, key: &str, value: &T) -> StorageResult<()> {
         let bytes = serde_json::to_vec(value).map_err(write_err)?;
         self.db
@@ -112,6 +114,7 @@ impl LogStore {
         Ok(())
     }
 
+    #[allow(clippy::result_large_err)]
     fn last_log_id(&self) -> StorageResult<Option<LogId<NodeId>>> {
         let mut it = self
             .db
@@ -248,6 +251,7 @@ pub struct StateMachineStore {
 }
 
 impl StateMachineStore {
+    #[allow(clippy::result_large_err)]
     pub fn new(db: Arc<DB>, applier: Arc<dyn CommandApplier>) -> StorageResult<Self> {
         let state = match db
             .get_cf(db.cf_handle("sm").expect("sm column family"), "state")
@@ -263,6 +267,7 @@ impl StateMachineStore {
         self.db.cf_handle("sm").expect("sm column family")
     }
 
+    #[allow(clippy::result_large_err)]
     fn persist_state(&self) -> StorageResult<()> {
         let bytes = serde_json::to_vec(&self.state).map_err(write_err)?;
         self.db

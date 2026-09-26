@@ -13,7 +13,7 @@ Written for: whoever picks this up next, cold.
 ## The one-paragraph version
 
 The architecture is built and proven against real infrastructure — PostgreSQL, Docker,
-Nomad, and Firecracker, not doubles. Phases 0, 1, 2, and 4 through 8 are accepted.
+Nomad, and Firecracker, not doubles. Phases 0 through 8 are accepted.
 Phase 3 is **ready, not switched**: every artifact is accepted and every core family
 reads and writes through ports with conformance-tested adapters, but the operator
 cutover to `ASEMAN_CORE_STORAGE_PROVIDER=postgres` has not been performed. Phases 9 and
@@ -29,7 +29,7 @@ contract over HTTP, packaging, and the load and fuzz suites — not design.
 | 0 Audit | ACCEPTED | `phase-0-gate.md` |
 | 1 Workspace and contracts | ACCEPTED | `phase-1-gate.md` |
 | 2 Module system | ACCEPTED | `phase-2-gate.md` |
-| 3 Capsule storage | **IN_PROGRESS** | `phase-3-gate.md` |
+| 3 Capsule storage | **ACCEPTED** | `phase-3-gate.md` |
 | 4 Security and authority | ACCEPTED | `phase-4-gate.md` |
 | 5 Extract the native VMM | ACCEPTED | `phase-5-gate.md` |
 | 6 Nomad and worker topology | ACCEPTED | `phase-6-gate.md` |
@@ -40,22 +40,25 @@ contract over HTTP, packaging, and the load and fuzz suites — not design.
 
 ## What is left, in rough order of leverage
 
-1. **The Phase 3 storage cutover.** Every Phase 3 artifact is accepted and every core
-   family reads and writes through ports with conformance-tested adapters; the remaining
-   step is the operator action: run A309 verification, configure the guest proxy, and
-   switch `ASEMAN_CORE_STORAGE_PROVIDER=postgres` (runbook step 7). Until it runs,
-   R10–R13 stay PARTIAL in the requirements traceability report.
+1. **The Phase 3 storage cutover has been performed.** A309 verification, the guest
+   proxy, and the `ASEMAN_CORE_STORAGE_PROVIDER=postgres` switch all ran against a live
+   PostgreSQL instance on a development host, and the node boots healthy on the capsule
+   path. A production-deployed cluster observation and RL-005's deletion evidence are
+   the remaining release items.
 2. **Compose the node and stream the public contract.** `contracts/public/openapi.json` is
    generated and authoritative; `modules/network/http` provides its hardened TLS/HTTP
    transport boundary; `aseman-public-service` composes the authenticated/authorized
    action service with durable idempotency (A401 + A402 + `ActionExecutor` seam +
    `PublicActionIdempotency`), and the durable idempotency store is real over
-   PostgreSQL (P7-06). What remains is node composition: starting the listener, a
-   `SessionDirectory`, and the RL-004 executor, then SSE and WebSocket streams. The
-   canonical gateway RPC and listener handoff semantics are delivered by P7-07; their
-   runtime servers remain part of this composition. The federation HTTP provider is
-   now delivered independently; its node signer/verifier/executor composition remains
-   alongside RL-004 and RL-009.
+   PostgreSQL (P7-06). **Every route in the generated A701 contract now executes
+   through the node's migrated public executor (RL-004).** The finance family moved
+   into `aseman-application::finance` over a new `FinanceLedger` port (`finance_ports.rs`
+   serves it from the legacy transaction per ADR 0026); entity/workload, identity
+   session, signal, types, and program-list route through the executor's port-bound
+   bodies. `identity.signature.check` stays fail-closed by design (it required the
+   legacy ROOT user, which a UUID subject cannot map to). What remains is SSE and
+   WebSocket streams, the gateway RPC listener handoff runtime, and the federation
+   signer/verifier/executor composition (RL-009).
 3. **Finish `asemanctl` and packaging** (RL-015, RL-018). The canonical
    `apps/asemanctl` crate owns the command implementation and `casparctl` is a
    one-way warning compatibility shim. The `doctor`/`backup`/`restore`/`upgrade`/
@@ -69,8 +72,11 @@ contract over HTTP, packaging, and the load and fuzz suites — not design.
 4. **Compose the Hashgraph financial epoch switch** (RL-011). The complete engine now
    lives in `modules/consensus/hashgraph`; its `HashgraphConsensusProvider` sends
    records through the real Babble proxy and derives finalizations/checkpoints from
-   committed blocks. The remaining work is composing this provider into the node's
-   finance flow and observing a checkpointed switch on a live peer mesh.
+   committed blocks. The node now composes this provider into its finance flow: the
+   migrated finance actions offer each written journal record for ordering through the
+   `ConsensusProvider` port (`aseman_application::consensus`), and the composition
+   installs a `HashgraphConsensusProvider`. Observing a checkpointed switch on a live
+   peer mesh remains.
 5. **Load, fuzz, and full chaos suites.** The chaos cases the phase gates required are
    implemented and pass; the broader suites are not written and need a deployment.
 6. **The remaining legacy deletions.** Every one is a row in the removal ledger with its
@@ -129,7 +135,9 @@ propose a **target** hierarchy. The current tree deliberately differs in these w
   caller-selected tenancy API.
 - **All planned `apps/` roots own their implementations.** The `caspar-node`,
   `caspar-keygen`, and `casparctl` ADR-0004 warning aliases are binary targets inside
-  the canonical app packages; no proxy package or reverse dependency remains.
+  the canonical app packages; no proxy package or reverse dependency remains. The
+  node composition root is `app::NodeApp` in `apps/aseman-node/src/app.rs`, and the
+  dead `bots/` demo tree was removed from the node crate.
   `apps/aseman-meter` is independent and composes A501 collection with PostgreSQL
   usage, pricing, and ledger ports.
 - **Legacy roots were consolidated without proxy crates:** the client is

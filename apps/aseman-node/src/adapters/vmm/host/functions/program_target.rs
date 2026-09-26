@@ -14,10 +14,9 @@
 
 use serde_json::{Map, Value, json};
 
-use crate::drivers::vmm::globals::with_global_app;
-use crate::drivers::vmm::host::functions::vm_ownership::program_owner_user;
+use crate::adapters::vmm::globals::with_global_app;
+use crate::adapters::vmm::host::functions::vm_ownership::program_owner_user;
 use crate::models::transaction::ITrx;
-use crate::shell::api::model::Creature;
 
 pub(crate) use aseman_contracts::guest_api::{PROGRAM_TARGET_OPS, TARGET_PROGRAM_ID_KEY};
 
@@ -36,7 +35,7 @@ pub(crate) fn machine_owner_user(machine_id: &str) -> String {
         app.modify_state(
             true,
             Box::new(move |trx: &dyn ITrx| {
-                let machine = (crate::shell::api::model::creature_ports::CreaturePorts { trx })
+                let machine = (crate::api::model::creature_ports::CreaturePorts { trx })
                     .creature_or_empty(&machine_id.clone());
                 *slot_c.lock().unwrap() = machine.owner_id;
                 Ok(())
@@ -77,10 +76,10 @@ fn normalize_create_input(caller: &str, obj: &mut Map<String, Value>) {
         .and_then(Value::as_str)
         .unwrap_or("")
         .trim();
-    if let Some(app_id) = app_id {
-        if machine.is_empty() || machine == caller {
-            obj.insert("machineId".to_string(), Value::String(app_id));
-        }
+    if let Some(app_id) = app_id
+        && (machine.is_empty() || machine == caller)
+    {
+        obj.insert("machineId".to_string(), Value::String(app_id));
     }
 }
 

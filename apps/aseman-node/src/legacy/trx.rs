@@ -25,14 +25,14 @@ use aseman_storage_legacy::LegacyKvWrite;
 use serde_json::{Map, Value};
 
 use crate::models::core::ICore;
-use crate::models::ports::storage::IStorage;
+use crate::models::ports::IStorage;
 use crate::models::transaction::ITrx;
 use crate::models::update::Update;
 
 /// `TrxWrapper` is the per-call transaction handle.
 pub struct TrxWrapper {
     _core: Arc<dyn ICore>,
-    db: crate::models::ports::storage::KvDb,
+    db: crate::models::ports::KvDb,
     readonly: bool,
     inner: Mutex<Inner>,
 }
@@ -194,8 +194,8 @@ impl ITrx for TrxWrapper {
         // instance applies the same mutations. `should_replicate` is false
         // for raft-apply threads (no echo) and for scopes the VMM marked as
         // local-only (non-distributed VMs).
-        let replicate = crate::drivers::cluster::should_replicate();
-        let mut replicated_ops: Vec<crate::drivers::cluster::command::KvOp> = Vec::new();
+        let replicate = crate::adapters::cluster::should_replicate();
+        let mut replicated_ops: Vec<crate::adapters::cluster::command::KvOp> = Vec::new();
         let mut batch: Vec<LegacyKvWrite> = Vec::with_capacity(inner.overlay.len());
         for (k, v) in &inner.overlay {
             match v {
@@ -205,7 +205,7 @@ impl ITrx for TrxWrapper {
                         value: val.clone(),
                     });
                     if replicate {
-                        replicated_ops.push(crate::drivers::cluster::command::KvOp::put(
+                        replicated_ops.push(crate::adapters::cluster::command::KvOp::put(
                             String::from_utf8_lossy(k).into_owned(),
                             val,
                         ));
@@ -214,7 +214,7 @@ impl ITrx for TrxWrapper {
                 None => {
                     batch.push(LegacyKvWrite::Delete { key: k.clone() });
                     if replicate {
-                        replicated_ops.push(crate::drivers::cluster::command::KvOp::del(
+                        replicated_ops.push(crate::adapters::cluster::command::KvOp::del(
                             String::from_utf8_lossy(k).into_owned(),
                         ));
                     }
@@ -228,7 +228,7 @@ impl ITrx for TrxWrapper {
         drop(inner);
         written.map_err(|error| anyhow!("state commit failed: {error}"))?;
         if !replicated_ops.is_empty() {
-            crate::drivers::cluster::on_local_commit(replicated_ops);
+            crate::adapters::cluster::on_local_commit(replicated_ops);
         }
         Ok(())
     }
@@ -605,10 +605,10 @@ impl ITrx for TrxWrapper {
                 index += 1;
                 continue;
             }
-            if let Some(c) = count {
-                if index >= offset + c {
-                    break;
-                }
+            if let Some(c) = count
+                && index >= offset + c
+            {
+                break;
             }
             index += 1;
             out.insert(id, cols);
@@ -633,10 +633,8 @@ impl TrxWrapper {
         merge: bool,
     ) -> Result<()> {
         let mut old: Map<String, Value> = Map::new();
-        if merge {
-            if let Ok(existing) = self.get_json(key, path) {
-                old = existing;
-            }
+        if merge && let Ok(existing) = self.get_json(key, path) {
+            old = existing;
         }
         let mut sorted_keys: Vec<&String> = obj.keys().collect();
         sorted_keys.sort();
@@ -742,11 +740,11 @@ fn merge_objects(dst: &mut Map<String, Value>, src: &Map<String, Value>) {
 #[cfg(test)]
 pub(crate) mod tests {
     use super::*;
-    use crate::models::ports::network::INetwork;
-    use crate::models::ports::security::ISecurity;
-    use crate::models::ports::signaler::ISignaler;
-    use crate::models::ports::tools::ITools;
-    use crate::models::ports::workloads::IWorkloads;
+    use crate::models::ports::INetwork;
+    use crate::models::ports::ISecurity;
+    use crate::models::ports::ISignaler;
+    use crate::models::ports::ITools;
+    use crate::models::ports::IWorkloads;
     use std::sync::Arc;
 
     // ---- minimal `ICore` stub for unit tests -------------------------------
@@ -774,13 +772,12 @@ pub(crate) mod tests {
             HashMap::new()
         }
         fn add_free_node(&self, _: &str) {}
-        fn actor(&self) -> Arc<dyn crate::models::action::actor::IActor> {
+        fn actor(&self) -> Arc<dyn crate::models::action::IActor> {
             unimplemented!()
         }
         fn load(&self, _: Vec<String>, _: HashMap<String, Value>) {}
         fn close(&self) {}
         fn plant_chain_trigger(&self, _: i64, _: &str, _: &str, _: &str, _: &str, _: &str) {}
-        fn app_pending_trxs(&self) {}
         fn ip_addr(&self) -> String {
             String::new()
         }
@@ -834,7 +831,7 @@ pub(crate) mod tests {
 
     pub(crate) struct StubStorage {
         root: String,
-        kv: crate::models::ports::storage::KvDb,
+        kv: crate::models::ports::KvDb,
     }
 
     impl StubStorage {
@@ -848,7 +845,7 @@ pub(crate) mod tests {
                     .as_nanos()
             );
             std::fs::create_dir_all(&dir).unwrap();
-            let kv: crate::models::ports::storage::KvDb = Arc::new(
+            let kv: crate::models::ports::KvDb = Arc::new(
                 aseman_storage_legacy::RocksDbKvStore::open_default(std::path::Path::new(&dir))
                     .expect("rocksdb"),
             );
@@ -860,7 +857,7 @@ pub(crate) mod tests {
         fn storage_root(&self) -> String {
             self.root.clone()
         }
-        fn kv_db(&self) -> crate::models::ports::storage::KvDb {
+        fn kv_db(&self) -> crate::models::ports::KvDb {
             self.kv.clone()
         }
         fn gen_id(&self, _t: &dyn ITrx, _: &str) -> String {

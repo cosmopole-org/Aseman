@@ -7,7 +7,7 @@ use std::net::TcpListener;
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 use std::thread;
-use std::time::{Duration, SystemTime, UNIX_EPOCH};
+use std::time::{Duration, SystemTime};
 
 use anyhow::{Result, anyhow};
 use aseman_config::AsemanConfig;
@@ -57,7 +57,7 @@ pub struct TelemetryServer {
     vm_port: u16,
     telemetry_port: u16,
     storage_root: String,
-    resources: crate::telemetry::resources::ResourceSampler,
+    resources: crate::observability::resources::ResourceSampler,
     lock: Mutex<()>,
 }
 
@@ -93,7 +93,7 @@ pub fn start(config: &AsemanConfig) -> Result<()> {
         vm_port: config.telemetry.vm_port,
         telemetry_port: config.telemetry.api_port,
         storage_root: config.storage.root_path.clone(),
-        resources: crate::telemetry::resources::ResourceSampler::new(),
+        resources: crate::observability::resources::ResourceSampler::new(),
         lock: Mutex::new(()),
     });
 
@@ -147,14 +147,12 @@ impl TelemetryServer {
     fn cached_or_collect(&self) -> Result<Snapshot> {
         let _guard = self.lock.lock().unwrap();
         // Cache check.
-        if let Ok(Some(bytes)) = self.db.get(b"latest_snapshot") {
-            if let Ok(cached) = serde_json::from_slice::<Snapshot>(&bytes) {
-                if let Ok(ts) = chrono::DateTime::parse_from_rfc3339(&cached.timestamp) {
-                    if Utc::now().signed_duration_since(ts).num_milliseconds() < 2000 {
-                        return Ok(cached);
-                    }
-                }
-            }
+        if let Ok(Some(bytes)) = self.db.get(b"latest_snapshot")
+            && let Ok(cached) = serde_json::from_slice::<Snapshot>(&bytes)
+            && let Ok(ts) = chrono::DateTime::parse_from_rfc3339(&cached.timestamp)
+            && Utc::now().signed_duration_since(ts).num_milliseconds() < 2000
+        {
+            return Ok(cached);
         }
         let snap = self.collect();
         if let Ok(bytes) = serde_json::to_vec(&snap) {

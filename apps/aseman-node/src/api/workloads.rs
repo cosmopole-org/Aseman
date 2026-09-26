@@ -54,12 +54,12 @@ use aseman_vmm_http::client::{ClientTls, HttpVmmClient};
 use serde_json::{Value, json};
 use sha2::{Digest, Sha256};
 
-use crate::drivers::blob_store::StorageRootBlobStore;
+use crate::adapters::blob_store::StorageRootBlobStore;
 
 /// The VM instance that serves an entity's signals.
 pub(crate) const SIGNAL_INSTANCE: &str = "signal";
 
-struct SystemClock;
+pub(crate) struct SystemClock;
 
 impl ClockPort for SystemClock {
     fn unix_millis(&self) -> i64 {
@@ -108,7 +108,7 @@ fn unsigned(value: i64) -> u64 {
     u64::try_from(value.max(0)).unwrap_or(0)
 }
 
-fn capsule(family: &str, legacy_id: &str) -> Uuid {
+pub(crate) fn capsule(family: &str, legacy_id: &str) -> Uuid {
     Uuid::from_bytes(deterministic_legacy_capsule_id(
         family,
         legacy_id.as_bytes(),
@@ -144,6 +144,7 @@ impl RemoteWorkloads {
     }
 
     /// Record, key, and create one VM instance of `entity`; safe to repeat.
+    #[allow(clippy::too_many_arguments)] // legacy VM launch surface
     pub(crate) fn launch(
         &self,
         program: &str,
@@ -262,7 +263,7 @@ impl RemoteWorkloads {
         workload: WorkloadId,
         state: DesiredWorkloadState,
     ) -> Result<u64> {
-        let policy = crate::shell::authority::policy()
+        let policy = crate::api::authority::policy()
             .ok_or_else(|| anyhow!("the action registry did not load"))?;
         let workloads = self.workloads();
         SetDesiredWorkloadState {
@@ -289,6 +290,7 @@ impl RemoteWorkloads {
 
     /// Deliver one signal (the legacy `Send` packet) to the entity's signal workload,
     /// launching it on first use.
+    #[allow(clippy::too_many_arguments)] // legacy VM signal surface
     pub(crate) fn invoke(
         &self,
         program: &str,
@@ -543,7 +545,9 @@ impl RemoteWorkloads {
             .into_iter()
             .find(|value| !value.is_empty())
             .map(|value| value.to_lowercase())
-            .unwrap_or_else(|| crate::drivers::vmm::driver::entity_runtime(app, &program, &entity));
+            .unwrap_or_else(|| {
+                crate::adapters::vmm::driver::entity_runtime(app, &program, &entity)
+            });
         let vm = text("vmId");
         let target = |vm: &str| Self::workload_id(&program, &entity, vm);
         let as_caller = Subject {
@@ -832,17 +836,16 @@ pub(crate) fn program_machine(app: &Arc<dyn crate::models::core::ICore>, program
         Box::new(move |trx: &dyn crate::models::transaction::ITrx| {
             *out.lock()
                 .unwrap_or_else(std::sync::PoisonError::into_inner) =
-                (crate::shell::api::model::program_ports::ProgramPorts { trx })
+                (crate::api::model::program_ports::ProgramPorts { trx })
                     .program_or_empty(&program)
                     .machine_id;
             Ok(())
         }),
     );
-    let machine = slot
-        .lock()
+
+    slot.lock()
         .unwrap_or_else(std::sync::PoisonError::into_inner)
-        .clone();
-    machine
+        .clone()
 }
 
 impl RemoteWorkloads {
@@ -927,7 +930,7 @@ impl GuestHostCalls for NodeGuestApi {
             "entityId": entity,
             "vmId": instance,
         });
-        Ok(crate::drivers::vmm::host::vm_host_functions::handle_unified_host_call(&packet))
+        Ok(crate::adapters::vmm::host::vm_host_functions::handle_unified_host_call(&packet))
     }
 
     fn artifact(&self, caller: &GuestCaller, digest: &str) -> PortResult<Vec<u8>> {

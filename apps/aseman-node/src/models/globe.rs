@@ -1,9 +1,8 @@
 use std::collections::HashMap;
-use std::time::SystemTime;
 
+use crate::legacy::utils::compat::GoError;
 use crate::models::chain::ChainPayPacket;
 use crate::models::update::Update;
-use crate::util::GoError;
 
 /// Callback receiving a chain base-request response.
 pub type BaseResponseCallback = Box<dyn Fn(Vec<u8>, i64, Option<GoError>) + Send + Sync>;
@@ -12,6 +11,10 @@ pub type BaseResponseCallback = Box<dyn Fn(Vec<u8>, i64, Option<GoError>) + Send
 pub type TypedMessageCallback = Box<dyn Fn(String, Vec<u8>) + Send + Sync>;
 
 /// The "globe" — the node's window onto the global chain network.
+///
+/// Transport only. Staking and the election round live in the consensus
+/// engine's `Governance` (RL-011); the orchestrator routes `stake`/`election`
+/// chain packets straight to that governance.
 pub trait IGlobe: Send + Sync {
     fn send_base_request_on_chain(
         &self,
@@ -53,7 +56,4 @@ pub trait IGlobe: Send + Sync {
         tag: &str,
         to_user_id: &str,
     );
-    fn handle(&self, typ: &str, trx_payload: Vec<u8>) -> bool;
-    fn stake_node_owner(&self, node_id: &str, owner_id: &str, amount: i64);
-    fn try_start_scheduled_election(&self, now: SystemTime);
 }

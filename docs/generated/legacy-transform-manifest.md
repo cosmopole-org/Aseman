@@ -19,11 +19,11 @@ closed; a blocked or heuristic row is never copied as an opaque authoritative ca
 | `aggregate_with_document_family` | 3 |
 | `aggregate_with_object_family` | 16 |
 | `covered_by_reviewed_family` | 6 |
-| `derived_index_or_relationship` | 46 |
-| `fixture_backed_transform` | 66 |
-| `intentional_removal` | 19 |
+| `derived_index_or_relationship` | 56 |
+| `fixture_backed_transform` | 74 |
+| `intentional_removal` | 23 |
 | `reviewed_no_persisted_record` | 5 |
-| `vmm_observed_runtime` | 27 |
+| `vmm_observed_runtime` | 48 |
 
 ## Blocked rows by owning phase
 

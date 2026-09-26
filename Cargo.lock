@@ -150,7 +150,12 @@ version = "0.1.0"
 dependencies = [
  "aseman-domain",
  "aseman-ports",
+ "hex",
+ "serde",
+ "serde_json",
+ "sha2 0.10.9",
  "thiserror 2.0.20",
+ "url",
 ]
 
 [[package]]
@@ -180,6 +185,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "aseman-config",
+ "aseman-contracts",
  "aseman-domain",
  "aseman-ports",
  "aseman-storage-legacy",
@@ -315,6 +321,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "aseman-keygen"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "aseman-config",
+ "hex",
+ "k256",
+]
+
+[[package]]
 name = "aseman-meter"
 version = "0.1.0"
 dependencies = [
@@ -394,6 +410,8 @@ dependencies = [
  "aseman-observability",
  "aseman-policy-native",
  "aseman-ports",
+ "aseman-public-http",
+ "aseman-public-service",
  "aseman-storage-legacy",
  "aseman-storage-postgres",
  "aseman-vmm-http",
@@ -405,7 +423,6 @@ dependencies = [
  "futures-util",
  "getrandom 0.2.17",
  "hex",
- "k256",
  "libc",
  "log",
  "num-bigint",
@@ -465,6 +482,7 @@ name = "aseman-ports"
 version = "0.1.0"
 dependencies = [
  "aseman-domain",
+ "serde_json",
  "thiserror 2.0.20",
 ]
 
@@ -4972,6 +4990,13 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "93fc1dc3aaa9bfed95e02e6eadabb4baf7e3078b0bd1b4d7b6b0b68378900502"
 dependencies = [
  "winapi-util",
+]
+
+[[package]]
+name = "scan-vmdb"
+version = "0.1.0"
+dependencies = [
+ "aseman-storage-legacy",
 ]
 
 [[package]]

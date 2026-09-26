@@ -9,6 +9,7 @@ repository.workspace = true
 
 [dependencies]
 aseman-domain = { path = "../aseman-domain" }
+serde_json.workspace = true
 thiserror.workspace = true
 
 [features]

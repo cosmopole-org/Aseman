@@ -4,8 +4,8 @@
 //! `onaccess::<storeId>::<userId>` + `hasaccess::<userId>::<storeId>` link
 //! mutations inside a hashgraph transaction.
 
-use crate::drivers::vmm::globals::with_global_app;
-use crate::drivers::vmm::prelude::*;
+use crate::adapters::vmm::globals::with_global_app;
+use crate::adapters::vmm::prelude::*;
 
 fn dispatch_micro(op: &str, input: &JsonValue) -> String {
     match with_global_app(|app| app.tools().workloads().host_action_micro(op, input, 0).0) {

@@ -50,7 +50,7 @@ pub(crate) fn run(
         return Err("guest state needs an identified creature".to_owned());
     }
     // On PostgreSQL the creature's own guest database serves it (ADR 0028).
-    if let Some(result) = crate::shell::api::model::guest_data::route_state(creature, op, input) {
+    if let Some(result) = crate::api::model::guest_data::route_state(creature, op, input) {
         return result;
     }
     match op {
@@ -104,9 +104,9 @@ pub(crate) fn run(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::core::actor::model::trx::TrxWrapper;
-    use crate::core::actor::model::trx::tests::{StubCore, StubStorage};
-    use crate::models::ports::storage::IStorage;
+    use crate::legacy::trx::TrxWrapper;
+    use crate::legacy::trx::tests::{StubCore, StubStorage};
+    use crate::models::ports::IStorage;
     use std::sync::Arc;
 
     fn trx() -> Arc<TrxWrapper> {

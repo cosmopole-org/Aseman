@@ -3,6 +3,7 @@
 
 pub mod handlers;
 pub mod inmem;
+#[allow(clippy::module_inception)] // Go-translation module name matches its directory
 pub mod proxy;
 pub mod types;
 

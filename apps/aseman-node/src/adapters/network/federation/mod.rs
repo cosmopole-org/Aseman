@@ -9,4 +9,3 @@ pub mod fednet;
 pub mod netserver;
 
 pub use fednet::FedNet;
-pub use netserver::{Socket, Tcp};

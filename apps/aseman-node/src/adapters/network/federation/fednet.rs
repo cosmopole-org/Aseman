@@ -12,20 +12,18 @@ use std::sync::{Arc, Mutex};
 use std::thread;
 use std::time::Duration;
 
-use anyhow::Result;
 use dashmap::DashMap;
 use serde_json::Value;
 
+use crate::api::model::StorePermissions;
+use crate::api::packets::{invites, stores};
+use crate::api::utils::crypto::secure_unique_string;
 use crate::models::core::ICore;
 use crate::models::packet::{OriginPacket, build_error_json};
-use crate::models::ports::network::federation::{FedRequestCallback, IFederation};
-use crate::models::ports::signaler::ISignaler;
-use crate::models::ports::storage::IStorage;
+use crate::models::ports::ISignaler;
+use crate::models::ports::IStorage;
+use crate::models::ports::{FedRequestCallback, IFederation};
 use crate::models::transaction::ITrx;
-use crate::shell::api::model::StorePermissions;
-use crate::shell::api::packets::{invites, stores};
-use crate::shell::utils::crypto::secure_unique_string;
-use crate::util::GoError;
 use aseman_network_legacy::TlsConfig;
 
 use super::netserver::{FedApi, Socket, Tcp};
@@ -145,8 +143,8 @@ impl FedNet {
                 Ok(())
             }),
         );
-        let result = host.lock().unwrap().clone();
-        result
+
+        host.lock().unwrap().clone()
     }
 
     fn handle_response(&self, pack: OriginPacket) {
@@ -239,7 +237,7 @@ impl FedNet {
         self.app.modify_state(
             false,
             Box::new(move |trx: &dyn ITrx| {
-                let ports = crate::shell::api::model::store_ports::MembershipPorts { trx };
+                let ports = crate::api::model::store_ports::MembershipPorts { trx };
                 let outcome = match grant {
                     Some(permissions) => {
                         aseman_ports::StoreAccess::join(&ports, &store_id, &member_id, permissions)
@@ -260,7 +258,7 @@ impl FedNet {
                         Box::new(move |trx: &dyn ITrx| {
                             // A mirrored update of a store this node does not hold is
                             // ignored rather than recreated without a creator.
-                            let stores = crate::shell::api::model::store_ports::StorePorts { trx };
+                            let stores = crate::api::model::store_ports::StorePorts { trx };
                             let record = aseman_domain::store::StoreRecord {
                                 id: tc.store.id.clone(),
                                 persistent_history: tc.store.pers_hist,
@@ -285,7 +283,7 @@ impl FedNet {
                         false,
                         Box::new(move |trx: &dyn ITrx| {
                             // LD-20: the store is really removed; the old key never existed.
-                            let stores = crate::shell::api::model::store_ports::StorePorts { trx };
+                            let stores = crate::api::model::store_ports::StorePorts { trx };
                             aseman_ports::StoreDirectory::delete_store(&stores, &id)
                                 .map_err(|error| anyhow::anyhow!("{error}"))?;
                             aseman_ports::StoreMetadata::delete_store_metadata(&stores, &id)

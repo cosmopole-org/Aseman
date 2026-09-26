@@ -268,10 +268,8 @@ fn grant_chains(
     subject: Option<&Subject>,
     action: &str,
 ) -> Vec<Vec<aseman_domain::capability::Grant>> {
-    let (Some(subject), Some(unit)) = (
-        subject,
-        crate::shell::api::model::core_storage::current_unit(),
-    ) else {
+    let (Some(subject), Some(unit)) = (subject, crate::api::model::core_storage::current_unit())
+    else {
         return Vec::new();
     };
     let store = aseman_capsule::capability::CapsuleGrantStore { repository: &*unit };
@@ -312,7 +310,7 @@ pub(crate) fn decide_surface(
         })
         .map_err(|error| error.to_string())?;
     let shadow = !decision.allowed && SHADOW_ACTIONS.contains(&action_id.as_str());
-    crate::shell::audit::record(aseman_domain::authority::AuditRecord {
+    crate::api::audit::record(aseman_domain::authority::AuditRecord {
         actor: caller
             .subject
             .map_or_else(|| "anonymous".to_owned(), |subject| subject.to_string()),
@@ -473,20 +471,18 @@ impl AuthorityLookups for TrxLookups<'_> {
         if id.is_empty() {
             return String::new();
         }
-        let programs = crate::shell::api::model::program_ports::ProgramPorts { trx: self.trx };
+        let programs = crate::api::model::program_ports::ProgramPorts { trx: self.trx };
         let owner = match aseman_ports::ProgramDirectory::program(&programs, id)
             .ok()
             .flatten()
         {
             Some(record) => {
-                let program = crate::shell::api::model::program_ports::program_view(record);
-                crate::shell::api::actions::program::resolve_program_owner_machine(
-                    self.trx, &program,
-                )
-                .owner_id
+                let program = crate::api::model::program_ports::program_view(record);
+                crate::api::actions::program::resolve_program_owner_machine(self.trx, &program)
+                    .owner_id
             }
             None => {
-                (crate::shell::api::model::creature_ports::CreaturePorts { trx: self.trx })
+                (crate::api::model::creature_ports::CreaturePorts { trx: self.trx })
                     .creature_or_empty(id)
                     .owner_id
             }
@@ -500,13 +496,13 @@ impl AuthorityLookups for TrxLookups<'_> {
 
     fn vm_program(&self, vm_id: &str) -> String {
         self.trx
-            .get_link(&crate::drivers::vmm::host::functions::vm_ownership::owner_link_key(vm_id))
+            .get_link(&crate::adapters::vmm::host::functions::vm_ownership::owner_link_key(vm_id))
             .trim()
             .to_owned()
     }
 
     fn store_permissions(&self, store_id: &str, member: &str) -> (bool, bool, bool) {
-        let ports = crate::shell::api::model::store_ports::MembershipPorts { trx: self.trx };
+        let ports = crate::api::model::store_ports::MembershipPorts { trx: self.trx };
         let permissions =
             aseman_ports::StoreAccess::permissions(&ports, store_id, member).unwrap_or_default();
         (permissions.read, permissions.signal, permissions.manage)
@@ -516,7 +512,7 @@ impl AuthorityLookups for TrxLookups<'_> {
         if store_id.is_empty() {
             return String::new();
         }
-        let ports = crate::shell::api::model::program_ports::ProgramPorts { trx: self.trx };
+        let ports = crate::api::model::program_ports::ProgramPorts { trx: self.trx };
         aseman_ports::VmResourceStores::resource_store(&ports, store_id)
             .ok()
             .flatten()
@@ -525,7 +521,7 @@ impl AuthorityLookups for TrxLookups<'_> {
     }
 
     fn is_human(&self, id: &str) -> bool {
-        (crate::shell::api::model::creature_ports::CreaturePorts { trx: self.trx })
+        (crate::api::model::creature_ports::CreaturePorts { trx: self.trx })
             .creature_or_empty(id)
             .type_name
             == aseman_domain::creature::HUMAN_CREATURE_TYPE

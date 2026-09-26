@@ -9,7 +9,7 @@
 use std::collections::HashMap;
 use std::sync::atomic::{AtomicI64, Ordering};
 use std::sync::{Arc, Mutex};
-use std::time::{Duration, Instant};
+use std::time::Duration;
 
 use anyhow::Result;
 use crossbeam_channel::{Receiver, Sender, bounded, select, unbounded};
@@ -62,10 +62,6 @@ pub struct Node {
     /// babble loop never queues more than one gossip cycle ahead.
     gossip_trigger_tx: Sender<()>,
     gossip_trigger_rx: Receiver<()>,
-
-    start: Instant,
-    sync_requests: AtomicI64,
-    sync_errors: AtomicI64,
 
     /// Number of undetermined events recorded at node initialisation.
     initial_undetermined_events: AtomicI64,
@@ -126,9 +122,6 @@ impl Node {
             control_timer: Arc::new(ControlTimer::new_random()),
             gossip_trigger_tx,
             gossip_trigger_rx,
-            start: Instant::now(),
-            sync_requests: AtomicI64::new(0),
-            sync_errors: AtomicI64::new(0),
             initial_undetermined_events: AtomicI64::new(0),
         })
     }
@@ -528,9 +521,8 @@ impl Node {
 
         let resp = self
             .request_sync(&peer.net_addr, known_events, self.conf.sync_limit)
-            .map_err(|e| {
-                self.logger.with_error(&e).warn("requestSync()");
-                e
+            .inspect_err(|e| {
+                self.logger.with_error(e).warn("requestSync()");
             })?;
 
         self.logger
@@ -571,9 +563,8 @@ impl Node {
             let wire_events = self.core.lock().unwrap().to_wire(&event_diff);
             let resp2 = self
                 .request_eager_sync(&peer.net_addr, wire_events)
-                .map_err(|e| {
-                    self.logger.with_error(&e).warn("requestEagerSync()");
-                    e
+                .inspect_err(|e| {
+                    self.logger.with_error(e).warn("requestEagerSync()");
                 })?;
             self.logger
                 .with_field("from_id", resp2.from_id)
@@ -590,11 +581,11 @@ impl Node {
         from_id: u32,
         events: Vec<WireEvent>,
     ) -> Result<()> {
-        if let Err(e) = core.sync(from_id, events) {
-            if !hg::is_normal_self_parent_error(&e) {
-                self.logger.with_error(&e).error("");
-                return Err(e);
-            }
+        if let Err(e) = core.sync(from_id, events)
+            && !hg::is_normal_self_parent_error(&e)
+        {
+            self.logger.with_error(&e).error("");
+            return Err(e);
         }
         if let Err(e) = core.process_sig_pool() {
             self.logger.with_error(&e).error("");
@@ -640,7 +631,7 @@ impl Node {
                 resp.block.internal_transaction_receipts().to_vec(),
             ) {
                 self.logger
-                    .with_error(&e)
+                    .with_error(e)
                     .error("Processing AnchorBlock InternalTransactionReceipts");
             }
         }
@@ -661,7 +652,7 @@ impl Node {
             let resp = match self.request_fast_forward(&p.net_addr) {
                 Ok(resp) => resp,
                 Err(e) => {
-                    self.logger.with_error(&e).error("requestFastForward()");
+                    self.logger.with_error(e).error("requestFastForward()");
                     continue;
                 }
             };

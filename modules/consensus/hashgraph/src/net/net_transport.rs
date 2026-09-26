@@ -25,6 +25,8 @@ use std::sync::{Arc, Mutex};
 use std::thread;
 use std::time::Duration;
 
+type ChainInputs = Mutex<HashMap<String, (Sender<Rpc>, Receiver<Rpc>)>>;
+
 use anyhow::{Result, anyhow};
 use crossbeam_channel::{Receiver, Sender, bounded, unbounded};
 use serde::{Serialize, de::DeserializeOwned};
@@ -70,7 +72,7 @@ pub struct NetworkTransport {
     consume_tx: Sender<Rpc>,
 
     // Per-chain consumer channels (keyed by "<workChainId>::<shardChainId>").
-    chain_inputs: Mutex<HashMap<String, (Sender<Rpc>, Receiver<Rpc>)>>,
+    chain_inputs: ChainInputs,
 
     // Shutdown flag inspected by the accept/consumer threads.
     shutdown: Mutex<bool>,

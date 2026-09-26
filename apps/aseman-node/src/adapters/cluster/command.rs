@@ -88,6 +88,7 @@ pub struct DeployArtifact {
 /// The application data payload of a raft log entry.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(tag = "type")]
+#[allow(clippy::large_enum_variant)] // DeployArtifact is inherently large
 pub enum ClusterCommand {
     /// No-op used for leader-commit probes.
     #[serde(rename = "noop")]

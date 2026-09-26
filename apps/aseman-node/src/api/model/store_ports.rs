@@ -11,11 +11,11 @@ use aseman_ports::{
     ClockPort, PortError, PortResult, SignalLog, StoreAccess, StoreDirectory, StoreMetadata,
 };
 
+use crate::api::model::Store;
+use crate::api::model::access::{StorePermissions, access_link_key, read_permissions};
 use crate::models::packet::{LogPacket, LogQuery};
-use crate::models::ports::storage::IStorage;
+use crate::models::ports::IStorage;
 use crate::models::transaction::ITrx;
-use crate::shell::api::model::Store;
-use crate::shell::api::model::access::{StorePermissions, access_link_key, read_permissions};
 
 /// Legacy store adapter: the `Store` object and its `creatorof` link behind
 /// [`StoreDirectory`], and `StoreMeta` behind [`StoreMetadata`]. It needs only the
@@ -419,7 +419,7 @@ pub(crate) struct SignalPorts {
 /// `$legacy`, bound as `$ports`.
 macro_rules! route {
     ($legacy:expr, |$ports:ident| $call:expr) => {
-        match crate::shell::api::model::core_storage::current_unit() {
+        match crate::api::model::core_storage::current_unit() {
             Some(unit) => {
                 let policy = aseman_contracts::legacy_realtime::SignalStreamPolicy::for_store;
                 let $ports = aseman_capsule::store::CapsuleStorePorts {
@@ -573,8 +573,8 @@ pub(crate) fn legacy_error(error: ApplicationError) -> anyhow::Error {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::core::actor::model::trx::TrxWrapper;
-    use crate::core::actor::model::trx::tests::{StubCore, StubStorage};
+    use crate::legacy::trx::TrxWrapper;
+    use crate::legacy::trx::tests::{StubCore, StubStorage};
     use std::sync::Arc;
 
     #[test]

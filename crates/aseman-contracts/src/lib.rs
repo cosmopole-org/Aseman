@@ -12,6 +12,7 @@ pub mod legacy_gateway;
 pub mod legacy_keys;
 pub mod legacy_realtime;
 pub mod legacy_storage_http;
+pub mod legacy_wire;
 pub mod migration;
 pub mod module;
 pub mod security;

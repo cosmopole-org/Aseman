@@ -112,7 +112,7 @@ def shell_actions() -> list[dict[str, str]]:
     )
     # Action families may be split into owned submodules as the migration
     # progresses. Keep the public-route inventory independent of file layout.
-    for path in sorted((ROOT / "apps/aseman-node/src/shell/api/actions").rglob("*.rs")):
+    for path in sorted((ROOT / "apps/aseman-node/src/api/actions").rglob("*.rs")):
         value = path.read_text(encoding="utf-8")
         for found in pattern.finditer(value):
             rows.append(
@@ -130,8 +130,8 @@ def shell_actions() -> list[dict[str, str]]:
 def static_http_routes() -> list[dict[str, str]]:
     rows: list[dict[str, str]] = []
     sources = {
-        "apps/aseman-node/src/drivers/cluster/server.rs": "cluster-admin-and-raft",
-        "apps/aseman-node/src/shell/storage_http.rs": "public-storage-http",
+        "apps/aseman-node/src/adapters/cluster/server.rs": "cluster-admin-and-raft",
+        "apps/aseman-node/src/api/storage_http.rs": "public-storage-http",
     }
     pair = re.compile(r'\(\s*"(GET|POST|PUT|DELETE|HEAD|PATCH)"\s*,\s*"([^\"]+)"\s*\)')
     for path, surface in sources.items():
@@ -151,7 +151,7 @@ def static_http_routes() -> list[dict[str, str]]:
                 }
             )
 
-    storage = text("apps/aseman-node/src/shell/storage_http.rs")
+    storage = text("apps/aseman-node/src/api/storage_http.rs")
     marker = 'p.starts_with("/storage/file/")'
     offset = storage.find(marker)
     if offset >= 0:
@@ -161,13 +161,13 @@ def static_http_routes() -> list[dict[str, str]]:
                     "surface": "public-storage-http",
                     "method": method,
                     "path": "/storage/file/{id}",
-                    "source": location("apps/aseman-node/src/shell/storage_http.rs", storage, offset),
+                    "source": location("apps/aseman-node/src/api/storage_http.rs", storage, offset),
                 }
             )
 
     for path, prefix, surface in (
-        ("apps/aseman-node/src/telemetry/server.rs", "/telemetry/", "telemetry-http"),
-        ("apps/aseman-node/src/telemetry/pprof.rs", "/debug/pprof", "profiling-http"),
+        ("apps/aseman-node/src/observability/server.rs", "/telemetry/", "telemetry-http"),
+        ("apps/aseman-node/src/observability/pprof.rs", "/debug/pprof", "profiling-http"),
     ):
         value = text(path)
         seen: set[str] = set()
@@ -185,7 +185,7 @@ def static_http_routes() -> list[dict[str, str]]:
                 }
             )
 
-    ingress_path = "apps/aseman-node/src/drivers/vmm/network/ingress.rs"
+    ingress_path = "apps/aseman-node/src/adapters/vmm/network/ingress.rs"
     ingress = text(ingress_path)
     rows.extend(
         [
@@ -199,7 +199,7 @@ def static_http_routes() -> list[dict[str, str]]:
                 "surface": "vm-http-ingress",
                 "method": "ANY",
                 "path": "/{creatureUsername}/{customPath...}",
-                "source": "apps/aseman-node/src/drivers/vmm/http_route.rs:1",
+                "source": "apps/aseman-node/src/adapters/vmm/http_route.rs:1",
             },
         ]
     )
@@ -207,7 +207,7 @@ def static_http_routes() -> list[dict[str, str]]:
 
 
 def guest_operations() -> list[dict[str, str]]:
-    path = "apps/aseman-node/src/drivers/vmm/host/vm_host_functions.rs"
+    path = "apps/aseman-node/src/adapters/vmm/host/vm_host_functions.rs"
     value = text(path)
     anchor = value.index("pub(crate) fn handle_unified_host_call")
     match_at = value.index("match op {", anchor)

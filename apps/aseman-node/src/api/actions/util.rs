@@ -13,9 +13,9 @@ use anyhow::{Result, anyhow};
 use serde::de::DeserializeOwned;
 use serde_json::Value;
 
-use crate::core::actor::model::base::action::{Action, ActionFn, StateModifierShared};
-use crate::core::actor::model::secured::action::{Parse, SecureAction};
-use crate::core::actor::model::secured::guard::Guard;
+use crate::legacy::actor::Guard;
+use crate::legacy::actor::action::{Action, ActionFn, StateModifierShared};
+use crate::legacy::actor::secure_action::{Parse, SecureAction};
 use crate::models::action::{IAction, ISecureAction};
 use crate::models::core::ICore;
 use crate::models::input::IInput;
@@ -53,8 +53,8 @@ where
         // Every signed action is authorized as its registered action (P4-05).
         let raw = serde_json::to_value(&typed).unwrap_or(Value::Null);
         let trx = state.trx();
-        crate::shell::authority::authorize_shell_action(
-            &crate::shell::authority::TrxLookups { trx: &*trx },
+        crate::api::authority::authorize_shell_action(
+            &crate::api::authority::TrxLookups { trx: &*trx },
             &path,
             &state.info().user_id(),
             &raw,

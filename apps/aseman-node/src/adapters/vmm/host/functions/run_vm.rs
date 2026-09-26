@@ -1,4 +1,4 @@
-use crate::drivers::vmm::prelude::*;
+use crate::adapters::vmm::prelude::*;
 
 /// Unified `runVm` host op. Any caller (a wasm creature, a fire VM
 /// host callback, etc.) can invoke any backend runtime from here —
@@ -28,7 +28,7 @@ pub(crate) fn host_fn_run_vm(caller_program_id: &str, input: &JsonValue) -> Stri
     if let JsonValue::Object(map) = &mut packet {
         map.insert("type".to_string(), JsonValue::String("runVm".to_string()));
     }
-    let raw = crate::drivers::vmm::host::functions::vm_calls::remote_vm_call(
+    let raw = crate::adapters::vmm::host::functions::vm_calls::remote_vm_call(
         "runVm",
         caller_program_id,
         &packet,
@@ -40,7 +40,7 @@ pub(crate) fn host_fn_run_vm(caller_program_id: &str, input: &JsonValue) -> Stri
         .and_then(|v| v["vmId"].as_str().map(|s| s.to_string()))
         .filter(|s| !s.trim().is_empty())
         .unwrap_or_else(|| input["vmId"].as_str().unwrap_or("").to_string());
-    crate::drivers::vmm::host::functions::vm_ownership::record_vm_owner(
+    crate::adapters::vmm::host::functions::vm_ownership::record_vm_owner(
         &launched_vm_id,
         caller_program_id,
     );

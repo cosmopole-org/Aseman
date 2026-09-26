@@ -10,6 +10,7 @@ repository.workspace = true
 [dependencies]
 aseman-storage-legacy = { path = "../../storage/rocksdb-legacy" }
 aseman-config = { path = "../../../crates/aseman-config" }
+aseman-contracts = { path = "../../../crates/aseman-contracts" }
 aseman-domain = { path = "../../../crates/aseman-domain" }
 aseman-ports = { path = "../../../crates/aseman-ports" }
 anyhow.workspace = true

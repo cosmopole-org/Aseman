@@ -1,4 +1,4 @@
-use crate::drivers::vmm::globals::with_global_app;
+use crate::adapters::vmm::globals::with_global_app;
 use serde_json::{Value as JsonValue, json};
 
 fn acquire_resource_lock(resource_id: &str, owner_id: &str) -> Result<(), String> {

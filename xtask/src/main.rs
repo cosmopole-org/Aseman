@@ -79,11 +79,30 @@ fn check_architecture(root: &Path) -> Result<()> {
         ),
         (
             "aseman-ports",
-            BTreeSet::from(["aseman-domain", "thiserror"]),
+            BTreeSet::from([
+                "aseman-domain",
+                "thiserror",
+                // The finance ledger port carries JSON documents (RL-004 finance
+                // strangler slice): `serde_json` is a pure wire-value crate, not a
+                // driver or storage type.
+                "serde_json",
+            ]),
         ),
         (
             "aseman-application",
-            BTreeSet::from(["aseman-domain", "aseman-ports", "thiserror"]),
+            BTreeSet::from([
+                "aseman-domain",
+                "aseman-ports",
+                "thiserror",
+                // Pure wire-value / hashing crates the finance use cases need
+                // (RL-004): serde for input structs, serde_json for documents, sha2
+                // and hex for finance hashes, url for origin validation.
+                "serde",
+                "serde_json",
+                "sha2",
+                "hex",
+                "url",
+            ]),
         ),
     ]);
     for package in packages {

@@ -7,12 +7,12 @@ use aseman_application::Diagnostics;
 use aseman_ports::ClockPort;
 use serde_json::{Value, json};
 
-use crate::core::actor::model::secured::guard::Guard;
+use crate::api::packets::simple::HelloInput;
+use crate::api::utils::future::async_once;
+use crate::legacy::actor::Guard;
 use crate::models::action::ISecureAction;
 use crate::models::core::ICore;
 use crate::models::state::IState;
-use crate::shell::api::packets::simple::HelloInput;
-use crate::shell::utils::future::async_once;
 
 use super::util::build_secure_action;
 
@@ -70,7 +70,7 @@ pub fn ping(app: Arc<dyn ICore>) -> Arc<dyn ISecureAction> {
                 .unwrap_or("");
             let diagnostics = Diagnostics {
                 clock: &SYSTEM_CLOCK,
-                advertised_port: &port,
+                advertised_port: port,
             };
             Ok(json!(diagnostics.ping()))
         },

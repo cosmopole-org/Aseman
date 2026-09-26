@@ -9,16 +9,16 @@ use std::sync::Arc;
 
 use anyhow::Result;
 
-use crate::drivers::network::client::{Tcp as TcpDriver, Ws as WsDriver};
+use crate::adapters::network::client::{Tcp as TcpDriver, Ws as WsDriver};
 use crate::models::core::ICore;
-use crate::models::ports::network::INetwork;
-use crate::models::ports::network::chain::IChain;
-use crate::models::ports::network::federation::IFederation;
-use crate::models::ports::network::tcp::ITcp;
-use crate::models::ports::network::ws::IWs;
-use crate::models::ports::security::ISecurity;
-use crate::models::ports::signaler::ISignaler;
-use crate::models::ports::storage::IStorage;
+use crate::models::ports::IChain;
+use crate::models::ports::IFederation;
+use crate::models::ports::INetwork;
+use crate::models::ports::ISecurity;
+use crate::models::ports::ISignaler;
+use crate::models::ports::IStorage;
+use crate::models::ports::ITcp;
+use crate::models::ports::IWs;
 use aseman_network_legacy::TlsConfig;
 
 /// Concrete [`INetwork`] implementation.

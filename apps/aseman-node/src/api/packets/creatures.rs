@@ -9,8 +9,8 @@ use std::collections::HashMap;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
+use crate::api::model::{Creature, Session};
 use crate::models::input::IInput;
-use crate::shell::api::model::{Creature, Session};
 
 macro_rules! input_impls {
     ($($t:ty => $origin:expr),* $(,)?) => {

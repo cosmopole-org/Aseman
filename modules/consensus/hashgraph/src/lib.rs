@@ -9,6 +9,7 @@ pub mod common;
 pub mod config;
 pub mod crypto;
 pub mod dummy;
+pub mod governance;
 pub mod hashgraph;
 pub mod logrus;
 pub mod net;

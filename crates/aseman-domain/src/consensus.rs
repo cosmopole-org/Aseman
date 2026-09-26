@@ -155,3 +155,55 @@ pub enum ConsensusError {
 
 #[cfg(test)]
 mod tests;
+
+// ---------------------------------------------------------------------------
+// Validator governance: staking and weighted-election state (RL-011).
+//
+// Staking (bond/unbond/slash) and the hourly weighted-validator election are
+// validator-set governance concerns. They belong with consensus, not with the
+// node's core orchestration: consensus decides *who* may finalize, and staking
+// decides *how much* each candidate is weighted. The domain types below are the
+// pure contracts the provider implements and the node observes.
+// ---------------------------------------------------------------------------
+
+/// A validator's stake ledger entry, mirroring the legacy `StakingNodeState`.
+#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+pub struct ValidatorStake {
+    pub node_id: String,
+    pub owner_id: String,
+    pub bonded_stake: i64,
+    pub pending_unbond: i64,
+    pub unbond_unlock_at: i64,
+    pub nonce: u64,
+    pub last_updated_at: i64,
+}
+
+/// A stake mutation a caller submits for ordering.
+#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+pub struct StakeRequest {
+    pub node_id: String,
+    pub owner_id: String,
+    pub action: StakeAction,
+    pub amount: i64,
+    pub nonce: u64,
+    pub lock_seconds: i64,
+}
+
+/// The bond/unbond/slash actions consensus understands.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+pub enum StakeAction {
+    #[default]
+    Bond,
+    Unbond,
+    Slash,
+}
+
+/// A snapshot of the elected validator set for a round.
+#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+pub struct ElectedValidators {
+    pub round_id: String,
+    /// Node ids selected by the weighted election, in selection order.
+    pub validators: Vec<String>,
+    pub total_bonded: i64,
+    pub selected_at: i64,
+}

@@ -115,7 +115,7 @@ def classify_access(row: dict[str, object]) -> dict[str, object]:
         status = "reviewed_no_persisted_record"
         target = None
         note = "ADR 0020 superuser flag has no writer; any record fails closed for review"
-    elif row["source"].startswith("apps/aseman-node/src/core/core_orchestrator.rs") and (
+    elif row["source"].startswith("apps/aseman-node/src/legacy/orchestrator/icore.rs") and (
         "|" in template or template.endswith(("::targetCount", "::tempCount"))
     ):
         status = "intentional_removal"
@@ -228,28 +228,41 @@ OWNED_BLOCKED_PREFIXES: dict[str, str] = {}
 
 # Per-source review of generic `{}::{}` style candidates (template families carry no name).
 SOURCE_REVIEWS = {
-    "apps/aseman-node/src/core/globe.rs": ("not_a_storage_key", "hash/seed input, never persisted"),
+    "apps/aseman-node/src/legacy/globe/mod.rs": ("not_a_storage_key", "hash/seed input, never persisted"),
     "modules/consensus/hashgraph/src/net/net_transport.rs": ("not_a_storage_key", "in-memory RPC channel map"),
-    "apps/aseman-node/src/drivers/network/federation/netserver.rs": ("not_a_storage_key", "routing target label"),
-    "apps/aseman-node/src/drivers/vmm/network/gateway_registry.rs": ("not_a_storage_key", "process-local gateway map"),
-    "apps/aseman-node/src/drivers/vmm/network/gateway_types.rs": ("not_a_storage_key", "process-local gateway map key"),
+    "apps/aseman-node/src/adapters/network/federation/netserver.rs": ("not_a_storage_key", "routing target label"),
+    "apps/aseman-node/src/adapters/vmm/network/gateway_registry.rs": ("not_a_storage_key", "process-local gateway map"),
+    "apps/aseman-node/src/adapters/vmm/network/gateway_types.rs": ("not_a_storage_key", "process-local gateway map key"),
     "modules/runtime/elpify/src/queue.rs": ("not_a_storage_key", "process-local VM queue map"),
     "modules/runtime/javascript/src/runtime.rs": ("not_a_storage_key", "process-local VM map"),
     "modules/runtime/wasm/src/runtime.rs": ("not_a_storage_key", "process-local VM map"),
     "modules/runtime/javascript/src/host_calls.rs": ("covered_by_reviewed_family", "ADR 0021 guest dbop namespace"),
     "modules/runtime/wasm/src/host_calls.rs": ("covered_by_reviewed_family", "ADR 0021 guest dbop namespace"),
-    "apps/aseman-node/src/drivers/vmm/host/vm_host_functions.rs": ("covered_by_reviewed_family", "ADR 0021 applet_db prefix composition"),
-    "apps/aseman-node/src/core/actor/model/trx.rs": ("covered_by_reviewed_family", "json/link physical layout internals"),
-    "apps/aseman-node/src/core/core_orchestrator.rs": ("covered_by_reviewed_family", "ADR 0020 dead chain-callback state"),
-    "apps/aseman-node/src/shell/api/model/entity.rs": ("covered_by_reviewed_family", "typed Entity composite identity"),
-    "apps/aseman-node/src/drivers/vmm/host/functions/login_grant.rs": ("covered_by_reviewed_family", "ADR 0023 login grant delete path"),
+    "apps/aseman-node/src/adapters/vmm/host/vm_host_functions.rs": ("covered_by_reviewed_family", "ADR 0021 applet_db prefix composition"),
+    "apps/aseman-node/src/legacy/trx.rs": ("covered_by_reviewed_family", "json/link physical layout internals"),
+    "apps/aseman-node/src/legacy/orchestrator/load.rs": ("covered_by_reviewed_family", "ADR 0020 dead chain-callback state"),
+    "apps/aseman-node/src/api/model/entity.rs": ("covered_by_reviewed_family", "typed Entity composite identity"),
+    "apps/aseman-node/src/adapters/vmm/host/functions/login_grant.rs": ("covered_by_reviewed_family", "ADR 0023 login grant delete path"),
 }
 for _source in (
-    "apps/aseman-node/src/drivers/vmm/hostcall_logs.rs", "apps/aseman-node/src/shell/api/actions/program.rs",
-    "apps/aseman-node/src/drivers/vmm/host/functions/vm_ownership.rs", "apps/aseman-node/src/drivers/vmm/host_bridge.rs",
-    "apps/aseman-node/src/drivers/vmm/proxy.rs", "apps/aseman-node/src/drivers/vmm/hostcall_entities.rs",
+    "apps/aseman-node/src/adapters/vmm/hostcall_logs.rs", "apps/aseman-node/src/api/actions/program.rs",
+    "apps/aseman-node/src/adapters/vmm/host/functions/vm_ownership.rs", "apps/aseman-node/src/adapters/vmm/host_bridge.rs",
+    "apps/aseman-node/src/adapters/vmm/proxy.rs", "apps/aseman-node/src/adapters/vmm/hostcall_entities.rs",
 ):
     SOURCE_REVIEWS[_source] = ("covered_by_reviewed_family", "ADR 0022 VM family key helper or delete path")
+# The RL-004 finance migration adapter owns the same finance epoch key families the
+# legacy finance.rs wrote: its `format!` templates are the ADR 0017 records, served
+# through the ledger port instead of the legacy transaction closures.
+SOURCE_REVIEWS["apps/aseman-node/src/api/model/finance_ports.rs"] = (
+    "covered_by_reviewed_family", "ADR 0017 finance epoch ledger port helper")
+SOURCE_REVIEWS["apps/aseman-node/src/legacy/globe/election.rs"] = (
+    "not_a_storage_key", "hash/seed input, never persisted")
+SOURCE_REVIEWS["apps/aseman-node/src/legacy/orchestrator/icore.rs"] = (
+    "covered_by_reviewed_family", "ADR 0020 dead chain-callback state")
+SOURCE_REVIEWS["apps/aseman-node/src/legacy/orchestrator/chain.rs"] = (
+    "covered_by_reviewed_family", "ADR 0020 chain-callback / chain-message state")
+SOURCE_REVIEWS["apps/aseman-node/src/legacy/globe/transport.rs"] = (
+    "not_a_storage_key", "hash/seed input, never persisted")
 GENERIC_OWNER = "unassigned source review"
 
 
@@ -275,7 +288,7 @@ def classify_candidate(row: dict[str, object]) -> dict[str, object]:
     if family in COVERED_CANDIDATE_FAMILIES:
         return {**row, "disposition": "covered_by_reviewed_family",
                 "note": f"heuristic match of a reviewed family: {COVERED_CANDIDATE_FAMILIES[family]}"}
-    if family in {"{}", ""}:
+    if family in {"{}", "", "{prefix}"}:
         source = row["source"].rsplit(":", 1)[0]
         disposition, note = SOURCE_REVIEWS.get(
             source,

@@ -3,8 +3,8 @@
 //! backend acting as its workload (P5-04). The key is always the caller's own: the
 //! creature comes from the resolved caller, never from the input.
 
-use crate::drivers::vmm::host::vm_host_functions::HostHierarchy;
-use crate::drivers::vmm::prelude::*;
+use crate::adapters::vmm::host::vm_host_functions::HostHierarchy;
+use crate::adapters::vmm::prelude::*;
 
 pub(crate) fn host_fn_state_op(ctx: &HostHierarchy, input: &JsonValue) -> String {
     let op = input["op"].as_str().unwrap_or("");
@@ -15,7 +15,7 @@ pub(crate) fn host_fn_state_op(ctx: &HostHierarchy, input: &JsonValue) -> String
         return json!({"ok": false, "error": "this operation needs an identified caller"})
             .to_string();
     }
-    match crate::shell::api::model::guest_data::route_db_op(
+    match crate::api::model::guest_data::route_db_op(
         &ctx.creature_id,
         aseman_domain::guest::LegacyKvNamespace::DbOp,
         op,

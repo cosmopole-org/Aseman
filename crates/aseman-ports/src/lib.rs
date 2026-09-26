@@ -33,6 +33,7 @@ pub mod consensus;
 pub mod coordination;
 pub mod federation;
 pub mod finance;
+pub mod finance_ledger;
 pub mod guest;
 pub mod realtime;
 pub mod vmm;

@@ -137,7 +137,7 @@ def build() -> dict[str, Any]:
             "tests/characterization/test_surface_golden.py",
             "crates/aseman-contracts/src/legacy_gateway.rs::tests",
             "crates/aseman-contracts/src/legacy_storage_http.rs::tests",
-            "apps/aseman-node/src/shell/storage_http.rs::characterization_tests",
+            "apps/aseman-node/src/api/storage_http.rs::characterization_tests",
             "cargo test -p aseman-node --lib (401 tests at Phase 0 baseline; migrated pure cases move to clean crates)",
             "cargo test -p asemanctl --all-targets (33 tests at baseline)",
         ],

@@ -37,12 +37,12 @@ use std::sync::{Arc, Mutex};
 use serde_json::{Map, Value, json};
 use uuid::Uuid;
 
-use crate::drivers::blob_store::StorageRootBlobStore;
+use crate::adapters::blob_store::StorageRootBlobStore;
+use crate::api::model::Creature;
+use crate::api::model::entity_ports::EntityPorts;
+use crate::api::packets::stores::Send as StoresSend;
 use crate::models::core::ICore;
 use crate::models::transaction::ITrx;
-use crate::shell::api::model::entity_ports::EntityPorts;
-use crate::shell::api::model::{Creature, Program};
-use crate::shell::api::packets::stores::Send as StoresSend;
 use aseman_domain::blob::BlobEvidence;
 use aseman_domain::program::{ArtifactRole, EntityRecord};
 use aseman_ports::{BlobStore, EntityDirectory};
@@ -192,12 +192,11 @@ fn is_streaming_chunk(value: &Value) -> bool {
     if let Some(b) = from_obj(value) {
         return b;
     }
-    if let Some(data) = value.get("data").and_then(Value::as_str) {
-        if let Ok(parsed) = serde_json::from_str::<Value>(data) {
-            if let Some(b) = from_obj(&parsed) {
-                return b;
-            }
-        }
+    if let Some(data) = value.get("data").and_then(Value::as_str)
+        && let Ok(parsed) = serde_json::from_str::<Value>(data)
+        && let Some(b) = from_obj(&parsed)
+    {
+        return b;
     }
     false
 }
@@ -323,8 +322,8 @@ where
             Ok(())
         }),
     );
-    let out = slot.lock().unwrap().clone();
-    out
+
+    slot.lock().unwrap().clone()
 }
 
 /// The identity a proxied packet travels under: the proxy's program, with the
@@ -332,9 +331,9 @@ where
 fn proxy_identity(app: &Arc<dyn ICore>, program_id: &str) -> Creature {
     let program_id_owned = program_id.to_string();
     read_state(app, Creature::default(), move |trx| {
-        let program = (crate::shell::api::model::program_ports::ProgramPorts { trx })
+        let program = (crate::api::model::program_ports::ProgramPorts { trx })
             .program_or_empty(&program_id_owned.clone());
-        let owner = (crate::shell::api::model::creature_ports::CreaturePorts { trx })
+        let owner = (crate::api::model::creature_ports::CreaturePorts { trx })
             .creature_or_empty(&program.machine_id.clone());
         Creature {
             id: program_id_owned.clone(),
@@ -363,32 +362,32 @@ fn extract_correlation_id(value: &Value) -> String {
     if !c.is_empty() {
         return c;
     }
-    if let Some(data) = value.get("data").and_then(Value::as_str) {
-        if let Ok(parsed) = serde_json::from_str::<Value>(data) {
-            let c = from_obj(&parsed);
-            if !c.is_empty() {
-                return c;
-            }
-            // Client convention: the caller's payload travels as a JSON
-            // string under `data.payload` — the correlation id the requester
-            // wants echoed back lives inside it.
-            match parsed.get("payload") {
-                Some(Value::String(p)) => {
-                    if let Ok(inner) = serde_json::from_str::<Value>(p) {
-                        let c = from_obj(&inner);
-                        if !c.is_empty() {
-                            return c;
-                        }
-                    }
-                }
-                Some(obj @ Value::Object(_)) => {
-                    let c = from_obj(obj);
+    if let Some(data) = value.get("data").and_then(Value::as_str)
+        && let Ok(parsed) = serde_json::from_str::<Value>(data)
+    {
+        let c = from_obj(&parsed);
+        if !c.is_empty() {
+            return c;
+        }
+        // Client convention: the caller's payload travels as a JSON
+        // string under `data.payload` — the correlation id the requester
+        // wants echoed back lives inside it.
+        match parsed.get("payload") {
+            Some(Value::String(p)) => {
+                if let Ok(inner) = serde_json::from_str::<Value>(p) {
+                    let c = from_obj(&inner);
                     if !c.is_empty() {
                         return c;
                     }
                 }
-                _ => {}
             }
+            Some(obj @ Value::Object(_)) => {
+                let c = from_obj(obj);
+                if !c.is_empty() {
+                    return c;
+                }
+            }
+            _ => {}
         }
     }
     String::new()
@@ -531,7 +530,7 @@ pub fn try_forward_through_proxy(
     }
     let machine_owned = machine_id.to_string();
     let entity_owned = entity_id.to_string();
-    let blobs = crate::drivers::blob_store::node_blobs(&*app.tools().storage());
+    let blobs = crate::adapters::blob_store::node_blobs(&*app.tools().storage());
     let (is_proxy, data_key, config_raw) = read_state(app, (false, None, Map::new()), move |trx| {
         let entities = EntityPorts { trx, blobs: &blobs };
         let proxy = entities
@@ -580,7 +579,7 @@ pub fn try_forward_through_proxy(
     };
     let attachment = data_key
         .and_then(|key| {
-            crate::drivers::blob_store::node_blobs(&*app.tools().storage())
+            crate::adapters::blob_store::node_blobs(&*app.tools().storage())
                 .blob(&key)
                 .ok()
                 .flatten()
@@ -727,6 +726,10 @@ pub fn start_correlation_reaper(app: Arc<dyn ICore>) {
     });
 }
 
+fn proxy_log(text: String) {
+    eprintln!("[proxy] {text}");
+}
+
 #[cfg(test)]
 mod inject_tests {
     // Exercises the REAL config parsing + deep-merge used by
@@ -806,8 +809,4 @@ mod inject_tests {
         }
         assert_eq!(after, before);
     }
-}
-
-fn proxy_log(text: String) {
-    eprintln!("[proxy] {text}");
 }
