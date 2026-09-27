@@ -1066,7 +1066,7 @@
       "method": "put_link",
       "mode": "write",
       "note": "ADR 0022 VMM-owned observed runtime; handoff inventory; rebuilt by P5 reconciliation (RL-013)",
-      "source": "apps/aseman-node/src/api/actions/program.rs:2368",
+      "source": "apps/aseman-node/src/api/actions/program.rs:2363",
       "target_kind": null
     },
     {
@@ -1453,7 +1453,7 @@
       "method": "del_key",
       "mode": "write",
       "note": "ADR 0022 VMM-owned observed runtime; handoff inventory; rebuilt by P5 reconciliation (RL-013)",
-      "source": "apps/aseman-node/src/api/actions/program.rs:2400",
+      "source": "apps/aseman-node/src/api/actions/program.rs:2395",
       "target_kind": null
     },
     {
@@ -2996,7 +2996,7 @@
       "logical_template": "Secret::{caller}::",
       "note": "heuristic match of a reviewed family: ADR 0022 VM state",
       "review_status": "candidate; caller association may be indirect",
-      "source": "apps/aseman-node/src/api/public_http.rs:715"
+      "source": "apps/aseman-node/src/api/public_http.rs:728"
     },
     {
       "disposition": "covered_by_reviewed_family",
@@ -3157,7 +3157,7 @@
       "logical_template": "VmBuilds::{}::",
       "note": "heuristic match of a reviewed family: ADR 0022 VM state",
       "review_status": "candidate; caller association may be indirect",
-      "source": "apps/aseman-node/src/api/actions/program.rs:2414"
+      "source": "apps/aseman-node/src/api/actions/program.rs:2409"
     },
     {
       "disposition": "covered_by_reviewed_family",
@@ -3311,7 +3311,7 @@
       "logical_template": "VmTerminal::{}::{}::{}",
       "note": "heuristic match of a reviewed family: ADR 0022 VM state",
       "review_status": "candidate; caller association may be indirect",
-      "source": "apps/aseman-node/src/api/actions/program.rs:2369"
+      "source": "apps/aseman-node/src/api/actions/program.rs:2364"
     },
     {
       "disposition": "covered_by_reviewed_family",
@@ -3675,7 +3675,7 @@
       "logical_template": "link::VmTerminal::{}::{}::{}",
       "note": "heuristic match of a reviewed family: ADR 0022 VM state",
       "review_status": "candidate; caller association may be indirect",
-      "source": "apps/aseman-node/src/api/actions/program.rs:2400"
+      "source": "apps/aseman-node/src/api/actions/program.rs:2395"
     },
     {
       "disposition": "covered_by_reviewed_family",

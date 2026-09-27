@@ -45,6 +45,8 @@
         "aseman-consensus-hashgraph",
         "aseman-contracts",
         "aseman-domain",
+        "aseman-federation-http",
+        "aseman-gateway-rpc",
         "aseman-guest-http",
         "aseman-identity-native",
         "aseman-module-runtime",
@@ -54,6 +56,7 @@
         "aseman-ports",
         "aseman-public-http",
         "aseman-public-service",
+        "aseman-realtime-durable",
         "aseman-storage-legacy",
         "aseman-storage-postgres",
         "aseman-vmm-http",
@@ -76,6 +79,7 @@
         "r2d2_postgres",
         "rand",
         "reqwest",
+        "ring",
         "rocksdb",
         "rsa",
         "rustls",
@@ -457,7 +461,28 @@
       "callers": [
         "aseman-contracts",
         "aseman-domain",
+        "aseman-public-http",
+        "futures-util",
+        "serde_json",
+        "tokio",
+        "tokio-stream",
+        "tonic"
+      ],
+      "current_owner": "modules/network/gateway/Cargo.toml",
+      "disposition": "move-or-wrap-per-parent-ledger",
+      "expiry": "owning phase replacement/deletion gate",
+      "id": "rust-package:aseman-gateway-rpc",
+      "replacement_evidence": "A001 plus architecture dependency checks",
+      "target_owner": "root Aseman workspace or isolated legacy provider"
+    },
+    {
+      "callers": [
+        "aseman-contracts",
+        "aseman-domain",
+        "aseman-observability",
         "axum",
+        "base64",
+        "futures-util",
         "hyper",
         "hyper-util",
         "rustls",
@@ -6615,7 +6640,7 @@
     },
     {
       "callers": [
-        "apps/aseman-node/src/api/public_http.rs:715"
+        "apps/aseman-node/src/api/public_http.rs:728"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -6768,7 +6793,7 @@
     {
       "callers": [
         "apps/aseman-node/src/api/actions/program.rs:1152",
-        "apps/aseman-node/src/api/actions/program.rs:2414"
+        "apps/aseman-node/src/api/actions/program.rs:2409"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -6870,7 +6895,7 @@
     {
       "callers": [
         "apps/aseman-node/src/api/actions/program.rs:1100",
-        "apps/aseman-node/src/api/actions/program.rs:2369"
+        "apps/aseman-node/src/api/actions/program.rs:2364"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -7142,7 +7167,7 @@
     {
       "callers": [
         "apps/aseman-node/src/api/actions/program.rs:1135",
-        "apps/aseman-node/src/api/actions/program.rs:2400"
+        "apps/aseman-node/src/api/actions/program.rs:2395"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -8077,10 +8102,10 @@
     }
   ],
   "summary": {
-    "artifacts": 51,
+    "artifacts": 52,
     "configuration": 121,
     "protocol_and_compatibility": 292,
     "storage": 210,
-    "total": 674
+    "total": 675
   }
 }

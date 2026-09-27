@@ -15,9 +15,9 @@ The complete dependency and feature data is in `current-workspace.json`.
 
 ## Repository summary
 
-- Tracked files: 1031
+- Tracked files: 1064
 - Tracked files under `dist/`: 29
-- Rust package manifests: 50
+- Rust package manifests: 51
 - Declared Cargo workspace roots: 1
 - npm package manifests: 1
 - Lockfiles: `Cargo.lock`, `apps/aseman-client/package-lock.json`
@@ -30,7 +30,7 @@ from separate manifests. This is current behavior, not the target topology.
 
 | Manifest | Resolver | Members | Excludes |
 |---|---:|---|---|
-| `Cargo.toml` | 2 | `apps/aseman-keygen`, `apps/aseman-meter`, `apps/aseman-node`, `apps/aseman-vmm`, `apps/aseman-vmm-agent`, `apps/asemanctl`, `apps/scan-vmdb`, `crates/*`, `modules/*`, `modules/consensus/hashgraph`, `modules/federation/http`, `modules/finance/ledger`, `modules/network/http`, `modules/network/legacy`, `modules/realtime/durable`, `modules/runtime/docker`, `modules/runtime/elpian`, `modules/runtime/elpian/crates/elpian-vm`, `modules/runtime/elpify`, `modules/runtime/elpify/crates/elpify-lang`, `modules/runtime/firecracker`, `modules/runtime/javascript`, `modules/runtime/modal`, `modules/runtime/sdk-legacy`, `modules/runtime/wasm`, `modules/security/capabilities`, `modules/storage/postgres`, `modules/storage/rocksdb-legacy`, `modules/vmm-backend/native-legacy`, `modules/vmm-backend/native-legacy/crates/caspar-vm-plugins`, `modules/vmm-backend/nomad`, `tests/contracts/module`, `tests/contracts/policy`, `tests/contracts/storage`, `tests/contracts/vmm-backend`, `tests/migration`, `xtask` | `modules/consensus`, `modules/federation`, `modules/finance`, `modules/network`, `modules/realtime`, `modules/runtime`, `modules/security`, `modules/storage`, `modules/vmm-backend` |
+| `Cargo.toml` | 2 | `apps/aseman-keygen`, `apps/aseman-meter`, `apps/aseman-node`, `apps/aseman-vmm`, `apps/aseman-vmm-agent`, `apps/asemanctl`, `apps/scan-vmdb`, `crates/*`, `modules/*`, `modules/consensus/hashgraph`, `modules/federation/http`, `modules/finance/ledger`, `modules/network/gateway`, `modules/network/http`, `modules/network/legacy`, `modules/realtime/durable`, `modules/runtime/docker`, `modules/runtime/elpian`, `modules/runtime/elpian/crates/elpian-vm`, `modules/runtime/elpify`, `modules/runtime/elpify/crates/elpify-lang`, `modules/runtime/firecracker`, `modules/runtime/javascript`, `modules/runtime/modal`, `modules/runtime/sdk-legacy`, `modules/runtime/wasm`, `modules/security/capabilities`, `modules/storage/postgres`, `modules/storage/rocksdb-legacy`, `modules/vmm-backend/native-legacy`, `modules/vmm-backend/native-legacy/crates/caspar-vm-plugins`, `modules/vmm-backend/nomad`, `tests/contracts/module`, `tests/contracts/policy`, `tests/contracts/storage`, `tests/contracts/vmm-backend`, `tests/migration`, `xtask` | `modules/consensus`, `modules/federation`, `modules/finance`, `modules/network`, `modules/realtime`, `modules/runtime`, `modules/security`, `modules/storage`, `modules/vmm-backend` |
 
 ## Rust packages
 
@@ -38,7 +38,7 @@ from separate manifests. This is current behavior, not the target topology.
 |---|---|---:|---|---:|---:|
 | `aseman-keygen` | `apps/aseman-keygen/Cargo.toml` | {'workspace': True} | bin:aseman-keygen, bin:caspar-keygen, lib:aseman-keygen | 4 | 0 |
 | `aseman-meter` | `apps/aseman-meter/Cargo.toml` | {'workspace': True} | bin:aseman-meter | 5 | 0 |
-| `aseman-node` | `apps/aseman-node/Cargo.toml` | {'workspace': True} | bin:aseman-node, bin:caspar-node, lib:aseman-node | 54 | 0 |
+| `aseman-node` | `apps/aseman-node/Cargo.toml` | {'workspace': True} | bin:aseman-node, bin:caspar-node, lib:aseman-node | 58 | 0 |
 | `aseman-vmm` | `apps/aseman-vmm/Cargo.toml` | {'workspace': True} | bin:aseman-vmm | 12 | 0 |
 | `aseman-vmm-agent` | `apps/aseman-vmm-agent/Cargo.toml` | {'workspace': True} | bin:aseman-vmm-agent, lib:aseman-vmm-agent | 18 | 0 |
 | `asemanctl` | `apps/asemanctl/Cargo.toml` | {'workspace': True} | bin:asemanctl, bin:casparctl, lib:asemanctl | 15 | 0 |
@@ -57,7 +57,8 @@ from separate manifests. This is current behavior, not the target topology.
 | `aseman-finance-ledger` | `modules/finance/ledger/Cargo.toml` | {'workspace': True} | lib:aseman-finance-ledger | 8 | 0 |
 | `aseman-guest-http` | `modules/guest-http/Cargo.toml` | {'workspace': True} | lib:aseman-guest-http | 14 | 0 |
 | `aseman-identity-native` | `modules/identity-native/Cargo.toml` | {'workspace': True} | lib:aseman-identity-native | 5 | 0 |
-| `aseman-public-http` | `modules/network/http/Cargo.toml` | {'workspace': True} | lib:aseman-public-http | 13 | 0 |
+| `aseman-gateway-rpc` | `modules/network/gateway/Cargo.toml` | {'workspace': True} | lib:aseman-gateway-rpc | 8 | 0 |
+| `aseman-public-http` | `modules/network/http/Cargo.toml` | {'workspace': True} | lib:aseman-public-http | 16 | 0 |
 | `aseman-network-legacy` | `modules/network/legacy/Cargo.toml` | {'workspace': True} | lib:aseman-network-legacy | 4 | 0 |
 | `aseman-public-service` | `modules/public-service/Cargo.toml` | {'workspace': True} | lib:aseman-public-service | 6 | 0 |
 | `aseman-realtime-durable` | `modules/realtime/durable/Cargo.toml` | {'workspace': True} | lib:aseman-realtime-durable | 8 | 0 |
@@ -113,6 +114,9 @@ from separate manifests. This is current behavior, not the target topology.
 | `aseman-finance-ledger` | dev | `aseman-config` | `crates/aseman-config` |
 | `aseman-finance-ledger` | normal | `aseman-domain` | `crates/aseman-domain` |
 | `aseman-finance-ledger` | normal | `aseman-ports` | `crates/aseman-ports` |
+| `aseman-gateway-rpc` | normal | `aseman-contracts` | `crates/aseman-contracts` |
+| `aseman-gateway-rpc` | normal | `aseman-domain` | `crates/aseman-domain` |
+| `aseman-gateway-rpc` | normal | `aseman-public-http` | `modules/network/http` |
 | `aseman-guest-http` | normal | `aseman-application` | `crates/aseman-application` |
 | `aseman-guest-http` | normal | `aseman-contracts` | `crates/aseman-contracts` |
 | `aseman-guest-http` | normal | `aseman-domain` | `crates/aseman-domain` |
@@ -144,6 +148,8 @@ from separate manifests. This is current behavior, not the target topology.
 | `aseman-node` | normal | `aseman-consensus-hashgraph` | `modules/consensus/hashgraph` |
 | `aseman-node` | normal | `aseman-contracts` | `crates/aseman-contracts` |
 | `aseman-node` | normal | `aseman-domain` | `crates/aseman-domain` |
+| `aseman-node` | normal | `aseman-federation-http` | `modules/federation/http` |
+| `aseman-node` | normal | `aseman-gateway-rpc` | `modules/network/gateway` |
 | `aseman-node` | normal | `aseman-guest-http` | `modules/guest-http` |
 | `aseman-node` | normal | `aseman-identity-native` | `modules/identity-native` |
 | `aseman-node` | normal | `aseman-module-runtime` | `crates/aseman-module-runtime` |
@@ -154,6 +160,7 @@ from separate manifests. This is current behavior, not the target topology.
 | `aseman-node` | normal | `aseman-ports` | `crates/aseman-ports` |
 | `aseman-node` | normal | `aseman-public-http` | `modules/network/http` |
 | `aseman-node` | normal | `aseman-public-service` | `modules/public-service` |
+| `aseman-node` | normal | `aseman-realtime-durable` | `modules/realtime/durable` |
 | `aseman-node` | normal | `aseman-storage-legacy` | `modules/storage/rocksdb-legacy` |
 | `aseman-node` | normal | `aseman-storage-postgres` | `modules/storage/postgres` |
 | `aseman-node` | normal | `aseman-vmm-http` | `modules/vmm-http` |
@@ -166,6 +173,7 @@ from separate manifests. This is current behavior, not the target topology.
 | `aseman-ports` | normal | `aseman-domain` | `crates/aseman-domain` |
 | `aseman-public-http` | normal | `aseman-contracts` | `crates/aseman-contracts` |
 | `aseman-public-http` | normal | `aseman-domain` | `crates/aseman-domain` |
+| `aseman-public-http` | normal | `aseman-observability` | `crates/aseman-observability` |
 | `aseman-public-service` | normal | `aseman-application` | `crates/aseman-application` |
 | `aseman-public-service` | normal | `aseman-contracts` | `crates/aseman-contracts` |
 | `aseman-public-service` | normal | `aseman-domain` | `crates/aseman-domain` |

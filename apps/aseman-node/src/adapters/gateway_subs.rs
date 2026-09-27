@@ -31,12 +31,19 @@
 //!   is dropped on the next publish — a bridge that reconnects (a sandbox
 //!   restart) must not leave its predecessor behind forever.
 
-use std::sync::Arc;
 use std::sync::atomic::{AtomicU64, Ordering};
+use std::sync::{Arc, RwLock};
 
+use aseman_domain::Uuid;
+use aseman_domain::realtime::{Event, RetentionClass};
+use aseman_ports::realtime::{EventLog, Publication};
+use aseman_ports::{PortError, PortResult};
 use dashmap::DashMap;
 use once_cell::sync::Lazy;
 use serde_json::Value;
+use sha2::{Digest, Sha256};
+
+use crate::api::workloads::creature_subject;
 
 /// Writes one update frame to a subscriber's connection.
 ///
@@ -68,6 +75,15 @@ struct Registry {
 }
 
 static REGISTRY: Lazy<Registry> = Lazy::new(Registry::default);
+static EVENT_LOG: Lazy<RwLock<Option<Arc<dyn EventLog>>>> = Lazy::new(|| RwLock::new(None));
+
+/// Install the authoritative A707 log. The public listener and bridge publisher use
+/// the same provider; legacy socket fan-out remains a compatibility side effect.
+pub fn configure_event_log(event_log: Arc<dyn EventLog>) {
+    *EVENT_LOG
+        .write()
+        .unwrap_or_else(|poisoned| poisoned.into_inner()) = Some(event_log);
+}
 
 /// Register a subscriber against every topic it was granted.
 ///
@@ -111,11 +127,65 @@ pub fn unsubscribe(subscriber_id: &str) {
     }
 }
 
-/// Push one update to every subscriber of `topic`. Returns how many
-/// connections it reached.
-pub fn publish(topic: &str, key: &str, data: &Value) -> usize {
+fn append_durable(
+    event_log: &dyn EventLog,
+    topic: &str,
+    creature_id: &str,
+    key: &str,
+    data: &Value,
+) -> PortResult<()> {
+    if topic.is_empty() || topic.len() > 256 {
+        return Err(PortError::Failed(
+            "realtime topic must be 1-256 bytes".to_owned(),
+        ));
+    }
+    let payload = serde_json::to_vec(data).map_err(|error| PortError::Failed(error.to_string()))?;
+    let payload_digest = format!("sha256:{}", hex::encode(Sha256::digest(&payload)));
+    let event_id = Uuid::now_v7();
+    let creature_id = creature_subject(creature_id).id;
+
+    // Sequence allocation is optimistic across replicas. A conflicting writer wins;
+    // this producer reads the new bound and retries without ever creating a gap.
+    for _ in 0..32 {
+        let (latest, _) = event_log.bounds(topic)?;
+        let publication = Publication {
+            event: Event {
+                id: event_id,
+                stream: topic.to_owned(),
+                creature_id,
+                kind: key.to_owned(),
+                producer: "guest.bridge.publish".to_owned(),
+                sequence: latest.unwrap_or(0).saturating_add(1),
+                at_millis: chrono::Utc::now().timestamp_millis(),
+                payload_digest: payload_digest.clone(),
+                retention: RetentionClass::Standard,
+                version: "1".to_owned(),
+                idempotency_key: None,
+            },
+            payload: payload.clone(),
+        };
+        match event_log.append(&publication) {
+            Ok(()) => return Ok(()),
+            Err(PortError::Conflict) => continue,
+            Err(error) => return Err(error),
+        }
+    }
+    Err(PortError::Conflict)
+}
+
+/// Durably append one update, then push it to every legacy subscriber of `topic`.
+/// Returns how many compatibility connections it reached.
+pub fn publish(topic: &str, creature_id: &str, key: &str, data: &Value) -> PortResult<usize> {
+    let event_log = EVENT_LOG
+        .read()
+        .unwrap_or_else(|poisoned| poisoned.into_inner())
+        .clone();
+    if let Some(event_log) = event_log {
+        append_durable(event_log.as_ref(), topic, creature_id, key, data)?;
+    }
+
     let Some(entry) = REGISTRY.by_topic.get(topic) else {
-        return 0;
+        return Ok(0);
     };
     let ids: Vec<String> = entry.iter().map(|e| e.key().clone()).collect();
     drop(entry);
@@ -140,7 +210,7 @@ pub fn publish(topic: &str, key: &str, data: &Value) -> usize {
     REGISTRY
         .delivered
         .fetch_add(delivered as u64, Ordering::Relaxed);
-    delivered
+    Ok(delivered)
 }
 
 /// How many connections currently subscribe to `topic`.
@@ -165,7 +235,51 @@ pub fn stats() -> Value {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::sync::Mutex;
     use std::sync::atomic::AtomicUsize;
+
+    #[derive(Default)]
+    struct RecordingEventLog {
+        publications: Mutex<Vec<Publication>>,
+    }
+
+    impl EventLog for RecordingEventLog {
+        fn append(&self, publication: &Publication) -> PortResult<()> {
+            let mut publications = self.publications.lock().unwrap();
+            let expected = publications
+                .last()
+                .map_or(1, |item| item.event.sequence + 1);
+            if publication.event.sequence != expected {
+                return Err(PortError::Conflict);
+            }
+            publications.push(publication.clone());
+            Ok(())
+        }
+
+        fn read(&self, _stream: &str, after: u64, limit: usize) -> PortResult<Vec<Publication>> {
+            Ok(self
+                .publications
+                .lock()
+                .unwrap()
+                .iter()
+                .filter(|item| item.event.sequence > after)
+                .take(limit)
+                .cloned()
+                .collect())
+        }
+
+        fn bounds(&self, _stream: &str) -> PortResult<(Option<u64>, Option<u64>)> {
+            let publications = self.publications.lock().unwrap();
+            Ok((
+                publications.last().map(|item| item.event.sequence),
+                publications.first().map(|item| item.event.sequence),
+            ))
+        }
+
+        fn purge_expired(&self, _now_millis: i64) -> PortResult<u64> {
+            Ok(0)
+        }
+    }
 
     fn counting_sink(hits: Arc<AtomicUsize>, alive: bool) -> SubscriberSink {
         Arc::new(move |_key: &str, _data: &Value| {
@@ -183,8 +297,14 @@ mod tests {
             topics: vec!["space:1".into()],
             sink: counting_sink(hits.clone(), true),
         });
-        assert_eq!(publish("space:1", "crew/update", &Value::Null), 1);
-        assert_eq!(publish("space:2", "crew/update", &Value::Null), 0);
+        assert_eq!(
+            publish("space:1", "creature-1", "crew/update", &Value::Null),
+            Ok(1)
+        );
+        assert_eq!(
+            publish("space:2", "creature-1", "crew/update", &Value::Null),
+            Ok(0)
+        );
         assert_eq!(hits.load(Ordering::Relaxed), 1);
         unsubscribe("sub-a");
     }
@@ -198,12 +318,56 @@ mod tests {
             topics: vec!["space:dead".into()],
             sink: counting_sink(hits.clone(), false),
         });
-        assert_eq!(publish("space:dead", "k", &Value::Null), 0);
+        assert_eq!(
+            publish("space:dead", "creature-1", "k", &Value::Null),
+            Ok(0)
+        );
         // The failed write removed it, so the topic index is empty and a
         // second publish does not even attempt delivery.
         assert_eq!(subscriber_count("space:dead"), 0);
-        assert_eq!(publish("space:dead", "k", &Value::Null), 0);
+        assert_eq!(
+            publish("space:dead", "creature-1", "k", &Value::Null),
+            Ok(0)
+        );
         assert_eq!(hits.load(Ordering::Relaxed), 1);
+    }
+
+    #[test]
+    fn durable_publish_uses_a707_scope_sequence_and_digest() {
+        let event_log = RecordingEventLog::default();
+        let payload = serde_json::json!({"answer": 42});
+        append_durable(
+            &event_log,
+            "space:durable",
+            "7@global",
+            "crew/update",
+            &payload,
+        )
+        .unwrap();
+        append_durable(
+            &event_log,
+            "space:durable",
+            "7@global",
+            "crew/update",
+            &payload,
+        )
+        .unwrap();
+
+        let publications = event_log.publications.lock().unwrap();
+        assert_eq!(publications.len(), 2);
+        assert_eq!(publications[0].event.sequence, 1);
+        assert_eq!(publications[1].event.sequence, 2);
+        assert_eq!(
+            publications[0].event.creature_id,
+            creature_subject("7@global").id
+        );
+        assert_eq!(publications[0].event.stream, "space:durable");
+        assert_eq!(publications[0].event.kind, "crew/update");
+        assert_eq!(
+            publications[0].payload,
+            serde_json::to_vec(&payload).unwrap()
+        );
+        assert!(publications[0].event.payload_digest.starts_with("sha256:"));
     }
 
     #[test]

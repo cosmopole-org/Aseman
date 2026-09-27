@@ -2,6 +2,7 @@
   "version": "1",
   "artifact": "A701/A903",
   "source": "contracts/public/openapi.json",
+  "stream_source": "contracts/public/events-v1.md",
   "compatibility": {
     "stable_api_major": 1,
     "breaking_change": "publish a new /v{major} route set and SDK major; never rewrite v1 semantics in place",

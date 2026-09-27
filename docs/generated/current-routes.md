@@ -132,7 +132,7 @@ This records current legacy surfaces. It is not the target HTTP/VMM contract.
 | public-storage-http | POST | `/storage/upload` | `apps/aseman-node/src/api/storage_http.rs:107` |
 | public-storage-http | PUT | `/storage/upload` | `apps/aseman-node/src/api/storage_http.rs:107` |
 | telemetry-http | GET | `/telemetry/health` | `apps/aseman-node/src/observability/server.rs:131` |
-| telemetry-http | GET | `/telemetry/snapshot` | `apps/aseman-node/src/observability/server.rs:132` |
+| telemetry-http | GET | `/telemetry/snapshot` | `apps/aseman-node/src/observability/server.rs:139` |
 | vm-http-ingress | ANY | `/{creatureId}/{programId}/{entityId}/{vmId}/{path...}` | `apps/aseman-node/src/adapters/vmm/network/ingress.rs:1` |
 | vm-http-ingress | ANY | `/{creatureUsername}/{customPath...}` | `apps/aseman-node/src/adapters/vmm/http_route.rs:1` |
 

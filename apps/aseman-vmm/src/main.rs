@@ -7,6 +7,7 @@
 //! all of it singleton work, so it runs only while this replica holds the fenced
 //! coordination lease (ADR 0013). Other replicas serve the API and stand by.
 
+use std::collections::BTreeMap;
 use std::io::BufReader;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -20,6 +21,7 @@ use aseman_ports::ClockPort;
 use aseman_storage_postgres::coordination::PostgresCoordination;
 use aseman_storage_postgres::vmm::PostgresVmmStore;
 use aseman_vmm_backend_grpc::client::GrpcBackend;
+use aseman_vmm_backend_grpc::routing::RoutingBackend;
 use aseman_vmm_http::server::{ServerTls, VmmHttpState, health_router, serve};
 use rustls::pki_types::{CertificateDer, PrivateKeyDer};
 
@@ -95,10 +97,27 @@ fn main() -> Result<(), Failure> {
         config.database_pool_size,
     )?);
     store.migrate()?;
-    let backend = Arc::new(GrpcBackend::connect(
+    let default_backend: Arc<dyn aseman_ports::vmm::VmmBackend> = Arc::new(GrpcBackend::connect(
         &config.backend_endpoint,
         Duration::from_secs(60),
     )?);
+    let runtime_backends = config
+        .runtime_backends
+        .iter()
+        .map(|(runtime, endpoint)| {
+            GrpcBackend::connect(endpoint, Duration::from_secs(60)).map(|backend| {
+                (
+                    runtime.clone(),
+                    Arc::new(backend) as Arc<dyn aseman_ports::vmm::VmmBackend>,
+                )
+            })
+        })
+        .collect::<Result<BTreeMap<_, _>, _>>()?;
+    let backend: Arc<dyn aseman_ports::vmm::VmmBackend> = if runtime_backends.is_empty() {
+        default_backend
+    } else {
+        Arc::new(RoutingBackend::new(default_backend, runtime_backends))
+    };
     let state = Arc::new(VmmHttpState {
         workloads: store.clone(),
         operations: store.clone(),

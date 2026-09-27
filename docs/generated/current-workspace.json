@@ -40,7 +40,7 @@
       "apps/aseman-client/package-lock.json"
     ],
     "tracked_dist_file_count": 29,
-    "tracked_file_count": 1031,
+    "tracked_file_count": 1064,
     "tracked_files_by_top_level": {
       ".cargo": 1,
       ".gitattributes": 1,
@@ -54,26 +54,26 @@
       "Cargo.toml": 1,
       "README.md": 1,
       "SECURITY.md": 1,
-      "apps": 210,
+      "apps": 216,
       "clippy.toml": 1,
-      "contracts": 93,
-      "crates": 128,
-      "deploy": 11,
+      "contracts": 99,
+      "crates": 129,
+      "deploy": 16,
       "dist": 29,
-      "docs": 156,
-      "modules": 314,
+      "docs": 158,
+      "modules": 316,
       "plan": 18,
       "rust-toolchain.toml": 1,
       "rustfmt.toml": 1,
-      "scripts": 29,
-      "tests": 25,
+      "scripts": 36,
+      "tests": 29,
       "xtask": 3
     },
     "tracked_source_files_by_extension": {
-      ".py": 33,
-      ".rs": 556,
+      ".py": 45,
+      ".rs": 563,
       ".sh": 2,
-      ".ts": 1
+      ".ts": 2
     }
   },
   "rust": {
@@ -216,6 +216,16 @@
             "scope": "normal"
           },
           {
+            "name": "aseman-federation-http",
+            "path": "modules/federation/http",
+            "scope": "normal"
+          },
+          {
+            "name": "aseman-gateway-rpc",
+            "path": "modules/network/gateway",
+            "scope": "normal"
+          },
+          {
             "name": "aseman-guest-http",
             "path": "modules/guest-http",
             "scope": "normal"
@@ -258,6 +268,11 @@
           {
             "name": "aseman-public-service",
             "path": "modules/public-service",
+            "scope": "normal"
+          },
+          {
+            "name": "aseman-realtime-durable",
+            "path": "modules/realtime/durable",
             "scope": "normal"
           },
           {
@@ -388,6 +403,10 @@
             "name": "reqwest",
             "scope": "normal",
             "version": "0.12"
+          },
+          {
+            "name": "ring",
+            "scope": "normal"
           },
           {
             "name": "rocksdb",
@@ -1880,14 +1899,91 @@
             "scope": "normal"
           },
           {
+            "name": "aseman-public-http",
+            "path": "modules/network/http",
+            "scope": "normal"
+          },
+          {
+            "name": "futures-util",
+            "scope": "normal",
+            "version": "0.3"
+          },
+          {
+            "name": "serde_json",
+            "scope": "normal"
+          },
+          {
+            "name": "tokio",
+            "scope": "normal"
+          },
+          {
+            "features": [
+              "net"
+            ],
+            "name": "tokio-stream",
+            "scope": "normal",
+            "version": "0.1"
+          },
+          {
+            "name": "tonic",
+            "scope": "normal"
+          }
+        ],
+        "description": "A702 canonical gateway RPC and A703 live listener handoff runtime.",
+        "edition": {
+          "workspace": true
+        },
+        "features": {},
+        "manifest": "modules/network/gateway/Cargo.toml",
+        "name": "aseman-gateway-rpc",
+        "targets": [
+          {
+            "kind": "lib",
+            "name": "aseman-gateway-rpc",
+            "path": "src/lib.rs"
+          }
+        ],
+        "version": {
+          "workspace": true
+        }
+      },
+      {
+        "dependencies": [
+          {
+            "name": "aseman-contracts",
+            "path": "crates/aseman-contracts",
+            "scope": "normal"
+          },
+          {
+            "name": "aseman-domain",
+            "path": "crates/aseman-domain",
+            "scope": "normal"
+          },
+          {
+            "name": "aseman-observability",
+            "path": "crates/aseman-observability",
+            "scope": "normal"
+          },
+          {
             "default-features": false,
             "features": [
               "http1",
-              "tokio"
+              "query",
+              "tokio",
+              "ws"
             ],
             "name": "axum",
             "scope": "normal",
             "version": "0.7.9"
+          },
+          {
+            "name": "base64",
+            "scope": "normal"
+          },
+          {
+            "name": "futures-util",
+            "scope": "normal",
+            "version": "0.3"
           },
           {
             "features": [
@@ -3801,6 +3897,7 @@
           "modules/consensus/hashgraph",
           "modules/federation/http",
           "modules/finance/ledger",
+          "modules/network/gateway",
           "modules/network/http",
           "modules/network/legacy",
           "modules/realtime/durable",

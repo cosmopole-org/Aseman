@@ -742,7 +742,7 @@
     {
       "method": "GET",
       "path": "/telemetry/snapshot",
-      "source": "apps/aseman-node/src/observability/server.rs:132",
+      "source": "apps/aseman-node/src/observability/server.rs:139",
       "surface": "telemetry-http"
     },
     {

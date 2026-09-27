@@ -276,7 +276,13 @@ pub(crate) fn host_fn_publish_update(caller_program_id: &str, input: &JsonValue)
         input["data"].clone()
     };
 
-    let delivered = gateway_subs::publish(&topic, &key, &data);
+    let delivered = match gateway_subs::publish(&topic, &owner, &key, &data) {
+        Ok(delivered) => delivered,
+        Err(error) => {
+            return json!({"ok": false, "error": format!("durable publish failed: {error}")})
+                .to_string();
+        }
+    };
     json!({
         "ok": true,
         "topic": topic,

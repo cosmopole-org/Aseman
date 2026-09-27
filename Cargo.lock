@@ -282,6 +282,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "aseman-gateway-rpc"
+version = "0.1.0"
+dependencies = [
+ "aseman-contracts",
+ "aseman-domain",
+ "aseman-public-http",
+ "futures-util",
+ "serde_json",
+ "tokio",
+ "tokio-stream",
+ "tonic",
+]
+
+[[package]]
 name = "aseman-guest-http"
 version = "0.1.0"
 dependencies = [
@@ -404,6 +418,8 @@ dependencies = [
  "aseman-consensus-hashgraph",
  "aseman-contracts",
  "aseman-domain",
+ "aseman-federation-http",
+ "aseman-gateway-rpc",
  "aseman-guest-http",
  "aseman-identity-native",
  "aseman-module-runtime",
@@ -413,6 +429,7 @@ dependencies = [
  "aseman-ports",
  "aseman-public-http",
  "aseman-public-service",
+ "aseman-realtime-durable",
  "aseman-storage-legacy",
  "aseman-storage-postgres",
  "aseman-vmm-http",
@@ -435,6 +452,7 @@ dependencies = [
  "r2d2_postgres",
  "rand 0.10.2",
  "reqwest 0.12.28",
+ "ring",
  "rocksdb",
  "rsa",
  "rustls 0.23.45",
@@ -493,7 +511,10 @@ version = "0.1.0"
 dependencies = [
  "aseman-contracts",
  "aseman-domain",
+ "aseman-observability",
  "axum",
+ "base64 0.22.1",
+ "futures-util",
  "hyper 1.11.1",
  "hyper-util",
  "rustls 0.23.45",
@@ -854,6 +875,7 @@ checksum = "edca88bc138befd0323b20752846e6587272d3b03b0343c8ea28a6f819e6e71f"
 dependencies = [
  "async-trait",
  "axum-core",
+ "base64 0.22.1",
  "bytes",
  "futures-util",
  "http 1.5.0",
@@ -872,8 +894,10 @@ dependencies = [
  "serde_json",
  "serde_path_to_error",
  "serde_urlencoded",
+ "sha1",
  "sync_wrapper 1.0.2",
  "tokio",
+ "tokio-tungstenite",
  "tower 0.5.3",
  "tower-layer",
  "tower-service",
@@ -5827,6 +5851,18 @@ dependencies = [
  "futures-core",
  "pin-project-lite",
  "tokio",
+]
+
+[[package]]
+name = "tokio-tungstenite"
+version = "0.24.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "edc5f74e248dc973e0dbb7b74c7e0d6fcc301c694ff50049504004ef4d0cdcd9"
+dependencies = [
+ "futures-util",
+ "log",
+ "tokio",
+ "tungstenite",
 ]
 
 [[package]]

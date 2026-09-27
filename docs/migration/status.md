@@ -56,9 +56,13 @@ production-shaped operational scenarios, and their legacy deletion gates — not
    serves it from the legacy transaction per ADR 0026); entity/workload, identity
    session, signal, types, and program-list route through the executor's port-bound
    bodies. `identity.signature.check` stays fail-closed by design (it required the
-   legacy ROOT user, which a UUID subject cannot map to). What remains is SSE and
-   WebSocket streams, the gateway RPC listener handoff runtime, and the federation
-   signer/verifier/executor composition (RL-009).
+   legacy ROOT user, which a UUID subject cannot map to). Creature-scoped SSE now
+   replays A707 from PostgreSQL with explicit retention resync, and bridge updates append
+   durably before compatibility fan-out. The authorized WebSocket log-terminal stream,
+   A702 RPC server, live A703 generation broker, and inbound federation verifier,
+   executor, and response signer are now composed. What remains is outbound federation
+   caller cutover plus deployed default/rollback and rotation/partition observation
+   (RL-009/RL-010).
 3. **Finish `asemanctl` and packaging** (RL-015, RL-018). The canonical
    `apps/asemanctl` crate owns the command implementation and `casparctl` is a
    one-way warning compatibility shim. The `doctor`/`backup`/`restore`/`upgrade`/

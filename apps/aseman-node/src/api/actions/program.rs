@@ -2315,15 +2315,10 @@ pub(crate) fn serve_read_vm_logs(
     let count = usize::try_from(input.count).unwrap_or(0).clamp(1, 1000);
     let after = u64::try_from(input.offset).unwrap_or(0);
     let build = input.log_type == "build";
+    let workload_id =
+        crate::api::workloads::RemoteWorkloads::workload_id(&program.id, &entity_id, &input.vm_id);
     let logs: Vec<Value> = remote
-        .logs(
-            crate::api::workloads::RemoteWorkloads::workload_id(
-                &program.id,
-                &entity_id,
-                &input.vm_id,
-            ),
-            after,
-        )?
+        .logs(workload_id, after)?
         .into_iter()
         .filter(|record| (record.stream == aseman_domain::vmm::LogStream::Build) == build)
         .take(count)
@@ -2340,7 +2335,7 @@ pub(crate) fn serve_read_vm_logs(
             .unwrap_or_default()
         })
         .collect();
-    Ok(json!({"logs": logs}))
+    Ok(json!({"logs": logs, "workloadId": workload_id.to_string()}))
 }
 
 /// `/machines/openVmTerminal` (`workload.terminal.open`) body.

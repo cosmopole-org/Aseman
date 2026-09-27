@@ -763,6 +763,9 @@ pub struct VmmServiceConfig {
     pub database_pool_size: u32,
     /// The A504 backend endpoint.
     pub backend_endpoint: String,
+    /// Optional `runtime=http://loopback:port` A504 routes. These processes are
+    /// independently installable and replaceable; the default backend is fallback.
+    pub runtime_backends: BTreeMap<String, String>,
     pub max_request_bytes: usize,
     /// How often the executor, observer, and reconciler run.
     pub reconcile_interval_millis: u64,
@@ -815,6 +818,28 @@ impl VmmServiceConfig {
                 Ok((node.trim().to_owned(), fingerprint))
             })
             .collect::<Result<BTreeMap<_, _>, _>>()?;
+        let runtime_backends = values
+            .get("ASEMAN_VMM_RUNTIME_BACKENDS")
+            .filter(|value| !value.trim().is_empty())
+            .map(|value| {
+                value
+                    .split(',')
+                    .map(|entry| {
+                        let invalid = ConfigError::Invalid {
+                            key: "ASEMAN_VMM_RUNTIME_BACKENDS",
+                            reason: "expected runtime=http://loopback:port entries",
+                        };
+                        let (runtime, endpoint) =
+                            entry.trim().split_once('=').ok_or(invalid.clone())?;
+                        if runtime.trim().is_empty() || !endpoint.starts_with("http://") {
+                            return Err(invalid);
+                        }
+                        Ok((runtime.trim().to_owned(), endpoint.trim().to_owned()))
+                    })
+                    .collect::<Result<BTreeMap<_, _>, _>>()
+            })
+            .transpose()?
+            .unwrap_or_default();
         Ok(Self {
             listen: value_or(values, "ASEMAN_VMM_LISTEN", "0.0.0.0:8443"),
             health_listen: nonempty(values, "ASEMAN_VMM_HEALTH_LISTEN"),
@@ -825,6 +850,7 @@ impl VmmServiceConfig {
             database_url_secret: required(values, "ASEMAN_VMM_DATABASE_URL_SECRET")?,
             database_pool_size: parse_or(values, "ASEMAN_VMM_DATABASE_POOL_SIZE", 8)?,
             backend_endpoint: required(values, "ASEMAN_VMM_BACKEND_ENDPOINT")?,
+            runtime_backends,
             max_request_bytes: parse_or(values, "ASEMAN_VMM_MAX_REQUEST_BYTES", 8 * 1024 * 1024)?,
             reconcile_interval_millis: parse_or(
                 values,
@@ -863,6 +889,49 @@ pub struct PublicHttpListenerConfig {
     pub rate_window_seconds: u64,
     pub max_rate_subjects: usize,
     pub drain_timeout_seconds: u64,
+    /// Loopback A702 endpoint for independently supervised network modules.
+    pub gateway_rpc_listen: Option<String>,
+    /// Listener generation restored through A703 on process startup.
+    pub gateway_rpc_generation: u64,
+}
+
+/// Mandatory-mTLS A705 listener and its canonical node response key.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct FederationListenerConfig {
+    pub listen: String,
+    pub tls_certificate: String,
+    pub tls_key_secret: String,
+    pub client_ca: String,
+    pub response_signing_key_secret: String,
+    pub audience: String,
+    pub max_body_bytes: usize,
+    pub drain_timeout_seconds: u64,
+}
+
+impl FederationListenerConfig {
+    pub fn from_process() -> Result<Self, ConfigError> {
+        Self::from_map(&std::env::vars().collect())
+    }
+
+    pub fn from_map(values: &BTreeMap<String, String>) -> Result<Self, ConfigError> {
+        Ok(Self {
+            listen: value_or(values, "ASEMAN_FEDERATION_HTTP_LISTEN", "0.0.0.0:9443"),
+            tls_certificate: required(values, "ASEMAN_FEDERATION_HTTP_TLS_CERTIFICATE")?,
+            tls_key_secret: required(values, "ASEMAN_FEDERATION_HTTP_TLS_KEY_SECRET")?,
+            client_ca: required(values, "ASEMAN_FEDERATION_HTTP_CLIENT_CA")?,
+            response_signing_key_secret: required(
+                values,
+                "ASEMAN_FEDERATION_RESPONSE_SIGNING_KEY_SECRET",
+            )?,
+            audience: required(values, "ASEMAN_FEDERATION_HTTP_AUDIENCE")?,
+            max_body_bytes: parse_or(values, "ASEMAN_FEDERATION_HTTP_MAX_BODY_BYTES", 1024 * 1024)?,
+            drain_timeout_seconds: parse_or(
+                values,
+                "ASEMAN_FEDERATION_HTTP_DRAIN_TIMEOUT_SECS",
+                10,
+            )?,
+        })
+    }
 }
 
 /// Configuration for the independent Phase 8 metering process.
@@ -963,6 +1032,8 @@ impl PublicHttpListenerConfig {
             rate_window_seconds: parse_or(values, "ASEMAN_PUBLIC_HTTP_RATE_WINDOW_SECONDS", 60)?,
             max_rate_subjects: parse_or(values, "ASEMAN_PUBLIC_HTTP_MAX_RATE_SUBJECTS", 8_192)?,
             drain_timeout_seconds: parse_or(values, "ASEMAN_PUBLIC_HTTP_DRAIN_TIMEOUT_SECS", 10)?,
+            gateway_rpc_listen: nonempty(values, "ASEMAN_GATEWAY_RPC_LISTEN"),
+            gateway_rpc_generation: parse_or(values, "ASEMAN_GATEWAY_RPC_GENERATION", 1)?,
         })
     }
 }
@@ -1448,6 +1519,13 @@ mod tests {
         let config = VmmServiceConfig::from_map(&values).unwrap();
         assert_eq!(config.clients["node-1"], [0xab; 32]);
         assert_eq!(config.listen, "0.0.0.0:8443");
+        assert!(config.runtime_backends.is_empty());
+        values.insert(
+            "ASEMAN_VMM_RUNTIME_BACKENDS".to_owned(),
+            "wasm=http://127.0.0.1:9101,docker=http://127.0.0.1:9102".to_owned(),
+        );
+        let routed = VmmServiceConfig::from_map(&values).unwrap();
+        assert_eq!(routed.runtime_backends["wasm"], "http://127.0.0.1:9101");
         for bad in ["node-1", "node-1=abc", "=abab", "node-1=zz"] {
             values.insert("ASEMAN_VMM_CLIENTS".to_owned(), bad.to_owned());
             assert!(VmmServiceConfig::from_map(&values).is_err(), "{bad}");
@@ -1480,6 +1558,8 @@ mod tests {
         assert_eq!(config.allowed_origins, vec!["https://console.example"]);
         assert_eq!(config.max_body_bytes, 1024 * 1024);
         assert_eq!(config.requests_per_window, 120);
+        assert!(config.gateway_rpc_listen.is_none());
+        assert_eq!(config.gateway_rpc_generation, 1);
         // No configured origins refuses cross-origin requests (the empty set).
         let mut closed = values.clone();
         closed.remove("ASEMAN_PUBLIC_HTTP_ALLOWED_ORIGINS");
@@ -1499,6 +1579,49 @@ mod tests {
             missing.remove(key);
             assert!(
                 PublicHttpListenerConfig::from_map(&missing).is_err(),
+                "{key}"
+            );
+        }
+    }
+
+    #[test]
+    fn federation_listener_requires_mtls_signing_and_audience() {
+        let values = BTreeMap::from([
+            (
+                "ASEMAN_FEDERATION_HTTP_TLS_CERTIFICATE".to_owned(),
+                "/cert".to_owned(),
+            ),
+            (
+                "ASEMAN_FEDERATION_HTTP_TLS_KEY_SECRET".to_owned(),
+                "/key".to_owned(),
+            ),
+            (
+                "ASEMAN_FEDERATION_HTTP_CLIENT_CA".to_owned(),
+                "/ca".to_owned(),
+            ),
+            (
+                "ASEMAN_FEDERATION_RESPONSE_SIGNING_KEY_SECRET".to_owned(),
+                "/response-key".to_owned(),
+            ),
+            (
+                "ASEMAN_FEDERATION_HTTP_AUDIENCE".to_owned(),
+                "node:a/federation/v1".to_owned(),
+            ),
+        ]);
+        let config = FederationListenerConfig::from_map(&values).unwrap();
+        assert_eq!(config.listen, "0.0.0.0:9443");
+        assert_eq!(config.max_body_bytes, 1024 * 1024);
+        for key in [
+            "ASEMAN_FEDERATION_HTTP_TLS_CERTIFICATE",
+            "ASEMAN_FEDERATION_HTTP_TLS_KEY_SECRET",
+            "ASEMAN_FEDERATION_HTTP_CLIENT_CA",
+            "ASEMAN_FEDERATION_RESPONSE_SIGNING_KEY_SECRET",
+            "ASEMAN_FEDERATION_HTTP_AUDIENCE",
+        ] {
+            let mut missing = values.clone();
+            missing.remove(key);
+            assert!(
+                FederationListenerConfig::from_map(&missing).is_err(),
                 "{key}"
             );
         }

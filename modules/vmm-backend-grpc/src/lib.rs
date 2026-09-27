@@ -6,4 +6,5 @@
 
 pub mod client;
 pub mod convert;
+pub mod routing;
 pub mod server;

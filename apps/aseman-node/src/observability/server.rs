@@ -127,17 +127,41 @@ impl TelemetryServer {
             return;
         }
         let path = parts[1];
-        let (status, body) = match path {
-            "/telemetry/health" => (200, br#"{"status":"ok"}"#.to_vec()),
+        let (status, content_type, body) = match path {
+            "/telemetry/health" => (200, "application/json", br#"{"status":"ok"}"#.to_vec()),
+            "/metrics" => (
+                200,
+                "text/plain; version=0.0.4; charset=utf-8",
+                aseman_observability::metrics()
+                    .render_prometheus()
+                    .into_bytes(),
+            ),
             "/telemetry/snapshot" => match self.cached_or_collect() {
-                Ok(snap) => (200, serde_json::to_vec(&snap).unwrap_or_default()),
-                Err(e) => (500, format!("{{\"error\":\"{}\"}}", e).into_bytes()),
+                Ok(snap) => (
+                    200,
+                    "application/json",
+                    serde_json::to_vec(&snap).unwrap_or_default(),
+                ),
+                Err(e) => (
+                    500,
+                    "application/json",
+                    format!("{{\"error\":\"{}\"}}", e).into_bytes(),
+                ),
             },
-            _ => (404, br#"{"error":"not found"}"#.to_vec()),
+            _ => (
+                404,
+                "application/json",
+                br#"{"error":"not found"}"#.to_vec(),
+            ),
+        };
+        let reason = match status {
+            200 => "OK",
+            404 => "Not Found",
+            500 => "Internal Server Error",
+            _ => "Unknown",
         };
         let response = format!(
-            "HTTP/1.1 {} OK\r\nContent-Type: application/json\r\nContent-Length: {}\r\nConnection: close\r\n\r\n",
-            status,
+            "HTTP/1.1 {status} {reason}\r\nContent-Type: {content_type}\r\nContent-Length: {}\r\nConnection: close\r\n\r\n",
             body.len()
         );
         let _ = stream.write_all(response.as_bytes());

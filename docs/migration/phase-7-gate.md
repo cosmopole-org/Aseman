@@ -49,11 +49,12 @@ execution count stays at one.
 
 ## Owned by later phases
 
-- **Serving the contract**: the hardened HTTP stack, its middleware (rate, concurrency,
-  body and duration limits, CORS, draining), and the SSE and WebSocket streams.
-- **Federation node composition and deployed evidence**: the package now delivers the
+- **Serving the contract** is delivered: the hardened HTTP stack, its middleware,
+  durable SSE, authorized WebSocket log terminals, A702, and the A703 runtime. Making
+  it the advertised default and observing handoff/rollback remain deployment work.
+- **Federation deployed evidence**: the package now delivers the
   mandatory-mTLS endpoint/client, A401 verification, signed responses, backoff, and
-  circuit breaker, plus the A706 trust/partition runbook. The node must supply the
-  concrete signer, descriptor verifier, executor, and listener configuration, then the
-  rotation/partition drill must be observed between deployed clusters.
+  circuit breaker, plus the A706 trust/partition runbook. The node supplies its
+  verifier, destination executor, response signer, durable state, and listener.
+  Outbound caller cutover and the rotation/partition drill remain to be observed.
 - **Retiring the legacy transports** is ADR 0004's window and the removal ledger's.

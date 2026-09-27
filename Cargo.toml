@@ -13,6 +13,7 @@ members = [
   "crates/*",
   "modules/*",
   "modules/network/http",
+  "modules/network/gateway",
   "modules/network/legacy",
   "modules/federation/http",
   "modules/consensus/hashgraph",

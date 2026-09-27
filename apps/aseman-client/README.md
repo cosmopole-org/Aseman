@@ -8,8 +8,11 @@ The canonical public HTTP v1 clients are generated from
 - [`generated/public_v1.py`](generated/public_v1.py) — dependency-free Python using
   `urllib`.
 
-Both expose all 76 published operations, enforce exactly one session/proof credential,
-and require an idempotency key before sending a mutation. Regenerate them with
+Both expose all 76 published operations plus the bounded `events` SSE iterator,
+enforce exactly one session/proof credential, and require an idempotency key before
+sending a mutation. The iterator carries `Last-Event-ID`, parses event/resync/error
+frames, and supports cancellation/timeout through each language's normal HTTP controls.
+Regenerate them with
 `python3 scripts/generate_public_clients.py`; freshness is part of `cargo xtask fast`.
 The compatibility rules are versioned in
 [`contracts/public/client-policy.json`](../../contracts/public/client-policy.json).

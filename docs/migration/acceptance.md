@@ -75,7 +75,7 @@ strength of an intention.
 
 | Criterion | State | Evidence |
 |---|---|---|
-| HTTP is the shipped default | PARTIAL | The contract is generated, `modules/network/http` provides the hardened transport boundary, the composed service owns A401/A402/execution/durable idempotency, and the node now composes the gateway (RL-004): `PublicActionExecutor` + `LegacySessionDirectory` + the TLS listener from `app::NodeApp`, observed live. Three action families execute through `aseman-application` use cases; the rest fail closed. SSE/WebSocket streams and making HTTP the advertised default remain open |
+| HTTP is the shipped default | PARTIAL | Generated actions, creature-scoped SSE/A707 replay, and the authorized WebSocket log terminal share A401/A402 admission. A702 is served through the live A703 handoff broker. Only deployed parity/rollback and making HTTP the advertised default remain open. |
 | Adapters pass the same application contract tests | MET | `check_legacy_transports.py`: they contain framing only |
 | Any workload resolves any target's minimal descriptor | MET | A704 |
 | Discovery grants no operational rights | MET | Phase 7 gate |

@@ -8,7 +8,8 @@
 
 #![forbid(unsafe_code)]
 
-use std::collections::{BTreeMap, BTreeSet, HashMap};
+use std::collections::{BTreeMap, BTreeSet, HashMap, VecDeque};
+use std::convert::Infallible;
 use std::future::Future;
 use std::net::SocketAddr;
 use std::sync::{Arc, Mutex};
@@ -20,13 +21,17 @@ use aseman_domain::identity::Proof;
 use axum::Router;
 use axum::body::{Body, Bytes};
 use axum::extract::rejection::BytesRejection;
-use axum::extract::{DefaultBodyLimit, Extension, Path, State};
+use axum::extract::ws::{Message, WebSocket, WebSocketUpgrade};
+use axum::extract::{DefaultBodyLimit, Extension, Path, Query, State};
 use axum::http::{HeaderMap, HeaderName, HeaderValue, StatusCode, header};
-use axum::response::Response;
-use axum::routing::post;
+use axum::response::sse::{Event as SseEvent, KeepAlive, Sse};
+use axum::response::{IntoResponse, Response};
+use axum::routing::{get, post};
+use futures_util::StreamExt;
+use futures_util::stream;
 use hyper_util::rt::TokioIo;
 use rustls::pki_types::{CertificateDer, PrivateKeyDer};
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use tokio::net::TcpListener;
 use tokio::sync::{Semaphore, watch};
 use tower::ServiceExt;
@@ -35,6 +40,7 @@ pub const SESSION_HEADER: &str = "Aseman-Session";
 pub const PROOF_HEADER: &str = "Aseman-Proof";
 pub const REQUEST_ID_HEADER: &str = "Aseman-Request-Id";
 pub const IDEMPOTENCY_HEADER: &str = "Idempotency-Key";
+pub const BRIDGE_TOKEN_HEADER: &str = "Aseman-Bridge-Token";
 
 const OPENAPI: &str = include_str!("../../../../contracts/public/openapi.json");
 
@@ -84,6 +90,91 @@ pub trait PublicActionService: Send + Sync {
         &self,
         request: PublicActionRequest,
     ) -> Result<PublicActionResponse, PublicActionError>;
+}
+
+/// One event already authorized for delivery to a public subscriber.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct PublicEventFrame {
+    pub event_id: String,
+    pub sequence: u64,
+    pub kind: String,
+    /// One JSON value containing the A707 envelope and payload representation.
+    pub data: String,
+}
+
+/// One bounded read from an admitted public subscription.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub enum PublicEventBatch {
+    Events(Vec<PublicEventFrame>),
+    /// The requested sequence predates retained history. The client must resync its
+    /// state instead of receiving a silently incomplete replay.
+    Resync {
+        oldest_sequence: Option<u64>,
+        latest_sequence: Option<u64>,
+    },
+}
+
+/// An admitted, creature-scoped subscription. Implementations retain the identity and
+/// authorization decision so a long-lived connection never replays a signed proof.
+pub trait PublicEventSubscription: Send + Sync {
+    fn read(
+        &self,
+        after_sequence: u64,
+        limit: usize,
+    ) -> Result<PublicEventBatch, PublicActionError>;
+}
+
+/// Admission request for the SSE realtime edge.
+#[derive(Clone)]
+pub struct PublicEventRequest {
+    pub request_id: String,
+    pub authentication: Authentication,
+    pub stream: String,
+    pub token: String,
+}
+
+/// The application entry point behind the public SSE edge. Implementations must route
+/// admission through A401/A402 and bind returned events to the admitted creature.
+pub trait PublicEventService: Send + Sync {
+    fn subscribe(
+        &self,
+        request: PublicEventRequest,
+    ) -> Result<Arc<dyn PublicEventSubscription>, PublicActionError>;
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct PublicTerminalOutput {
+    pub sequence: u64,
+    pub channel: String,
+    pub data: Vec<u8>,
+}
+
+pub trait PublicTerminalSession: Send + Sync {
+    fn read(
+        &self,
+        after_sequence: u64,
+        limit: usize,
+    ) -> Result<Vec<PublicTerminalOutput>, PublicActionError>;
+    fn write(&self, data: &[u8]) -> Result<(), PublicActionError>;
+    fn resize(&self, columns: u32, rows: u32) -> Result<(), PublicActionError>;
+    fn close(&self) -> Result<(), PublicActionError>;
+}
+
+#[derive(Clone)]
+pub struct PublicTerminalRequest {
+    pub request_id: String,
+    pub authentication: Authentication,
+    pub idempotency_key: String,
+    pub workload_id: String,
+    pub creature_id: String,
+    pub vm_id: String,
+}
+
+pub trait PublicTerminalService: Send + Sync {
+    fn open(
+        &self,
+        request: PublicTerminalRequest,
+    ) -> Result<Arc<dyn PublicTerminalSession>, PublicActionError>;
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -183,6 +274,8 @@ struct RateBucket {
 
 struct PublicHttpState {
     service: Arc<dyn PublicActionService>,
+    events: Option<Arc<dyn PublicEventService>>,
+    terminals: Option<Arc<dyn PublicTerminalService>>,
     catalog: RouteCatalog,
     config: PublicHttpConfig,
     in_flight: Arc<Semaphore>,
@@ -190,6 +283,69 @@ struct PublicHttpState {
 }
 
 type Shared = Arc<PublicHttpState>;
+
+const STREAM_BATCH_EVENTS: usize = 100;
+const STREAM_MAX_EVENTS: usize = 1_000;
+const STREAM_POLL_INTERVAL: Duration = Duration::from_millis(250);
+const STREAM_IDLE_TIMEOUT: Duration = Duration::from_secs(30);
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+struct EventQuery {
+    #[serde(default)]
+    after: Option<u64>,
+    #[serde(default = "default_stream_events")]
+    max_events: usize,
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+struct TerminalQuery {
+    creature_id: String,
+    vm_id: String,
+    #[serde(default)]
+    after: u64,
+}
+
+#[derive(Deserialize)]
+#[serde(tag = "type", rename_all = "snake_case", deny_unknown_fields)]
+enum TerminalClientFrame {
+    Stdin { data: String },
+    Resize { columns: u32, rows: u32 },
+    Close,
+}
+
+#[derive(Serialize)]
+#[serde(tag = "type", rename_all = "snake_case")]
+enum TerminalServerFrame<'a> {
+    Output {
+        sequence: u64,
+        channel: &'a str,
+        data: String,
+    },
+    Error {
+        status: u16,
+        reason: &'a str,
+        detail: &'a str,
+    },
+    Exit {
+        code: i32,
+    },
+}
+
+const fn default_stream_events() -> usize {
+    STREAM_BATCH_EVENTS
+}
+
+struct EventCursor {
+    subscription: Arc<dyn PublicEventSubscription>,
+    buffered: VecDeque<PublicEventFrame>,
+    after: u64,
+    remaining: usize,
+    idle_since: Instant,
+    finished: bool,
+    _permit: tokio::sync::OwnedSemaphorePermit,
+}
 
 #[derive(Serialize)]
 struct Problem<'a> {
@@ -374,6 +530,7 @@ async fn action(
     headers: HeaderMap,
     body: Result<Bytes, BytesRejection>,
 ) -> Response {
+    let started = Instant::now();
     let request_id = request_id(&headers);
     let origin = match cors_origin(&state, &headers) {
         Ok(origin) => origin,
@@ -486,6 +643,7 @@ async fn action(
         }
     };
     let service = state.service.clone();
+    let metric_route = operation.action.clone();
     let request = PublicActionRequest {
         request_id: request_id.clone(),
         route,
@@ -528,7 +686,632 @@ async fn action(
             &request_id,
         ),
     };
+    let status_class = format!("{}xx", response.status().as_u16() / 100);
+    aseman_observability::metrics().increment(
+        "aseman_http_requests_total",
+        &[
+            ("service", "aseman-node"),
+            ("route", metric_route.as_str()),
+            ("method", "POST"),
+            ("status_class", status_class.as_str()),
+        ],
+    );
+    aseman_observability::metrics().observe(
+        "aseman_http_request_duration_seconds",
+        &[
+            ("service", "aseman-node"),
+            ("route", metric_route.as_str()),
+            ("method", "POST"),
+        ],
+        started.elapsed().as_secs_f64(),
+    );
     add_cors(response, origin.as_deref())
+}
+
+fn stream_problem(error: &PublicActionError) -> SseEvent {
+    let data = serde_json::json!({
+        "status": error.status,
+        "reason": error.reason,
+        "detail": error.detail,
+    });
+    SseEvent::default().event("error").data(data.to_string())
+}
+
+fn resync_event(oldest_sequence: Option<u64>, latest_sequence: Option<u64>) -> SseEvent {
+    SseEvent::default().event("resync").data(
+        serde_json::json!({
+            "oldestSequence": oldest_sequence,
+            "latestSequence": latest_sequence,
+        })
+        .to_string(),
+    )
+}
+
+async fn next_event(
+    mut cursor: EventCursor,
+) -> Option<(Result<SseEvent, Infallible>, EventCursor)> {
+    loop {
+        if let Some(frame) = cursor.buffered.pop_front() {
+            cursor.after = frame.sequence;
+            cursor.remaining = cursor.remaining.saturating_sub(1);
+            let event = SseEvent::default()
+                // SSE Last-Event-ID is the dense A707 stream sequence. The stable A707
+                // UUID remains in the JSON envelope delivered as data.
+                .id(frame.sequence.to_string())
+                .event(frame.kind)
+                .data(frame.data);
+            return Some((Ok(event), cursor));
+        }
+        if cursor.finished || cursor.remaining == 0 {
+            return None;
+        }
+
+        let subscription = cursor.subscription.clone();
+        let after = cursor.after;
+        let limit = cursor.remaining.min(STREAM_BATCH_EVENTS);
+        let read = tokio::task::spawn_blocking(move || subscription.read(after, limit)).await;
+        match read {
+            Ok(Ok(PublicEventBatch::Events(events))) if events.is_empty() => {
+                if cursor.idle_since.elapsed() >= STREAM_IDLE_TIMEOUT {
+                    return None;
+                }
+                tokio::time::sleep(STREAM_POLL_INTERVAL).await;
+            }
+            Ok(Ok(PublicEventBatch::Events(events))) => {
+                cursor.buffered.extend(events);
+                cursor.idle_since = Instant::now();
+            }
+            Ok(Ok(PublicEventBatch::Resync {
+                oldest_sequence,
+                latest_sequence,
+            })) => {
+                cursor.finished = true;
+                return Some((Ok(resync_event(oldest_sequence, latest_sequence)), cursor));
+            }
+            Ok(Err(error)) => {
+                cursor.finished = true;
+                return Some((Ok(stream_problem(&error)), cursor));
+            }
+            Err(_) => {
+                cursor.finished = true;
+                return Some((
+                    Ok(stream_problem(&PublicActionError {
+                        status: 503,
+                        reason: "service_unavailable".to_owned(),
+                        detail: "the event service stopped unexpectedly".to_owned(),
+                    })),
+                    cursor,
+                ));
+            }
+        }
+    }
+}
+
+async fn events(
+    State(state): State<Shared>,
+    peer: Option<Extension<SocketAddr>>,
+    Path(stream_name): Path<String>,
+    Query(query): Query<EventQuery>,
+    headers: HeaderMap,
+) -> Response {
+    let request_id = request_id(&headers);
+    let origin = match cors_origin(&state, &headers) {
+        Ok(origin) => origin,
+        Err(()) => {
+            return problem(
+                StatusCode::FORBIDDEN,
+                "Origin refused",
+                "origin_refused",
+                "the request origin is not allowed",
+                &request_id,
+            );
+        }
+    };
+    let Some(event_service) = state.events.clone() else {
+        return add_cors(
+            problem(
+                StatusCode::NOT_FOUND,
+                "Event stream unavailable",
+                "route_not_found",
+                "the public event service is not composed",
+                &request_id,
+            ),
+            origin.as_deref(),
+        );
+    };
+    if stream_name.is_empty() || stream_name.len() > 256 {
+        return add_cors(
+            problem(
+                StatusCode::BAD_REQUEST,
+                "Invalid subscription",
+                "invalid_subscription",
+                "stream must be 1-256 bytes",
+                &request_id,
+            ),
+            origin.as_deref(),
+        );
+    }
+    let token = match headers
+        .get(BRIDGE_TOKEN_HEADER)
+        .and_then(|value| value.to_str().ok())
+        .filter(|value| !value.is_empty() && value.len() <= 4_096)
+    {
+        Some(token) => token.to_owned(),
+        None => {
+            return add_cors(
+                problem(
+                    StatusCode::BAD_REQUEST,
+                    "Invalid subscription",
+                    "invalid_subscription",
+                    "Aseman-Bridge-Token must be 1-4096 bytes",
+                    &request_id,
+                ),
+                origin.as_deref(),
+            );
+        }
+    };
+    if query.max_events == 0 || query.max_events > STREAM_MAX_EVENTS {
+        return add_cors(
+            problem(
+                StatusCode::BAD_REQUEST,
+                "Invalid stream limit",
+                "invalid_stream_limit",
+                "maxEvents must be between 1 and 1000",
+                &request_id,
+            ),
+            origin.as_deref(),
+        );
+    }
+    if !admitted(&state, peer.map(|Extension(peer)| peer)) {
+        return add_cors(
+            problem(
+                StatusCode::TOO_MANY_REQUESTS,
+                "Rate limit exceeded",
+                "rate_limited",
+                "retry after the admission window",
+                &request_id,
+            ),
+            origin.as_deref(),
+        );
+    }
+    let authentication = match authentication(&headers) {
+        Ok(authentication) => authentication,
+        Err(reason) => {
+            return add_cors(
+                problem(
+                    StatusCode::UNAUTHORIZED,
+                    "Authentication required",
+                    reason,
+                    "provide exactly one valid Aseman-Session or Aseman-Proof header",
+                    &request_id,
+                ),
+                origin.as_deref(),
+            );
+        }
+    };
+    let after_header = match headers.get(HeaderName::from_static("last-event-id")) {
+        None => None,
+        Some(value) => match value
+            .to_str()
+            .ok()
+            .and_then(|value| value.parse::<u64>().ok())
+        {
+            Some(sequence) => Some(sequence),
+            None => {
+                return add_cors(
+                    problem(
+                        StatusCode::BAD_REQUEST,
+                        "Invalid event cursor",
+                        "invalid_event_cursor",
+                        "Last-Event-ID must be an A707 stream sequence",
+                        &request_id,
+                    ),
+                    origin.as_deref(),
+                );
+            }
+        },
+    };
+    let permit = match state.in_flight.clone().try_acquire_owned() {
+        Ok(permit) => permit,
+        Err(_) => {
+            return add_cors(
+                problem(
+                    StatusCode::SERVICE_UNAVAILABLE,
+                    "Concurrency limit reached",
+                    "concurrency_limited",
+                    "retry when another request completes",
+                    &request_id,
+                ),
+                origin.as_deref(),
+            );
+        }
+    };
+    let after = after_header.or(query.after).unwrap_or(0);
+    let max_events = query.max_events;
+    let subscription_request_id = request_id.clone();
+    let subscription = match tokio::task::spawn_blocking(move || {
+        event_service.subscribe(PublicEventRequest {
+            request_id: subscription_request_id,
+            authentication,
+            stream: stream_name,
+            token,
+        })
+    })
+    .await
+    {
+        Ok(Ok(subscription)) => subscription,
+        Ok(Err(error)) => {
+            return add_cors(
+                problem(
+                    StatusCode::from_u16(error.status).unwrap_or(StatusCode::INTERNAL_SERVER_ERROR),
+                    "Subscription refused",
+                    &error.reason,
+                    &error.detail,
+                    &request_id,
+                ),
+                origin.as_deref(),
+            );
+        }
+        Err(_) => {
+            return add_cors(
+                problem(
+                    StatusCode::SERVICE_UNAVAILABLE,
+                    "Service unavailable",
+                    "service_unavailable",
+                    "the event service stopped unexpectedly",
+                    &request_id,
+                ),
+                origin.as_deref(),
+            );
+        }
+    };
+
+    let cursor = EventCursor {
+        subscription,
+        buffered: VecDeque::new(),
+        after,
+        remaining: max_events,
+        idle_since: Instant::now(),
+        finished: false,
+        _permit: permit,
+    };
+    let mut response = Sse::new(stream::unfold(cursor, next_event))
+        .keep_alive(
+            KeepAlive::new()
+                .interval(Duration::from_secs(5))
+                .text("keepalive"),
+        )
+        .into_response();
+    response
+        .headers_mut()
+        .insert(header::CACHE_CONTROL, HeaderValue::from_static("no-cache"));
+    response.headers_mut().insert(
+        HeaderName::from_static("x-accel-buffering"),
+        HeaderValue::from_static("no"),
+    );
+    if let Ok(value) = HeaderValue::from_str(&request_id) {
+        response
+            .headers_mut()
+            .insert(HeaderName::from_static("aseman-request-id"), value);
+    }
+    add_cors(response, origin.as_deref())
+}
+
+async fn event_preflight(State(state): State<Shared>, headers: HeaderMap) -> Response {
+    let request_id = request_id(&headers);
+    if state.events.is_none() {
+        return problem(
+            StatusCode::NOT_FOUND,
+            "Event stream unavailable",
+            "route_not_found",
+            "the public event service is not composed",
+            &request_id,
+        );
+    }
+    let origin = match cors_origin(&state, &headers) {
+        Ok(Some(origin)) => origin,
+        _ => {
+            return problem(
+                StatusCode::FORBIDDEN,
+                "Origin refused",
+                "origin_refused",
+                "the request origin is not allowed",
+                &request_id,
+            );
+        }
+    };
+    let mut response = finish(
+        StatusCode::NO_CONTENT,
+        "application/json",
+        Vec::new(),
+        &request_id,
+    );
+    response.headers_mut().insert(
+        header::ACCESS_CONTROL_ALLOW_METHODS,
+        HeaderValue::from_static("GET, OPTIONS"),
+    );
+    response.headers_mut().insert(
+        header::ACCESS_CONTROL_ALLOW_HEADERS,
+        HeaderValue::from_static(
+            "Aseman-Session, Aseman-Proof, Aseman-Request-Id, Aseman-Bridge-Token, Last-Event-ID",
+        ),
+    );
+    add_cors(response, Some(&origin))
+}
+
+async fn send_terminal_frame(socket: &mut WebSocket, frame: &TerminalServerFrame<'_>) -> bool {
+    let Ok(text) = serde_json::to_string(frame) else {
+        return false;
+    };
+    socket.send(Message::Text(text)).await.is_ok()
+}
+
+async fn run_terminal(
+    mut socket: WebSocket,
+    session: Arc<dyn PublicTerminalSession>,
+    mut after: u64,
+    _permit: tokio::sync::OwnedSemaphorePermit,
+) {
+    let mut poll = tokio::time::interval(STREAM_POLL_INTERVAL);
+    loop {
+        tokio::select! {
+            _ = poll.tick() => {
+                let reader = session.clone();
+                let output = tokio::task::spawn_blocking(move || reader.read(after, 100)).await;
+                match output {
+                    Ok(Ok(records)) => {
+                        for record in records {
+                            after = after.max(record.sequence);
+                            let data = base64::Engine::encode(
+                                &base64::engine::general_purpose::STANDARD,
+                                &record.data,
+                            );
+                            if !send_terminal_frame(&mut socket, &TerminalServerFrame::Output {
+                                sequence: record.sequence,
+                                channel: &record.channel,
+                                data,
+                            }).await {
+                                let _ = session.close();
+                                return;
+                            }
+                        }
+                    }
+                    Ok(Err(error)) => {
+                        let _ = send_terminal_frame(&mut socket, &TerminalServerFrame::Error {
+                            status: error.status,
+                            reason: &error.reason,
+                            detail: &error.detail,
+                        }).await;
+                        let _ = session.close();
+                        return;
+                    }
+                    Err(_) => {
+                        let _ = send_terminal_frame(&mut socket, &TerminalServerFrame::Error {
+                            status: 503,
+                            reason: "service_unavailable",
+                            detail: "the terminal service stopped unexpectedly",
+                        }).await;
+                        let _ = session.close();
+                        return;
+                    }
+                }
+            }
+            incoming = socket.next() => {
+                let Some(Ok(message)) = incoming else {
+                    let _ = session.close();
+                    return;
+                };
+                let result = match message {
+                    Message::Text(text) => match serde_json::from_str::<TerminalClientFrame>(&text) {
+                        Ok(TerminalClientFrame::Stdin { data }) => {
+                            base64::Engine::decode(
+                                &base64::engine::general_purpose::STANDARD,
+                                data,
+                            )
+                            .map_err(|_| PublicActionError {
+                                status: 400,
+                                reason: "invalid_terminal_frame".to_owned(),
+                                detail: "stdin data is not base64".to_owned(),
+                            })
+                            .and_then(|bytes| session.write(&bytes))
+                        }
+                        Ok(TerminalClientFrame::Resize { columns, rows }) => {
+                            session.resize(columns, rows)
+                        }
+                        Ok(TerminalClientFrame::Close) => {
+                            let _ = session.close();
+                            let _ = send_terminal_frame(
+                                &mut socket,
+                                &TerminalServerFrame::Exit { code: 0 },
+                            ).await;
+                            return;
+                        }
+                        Err(_) => Err(PublicActionError {
+                            status: 400,
+                            reason: "invalid_terminal_frame".to_owned(),
+                            detail: "terminal text frame is malformed".to_owned(),
+                        }),
+                    },
+                    Message::Close(_) => {
+                        let _ = session.close();
+                        return;
+                    }
+                    Message::Ping(data) => {
+                        if socket.send(Message::Pong(data)).await.is_err() {
+                            let _ = session.close();
+                            return;
+                        }
+                        Ok(())
+                    }
+                    Message::Pong(_) => Ok(()),
+                    Message::Binary(_) => Err(PublicActionError {
+                        status: 400,
+                        reason: "invalid_terminal_frame".to_owned(),
+                        detail: "terminal input uses JSON text frames".to_owned(),
+                    }),
+                };
+                if let Err(error) = result
+                    && !send_terminal_frame(&mut socket, &TerminalServerFrame::Error {
+                        status: error.status,
+                        reason: &error.reason,
+                        detail: &error.detail,
+                    }).await
+                {
+                    let _ = session.close();
+                    return;
+                }
+            }
+        }
+    }
+}
+
+async fn terminal(
+    State(state): State<Shared>,
+    peer: Option<Extension<SocketAddr>>,
+    Path(workload_id): Path<String>,
+    Query(query): Query<TerminalQuery>,
+    headers: HeaderMap,
+    upgrade: WebSocketUpgrade,
+) -> Response {
+    let request_id = request_id(&headers);
+    let origin = match cors_origin(&state, &headers) {
+        Ok(origin) => origin,
+        Err(()) => {
+            return problem(
+                StatusCode::FORBIDDEN,
+                "Origin refused",
+                "origin_refused",
+                "the request origin is not allowed",
+                &request_id,
+            );
+        }
+    };
+    let Some(terminals) = state.terminals.clone() else {
+        return add_cors(
+            problem(
+                StatusCode::NOT_IMPLEMENTED,
+                "Terminal unavailable",
+                "unsupported_operation",
+                "no terminal provider is composed",
+                &request_id,
+            ),
+            origin.as_deref(),
+        );
+    };
+    if !admitted(&state, peer.map(|Extension(peer)| peer)) {
+        return add_cors(
+            problem(
+                StatusCode::TOO_MANY_REQUESTS,
+                "Rate limit exceeded",
+                "rate_limited",
+                "retry after the admission window",
+                &request_id,
+            ),
+            origin.as_deref(),
+        );
+    }
+    let authentication = match authentication(&headers) {
+        Ok(authentication) => authentication,
+        Err(reason) => {
+            return add_cors(
+                problem(
+                    StatusCode::UNAUTHORIZED,
+                    "Authentication required",
+                    reason,
+                    "provide exactly one valid Aseman-Session or Aseman-Proof header",
+                    &request_id,
+                ),
+                origin.as_deref(),
+            );
+        }
+    };
+    let idempotency_key = match idempotency(&headers, true) {
+        Ok(Some(key)) => key,
+        _ => {
+            return add_cors(
+                problem(
+                    StatusCode::BAD_REQUEST,
+                    "Invalid idempotency key",
+                    "idempotency_key_required",
+                    "terminal admission requires a 16-128 character Idempotency-Key",
+                    &request_id,
+                ),
+                origin.as_deref(),
+            );
+        }
+    };
+    if workload_id.is_empty()
+        || query.creature_id.is_empty()
+        || query.vm_id.is_empty()
+        || workload_id.len() > 128
+    {
+        return add_cors(
+            problem(
+                StatusCode::BAD_REQUEST,
+                "Invalid terminal target",
+                "invalid_terminal_target",
+                "workloadId, creatureId, and vmId are required",
+                &request_id,
+            ),
+            origin.as_deref(),
+        );
+    }
+    let permit = match state.in_flight.clone().try_acquire_owned() {
+        Ok(permit) => permit,
+        Err(_) => {
+            return add_cors(
+                problem(
+                    StatusCode::SERVICE_UNAVAILABLE,
+                    "Concurrency limit reached",
+                    "concurrency_limited",
+                    "retry when another request completes",
+                    &request_id,
+                ),
+                origin.as_deref(),
+            );
+        }
+    };
+    let open = PublicTerminalRequest {
+        request_id: request_id.clone(),
+        authentication,
+        idempotency_key,
+        workload_id,
+        creature_id: query.creature_id,
+        vm_id: query.vm_id,
+    };
+    let session = match tokio::task::spawn_blocking(move || terminals.open(open)).await {
+        Ok(Ok(session)) => session,
+        Ok(Err(error)) => {
+            return add_cors(
+                problem(
+                    StatusCode::from_u16(error.status).unwrap_or(StatusCode::INTERNAL_SERVER_ERROR),
+                    "Terminal refused",
+                    &error.reason,
+                    &error.detail,
+                    &request_id,
+                ),
+                origin.as_deref(),
+            );
+        }
+        Err(_) => {
+            return add_cors(
+                problem(
+                    StatusCode::SERVICE_UNAVAILABLE,
+                    "Terminal unavailable",
+                    "service_unavailable",
+                    "the terminal service stopped unexpectedly",
+                    &request_id,
+                ),
+                origin.as_deref(),
+            );
+        }
+    };
+    add_cors(
+        upgrade
+            .protocols(["aseman.terminal.v1"])
+            .on_upgrade(move |socket| run_terminal(socket, session, query.after, permit)),
+        origin.as_deref(),
+    )
 }
 
 async fn preflight(
@@ -583,10 +1366,31 @@ async fn preflight(
 
 /// Construct the public router from the checked-in generated contract.
 pub fn router(service: Arc<dyn PublicActionService>, config: PublicHttpConfig) -> Router {
+    router_with_streams(service, None, None, config)
+}
+
+/// Construct the public router with the creature-scoped A707 SSE edge enabled.
+pub fn router_with_events(
+    service: Arc<dyn PublicActionService>,
+    event_service: Option<Arc<dyn PublicEventService>>,
+    config: PublicHttpConfig,
+) -> Router {
+    router_with_streams(service, event_service, None, config)
+}
+
+/// Construct the public router with both durable SSE and WebSocket terminal edges.
+pub fn router_with_streams(
+    service: Arc<dyn PublicActionService>,
+    event_service: Option<Arc<dyn PublicEventService>>,
+    terminal_service: Option<Arc<dyn PublicTerminalService>>,
+    config: PublicHttpConfig,
+) -> Router {
     let max_body_bytes = config.max_body_bytes;
     let max_in_flight = config.max_in_flight.max(1);
     let state = Arc::new(PublicHttpState {
         service,
+        events: event_service,
+        terminals: terminal_service,
         catalog: RouteCatalog::default(),
         in_flight: Arc::new(Semaphore::new(max_in_flight)),
         rates: Mutex::new(HashMap::new()),
@@ -594,6 +1398,8 @@ pub fn router(service: Arc<dyn PublicActionService>, config: PublicHttpConfig) -
     });
     Router::new()
         .route("/v1/actions/*path", post(action).options(preflight))
+        .route("/v1/events/:stream", get(events).options(event_preflight))
+        .route("/v1/terminals/:workload_id", get(terminal))
         .layer(DefaultBodyLimit::max(max_body_bytes))
         .with_state(state)
 }
@@ -612,6 +1418,64 @@ pub async fn serve(
     config: PublicHttpConfig,
     shutdown: impl Future<Output = ()>,
 ) -> Result<(), String> {
+    serve_with_events(
+        listener,
+        certificate_chain,
+        private_key,
+        service,
+        None,
+        config,
+        shutdown,
+    )
+    .await
+}
+
+/// Serve TLS with the A707 SSE edge composed beside the A701 unary actions.
+///
+/// # Errors
+///
+/// Invalid TLS material or a listener failure during shutdown setup.
+pub async fn serve_with_events(
+    listener: TcpListener,
+    certificate_chain: Vec<CertificateDer<'static>>,
+    private_key: PrivateKeyDer<'static>,
+    service: Arc<dyn PublicActionService>,
+    events: Option<Arc<dyn PublicEventService>>,
+    config: PublicHttpConfig,
+    shutdown: impl Future<Output = ()>,
+) -> Result<(), String> {
+    serve_with_streams(
+        listener,
+        certificate_chain,
+        private_key,
+        service,
+        PublicStreamServices {
+            events,
+            terminals: None,
+        },
+        config,
+        shutdown,
+    )
+    .await
+}
+
+/// Optional streaming services hosted beside the unary public API.
+#[derive(Clone, Default)]
+pub struct PublicStreamServices {
+    pub events: Option<Arc<dyn PublicEventService>>,
+    pub terminals: Option<Arc<dyn PublicTerminalService>>,
+}
+
+/// Serve TLS with durable SSE and WebSocket terminal streams composed beside A701.
+pub async fn serve_with_streams(
+    listener: TcpListener,
+    certificate_chain: Vec<CertificateDer<'static>>,
+    private_key: PrivateKeyDer<'static>,
+    service: Arc<dyn PublicActionService>,
+    streams: PublicStreamServices,
+    config: PublicHttpConfig,
+    shutdown: impl Future<Output = ()>,
+) -> Result<(), String> {
     let provider = Arc::new(rustls::crypto::ring::default_provider());
     let tls = rustls::ServerConfig::builder_with_provider(provider)
         .with_safe_default_protocol_versions()
@@ -620,7 +1484,7 @@ pub async fn serve(
         .with_single_cert(certificate_chain, private_key)
         .map_err(|error| error.to_string())?;
     let acceptor = tokio_rustls::TlsAcceptor::from(Arc::new(tls));
-    let app = router(service, config.clone());
+    let app = router_with_streams(service, streams.events, streams.terminals, config.clone());
     let (drain_tx, drain_rx) = watch::channel(false);
     let mut tasks = tokio::task::JoinSet::new();
     tokio::pin!(shutdown);
@@ -646,7 +1510,8 @@ pub async fn serve(
                         },
                     );
                     let connection = hyper::server::conn::http1::Builder::new()
-                        .serve_connection(TokioIo::new(stream), service);
+                        .serve_connection(TokioIo::new(stream), service)
+                        .with_upgrades();
                     tokio::pin!(connection);
                     tokio::select! {
                         _ = &mut connection => {}

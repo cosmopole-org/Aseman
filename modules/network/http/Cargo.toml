@@ -10,7 +10,10 @@ repository.workspace = true
 [dependencies]
 aseman-contracts = { path = "../../../crates/aseman-contracts" }
 aseman-domain = { path = "../../../crates/aseman-domain" }
-axum = { version = "0.7.9", default-features = false, features = ["http1", "tokio"] }
+aseman-observability = { path = "../../../crates/aseman-observability" }
+axum = { version = "0.7.9", default-features = false, features = ["http1", "query", "tokio", "ws"] }
+base64.workspace = true
+futures-util = "0.3"
 hyper = { version = "1", features = ["http1", "server"] }
 hyper-util = { version = "0.1", features = ["server", "http1", "tokio", "service"] }
 rustls = { version = "0.23", default-features = false, features = ["std", "ring", "tls12"] }

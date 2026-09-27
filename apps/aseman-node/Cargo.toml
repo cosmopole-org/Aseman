@@ -31,7 +31,10 @@ aseman-storage-legacy = { path = "../../modules/storage/rocksdb-legacy" }
 aseman-storage-postgres = { path = "../../modules/storage/postgres" }
 aseman-policy-native = { path = "../../modules/security/capabilities" }
 aseman-public-http = { path = "../../modules/network/http" }
+aseman-gateway-rpc = { path = "../../modules/network/gateway" }
+aseman-federation-http = { path = "../../modules/federation/http" }
 aseman-public-service = { path = "../../modules/public-service" }
+aseman-realtime-durable = { path = "../../modules/realtime/durable" }
 aseman-identity-native = { path = "../../modules/identity-native" }
 aseman-guest-http = { path = "../../modules/guest-http" }
 aseman-vmm-http = { path = "../../modules/vmm-http" }
@@ -50,6 +53,7 @@ postgres = "0.19.13"
 r2d2 = "0.8.10"
 r2d2_postgres = "0.18.2"
 rand = "0.10.1"
+ring.workspace = true
 rocksdb.workspace = true
 rsa.workspace = true
 rustls = { version = "0.23", default-features = false, features = ["std", "ring", "tls12"] }

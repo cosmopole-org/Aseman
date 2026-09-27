@@ -27,24 +27,37 @@ use aseman_application::{Diagnostics, GetServerPeers, GetServerPublicKey};
 use aseman_capsule::audit::CapsuleDecisionAudit;
 use aseman_capsule::capability::CapsuleGrantStore;
 use aseman_capsule::identity::CapsuleKeyDirectory;
-use aseman_config::{AsemanConfig, PublicHttpListenerConfig};
+use aseman_config::{AsemanConfig, FederationListenerConfig, PublicHttpListenerConfig};
 use aseman_domain::authority::{ActionRegistry, Condition, ResourceRef};
+use aseman_domain::federation::Envelope;
 use aseman_domain::identity::Subject;
+use aseman_domain::realtime::{can_replay_from, may_deliver};
 use aseman_domain::signal_tags::LogQuery;
+use aseman_federation_http::{
+    FederationExecutor, FederationHttpConfig, FederationResponseSigner, FederationServerTls,
+    FederationService, PostgresFederation,
+};
 use aseman_identity_native::NativeIdentityVerifier;
+use aseman_ports::realtime::EventLog;
 use aseman_ports::{
     ActionExecutor, BlobStore, DecisionAudit, GrantStore, IdentityVerifier, KeyDirectory,
     PolicyDecisionPort, PortError, PublicActionIdempotency, ReplayGuard, SessionDirectory,
 };
 use aseman_public_http::{
-    PublicActionError, PublicActionResponse, PublicActionService, PublicHttpConfig,
+    PublicActionError, PublicActionRequest, PublicActionResponse, PublicActionService,
+    PublicEventBatch, PublicEventFrame, PublicEventRequest, PublicEventService,
+    PublicEventSubscription, PublicHttpConfig, PublicTerminalOutput, PublicTerminalRequest,
+    PublicTerminalService, PublicTerminalSession,
 };
 use aseman_public_service::ComposedPublicActionService;
+use aseman_realtime_durable::PostgresRealtime;
 use aseman_storage_postgres::PostgresCapsuleRepository;
+use ring::signature::Ed25519KeyPair;
 use rustls::pki_types::{CertificateDer, PrivateKeyDer};
 use serde_json::{Value, json};
 
 use crate::adapters::blob_store::{PUBLIC_FILES, node_blobs};
+use crate::adapters::gateway_subs;
 use crate::api::actions::auth::LegacyAuthPorts;
 use crate::api::actions::creature as creature_actions;
 use crate::api::actions::creature::{
@@ -1334,6 +1347,31 @@ impl SessionDirectory for LegacySessionDirectory {
 struct ComposedPublicHttp {
     _repository: &'static PostgresCapsuleRepository,
     service: ComposedPublicActionService,
+    realtime: Arc<PostgresRealtime>,
+}
+
+struct NodeFederationExecutor {
+    actions: Arc<dyn ActionExecutor>,
+}
+
+impl FederationExecutor for NodeFederationExecutor {
+    fn execute(&self, envelope: &Envelope, payload: &[u8]) -> Result<String, PortError> {
+        let subject = envelope
+            .subject
+            .parse::<Subject>()
+            .map_err(|_| PortError::Denied("invalid federation subject"))?;
+        let answer = self.actions.execute(subject, &envelope.action, payload)?;
+        String::from_utf8(answer)
+            .map_err(|_| PortError::Failed("federated answer is not UTF-8".to_owned()))
+    }
+}
+
+struct NodeFederationSigner(Ed25519KeyPair);
+
+impl FederationResponseSigner for NodeFederationSigner {
+    fn sign(&self, response: &[u8]) -> Result<String, PortError> {
+        Ok(base64::engine::general_purpose::URL_SAFE_NO_PAD.encode(self.0.sign(response).as_ref()))
+    }
 }
 
 impl PublicActionService for ComposedPublicHttp {
@@ -1342,6 +1380,219 @@ impl PublicActionService for ComposedPublicHttp {
         request: aseman_public_http::PublicActionRequest,
     ) -> Result<PublicActionResponse, PublicActionError> {
         self.service.invoke(request)
+    }
+}
+
+struct AuthorizedPublicEvents {
+    realtime: Arc<dyn EventLog>,
+    creature_id: aseman_domain::Uuid,
+    stream: String,
+}
+
+fn public_event_error(status: u16, reason: &str, detail: impl Into<String>) -> PublicActionError {
+    PublicActionError {
+        status,
+        reason: reason.to_owned(),
+        detail: detail.into(),
+    }
+}
+
+impl PublicEventSubscription for AuthorizedPublicEvents {
+    fn read(
+        &self,
+        after_sequence: u64,
+        limit: usize,
+    ) -> Result<PublicEventBatch, PublicActionError> {
+        let (latest, oldest) = self
+            .realtime
+            .bounds(&self.stream)
+            .map_err(|error| public_event_error(503, "realtime_unavailable", error.to_string()))?;
+        if !can_replay_from(oldest, after_sequence) {
+            return Ok(PublicEventBatch::Resync {
+                oldest_sequence: oldest,
+                latest_sequence: latest,
+            });
+        }
+        let publications = self
+            .realtime
+            .read(&self.stream, after_sequence, limit)
+            .map_err(|error| public_event_error(503, "realtime_unavailable", error.to_string()))?;
+        let mut frames = Vec::with_capacity(publications.len());
+        for publication in publications {
+            if !may_deliver(&publication.event, self.creature_id) {
+                return Err(public_event_error(
+                    403,
+                    "event_scope_denied",
+                    "the stream contains an event outside the admitted creature scope",
+                ));
+            }
+            let event_id = publication.event.id.to_string();
+            let sequence = publication.event.sequence;
+            let kind = publication.event.kind.clone();
+            let data = serde_json::to_string(&json!({
+                "event": publication.event,
+                "payloadBase64": base64::engine::general_purpose::STANDARD
+                    .encode(publication.payload),
+            }))
+            .map_err(|error| public_event_error(500, "event_encode_failed", error.to_string()))?;
+            frames.push(PublicEventFrame {
+                event_id,
+                sequence,
+                kind,
+                data,
+            });
+        }
+        Ok(PublicEventBatch::Events(frames))
+    }
+}
+
+impl PublicEventService for ComposedPublicHttp {
+    fn subscribe(
+        &self,
+        request: PublicEventRequest,
+    ) -> Result<Arc<dyn PublicEventSubscription>, PublicActionError> {
+        let body = serde_json::to_vec(&json!({
+            "token": request.token,
+            "topics": [request.stream.clone()],
+        }))
+        .map_err(|error| {
+            public_event_error(500, "subscription_encode_failed", error.to_string())
+        })?;
+        let response = self.service.invoke(PublicActionRequest {
+            request_id: request.request_id,
+            route: "/v1/actions/gateway/subscribe".to_owned(),
+            action: "topic.subscribe".to_owned(),
+            class: aseman_domain::authority::ActionClass::Read,
+            authentication: request.authentication,
+            idempotency_key: None,
+            body,
+        })?;
+        let value: Value = serde_json::from_slice(&response.body)
+            .map_err(|error| public_event_error(503, "subscription_invalid", error.to_string()))?;
+        let creature_id = value
+            .get("creatureId")
+            .and_then(Value::as_str)
+            .filter(|value| !value.trim().is_empty())
+            .map(|value| creature_subject(value).id)
+            .ok_or_else(|| {
+                public_event_error(
+                    503,
+                    "subscription_invalid",
+                    "topic admission returned no creatureId",
+                )
+            })?;
+        Ok(Arc::new(AuthorizedPublicEvents {
+            realtime: self.realtime.clone(),
+            creature_id,
+            stream: request.stream,
+        }))
+    }
+}
+
+struct VmmLogTerminal {
+    remote: Arc<crate::api::workloads::RemoteWorkloads>,
+    workload: aseman_domain::WorkloadId,
+}
+
+impl PublicTerminalSession for VmmLogTerminal {
+    fn read(
+        &self,
+        after_sequence: u64,
+        limit: usize,
+    ) -> Result<Vec<PublicTerminalOutput>, PublicActionError> {
+        let records = self
+            .remote
+            .logs(self.workload, after_sequence)
+            .map_err(|error| public_event_error(503, "terminal_unavailable", error.to_string()))?;
+        Ok(records
+            .into_iter()
+            .take(limit.min(100))
+            .map(|record| PublicTerminalOutput {
+                sequence: record.sequence,
+                channel: match record.stream {
+                    aseman_domain::vmm::LogStream::Stdout => "stdout",
+                    aseman_domain::vmm::LogStream::Stderr => "stderr",
+                    aseman_domain::vmm::LogStream::System => "system",
+                    aseman_domain::vmm::LogStream::Build => "build",
+                }
+                .to_owned(),
+                data: record.line.into_bytes(),
+            })
+            .collect())
+    }
+
+    fn write(&self, _data: &[u8]) -> Result<(), PublicActionError> {
+        Err(public_event_error(
+            501,
+            "unsupported_operation",
+            "the installed runtime exposes the legacy log terminal, not interactive stdin",
+        ))
+    }
+
+    fn resize(&self, _columns: u32, _rows: u32) -> Result<(), PublicActionError> {
+        Err(public_event_error(
+            501,
+            "unsupported_operation",
+            "the installed runtime exposes the legacy log terminal, not a PTY",
+        ))
+    }
+
+    fn close(&self) -> Result<(), PublicActionError> {
+        Ok(())
+    }
+}
+
+impl PublicTerminalService for ComposedPublicHttp {
+    fn open(
+        &self,
+        request: PublicTerminalRequest,
+    ) -> Result<Arc<dyn PublicTerminalSession>, PublicActionError> {
+        let workload = request
+            .workload_id
+            .parse::<uuid::Uuid>()
+            .ok()
+            .map(aseman_domain::WorkloadId::from_uuid)
+            .ok_or_else(|| {
+                public_event_error(400, "invalid_terminal_target", "workload ID is not a UUID")
+            })?;
+        // The legacy terminal was a log subscription (ADR 0029). Admission therefore
+        // uses the ordinary workload log action, which authenticates the caller and
+        // proves ownership. Its response returns the resolved typed workload ID; the
+        // supplied target must match it before any stream is opened.
+        let body = serde_json::to_vec(&json!({
+            "vmId": request.vm_id,
+            "logType": "terminal",
+            "offset": 0,
+            "count": 1,
+            "creatureId": request.creature_id,
+        }))
+        .map_err(|error| public_event_error(500, "terminal_encode_failed", error.to_string()))?;
+        let response = self.service.invoke(PublicActionRequest {
+            request_id: request.request_id,
+            route: "/v1/actions/machines/readVmLogs".to_owned(),
+            action: "workload.logs.read".to_owned(),
+            class: aseman_domain::authority::ActionClass::Read,
+            authentication: request.authentication,
+            idempotency_key: Some(request.idempotency_key),
+            body,
+        })?;
+        let response: Value = serde_json::from_slice(&response.body)
+            .map_err(|error| public_event_error(503, "terminal_invalid", error.to_string()))?;
+        if response.get("workloadId").and_then(Value::as_str) != Some(&request.workload_id) {
+            return Err(public_event_error(
+                403,
+                "terminal_scope_denied",
+                "the admitted VM does not resolve to the requested workload",
+            ));
+        }
+        let remote = crate::api::workloads::remote().ok_or_else(|| {
+            public_event_error(
+                503,
+                "terminal_unavailable",
+                "the node has no configured VMM",
+            )
+        })?;
+        Ok(Arc::new(VmmLogTerminal { remote, workload }))
     }
 }
 
@@ -1380,9 +1631,8 @@ pub(crate) fn start_public_http(config: &AsemanConfig, app: Arc<dyn ICore>) -> R
     // The repository backs every capsule port and lives for the node's lifetime.
     // The capsule adapters borrow it, so one clone is leaked to 'static; the owned
     // Arc serves the ReplayGuard/PublicActionIdempotency impls, which are on the type.
-    let repository_owned = Arc::new(PostgresCapsuleRepository::connect(&read_database_url(
-        config,
-    )?)?);
+    let database_url = read_database_url(config)?;
+    let repository_owned = Arc::new(PostgresCapsuleRepository::connect(&database_url)?);
     let repository: &'static PostgresCapsuleRepository =
         &*Box::leak(Box::new(repository_owned.clone()));
 
@@ -1425,6 +1675,16 @@ pub(crate) fn start_public_http(config: &AsemanConfig, app: Arc<dyn ICore>) -> R
         consensus,
     });
 
+    start_federation_http(
+        config,
+        &database_url,
+        keys.clone(),
+        replay.clone(),
+        verifier.clone(),
+        policy.clone(),
+        executor.clone(),
+    )?;
+
     let service = ComposedPublicActionService::new(
         keys,
         replay,
@@ -1442,10 +1702,74 @@ pub(crate) fn start_public_http(config: &AsemanConfig, app: Arc<dyn ICore>) -> R
             rotation: aseman_domain::identity::RotationPolicy::DEFAULT,
         },
     );
-    let composed: Arc<dyn PublicActionService> = Arc::new(ComposedPublicHttp {
+    let realtime = Arc::new(
+        PostgresRealtime::connect(&database_url, 4)
+            .map_err(|error| anyhow!("cannot connect public realtime provider: {error}"))?,
+    );
+    realtime
+        .migrate()
+        .map_err(|error| anyhow!("cannot migrate public realtime provider: {error}"))?;
+    let event_log: Arc<dyn EventLog> = realtime.clone();
+    gateway_subs::configure_event_log(event_log);
+    let composed = Arc::new(ComposedPublicHttp {
         _repository: repository,
         service,
+        realtime,
     });
+    let actions: Arc<dyn PublicActionService> = composed.clone();
+    let events: Arc<dyn PublicEventService> = composed.clone();
+    let terminals: Arc<dyn PublicTerminalService> = composed;
+
+    // A702 is the sole application gateway for independently installed network
+    // modules. A703 binds the candidate before committing its generation and keeps
+    // the listener broker alive for drain/rollback. Plaintext is intentionally
+    // loopback-only; an off-host module must be fronted by a mutually authenticated
+    // transport endpoint.
+    if let Some(endpoint) = listener.gateway_rpc_listen.clone() {
+        let address = endpoint
+            .parse::<std::net::SocketAddr>()
+            .map_err(|error| anyhow!("invalid A702 listener {endpoint}: {error}"))?;
+        let generation = listener.gateway_rpc_generation;
+        if generation == 0 {
+            return Err(anyhow!("ASEMAN_GATEWAY_RPC_GENERATION must be positive"));
+        }
+        let gateway_actions = actions.clone();
+        let gateway_events = events.clone();
+        let gateway_terminals = terminals.clone();
+        let instance_id = config.node.id.clone();
+        std::thread::Builder::new()
+            .name("aseman-gateway-rpc".to_owned())
+            .spawn(move || {
+                let runtime = tokio::runtime::Builder::new_multi_thread()
+                    .worker_threads(2)
+                    .enable_all()
+                    .build()
+                    .expect("gateway runtime");
+                runtime.block_on(async move {
+                    let broker = aseman_gateway_rpc::GatewayListenerBroker::default();
+                    let service = aseman_gateway_rpc::GatewayService::new(
+                        gateway_actions,
+                        gateway_events,
+                        instance_id,
+                    )
+                    .with_terminal(gateway_terminals);
+                    match broker.stage(generation, address, service).await {
+                        Ok(bound) => {
+                            if let Err(error) = broker.activate(generation) {
+                                eprintln!("[gateway-rpc] activation failed: {error}");
+                                return;
+                            }
+                            eprintln!(
+                                "[gateway-rpc] serving A702 generation {generation} on {bound}"
+                            );
+                            std::future::pending::<()>().await;
+                        }
+                        Err(error) => eprintln!("[gateway-rpc] staging failed: {error}"),
+                    }
+                });
+            })
+            .map_err(|error| anyhow!("cannot spawn the A702 gateway server: {error}"))?;
+    }
 
     let certificate_chain = load_certificate_chain(&listener.tls_certificate)?;
     let private_key = load_private_key(&listener.tls_key_secret)?;
@@ -1469,11 +1793,15 @@ pub(crate) fn start_public_http(config: &AsemanConfig, app: Arc<dyn ICore>) -> R
                     .await
                     .map_err(|e| e.to_string())?;
                 eprintln!("[public-http] serving the A701 contract on {}", address);
-                aseman_public_http::serve(
+                aseman_public_http::serve_with_streams(
                     tcp,
                     certificate_chain,
                     private_key,
-                    composed,
+                    actions,
+                    aseman_public_http::PublicStreamServices {
+                        events: Some(events),
+                        terminals: Some(terminals),
+                    },
                     config,
                     shutdown,
                 )
@@ -1482,6 +1810,105 @@ pub(crate) fn start_public_http(config: &AsemanConfig, app: Arc<dyn ICore>) -> R
         })
         .map_err(|error| anyhow!("cannot spawn the public HTTP server: {error}"))?;
 
+    Ok(())
+}
+
+#[allow(clippy::too_many_arguments)]
+fn start_federation_http(
+    config: &AsemanConfig,
+    database_url: &str,
+    keys: Arc<dyn KeyDirectory>,
+    replay: Arc<dyn ReplayGuard>,
+    verifier: Arc<dyn IdentityVerifier>,
+    policy: Arc<dyn PolicyDecisionPort>,
+    actions: Arc<dyn ActionExecutor>,
+) -> Result<()> {
+    let listener = match FederationListenerConfig::from_process() {
+        Ok(listener) => listener,
+        Err(_) => return Ok(()),
+    };
+    let node_id = crate::api::workloads::node_subject(&config.node.id).id;
+    let database = database_url
+        .parse::<postgres::Config>()
+        .map_err(|error| anyhow!("invalid federation database URL: {error}"))?;
+    let provider = Arc::new(
+        PostgresFederation::connect_config(database, 8, node_id)
+            .map_err(|error| anyhow!("cannot connect federation provider: {error}"))?,
+    );
+    provider
+        .migrate()
+        .map_err(|error| anyhow!("cannot migrate federation provider: {error}"))?;
+
+    let signing_pem =
+        aseman_config::read_secret_file(&listener.response_signing_key_secret, 64 * 1024)?;
+    let signing_der =
+        rustls_pemfile::pkcs8_private_keys(&mut std::io::Cursor::new(signing_pem.as_bytes()))
+            .next()
+            .transpose()
+            .map_err(|error| anyhow!("invalid federation response key: {error}"))?
+            .ok_or_else(|| anyhow!("federation response key secret holds no PKCS#8 key"))?;
+    let signer = Ed25519KeyPair::from_pkcs8(signing_der.secret_pkcs8_der())
+        .map_err(|_| anyhow!("federation response key is not Ed25519 PKCS#8"))?;
+
+    let directory: Arc<dyn aseman_ports::federation::Directory> = provider.clone();
+    let guard: Arc<dyn aseman_ports::federation::EnvelopeGuard> = provider;
+    let service = Arc::new(FederationService {
+        keys,
+        replay,
+        verifier,
+        directory,
+        guard,
+        policy,
+        clock: Arc::new(SystemClock),
+        executor: Arc::new(NodeFederationExecutor { actions }),
+        response_signer: Arc::new(NodeFederationSigner(signer)),
+        node_id,
+        audience: listener.audience.clone(),
+    });
+    let tls = FederationServerTls {
+        certificate_chain: load_certificate_chain(&listener.tls_certificate)?,
+        private_key: load_private_key(&listener.tls_key_secret)?,
+        client_roots: load_certificate_chain(&listener.client_ca)?,
+    };
+    let address = listener
+        .listen
+        .parse::<std::net::SocketAddr>()
+        .map_err(|error| anyhow!("invalid federation listener: {error}"))?;
+    let transport = FederationHttpConfig {
+        max_body_bytes: listener.max_body_bytes,
+        drain_timeout: Duration::from_secs(listener.drain_timeout_seconds),
+    };
+    std::thread::Builder::new()
+        .name("aseman-federation-http".to_owned())
+        .spawn(move || {
+            let runtime = tokio::runtime::Builder::new_multi_thread()
+                .worker_threads(2)
+                .enable_all()
+                .build()
+                .expect("federation runtime");
+            runtime.block_on(async move {
+                let tcp = match tokio::net::TcpListener::bind(address).await {
+                    Ok(tcp) => tcp,
+                    Err(error) => {
+                        eprintln!("[federation-http] bind failed: {error}");
+                        return;
+                    }
+                };
+                eprintln!("[federation-http] serving A705 on {address}");
+                if let Err(error) = aseman_federation_http::serve(
+                    tcp,
+                    tls,
+                    service,
+                    transport,
+                    std::future::pending(),
+                )
+                .await
+                {
+                    eprintln!("[federation-http] stopped: {error}");
+                }
+            });
+        })
+        .map_err(|error| anyhow!("cannot spawn federation HTTP server: {error}"))?;
     Ok(())
 }
 
@@ -1509,6 +1936,58 @@ fn load_private_key(secret_path: &str) -> Result<PrivateKeyDer<'static>> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use aseman_domain::realtime::{Event, RetentionClass};
+    use aseman_ports::PortResult;
+    use aseman_ports::realtime::Publication;
+
+    struct FakeEventLog {
+        oldest: Option<u64>,
+        latest: Option<u64>,
+        publications: Vec<Publication>,
+    }
+
+    impl EventLog for FakeEventLog {
+        fn append(&self, _publication: &Publication) -> PortResult<()> {
+            Err(PortError::Unsupported("test log is read-only"))
+        }
+
+        fn read(&self, _stream: &str, after: u64, limit: usize) -> PortResult<Vec<Publication>> {
+            Ok(self
+                .publications
+                .iter()
+                .filter(|publication| publication.event.sequence > after)
+                .take(limit)
+                .cloned()
+                .collect())
+        }
+
+        fn bounds(&self, _stream: &str) -> PortResult<(Option<u64>, Option<u64>)> {
+            Ok((self.latest, self.oldest))
+        }
+
+        fn purge_expired(&self, _now_millis: i64) -> PortResult<u64> {
+            Err(PortError::Unsupported("test log is read-only"))
+        }
+    }
+
+    fn publication(creature_id: aseman_domain::Uuid, sequence: u64) -> Publication {
+        Publication {
+            event: Event {
+                id: aseman_domain::Uuid::now_v7(),
+                stream: "creature:events".to_owned(),
+                creature_id,
+                kind: "store.updated".to_owned(),
+                producer: "test".to_owned(),
+                sequence,
+                at_millis: 1,
+                payload_digest: format!("sha256:{}", "0".repeat(64)),
+                retention: RetentionClass::Standard,
+                version: "1".to_owned(),
+                idempotency_key: None,
+            },
+            payload: br#"{"ok":true}"#.to_vec(),
+        }
+    }
 
     #[test]
     fn resource_id_extracts_known_keys() {
@@ -1536,5 +2015,57 @@ mod tests {
         assert_eq!(diagnostics.hello("world"), "hello world !");
         assert_eq!(diagnostics.ping(), "8074");
         assert!(diagnostics.time_millis() > 0);
+    }
+
+    #[test]
+    fn public_events_replay_only_the_admitted_creature_scope() {
+        let creature_id = aseman_domain::Uuid::now_v7();
+        let subscription = AuthorizedPublicEvents {
+            realtime: Arc::new(FakeEventLog {
+                oldest: Some(1),
+                latest: Some(1),
+                publications: vec![publication(creature_id, 1)],
+            }),
+            creature_id,
+            stream: "creature:events".to_owned(),
+        };
+        let PublicEventBatch::Events(frames) = subscription.read(0, 10).unwrap() else {
+            panic!("expected event frames");
+        };
+        assert_eq!(frames.len(), 1);
+        assert_eq!(frames[0].sequence, 1);
+        assert!(frames[0].data.contains("payloadBase64"));
+
+        let denied = AuthorizedPublicEvents {
+            realtime: Arc::new(FakeEventLog {
+                oldest: Some(1),
+                latest: Some(1),
+                publications: vec![publication(aseman_domain::Uuid::now_v7(), 1)],
+            }),
+            creature_id,
+            stream: "creature:events".to_owned(),
+        };
+        assert_eq!(denied.read(0, 10).unwrap_err().status, 403);
+    }
+
+    #[test]
+    fn public_events_require_resync_when_retention_passed_the_cursor() {
+        let creature_id = aseman_domain::Uuid::now_v7();
+        let subscription = AuthorizedPublicEvents {
+            realtime: Arc::new(FakeEventLog {
+                oldest: Some(20),
+                latest: Some(30),
+                publications: Vec::new(),
+            }),
+            creature_id,
+            stream: "creature:events".to_owned(),
+        };
+        assert_eq!(
+            subscription.read(2, 10).unwrap(),
+            PublicEventBatch::Resync {
+                oldest_sequence: Some(20),
+                latest_sequence: Some(30),
+            }
+        );
     }
 }

@@ -4,8 +4,9 @@ from __future__ import annotations
 
 import json
 import urllib.error
+import urllib.parse
 import urllib.request
-from typing import Any, TypeAlias
+from typing import Any, Iterator, TypeAlias
 
 JsonValue: TypeAlias = Any
 JsonObject: TypeAlias = dict[str, JsonValue]
@@ -440,4 +441,75 @@ class AsemanClient:
     def stores_signal(self, body: JsonObject | None = None, **options: str) -> JsonValue:
         'Signal a store. Policy action: store.signal.'
         return self._invoke("/v1/actions/stores/signal", True, body or {}, **options)
+
+
+    def events(
+        self,
+        stream: str,
+        token: str,
+        *,
+        after: int | None = None,
+        max_events: int = 100,
+        **options: str,
+    ) -> Iterator[JsonObject]:
+        """Subscribe to a creature-scoped A707 stream with Last-Event-ID replay."""
+        session = options.get("session", self.session)
+        proof = options.get("proof", self.proof)
+        if bool(session) == bool(proof):
+            raise TypeError("exactly one of session or proof is required")
+        if not stream or not token:
+            raise TypeError("stream and token are required")
+        if not 1 <= max_events <= 1000:
+            raise TypeError("max_events must be between 1 and 1000")
+        query = urllib.parse.urlencode({"maxEvents": max_events})
+        path = "/v1/events/" + urllib.parse.quote(stream, safe="") + "?" + query
+        headers = {"Accept": "text/event-stream", "Aseman-Bridge-Token": token}
+        headers["Aseman-Session" if session else "Aseman-Proof"] = session or proof or ""
+        if options.get("request_id"):
+            headers["Aseman-Request-Id"] = options["request_id"]
+        if after is not None:
+            headers["Last-Event-ID"] = str(after)
+        request = urllib.request.Request(self.base_url + path, headers=headers, method="GET")
+        try:
+            with urllib.request.urlopen(request, timeout=self.timeout) as response:
+                event_id: str | None = None
+                event_type = "message"
+                data: list[str] = []
+                for raw_line in response:
+                    line = raw_line.decode("utf-8").rstrip("\r\n")
+                    if not line:
+                        if data:
+                            joined = "\n".join(data)
+                            try:
+                                decoded: JsonValue = json.loads(joined)
+                            except json.JSONDecodeError:
+                                decoded = joined
+                            yield {"id": event_id, "event": event_type, "data": decoded}
+                        event_id, event_type, data = None, "message", []
+                        continue
+                    if line.startswith(":"):
+                        continue
+                    field, separator, value = line.partition(":")
+                    if separator and value.startswith(" "):
+                        value = value[1:]
+                    if field == "id":
+                        event_id = value
+                    elif field == "event":
+                        event_type = value
+                    elif field == "data":
+                        data.append(value)
+                if data:
+                    joined = "\n".join(data)
+                    try:
+                        decoded = json.loads(joined)
+                    except json.JSONDecodeError:
+                        decoded = joined
+                    yield {"id": event_id, "event": event_type, "data": decoded}
+        except urllib.error.HTTPError as error:
+            raw = error.read()
+            try:
+                problem: JsonValue = json.loads(raw) if raw else None
+            except json.JSONDecodeError:
+                problem = raw.decode(errors="replace")
+            raise AsemanApiError(error.code, problem, error.headers.get("Aseman-Request-Id")) from error
 
