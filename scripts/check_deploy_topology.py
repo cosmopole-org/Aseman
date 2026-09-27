@@ -13,6 +13,7 @@ import argparse
 import json
 import re
 import sys
+import tomllib
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -45,6 +46,9 @@ IMAGES = {
     ),
 }
 
+COMPACT_PROFILE = "deploy/compose/compact.compose.yaml"
+CLUSTER_PROFILE = "deploy/compose/cluster.compose.yaml"
+
 
 def fail(problems: list[str], message: str) -> None:
     problems.append(message)
@@ -60,6 +64,25 @@ def check() -> list[str]:
             fail(problems, f"{name} is deployed but the topology contract omits it")
         if manifest and not (ROOT / manifest).exists():
             fail(problems, f"{name} names {manifest}, which does not exist")
+
+    # Packaging consumes these exact executable names. Checking only the package name
+    # let a `runner` target masquerade as `aseman-node` until image construction.
+    required_bins = {
+        "apps/aseman-node/Cargo.toml": {"aseman-node", "caspar-node"},
+        "apps/aseman-keygen/Cargo.toml": {"aseman-keygen", "caspar-keygen"},
+        "apps/asemanctl/Cargo.toml": {"casparctl"},
+    }
+    for manifest, expected in required_bins.items():
+        data = tomllib.loads((ROOT / manifest).read_text(encoding="utf-8"))
+        actual = {binary["name"] for binary in data.get("bin", [])}
+        missing = sorted(expected - actual)
+        if missing:
+            fail(problems, f"{manifest} is missing packaged binary targets: {', '.join(missing)}")
+
+    # asemanctl is Cargo's implicit `src/main.rs` target; keep that canonical entry
+    # point beside the explicitly catalogued compatibility alias.
+    if not (ROOT / "apps/asemanctl/src/main.rs").exists():
+        fail(problems, "apps/asemanctl is missing the canonical asemanctl src/main.rs")
     for name in services:
         if name not in OWNED_BY:
             fail(problems, f"the contract names {name}, which nothing deploys")
@@ -100,6 +123,47 @@ def check() -> list[str]:
             fail(problems, "the agent systemd unit must not receive the Docker socket")
     if "aseman-vmm-agent" not in build_script:
         fail(problems, "build-dist.sh does not publish the host agent executable")
+
+    compact_path = ROOT / COMPACT_PROFILE
+    if not compact_path.exists():
+        fail(problems, f"the compact topology has no executable profile at {COMPACT_PROFILE}")
+    else:
+        compact = compact_path.read_text(encoding="utf-8")
+        for service in ["postgres", "vmm", "nomad-backend", "node", "meter"]:
+            if not re.search(rf"^  {re.escape(service)}:$", compact, re.MULTILINE):
+                fail(problems, f"{COMPACT_PROFILE} omits the {service} service")
+        for required in [
+            "network_mode: service:vmm",
+            "127.0.0.1:9090",
+            "ASEMAN_CORE_STORAGE_PROVIDER: postgres",
+            "cap_drop: [ALL]",
+            "read_only: true",
+        ]:
+            if required not in compact:
+                fail(problems, f"{COMPACT_PROFILE} is missing {required}")
+        for forbidden in ["/var/run/docker.sock", "/dev/kvm", "image: nomad"]:
+            if forbidden in compact:
+                fail(problems, f"{COMPACT_PROFILE} includes forbidden compact input {forbidden}")
+
+    cluster_path = ROOT / CLUSTER_PROFILE
+    if not cluster_path.exists():
+        fail(problems, f"the cluster topology has no executable profile at {CLUSTER_PROFILE}")
+    else:
+        cluster = cluster_path.read_text(encoding="utf-8")
+        for service in ["vmm", "nomad-backend", "node-1", "node-2", "node-3", "meter"]:
+            if not re.search(rf"^  {re.escape(service)}:$", cluster, re.MULTILINE):
+                fail(problems, f"{CLUSTER_PROFILE} omits the {service} service")
+        for required in [
+            "network_mode: service:vmm",
+            "ASEMAN_CORE_STORAGE_PROVIDER: postgres",
+            "cap_drop: [ALL]",
+            "read_only: true",
+        ]:
+            if required not in cluster:
+                fail(problems, f"{CLUSTER_PROFILE} is missing {required}")
+        for forbidden in ["/var/run/docker.sock", "/dev/kvm", "image: nomad", "postgres:"]:
+            if forbidden in cluster:
+                fail(problems, f"{CLUSTER_PROFILE} includes operator-owned input {forbidden}")
 
     # The A504 listener is the trust boundary: it must refuse a non-loopback address.
     a504 = next(

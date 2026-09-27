@@ -1,0 +1,76 @@
+{
+  "version": "1",
+  "artifact": "A905",
+  "owner": "operations",
+  "window_days": 30,
+  "metric_prefix": "aseman_",
+  "labels": {
+    "allowed_bounded": ["service", "route", "method", "status_class", "dependency", "operation", "provider", "result"],
+    "forbidden_high_cardinality": ["request_id", "trace_id", "creature_id", "workload_id", "user_id", "event_id"]
+  },
+  "metrics": [
+    {"name": "aseman_http_requests_total", "type": "counter", "unit": "requests", "labels": ["service", "route", "method", "status_class"]},
+    {"name": "aseman_http_request_duration_seconds", "type": "histogram", "unit": "seconds", "labels": ["service", "route", "method"]},
+    {"name": "aseman_ready", "type": "gauge", "unit": "ratio", "labels": ["service"]},
+    {"name": "aseman_dependency_healthy", "type": "gauge", "unit": "ratio", "labels": ["service", "dependency"]},
+    {"name": "aseman_operation_total", "type": "counter", "unit": "operations", "labels": ["service", "operation", "result"]},
+    {"name": "aseman_operation_duration_seconds", "type": "histogram", "unit": "seconds", "labels": ["service", "operation", "result"]},
+    {"name": "aseman_realtime_outbox_pending", "type": "gauge", "unit": "events", "labels": ["service"]},
+    {"name": "aseman_realtime_oldest_unpublished_seconds", "type": "gauge", "unit": "seconds", "labels": ["service"]},
+    {"name": "aseman_realtime_dead_letters_total", "type": "gauge", "unit": "events", "labels": ["service"]},
+    {"name": "aseman_realtime_publish_total", "type": "counter", "unit": "events", "labels": ["service", "result"]},
+    {"name": "aseman_federation_requests_total", "type": "counter", "unit": "requests", "labels": ["service", "operation", "result"]},
+    {"name": "aseman_finance_settlement_lag_seconds", "type": "gauge", "unit": "seconds", "labels": ["service"]},
+    {"name": "aseman_vmm_reconcile_drift", "type": "gauge", "unit": "workloads", "labels": ["service", "provider"]}
+  ],
+  "slos": [
+    {
+      "id": "api-availability",
+      "objective": 0.999,
+      "indicator": "successful non-health HTTP requests / all non-health HTTP requests",
+      "good_query": "sum(rate(aseman_http_requests_total{route!=\"/health\",status_class!~\"5..\"}[30d]))",
+      "total_query": "sum(rate(aseman_http_requests_total{route!=\"/health\"}[30d]))"
+    },
+    {
+      "id": "api-latency",
+      "objective": 0.99,
+      "threshold_seconds": 1.0,
+      "indicator": "non-health HTTP requests completed within one second",
+      "good_query": "sum(rate(aseman_http_request_duration_seconds_bucket{route!=\"/health\",le=\"1\"}[30d]))",
+      "total_query": "sum(rate(aseman_http_request_duration_seconds_count{route!=\"/health\"}[30d]))"
+    },
+    {
+      "id": "realtime-delivery",
+      "objective": 0.999,
+      "threshold_seconds": 30,
+      "indicator": "time with oldest unpublished event at or below 30 seconds",
+      "good_query": "sum_over_time((aseman_realtime_oldest_unpublished_seconds <= bool 30)[30d:1m])",
+      "total_query": "count_over_time(aseman_realtime_oldest_unpublished_seconds[30d:1m])"
+    },
+    {
+      "id": "settlement-freshness",
+      "objective": 0.99,
+      "threshold_seconds": 300,
+      "indicator": "time with finance settlement lag at or below five minutes",
+      "good_query": "sum_over_time((aseman_finance_settlement_lag_seconds <= bool 300)[30d:1m])",
+      "total_query": "count_over_time(aseman_finance_settlement_lag_seconds[30d:1m])"
+    }
+  ],
+  "error_budget": {
+    "formula": "1 - objective",
+    "burn_windows": ["5m", "1h", "6h", "3d"],
+    "page": "14.4x burn for 5m and 1h",
+    "ticket": "6x burn for 6h or 1x burn for 3d",
+    "release_policy": "freeze promotion when a page-level burn is active or the 30-day budget is exhausted"
+  },
+  "dashboards": ["aseman-overview"],
+  "alerts": [
+    "AsemanApiErrorBudgetFastBurn",
+    "AsemanApiErrorBudgetSlowBurn",
+    "AsemanServiceNotReady",
+    "AsemanRealtimeBacklog",
+    "AsemanRealtimeDeadLetters",
+    "AsemanFinanceSettlementLag",
+    "AsemanVmmReconcileDrift"
+  ]
+}

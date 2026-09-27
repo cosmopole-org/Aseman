@@ -44,6 +44,6 @@ CREATE TABLE IF NOT EXISTS aseman_core.realtime_outbox (
     attempts integer NOT NULL DEFAULT 0,
     published boolean NOT NULL DEFAULT false
 );
-CREATE INDEX IF NOT EXISTS realtime_outbox_pending
-    ON aseman_core.realtime_outbox (event_id)
+CREATE INDEX IF NOT EXISTS realtime_outbox_claimable
+    ON aseman_core.realtime_outbox (attempts, claimed_until_millis, event_id)
     WHERE NOT published;

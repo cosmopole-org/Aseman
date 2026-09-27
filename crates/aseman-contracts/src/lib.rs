@@ -1,6 +1,9 @@
 //! Wire-contract primitives shared by generated protocol packages.
 #![forbid(unsafe_code)]
 
+#[cfg(test)]
+mod parser_properties;
+
 use serde::{Deserialize, Serialize};
 
 pub mod capsule;

@@ -1,4 +1,20 @@
-# Caspar Client CLI (`caspar-client`)
+# Aseman clients
+
+The canonical public HTTP v1 clients are generated from
+[`contracts/public/openapi.json`](../../contracts/public/openapi.json):
+
+- [`generated/public-v1.ts`](generated/public-v1.ts) — dependency-free TypeScript
+  using the platform `fetch` API.
+- [`generated/public_v1.py`](generated/public_v1.py) — dependency-free Python using
+  `urllib`.
+
+Both expose all 76 published operations, enforce exactly one session/proof credential,
+and require an idempotency key before sending a mutation. Regenerate them with
+`python3 scripts/generate_public_clients.py`; freshness is part of `cargo xtask fast`.
+The compatibility rules are versioned in
+[`contracts/public/client-policy.json`](../../contracts/public/client-policy.json).
+
+## Legacy Caspar client (`caspar-client`)
 
 A thin TypeScript/Node.js client for a **Caspar node's signed binary action
 protocol** (the "Caspar shell API"). Every command maps directly to a Caspar

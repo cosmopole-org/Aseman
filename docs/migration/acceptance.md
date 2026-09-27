@@ -99,12 +99,12 @@ strength of an intention.
 | Criterion | State | Evidence |
 |---|---|---|
 | Node, VMM, meter have separate least-privilege artifacts | PARTIAL | Separate checked non-root images exist for node/VMM/meter/Nomad backend, and the authenticated privileged agent has a checked systemd profile; signed image publication and deployment-backed privilege inspection remain open |
-| Compact setup through one idempotent command | OPEN | Phase 9 gate: the rules exist, the command does not |
+| Compact setup through one idempotent command | PARTIAL | `asemanctl bootstrap` now drives the seven-stage resumable workflow and checked compact Compose profile; a retained clean-host end-to-end observation remains required by the Phase 9 gate |
 | Re-running bootstrap is safe | MET as rules | P9-01: re-running a finished stage is an error |
 | Failed stages resume or roll back without destroying data | MET as rules | P9-01: roll-forward at and after the schema stage |
 | Backup and clean restore tested | OPEN | Phase 9 |
 | Formatting, Clippy, tests, compatibility gates in CI | MET | `cargo xtask fast` |
-| Releases commit no generated binaries | OPEN | RL-018: `dist/*` stays until a signed-artifact pipeline replaces it |
+| Releases commit no generated binaries | PARTIAL | The replacement workflow builds out of tree and publishes SPDX/checksum/attestation evidence without repository write permission; RL-018 keeps existing tracked `dist/*` until a tagged run is retained, independently verified, and all consumers use promoted artifacts |
 
 ## Documentation and comprehension
 
@@ -125,24 +125,25 @@ strength of an intention.
 | Criterion | State | Evidence |
 |---|---|---|
 | One workspace, lockfile, toolchain, lint policy, task runner | MET | Phase 1 |
-| Explicit canonical hierarchy and ownership | PARTIAL | All ownership roots, app roots, canonical crates, and planned module package paths now exist and own implementation source; `docs/generated/repository-layout.md` reports 0 open target package paths and 8 gated legacy roots whose replacement/deletion windows remain |
+| Explicit canonical hierarchy and ownership | PARTIAL | All ownership roots, app roots, canonical crates, and planned module package paths now exist and own implementation source; `docs/generated/repository-layout.md` reports 0 open target package paths and one gated legacy root (`dist`). Compatibility code within canonical packages remains governed by the removal ledger. |
 | No broad lint suppressions | PARTIAL | `apps/aseman-node` and `modules/consensus/hashgraph` now compile clippy-clean across all targets under a single crate-wide `#![allow(dead_code)]` in the node (strangler-gated on the A008 legacy surface). The `unused_imports`, `module_inception`, and `type_complexity` crate allows were removed and their warnings fixed with type aliases and scoped per-item allows; the hashgraph engine's warnings (collapsible-if, inspect-err, derivable defaults, unused fields) were fixed outright. The node's remaining suppression expires with the removal-ledger rows (RL-002..RL-012). |
 | Direct environment reads outside the config adapter rejected | MET | The ratchet; all four reads are in `aseman-config` |
 | Internal APIs avoid unvalidated JSON and stringly-typed states | PARTIAL | True of every new contract; the legacy action handlers still pass `serde_json::Value` |
 | Shared session behavior has one transport-neutral owner | MET | `check_legacy_transports.py` |
 | Bounded batches and declared indexes on billing, outbox, guest paths | MET | Every store query takes a limit; the migrations declare their indexes |
-| Hot paths have ratcheted budgets | OPEN | Phase 10 benchmarks |
+| Hot paths have ratcheted budgets | PARTIAL | A708 now fixes and passes a 100 events/s realtime floor (519.3 events/s observed for 2,000 2-KiB events on the local PostgreSQL 16 test topology); production-shaped HTTP, scheduling, federation, guest-data, and metering budgets remain in `contracts/testing/operational-scenarios-v1.json` |
 
 ## Required suites
 
-Unit, architecture, capsule conformance, VMM conformance, policy property, contract, and
-integration suites all run. A deterministic load-lite property suite covers the public
-action idempotency contract (50 mutations with retries: exactly one execution and one
-completed outcome per key). **Fuzz, load, and full chaos suites are open**; the chaos
-cases that the phase gates required — worker loss, drain, replica loss, backend crash,
-database unreachability — are implemented and pass. A real fuzzer needs a nightly
-`cargo-fuzz` toolchain, which the pinned stable channel (1.98.0) does not provide, so
-the property style is used instead until the toolchain decision changes.
+Unit, architecture, capsule/VMM conformance, policy property, contract, and integration
+suites all run. Four untrusted contract parsers run 512 generated property cases each.
+Public-action load-lite covers 50 mutations with retries; focused PostgreSQL 16 load and
+soak runs passed 2,000 durable realtime events and 1,000 idempotent settlement intervals.
+`contracts/testing/operational-scenarios-v1.json` now fixes commands and numeric
+thresholds for all required targets. The existing worker loss, drain, replica loss,
+backend crash, database unreachability, envelope replay, and settlement retry cases
+pass. Production-scale HTTP, scheduling, federation, guest-data, metering, canary,
+rollback, and longer soak reports remain open.
 
 ## Honest summary
 

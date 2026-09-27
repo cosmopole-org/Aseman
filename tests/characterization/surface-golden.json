@@ -1230,6 +1230,10 @@
           "handler": "cluster::run_cluster(&args[2..])"
         },
         {
+          "command": "bootstrap",
+          "handler": "bootstrap::run_bootstrap(&args[2..])"
+        },
+        {
           "command": "module",
           "handler": "modules::run_modules(&args[2..])"
         },

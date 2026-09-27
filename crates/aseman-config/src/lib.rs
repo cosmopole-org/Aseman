@@ -320,6 +320,8 @@ pub struct CliConfig {
     pub state_dir: Option<String>,
     /// Operator Ed25519 seed used to sign backup manifests (A902).
     pub operator_signing_key: Option<String>,
+    /// Internal recursion guard for asemanctl's global structured-output wrapper.
+    pub structured_child: bool,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -328,6 +330,10 @@ pub struct IntegrationTestConfig {
     /// The Nomad cluster a live backend test runs against; absent skips the test,
     /// because Aseman never installs a scheduler (ADR 0002).
     pub nomad_endpoint: Option<String>,
+    /// Expensive release load tests run only when explicitly requested.
+    pub run_load_tests: bool,
+    /// Long-running settlement/recovery tests run only when explicitly requested.
+    pub run_soak_tests: bool,
 }
 
 impl IntegrationTestConfig {
@@ -340,6 +346,10 @@ impl IntegrationTestConfig {
             nomad_endpoint: std::env::var("ASEMAN_TEST_NOMAD_ENDPOINT")
                 .ok()
                 .filter(|value| !value.trim().is_empty()),
+            run_load_tests: std::env::var("ASEMAN_RUN_LOAD_TESTS")
+                .is_ok_and(|value| matches!(value.trim(), "1" | "true" | "yes" | "on")),
+            run_soak_tests: std::env::var("ASEMAN_RUN_SOAK_TESTS")
+                .is_ok_and(|value| matches!(value.trim(), "1" | "true" | "yes" | "on")),
         }
     }
 }
@@ -369,6 +379,9 @@ impl CliConfig {
             vms_dir: nonempty(&values, "ASEMAN_VMS_DIR"),
             state_dir: nonempty(&values, "ASEMAN_CTL_STATE_DIR"),
             operator_signing_key: nonempty(&values, "ASEMAN_OPERATOR_SIGNING_KEY"),
+            structured_child: values
+                .get("ASEMAN_CLI_STRUCTURED_CHILD")
+                .is_some_and(|value| value == "1"),
         })
     }
 }

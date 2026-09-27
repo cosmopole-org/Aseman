@@ -6,10 +6,15 @@ edition.workspace = true
 rust-version.workspace = true
 license.workspace = true
 repository.workspace = true
+default-run = "aseman-node"
 
 [[bin]]
-name = "runner"
+name = "aseman-node"
 path = "src/runner.rs"
+
+[[bin]]
+name = "caspar-node"
+path = "src/bin/caspar-node.rs"
 
 [dependencies]
 aseman-application = { path = "../../crates/aseman-application" }

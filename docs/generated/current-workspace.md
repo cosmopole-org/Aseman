@@ -15,7 +15,7 @@ The complete dependency and feature data is in `current-workspace.json`.
 
 ## Repository summary
 
-- Tracked files: 1024
+- Tracked files: 1031
 - Tracked files under `dist/`: 29
 - Rust package manifests: 50
 - Declared Cargo workspace roots: 1
@@ -36,17 +36,17 @@ from separate manifests. This is current behavior, not the target topology.
 
 | Package | Manifest | Edition | Targets | Direct dependencies | Features |
 |---|---|---:|---|---:|---:|
-| `aseman-keygen` | `apps/aseman-keygen/Cargo.toml` | {'workspace': True} | bin:aseman-keygen | 4 | 0 |
+| `aseman-keygen` | `apps/aseman-keygen/Cargo.toml` | {'workspace': True} | bin:aseman-keygen, bin:caspar-keygen, lib:aseman-keygen | 4 | 0 |
 | `aseman-meter` | `apps/aseman-meter/Cargo.toml` | {'workspace': True} | bin:aseman-meter | 5 | 0 |
-| `aseman-node` | `apps/aseman-node/Cargo.toml` | {'workspace': True} | bin:runner, lib:aseman-node | 54 | 0 |
+| `aseman-node` | `apps/aseman-node/Cargo.toml` | {'workspace': True} | bin:aseman-node, bin:caspar-node, lib:aseman-node | 54 | 0 |
 | `aseman-vmm` | `apps/aseman-vmm/Cargo.toml` | {'workspace': True} | bin:aseman-vmm | 12 | 0 |
 | `aseman-vmm-agent` | `apps/aseman-vmm-agent/Cargo.toml` | {'workspace': True} | bin:aseman-vmm-agent, lib:aseman-vmm-agent | 18 | 0 |
-| `asemanctl` | `apps/asemanctl/Cargo.toml` | {'workspace': True} | bin:casparctl, lib:asemanctl | 14 | 0 |
+| `asemanctl` | `apps/asemanctl/Cargo.toml` | {'workspace': True} | bin:asemanctl, bin:casparctl, lib:asemanctl | 15 | 0 |
 | `scan-vmdb` | `apps/scan-vmdb/Cargo.toml` | {'workspace': True} | bin:scan-vmdb | 1 | 0 |
 | `aseman-application` | `crates/aseman-application/Cargo.toml` | {'workspace': True} | lib:aseman-application | 9 | 0 |
 | `aseman-capsule` | `crates/aseman-capsule/Cargo.toml` | {'workspace': True} | lib:aseman-capsule | 6 | 0 |
 | `aseman-config` | `crates/aseman-config/Cargo.toml` | {'workspace': True} | lib:aseman-config | 3 | 0 |
-| `aseman-contracts` | `crates/aseman-contracts/Cargo.toml` | {'workspace': True} | lib:aseman-contracts | 14 | 0 |
+| `aseman-contracts` | `crates/aseman-contracts/Cargo.toml` | {'workspace': True} | lib:aseman-contracts | 15 | 0 |
 | `aseman-domain` | `crates/aseman-domain/Cargo.toml` | {'workspace': True} | lib:aseman-domain | 3 | 0 |
 | `aseman-guest-sdk` | `crates/aseman-guest-sdk/Cargo.toml` | {'workspace': True} | lib:aseman-guest-sdk | 3 | 0 |
 | `aseman-module-runtime` | `crates/aseman-module-runtime/Cargo.toml` | {'workspace': True} | lib:aseman-module-runtime | 10 | 0 |

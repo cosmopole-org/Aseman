@@ -26,6 +26,19 @@ Firecracker API, uses a closed device policy with only `/dev/kvm`, and confines 
 to the allocation root and cgroup tree. Copy and edit `vmm-agent.example.json`; never
 reuse its placeholder fingerprint.
 
-Compact orchestration and clustered profiles remain gated. Nomad is operator-provided
-under ADR 0002 and must not be downloaded, bundled, mirrored, or redistributed by
-these assets.
+`compose/compact.compose.yaml` is the executable compact orchestration profile. It
+keeps A504 loopback-only by placing the independently running backend in the VMM
+container's network namespace, starts services in A602 order, drops every capability,
+uses read-only roots, and exposes only the public node endpoint plus host-local health
+ports. `compose/compact.env.example` documents its non-secret inputs; bootstrap creates
+the secret files outside the repository.
+
+`compose/cluster.compose.yaml` is the executable service composition for three control
+replicas sharing one node identity and external PostgreSQL/Nomad. It publishes the
+three replica endpoints on host-local ports for an operator-owned stable load balancer;
+the load balancer and secret/certificate distribution deliberately remain outside the
+profile because they are deployment authority, not application containers.
+
+Nomad is operator-provided under ADR 0002 and must not be downloaded, bundled,
+mirrored, or redistributed by these assets. The compact profile connects to the
+operator's endpoint through `nomad-backend.json` and never creates or removes Nomad.

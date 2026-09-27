@@ -13,14 +13,14 @@ Written for: whoever picks this up next, cold.
 ## The one-paragraph version
 
 The architecture is built and proven against real infrastructure — PostgreSQL, Docker,
-Nomad, and Firecracker, not doubles. Phases 0 through 8 are accepted.
-Phase 3 is **ready, not switched**: every artifact is accepted and every core family
-reads and writes through ports with conformance-tested adapters, but the operator
-cutover to `ASEMAN_CORE_STORAGE_PROVIDER=postgres` has not been performed. Phases 9 and
-10 are recorded as **partial**, honestly, because their criteria are observable outcomes
+Nomad, and Firecracker, not doubles. Phases 0 through 8 are accepted. The Phase 3
+operator cutover to `ASEMAN_CORE_STORAGE_PROVIDER=postgres` has been performed and
+observed on a development host; production-cluster observation and the legacy deletion
+gate remain. Phases 9 and 10 are recorded as **partial**, honestly, because their criteria are observable outcomes
 (a clean host bootstrapping in one command; every acceptance criterion passing) and
-those have not been observed. What remains is mostly delivery — serving the public
-contract over HTTP, packaging, and the load and fuzz suites — not design.
+those have not been observed. What remains is mostly deployment evidence — streaming
+and federation handoff, clean-host bootstrap/restore, tagged artifact promotion,
+production-shaped operational scenarios, and their legacy deletion gates — not design.
 
 ## Phase gates
 
@@ -63,12 +63,18 @@ contract over HTTP, packaging, and the load and fuzz suites — not design.
    `apps/asemanctl` crate owns the command implementation and `casparctl` is a
    one-way warning compatibility shim. The `doctor`/`backup`/`restore`/`upgrade`/
    `support-bundle` administration groups are now implemented and drive the A902
-   resumable journals (RL-015); a stable structured-output/exit-code catalogue,
-   generated public clients/SDKs, and executable deployment profiles remain
-   incomplete. Separate least-privilege image definitions for node, VMM, meter, and
-   Nomad backend now live under `deploy/images`. Tracked `dist/*` blobs stay until
-   there is a signed-artifact pipeline to replace them — deleting them first would be
-   half of a two-part gate.
+   resumable journals (RL-015). A versioned contract gate-checks the complete dispatch
+   set, output modes, exact exit-code meanings, and global redacted JSON envelopes.
+   Generated TypeScript/Python clients cover all 76 public operations. Clean-host and
+   cluster observations plus the ADR-0004 compatibility window remain incomplete.
+   `asemanctl bootstrap` now drives the executable compact profile with resumable state
+   and off-tree secret generation; an executable three-replica cluster service profile
+   consumes operator-owned HA PostgreSQL, Nomad, and a stable load balancer. Separate
+   least-privilege image definitions for node, VMM, meter, and Nomad backend live under
+   `deploy/images`. The checked A906 workflow now builds out of tree and emits
+   deterministic archives, SPDX SBOMs, checksums, and signed attestations. Tracked
+   `dist/*` blobs stay until a successful tagged run, scanning, independent verification,
+   consumer cutover, and rollback evidence complete RL-018's second gate.
 4. **Compose the Hashgraph financial epoch switch** (RL-011). The complete engine now
    lives in `modules/consensus/hashgraph`; its `HashgraphConsensusProvider` sends
    records through the real Babble proxy and derives finalizations/checkpoints from
@@ -77,19 +83,23 @@ contract over HTTP, packaging, and the load and fuzz suites — not design.
    `ConsensusProvider` port (`aseman_application::consensus`), and the composition
    installs a `HashgraphConsensusProvider`. Observing a checkpointed switch on a live
    peer mesh remains.
-5. **Load, fuzz, and full chaos suites.** The chaos cases the phase gates required are
-   implemented and pass; the broader suites are not written and need a deployment.
+5. **Execute the operational scenario manifest at production shape.** Parser property
+   fuzzing, public-action load-lite, and focused PostgreSQL realtime/metering load/soak
+   runs pass. A checked nine-scenario manifest and HTTP load probe define numeric
+   thresholds; scheduling/federation/guest/HTTP scale, longer soak, canary, and rollback
+   reports still need the intended deployment.
 6. **The remaining legacy deletions.** Every one is a row in the removal ledger with its
    blocker named, and `scripts/check_removal_ledger_due.py` fails a release if one goes
    quiet.
 7. **Retire superseded roots after their gates.** The generated
    `docs/generated/repository-layout.md` compares the plan to the tree. Every planned
-   target package path now exists and owns implementation source. Eight legacy roots
-   remain behind compatibility, replacement, or publication gates; path completion is
+   target package path now exists and owns implementation source. The generated layout
+   currently reports one legacy root, `dist`, behind its publication gate; compatibility
+   code also remains inside canonical packages until its named removal gates pass. Path completion is
    not treated as permission to delete them.
 
 Delivered in this pass: the requirements traceability report (A1005) runs in
-`cargo xtask fast` and records 25 requirements, 0 violations, 12 MET, 13 PARTIAL, 0
+`cargo xtask fast` and records 25 requirements, 0 violations, 16 MET, 9 PARTIAL, 0
 OPEN. The repository-structure deviations from the plan's proposed hierarchy are
 documented below.
 
@@ -144,13 +154,15 @@ propose a **target** hierarchy. The current tree deliberately differs in these w
   `apps/aseman-client`, all seven runtime
   implementations plus their compatibility SDK are `modules/runtime`, the generated
   registry belongs to the native backend, and old wiki pages are explicitly archived
-  in `docs/legacy/caspar`. Tracked `dist/` remains open under RL-016.
-- **The required ownership roots now exist.** `deploy/` points to the authoritative
+  in `docs/legacy/caspar`. Tracked `dist/` remains open under RL-018.
+- **The required ownership roots now exist.** `deploy/` owns checked compact and cluster
+  profiles tied to the authoritative
   topology contract, creature-implementation guidance lives in
-  `docs/development/creature-implementation.md`, and
-  `tests/evals/agent/` contains a mechanically checked cold-start catalog. Root
+  `docs/development/creature-implementation.md`, generated public clients live in
+  `apps/aseman-client/generated/`, and `tests/evals/agent/` contains a mechanically
+  checked cold-start catalog. Root
   `ARCHITECTURE.md`, `CONTRIBUTING.md`, `SECURITY.md`, `CHANGELOG.md`, and the
-  `docs/` portal are present. Actual compact orchestration, broader generated SDK
+  `docs/` portal are present. Clean-host compact observation, broader generated SDK
   examples, and deployment-backed evaluation runs remain Phase 9 work.
 
 In short: the plan's hierarchy is the target; the tree is the strangler's current edge.

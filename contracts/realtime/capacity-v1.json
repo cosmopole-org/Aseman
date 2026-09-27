@@ -1,0 +1,86 @@
+{
+  "version": "1",
+  "artifact": "A708",
+  "owner": "realtime/operations",
+  "authority": [
+    "ADR 0014",
+    "contracts/realtime/events-v1.md",
+    "this file"
+  ],
+  "topology": {
+    "compact": {
+      "provider": "postgresql",
+      "database": "shared compact PostgreSQL with a distinct aseman_core schema",
+      "publishers": 1,
+      "fencing": "one coordination lease"
+    },
+    "cluster": {
+      "provider": "HA PostgreSQL",
+      "database": "the node control-plane PostgreSQL cluster",
+      "publishers": "2 or more replicas, exactly one active per fenced lease",
+      "fencing": "one coordination lease; SKIP LOCKED remains the row-level crash boundary"
+    }
+  },
+  "fixed_semantics": {
+    "delivery": "at_least_once",
+    "ordering": "dense_per_stream",
+    "claim_max_attempts": 8,
+    "retention_millis": {
+      "transient": 3600000,
+      "standard": 604800000,
+      "durable": null
+    },
+    "required_indexes": [
+      "realtime_event_stream",
+      "realtime_event_retention",
+      "realtime_outbox_claimable"
+    ]
+  },
+  "planning_defaults": {
+    "claim_batch_events": 100,
+    "claim_lease_millis": 30000,
+    "poll_interval_millis": 250,
+    "average_event_bytes": 2048,
+    "storage_overhead_factor": 1.35,
+    "headroom_factor": 2.0,
+    "minimum_postgres_connections": 8
+  },
+  "capacity_formulas": {
+    "retained_bytes": "events_per_second * average_event_bytes * retention_seconds * storage_overhead_factor",
+    "minimum_publish_rate": "peak_events_per_second * headroom_factor",
+    "minimum_connections": "api_replicas + active_publishers + migration_workers + operator_reserve",
+    "replay_seconds": "replay_events / measured_sustained_replay_events_per_second"
+  },
+  "admission": {
+    "required_measurements": [
+      "peak_events_per_second",
+      "p95_event_bytes",
+      "measured_sustained_publish_events_per_second",
+      "measured_sustained_replay_events_per_second",
+      "postgres_available_bytes",
+      "postgres_max_connections"
+    ],
+    "rules": [
+      "measured_sustained_publish_events_per_second >= peak_events_per_second * headroom_factor",
+      "postgres_available_bytes >= retained_bytes * headroom_factor",
+      "postgres_max_connections >= minimum_connections",
+      "oldest_unpublished_event_seconds <= 30 during steady state",
+      "dead_letter_total == 0"
+    ],
+    "unmeasured_values_are_not_release_evidence": true
+  },
+  "scale_and_abort": {
+    "scale": [
+      "outbox backlog grows for 10 minutes while PostgreSQL is healthy",
+      "publish saturation exceeds 70 percent for 15 minutes",
+      "projected retained bytes exceeds 60 percent of allocated PostgreSQL storage"
+    ],
+    "abort": [
+      "any acknowledged event is lost",
+      "a stream sequence is duplicated or has a gap",
+      "dead letters increase during canary",
+      "checkpoint regression is observed",
+      "projected retained bytes exceeds 80 percent of allocated PostgreSQL storage"
+    ]
+  }
+}

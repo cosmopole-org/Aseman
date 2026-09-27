@@ -180,6 +180,9 @@ fn fast(root: &Path) -> Result<()> {
         "generate_security_registry.py",
         "generate_vmm_parity.py",
         "generate_public_api.py",
+        // A701/A903: dependency-free TypeScript and Python clients are derived from
+        // the authoritative OpenAPI operation IDs and mutation classes.
+        "generate_public_clients.py",
         // A1005: every requirement keeps a design authority, a delivery phase, an
         // acceptance authority, and a phase-gate status, mechanically checked.
         "generate_requirements_traceability.py",
@@ -195,6 +198,17 @@ fn fast(root: &Path) -> Result<()> {
         // A902/A904: recovery journals cannot drift from the domain plan, and a
         // support bundle must retain both collection and redaction boundaries.
         "check_operations_contracts.py",
+        // A903: the stable command/output/exit catalogue matches actual dispatch.
+        "check_cli_contract.py",
+        // A906: releases stay out of the source tree and carry checked SBOM,
+        // license, digest, provenance, action-pin, and attestation requirements.
+        "check_release_policy.py",
+        // A708/A905: realtime capacity, SLOs, bounded metric labels, dashboards,
+        // alert rules, and their runbook references stay one checked contract.
+        "check_observability_policy.py",
+        // A1002: every required operational suite has a command, owner, evidence,
+        // environment declaration, and numeric pass/fail threshold.
+        "check_operational_scenarios.py",
         // Not a generator either: the legacy transports must stay framing-only
         // (A701, P7-05).
         "check_legacy_transports.py",

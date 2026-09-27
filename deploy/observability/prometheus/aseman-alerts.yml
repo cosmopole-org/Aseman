@@ -1,0 +1,56 @@
+groups:
+  - name: aseman-slo
+    rules:
+      - alert: AsemanApiErrorBudgetFastBurn
+        expr: |
+          (sum(rate(aseman_http_requests_total{route!="/health",status_class=~"5.."}[5m])) / clamp_min(sum(rate(aseman_http_requests_total{route!="/health"}[5m])), 1)) > (14.4 * 0.001)
+          and
+          (sum(rate(aseman_http_requests_total{route!="/health",status_class=~"5.."}[1h])) / clamp_min(sum(rate(aseman_http_requests_total{route!="/health"}[1h])), 1)) > (14.4 * 0.001)
+        for: 5m
+        labels: {severity: page}
+        annotations:
+          summary: Aseman API is rapidly exhausting its 30-day availability budget
+          runbook_url: docs/operations/observability.md#api-error-budget-burn
+      - alert: AsemanApiErrorBudgetSlowBurn
+        expr: |
+          (sum(rate(aseman_http_requests_total{route!="/health",status_class=~"5.."}[6h])) / clamp_min(sum(rate(aseman_http_requests_total{route!="/health"}[6h])), 1)) > (6 * 0.001)
+        for: 1h
+        labels: {severity: ticket}
+        annotations:
+          summary: Aseman API is steadily exhausting its 30-day availability budget
+          runbook_url: docs/operations/observability.md#api-error-budget-burn
+      - alert: AsemanServiceNotReady
+        expr: min by (service) (aseman_ready) < 1
+        for: 5m
+        labels: {severity: page}
+        annotations:
+          summary: An Aseman service has been unready for five minutes
+          runbook_url: docs/operations/observability.md#service-not-ready
+      - alert: AsemanRealtimeBacklog
+        expr: max(aseman_realtime_oldest_unpublished_seconds) > 30
+        for: 10m
+        labels: {severity: page}
+        annotations:
+          summary: Realtime delivery is outside its 30-second objective
+          runbook_url: docs/operations/observability.md#realtime-backlog
+      - alert: AsemanRealtimeDeadLetters
+        expr: sum(aseman_realtime_dead_letters_total) > 0
+        for: 1m
+        labels: {severity: page}
+        annotations:
+          summary: Realtime events have exhausted their retry budget
+          runbook_url: docs/operations/observability.md#realtime-dead-letters
+      - alert: AsemanFinanceSettlementLag
+        expr: max(aseman_finance_settlement_lag_seconds) > 300
+        for: 10m
+        labels: {severity: page}
+        annotations:
+          summary: Finance settlement is more than five minutes behind
+          runbook_url: docs/operations/observability.md#finance-settlement-lag
+      - alert: AsemanVmmReconcileDrift
+        expr: sum(aseman_vmm_reconcile_drift) > 0
+        for: 15m
+        labels: {severity: ticket}
+        annotations:
+          summary: Desired and observed workloads have not converged
+          runbook_url: docs/operations/observability.md#vmm-reconciliation-drift

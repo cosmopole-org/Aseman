@@ -25,6 +25,12 @@ The single replica still takes the coordination lease before it does singleton w
 looks like overhead on one machine, and it is the reason a compact deployment can grow
 into a cluster without changing how anything is fenced.
 
+The executable profile is `deploy/compose/compact.compose.yaml`, driven by
+`asemanctl bootstrap --profile compact`. The driver creates its PKI, secret files,
+backend configuration, and atomic progress record outside the repository. A504 remains
+loopback-only by sharing only the VMM container's network namespace; services do not
+share a process or filesystem. Nomad remains an operator-supplied endpoint.
+
 ### Cluster
 
 Three or more Aseman control replicas behind one stable HTTPS endpoint, three or five
@@ -33,6 +39,12 @@ Nomad servers, a worker pool you add to and remove from, and external or HA Post
 The replica count needs no quorum: PostgreSQL owns application state and coordination,
 not a replica vote (ADR 0013). Nomad's own Raft quorum is separate and is three or five
 servers.
+
+`deploy/compose/cluster.compose.yaml` composes three control replicas, the VMM,
+loopback-only backend, and meter. It consumes external PostgreSQL and Nomad and binds
+each replica to a distinct host-local upstream port. The operator's stable HTTPS load
+balancer terminates or passes through the shared endpoint certificate to those
+upstreams; it is intentionally not represented as an Aseman-owned container.
 
 ### Host
 

@@ -6,10 +6,15 @@ edition.workspace = true
 rust-version.workspace = true
 license.workspace = true
 repository.workspace = true
+default-run = "aseman-keygen"
 
 [[bin]]
 name = "aseman-keygen"
 path = "src/main.rs"
+
+[[bin]]
+name = "caspar-keygen"
+path = "src/bin/caspar-keygen.rs"
 
 [dependencies]
 anyhow = "1.0.102"

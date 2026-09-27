@@ -823,6 +823,16 @@
         "CASPAR_ROCKSDB_WRITE_BUFFER_MB"
       ]
     },
+    "ASEMAN_RUN_LOAD_TESTS": {
+      "description": "Typed replacement for legacy ASEMAN_RUN_LOAD_TESTS (runtime-or-storage).",
+      "type": "string",
+      "x-legacy-aliases": []
+    },
+    "ASEMAN_RUN_SOAK_TESTS": {
+      "description": "Typed replacement for legacy ASEMAN_RUN_SOAK_TESTS (runtime-or-storage).",
+      "type": "string",
+      "x-legacy-aliases": []
+    },
     "ASEMAN_SIGNAL_TIMEOUT_MS": {
       "description": "Typed replacement for legacy CASPAR_SIGNAL_TIMEOUT_MS (application).",
       "minimum": 0,

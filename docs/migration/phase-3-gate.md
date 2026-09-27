@@ -36,7 +36,7 @@ databases on PostgreSQL through the configured proxy.
 | Gate clause | Status | Evidence / remaining work |
 |---|---|---|
 | All persistent classes use capsules (except ADR 0022 VMM observed runtime) | **Met** | A308 accepted with zero blocked rows (ADRs 0016–0025). Every class the export emits has a native writer: core, finance, telemetry, realtime, and guest KV per creature |
-| PostgreSQL is the default (ADR 0026: every port family except balances and the finance ledger, which ADR 0017 keeps on legacy until P8, and identity credentials, which ADRs 0019/0023 keep on legacy until P4) | **Ready, not switched** | Every core family reads and writes through ports with both adapters, and a sweep of the storage-access inventory finds no direct core-family access outside the adapters (see the strangler table). What remains goes to legacy by ADR 0026: finance, identity credentials, VMM observed runtime, id allocation, and chains. Typed provider selection and per-action routing are in place (`ASEMAN_CORE_STORAGE_PROVIDER`). The switch is an operator cutover after A309 verification. Its blockers, LD-14 and LD-24, are fixed (P4-04/P4-05, ADR 0028), and guest data follows the core families into each creature's database. Remaining prerequisites are the guest proxy configuration and active guest bindings from the import (runbook step 7) |
+| PostgreSQL is the default (ADR 0026: every port family except balances and the finance ledger, which ADR 0017 kept on legacy until P8, and identity credentials, which ADRs 0019/0023 kept on legacy until P4) | **Met on the observed development deployment** | Every core family reads and writes through ports with both adapters, and a sweep of the storage-access inventory finds no direct core-family access outside the adapters (see the strangler table). A309 verification, guest-proxy configuration, active guest bindings, and the `ASEMAN_CORE_STORAGE_PROVIDER=postgres` switch were performed successfully. ADR-owned compatibility families remain only until their deletion gates; production-cluster observation is Phase 10 rollout evidence. |
 | Each creature's guest records and schemas live in its isolated database | **Met for migrated state** | A306 isolation tests, and the ADR 0021 importer writes only into the owner's database. Live guest access switches with the P4-04 gateway |
 | Legacy and PostgreSQL providers pass conformance, isolation, pool-contamination, schema, and migration/restart tests | **Met** | PostgreSQL: storage conformance, guest isolation, document capsules, fencing, and the A309 end-to-end test. Legacy: every port family's legacy adapter passes the same conformance suite as its capsule adapter (node tests), alongside the export, KV and time-series seams and the LD-12 repair |
 | Node/application crates no longer import RocksDB or QuestDB types | **Met, with two owned exceptions** | The core path uses `LegacyKvStore` and `QuestDbTimeSeries` from `aseman-storage-legacy`, and all 384 node library tests pass. Exceptions: the OpenRaft store (RL-012, ADR 0012) and the Hashgraph store (RL-011, ADR 0025) |
@@ -85,8 +85,7 @@ the A308 manifest keeps zero blocked rows.
 
 ## Next steps
 
-1. Cutover: run A309 verification, configure the guest proxy, confirm active guest
-   bindings, and switch `ASEMAN_CORE_STORAGE_PROVIDER=postgres` (runbook step 7). Then
-   accept this gate.
-2. RL-005 deletion gate: remove the legacy core path only after the cutover and its
-   deletion evidence (AGENTS: never delete before both gates pass).
+1. Repeat the accepted cutover workflow on the production deployment and retain its
+   rollout/rollback evidence.
+2. RL-005 deletion gate: remove the legacy core path only after its compatibility
+   callers and retention window are gone (AGENTS: never delete before both gates pass).

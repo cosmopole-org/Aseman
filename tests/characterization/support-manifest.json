@@ -282,6 +282,15 @@
       "current_owner": "casparctl",
       "disposition": "deprecate-alias",
       "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "casparctl top_level bootstrap",
+      "support": "supported-compatibility",
+      "target_owner": "asemanctl"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "casparctl",
+      "disposition": "deprecate-alias",
+      "expiry": "ADR-0004 window after replacement acceptance",
       "id": "casparctl top_level module",
       "support": "supported-compatibility",
       "target_owner": "asemanctl"

@@ -493,7 +493,7 @@ mod tests {
             .proxy()
             .get_snapshot(0)
             .unwrap_or_else(|_| b"{}".to_vec());
-        let mut restored = HashgraphConsensusProvider::new();
+        let restored = HashgraphConsensusProvider::new();
         restored.proxy().restore(&snapshot).unwrap();
         assert_eq!(provider.pending().unwrap(), restored.pending().unwrap());
     }

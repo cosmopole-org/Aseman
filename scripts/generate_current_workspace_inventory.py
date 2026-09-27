@@ -127,7 +127,9 @@ def targets(manifest: dict[str, Any], manifest_dir: Path) -> list[dict[str, str]
                 "path": binary.get("path", "src/main.rs"),
             }
         )
-    if not binaries and (manifest_dir / "src/main.rs").exists():
+    if (manifest_dir / "src/main.rs").exists() and not any(
+        binary.get("path", "src/main.rs") == "src/main.rs" for binary in binaries
+    ):
         result.append(
             {
                 "kind": "bin",

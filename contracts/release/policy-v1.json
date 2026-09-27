@@ -1,0 +1,101 @@
+{
+  "schema_version": 1,
+  "artifact": "A906",
+  "owner": "release/operations",
+  "release": {
+    "tag_pattern": "^v[0-9]+\\.[0-9]+\\.[0-9]+(?:[-+][0-9A-Za-z.-]+)?$",
+    "locked_dependencies": true,
+    "source_commit_bound": true,
+    "source_date_epoch_required": true,
+    "tracked_output_forbidden": "dist/"
+  },
+  "artifacts": {
+    "architectures": ["amd64", "arm64"],
+    "required_binaries": [
+      "aseman-keygen",
+      "aseman-meter",
+      "aseman-node",
+      "aseman-vmm",
+      "aseman-vmm-agent",
+      "aseman-vmm-backend-nomad",
+      "asemanctl"
+    ],
+    "compatibility_aliases": ["caspar-keygen", "caspar-node", "casparctl"],
+    "archive_pattern": "aseman-dist-{arch}.tgz",
+    "checksum_pattern": "aseman-dist-{arch}.SHA256SUMS",
+    "checksum_algorithm": "SHA256"
+  },
+  "sbom": {
+    "format": "SPDX-2.3",
+    "media_type": "application/spdx+json",
+    "file_pattern": "aseman-dist-{arch}.spdx.json",
+    "dependency_authority": "Cargo.lock",
+    "file_hash_algorithm": "SHA256",
+    "unknown_license_policy": "deny-except-versioned-migration-exception"
+  },
+  "provenance": {
+    "predicate_type": "https://slsa.dev/provenance/v1",
+    "statement_type": "https://in-toto.io/Statement/v1",
+    "subject_digest": "sha256",
+    "signing": "GitHub Actions OIDC with Sigstore-backed artifact attestation",
+    "issuer": "https://token.actions.githubusercontent.com",
+    "workflow": ".github/workflows/build-node.yml",
+    "verification": "gh attestation verify ARTIFACT --repo OWNER/REPOSITORY"
+  },
+  "vulnerabilities": {
+    "dependency_database": "RustSec advisory database",
+    "artifact_scanner_required": true,
+    "report_pattern": "aseman-dist-{arch}.vulnerabilities.json",
+    "deny_severities": ["critical", "high"],
+    "deny_withdrawn": false,
+    "exception_requires": ["advisory", "owner", "reason", "expiry"]
+  },
+  "licenses": {
+    "allowed_spdx_ids": [
+      "0BSD",
+      "Apache-2.0",
+      "Apache-2.0 WITH LLVM-exception",
+      "BSD-2-Clause",
+      "BSD-3-Clause",
+      "BSL-1.0",
+      "CC0-1.0",
+      "CDDL-1.0",
+      "CDLA-Permissive-2.0",
+      "ISC",
+      "LGPL-2.1-or-later",
+      "MIT",
+      "MIT-0",
+      "MPL-2.0",
+      "PostgreSQL",
+      "Unicode-3.0",
+      "Unlicense",
+      "Zlib"
+    ],
+    "denied_spdx_ids": ["AGPL-1.0", "AGPL-3.0", "SSPL-1.0"],
+    "migration_exceptions": [
+      {
+        "packages": [
+          "caspar-vm-docker",
+          "caspar-vm-elpian",
+          "caspar-vm-elpify",
+          "caspar-vm-fire",
+          "caspar-vm-javascript",
+          "caspar-vm-modal",
+          "caspar-vm-plugins",
+          "caspar-vm-sdk",
+          "caspar-vm-wasm",
+          "elpian-vm"
+        ],
+        "owner": "runtime-migration/RL-014",
+        "reason": "legacy workspace packages do not yet declare SPDX metadata",
+        "expiry": "Phase 10 deletion gate"
+      }
+    ]
+  },
+  "ci": {
+    "actions_pinned_by_commit": true,
+    "required_permissions": ["contents: read", "id-token: write", "attestations: write", "checks: write"],
+    "publication": "immutable workflow artifact plus signed attestations",
+    "source_tree_publish_forbidden": true
+  }
+}

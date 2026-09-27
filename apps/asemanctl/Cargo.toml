@@ -6,6 +6,7 @@ edition.workspace = true
 rust-version.workspace = true
 license.workspace = true
 repository.workspace = true
+default-run = "asemanctl"
 
 [[bin]]
 name = "casparctl"
@@ -19,6 +20,7 @@ base64.workspace = true
 chrono = { version = "0.4", default-features = false, features = ["clock", "std"] }
 ctrlc = "3.4"
 clap = { version = "4", features = ["derive"] }
+hex.workspace = true
 regex.workspace = true
 ring.workspace = true
 serde.workspace = true

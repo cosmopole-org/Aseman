@@ -13,6 +13,7 @@
 #   --skip-node      Skip cargo build for aseman-node/keygen and aliases
 #   --skip-ctl       Skip cargo build for asemanctl and its casparctl alias
 #   --skip-services  Skip aseman-vmm, aseman-meter, and the Nomad backend
+#   --dist-dir DIR    Write artifacts outside the tracked compatibility dist/
 #   --wasmedge-ver V Override WasmEdge version to install (default: 0.17.1)
 #   --disable-vm K   Disable a VM plugin for this node build (repeatable, or
 #                    comma-separated keys). Equivalent to `asemanctl vms disable`.
@@ -62,6 +63,7 @@ while [[ $# -gt 0 ]]; do
     --skip-node)    SKIP_NODE=true ;;
     --skip-ctl)     SKIP_CTL=true ;;
     --skip-services) SKIP_SERVICES=true ;;
+    --dist-dir) shift; DIST_DIR="$(realpath -m "$1")" ;;
     --wasmedge-ver) shift; WASMEDGE_VERSION="$1" ;;
     --disable-vm)   shift; IFS=',' read -ra _keys <<< "$1"; DISABLE_VMS+=("${_keys[@]}") ;;
     --enable-vm)    shift; IFS=',' read -ra _keys <<< "$1"; ENABLE_VMS+=("${_keys[@]}") ;;
@@ -222,7 +224,7 @@ else
   cd "$REPO_DIR"
   NODE_LOG="${TMPDIR:-/tmp}/caspar-node-build.log"
   set +e
-  cargo build --release -p aseman-node 2>&1 | tee "$NODE_LOG" | grep -E "^error|Compiling aseman-node|Finished"
+  cargo build --release -p aseman-node -p aseman-keygen 2>&1 | tee "$NODE_LOG" | grep -E "^error|Compiling aseman-(node|keygen)|Finished"
   CARGO_STATUS=${PIPESTATUS[0]}
   set -e
   if [[ $CARGO_STATUS -ne 0 ]]; then

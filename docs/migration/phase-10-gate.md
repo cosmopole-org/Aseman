@@ -36,24 +36,24 @@ marked MET with evidence or OPEN with the obstacle.
 `plan/migration/14-plan-integrity-and-traceability.md` names a design authority, a
 delivery phase, and an acceptance authority, maps each requirement's phases to their
 phase-gate status, and runs `--check` in `cargo xtask fast`. The report records the
-truth as of this gate: 25 requirements, 0 violations, 12 MET, 13 PARTIAL (their phases
-3, 9, or 10 are not accepted), 0 OPEN.
+truth as of this gate: 25 requirements, 0 violations, 16 MET, 9 PARTIAL (their phases
+9 or 10 are not accepted), 0 OPEN.
 
-**A corrected Phase 3 record.** `status.md` previously listed Phase 3 as accepted while
-`phase-3-gate.md` correctly recorded it as in progress (the switch is an operator
-action). The status now agrees with the gate: Phase 3 is **ready, not switched**, and
-its requirements (R10–R13) are PARTIAL in the traceability report until the cutover.
+**A completed Phase 3 cutover record.** The development-host operator cutover was
+performed and observed after this gate was first written. Phase 3 is accepted and its
+requirements (R10–R13) are MET in the generated traceability report. Production rollout
+and legacy deletion remain Phase 10 evidence rather than reopening the Phase 3 gate.
 
 ## What remains
 
 | Item | Where it is recorded |
 |---|---|
-| Fuzz, load, and full chaos suites | Acceptance: "Required suites" |
-| Supply chain, SBOM, signing, provenance gates | Phase 9 packaging |
+| Deployment-scale load, soak, and full chaos execution | A1002 now has a checked nine-scenario manifest, parser property fuzzing, a thresholded HTTP probe, and focused PostgreSQL realtime/metering runs; production reports remain |
+| Supply chain, SBOM, signing, provenance gates | A906 now has a checked policy, deterministic SPDX generator, commit-pinned attestation workflow, RustSec audit, and blocking high/critical artifact scan; retained tagged-release and independent verification evidence remain Phase 9 packaging work |
 | Execute shadow traffic and canary nodes | A1003's machine-checked decision/abort contract is delivered; execution needs a deployment |
 | Execute and score cold-agent comprehension evaluations | The catalog and authority-path drift gate are delivered in P9-05; deployment-independent scored runs remain open |
 | Rollback and disaster-recovery drills | Needs a deployment |
-| The Phase 3 storage cutover | `phase-3-gate.md`: an operator action (runbook step 7) |
+| Production observation of the Phase 3 storage cutover and eventual RL-005 deletion | `phase-3-gate.md` and the removal ledger |
 | Deleting the legacy paths | The removal ledger's outstanding rows, each with its blocker |
 
 Most need either infrastructure outside this repository or a running deployment. The

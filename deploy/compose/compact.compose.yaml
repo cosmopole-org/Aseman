@@ -1,0 +1,163 @@
+name: aseman-compact
+
+# Executable A602 compact profile. Nomad remains operator-supplied under ADR 0002;
+# point NOMAD_ENDPOINT at that installation. `asemanctl bootstrap` prepares the
+# configuration directory and then drives this profile in dependency order.
+services:
+  postgres:
+    image: ${POSTGRES_IMAGE:-postgres:18-bookworm}
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: aseman
+      POSTGRES_USER: aseman
+      POSTGRES_PASSWORD_FILE: /run/aseman/secrets/postgres-password
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ${ASEMAN_CONFIG_DIR:?set ASEMAN_CONFIG_DIR}/secrets/postgres-password:/run/aseman/secrets/postgres-password:ro
+      - ${ASEMAN_CONFIG_DIR}/postgres-init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U aseman -d aseman"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+    networks: [control, scheduler]
+    extra_hosts:
+      - host.docker.internal:host-gateway
+
+  vmm:
+    image: ${ASEMAN_VMM_IMAGE:?set ASEMAN_VMM_IMAGE}
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      ASEMAN_VMM_LISTEN: 0.0.0.0:8443
+      ASEMAN_VMM_HEALTH_LISTEN: 0.0.0.0:8444
+      ASEMAN_VMM_TLS_CERTIFICATE: /etc/aseman/tls/vmm-cert.pem
+      ASEMAN_VMM_TLS_KEY_SECRET: /etc/aseman/tls/vmm-key.pem
+      ASEMAN_VMM_CLIENT_CA: /etc/aseman/tls/ca-cert.pem
+      ASEMAN_VMM_CLIENTS: compact-node=${VMM_NODE_CERT_SHA256:?set VMM_NODE_CERT_SHA256},compact-meter=${VMM_METER_CERT_SHA256:?set VMM_METER_CERT_SHA256}
+      ASEMAN_VMM_DATABASE_URL_SECRET: /run/aseman/secrets/database-url
+      ASEMAN_VMM_BACKEND_ENDPOINT: http://127.0.0.1:9090
+      ASEMAN_VMM_INSTANCE: compact-vmm
+    volumes:
+      - ${ASEMAN_CONFIG_DIR}/tls/ca-cert.pem:/etc/aseman/tls/ca-cert.pem:ro
+      - ${ASEMAN_CONFIG_DIR}/tls/vmm-cert.pem:/etc/aseman/tls/vmm-cert.pem:ro
+      - ${ASEMAN_CONFIG_DIR}/tls/vmm-key.pem:/etc/aseman/tls/vmm-key.pem:ro
+      - ${ASEMAN_CONFIG_DIR}/secrets/database-url:/run/aseman/secrets/database-url:ro
+      - node-data:/var/lib/aseman
+    ports:
+      - "127.0.0.1:8444:8444"
+    networks: [control]
+    read_only: true
+    tmpfs: [/tmp]
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+
+  nomad-backend:
+    image: ${ASEMAN_NOMAD_BACKEND_IMAGE:?set ASEMAN_NOMAD_BACKEND_IMAGE}
+    restart: unless-stopped
+    # A504 is intentionally loopback-only. Sharing the VMM network namespace keeps
+    # it unreachable from every other container while preserving separate processes.
+    network_mode: service:vmm
+    depends_on: [vmm]
+    command: ["127.0.0.1:9090", "/etc/aseman/nomad-backend.json"]
+    volumes:
+      - ${ASEMAN_CONFIG_DIR}/nomad-backend.json:/etc/aseman/nomad-backend.json:ro
+    read_only: true
+    tmpfs: [/tmp]
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+
+  node:
+    image: ${ASEMAN_NODE_IMAGE:?set ASEMAN_NODE_IMAGE}
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      vmm:
+        condition: service_started
+      nomad-backend:
+        condition: service_started
+    environment:
+      ASEMAN_NODE_ID: ${ASEMAN_NODE_ID:?set ASEMAN_NODE_ID}
+      ASEMAN_NODE_PRIVATE_KEY_SECRET: /run/aseman/secrets/node-private-key.pem
+      ASEMAN_CORE_STORAGE_PROVIDER: postgres
+      ASEMAN_CORE_BINDING_GENERATION: ${ASEMAN_CORE_BINDING_GENERATION:-1}
+      ASEMAN_DATABASE_URL_SECRET: /run/aseman/secrets/database-url
+      ASEMAN_GUEST_PROXY_URL_SECRET: /run/aseman/secrets/guest-proxy-url
+      ASEMAN_GUEST_PROXY_ROLE: aseman_guest_proxy
+      ASEMAN_VMM_ENDPOINT: https://vmm:8443
+      ASEMAN_VMM_SERVER_CA: /etc/aseman/tls/ca-cert.pem
+      ASEMAN_VMM_CLIENT_IDENTITY_SECRET: /run/aseman/secrets/node-vmm-identity.pem
+      ASEMAN_GUEST_API_LISTEN: 0.0.0.0:8444
+      ASEMAN_GUEST_API_URL: https://node:8444
+      ASEMAN_GUEST_API_CERTIFICATE: /etc/aseman/tls/node-cert.pem
+      ASEMAN_GUEST_API_KEY_SECRET: /etc/aseman/tls/node-key.pem
+      ASEMAN_PUBLIC_HTTP_LISTEN: 0.0.0.0:443
+      ASEMAN_PUBLIC_HTTP_PORT: 443
+      ASEMAN_PUBLIC_HTTP_TLS_CERTIFICATE: /etc/aseman/tls/node-cert.pem
+      ASEMAN_PUBLIC_HTTP_TLS_KEY_SECRET: /etc/aseman/tls/node-key.pem
+      ASEMAN_PUBLIC_HTTP_AUDIENCE: ${ASEMAN_PUBLIC_HTTP_AUDIENCE:-aseman-public}
+      ASEMAN_LEGACY_TELEMETRY_API_PORT: 8080
+      ASEMAN_LEGACY_STORAGE_ROOT_PATH: /var/lib/aseman/storage
+      ASEMAN_LEGACY_BASE_DB_PATH: /var/lib/aseman/storage/base
+      ASEMAN_LEGACY_APPLET_DB_PATH: /var/lib/aseman/storage/applet
+      ASEMAN_LEGACY_STORE_LOGS_DB: /var/lib/aseman/storage/store-logs
+      ASEMAN_LEGACY_SEARCH_INDEX_PATH: /var/lib/aseman/storage/search
+      ASEMAN_LEGACY_TELEMETRY_DB_PATH: /var/lib/aseman/telemetry
+      ASEMAN_LEGACY_TCP_PORT: "0"
+      ASEMAN_LEGACY_WS_PORT: "0"
+      ASEMAN_LEGACY_FEDERATION_PORT: "0"
+      ASEMAN_LEGACY_CONSENSUS_PORT: "0"
+    volumes:
+      - ${ASEMAN_CONFIG_DIR}/tls/ca-cert.pem:/etc/aseman/tls/ca-cert.pem:ro
+      - ${ASEMAN_CONFIG_DIR}/tls/node-cert.pem:/etc/aseman/tls/node-cert.pem:ro
+      - ${ASEMAN_CONFIG_DIR}/tls/node-key.pem:/etc/aseman/tls/node-key.pem:ro
+      - ${ASEMAN_CONFIG_DIR}/secrets/node-private-key.pem:/run/aseman/secrets/node-private-key.pem:ro
+      - ${ASEMAN_CONFIG_DIR}/secrets/database-url:/run/aseman/secrets/database-url:ro
+      - ${ASEMAN_CONFIG_DIR}/secrets/guest-proxy-url:/run/aseman/secrets/guest-proxy-url:ro
+      - ${ASEMAN_CONFIG_DIR}/secrets/node-vmm-identity.pem:/run/aseman/secrets/node-vmm-identity.pem:ro
+      - node-data:/var/lib/aseman
+    ports:
+      - "${ASEMAN_PUBLIC_PORT:-443}:443"
+      - "127.0.0.1:${ASEMAN_HEALTH_PORT:-8080}:8080"
+    networks: [control]
+    read_only: true
+    tmpfs: [/tmp]
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+
+  meter:
+    image: ${ASEMAN_METER_IMAGE:?set ASEMAN_METER_IMAGE}
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      vmm:
+        condition: service_started
+    environment:
+      ASEMAN_METER_DATABASE_URL_SECRET: /run/aseman/secrets/database-url
+      ASEMAN_METER_VMM_ENDPOINT: https://vmm:8443
+      ASEMAN_METER_VMM_SERVER_CA: /etc/aseman/tls/ca-cert.pem
+      ASEMAN_METER_VMM_IDENTITY_SECRET: /run/aseman/secrets/meter-vmm-identity.pem
+      ASEMAN_METER_VMM_OWNER: compact-meter
+      ASEMAN_METER_REVENUE_ACCOUNT: ${ASEMAN_METER_REVENUE_ACCOUNT:-aseman-revenue}
+    volumes:
+      - ${ASEMAN_CONFIG_DIR}/tls/ca-cert.pem:/etc/aseman/tls/ca-cert.pem:ro
+      - ${ASEMAN_CONFIG_DIR}/secrets/database-url:/run/aseman/secrets/database-url:ro
+      - ${ASEMAN_CONFIG_DIR}/secrets/meter-vmm-identity.pem:/run/aseman/secrets/meter-vmm-identity.pem:ro
+    networks: [control]
+    read_only: true
+    tmpfs: [/tmp]
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+
+networks:
+  control:
+    internal: true
+  scheduler:
+
+volumes:
+  postgres-data:
+  node-data:

@@ -1,0 +1,24 @@
+{
+  "annotations": {"list": []},
+  "editable": false,
+  "panels": [
+    {"id": 1, "title": "API request rate", "type": "timeseries", "targets": [{"expr": "sum by (service) (rate(aseman_http_requests_total{route!=\"/health\"}[5m]))"}]},
+    {"id": 2, "title": "API 5xx ratio", "type": "timeseries", "targets": [{"expr": "sum(rate(aseman_http_requests_total{route!=\"/health\",status_class=~\"5..\"}[5m])) / clamp_min(sum(rate(aseman_http_requests_total{route!=\"/health\"}[5m])), 1)"}]},
+    {"id": 3, "title": "API p95 latency", "type": "timeseries", "targets": [{"expr": "histogram_quantile(0.95, sum by (le, service) (rate(aseman_http_request_duration_seconds_bucket{route!=\"/health\"}[5m])))"}]},
+    {"id": 4, "title": "Service readiness", "type": "state-timeline", "targets": [{"expr": "min by (service) (aseman_ready)"}]},
+    {"id": 5, "title": "Dependency health", "type": "state-timeline", "targets": [{"expr": "min by (service, dependency) (aseman_dependency_healthy)"}]},
+    {"id": 6, "title": "Realtime pending and age", "type": "timeseries", "targets": [{"expr": "sum(aseman_realtime_outbox_pending)"}, {"expr": "max(aseman_realtime_oldest_unpublished_seconds)"}]},
+    {"id": 7, "title": "Realtime dead letters", "type": "stat", "targets": [{"expr": "sum(aseman_realtime_dead_letters_total)"}]},
+    {"id": 8, "title": "Settlement lag", "type": "timeseries", "targets": [{"expr": "max(aseman_finance_settlement_lag_seconds)"}]},
+    {"id": 9, "title": "VMM reconciliation drift", "type": "timeseries", "targets": [{"expr": "sum by (provider) (aseman_vmm_reconcile_drift)"}]},
+    {"id": 10, "title": "Operation failures", "type": "timeseries", "targets": [{"expr": "sum by (service, operation) (rate(aseman_operation_total{result!=\"success\"}[5m]))"}]}
+  ],
+  "schemaVersion": 39,
+  "tags": ["aseman", "A905"],
+  "templating": {"list": []},
+  "time": {"from": "now-6h", "to": "now"},
+  "timezone": "browser",
+  "title": "Aseman overview",
+  "uid": "aseman-overview",
+  "version": 1
+}

@@ -1,0 +1,24 @@
+{
+  "version": "1",
+  "artifact": "A701/A903",
+  "source": "contracts/public/openapi.json",
+  "compatibility": {
+    "stable_api_major": 1,
+    "breaking_change": "publish a new /v{major} route set and SDK major; never rewrite v1 semantics in place",
+    "additive_change": "regenerate clients and increase their minor version",
+    "unknown_response_fields": "ignore",
+    "unknown_problem_reason": "surface without coercing to a known reason"
+  },
+  "authentication": {
+    "accepted": ["Aseman-Session", "Aseman-Proof"],
+    "rule": "exactly one credential is required"
+  },
+  "mutation": {
+    "idempotency_header": "Idempotency-Key",
+    "rule": "required whenever x-aseman-class is not read"
+  },
+  "generated": [
+    {"language": "typescript", "path": "apps/aseman-client/generated/public-v1.ts"},
+    {"language": "python", "path": "apps/aseman-client/generated/public_v1.py"}
+  ]
+}

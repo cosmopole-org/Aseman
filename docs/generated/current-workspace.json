@@ -40,7 +40,7 @@
       "apps/aseman-client/package-lock.json"
     ],
     "tracked_dist_file_count": 29,
-    "tracked_file_count": 1024,
+    "tracked_file_count": 1031,
     "tracked_files_by_top_level": {
       ".cargo": 1,
       ".gitattributes": 1,
@@ -54,14 +54,14 @@
       "Cargo.toml": 1,
       "README.md": 1,
       "SECURITY.md": 1,
-      "apps": 207,
+      "apps": 210,
       "clippy.toml": 1,
       "contracts": 93,
       "crates": 128,
       "deploy": 11,
       "dist": 29,
-      "docs": 155,
-      "modules": 311,
+      "docs": 156,
+      "modules": 314,
       "plan": 18,
       "rust-toolchain.toml": 1,
       "rustfmt.toml": 1,
@@ -71,7 +71,7 @@
     },
     "tracked_source_files_by_extension": {
       ".py": 33,
-      ".rs": 551,
+      ".rs": 556,
       ".sh": 2,
       ".ts": 1
     }
@@ -117,6 +117,16 @@
             "kind": "bin",
             "name": "aseman-keygen",
             "path": "src/main.rs"
+          },
+          {
+            "kind": "bin",
+            "name": "caspar-keygen",
+            "path": "src/bin/caspar-keygen.rs"
+          },
+          {
+            "kind": "lib",
+            "name": "aseman-keygen",
+            "path": "src/lib.rs"
           }
         ],
         "version": {
@@ -495,8 +505,13 @@
         "targets": [
           {
             "kind": "bin",
-            "name": "runner",
+            "name": "aseman-node",
             "path": "src/runner.rs"
+          },
+          {
+            "kind": "bin",
+            "name": "caspar-node",
+            "path": "src/bin/caspar-node.rs"
           },
           {
             "kind": "lib",
@@ -798,6 +813,10 @@
             "version": "3.4"
           },
           {
+            "name": "hex",
+            "scope": "normal"
+          },
+          {
             "name": "regex",
             "scope": "normal"
           },
@@ -834,6 +853,11 @@
         "manifest": "apps/asemanctl/Cargo.toml",
         "name": "asemanctl",
         "targets": [
+          {
+            "kind": "bin",
+            "name": "asemanctl",
+            "path": "src/main.rs"
+          },
           {
             "kind": "bin",
             "name": "casparctl",
@@ -1069,6 +1093,10 @@
           {
             "name": "uuid",
             "scope": "normal"
+          },
+          {
+            "name": "proptest",
+            "scope": "dev"
           },
           {
             "name": "protox",
