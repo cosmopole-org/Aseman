@@ -49,7 +49,7 @@ use aseman_ports::guest::{GuestCaller, GuestHostCalls};
 use aseman_ports::{
     BlobStore, ClockPort, EntityDirectory, PortError, PortResult, WorkloadRepository,
 };
-use aseman_storage_postgres::PostgresCapsuleRepository;
+use aseman_capsule::auto::AutoCommit;
 use aseman_vmm_http::client::{ClientTls, HttpVmmClient};
 use serde_json::{Value, json};
 use sha2::{Digest, Sha256};
@@ -91,7 +91,7 @@ pub(crate) struct RemoteWorkloads {
     client: HttpVmmClient,
     /// The VMM's runtimes, read once (capabilities change only with a new backend).
     runtimes: std::sync::Mutex<Option<Vec<aseman_domain::vmm::RuntimeCapabilities>>>,
-    catalog: PostgresCapsuleRepository,
+    catalog: AutoCommit,
     blobs: StorageRootBlobStore,
     guest_api_url: String,
     audience: String,
@@ -833,7 +833,7 @@ pub(crate) fn program_machine(app: &Arc<dyn crate::models::core::ICore>, program
     let program = program.to_owned();
     app.modify_state(
         true,
-        Box::new(move |trx: &dyn crate::models::transaction::ITrx| {
+        Box::new(move |trx: &crate::core::trx::Trx| {
             *out.lock()
                 .unwrap_or_else(std::sync::PoisonError::into_inner) =
                 (crate::api::model::program_ports::ProgramPorts { trx })
@@ -876,7 +876,7 @@ impl RemoteWorkloads {
 
 /// The guest API as the node serves it.
 struct NodeGuestApi {
-    catalog: PostgresCapsuleRepository,
+    catalog: AutoCommit,
     blobs: StorageRootBlobStore,
     policy: VerifierPolicy,
 }
@@ -961,7 +961,7 @@ fn certificates(path: &str) -> Result<Vec<rustls::pki_types::CertificateDer<'sta
 pub(crate) fn connect(
     config: &VmmClientConfig,
     node_id: &str,
-    database_url: &str,
+    storage: aseman_storage::Storage,
     storage_root: &str,
 ) -> Result<RemoteWorkloads> {
     let identity = aseman_config::read_secret_file(&config.identity_secret, 64 * 1024)?;
@@ -978,28 +978,28 @@ pub(crate) fn connect(
     Ok(RemoteWorkloads {
         client,
         runtimes: std::sync::Mutex::new(None),
-        catalog: PostgresCapsuleRepository::connect(database_url)?,
+        catalog: AutoCommit(storage),
         blobs: StorageRootBlobStore::new(storage_root),
         guest_api_url: config.guest_api_url.clone(),
         audience: audience(&node_subject(node_id)),
     })
 }
 
-/// Connect to the VMM and start the guest API (called once at startup, after core
-/// storage is on PostgreSQL).
+/// Connect to the VMM and start the guest API (called once at startup, after the
+/// node's storage is open).
 pub(crate) fn install(
     config: &VmmClientConfig,
     node_id: &str,
-    database_url: &str,
+    storage: aseman_storage::Storage,
     storage_root: &str,
 ) -> Result<()> {
-    let remote = connect(config, node_id, database_url, storage_root)?;
+    let remote = connect(config, node_id, storage.clone(), storage_root)?;
     let chain = certificates(&config.guest_api_certificate)?;
     let key_pem = aseman_config::read_secret_file(&config.guest_api_key_secret, 64 * 1024)?;
     let key = rustls_pemfile::private_key(&mut BufReader::new(key_pem.as_bytes()))?
         .ok_or_else(|| anyhow!("the guest API key secret holds no private key"))?;
     let api = Arc::new(NodeGuestApi {
-        catalog: PostgresCapsuleRepository::connect(database_url)?,
+        catalog: AutoCommit(storage),
         blobs: StorageRootBlobStore::new(storage_root),
         policy: VerifierPolicy {
             audience: remote.audience.clone(),
@@ -1031,7 +1031,7 @@ pub(crate) fn install(
 }
 
 /// The machine creature that owns `program`, from the PostgreSQL catalog.
-fn catalog_program_machine(catalog: &PostgresCapsuleRepository, program: &str) -> Result<String> {
+fn catalog_program_machine(catalog: &AutoCommit, program: &str) -> Result<String> {
     aseman_ports::ProgramDirectory::program(
         &aseman_capsule::program::CapsuleProgramPorts {
             repository: catalog,
@@ -1051,13 +1051,13 @@ fn catalog_program_machine(catalog: &PostgresCapsuleRepository, program: &str) -
 /// match the store), runs every adopted instance as a workload of the configured VMM,
 /// and only then removes the decided observed records from the legacy store.
 pub(crate) fn handoff(config: &aseman_config::AsemanConfig, arguments: &[String]) -> Result<()> {
-    let legacy = aseman_storage_rocksdb::RocksDbKvStore::open_tuned(std::path::Path::new(
+    let legacy = aseman_storage_providers::legacy::RocksDbKvStore::open_tuned(std::path::Path::new(
         &config.storage.base_db_path,
     ))
     .map_err(|error| anyhow!("{error}"))?;
     match arguments {
         [command, out] if command == "plan" => {
-            let plan = aseman_storage_rocksdb::plan_legacy_vm_handoff(&legacy)
+            let plan = aseman_storage_providers::legacy::plan_legacy_vm_handoff(&legacy)
                 .map_err(|error| anyhow!("{error}"))?;
             std::fs::write(out, serde_json::to_vec_pretty(&plan)?)?;
             println!(
@@ -1069,39 +1069,33 @@ pub(crate) fn handoff(config: &aseman_config::AsemanConfig, arguments: &[String]
             Ok(())
         }
         [command, plan_path, decisions_path] if command == "apply" => {
-            let approved: aseman_storage_rocksdb::LegacyVmHandoffPlan =
+            let approved: aseman_storage_providers::legacy::LegacyVmHandoffPlan =
                 serde_json::from_slice(&std::fs::read(plan_path)?)?;
-            let decisions: aseman_storage_rocksdb::LegacyVmHandoffDecisions =
+            let decisions: aseman_storage_providers::legacy::LegacyVmHandoffDecisions =
                 serde_json::from_slice(&std::fs::read(decisions_path)?)?;
-            let current = aseman_storage_rocksdb::plan_legacy_vm_handoff(&legacy)
+            let current = aseman_storage_providers::legacy::plan_legacy_vm_handoff(&legacy)
                 .map_err(|error| anyhow!("{error}"))?;
             if current.digest != approved.digest {
                 return Err(anyhow!(
                     "the legacy VM handoff plan changed since it was approved; plan again"
                 ));
             }
-            aseman_storage_rocksdb::check_legacy_vm_decisions(&current, &decisions)
+            aseman_storage_providers::legacy::check_legacy_vm_decisions(&current, &decisions)
                 .map_err(|error| anyhow!("{error}"))?;
             let vmm = config
                 .vmm
                 .as_ref()
                 .ok_or_else(|| anyhow!("adoption needs ASEMAN_VMM_ENDPOINT"))?;
-            let database_url = aseman_config::read_secret_file(
-                config
-                    .database_url_secret
-                    .as_deref()
-                    .ok_or_else(|| anyhow!("ASEMAN_DATABASE_URL_SECRET is required"))?,
-                4096,
-            )?;
-            let remote = connect(
-                vmm,
-                &config.node.id,
-                &database_url,
+            let storage = crate::adapters::storage::open_from_config(
+                Some(config),
                 &config.storage.root_path,
+                &config.storage.base_db_path,
+                false,
             )?;
+            let remote = connect(vmm, &config.node.id, storage, &config.storage.root_path)?;
             for instance in &current.instances {
                 if decisions.instances.get(&instance.key())
-                    != Some(&aseman_storage_rocksdb::LegacyVmDecision::Adopt)
+                    != Some(&aseman_storage_providers::legacy::LegacyVmDecision::Adopt)
                 {
                     continue;
                 }
@@ -1123,7 +1117,7 @@ pub(crate) fn handoff(config: &aseman_config::AsemanConfig, arguments: &[String]
                 )?;
                 println!("adopted {} as workload {workload}", instance.key());
             }
-            let removed = aseman_storage_rocksdb::complete_legacy_vm_handoff(
+            let removed = aseman_storage_providers::legacy::complete_legacy_vm_handoff(
                 &legacy,
                 approved.digest,
                 &decisions,

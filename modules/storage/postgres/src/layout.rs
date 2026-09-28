@@ -482,6 +482,21 @@ pub(crate) fn reconcile_columns(client: &mut impl GenericClient) -> StorageResul
         {
             changes.push(format!("ALTER COLUMN {CBOR_COLUMN} DROP NOT NULL"));
         }
+        // A column the mapping no longer declares keeps its data but no longer
+        // constrains new rows.
+        let declared = expected
+            .iter()
+            .map(|(name, _)| name.clone())
+            .chain(ENVELOPE_COLUMNS.iter().map(|column| (*column).to_owned()))
+            .collect::<BTreeSet<_>>();
+        for (name, (_, nullable)) in &existing {
+            if !declared.contains(name) && !nullable {
+                changes.push(format!(
+                    "ALTER COLUMN {} DROP NOT NULL",
+                    sql_identifier(name)
+                ));
+            }
+        }
         for (name, (ddl_type, info_type)) in expected {
             let quoted = sql_identifier(&name);
             match existing.get(&name) {
@@ -498,6 +513,82 @@ pub(crate) fn reconcile_columns(client: &mut impl GenericClient) -> StorageResul
                     "ALTER TABLE {} {}",
                     qualified(mapping),
                     changes.join(", ")
+                ))
+                .map_err(map_postgres_error)?;
+        }
+        if mapping.schema == SCHEMA {
+            drop_stale_constraints(client, mapping)?;
+        }
+    }
+    Ok(())
+}
+
+/// The generator's constraint name (`scripts/generate_postgres_core.py`).
+fn constraint_name(prefix: &str, table: &str, fields: &[String]) -> String {
+    use sha2::{Digest as _, Sha256};
+    let source = std::iter::once(prefix)
+        .chain(std::iter::once(table))
+        .chain(fields.iter().map(String::as_str))
+        .collect::<Vec<_>>()
+        .join("_");
+    if source.len() <= 63 {
+        return source;
+    }
+    let digest = Sha256::digest(source.as_bytes());
+    let hex = digest.iter().map(|byte| format!("{byte:02x}")).collect::<String>();
+    format!("{}_{}", &source[..52], &hex[..10])
+}
+
+/// Drop the unique indexes and foreign keys of a core table that the mapping no
+/// longer declares (the generated DDL recreates every declared one).
+fn drop_stale_constraints(
+    client: &mut impl GenericClient,
+    mapping: &TableMapping,
+) -> StorageResult<()> {
+    let unique = mapping
+        .unique_indexes
+        .iter()
+        .map(|fields| constraint_name("uq", &mapping.table, fields))
+        .collect::<BTreeSet<_>>();
+    let foreign = mapping
+        .relationships
+        .keys()
+        .map(|name| constraint_name("fk", &mapping.table, std::slice::from_ref(name)))
+        .collect::<BTreeSet<_>>();
+    let indexes = client
+        .query(
+            "SELECT indexname FROM pg_indexes WHERE schemaname = $1 AND tablename = $2 \
+             AND indexname LIKE 'uq\\_%'",
+            &[&mapping.schema, &mapping.table],
+        )
+        .map_err(map_postgres_error)?;
+    for row in indexes {
+        let name: String = row.get(0);
+        if !unique.contains(&name) {
+            client
+                .batch_execute(&format!(
+                    "DROP INDEX IF EXISTS {}.{}",
+                    sql_identifier(&mapping.schema),
+                    sql_identifier(&name)
+                ))
+                .map_err(map_postgres_error)?;
+        }
+    }
+    let constraints = client
+        .query(
+            "SELECT conname FROM pg_constraint WHERE contype = 'f' \
+             AND conrelid = to_regclass($1)",
+            &[&format!("{}.{}", mapping.schema, mapping.table)],
+        )
+        .map_err(map_postgres_error)?;
+    for row in constraints {
+        let name: String = row.get(0);
+        if name.starts_with("fk_") && !foreign.contains(&name) {
+            client
+                .batch_execute(&format!(
+                    "ALTER TABLE {} DROP CONSTRAINT IF EXISTS {}",
+                    qualified(mapping),
+                    sql_identifier(&name)
                 ))
                 .map_err(map_postgres_error)?;
         }

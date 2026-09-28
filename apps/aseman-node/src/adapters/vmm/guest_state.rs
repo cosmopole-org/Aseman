@@ -12,7 +12,7 @@
 
 use serde_json::{Map, Value, json};
 
-use crate::models::transaction::ITrx;
+use crate::core::trx::Trx;
 
 /// The guest state operations.
 #[expect(
@@ -45,7 +45,7 @@ fn required<'a>(input: &'a Value, field: &str) -> Result<&'a str, String> {
 ///
 /// A refusal without a trusted creature, a missing field, or an unknown operation.
 pub(crate) fn run(
-    trx: &dyn ITrx,
+    trx: &Trx,
     creature: &str,
     op: &str,
     input: &Value,

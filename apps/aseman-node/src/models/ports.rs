@@ -16,8 +16,7 @@ use serde_json::Value;
 use serde_json::Value as JsonValue;
 
 use crate::core::utils::compat::GoError;
-use crate::models::packet::{LogPacket, LogQuery};
-use crate::models::transaction::ITrx;
+use crate::core::trx::Trx;
 
 /// The client-facing transport a request arrived on.
 ///
@@ -390,62 +389,18 @@ pub trait ISignaler: Send + Sync {
     fn retrive_group(&self, group_id: &str) -> Option<Arc<Group>>;
 }
 
-/// Key/value database handle of the RocksDB provider (local or Raft-replicated).
-pub type KvDb = Arc<dyn aseman_storage_rocksdb::LegacyKvStore>;
-
-/// The selected storage provider's transaction source (ADR 0033): every node
-/// transaction runs on exactly one of them.
-#[derive(Clone)]
-pub enum StateBackend {
-    /// The RocksDB provider's store.
-    RocksDb(KvDb),
-    /// The PostgreSQL provider's compatibility transactions (ADR 0031).
-    Postgres(Arc<crate::adapters::postgres::trx::PostgresTrxFactory>),
-}
-
-/// The storage driver interface.
+/// The storage driver interface: the node's one door to the storage provider plugin
+/// it loaded (ADR 0036).
 pub trait IStorage: Send + Sync {
     fn storage_root(&self) -> String;
-    fn state(&self) -> StateBackend;
-    fn gen_id(&self, t: &dyn ITrx, origin: &str) -> String;
-    /// Append one signal packet to the store's time-series log. `tags` are the
-    /// sender's labels, already validated by the caller; they are stored with
-    /// the packet so [`IStorage::read_store_logs`] can filter on them.
-    ///
-    /// Errors rather than reporting a packet it did not write: this row is the
-    /// message, so a caller must be able to tell the sender their message did
-    /// not land instead of watching it vanish on the next read.
-    fn log_time_sieries(
-        &self,
-        store_id: &str,
-        user_id: &str,
-        data: &str,
-        tags: &[String],
-        time_val: i64,
-    ) -> Result<LogPacket>;
-    #[expect(
-        dead_code,
-        reason = "RL-002: legacy model surface kept until its deletion gate"
-    )]
-    fn update_log(
-        &self,
-        store_id: &str,
-        user_id: &str,
-        signal_id: &str,
-        data: &str,
-        time_val: i64,
-    ) -> LogPacket;
-    /// Read a store's persisted signals, newest first, filtered by the
-    /// query's tags and time bounds.
-    ///
-    /// Errors rather than returning an empty page: "the log is unreachable" and
-    /// "this store has nothing to say" must not look the same to a reader.
-    fn read_store_logs(&self, store_id: &str, query: &LogQuery) -> Result<Vec<LogPacket>>;
-    #[expect(
-        dead_code,
-        reason = "RL-002: legacy model surface kept until its deletion gate"
-    )]
-    fn pick_store_logs(&self, store_id: &str, ids: Vec<String>) -> Vec<LogPacket>;
+    /// Begin a transaction on the selected provider.
+    fn begin(&self, readonly: bool) -> Result<crate::core::trx::Trx>;
+    /// Where consensus engines keep their logs (ADR 0035).
+    fn consensus_logs(&self) -> Arc<dyn aseman_ports::consensus_log::ConsensusLogStorage>;
+    /// Mint the next `N@origin` id. Ids come from their own short transaction, so
+    /// a hot counter never serializes the actions that use them; an id an aborted
+    /// action took is not reused.
+    fn gen_id(&self, origin: &str) -> String;
 }
 
 /// Aggregates every node driver behind a single interface.

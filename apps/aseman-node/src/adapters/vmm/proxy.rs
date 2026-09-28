@@ -42,7 +42,7 @@ use crate::api::model::Creature;
 use crate::api::model::entity_ports::EntityPorts;
 use crate::api::packets::stores::Send as StoresSend;
 use crate::models::core::ICore;
-use crate::models::transaction::ITrx;
+use crate::core::trx::Trx;
 use aseman_domain::blob::BlobEvidence;
 use aseman_domain::program::{ArtifactRole, EntityRecord};
 use aseman_ports::{BlobStore, EntityDirectory};
@@ -85,7 +85,7 @@ fn now_ms() -> i64 {
 
 /// Delete a correlation record and its expiry-index link inside an open
 /// transaction.
-fn delete_correlation(trx: &dyn ITrx, correlation_id: &str) {
+fn delete_correlation(trx: &Trx, correlation_id: &str) {
     trx.del_json(&correlation_key(correlation_id), "record");
     trx.del_key(&format!(
         "link::{}",
@@ -283,7 +283,7 @@ fn deep_merge(dst: &mut Value, src: &Value) {
 /// itself, its stored data file as the primary file, and the proxy target
 /// configuration.
 pub fn record_proxy_entity(
-    trx: &dyn ITrx,
+    trx: &Trx,
     blobs: &StorageRootBlobStore,
     program_id: &str,
     entity_id: &str,
@@ -311,13 +311,13 @@ pub fn record_proxy_entity(
 fn read_state<T, F>(app: &Arc<dyn ICore>, default: T, f: F) -> T
 where
     T: Clone + Send + 'static,
-    F: Fn(&dyn ITrx) -> T + Send + Sync + 'static,
+    F: Fn(&Trx) -> T + Send + Sync + 'static,
 {
     let slot = Arc::new(Mutex::new(default));
     let slot_clone = slot.clone();
     app.modify_state(
         true,
-        Box::new(move |trx: &dyn ITrx| {
+        Box::new(move |trx: &Trx| {
             *slot_clone.lock().unwrap() = f(trx);
             Ok(())
         }),
@@ -439,7 +439,7 @@ pub fn try_route_proxy_response(
         let corr_owned = correlation_id.clone();
         app.modify_state(
             false,
-            Box::new(move |trx: &dyn ITrx| {
+            Box::new(move |trx: &Trx| {
                 delete_correlation(trx, &corr_owned);
                 Ok(())
             }),
@@ -481,7 +481,7 @@ pub fn try_route_proxy_response(
         let corr_owned = correlation_id.clone();
         app.modify_state(
             false,
-            Box::new(move |trx: &dyn ITrx| {
+            Box::new(move |trx: &Trx| {
                 let _ = trx.put_json(
                     &correlation_key(&corr_owned),
                     "record",
@@ -500,7 +500,7 @@ pub fn try_route_proxy_response(
         let corr_owned = correlation_id.clone();
         app.modify_state(
             false,
-            Box::new(move |trx: &dyn ITrx| {
+            Box::new(move |trx: &Trx| {
                 delete_correlation(trx, &corr_owned);
                 Ok(())
             }),
@@ -632,7 +632,7 @@ pub fn try_forward_through_proxy(
     let expiry_link = correlation_expiry_link(&correlation_id);
     app.modify_state(
         false,
-        Box::new(move |trx: &dyn ITrx| {
+        Box::new(move |trx: &Trx| {
             let _ = trx.put_json(&corr_key, "record", &record, true);
             trx.put_link(&expiry_link, &expires_at.to_string());
             Ok(())
@@ -702,7 +702,7 @@ pub fn sweep_expired_correlations(app: &Arc<dyn ICore>) {
     let count = expired.len();
     app.modify_state(
         false,
-        Box::new(move |trx: &dyn ITrx| {
+        Box::new(move |trx: &Trx| {
             for corr_id in &expired {
                 delete_correlation(trx, corr_id);
             }

@@ -9,7 +9,7 @@ use std::sync::{Arc, Mutex};
 use serde::{Deserialize, Serialize};
 
 use crate::models::core::ICore;
-use crate::models::transaction::ITrx;
+use crate::core::trx::Trx;
 
 use crate::core::actor::info::Info;
 
@@ -22,7 +22,7 @@ fn read_user_type(app: &Arc<dyn ICore>, user_id: &str) -> String {
     let user_id_owned = user_id.to_string();
     app.modify_state(
         true,
-        Box::new(move |trx: &dyn ITrx| {
+        Box::new(move |trx: &Trx| {
             *slot_clone.lock().unwrap() = aseman_ports::CreatureDirectory::creature(
                 &crate::api::model::creature_ports::CreaturePorts { trx },
                 &user_id_owned,

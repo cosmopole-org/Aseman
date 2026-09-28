@@ -16,7 +16,7 @@ use crate::api::packets::stores;
 use crate::models::core::ICore;
 use crate::models::ports::IWorkloads;
 use crate::models::ports::Listener;
-use crate::models::transaction::ITrx;
+use crate::core::trx::Trx;
 
 pub struct NodeWorkloads {
     pub(super) app: Arc<dyn ICore>,
@@ -51,7 +51,7 @@ pub(crate) fn entity_runtime(app: &Arc<dyn ICore>, program: &str, entity: &str) 
     let entity = entity.to_owned();
     app.modify_state(
         true,
-        Box::new(move |trx: &dyn ITrx| {
+        Box::new(move |trx: &Trx| {
             let record =
                 (crate::api::model::program_ports::ProgramPorts { trx }).program_or_empty(&program);
             let mut runtime = record.runtime.trim().to_lowercase();
@@ -166,7 +166,7 @@ impl IWorkloads for NodeWorkloads {
         let machine_owned = machine_id.to_string();
         self.app.modify_state(
             true,
-            Box::new(move |trx: &dyn ITrx| {
+            Box::new(move |trx: &Trx| {
                 *store_out.lock().unwrap() = (crate::api::model::store_ports::StorePorts { trx })
                     .store_or_empty(&store_id_owned);
                 let ports = crate::api::model::store_ports::MembershipPorts { trx };
@@ -239,7 +239,7 @@ impl IWorkloads for NodeWorkloads {
         let segments_owned = segments.clone();
         self.app.modify_state(
             true,
-            Box::new(move |trx: &dyn ITrx| {
+            Box::new(move |trx: &Trx| {
                 // The leading segment addresses the owning creature either by its
                 // username (resolved through the index) or — because a username
                 // qualified with a URL-shaped node source (e.g.

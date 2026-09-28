@@ -27,6 +27,8 @@ mod capsule;
 pub mod capsule_store;
 pub mod cluster;
 pub mod consensus_log;
+mod model_index;
+pub mod model_store;
 mod custody;
 mod documents;
 mod export;

@@ -21,7 +21,7 @@ use crate::core::utils::compat::GoError;
 use crate::models::action::TrxClosure;
 use crate::models::chain::{ChainBaseRequest, ChainMessage, ChainPayPacket};
 use crate::models::core::ICore;
-use crate::models::transaction::ITrx;
+use crate::core::trx::Trx;
 
 impl Core {
     pub(crate) fn chain_message_targets_local(&self, packet: &ChainMessage) -> bool {
@@ -51,7 +51,7 @@ impl Core {
             let machine_id_owned = machine_id.clone();
             self.modify_state(
                 true,
-                Box::new(move |trx: &dyn ITrx| {
+                Box::new(move |trx: &Trx| {
                     let vm = (crate::api::model::program_ports::ProgramPorts { trx })
                         .program_or_empty(&machine_id_owned.clone());
                     *runtime_clone.lock().unwrap() = vm.runtime;

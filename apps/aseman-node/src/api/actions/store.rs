@@ -45,7 +45,7 @@ use super::util::build_secure_action;
 #[cfg(test)]
 use crate::api::model::access::{StorePermissions, access_link_key};
 #[cfg(test)]
-use crate::models::transaction::ITrx;
+use crate::core::trx::Trx;
 #[cfg(test)]
 use aseman_application::store::DEFAULT_HISTORY_COUNT;
 
@@ -352,7 +352,7 @@ mod tests {
             fn state(&self) -> crate::models::ports::StateBackend {
                 crate::models::ports::StateBackend::RocksDb(self.kv.clone())
             }
-            fn gen_id(&self, _: &dyn ITrx, _: &str) -> String {
+            fn gen_id(&self, _: &Trx, _: &str) -> String {
                 String::new()
             }
             fn log_time_sieries(

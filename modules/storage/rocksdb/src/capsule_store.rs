@@ -34,7 +34,7 @@ use std::sync::{Arc, OnceLock};
 /// The most capsules one [`CapsuleStore::put_all`] holds.
 pub const MAX_TRANSACTION_CAPSULES: usize = 64;
 
-const ROOT: &str = "aseman/capsule/";
+pub(crate) const ROOT: &str = "aseman/capsule/";
 const LAYOUT_KEY: &str = "aseman/capsule/layout";
 const WRITE_ATTEMPTS: usize = 3;
 const MAX_PREDICATE_WIDTH: usize = 64;
@@ -82,7 +82,7 @@ fn failed(message: impl Into<String>) -> CapsuleStoreError {
     CapsuleStoreError::Failed(message.into())
 }
 
-fn invalid(message: impl std::fmt::Display) -> CapsuleStoreError {
+pub(crate) fn invalid(message: impl std::fmt::Display) -> CapsuleStoreError {
     failed(format!("invalid capsule or query: {message}"))
 }
 
@@ -90,7 +90,7 @@ fn unsupported(message: impl std::fmt::Display) -> CapsuleStoreError {
     failed(format!("unsupported storage capability: {message}"))
 }
 
-fn storage(error: LegacyMigrationError) -> CapsuleStoreError {
+pub(crate) fn storage(error: LegacyMigrationError) -> CapsuleStoreError {
     failed(format!("RocksDB is unavailable: {error}"))
 }
 
@@ -150,7 +150,7 @@ struct RowMeta {
 
 /// What one capsule currently occupies: its keys and their values.
 #[derive(Default)]
-struct Stored {
+pub(crate) struct Stored {
     keys: BTreeMap<String, Vec<u8>>,
 }
 
@@ -170,7 +170,7 @@ impl Stored {
         .collect()
     }
 
-    fn envelope(&self, kind: &str, id: &CapsuleId) -> CapsuleStoreResult<Option<CapsuleEnvelope>> {
+    pub(crate) fn envelope(&self, kind: &str, id: &CapsuleId) -> CapsuleStoreResult<Option<CapsuleEnvelope>> {
         if let Some(bytes) = self.keys.get(&packed_key(kind, id)) {
             return CapsuleEnvelope::from_canonical_bytes(bytes)
                 .map(Some)
@@ -300,7 +300,7 @@ fn unique_keys(capsule: &CapsuleEnvelope) -> CapsuleStoreResult<Vec<String>> {
 
 /// Capsules on the provider's key/value store, in either layout.
 pub struct RocksDbCapsuleStore {
-    kv: Arc<dyn LegacyKvStore>,
+    pub(crate) kv: Arc<dyn LegacyKvStore>,
     capsule: AtomicBool,
     replicated: bool,
 }
@@ -406,7 +406,7 @@ impl RocksDbCapsuleStore {
         Ok(converted)
     }
 
-    fn stored(&self, kind: &str, id: &CapsuleId) -> CapsuleStoreResult<Stored> {
+    pub(crate) fn stored(&self, kind: &str, id: &CapsuleId) -> CapsuleStoreResult<Stored> {
         let mut stored = Stored::default();
         let packed = packed_key(kind, id);
         if let Some(value) = self.kv.get(packed.as_bytes()).map_err(storage)? {
@@ -424,7 +424,29 @@ impl RocksDbCapsuleStore {
         Ok(stored)
     }
 
-    fn try_put_all(&self, writes: &[(CapsuleEnvelope, Option<u64>)]) -> CapsuleStoreResult<bool> {
+    pub(crate) fn try_put_all(
+        &self,
+        writes: &[(CapsuleEnvelope, Option<u64>)],
+    ) -> CapsuleStoreResult<bool> {
+        self.try_write(writes, false)
+    }
+
+    /// Store capsules exactly as given (migration import): a capsule of any revision
+    /// is inserted when its id is free, an identical one is accepted, anything else is
+    /// a conflict.
+    pub(crate) fn try_import(&self, capsules: &[CapsuleEnvelope]) -> CapsuleStoreResult<bool> {
+        let writes = capsules
+            .iter()
+            .map(|capsule| (capsule.clone(), None))
+            .collect::<Vec<_>>();
+        self.try_write(&writes, true)
+    }
+
+    fn try_write(
+        &self,
+        writes: &[(CapsuleEnvelope, Option<u64>)],
+        import: bool,
+    ) -> CapsuleStoreResult<bool> {
         let layout = self.layout();
         // Each capsule's state before this batch, and after the writes so far.
         let mut before: BTreeMap<(String, CapsuleId), Stored> = BTreeMap::new();
@@ -439,7 +461,7 @@ impl RocksDbCapsuleStore {
             }
             let current = after[&identity].as_ref();
             let accepted = match (expected_revision, current) {
-                (None, None) => capsule.revision == 1,
+                (None, None) => import || capsule.revision == 1,
                 (Some(expected), Some(current)) => {
                     current.revision == *expected
                         && capsule.revision == expected.saturating_add(1)
@@ -477,6 +499,23 @@ impl RocksDbCapsuleStore {
                 for key in unique_keys(previous)? {
                     released.insert(key, id.clone());
                 }
+            }
+            // Secondary indexes (ADR 0036) follow the live revision.
+            let old_index = match &previous {
+                Some(previous) => crate::model_store::index_keys(previous)?,
+                None => BTreeSet::new(),
+            };
+            let new_index = crate::model_store::index_keys(target)?;
+            for key in old_index.difference(&new_index) {
+                batch.push(LegacyKvWrite::Delete {
+                    key: key.as_bytes().to_vec(),
+                });
+            }
+            for key in new_index.difference(&old_index) {
+                batch.push(LegacyKvWrite::Put {
+                    key: key.as_bytes().to_vec(),
+                    value: Vec::new(),
+                });
             }
             if !target.tombstone {
                 for key in unique_keys(target)? {
@@ -523,7 +562,7 @@ impl RocksDbCapsuleStore {
             .map_err(storage)
     }
 
-    fn scan_kind(&self, kind: &str) -> CapsuleStoreResult<Vec<CapsuleEnvelope>> {
+    pub(crate) fn scan_kind(&self, kind: &str) -> CapsuleStoreResult<Vec<CapsuleEnvelope>> {
         let mut capsules = Vec::new();
         for (_, value) in self
             .kv
@@ -574,7 +613,7 @@ fn replace(
     writes
 }
 
-fn parse_id(text: &str) -> Option<CapsuleId> {
+pub(crate) fn parse_id(text: &str) -> Option<CapsuleId> {
     if text.len() != 32 {
         return None;
     }

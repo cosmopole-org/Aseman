@@ -1,0 +1,17 @@
+[package]
+name = "aseman-storage-providers"
+description = "The storage provider plugins a node can load (ADR 0036); only composition roots depend on it."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+aseman-ports = { path = "../aseman-ports" }
+aseman-storage = { path = "../aseman-storage" }
+aseman-storage-postgres = { path = "../../modules/storage/postgres" }
+aseman-storage-rocksdb = { path = "../../modules/storage/rocksdb" }
+
+[lints]
+workspace = true

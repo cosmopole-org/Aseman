@@ -1,46 +1,1662 @@
 {
   "schema_version": 1,
   "definitions": [
-    {"kind":"core.user","fields":{"username":"text","email":"text","public_key":"bytes","status":"text"},"required":["username","public_key","status"],"unique_indexes":[["username"],["email"],["public_key"]],"relationships":{},"retention":"authority"},
-    {"kind":"core.creature","fields":{"username":"text","creature_type":"text","public_key":"bytes","status":"text","chain_id":"text","subchain_id":"text"},"required":["username","creature_type","public_key","status"],"unique_indexes":[["username"],["public_key"]],"relationships":{"owner":"core.user"},"retention":"authority"},
-    {"kind":"core.program","fields":{"machine_id":"text","runtime":"text","path":"text","comment":"text"},"required":["machine_id","runtime","path"],"unique_indexes":[],"relationships":{"creature":"core.creature"},"retention":"authority"},
-    {"kind":"core.store","fields":{"is_public":"bool","member_count":"integer","persistent_history":"bool","signal_count":"integer","tag":"text"},"required":["is_public","member_count","persistent_history","signal_count"],"unique_indexes":[],"relationships":{"creature":"core.creature","parent":"core.store"},"retention":"authority"},
-    {"kind":"core.store_membership","fields":{"member_kind":"text","member_ref":"text","permissions":"text","joined_at_micros":"timestamp_micros"},"required":["member_kind","member_ref","permissions","joined_at_micros"],"unique_indexes":[["store","member_kind","member_ref"]],"relationships":{"store":"core.store","creature":"core.creature","program":"core.program"},"retention":"authority"},
-    {"kind":"core.access_level","fields":{"level":"text","permissions":"bytes"},"required":["level","permissions"],"unique_indexes":[["store","level"]],"relationships":{"store":"core.store"},"retention":"authority"},
-    {"kind":"core.capability_grant","fields":{"subject_kind":"text","subject_id":"capsule_id","issuer_kind":"text","issuer_id":"capsule_id","actions":"document","resource_kind":"text","resource_id":"text","delegable_actions":"document","max_depth":"integer","parent_id":"capsule_id","not_before_micros":"timestamp_micros","expires_at_micros":"timestamp_micros","revoked_at_micros":"timestamp_micros","policy_version":"text"},"required":["subject_kind","subject_id","issuer_kind","issuer_id","actions","resource_kind","delegable_actions","max_depth","not_before_micros","policy_version"],"unique_indexes":[],"relationships":{},"retention":"revocation"},
-    {"kind":"core.session","fields":{"token_digest":"bytes","issued_at_micros":"timestamp_micros","expires_at_micros":"timestamp_micros","revoked_at_micros":"timestamp_micros"},"required":["token_digest","issued_at_micros","expires_at_micros"],"unique_indexes":[["token_digest"]],"relationships":{"user":"core.user"},"retention":"revocation"},
-    {"kind":"core.file","fields":{"store_key":"text","content_digest":"bytes","media_type":"text","size_bytes":"integer"},"required":["store_key","content_digest","size_bytes"],"unique_indexes":[["store_key"]],"relationships":{"owner":"core.user","store":"core.store"},"retention":"authority"},
-    {"kind":"core.workload","fields":{"workload_name":"text","runtime":"text","desired_state":"text","desired_generation":"integer","observed_state":"text","observed_generation":"integer"},"required":["workload_name","runtime","desired_state","desired_generation"],"unique_indexes":[["program","workload_name"]],"relationships":{"program":"core.program","creature":"core.creature"},"retention":"authority"},
-    {"kind":"core.workload_operation","fields":{"operation":"text","idempotency_key":"text","state":"text","requested_at_micros":"timestamp_micros","completed_at_micros":"timestamp_micros"},"required":["operation","idempotency_key","state","requested_at_micros"],"unique_indexes":[["idempotency_key"]],"relationships":{"workload":"core.workload"},"retention":"operational"},
-    {"kind":"core.node","fields":{"name":"text","region":"text","status":"text","descriptor_digest":"bytes"},"required":["name","status","descriptor_digest"],"unique_indexes":[["name"]],"relationships":{},"retention":"authority"},
-    {"kind":"core.federation_peer","fields":{"origin":"text","endpoint":"text","trust_state":"text","descriptor_digest":"bytes"},"required":["origin","endpoint","trust_state","descriptor_digest"],"unique_indexes":[["origin"]],"relationships":{},"retention":"authority"},
-    {"kind":"core.identity_key","fields":{"subject_kind":"text","subject_id":"capsule_id","purpose":"text","epoch":"integer","key_id":"text","public_key":"bytes","not_before_micros":"timestamp_micros","expires_at_micros":"timestamp_micros","retired_at_micros":"timestamp_micros","revoked_at_micros":"timestamp_micros","legacy":"bool"},"required":["subject_kind","subject_id","purpose","epoch","key_id","public_key","not_before_micros","legacy"],"unique_indexes":[["key_id"],["subject_kind","subject_id","purpose","epoch"]],"relationships":{},"retention":"revocation"},
-    {"kind":"finance.wallet","fields":{"currency":"text","balance_minor":"integer","scale":"integer","state":"text"},"required":["currency","balance_minor","scale","state"],"unique_indexes":[["creature","currency"]],"relationships":{"creature":"core.creature"},"retention":"financial_permanent"},
-    {"kind":"finance.ledger_entry","fields":{"entry_group_id":"capsule_id","sequence":"integer","amount_minor":"integer","currency":"text","scale":"integer","direction":"text","idempotency_key":"text","occurred_at_micros":"timestamp_micros"},"required":["entry_group_id","sequence","amount_minor","currency","scale","direction","idempotency_key","occurred_at_micros"],"unique_indexes":[["idempotency_key"],["entry_group_id","sequence"]],"relationships":{"wallet":"finance.wallet"},"retention":"financial_permanent"},
-    {"kind":"finance.pricing_policy","fields":{"version":"integer","currency":"text","scale":"integer","rules":"bytes","effective_at_micros":"timestamp_micros"},"required":["version","currency","scale","rules","effective_at_micros"],"unique_indexes":[["version"]],"relationships":{},"retention":"financial_permanent"},
-    {"kind":"finance.usage_record","fields":{"metric":"text","quantity":"integer","interval_start_micros":"timestamp_micros","interval_end_micros":"timestamp_micros","idempotency_key":"text"},"required":["metric","quantity","interval_start_micros","interval_end_micros","idempotency_key"],"unique_indexes":[["idempotency_key"]],"relationships":{"workload":"core.workload"},"retention":"financial_permanent"},
-    {"kind":"core.module_installation","fields":{"module_name":"text","module_kind":"text","version":"text","artifact_digest":"bytes","state":"text","routing_generation":"integer"},"required":["module_name","module_kind","version","artifact_digest","state","routing_generation"],"unique_indexes":[["module_name","version"]],"relationships":{},"retention":"authority"},
-    {"kind":"core.guest_database_binding","fields":{"provider_id":"text","database_name":"text","role_name":"text","generation":"integer","schema_catalog_revision":"integer","status":"text"},"required":["provider_id","database_name","role_name","generation","schema_catalog_revision","status"],"unique_indexes":[["creature"],["provider_id","database_name"],["provider_id","role_name"]],"relationships":{"creature":"core.creature"},"retention":"authority"},
-    {"kind":"core.guest_schema_definition","fields":{"schema_name":"text","schema_version":"integer","definition":"bytes","status":"text"},"required":["schema_name","schema_version","definition","status"],"unique_indexes":[["creature","schema_name","schema_version"]],"relationships":{"creature":"core.creature","binding":"core.guest_database_binding"},"retention":"authority"},
-    {"kind":"core.chain","fields":{"store_id":"text","status":"text"},"required":["store_id","status"],"unique_indexes":[["store_id"]],"relationships":{"store":"core.store"},"retention":"authority"},
-    {"kind":"core.chain_shard","fields":{"work_chain_id":"text","shard_name":"text"},"required":["work_chain_id","shard_name"],"unique_indexes":[["work_chain_id","shard_name"]],"relationships":{"chain":"core.chain"},"retention":"authority"},
-    {"kind":"core.entity","fields":{"entity_name":"text","entity_type":"text","image_name":"text"},"required":["entity_name","entity_type"],"unique_indexes":[["program","entity_name"]],"relationships":{"program":"core.program"},"retention":"authority"},
-    {"kind":"core.user_metadata","fields":{"document":"document","document_path":"text","entry_count":"integer","content_digest":"bytes"},"required":["document","document_path","entry_count","content_digest"],"unique_indexes":[["creature"]],"relationships":{"creature":"core.creature"},"retention":"authority"},
-    {"kind":"core.creature_metadata","fields":{"document":"document","document_path":"text","entry_count":"integer","content_digest":"bytes"},"required":["document","document_path","entry_count","content_digest"],"unique_indexes":[["creature"]],"relationships":{"creature":"core.creature"},"retention":"authority"},
-    {"kind":"core.store_metadata","fields":{"document":"document","document_path":"text","entry_count":"integer","content_digest":"bytes"},"required":["document","document_path","entry_count","content_digest"],"unique_indexes":[["store"]],"relationships":{"store":"core.store"},"retention":"authority"},
-    {"kind":"core.program_metadata","fields":{"document":"document","document_path":"text","entry_count":"integer","content_digest":"bytes"},"required":["document","document_path","entry_count","content_digest"],"unique_indexes":[["program"]],"relationships":{"program":"core.program"},"retention":"authority"},
-    {"kind":"finance.legacy_record","fields":{"record_family":"text","legacy_key":"text","document":"document","entry_count":"integer","content_digest":"bytes","currency":"text","scale":"integer"},"required":["record_family","legacy_key","document","entry_count","content_digest","currency","scale"],"unique_indexes":[["record_family","legacy_key"]],"relationships":{},"retention":"financial_permanent"},
-    {"kind":"core.creature_type","fields":{"type_name":"text","document":"document","document_path":"text","entry_count":"integer","content_digest":"bytes"},"required":["type_name","document","document_path","entry_count","content_digest"],"unique_indexes":[["type_name"]],"relationships":{},"retention":"authority"},
-    {"kind":"core.gateway_route","fields":{"path":"text","entity_name":"text","runtime":"text"},"required":["path","entity_name","runtime"],"unique_indexes":[["creature","path"]],"relationships":{"creature":"core.creature","program":"core.program"},"retention":"authority"},
-    {"kind":"core.program_alarm","fields":{"fire_at_micros":"timestamp_micros","entity_name":"text","data":"text"},"required":["fire_at_micros","entity_name","data"],"unique_indexes":[["program"]],"relationships":{"program":"core.program","store":"core.store"},"retention":"authority"},
-    {"kind":"core.vm_resource_store","fields":{"name":"text","machine_ref":"text","document":"document","document_path":"text","entry_count":"integer","content_digest":"bytes"},"required":["name","machine_ref","document","document_path","entry_count","content_digest"],"unique_indexes":[],"relationships":{"creature":"core.creature"},"retention":"authority"},
-    {"kind":"core.vm_resource_entity","fields":{"entity_type":"text","entity_ref":"text","document":"document","document_path":"text","entry_count":"integer","content_digest":"bytes","artifact_present":"bool","store_key":"text","artifact_digest":"bytes","size_bytes":"integer","media_type":"text"},"required":["entity_type","entity_ref","document","document_path","entry_count","content_digest","artifact_present"],"unique_indexes":[["resource_store","entity_type","entity_ref"]],"relationships":{"resource_store":"core.vm_resource_store"},"retention":"authority"},
-    {"kind":"core.entity_config","fields":{"document":"document","document_path":"text","entry_count":"integer","content_digest":"bytes"},"required":["document","document_path","entry_count","content_digest"],"unique_indexes":[["entity"]],"relationships":{"entity":"core.entity"},"retention":"authority"},
-    {"kind":"core.entity_artifact","fields":{"artifact_role":"text","artifact_present":"bool","store_key":"text","artifact_digest":"bytes","size_bytes":"integer","media_type":"text"},"required":["artifact_role","artifact_present"],"unique_indexes":[["entity","artifact_role"]],"relationships":{"entity":"core.entity"},"retention":"authority"},
-    {"kind":"core.creature_secret","fields":{"name":"text","algorithm":"text","ciphertext":"bytes","key_fingerprint":"bytes"},"required":["name","algorithm","ciphertext","key_fingerprint"],"unique_indexes":[["creature","name"]],"relationships":{"creature":"core.creature"},"retention":"authority"},
-    {"kind":"core.secret_grant","fields":{"grantee_ref":"text","expires_at_micros":"timestamp_micros"},"required":["grantee_ref","expires_at_micros"],"unique_indexes":[["secret","grantee_ref"]],"relationships":{"secret":"core.creature_secret","grantee":"core.creature"},"retention":"revocation"},
-    {"kind":"core.bridge_grant","fields":{"token_digest":"bytes","minted_by_ref":"text","expires_at_micros":"timestamp_micros","document":"document","document_path":"text","entry_count":"integer","content_digest":"bytes"},"required":["token_digest","minted_by_ref","expires_at_micros","document","document_path","entry_count","content_digest"],"unique_indexes":[["token_digest"]],"relationships":{},"retention":"revocation"},
-    {"kind":"core.bridge_topic","fields":{"topic":"text","owner_ref":"text"},"required":["topic","owner_ref"],"unique_indexes":[["topic"]],"relationships":{},"retention":"authority"},
-    {"kind":"core.legacy_identity","fields":{"family":"text","legacy_id":"text","target_kind":"text","target_id":"capsule_id"},"required":["family","legacy_id","target_kind","target_id"],"unique_indexes":[["family","legacy_id"],["target_kind","target_id"]],"relationships":{},"retention":"authority"}
+    {
+      "kind": "core.user",
+      "fields": {
+        "username": "text",
+        "email": "text",
+        "public_key": "bytes",
+        "status": "text"
+      },
+      "required": [
+        "username",
+        "public_key",
+        "status"
+      ],
+      "unique_indexes": [
+        [
+          "username"
+        ],
+        [
+          "email"
+        ],
+        [
+          "public_key"
+        ]
+      ],
+      "relationships": {},
+      "retention": "authority"
+    },
+    {
+      "kind": "core.creature",
+      "fields": {
+        "username": "text",
+        "creature_type": "text",
+        "public_key": "bytes",
+        "status": "text",
+        "chain_id": "text",
+        "subchain_id": "text"
+      },
+      "required": [
+        "username",
+        "creature_type",
+        "public_key",
+        "status"
+      ],
+      "unique_indexes": [
+        [
+          "username"
+        ],
+        [
+          "public_key"
+        ]
+      ],
+      "relationships": {
+        "owner": "core.user"
+      },
+      "retention": "authority"
+    },
+    {
+      "kind": "core.program",
+      "fields": {
+        "machine_id": "text",
+        "runtime": "text",
+        "path": "text",
+        "comment": "text"
+      },
+      "required": [
+        "machine_id",
+        "runtime",
+        "path"
+      ],
+      "unique_indexes": [],
+      "relationships": {
+        "creature": "core.creature"
+      },
+      "retention": "authority"
+    },
+    {
+      "kind": "core.store",
+      "fields": {
+        "is_public": "bool",
+        "member_count": "integer",
+        "persistent_history": "bool",
+        "signal_count": "integer",
+        "tag": "text"
+      },
+      "required": [
+        "is_public",
+        "member_count",
+        "persistent_history",
+        "signal_count"
+      ],
+      "unique_indexes": [],
+      "relationships": {
+        "creature": "core.creature",
+        "parent": "core.store"
+      },
+      "retention": "authority"
+    },
+    {
+      "kind": "core.store_membership",
+      "fields": {
+        "member_kind": "text",
+        "member_ref": "text",
+        "permissions": "text",
+        "joined_at_micros": "timestamp_micros"
+      },
+      "required": [
+        "member_kind",
+        "member_ref",
+        "permissions",
+        "joined_at_micros"
+      ],
+      "unique_indexes": [
+        [
+          "store",
+          "member_kind",
+          "member_ref"
+        ]
+      ],
+      "relationships": {
+        "store": "core.store",
+        "creature": "core.creature",
+        "program": "core.program"
+      },
+      "retention": "authority"
+    },
+    {
+      "kind": "core.access_level",
+      "fields": {
+        "level": "text",
+        "permissions": "bytes"
+      },
+      "required": [
+        "level",
+        "permissions"
+      ],
+      "unique_indexes": [
+        [
+          "store",
+          "level"
+        ]
+      ],
+      "relationships": {
+        "store": "core.store"
+      },
+      "retention": "authority"
+    },
+    {
+      "kind": "core.capability_grant",
+      "fields": {
+        "subject_kind": "text",
+        "subject_id": "capsule_id",
+        "issuer_kind": "text",
+        "issuer_id": "capsule_id",
+        "actions": "document",
+        "resource_kind": "text",
+        "resource_id": "text",
+        "delegable_actions": "document",
+        "max_depth": "integer",
+        "parent_id": "capsule_id",
+        "not_before_micros": "timestamp_micros",
+        "expires_at_micros": "timestamp_micros",
+        "revoked_at_micros": "timestamp_micros",
+        "policy_version": "text"
+      },
+      "required": [
+        "subject_kind",
+        "subject_id",
+        "issuer_kind",
+        "issuer_id",
+        "actions",
+        "resource_kind",
+        "delegable_actions",
+        "max_depth",
+        "not_before_micros",
+        "policy_version"
+      ],
+      "unique_indexes": [],
+      "relationships": {},
+      "retention": "revocation"
+    },
+    {
+      "kind": "core.session",
+      "fields": {
+        "token_digest": "bytes",
+        "issued_at_micros": "timestamp_micros",
+        "expires_at_micros": "timestamp_micros",
+        "revoked_at_micros": "timestamp_micros"
+      },
+      "required": [
+        "token_digest",
+        "issued_at_micros",
+        "expires_at_micros"
+      ],
+      "unique_indexes": [
+        [
+          "token_digest"
+        ]
+      ],
+      "relationships": {
+        "user": "core.user"
+      },
+      "retention": "revocation"
+    },
+    {
+      "kind": "core.file",
+      "fields": {
+        "store_key": "text",
+        "content_digest": "bytes",
+        "media_type": "text",
+        "size_bytes": "integer"
+      },
+      "required": [
+        "store_key",
+        "content_digest",
+        "size_bytes"
+      ],
+      "unique_indexes": [
+        [
+          "store_key"
+        ]
+      ],
+      "relationships": {
+        "owner": "core.user",
+        "store": "core.store"
+      },
+      "retention": "authority"
+    },
+    {
+      "kind": "core.workload",
+      "fields": {
+        "workload_name": "text",
+        "runtime": "text",
+        "desired_state": "text",
+        "desired_generation": "integer",
+        "observed_state": "text",
+        "observed_generation": "integer"
+      },
+      "required": [
+        "workload_name",
+        "runtime",
+        "desired_state",
+        "desired_generation"
+      ],
+      "unique_indexes": [
+        [
+          "program",
+          "workload_name"
+        ]
+      ],
+      "relationships": {
+        "program": "core.program",
+        "creature": "core.creature"
+      },
+      "retention": "authority"
+    },
+    {
+      "kind": "core.workload_operation",
+      "fields": {
+        "operation": "text",
+        "idempotency_key": "text",
+        "state": "text",
+        "requested_at_micros": "timestamp_micros",
+        "completed_at_micros": "timestamp_micros"
+      },
+      "required": [
+        "operation",
+        "idempotency_key",
+        "state",
+        "requested_at_micros"
+      ],
+      "unique_indexes": [
+        [
+          "idempotency_key"
+        ]
+      ],
+      "relationships": {
+        "workload": "core.workload"
+      },
+      "retention": "operational"
+    },
+    {
+      "kind": "core.node",
+      "fields": {
+        "name": "text",
+        "region": "text",
+        "status": "text",
+        "descriptor_digest": "bytes"
+      },
+      "required": [
+        "name",
+        "status",
+        "descriptor_digest"
+      ],
+      "unique_indexes": [
+        [
+          "name"
+        ]
+      ],
+      "relationships": {},
+      "retention": "authority"
+    },
+    {
+      "kind": "core.federation_peer",
+      "fields": {
+        "origin": "text",
+        "endpoint": "text",
+        "trust_state": "text",
+        "descriptor_digest": "bytes"
+      },
+      "required": [
+        "origin",
+        "endpoint",
+        "trust_state",
+        "descriptor_digest"
+      ],
+      "unique_indexes": [
+        [
+          "origin"
+        ]
+      ],
+      "relationships": {},
+      "retention": "authority"
+    },
+    {
+      "kind": "core.identity_key",
+      "fields": {
+        "subject_kind": "text",
+        "subject_id": "capsule_id",
+        "purpose": "text",
+        "epoch": "integer",
+        "key_id": "text",
+        "public_key": "bytes",
+        "not_before_micros": "timestamp_micros",
+        "expires_at_micros": "timestamp_micros",
+        "retired_at_micros": "timestamp_micros",
+        "revoked_at_micros": "timestamp_micros",
+        "legacy": "bool"
+      },
+      "required": [
+        "subject_kind",
+        "subject_id",
+        "purpose",
+        "epoch",
+        "key_id",
+        "public_key",
+        "not_before_micros",
+        "legacy"
+      ],
+      "unique_indexes": [
+        [
+          "key_id"
+        ],
+        [
+          "subject_kind",
+          "subject_id",
+          "purpose",
+          "epoch"
+        ]
+      ],
+      "relationships": {},
+      "retention": "revocation"
+    },
+    {
+      "kind": "finance.wallet",
+      "fields": {
+        "currency": "text",
+        "balance_minor": "integer",
+        "scale": "integer",
+        "state": "text"
+      },
+      "required": [
+        "currency",
+        "balance_minor",
+        "scale",
+        "state"
+      ],
+      "unique_indexes": [
+        [
+          "creature",
+          "currency"
+        ]
+      ],
+      "relationships": {
+        "creature": "core.creature"
+      },
+      "retention": "financial_permanent"
+    },
+    {
+      "kind": "finance.ledger_entry",
+      "fields": {
+        "entry_group_id": "capsule_id",
+        "sequence": "integer",
+        "amount_minor": "integer",
+        "currency": "text",
+        "scale": "integer",
+        "direction": "text",
+        "idempotency_key": "text",
+        "occurred_at_micros": "timestamp_micros"
+      },
+      "required": [
+        "entry_group_id",
+        "sequence",
+        "amount_minor",
+        "currency",
+        "scale",
+        "direction",
+        "idempotency_key",
+        "occurred_at_micros"
+      ],
+      "unique_indexes": [
+        [
+          "idempotency_key"
+        ],
+        [
+          "entry_group_id",
+          "sequence"
+        ]
+      ],
+      "relationships": {
+        "wallet": "finance.wallet"
+      },
+      "retention": "financial_permanent"
+    },
+    {
+      "kind": "finance.pricing_policy",
+      "fields": {
+        "version": "integer",
+        "currency": "text",
+        "scale": "integer",
+        "rules": "bytes",
+        "effective_at_micros": "timestamp_micros"
+      },
+      "required": [
+        "version",
+        "currency",
+        "scale",
+        "rules",
+        "effective_at_micros"
+      ],
+      "unique_indexes": [
+        [
+          "version"
+        ]
+      ],
+      "relationships": {},
+      "retention": "financial_permanent"
+    },
+    {
+      "kind": "finance.usage_record",
+      "fields": {
+        "metric": "text",
+        "quantity": "integer",
+        "interval_start_micros": "timestamp_micros",
+        "interval_end_micros": "timestamp_micros",
+        "idempotency_key": "text"
+      },
+      "required": [
+        "metric",
+        "quantity",
+        "interval_start_micros",
+        "interval_end_micros",
+        "idempotency_key"
+      ],
+      "unique_indexes": [
+        [
+          "idempotency_key"
+        ]
+      ],
+      "relationships": {
+        "workload": "core.workload"
+      },
+      "retention": "financial_permanent"
+    },
+    {
+      "kind": "core.module_installation",
+      "fields": {
+        "module_name": "text",
+        "module_kind": "text",
+        "version": "text",
+        "artifact_digest": "bytes",
+        "state": "text",
+        "routing_generation": "integer"
+      },
+      "required": [
+        "module_name",
+        "module_kind",
+        "version",
+        "artifact_digest",
+        "state",
+        "routing_generation"
+      ],
+      "unique_indexes": [
+        [
+          "module_name",
+          "version"
+        ]
+      ],
+      "relationships": {},
+      "retention": "authority"
+    },
+    {
+      "kind": "core.guest_database_binding",
+      "fields": {
+        "provider_id": "text",
+        "database_name": "text",
+        "role_name": "text",
+        "generation": "integer",
+        "schema_catalog_revision": "integer",
+        "status": "text"
+      },
+      "required": [
+        "provider_id",
+        "database_name",
+        "role_name",
+        "generation",
+        "schema_catalog_revision",
+        "status"
+      ],
+      "unique_indexes": [
+        [
+          "creature"
+        ],
+        [
+          "provider_id",
+          "database_name"
+        ],
+        [
+          "provider_id",
+          "role_name"
+        ]
+      ],
+      "relationships": {
+        "creature": "core.creature"
+      },
+      "retention": "authority"
+    },
+    {
+      "kind": "core.guest_schema_definition",
+      "fields": {
+        "schema_name": "text",
+        "schema_version": "integer",
+        "definition": "bytes",
+        "status": "text"
+      },
+      "required": [
+        "schema_name",
+        "schema_version",
+        "definition",
+        "status"
+      ],
+      "unique_indexes": [
+        [
+          "creature",
+          "schema_name",
+          "schema_version"
+        ]
+      ],
+      "relationships": {
+        "creature": "core.creature",
+        "binding": "core.guest_database_binding"
+      },
+      "retention": "authority"
+    },
+    {
+      "kind": "core.entity",
+      "fields": {
+        "entity_name": "text",
+        "entity_type": "text",
+        "image_name": "text"
+      },
+      "required": [
+        "entity_name",
+        "entity_type"
+      ],
+      "unique_indexes": [
+        [
+          "program",
+          "entity_name"
+        ]
+      ],
+      "relationships": {
+        "program": "core.program"
+      },
+      "retention": "authority"
+    },
+    {
+      "kind": "core.user_metadata",
+      "fields": {
+        "document": "document",
+        "document_path": "text",
+        "entry_count": "integer",
+        "content_digest": "bytes"
+      },
+      "required": [
+        "document",
+        "document_path",
+        "entry_count",
+        "content_digest"
+      ],
+      "unique_indexes": [
+        [
+          "creature"
+        ]
+      ],
+      "relationships": {
+        "creature": "core.creature"
+      },
+      "retention": "authority"
+    },
+    {
+      "kind": "core.creature_metadata",
+      "fields": {
+        "document": "document",
+        "document_path": "text",
+        "entry_count": "integer",
+        "content_digest": "bytes"
+      },
+      "required": [
+        "document",
+        "document_path",
+        "entry_count",
+        "content_digest"
+      ],
+      "unique_indexes": [
+        [
+          "creature"
+        ]
+      ],
+      "relationships": {
+        "creature": "core.creature"
+      },
+      "retention": "authority"
+    },
+    {
+      "kind": "core.store_metadata",
+      "fields": {
+        "document": "document",
+        "document_path": "text",
+        "entry_count": "integer",
+        "content_digest": "bytes"
+      },
+      "required": [
+        "document",
+        "document_path",
+        "entry_count",
+        "content_digest"
+      ],
+      "unique_indexes": [
+        [
+          "store"
+        ]
+      ],
+      "relationships": {
+        "store": "core.store"
+      },
+      "retention": "authority"
+    },
+    {
+      "kind": "core.program_metadata",
+      "fields": {
+        "document": "document",
+        "document_path": "text",
+        "entry_count": "integer",
+        "content_digest": "bytes"
+      },
+      "required": [
+        "document",
+        "document_path",
+        "entry_count",
+        "content_digest"
+      ],
+      "unique_indexes": [
+        [
+          "program"
+        ]
+      ],
+      "relationships": {
+        "program": "core.program"
+      },
+      "retention": "authority"
+    },
+    {
+      "kind": "finance.legacy_record",
+      "fields": {
+        "record_family": "text",
+        "legacy_key": "text",
+        "document": "document",
+        "entry_count": "integer",
+        "content_digest": "bytes",
+        "currency": "text",
+        "scale": "integer"
+      },
+      "required": [
+        "record_family",
+        "legacy_key",
+        "document",
+        "entry_count",
+        "content_digest",
+        "currency",
+        "scale"
+      ],
+      "unique_indexes": [
+        [
+          "record_family",
+          "legacy_key"
+        ]
+      ],
+      "relationships": {},
+      "retention": "financial_permanent"
+    },
+    {
+      "kind": "core.creature_type",
+      "fields": {
+        "type_name": "text",
+        "document": "document",
+        "document_path": "text",
+        "entry_count": "integer",
+        "content_digest": "bytes"
+      },
+      "required": [
+        "type_name",
+        "document",
+        "document_path",
+        "entry_count",
+        "content_digest"
+      ],
+      "unique_indexes": [
+        [
+          "type_name"
+        ]
+      ],
+      "relationships": {},
+      "retention": "authority"
+    },
+    {
+      "kind": "core.gateway_route",
+      "fields": {
+        "path": "text",
+        "entity_name": "text",
+        "runtime": "text"
+      },
+      "required": [
+        "path",
+        "entity_name",
+        "runtime"
+      ],
+      "unique_indexes": [
+        [
+          "creature",
+          "path"
+        ]
+      ],
+      "relationships": {
+        "creature": "core.creature",
+        "program": "core.program"
+      },
+      "retention": "authority"
+    },
+    {
+      "kind": "core.program_alarm",
+      "fields": {
+        "fire_at_micros": "timestamp_micros",
+        "entity_name": "text",
+        "data": "text"
+      },
+      "required": [
+        "fire_at_micros",
+        "entity_name",
+        "data"
+      ],
+      "unique_indexes": [
+        [
+          "program"
+        ]
+      ],
+      "relationships": {
+        "program": "core.program",
+        "store": "core.store"
+      },
+      "retention": "authority"
+    },
+    {
+      "kind": "core.vm_resource_store",
+      "fields": {
+        "name": "text",
+        "machine_ref": "text",
+        "document": "document",
+        "document_path": "text",
+        "entry_count": "integer",
+        "content_digest": "bytes"
+      },
+      "required": [
+        "name",
+        "machine_ref",
+        "document",
+        "document_path",
+        "entry_count",
+        "content_digest"
+      ],
+      "unique_indexes": [],
+      "relationships": {
+        "creature": "core.creature"
+      },
+      "retention": "authority"
+    },
+    {
+      "kind": "core.vm_resource_entity",
+      "fields": {
+        "entity_type": "text",
+        "entity_ref": "text",
+        "document": "document",
+        "document_path": "text",
+        "entry_count": "integer",
+        "content_digest": "bytes",
+        "artifact_present": "bool",
+        "store_key": "text",
+        "artifact_digest": "bytes",
+        "size_bytes": "integer",
+        "media_type": "text"
+      },
+      "required": [
+        "entity_type",
+        "entity_ref",
+        "document",
+        "document_path",
+        "entry_count",
+        "content_digest",
+        "artifact_present"
+      ],
+      "unique_indexes": [
+        [
+          "resource_store",
+          "entity_type",
+          "entity_ref"
+        ]
+      ],
+      "relationships": {
+        "resource_store": "core.vm_resource_store"
+      },
+      "retention": "authority"
+    },
+    {
+      "kind": "core.entity_config",
+      "fields": {
+        "document": "document",
+        "document_path": "text",
+        "entry_count": "integer",
+        "content_digest": "bytes"
+      },
+      "required": [
+        "document",
+        "document_path",
+        "entry_count",
+        "content_digest"
+      ],
+      "unique_indexes": [
+        [
+          "entity"
+        ]
+      ],
+      "relationships": {
+        "entity": "core.entity"
+      },
+      "retention": "authority"
+    },
+    {
+      "kind": "core.entity_artifact",
+      "fields": {
+        "artifact_role": "text",
+        "artifact_present": "bool",
+        "store_key": "text",
+        "artifact_digest": "bytes",
+        "size_bytes": "integer",
+        "media_type": "text"
+      },
+      "required": [
+        "artifact_role",
+        "artifact_present"
+      ],
+      "unique_indexes": [
+        [
+          "entity",
+          "artifact_role"
+        ]
+      ],
+      "relationships": {
+        "entity": "core.entity"
+      },
+      "retention": "authority"
+    },
+    {
+      "kind": "core.creature_secret",
+      "fields": {
+        "name": "text",
+        "algorithm": "text",
+        "ciphertext": "bytes",
+        "key_fingerprint": "bytes"
+      },
+      "required": [
+        "name",
+        "algorithm",
+        "ciphertext",
+        "key_fingerprint"
+      ],
+      "unique_indexes": [
+        [
+          "creature",
+          "name"
+        ]
+      ],
+      "relationships": {
+        "creature": "core.creature"
+      },
+      "retention": "authority"
+    },
+    {
+      "kind": "core.secret_grant",
+      "fields": {
+        "grantee_ref": "text",
+        "expires_at_micros": "timestamp_micros"
+      },
+      "required": [
+        "grantee_ref",
+        "expires_at_micros"
+      ],
+      "unique_indexes": [
+        [
+          "secret",
+          "grantee_ref"
+        ]
+      ],
+      "relationships": {
+        "secret": "core.creature_secret",
+        "grantee": "core.creature"
+      },
+      "retention": "revocation"
+    },
+    {
+      "kind": "core.bridge_grant",
+      "fields": {
+        "token_digest": "bytes",
+        "minted_by_ref": "text",
+        "expires_at_micros": "timestamp_micros",
+        "document": "document",
+        "document_path": "text",
+        "entry_count": "integer",
+        "content_digest": "bytes"
+      },
+      "required": [
+        "token_digest",
+        "minted_by_ref",
+        "expires_at_micros",
+        "document",
+        "document_path",
+        "entry_count",
+        "content_digest"
+      ],
+      "unique_indexes": [
+        [
+          "token_digest"
+        ]
+      ],
+      "relationships": {},
+      "retention": "revocation"
+    },
+    {
+      "kind": "core.bridge_topic",
+      "fields": {
+        "topic": "text",
+        "owner_ref": "text"
+      },
+      "required": [
+        "topic",
+        "owner_ref"
+      ],
+      "unique_indexes": [
+        [
+          "topic"
+        ]
+      ],
+      "relationships": {},
+      "retention": "authority"
+    },
+    {
+      "kind": "core.legacy_identity",
+      "fields": {
+        "family": "text",
+        "legacy_id": "text",
+        "target_kind": "text",
+        "target_id": "capsule_id"
+      },
+      "required": [
+        "family",
+        "legacy_id",
+        "target_kind",
+        "target_id"
+      ],
+      "unique_indexes": [
+        [
+          "family",
+          "legacy_id"
+        ],
+        [
+          "target_kind",
+          "target_id"
+        ]
+      ],
+      "relationships": {},
+      "retention": "authority"
+    },
+    {
+      "kind": "core.counter",
+      "fields": {
+        "key": "text",
+        "value": "integer"
+      },
+      "required": [
+        "key",
+        "value"
+      ],
+      "unique_indexes": [
+        [
+          "key"
+        ]
+      ],
+      "relationships": {},
+      "retention": "operational",
+      "key_family": "Counter"
+    },
+    {
+      "kind": "core.marker",
+      "fields": {
+        "key": "text",
+        "value": "text"
+      },
+      "required": [
+        "key",
+        "value"
+      ],
+      "unique_indexes": [
+        [
+          "key"
+        ]
+      ],
+      "relationships": {},
+      "retention": "operational",
+      "key_family": "Marker"
+    },
+    {
+      "kind": "core.finance_account",
+      "fields": {
+        "key": "text",
+        "held_minor": "integer",
+        "debt_minor": "integer",
+        "withdrawable_minor": "integer",
+        "payout_held_minor": "integer",
+        "earned_minor": "integer",
+        "spent_minor": "integer",
+        "pool_ref": "text"
+      },
+      "required": [
+        "key"
+      ],
+      "unique_indexes": [
+        [
+          "key"
+        ]
+      ],
+      "relationships": {},
+      "retention": "operational",
+      "key_family": "FinanceAccount"
+    },
+    {
+      "kind": "core.finance_hold",
+      "fields": {
+        "key": "text",
+        "payer_ref": "text",
+        "created_millis": "integer",
+        "document": "document"
+      },
+      "required": [
+        "key",
+        "payer_ref",
+        "created_millis",
+        "document"
+      ],
+      "unique_indexes": [
+        [
+          "key"
+        ]
+      ],
+      "relationships": {},
+      "retention": "operational",
+      "key_family": "FinanceHold",
+      "range_indexes": [
+        [
+          "payer_ref",
+          "created_millis"
+        ]
+      ]
+    },
+    {
+      "kind": "core.finance_pool",
+      "fields": {
+        "key": "text",
+        "payer_ref": "text",
+        "document": "document"
+      },
+      "required": [
+        "key",
+        "document"
+      ],
+      "unique_indexes": [
+        [
+          "key"
+        ]
+      ],
+      "relationships": {},
+      "retention": "operational",
+      "key_family": "FinancePool",
+      "range_indexes": [
+        [
+          "payer_ref"
+        ]
+      ]
+    },
+    {
+      "kind": "core.finance_pool_reservation",
+      "fields": {
+        "key": "text",
+        "pool_ref": "text",
+        "document": "document"
+      },
+      "required": [
+        "key",
+        "document"
+      ],
+      "unique_indexes": [
+        [
+          "key"
+        ]
+      ],
+      "relationships": {},
+      "retention": "operational",
+      "key_family": "FinancePoolReservation",
+      "range_indexes": [
+        [
+          "pool_ref"
+        ]
+      ]
+    },
+    {
+      "kind": "core.finance_live_debit",
+      "fields": {
+        "key": "text",
+        "document": "document"
+      },
+      "required": [
+        "key",
+        "document"
+      ],
+      "unique_indexes": [
+        [
+          "key"
+        ]
+      ],
+      "relationships": {},
+      "retention": "operational",
+      "key_family": "FinanceLiveDebit"
+    },
+    {
+      "kind": "core.finance_project_budget",
+      "fields": {
+        "key": "text",
+        "document": "document"
+      },
+      "required": [
+        "key",
+        "document"
+      ],
+      "unique_indexes": [
+        [
+          "key"
+        ]
+      ],
+      "relationships": {},
+      "retention": "operational",
+      "key_family": "FinanceProjectBudget"
+    },
+    {
+      "kind": "core.finance_payout",
+      "fields": {
+        "key": "text",
+        "user_ref": "text",
+        "created_millis": "integer",
+        "document": "document"
+      },
+      "required": [
+        "key",
+        "user_ref",
+        "created_millis",
+        "document"
+      ],
+      "unique_indexes": [
+        [
+          "key"
+        ]
+      ],
+      "relationships": {},
+      "retention": "operational",
+      "key_family": "FinancePayout",
+      "range_indexes": [
+        [
+          "user_ref",
+          "created_millis"
+        ]
+      ]
+    },
+    {
+      "kind": "core.finance_journal",
+      "fields": {
+        "key": "text",
+        "entry_kind": "text",
+        "hold_ref": "text",
+        "payer_ref": "text",
+        "created_millis": "integer",
+        "document": "document"
+      },
+      "required": [
+        "key",
+        "entry_kind",
+        "created_millis",
+        "document"
+      ],
+      "unique_indexes": [
+        [
+          "key"
+        ]
+      ],
+      "relationships": {},
+      "retention": "operational",
+      "key_family": "FinanceJournal"
+    },
+    {
+      "kind": "core.finance_journal_participant",
+      "fields": {
+        "journal_ref": "text",
+        "participant_ref": "text",
+        "created_millis": "integer"
+      },
+      "required": [
+        "journal_ref",
+        "participant_ref",
+        "created_millis"
+      ],
+      "unique_indexes": [
+        [
+          "journal_ref",
+          "participant_ref"
+        ]
+      ],
+      "relationships": {},
+      "retention": "operational",
+      "range_indexes": [
+        [
+          "participant_ref",
+          "created_millis"
+        ]
+      ]
+    },
+    {
+      "kind": "core.billing_catalog",
+      "fields": {
+        "key": "text",
+        "document": "document"
+      },
+      "required": [
+        "key",
+        "document"
+      ],
+      "unique_indexes": [
+        [
+          "key"
+        ]
+      ],
+      "relationships": {},
+      "retention": "operational",
+      "key_family": "BillingCatalog"
+    },
+    {
+      "kind": "core.billing_quote",
+      "fields": {
+        "key": "text",
+        "document": "document"
+      },
+      "required": [
+        "key",
+        "document"
+      ],
+      "unique_indexes": [
+        [
+          "key"
+        ]
+      ],
+      "relationships": {},
+      "retention": "operational",
+      "key_family": "BillingQuote"
+    },
+    {
+      "kind": "core.namespace_document",
+      "fields": {
+        "key": "text",
+        "document": "document"
+      },
+      "required": [
+        "key",
+        "document"
+      ],
+      "unique_indexes": [
+        [
+          "key"
+        ]
+      ],
+      "relationships": {},
+      "retention": "operational",
+      "key_family": "NamespaceDocument"
+    },
+    {
+      "kind": "core.user_email",
+      "fields": {
+        "key": "text",
+        "user_ref": "text"
+      },
+      "required": [
+        "key",
+        "user_ref"
+      ],
+      "unique_indexes": [
+        [
+          "key"
+        ],
+        [
+          "user_ref"
+        ]
+      ],
+      "relationships": {},
+      "retention": "operational",
+      "key_family": "UserEmail"
+    },
+    {
+      "kind": "core.replay_nonce",
+      "fields": {
+        "key": "text",
+        "key_ref": "text",
+        "retain_until_millis": "integer"
+      },
+      "required": [
+        "key",
+        "key_ref",
+        "retain_until_millis"
+      ],
+      "unique_indexes": [
+        [
+          "key"
+        ]
+      ],
+      "relationships": {},
+      "retention": "operational",
+      "key_family": "ReplayNonce",
+      "range_indexes": [
+        [
+          "retain_until_millis"
+        ]
+      ]
+    },
+    {
+      "kind": "core.identity_challenge",
+      "fields": {
+        "key": "text",
+        "subject": "text",
+        "audience": "text",
+        "expires_at_millis": "integer"
+      },
+      "required": [
+        "key",
+        "subject",
+        "audience",
+        "expires_at_millis"
+      ],
+      "unique_indexes": [
+        [
+          "key"
+        ]
+      ],
+      "relationships": {},
+      "retention": "operational",
+      "key_family": "IdentityChallenge",
+      "range_indexes": [
+        [
+          "expires_at_millis"
+        ]
+      ]
+    },
+    {
+      "kind": "core.public_idempotency",
+      "fields": {
+        "key": "text",
+        "subject": "text",
+        "request_key": "text",
+        "digest": "bytes",
+        "claimed_at_millis": "integer",
+        "response": "bytes",
+        "completed": "bool"
+      },
+      "required": [
+        "key",
+        "subject",
+        "request_key",
+        "digest",
+        "claimed_at_millis",
+        "completed"
+      ],
+      "unique_indexes": [
+        [
+          "key"
+        ]
+      ],
+      "relationships": {},
+      "retention": "operational",
+      "key_family": "PublicIdempotency"
+    },
+    {
+      "kind": "core.chain",
+      "fields": {
+        "key": "text",
+        "store_id": "text",
+        "status": "text"
+      },
+      "required": [
+        "key"
+      ],
+      "unique_indexes": [
+        [
+          "key"
+        ]
+      ],
+      "relationships": {},
+      "retention": "operational",
+      "key_family": "Chain"
+    },
+    {
+      "kind": "core.chain_shard",
+      "fields": {
+        "key": "text",
+        "work_chain_id": "text",
+        "shard_name": "text"
+      },
+      "required": [
+        "key"
+      ],
+      "unique_indexes": [
+        [
+          "key"
+        ]
+      ],
+      "relationships": {},
+      "retention": "operational",
+      "key_family": "ChainShard"
+    },
+    {
+      "kind": "core.session_token",
+      "fields": {
+        "key": "text",
+        "user_ref": "text"
+      },
+      "required": [
+        "key",
+        "user_ref"
+      ],
+      "unique_indexes": [
+        [
+          "key"
+        ]
+      ],
+      "relationships": {},
+      "retention": "operational",
+      "key_family": "SessionToken",
+      "range_indexes": [
+        [
+          "user_ref"
+        ]
+      ]
+    },
+    {
+      "kind": "core.vm_instance",
+      "fields": {
+        "key": "text",
+        "program_ref": "text",
+        "entity_ref": "text",
+        "owner_program": "text",
+        "status": "text",
+        "started_at_millis": "integer",
+        "distributed": "bool",
+        "billing": "document"
+      },
+      "required": [
+        "key"
+      ],
+      "unique_indexes": [
+        [
+          "key"
+        ]
+      ],
+      "relationships": {},
+      "retention": "operational",
+      "key_family": "VmInstance",
+      "range_indexes": [
+        [
+          "program_ref",
+          "entity_ref"
+        ],
+        [
+          "status"
+        ]
+      ]
+    },
+    {
+      "kind": "core.vm_distribution",
+      "fields": {
+        "key": "text",
+        "label": "text"
+      },
+      "required": [
+        "key",
+        "label"
+      ],
+      "unique_indexes": [
+        [
+          "key"
+        ]
+      ],
+      "relationships": {},
+      "retention": "operational",
+      "key_family": "VmDistribution"
+    },
+    {
+      "kind": "core.vm_terminal",
+      "fields": {
+        "key": "text",
+        "program_ref": "text",
+        "vm_ref": "text",
+        "user_ref": "text"
+      },
+      "required": [
+        "key",
+        "program_ref",
+        "vm_ref",
+        "user_ref"
+      ],
+      "unique_indexes": [
+        [
+          "key"
+        ]
+      ],
+      "relationships": {},
+      "retention": "operational",
+      "key_family": "VmTerminal"
+    },
+    {
+      "kind": "core.token_lock",
+      "fields": {
+        "key": "text",
+        "owner_ref": "text",
+        "lock_ref": "text",
+        "document": "document"
+      },
+      "required": [
+        "key",
+        "owner_ref",
+        "lock_ref",
+        "document"
+      ],
+      "unique_indexes": [
+        [
+          "key"
+        ]
+      ],
+      "relationships": {},
+      "retention": "operational",
+      "key_family": "TokenLock",
+      "range_indexes": [
+        [
+          "owner_ref"
+        ]
+      ]
+    },
+    {
+      "kind": "core.secret_value",
+      "fields": {
+        "key": "text",
+        "owner_ref": "text",
+        "name": "text",
+        "blob": "text"
+      },
+      "required": [
+        "key",
+        "owner_ref",
+        "name",
+        "blob"
+      ],
+      "unique_indexes": [
+        [
+          "key"
+        ]
+      ],
+      "relationships": {},
+      "retention": "operational",
+      "key_family": "SecretValue",
+      "range_indexes": [
+        [
+          "owner_ref",
+          "name"
+        ]
+      ]
+    },
+    {
+      "kind": "core.secret_access",
+      "fields": {
+        "key": "text",
+        "owner_ref": "text",
+        "name": "text",
+        "grantee_ref": "text",
+        "expires_at_millis": "integer"
+      },
+      "required": [
+        "key",
+        "owner_ref",
+        "name",
+        "grantee_ref",
+        "expires_at_millis"
+      ],
+      "unique_indexes": [
+        [
+          "key"
+        ]
+      ],
+      "relationships": {},
+      "retention": "operational",
+      "key_family": "SecretAccess",
+      "range_indexes": [
+        [
+          "grantee_ref",
+          "owner_ref",
+          "name"
+        ]
+      ]
+    }
   ]
 }

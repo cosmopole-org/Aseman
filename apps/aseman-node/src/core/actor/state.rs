@@ -4,7 +4,7 @@ use std::sync::{Arc, Mutex};
 
 use crate::models::info::IInfo;
 use crate::models::state::IState;
-use crate::models::transaction::ITrx;
+use crate::core::trx::Trx;
 
 /// Concrete state carrier handed to action closures.
 ///
@@ -17,14 +17,14 @@ pub struct State {
 
 struct Inner {
     info: Option<Arc<dyn IInfo>>,
-    trx: Option<Arc<dyn ITrx>>,
+    trx: Option<Arc<Trx>>,
     src: String,
 }
 
 impl State {
     /// Build a new `State` with all three fields. Pass `None` to skip a
     /// field, equivalent to the variadic `NewState` arg patterns.
-    pub fn new(info: Option<Arc<dyn IInfo>>, trx: Option<Arc<dyn ITrx>>, src: &str) -> State {
+    pub fn new(info: Option<Arc<dyn IInfo>>, trx: Option<Arc<Trx>>, src: &str) -> State {
         State {
             inner: Mutex::new(Inner {
                 info,
@@ -54,17 +54,13 @@ impl IState for State {
             .expect("State.info accessed before being set")
     }
 
-    fn trx(&self) -> Arc<dyn ITrx> {
+    fn trx(&self) -> Arc<Trx> {
         self.inner
             .lock()
             .unwrap()
             .trx
             .clone()
             .expect("State.trx accessed before being set")
-    }
-
-    fn set_trx(&self, trx: Arc<dyn ITrx>) {
-        self.inner.lock().unwrap().trx = Some(trx);
     }
 
     fn source(&self) -> String {

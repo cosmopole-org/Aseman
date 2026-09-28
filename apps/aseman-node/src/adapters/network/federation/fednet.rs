@@ -23,7 +23,7 @@ use crate::models::packet::{OriginPacket, build_error_json};
 use crate::models::ports::ISignaler;
 use crate::models::ports::IStorage;
 use crate::models::ports::{FedRequestCallback, IFederation};
-use crate::models::transaction::ITrx;
+use crate::core::trx::Trx;
 use aseman_network_legacy::TlsConfig;
 
 use super::netserver::{FedApi, Socket, Tcp};
@@ -142,7 +142,7 @@ impl FedNet {
         let key = format!("NodeIpToHost::{}", ip);
         self.app.modify_state(
             true,
-            Box::new(move |trx: &dyn ITrx| {
+            Box::new(move |trx: &Trx| {
                 *host_clone.lock().unwrap() = trx.get_link(&key);
                 Ok(())
             }),
@@ -240,7 +240,7 @@ impl FedNet {
         let member_id = member_id.to_string();
         self.app.modify_state(
             false,
-            Box::new(move |trx: &dyn ITrx| {
+            Box::new(move |trx: &Trx| {
                 let ports = crate::api::model::store_ports::MembershipPorts { trx };
                 let outcome = match grant {
                     Some(permissions) => {
@@ -259,7 +259,7 @@ impl FedNet {
                 if let Ok(tc) = serde_json::from_slice::<stores::Update>(data) {
                     self.app.modify_state(
                         false,
-                        Box::new(move |trx: &dyn ITrx| {
+                        Box::new(move |trx: &Trx| {
                             // A mirrored update of a store this node does not hold is
                             // ignored rather than recreated without a creator.
                             let stores = crate::api::model::store_ports::StorePorts { trx };
@@ -285,7 +285,7 @@ impl FedNet {
                     let id = tc.store.id;
                     self.app.modify_state(
                         false,
-                        Box::new(move |trx: &dyn ITrx| {
+                        Box::new(move |trx: &Trx| {
                             // LD-20: the store is really removed; the old key never existed.
                             let stores = crate::api::model::store_ports::StorePorts { trx };
                             aseman_ports::StoreDirectory::delete_store(&stores, &id)
@@ -316,7 +316,7 @@ impl FedNet {
                     let payload = serde_json::to_value(&tc.metadata).unwrap_or(Value::Null);
                     self.app.modify_state(
                         false,
-                        Box::new(move |trx: &dyn ITrx| {
+                        Box::new(move |trx: &Trx| {
                             trx.put_json(&key_, "meta", &payload, false)?;
                             Ok(())
                         }),

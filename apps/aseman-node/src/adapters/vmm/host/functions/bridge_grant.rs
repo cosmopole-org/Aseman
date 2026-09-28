@@ -25,7 +25,7 @@ use crate::adapters::gateway_subs;
 use crate::adapters::vmm::globals::with_global_app;
 use crate::adapters::vmm::prelude::*;
 use crate::api::actions::gateway::{bridge_grant_key, bridge_topic_owner_key, hash_bridge_token};
-use crate::models::transaction::ITrx;
+use crate::core::trx::Trx;
 
 /// Whether two programs belong to the same owner.
 ///
@@ -134,7 +134,7 @@ pub(crate) fn host_fn_register_bridge_token(caller_program_id: &str, input: &Jso
     let applied = with_global_app(|app| {
         app.modify_state(
             false,
-            Box::new(move |trx: &dyn ITrx| {
+            Box::new(move |trx: &Trx| {
                 // Claim each topic for this creature, refusing one another
                 // creature already owns.
                 for topic in &topics_for_trx {
@@ -199,7 +199,7 @@ pub(crate) fn host_fn_revoke_bridge_token(caller_program_id: &str, input: &JsonV
     with_global_app(|app| {
         app.modify_state(
             true,
-            Box::new(move |trx: &dyn ITrx| {
+            Box::new(move |trx: &Trx| {
                 if let Ok(grant) = trx.get_json(&key_read, "grant")
                     && let Some(id) = grant.get("creatureId").and_then(|v| v.as_str())
                 {
@@ -222,7 +222,7 @@ pub(crate) fn host_fn_revoke_bridge_token(caller_program_id: &str, input: &JsonV
     with_global_app(|app| {
         app.modify_state(
             false,
-            Box::new(move |trx: &dyn ITrx| {
+            Box::new(move |trx: &Trx| {
                 trx.del_json(&key, "grant");
                 Ok(())
             }),
@@ -250,7 +250,7 @@ pub(crate) fn host_fn_publish_update(caller_program_id: &str, input: &JsonValue)
     with_global_app(|app| {
         app.modify_state(
             true,
-            Box::new(move |trx: &dyn ITrx| {
+            Box::new(move |trx: &Trx| {
                 *owner_c.lock().unwrap() = trx.get_link(&owner_key);
                 Ok(())
             }),

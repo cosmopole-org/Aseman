@@ -13,7 +13,7 @@ use serde_json::Value;
 use crate::models::core::ICore;
 use crate::models::ports::IFederation;
 use crate::models::ports::{GlobalListener, Group, ISignaler, JoinListener, Listener};
-use crate::models::transaction::ITrx;
+use crate::core::trx::Trx;
 
 /// Concrete [`ISignaler`] implementation. Owns per-listener / per-group
 /// `DashMap`s and a coarse-grained `Mutex` matching `Signaler.lock` from Go.
@@ -81,7 +81,7 @@ impl Signaler {
         let store_id = store_id.to_string();
         self.app.modify_state(
             true,
-            Box::new(move |trx: &dyn ITrx| {
+            Box::new(move |trx: &Trx| {
                 // Membership goes through the store port (legacy adapter until cutover).
                 let ports = crate::api::model::store_ports::MembershipPorts { trx };
                 *out_clone.lock().unwrap() = aseman_ports::StoreAccess::members(&ports, &store_id)
@@ -104,7 +104,7 @@ impl Signaler {
         let user_id_owned = user_id.to_string();
         self.app.modify_state(
             true,
-            Box::new(move |trx: &dyn ITrx| {
+            Box::new(move |trx: &Trx| {
                 *slot_clone.lock().unwrap() = aseman_ports::CreatureDirectory::creature(
                     &crate::api::model::creature_ports::CreaturePorts { trx },
                     &user_id_owned,

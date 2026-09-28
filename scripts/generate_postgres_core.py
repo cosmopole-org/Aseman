@@ -105,6 +105,7 @@ def load() -> tuple[dict[str, object], list[dict[str, object]]]:
                 "required_fields": definition["required"],
                 "relationships": relationships,
                 "unique_indexes": definition["unique_indexes"],
+                "range_indexes": definition.get("range_indexes", []),
             }
         )
     if observed_relationships != set(policy):
@@ -234,6 +235,17 @@ def ddl(mapping: dict[str, object]) -> str:
             )
             lines.append(
                 f"CREATE UNIQUE INDEX IF NOT EXISTS {name} ON {SCHEMA}.{quoted(table)} ({columns}) WHERE NOT tombstone;"
+            )
+        # ADR 0036: range indexes, and every relation, serve model queries.
+        indexed = [list(fields) for fields in row["range_indexes"]]
+        indexed += [[name] for name in row["relationships"] if [name] not in indexed]
+        for fields in indexed:
+            columns = ", ".join(
+                quoted(row["field_columns"].get(field, field)) for field in fields
+            )
+            lines.append(
+                f"CREATE INDEX IF NOT EXISTS {constraint_name('ix', table, fields)} "
+                f"ON {SCHEMA}.{quoted(table)} ({columns}, id) WHERE NOT tombstone;"
             )
         lines.append(
             f"CREATE INDEX IF NOT EXISTS {constraint_name('ix', table, ['updated_at'])} "

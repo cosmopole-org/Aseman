@@ -11,7 +11,6 @@ use std::time::{Duration, SystemTime};
 
 use anyhow::{Result, anyhow};
 use aseman_config::AsemanConfig;
-use aseman_storage_rocksdb::{LegacyKvStore, LegacyKvWrite, RocksDbKvStore};
 use chrono::Utc;
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
@@ -46,7 +45,8 @@ pub struct Snapshot {
 
 /// Telemetry server state.
 pub struct TelemetryServer {
-    db: Arc<RocksDbKvStore>,
+    /// The last snapshot, reused for two seconds.
+    cached: Mutex<Option<Snapshot>>,
     started_at: SystemTime,
     origin: String,
     chain_port: u16,
@@ -63,26 +63,8 @@ pub struct TelemetryServer {
 
 /// Start telemetry from the composition root's validated configuration.
 pub fn start(config: &AsemanConfig) -> Result<()> {
-    let mut db_path = config.telemetry.database_path.clone();
-    if db_path.trim().is_empty() {
-        let root = if config.storage.root_path.trim().is_empty() {
-            "."
-        } else {
-            &config.storage.root_path
-        };
-        db_path = PathBuf::from(root)
-            .join("telemetry-rocks")
-            .to_string_lossy()
-            .into_owned();
-    }
-    fs::create_dir_all(&db_path).map_err(|e| anyhow!("mkdir telemetry db: {}", e))?;
-    let db = Arc::new(
-        RocksDbKvStore::open_default(std::path::Path::new(&db_path))
-            .map_err(|e| anyhow!("open telemetry db: {}", e))?,
-    );
-
     let server = Arc::new(TelemetryServer {
-        db,
+        cached: Mutex::new(None),
         started_at: SystemTime::now(),
         origin: config.node.origin.clone(),
         chain_port: config.network.legacy_consensus_port,
@@ -171,20 +153,15 @@ impl TelemetryServer {
     fn cached_or_collect(&self) -> Result<Snapshot> {
         let _guard = self.lock.lock().unwrap();
         // Cache check.
-        if let Ok(Some(bytes)) = self.db.get(b"latest_snapshot")
-            && let Ok(cached) = serde_json::from_slice::<Snapshot>(&bytes)
-            && let Ok(ts) = chrono::DateTime::parse_from_rfc3339(&cached.timestamp)
+        let mut cached = self.cached.lock().unwrap_or_else(|error| error.into_inner());
+        if let Some(snapshot) = cached.as_ref()
+            && let Ok(ts) = chrono::DateTime::parse_from_rfc3339(&snapshot.timestamp)
             && Utc::now().signed_duration_since(ts).num_milliseconds() < 2000
         {
-            return Ok(cached);
+            return Ok(snapshot.clone());
         }
         let snap = self.collect();
-        if let Ok(bytes) = serde_json::to_vec(&snap) {
-            let _ = self.db.write_batch(&[LegacyKvWrite::Put {
-                key: b"latest_snapshot".to_vec(),
-                value: bytes,
-            }]);
-        }
+        *cached = Some(snap.clone());
         Ok(snap)
     }
 

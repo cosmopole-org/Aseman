@@ -1,10 +1,12 @@
-//! Translation of `shell/api/model/session.go`.
+//! Legacy session tokens (ADR 0036): the `core.session_token` model, a minted token
+//! naming its user.
 
-use std::collections::HashMap;
-
+use anyhow::Result;
+use aseman_storage::Models;
+use aseman_storage::client::core::session_token;
 use serde::{Deserialize, Serialize};
 
-use crate::models::transaction::ITrx;
+use crate::core::trx::{Trx, failed};
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct Session {
@@ -15,28 +17,30 @@ pub struct Session {
 }
 
 impl Session {
-    pub fn type_() -> &'static str {
-        "Session"
+    /// Record the session.
+    pub fn save(&self, trx: &Trx) -> Result<()> {
+        trx.session_token()
+            .upsert(
+                session_token::by_key(self.id.clone()),
+                session_token::Create {
+                    key: self.id.clone(),
+                    user_ref: self.user_id.clone(),
+                },
+                session_token::update().user_ref(self.user_id.clone()),
+            )
+            .map(drop)
+            .map_err(failed)
     }
 
-    pub fn push(&self, trx: &dyn ITrx) {
-        let mut cols: HashMap<String, Vec<u8>> = HashMap::new();
-        cols.insert("userId".into(), self.user_id.as_bytes().to_vec());
-        trx.put_obj(Self::type_(), &self.id, cols);
-        trx.put_index(
-            Self::type_(),
-            "userId",
-            "id",
-            &self.user_id,
-            self.id.as_bytes().to_vec(),
-        );
-    }
-
-    pub fn pull(mut self, trx: &dyn ITrx) -> Session {
-        let m = trx.get_obj(Self::type_(), &self.id);
-        if let Some(v) = m.get("userId") {
-            self.user_id = String::from_utf8_lossy(v).into_owned();
-        }
-        self
+    /// The session a token names, if any.
+    pub fn find(trx: &Trx, token: &str) -> Result<Option<Session>> {
+        Ok(trx
+            .session_token()
+            .find_unique(session_token::by_key(token))
+            .map_err(failed)?
+            .map(|row| Session {
+                id: row.key,
+                user_id: row.user_ref,
+            }))
     }
 }

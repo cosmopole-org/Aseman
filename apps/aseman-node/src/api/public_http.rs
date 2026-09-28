@@ -57,7 +57,7 @@ use aseman_public_http::{
 };
 use aseman_public_service::ComposedPublicActionService;
 use aseman_realtime_durable::PostgresRealtime;
-use aseman_storage_postgres::PostgresCapsuleRepository;
+use aseman_capsule::auto::AutoCommit;
 use ring::signature::Ed25519KeyPair;
 use rustls::pki_types::{CertificateDer, PrivateKeyDer};
 use serde_json::{Value, json};
@@ -96,7 +96,7 @@ use crate::api::utils::future::async_once;
 use crate::api::utils::secret_crypto;
 use crate::api::workloads::{SystemClock, creature_subject};
 use crate::models::core::ICore;
-use crate::models::transaction::ITrx;
+use crate::core::trx::Trx;
 use base64::Engine;
 use chrono::Utc;
 
@@ -297,7 +297,7 @@ impl PublicActionExecutor {
     fn in_trx<R>(
         &self,
         readonly: bool,
-        mut f: impl FnMut(&dyn ITrx) -> anyhow::Result<R> + Send + 'static,
+        mut f: impl FnMut(&Trx) -> anyhow::Result<R> + Send + 'static,
     ) -> Result<R, PortError>
     where
         R: Send + 'static,
@@ -306,7 +306,7 @@ impl PublicActionExecutor {
         let holder = slot.clone();
         self.app.modify_state(
             readonly,
-            Box::new(move |trx: &dyn ITrx| {
+            Box::new(move |trx: &Trx| {
                 let value = f(trx).map_err(|error| anyhow!("{error}"))?;
                 *holder.lock().unwrap() = Some(value);
                 Ok(())
@@ -394,7 +394,7 @@ impl ActionExecutor for PublicActionExecutor {
                 self.in_trx(false, move |trx| {
                     let creatures = CreaturePorts { trx };
                     let opening_balance = resolve_initial_balance(trx, &input.typ)?;
-                    let id = app.tools().storage().gen_id(trx, "global");
+                    let id = app.tools().storage().gen_id("global");
                     let created = CreateCreature {
                         directory: &creatures,
                         balances: &creatures,
@@ -414,7 +414,7 @@ impl ActionExecutor for PublicActionExecutor {
                     .map_err(legacy_error)?;
                     let creature = creature_view(created.record, created.balance);
                     let session = Session {
-                        id: app.tools().storage().gen_id(trx, "global"),
+                        id: app.tools().storage().gen_id("global"),
                         user_id: creature.id.clone(),
                     };
                     session.push(trx);
@@ -646,7 +646,7 @@ impl ActionExecutor for PublicActionExecutor {
                     .execute(
                         &caller,
                         NewProgram {
-                            id: app.tools().storage().gen_id(trx, "global"),
+                            id: app.tools().storage().gen_id("global"),
                             machine_id: input.app_id.clone(),
                             runtime: input.runtime.clone(),
                             path: input.path.clone(),
@@ -1430,7 +1430,7 @@ impl SessionDirectory for LegacySessionDirectory {
         let holder = slot.clone();
         self.app.modify_state(
             true,
-            Box::new(move |trx: &dyn crate::models::transaction::ITrx| {
+            Box::new(move |trx: &crate::core::trx::Trx| {
                 let session = crate::api::model::session::Session {
                     id: token_owned.clone(),
                     ..Default::default()
@@ -1453,10 +1453,10 @@ impl SessionDirectory for LegacySessionDirectory {
     }
 }
 
-/// The composed service that keeps the shared PostgreSQL repository alive for the
-/// capsule-backed port adapters it owns.
+/// The composed service that keeps the node's storage alive for the capsule-backed
+/// port adapters it owns.
 struct ComposedPublicHttp {
-    _repository: &'static PostgresCapsuleRepository,
+    _repository: &'static AutoCommit,
     service: ComposedPublicActionService,
     realtime: Arc<PostgresRealtime>,
 }
@@ -1745,13 +1745,14 @@ pub(crate) fn start_public_http(config: &AsemanConfig, app: Arc<dyn ICore>) -> R
         Ok(listener) => listener,
         Err(_) => return Ok(()),
     };
-    // The repository backs every capsule port and lives for the node's lifetime.
-    // The capsule adapters borrow it, so one clone is leaked to 'static; the owned
-    // Arc serves the ReplayGuard/PublicActionIdempotency impls, which are on the type.
+    // The node's storage backs every capsule port and lives for the node's lifetime
+    // (one transaction per port call). The capsule adapters borrow it, so one handle
+    // is leaked to 'static; the owned Arc serves the replay and idempotency ports.
     let database_url = read_database_url(config)?;
-    let repository_owned = Arc::new(PostgresCapsuleRepository::connect(&database_url)?);
-    let repository: &'static PostgresCapsuleRepository =
-        &*Box::leak(Box::new(repository_owned.clone()));
+    let storage = crate::adapters::storage::installed()
+        .ok_or_else(|| anyhow!("the node's storage is not open"))?;
+    let repository_owned = Arc::new(AutoCommit(storage));
+    let repository: &'static AutoCommit = &*Box::leak(Box::new((*repository_owned).clone()));
 
     let registry = aseman_contracts::security::action_registry()
         .map_err(|error| anyhow!("cannot load the A402 registry: {error}"))?;

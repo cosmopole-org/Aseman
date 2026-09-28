@@ -27,7 +27,7 @@ use aseman_domain::identity::{Subject, SubjectKind};
 use aseman_ports::PolicyDecisionPort;
 use serde_json::Value as JsonValue;
 
-use crate::models::transaction::ITrx;
+use crate::core::trx::Trx;
 
 /// The legacy root identity (`/creatures/mint`'s hard-coded administrator).
 pub(crate) const LEGACY_ROOT: &str = "1@global";
@@ -457,7 +457,7 @@ pub(crate) fn authorize_shell_action(
 
 /// The lookups over one state transaction.
 pub(crate) struct TrxLookups<'a> {
-    pub(crate) trx: &'a dyn ITrx,
+    pub(crate) trx: &'a Trx,
 }
 
 impl AuthorityLookups for TrxLookups<'_> {

@@ -3,20 +3,15 @@
 use std::sync::Arc;
 
 use crate::models::info::IInfo;
-use crate::models::transaction::ITrx;
+use crate::core::trx::Trx;
 
 /// The mutable state handle threaded through every secured action.
 ///
-/// It bundles the authenticated caller [`IInfo`], the live storage
-/// [`ITrx`], and the request `source` string for audit/routing.
+/// It bundles the authenticated caller [`IInfo`], the action's storage
+/// [`Trx`], and the request `source` string for audit/routing.
 pub trait IState: Send + Sync {
     fn info(&self) -> Arc<dyn IInfo>;
-    fn trx(&self) -> Arc<dyn ITrx>;
-    #[expect(
-        dead_code,
-        reason = "RL-002: legacy model surface kept until its deletion gate"
-    )]
-    fn set_trx(&self, trx: Arc<dyn ITrx>);
+    fn trx(&self) -> Arc<Trx>;
     fn source(&self) -> String;
     fn set_source(&self, source: &str);
 }

@@ -815,7 +815,7 @@ pub(crate) fn host_fn_micro(op: &str, input: &JsonValue) -> String {
 /// signed routes (the app/operator perform those); a creature only ever reads.
 pub(crate) fn host_fn_secret_get(caller: &str, input: &JsonValue) -> String {
     use crate::api::utils::secret_crypto;
-    use crate::models::transaction::ITrx;
+    use crate::core::trx::Trx;
     use std::sync::{Arc, Mutex};
 
     let caller = caller.trim();
@@ -846,7 +846,7 @@ pub(crate) fn host_fn_secret_get(caller: &str, input: &JsonValue) -> String {
         let (sl, gl) = (secret_link.clone(), grant_link.clone());
         app.modify_state(
             true,
-            Box::new(move |trx: &dyn ITrx| {
+            Box::new(move |trx: &Trx| {
                 *b.lock().unwrap() = trx.get_link(&sl);
                 if need_grant {
                     *g.lock().unwrap() = trx.get_link(&gl);
@@ -892,7 +892,7 @@ pub(crate) fn host_fn_secret_get(caller: &str, input: &JsonValue) -> String {
 /// the agent backbone can discover the platform keys granted to it without a
 /// hardcoded owner. Same node-authoritative caller resolution as `secretGet`.
 pub(crate) fn host_fn_secret_list_granted(caller: &str) -> String {
-    use crate::models::transaction::ITrx;
+    use crate::core::trx::Trx;
     use std::sync::{Arc, Mutex};
 
     let caller = caller.trim().to_string();
@@ -905,7 +905,7 @@ pub(crate) fn host_fn_secret_list_granted(caller: &str) -> String {
         let caller_c = caller.clone();
         app.modify_state(
             true,
-            Box::new(move |trx: &dyn ITrx| {
+            Box::new(move |trx: &Trx| {
                 *slot_c.lock().unwrap() =
                     crate::api::actions::creature::list_granted_secrets(trx, &caller_c);
                 Ok(())
@@ -1102,7 +1102,7 @@ pub(crate) fn host_fn_node_identity(caller_program_id: &str, input: &JsonValue) 
 // Creature. Both the finance-control check and resource ownership stamping use
 // persisted host state; no owner value supplied by a guest is trusted.
 fn finance_program_binding(app: &Arc<dyn ICore>, program_id: &str) -> Option<(String, String)> {
-    use crate::models::transaction::ITrx;
+    use crate::core::trx::Trx;
 
     use std::sync::Mutex;
 
@@ -1114,7 +1114,7 @@ fn finance_program_binding(app: &Arc<dyn ICore>, program_id: &str) -> Option<(St
     let slot_c = slot.clone();
     app.modify_state(
         true,
-        Box::new(move |trx: &dyn ITrx| {
+        Box::new(move |trx: &Trx| {
             let program = (crate::api::model::program_ports::ProgramPorts { trx })
                 .program_or_empty(&program_id.clone());
             if program.machine_id.is_empty() {
@@ -1152,7 +1152,7 @@ fn finance_node_record(
     app: &Arc<dyn ICore>,
     node_owner_account_id: &str,
 ) -> Option<serde_json::Map<String, JsonValue>> {
-    use crate::models::transaction::ITrx;
+    use crate::core::trx::Trx;
     use std::sync::Mutex;
 
     let owner = node_owner_account_id.to_string();
@@ -1160,7 +1160,7 @@ fn finance_node_record(
     let slot_c = slot.clone();
     app.modify_state(
         true,
-        Box::new(move |trx: &dyn ITrx| {
+        Box::new(move |trx: &Trx| {
             if let Ok(nodes) = trx.get_json("Json::CreatureNamespace::billing", "nodes") {
                 *slot_c.lock().unwrap() = nodes.get(&owner).and_then(JsonValue::as_object).cloned();
             }
@@ -1435,7 +1435,7 @@ pub(crate) fn host_fn_publish_finance_quote(caller_program_id: &str, input: &Jso
 /// Atomically reserve an open hold for one authenticated metering run.
 pub(crate) fn host_fn_start_hold(caller_program_id: &str, input: &JsonValue) -> String {
     use crate::api::packets::creatures::StartHoldInput;
-    use crate::models::transaction::ITrx;
+    use crate::core::trx::Trx;
     use std::sync::{Arc, Mutex, mpsc};
     use std::time::Duration;
 
@@ -1453,7 +1453,7 @@ pub(crate) fn host_fn_start_hold(caller_program_id: &str, input: &JsonValue) -> 
     let hold_id_c = hold_id.clone();
     app.modify_state(
         true,
-        Box::new(move |trx: &dyn ITrx| {
+        Box::new(move |trx: &Trx| {
             if let Ok(hold) = trx.get_json(&format!("Json::FinanceHold::{hold_id_c}"), "hold") {
                 *hold_slot_c.lock().unwrap() = hold;
             }
@@ -1523,7 +1523,7 @@ pub(crate) fn host_fn_start_hold(caller_program_id: &str, input: &JsonValue) -> 
 
 pub(crate) fn host_fn_release_hold(caller_program_id: &str, input: &JsonValue) -> String {
     use crate::api::packets::creatures::ReleaseHoldInput;
-    use crate::models::transaction::ITrx;
+    use crate::core::trx::Trx;
     use std::sync::{Arc, Mutex, mpsc};
     use std::time::Duration;
 
@@ -1541,7 +1541,7 @@ pub(crate) fn host_fn_release_hold(caller_program_id: &str, input: &JsonValue) -
     let hold_id_c = hold_id.clone();
     app.modify_state(
         true,
-        Box::new(move |trx: &dyn ITrx| {
+        Box::new(move |trx: &Trx| {
             if let Ok(hold) = trx.get_json(&format!("Json::FinanceHold::{hold_id_c}"), "hold") {
                 *hold_slot_c.lock().unwrap() = hold;
             }
@@ -1611,7 +1611,7 @@ pub(crate) fn host_fn_release_hold(caller_program_id: &str, input: &JsonValue) -
 
 pub(crate) fn host_fn_settle_hold(caller_program_id: &str, input: &JsonValue) -> String {
     use crate::api::packets::creatures::SettleHoldInput;
-    use crate::models::transaction::ITrx;
+    use crate::core::trx::Trx;
     use std::sync::{Arc, Mutex, mpsc};
     use std::time::Duration;
 
@@ -1630,7 +1630,7 @@ pub(crate) fn host_fn_settle_hold(caller_program_id: &str, input: &JsonValue) ->
     let hold_id_c = hold_id.clone();
     app.modify_state(
         true,
-        Box::new(move |trx: &dyn ITrx| {
+        Box::new(move |trx: &Trx| {
             if let Ok(hold) = trx.get_json(&format!("Json::FinanceHold::{hold_id_c}"), "hold") {
                 *hold_slot_c.lock().unwrap() = hold;
             }
@@ -1717,7 +1717,7 @@ pub(crate) fn host_fn_pool_authority_call(
     route: &str,
     op_label: &str,
 ) -> String {
-    use crate::models::transaction::ITrx;
+    use crate::core::trx::Trx;
     use std::sync::{Arc, Mutex, mpsc};
     use std::time::Duration;
 
@@ -1735,7 +1735,7 @@ pub(crate) fn host_fn_pool_authority_call(
     let pool_id_c = pool_id.clone();
     app.modify_state(
         true,
-        Box::new(move |trx: &dyn ITrx| {
+        Box::new(move |trx: &Trx| {
             if let Ok(pool) = trx.get_json(&format!("Json::FinancePool::{pool_id_c}"), "pool") {
                 *pool_slot_c.lock().unwrap() = pool;
             }
