@@ -188,7 +188,7 @@ fn request(args: &ModuleArgs, method: &str, path: &str, body: Option<&Value>) ->
             .arg("-H")
             .arg(format!("authorization: Bearer {}", args.token))
             .arg("-H")
-            .arg(format!("x-caspar-cluster-token: {}", args.token));
+            .arg(format!("x-aseman-cluster-token: {}", args.token));
     }
     if let Some(body) = body {
         command.arg("-d").arg(serde_json::to_string(body)?);

@@ -24,6 +24,8 @@ aseman-observability = { path = "../../crates/aseman-observability" }
 aseman-ports = { path = "../../crates/aseman-ports" }
 aseman-capsule = { path = "../../crates/aseman-capsule" }
 aseman-consensus-hashgraph = { path = "../../modules/consensus/hashgraph" }
+aseman-storage = { path = "../../crates/aseman-storage" }
+aseman-storage-providers = { path = "../../crates/aseman-storage-providers" }
 aseman-storage-rocksdb = { path = "../../modules/storage/rocksdb" }
 aseman-storage-postgres = { path = "../../modules/storage/postgres" }
 aseman-policy-native = { path = "../../modules/security/capabilities" }

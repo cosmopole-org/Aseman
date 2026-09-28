@@ -1,35 +1,15 @@
-//! Legacy adapters for the creature identity use cases: the node transaction behind
-//! [`CreatureDirectory`] and [`CreatureBalances`] (RL-004 strangler). Key encodings
-//! are exactly the legacy `Creature` object, its `username` index, and its `balance`
-//! column.
+//! The creature ports of one state action (ADR 0036): the creature, user, wallet,
+//! metadata, and type-registry models, through the capsule repositories over the
+//! action's transaction.
 
-use std::collections::HashMap;
-
-use aseman_domain::creature::{CreatureRecord, METADATA_ROOT, MetadataKind, legacy_page};
+use aseman_capsule::creature::CapsuleCreaturePorts;
+use aseman_domain::creature::{CreatureRecord, MetadataKind};
 use aseman_ports::{
     CreatureBalances, CreatureDirectory, CreatureMetadata, CreatureTypes, PortError, PortResult,
 };
 
 use crate::api::model::Creature;
-use crate::models::transaction::ITrx;
-
-/// The legacy adapter: the `Creature` object, its `username` index, its `balance`
-/// column, the `ownerof` link, `CreatMeta`/`UserMeta`, and the type registry.
-struct LegacyCreatures<'a> {
-    trx: &'a dyn ITrx,
-}
-
-fn record(creature: Creature) -> CreatureRecord {
-    CreatureRecord {
-        id: creature.id,
-        creature_type: creature.type_name,
-        username: creature.username,
-        public_key: creature.public_key,
-        chain_id: creature.chain_id,
-        subchain_id: creature.subchain_id,
-        owner_id: creature.owner_id,
-    }
-}
+use crate::core::trx::{BALANCE_CURRENCY, BALANCE_SCALE, Trx};
 
 /// The legacy wire shape of a creature: its identity plus its balance.
 pub(crate) fn creature_view(record: CreatureRecord, balance: i64) -> Creature {
@@ -46,83 +26,32 @@ pub(crate) fn creature_view(record: CreatureRecord, balance: i64) -> Creature {
     }
 }
 
-fn identity_columns(record: &CreatureRecord) -> HashMap<String, Vec<u8>> {
-    HashMap::from([
-        ("type".to_owned(), record.creature_type.as_bytes().to_vec()),
-        ("username".to_owned(), record.username.as_bytes().to_vec()),
-        (
-            "publicKey".to_owned(),
-            record.public_key.as_bytes().to_vec(),
-        ),
-        ("chainId".to_owned(), record.chain_id.as_bytes().to_vec()),
-        (
-            "subchainId".to_owned(),
-            record.subchain_id.as_bytes().to_vec(),
-        ),
-        ("ownerId".to_owned(), record.owner_id.as_bytes().to_vec()),
-    ])
+/// The creature ports of one state action.
+pub(crate) struct CreaturePorts<'a> {
+    pub(crate) trx: &'a Trx,
 }
 
-impl LegacyCreatures<'_> {
-    fn exists(&self, creature_id: &str) -> bool {
-        self.trx.has_obj(Creature::type_(), creature_id)
-    }
-
-    /// The derived `ownerof` link of a record, if it has one: a non-human creature
-    /// with an owner (the A308 export verifies exactly this).
-    fn owner_link(record: &CreatureRecord) -> Option<(&str, &str)> {
-        (!record.is_human() && !record.owner_id.is_empty())
-            .then_some((record.owner_id.as_str(), record.id.as_str()))
-    }
-
-    fn put_owner_link(&self, (owner, creature): (&str, &str)) {
-        self.trx
-            .put_link(&format!("ownerof::{owner}::{creature}"), "true");
-    }
-
-    fn delete_owner_link(&self, (owner, creature): (&str, &str)) {
-        self.trx
-            .del_key(&format!("link::ownerof::{owner}::{creature}"));
-    }
-
-    fn put_username(&self, username: &str, creature_id: &str) {
-        if !username.is_empty() {
-            self.trx.put_index(
-                Creature::type_(),
-                "username",
-                "id",
-                username,
-                creature_id.as_bytes().to_vec(),
-            );
+impl CreaturePorts<'_> {
+    fn ports(&self) -> CapsuleCreaturePorts<'_> {
+        CapsuleCreaturePorts {
+            repository: self.trx,
+            currency: BALANCE_CURRENCY,
+            scale: BALANCE_SCALE,
         }
     }
 }
 
-impl CreatureDirectory for LegacyCreatures<'_> {
+impl CreatureDirectory for CreaturePorts<'_> {
     fn creature(&self, creature_id: &str) -> PortResult<Option<CreatureRecord>> {
-        if !self.exists(creature_id) {
-            return Ok(None);
-        }
-        Ok(Some(record(
-            Creature {
-                id: creature_id.to_owned(),
-                ..Default::default()
-            }
-            .pull(self.trx),
-        )))
+        self.ports().creature(creature_id)
     }
 
     fn creature_id_by_username(&self, username: &str) -> PortResult<Option<String>> {
-        let id = self
-            .trx
-            .get_index(Creature::type_(), "username", "id", username);
-        Ok((!id.is_empty()).then_some(id))
+        self.ports().creature_id_by_username(username)
     }
 
     fn find_by_username_fragment(&self, fragment: &str) -> PortResult<Option<CreatureRecord>> {
-        let found = Creature::search(self.trx, 0, 1, "username", fragment, &HashMap::new())
-            .map_err(|error| PortError::Failed(error.to_string()))?;
-        Ok(found.into_iter().next().map(record))
+        self.ports().find_by_username_fragment(fragment)
     }
 
     fn creatures(
@@ -131,75 +60,75 @@ impl CreatureDirectory for LegacyCreatures<'_> {
         offset: i64,
         count: Option<i64>,
     ) -> PortResult<Vec<CreatureRecord>> {
-        let filter = creature_type
-            .map(|creature_type| HashMap::from([("type".to_owned(), creature_type.to_owned())]))
-            .unwrap_or_default();
-        // The full filtered list in identity order, then the shared legacy window.
-        let mut all = self
-            .trx
-            .get_obj_list(Creature::type_(), &["*".to_owned()], &filter, &[])
-            .map_err(|error| PortError::Failed(error.to_string()))?
-            .into_iter()
-            .map(|(id, columns)| Creature::from_columns(id, &columns))
-            .collect::<Vec<_>>();
-        all.sort_by(|left, right| left.id.cmp(&right.id));
-        Ok(legacy_page(all.into_iter().map(record), offset, count))
+        self.ports().creatures(creature_type, offset, count)
     }
 
     fn create(&self, record: &CreatureRecord) -> PortResult<()> {
-        if self.exists(&record.id) || self.creature_id_by_username(&record.username)?.is_some() {
-            return Err(PortError::Conflict);
-        }
-        self.trx
-            .put_obj(Creature::type_(), &record.id, identity_columns(record));
-        self.put_username(&record.username, &record.id);
-        if let Some(link) = Self::owner_link(record) {
-            self.put_owner_link(link);
-        }
-        Ok(())
+        self.ports().create(record)
     }
 
     fn update(&self, record: &CreatureRecord) -> PortResult<()> {
-        let current = self.creature(&record.id)?.ok_or(PortError::NotFound)?;
-        if current.username != record.username {
-            if self.creature_id_by_username(&record.username)?.is_some() {
-                return Err(PortError::Conflict);
-            }
-            if !current.username.is_empty() {
-                self.trx
-                    .del_index(Creature::type_(), "username", "id", &current.username);
-            }
-        }
-        self.trx
-            .put_obj(Creature::type_(), &record.id, identity_columns(record));
-        self.put_username(&record.username, &record.id);
-        // LD-16: the owner link follows the owner and the type.
-        let (old_link, new_link) = (Self::owner_link(&current), Self::owner_link(record));
-        if old_link != new_link {
-            if let Some(link) = old_link {
-                self.delete_owner_link(link);
-            }
-            if let Some(link) = new_link {
-                self.put_owner_link(link);
-            }
-        }
-        Ok(())
+        self.ports().update(record)
     }
 
     fn delete(&self, creature_id: &str) -> PortResult<()> {
-        if let Some(current) = self.creature(creature_id)? {
-            // LD-16: a deleted creature takes its owner link with it.
-            if let Some(link) = Self::owner_link(&current) {
-                self.delete_owner_link(link);
-            }
-            Creature {
-                id: current.id,
-                username: current.username,
-                ..Default::default()
-            }
-            .delete(self.trx);
-        }
-        Ok(())
+        self.ports().delete(creature_id)
+    }
+}
+
+impl CreatureMetadata for CreaturePorts<'_> {
+    fn metadata(
+        &self,
+        kind: MetadataKind,
+        creature_id: &str,
+        path: &str,
+    ) -> PortResult<Option<String>> {
+        self.ports().metadata(kind, creature_id, path)
+    }
+
+    fn replace_metadata(
+        &self,
+        kind: MetadataKind,
+        creature_id: &str,
+        document: &str,
+    ) -> PortResult<()> {
+        self.ports().replace_metadata(kind, creature_id, document)
+    }
+
+    fn delete_metadata(&self, kind: MetadataKind, creature_id: &str) -> PortResult<()> {
+        self.ports().delete_metadata(kind, creature_id)
+    }
+}
+
+impl CreatureTypes for CreaturePorts<'_> {
+    fn creature_type(&self, name: &str) -> PortResult<Option<String>> {
+        self.ports().creature_type(name)
+    }
+
+    fn creature_types(&self) -> PortResult<Vec<(String, String)>> {
+        self.ports().creature_types()
+    }
+
+    fn put_creature_type(&self, name: &str, spec: &str) -> PortResult<()> {
+        self.ports().put_creature_type(name, spec)
+    }
+}
+
+impl CreatureBalances for CreaturePorts<'_> {
+    fn open(&self, creature_id: &str, opening_balance: i64) -> PortResult<()> {
+        self.ports().open(creature_id, opening_balance)
+    }
+
+    fn close(&self, creature_id: &str) -> PortResult<()> {
+        self.ports().close(creature_id)
+    }
+
+    fn balance(&self, creature_id: &str) -> PortResult<i64> {
+        self.ports().balance(creature_id)
+    }
+
+    fn set_balance(&self, creature_id: &str, balance: i64) -> PortResult<()> {
+        self.ports().set_balance(creature_id, balance)
     }
 }
 
@@ -255,14 +184,6 @@ impl CreaturePorts<'_> {
     }
 }
 
-/// The legacy document key of a creature's metadata.
-fn metadata_key(kind: MetadataKind, creature_id: &str) -> String {
-    match kind {
-        MetadataKind::Creature => format!("CreatMeta::{creature_id}"),
-        MetadataKind::User => format!("UserMeta::{creature_id}"),
-    }
-}
-
 impl CreaturePorts<'_> {
     /// The metadata object at `path`, as legacy `get_json(..).ok()` returned it.
     pub(crate) fn metadata_object(
@@ -292,318 +213,9 @@ impl CreaturePorts<'_> {
     }
 }
 
-impl CreatureMetadata for LegacyCreatures<'_> {
-    fn metadata(
-        &self,
-        kind: MetadataKind,
-        creature_id: &str,
-        path: &str,
-    ) -> PortResult<Option<String>> {
-        match self.trx.get_json(&metadata_key(kind, creature_id), path) {
-            Ok(object) => serde_json::to_string(&object)
-                .map(Some)
-                .map_err(|error| PortError::Failed(error.to_string())),
-            Err(_) => Ok(None),
-        }
-    }
-
-    fn replace_metadata(
-        &self,
-        kind: MetadataKind,
-        creature_id: &str,
-        document: &str,
-    ) -> PortResult<()> {
-        let document = match serde_json::from_str::<serde_json::Value>(document) {
-            Ok(object @ serde_json::Value::Object(_)) => object,
-            _ => {
-                return Err(PortError::Failed(
-                    "metadata must be a JSON object".to_owned(),
-                ));
-            }
-        };
-        let key = metadata_key(kind, creature_id);
-        // A non-merge `put_json` keeps old child splats, so clear the tree first.
-        self.trx.del_json(&key, METADATA_ROOT);
-        self.trx
-            .put_json(&key, METADATA_ROOT, &document, false)
-            .map_err(|error| PortError::Failed(error.to_string()))
-    }
-
-    fn delete_metadata(&self, kind: MetadataKind, creature_id: &str) -> PortResult<()> {
-        self.trx
-            .del_json(&metadata_key(kind, creature_id), METADATA_ROOT);
-        Ok(())
-    }
-}
-
-const CREATURE_TYPE_FLAG: &str = "CreatureTypeExists::";
-
-fn creature_type_key(name: &str) -> String {
-    format!("Json::CreatureType::{name}")
-}
-
-impl CreatureTypes for LegacyCreatures<'_> {
-    fn creature_type(&self, name: &str) -> PortResult<Option<String>> {
-        match self.trx.get_json(&creature_type_key(name), "spec") {
-            Ok(spec) if !spec.is_empty() => serde_json::to_string(&spec)
-                .map(Some)
-                .map_err(|error| PortError::Failed(error.to_string())),
-            _ => Ok(None),
-        }
-    }
-
-    fn creature_types(&self) -> PortResult<Vec<(String, String)>> {
-        let mut types = Vec::new();
-        for link in self
-            .trx
-            .get_links_list(CREATURE_TYPE_FLAG, -1, -1, &[])
-            .unwrap_or_default()
-        {
-            let name = link.strip_prefix(CREATURE_TYPE_FLAG).unwrap_or(&link);
-            if let Some(spec) = self.creature_type(name)? {
-                types.push((name.to_owned(), spec));
-            }
-        }
-        Ok(types)
-    }
-
-    fn put_creature_type(&self, name: &str, spec: &str) -> PortResult<()> {
-        let spec = match serde_json::from_str::<serde_json::Value>(spec) {
-            Ok(object @ serde_json::Value::Object(_)) => object,
-            _ => {
-                return Err(PortError::Failed(
-                    "a creature type spec must be a JSON object".to_owned(),
-                ));
-            }
-        };
-        let key = creature_type_key(name);
-        // A non-merge `put_json` keeps old child splats, so clear the tree first.
-        self.trx.del_json(&key, "spec");
-        self.trx
-            .put_json(&key, "spec", &spec, false)
-            .map_err(|error| PortError::Failed(error.to_string()))?;
-        self.trx
-            .put_link(&format!("{CREATURE_TYPE_FLAG}{name}"), "true");
-        Ok(())
-    }
-}
-
-/// The legacy balance is the `balance` column of the `Creature` object, and only that
-/// column: after cutover the identity lives on capsules while the balance stays with
-/// the legacy finance subsystem (ADR 0026), so no object marker is written.
-fn balance_key(creature_id: &str) -> String {
-    format!("obj::{}::{creature_id}::balance", Creature::type_())
-}
-
-impl CreatureBalances for LegacyCreatures<'_> {
-    fn close(&self, creature_id: &str) -> PortResult<()> {
-        self.trx.del_key(&balance_key(creature_id));
-        Ok(())
-    }
-
-    fn open(&self, creature_id: &str, opening_balance: i64) -> PortResult<()> {
-        if !self.trx.get_bytes(&balance_key(creature_id)).is_empty() {
-            return Err(PortError::Conflict);
-        }
-        self.trx.put_bytes(
-            &balance_key(creature_id),
-            (opening_balance as u64).to_le_bytes().to_vec(),
-        );
-        Ok(())
-    }
-
-    fn balance(&self, creature_id: &str) -> PortResult<i64> {
-        let bytes = self.trx.get_bytes(&balance_key(creature_id));
-        let bytes: [u8; 8] = bytes
-            .as_slice()
-            .try_into()
-            .map_err(|_| PortError::NotFound)?;
-        Ok(i64::from_le_bytes(bytes))
-    }
-
-    fn set_balance(&self, creature_id: &str, balance: i64) -> PortResult<()> {
-        // A missing balance stays missing: no ghost account (LD-13).
-        self.balance(creature_id)?;
-        self.trx.put_bytes(
-            &balance_key(creature_id),
-            (balance as u64).to_le_bytes().to_vec(),
-        );
-        Ok(())
-    }
-}
-
-/// The creature ports of one state action, routed per ADR 0026: the core families
-/// go to the action's PostgreSQL unit of work when the node runs on PostgreSQL, and
-/// to the legacy transaction otherwise; balances always stay with the legacy finance
-/// subsystem until P8.
-pub(crate) struct CreaturePorts<'a> {
-    pub(crate) trx: &'a dyn ITrx,
-}
-
-impl<'a> CreaturePorts<'a> {
-    fn legacy(&self) -> LegacyCreatures<'a> {
-        LegacyCreatures { trx: self.trx }
-    }
-}
-
-/// Run `$call` on the adapter for the current provider, bound as `$ports`.
-macro_rules! route {
-    ($self:ident, |$ports:ident| $call:expr) => {
-        match crate::api::model::core_storage::current_unit() {
-            Some(unit) => {
-                let $ports = capsule_creatures(&*unit);
-                $call
-            }
-            None => {
-                let $ports = $self.legacy();
-                $call
-            }
-        }
-    };
-}
-
-impl CreatureDirectory for CreaturePorts<'_> {
-    fn creature(&self, creature_id: &str) -> PortResult<Option<CreatureRecord>> {
-        route!(self, |ports| ports.creature(creature_id))
-    }
-
-    fn creature_id_by_username(&self, username: &str) -> PortResult<Option<String>> {
-        route!(self, |ports| ports.creature_id_by_username(username))
-    }
-
-    fn find_by_username_fragment(&self, fragment: &str) -> PortResult<Option<CreatureRecord>> {
-        route!(self, |ports| ports.find_by_username_fragment(fragment))
-    }
-
-    fn creatures(
-        &self,
-        creature_type: Option<&str>,
-        offset: i64,
-        count: Option<i64>,
-    ) -> PortResult<Vec<CreatureRecord>> {
-        route!(self, |ports| ports.creatures(creature_type, offset, count))
-    }
-
-    /// On capsules, the balance opened next to the identity lives on legacy, so a
-    /// failed legacy commit deletes the identity again (ADR 0026 point 4).
-    fn create(&self, record: &CreatureRecord) -> PortResult<()> {
-        let Some(unit) = crate::api::model::core_storage::current_unit() else {
-            return self.legacy().create(record);
-        };
-        capsule_creatures(&*unit).create(record)?;
-        let id = record.id.clone();
-        crate::api::model::core_storage::register_compensation(Box::new(move |store| {
-            capsule_creatures(store)
-                .delete(&id)
-                .map_err(|error| anyhow::anyhow!("{error}"))
-        }));
-        Ok(())
-    }
-
-    fn update(&self, record: &CreatureRecord) -> PortResult<()> {
-        route!(self, |ports| ports.update(record))
-    }
-
-    /// On capsules, the balance closed next to the identity lives on legacy, so a
-    /// failed legacy commit revives the identity (ADR 0026 point 4).
-    fn delete(&self, creature_id: &str) -> PortResult<()> {
-        let Some(unit) = crate::api::model::core_storage::current_unit() else {
-            return self.legacy().delete(creature_id);
-        };
-        let ports = capsule_creatures(&*unit);
-        let saved = ports.creature(creature_id)?;
-        ports.delete(creature_id)?;
-        if let Some(saved) = saved {
-            crate::api::model::core_storage::register_compensation(Box::new(move |store| {
-                capsule_creatures(store)
-                    .create(&saved)
-                    .map_err(|error| anyhow::anyhow!("{error}"))
-            }));
-        }
-        Ok(())
-    }
-}
-
-/// The capsule creature adapter over one unit of work. Balances are not served from
-/// it (ADR 0026), so it carries no finance epoch.
-fn capsule_creatures(
-    store: &dyn aseman_capsule::CapsuleStore,
-) -> aseman_capsule::creature::CapsuleCreaturePorts<'_> {
-    aseman_capsule::creature::CapsuleCreaturePorts {
-        repository: store,
-        currency: "",
-        scale: 0,
-    }
-}
-
-impl CreatureMetadata for CreaturePorts<'_> {
-    fn metadata(
-        &self,
-        kind: MetadataKind,
-        creature_id: &str,
-        path: &str,
-    ) -> PortResult<Option<String>> {
-        route!(self, |ports| ports.metadata(kind, creature_id, path))
-    }
-
-    fn replace_metadata(
-        &self,
-        kind: MetadataKind,
-        creature_id: &str,
-        document: &str,
-    ) -> PortResult<()> {
-        route!(self, |ports| ports.replace_metadata(
-            kind,
-            creature_id,
-            document
-        ))
-    }
-
-    fn delete_metadata(&self, kind: MetadataKind, creature_id: &str) -> PortResult<()> {
-        route!(self, |ports| ports.delete_metadata(kind, creature_id))
-    }
-}
-
-impl CreatureTypes for CreaturePorts<'_> {
-    fn creature_type(&self, name: &str) -> PortResult<Option<String>> {
-        route!(self, |ports| ports.creature_type(name))
-    }
-
-    fn creature_types(&self) -> PortResult<Vec<(String, String)>> {
-        route!(self, |ports| ports.creature_types())
-    }
-
-    fn put_creature_type(&self, name: &str, spec: &str) -> PortResult<()> {
-        route!(self, |ports| ports.put_creature_type(name, spec))
-    }
-}
-
-/// Balances change with the legacy finance ledger, so they stay on legacy (ADR 0026).
-impl CreatureBalances for CreaturePorts<'_> {
-    fn open(&self, creature_id: &str, opening_balance: i64) -> PortResult<()> {
-        self.legacy().open(creature_id, opening_balance)
-    }
-
-    fn close(&self, creature_id: &str) -> PortResult<()> {
-        self.legacy().close(creature_id)
-    }
-
-    fn balance(&self, creature_id: &str) -> PortResult<i64> {
-        self.legacy().balance(creature_id)
-    }
-
-    fn set_balance(&self, creature_id: &str, balance: i64) -> PortResult<()> {
-        self.legacy().set_balance(creature_id, balance)
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::adapters::rocksdb::trx::TrxWrapper;
-    use crate::adapters::rocksdb::trx::tests::{StubCore, StubStorage};
-    use crate::models::ports::IStorage;
-    use std::sync::Arc;
 
     pub(crate) fn test_public_keys() -> [String; 4] {
         use rsa::pkcs8::{EncodePublicKey, LineEnding};
@@ -616,16 +228,9 @@ mod tests {
     }
 
     #[test]
-    fn legacy_creatures_pass_the_directory_conformance_suite() {
-        let storage: Arc<dyn IStorage> = StubStorage::new();
-        let trx = TrxWrapper::over_storage(
-            Arc::new(StubCore {
-                storage: storage.clone(),
-            }),
-            storage,
-            false,
-        );
-        let creatures = LegacyCreatures { trx: &*trx };
+    fn creatures_pass_the_directory_metadata_and_type_conformance_suites() {
+        let trx = crate::core::trx::test_trx();
+        let creatures = CreaturePorts { trx: &trx };
         let keys = test_public_keys();
         aseman_ports::conformance::creature_directory(
             &creatures,
@@ -634,100 +239,17 @@ mod tests {
         );
         aseman_ports::conformance::creature_metadata(&creatures, &creatures, &keys[3]);
         aseman_ports::conformance::creature_types(&creatures);
-        // The legacy encodings are unchanged.
-        let alice = Creature {
-            id: "1@conformance".into(),
-            ..Default::default()
-        }
-        .pull(&*trx);
-        assert_eq!(alice.balance, 10);
-        assert_eq!(
-            trx.get_index("Creature", "username", "id", "alice@conformance"),
-            "1@conformance"
-        );
-    }
-
-    /// LD-16: the derived `ownerof` link follows create, owner and type changes, and
-    /// delete, exactly as the A308 export verifies it.
-    #[test]
-    fn owner_links_follow_the_record() {
-        let storage: Arc<dyn IStorage> = StubStorage::new();
-        let trx = TrxWrapper::over_storage(
-            Arc::new(StubCore {
-                storage: storage.clone(),
-            }),
-            storage,
-            false,
-        );
-        let creatures = LegacyCreatures { trx: &*trx };
-        let link = |owner: &str| trx.get_link(&format!("ownerof::{owner}::3@global"));
-        let mut machine = CreatureRecord {
-            id: "3@global".into(),
-            creature_type: "machine".into(),
-            username: "bot@global".into(),
-            public_key: "pem".into(),
-            chain_id: "main".into(),
-            subchain_id: "main".into(),
-            owner_id: "1@global".into(),
-        };
-        creatures.create(&machine).unwrap();
-        assert_eq!(link("1@global"), "true");
-        machine.owner_id = "2@global".into();
-        creatures.update(&machine).unwrap();
-        assert_eq!(
-            (link("1@global").as_str(), link("2@global").as_str()),
-            ("", "true")
-        );
-        machine.creature_type = "human".into();
-        creatures.update(&machine).unwrap();
-        assert_eq!(link("2@global"), "");
-        machine.creature_type = "machine".into();
-        creatures.update(&machine).unwrap();
-        assert_eq!(link("2@global"), "true");
-        creatures.delete(&machine.id).unwrap();
-        assert_eq!(link("2@global"), "");
     }
 
     /// Finance reads and writes balances through `Account`. A missing creature is
-    /// absent (LD-13), and a write-back changes only the `balance` column.
+    /// absent (LD-13), and writing an absent account back fails.
     #[test]
-    fn accounts_write_only_the_balance_and_never_create_ghost_creatures() {
-        let storage: Arc<dyn IStorage> = StubStorage::new();
-        let trx = TrxWrapper::over_storage(
-            Arc::new(StubCore {
-                storage: storage.clone(),
-            }),
-            storage,
-            false,
-        );
-        let creatures = CreaturePorts { trx: &*trx };
+    fn accounts_never_create_ghost_creatures() {
+        let trx = crate::core::trx::test_trx();
+        let creatures = CreaturePorts { trx: &trx };
         assert_eq!(creatures.account("9@global").unwrap(), None);
         let ghost = creatures.account_or_empty("9@global").unwrap();
         assert_eq!(ghost.balance, 0);
         assert!(creatures.store_account(&ghost).is_err());
-        assert!(!trx.has_obj("Creature", "9@global"));
-
-        Creature {
-            id: "2@global".into(),
-            type_name: "human".into(),
-            username: "alice@global".into(),
-            public_key: "pem".into(),
-            balance: 5,
-            ..Default::default()
-        }
-        .push(&*trx);
-        let mut account = creatures.account("2@global").unwrap().unwrap();
-        assert_eq!(account.balance, 5);
-        account.balance = 12;
-        creatures.store_account(&account).unwrap();
-        let stored = Creature {
-            id: "2@global".into(),
-            ..Default::default()
-        }
-        .pull(&*trx);
-        assert_eq!(
-            (stored.balance, stored.username.as_str()),
-            (12, "alice@global")
-        );
     }
 }

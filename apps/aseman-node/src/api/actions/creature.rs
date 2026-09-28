@@ -45,7 +45,7 @@ use crate::models::action::ISecureAction;
 use crate::models::core::ICore;
 use crate::models::input::IInput;
 use crate::models::state::IState;
-use crate::models::transaction::ITrx;
+use crate::core::trx::Trx;
 use crate::models::transaction::object_to_map;
 use aseman_application::creature::{
     CreateCreature, CreaturePatch, DeleteCreature, GetCreature, NewCreature, UpdateCreature,
@@ -103,7 +103,7 @@ const DEFAULT_CREATURE_INITIAL_BALANCE: i64 = 0;
 const LEGACY_HUMAN_INITIAL_BALANCE: i64 = 1_000_000_000_000_000;
 
 /// The spec of a registered creature type, if present.
-fn get_creature_type(trx: &dyn ITrx, name: &str) -> Option<Map<String, Value>> {
+fn get_creature_type(trx: &Trx, name: &str) -> Option<Map<String, Value>> {
     let spec = aseman_ports::CreatureTypes::creature_type(&CreaturePorts { trx }, name)
         .ok()
         .flatten()?;
@@ -111,7 +111,7 @@ fn get_creature_type(trx: &dyn ITrx, name: &str) -> Option<Map<String, Value>> {
 }
 
 /// Store a creature type's spec through the registry port.
-fn put_creature_type(trx: &dyn ITrx, name: &str, spec: &Value) -> Result<()> {
+fn put_creature_type(trx: &Trx, name: &str, spec: &Value) -> Result<()> {
     aseman_ports::CreatureTypes::put_creature_type(
         &CreaturePorts { trx },
         name,
@@ -121,7 +121,7 @@ fn put_creature_type(trx: &dyn ITrx, name: &str, spec: &Value) -> Result<()> {
 }
 
 /// Register a creature type only if it does not already exist (idempotent).
-fn register_creature_type_if_absent(trx: &dyn ITrx, name: &str, spec: Value) {
+fn register_creature_type_if_absent(trx: &Trx, name: &str, spec: Value) {
     if get_creature_type(trx, name).is_some() {
         return;
     }
@@ -133,7 +133,7 @@ fn register_creature_type_if_absent(trx: &dyn ITrx, name: &str, spec: Value) {
 /// Replace the old built-in human grant without overwriting a host-defined
 /// balance. Nodes that already installed the human type otherwise retain the
 /// legacy value forever because built-in type registration is idempotent.
-fn migrate_legacy_human_balance(trx: &dyn ITrx) {
+fn migrate_legacy_human_balance(trx: &Trx) {
     let Some(mut spec) = get_creature_type(trx, "human") else {
         return;
     };
@@ -154,7 +154,7 @@ fn migrate_legacy_human_balance(trx: &dyn ITrx) {
 pub fn install_creature_types(app: Arc<dyn ICore>) {
     app.modify_state(
         false,
-        Box::new(|trx: &dyn ITrx| {
+        Box::new(|trx: &Trx| {
             register_creature_type_if_absent(
                 trx,
                 "human",
@@ -182,7 +182,7 @@ pub fn install_creature_types(app: Arc<dyn ICore>) {
 /// Resolve a creature type's initial balance from the registry. Falls back to
 /// the built-in seed values when the registry has not been seeded yet (the very
 /// first creature is created before `install` runs), and rejects unknown types.
-pub(crate) fn resolve_initial_balance(trx: &dyn ITrx, creature_type: &str) -> Result<i64> {
+pub(crate) fn resolve_initial_balance(trx: &Trx, creature_type: &str) -> Result<i64> {
     match get_creature_type(trx, creature_type) {
         Some(spec) => Ok(spec
             .get("initialBalance")
@@ -214,7 +214,7 @@ fn create(app: Arc<dyn ICore>) -> Arc<dyn ISecureAction> {
                 id: app_for_handler
                     .tools()
                     .storage()
-                    .gen_id(&*trx, &input.origin()),
+                    .gen_id(&input.origin()),
                 creature_type: input.typ.clone(),
                 name: input.username.clone(),
                 origin: state.source(),
@@ -233,10 +233,10 @@ fn create(app: Arc<dyn ICore>) -> Arc<dyn ISecureAction> {
                 id: app_for_handler
                     .tools()
                     .storage()
-                    .gen_id(&*trx, &input.origin()),
+                    .gen_id(&input.origin()),
                 user_id: creature.id.clone(),
             };
-            session.push(&*trx);
+            session.save(&trx)?;
             for kind in [MetadataKind::Creature, MetadataKind::User] {
                 creatures
                     .replace_metadata_value(kind, &creature.id, &input.metadata)
@@ -563,10 +563,14 @@ fn mint(app: Arc<dyn ICore>) -> Arc<dyn ISecureAction> {
             // together or not at all.
             let marker = match input.idempotency_key.trim() {
                 "" => None,
-                key => Some(format!("MintApplied::{}", key)),
+                key => Some(aseman_ports::finance_ledger::FinanceMarker::MintApplied {
+                    key: key.to_owned(),
+                }),
             };
+            let ledger = crate::api::model::finance_ports::FinanceLedgerPorts { trx: &trx };
             if let Some(marker) = &marker {
-                let applied = trx.get_link(marker);
+                let applied = aseman_ports::finance_ledger::FinanceLedger::marker(&ledger, marker)
+                    .map_err(|error| anyhow!("{error}"))?;
                 if !applied.is_empty() {
                     return Ok(json!({
                         "applied": false,
@@ -578,7 +582,9 @@ fn mint(app: Arc<dyn ICore>) -> Arc<dyn ISecureAction> {
 
             // The email→id link resolves the creature directly; credit the
             // single authoritative Creature balance.
-            let to_user_id = trx.get_link(&format!("UserEmailToId::{}", input.to_user_email));
+            let to_user_id =
+                aseman_ports::finance_ledger::FinanceLedger::email_to_id(&ledger, &input.to_user_email)
+                    .map_err(|error| anyhow!("{error}"))?;
             if to_user_id.is_empty() {
                 return Err(anyhow!("target user not found"));
             }
@@ -617,10 +623,12 @@ fn mint(app: Arc<dyn ICore>) -> Arc<dyn ISecureAction> {
                 Utc::now().timestamp_millis(),
             )?;
             if let Some(marker) = &marker {
-                trx.put_link(
+                aseman_ports::finance_ledger::FinanceLedger::put_marker(
+                    &ledger,
                     marker,
                     &format!("{}:{}:{}", target_id, input.amount, journal_id),
-                );
+                )
+                .map_err(|error| anyhow!("{error}"))?;
             }
             Ok(json!({
                 "applied": true, "balance": creature.balance,
@@ -654,9 +662,11 @@ fn check_sign(app: Arc<dyn ICore>) -> Arc<dyn ISecureAction> {
                 &input.signature,
             );
             if success {
-                let email = state
-                    .trx()
-                    .get_link(&format!("UserIdToEmail::{}", input.user_id));
+                let email = aseman_ports::finance_ledger::FinanceLedger::id_to_email(
+                    &crate::api::model::finance_ports::FinanceLedgerPorts { trx: &state.trx() },
+                    &input.user_id,
+                )
+                .map_err(|error| anyhow!("{error}"))?;
                 return Ok(json!({"valid": true, "email": email}));
             }
             Ok(json!({"valid": false}))
@@ -671,47 +681,22 @@ fn check_sign(app: Arc<dyn ICore>) -> Arc<dyn ISecureAction> {
 // control is enforced HERE against the authenticated caller (`user_id()`), which
 // a creature cannot forge — the encryption alone is not the boundary.
 
-const SECRET_PREFIX: &str = "Secret::";
-const SECRET_GRANT_PREFIX: &str = "SecretGrant::";
-const SECRET_GRANTEE_PREFIX: &str = "SecretGrantee::";
-
-pub(crate) fn secret_key(owner: &str, name: &str) -> String {
-    format!("{SECRET_PREFIX}{owner}::{name}")
-}
-pub(crate) fn secret_grant_key(owner: &str, name: &str, grantee: &str) -> String {
-    format!("{SECRET_GRANT_PREFIX}{owner}::{name}::{grantee}")
-}
-/// Reverse index keyed by grantee, so a grantee can enumerate its grants.
-pub(crate) fn secret_grantee_key(grantee: &str, owner: &str, name: &str) -> String {
-    format!("{SECRET_GRANTEE_PREFIX}{grantee}::{owner}::{name}")
-}
-/// Names/ids are path components of the storage key, so a ':' would let a caller
-/// escape its own namespace. Reject it rather than sanitize silently.
+/// Names/ids are path components of secret records, so a ':' would let a caller
+/// reach into another namespace. Reject it rather than sanitize silently.
 pub(crate) fn valid_component(s: &str) -> bool {
     !s.is_empty() && !s.contains(':')
 }
 
-/// The unexpired `{owner, name}` grants held by `grantee`, from the reverse index.
-/// Shared by the signed route and the docker host-call so both return the same set.
-pub(crate) fn list_granted_secrets(trx: &dyn ITrx, grantee: &str) -> Vec<Value> {
-    let prefix = format!("{SECRET_GRANTEE_PREFIX}{grantee}::");
+/// The unexpired `{owner, name}` grants held by `grantee`. Shared by the signed
+/// route and the docker host-call so both return the same set.
+pub(crate) fn list_granted_secrets(trx: &Trx, grantee: &str) -> Result<Vec<Value>> {
     let now = Utc::now().timestamp_millis();
-    let mut out = Vec::new();
-    for key in trx.get_by_prefix(&prefix) {
-        let Some(rest) = key.strip_prefix(&prefix) else {
-            continue;
-        };
-        // rest = "<owner>::<name>"; owner has no "::" and name has no ':'.
-        let Some((owner, name)) = rest.split_once("::") else {
-            continue;
-        };
-        let expires_at: i64 = trx.get_link(&key).trim().parse().unwrap_or(0);
-        if expires_at <= 0 || now >= expires_at {
-            continue;
-        }
-        out.push(json!({ "owner": owner, "name": name, "expiresAt": expires_at }));
-    }
-    out
+    Ok(crate::api::model::secrets::grants_of(trx, grantee, now)?
+        .into_iter()
+        .map(|(owner, name, expires_at)| {
+            json!({ "owner": owner, "name": name, "expiresAt": expires_at })
+        })
+        .collect())
 }
 
 fn secret_put(app: Arc<dyn ICore>) -> Arc<dyn ISecureAction> {
@@ -735,7 +720,7 @@ fn secret_put(app: Arc<dyn ICore>) -> Arc<dyn ISecureAction> {
             let key = secret_crypto::master_key(&root)?;
             let blob = secret_crypto::encrypt(input.value.as_bytes(), &key)?;
             let trx = state.trx();
-            trx.put_link(&secret_key(&owner, &input.name), &blob);
+            crate::api::model::secrets::put_blob(&trx, &owner, &input.name, &blob)?;
             Ok(json!({ "ok": true, "name": input.name }))
         },
     )
@@ -763,16 +748,15 @@ fn secret_get(app: Arc<dyn ICore>) -> Arc<dyn ISecureAction> {
             let trx = state.trx();
             // A non-owner caller needs an unexpired grant.
             if owner != caller {
-                let raw = trx.get_link(&secret_grant_key(&owner, &input.name, &caller));
-                let expires_at: i64 = raw.trim().parse().unwrap_or(0);
+                let expires_at =
+                    crate::api::model::secrets::grant_expiry(&trx, &owner, &input.name, &caller)?;
                 if expires_at <= 0 || Utc::now().timestamp_millis() >= expires_at {
                     return Err(anyhow!("access denied: no valid grant for this secret"));
                 }
             }
-            let blob = trx.get_link(&secret_key(&owner, &input.name));
-            if blob.is_empty() {
+            let Some(blob) = crate::api::model::secrets::blob(&trx, &owner, &input.name)? else {
                 return Err(anyhow!("secret not found"));
-            }
+            };
             let root = app_h.tools().storage().storage_root().to_string();
             let key = secret_crypto::master_key(&root)?;
             let plaintext = secret_crypto::decrypt(&blob, &key)?;
@@ -803,20 +787,11 @@ fn secret_grant(app: Arc<dyn ICore>) -> Arc<dyn ISecureAction> {
             }
             let trx = state.trx();
             // Only the owner of an existing secret may grant access to it.
-            if trx.get_link(&secret_key(&owner, &input.name)).is_empty() {
+            if crate::api::model::secrets::blob(&trx, &owner, &input.name)?.is_none() {
                 return Err(anyhow!("secret not found"));
             }
             let expires_at = Utc::now().timestamp_millis() + input.ttl_seconds * 1000;
-            trx.put_link(
-                &secret_grant_key(&owner, &input.name, &input.grantee),
-                &expires_at.to_string(),
-            );
-            // Reverse index so a grantee can discover what it was granted without
-            // knowing the owner up front (secretListGranted). Same expiry value.
-            trx.put_link(
-                &secret_grantee_key(&input.grantee, &owner, &input.name),
-                &expires_at.to_string(),
-            );
+            crate::api::model::secrets::grant(&trx, &owner, &input.name, &input.grantee, expires_at)?;
             Ok(json!({ "ok": true, "grantee": input.grantee, "expiresAt": expires_at }))
         },
     )
@@ -836,8 +811,7 @@ fn secret_revoke(app: Arc<dyn ICore>) -> Arc<dyn ISecureAction> {
                 return Err(anyhow!("name and grantee are required"));
             }
             let trx = state.trx();
-            trx.del_key(&secret_grant_key(&owner, &input.name, &input.grantee));
-            trx.del_key(&secret_grantee_key(&input.grantee, &owner, &input.name));
+            crate::api::model::secrets::revoke(&trx, &owner, &input.name, &input.grantee)?;
             Ok(json!({ "ok": true }))
         },
     )
@@ -857,7 +831,7 @@ fn secret_list_granted(app: Arc<dyn ICore>) -> Arc<dyn ISecureAction> {
             if caller.is_empty() {
                 return Err(anyhow!("not authenticated"));
             }
-            let grants = list_granted_secrets(&*state.trx(), &caller);
+            let grants = list_granted_secrets(&state.trx(), &caller)?;
             Ok(json!({ "ok": true, "grants": grants }))
         },
     )
@@ -873,13 +847,7 @@ fn secret_list(app: Arc<dyn ICore>) -> Arc<dyn ISecureAction> {
             if owner.is_empty() {
                 return Err(anyhow!("not authenticated"));
             }
-            let prefix = format!("{SECRET_PREFIX}{owner}::");
-            let names: Vec<String> = state
-                .trx()
-                .get_by_prefix(&prefix)
-                .into_iter()
-                .filter_map(|k| k.strip_prefix(&prefix).map(|s| s.to_string()))
-                .collect();
+            let names = crate::api::model::secrets::names(&state.trx(), &owner)?;
             Ok(json!({ "ok": true, "names": names }))
         },
     )
@@ -1015,10 +983,13 @@ fn lock_token(app: Arc<dyn ICore>) -> Arc<dyn ISecureAction> {
                     "userId": input.target,
                     "steps": steps,
                 });
-                trx.put_json(
-                    &format!("Json::Creature::{}", state.info().user_id()),
-                    &format!("lockedTokens.{}", lock_id),
-                    &payload,
+                crate::api::model::token_locks::put_lock(
+                    &trx,
+                    &state.info().user_id(),
+                    &lock_id,
+                    payload
+                        .as_object()
+                        .ok_or_else(|| anyhow!("invalid lock payload"))?,
                     true,
                 )?;
             } else {
@@ -1050,13 +1021,11 @@ fn consume_lock(app: Arc<dyn ICore>) -> Arc<dyn ISecureAction> {
                 return Err(anyhow!("payer user not found"));
             }
             let sender = (CreaturePorts { trx: &*trx }).account_or_empty(&input.user_id.clone())?;
-            let payment_map = match trx.get_json(
-                &format!("Json::Creature::{}", sender.id),
-                &format!("lockedTokens.{}", input.lock_id),
-            ) {
-                Ok(m) => m,
-                Err(_) => return Err(anyhow!("lock not found")),
-            };
+            let payment_map =
+                match crate::api::model::token_locks::lock(&*trx, &sender.id, &input.lock_id)? {
+                    Some(m) => m,
+                    None => return Err(anyhow!("lock not found")),
+                };
             let mut payment: Map<String, Value> = payment_map;
             let steps_raw = match payment.get("steps") {
                 Some(Value::Array(arr)) if !arr.is_empty() => arr.clone(),
@@ -1152,10 +1121,7 @@ fn consume_lock(app: Arc<dyn ICore>) -> Arc<dyn ISecureAction> {
                 }
             }
             if remaining_amount == 0 {
-                trx.del_json(
-                    &format!("Json::Creature::{}", sender.id),
-                    &format!("lockedTokens.{}", input.lock_id),
-                );
+                crate::api::model::token_locks::delete_lock(&*trx, &sender.id, &input.lock_id)?;
             } else {
                 let total_amount = payment.get("amount").and_then(as_i64).unwrap_or(0);
                 if total_amount <= 0 {
@@ -1173,12 +1139,7 @@ fn consume_lock(app: Arc<dyn ICore>) -> Arc<dyn ISecureAction> {
                     "consumedAmount".to_string(),
                     json!(total_amount - remaining_amount),
                 );
-                trx.put_json(
-                    &format!("Json::Creature::{}", sender.id),
-                    &format!("lockedTokens.{}", input.lock_id),
-                    &Value::Object(payment),
-                    true,
-                )?;
+                crate::api::model::token_locks::put_lock(&*trx, &sender.id, &input.lock_id, &payment, true)?;
             }
             Ok(json!({
                 "success": true,
@@ -1214,12 +1175,12 @@ fn delete(app: Arc<dyn ICore>) -> Arc<dyn ISecureAction> {
             ports
                 .remove_member_everywhere(&input.user_id)
                 .map_err(|error| anyhow!("{error}"))?;
-            let email = trx.get_link(&format!("UserIdToEmail::{}", input.user_id));
-            trx.del_key(&format!("link::UserIdToEmail::{}", input.user_id));
-            if !email.is_empty() {
-                trx.del_key(&format!("link::UserEmailToId::{}", email));
-            }
-            trx.del_key(&format!("link::UserPrivateKey::{}", input.user_id));
+            // The creature's email address leaves with it.
+            aseman_storage::Models::user_email(&*trx)
+                .delete_many(Some(
+                    aseman_storage::client::core::user_email::user_ref().eq(input.user_id.clone()),
+                ))
+                .map_err(crate::core::trx::failed)?;
             Ok(json!({}))
         },
     )
@@ -1278,7 +1239,7 @@ fn meta(app: Arc<dyn ICore>) -> Arc<dyn ISecureAction> {
 
 fn apply_extender_fields(
     state: &Arc<dyn IState>,
-    trx: &dyn crate::models::transaction::ITrx,
+    trx: &crate::core::trx::Trx,
     user_id: &str,
     mut user_map: HashMap<String, Value>,
     extender: &HashMap<String, ExtendedField>,
@@ -1437,7 +1398,7 @@ pub fn install(
 /// `/creatures/types` (`creature.types.read`) body.
 pub(crate) fn serve_creature_types(
     _app: &Arc<dyn ICore>,
-    trx: &dyn ITrx,
+    trx: &Trx,
     _user_id: &str,
 ) -> Result<Value> {
     let mut out: Vec<Value> = Vec::new();
@@ -1454,7 +1415,7 @@ pub(crate) fn serve_creature_types(
 /// `/creatures/authenticate` (`identity.session.create`) body.
 pub(crate) fn serve_authenticate(
     _app: &Arc<dyn ICore>,
-    trx: &dyn ITrx,
+    trx: &Trx,
     user_id: &str,
 ) -> Result<Value> {
     let creatures = CreaturePorts { trx };
@@ -1480,7 +1441,7 @@ pub(crate) fn serve_authenticate(
 /// `/creatures/signal` (`creature.signal`) body.
 pub(crate) fn serve_creature_signal(
     app: &Arc<dyn ICore>,
-    trx: &dyn ITrx,
+    trx: &Trx,
     user_id: &str,
     store_id: &str,
     input: CreatureSignalInput,
@@ -1565,7 +1526,7 @@ pub(crate) fn serve_creature_signal(
 /// `/creatures/lockToken` (`finance.lock.create`) body.
 pub(crate) fn serve_lock_token(
     _app: &Arc<dyn ICore>,
-    trx: &dyn ITrx,
+    trx: &Trx,
     user_id: &str,
     input: LockTokenInput,
 ) -> Result<Value> {
@@ -1627,12 +1588,13 @@ pub(crate) fn serve_lock_token(
             "userId": input.target,
             "steps": steps,
         });
-        trx.put_json(
-            &format!("Json::Creature::{}", user_id),
-            &format!("lockedTokens.{}", lock_id),
-            &payload,
-            true,
-        )?;
+        crate::api::model::token_locks::put_lock(
+                    &*trx,
+                    &user_id,
+                    &lock_id,
+                    payload.as_object().ok_or_else(|| anyhow!("invalid lock payload"))?,
+                    true,
+                )?;
     } else {
         return Err(anyhow!("unknown lock type"));
     }
@@ -1642,7 +1604,7 @@ pub(crate) fn serve_lock_token(
 /// `/creatures/consumeLock` (`finance.lock.consume`) body.
 pub(crate) fn serve_consume_lock(
     app: &Arc<dyn ICore>,
-    trx: &dyn ITrx,
+    trx: &Trx,
     user_id: &str,
     input: ConsumeLockInput,
 ) -> Result<Value> {
@@ -1654,13 +1616,11 @@ pub(crate) fn serve_consume_lock(
         return Err(anyhow!("payer user not found"));
     }
     let sender = (CreaturePorts { trx }).account_or_empty(&input.user_id.clone())?;
-    let payment_map = match trx.get_json(
-        &format!("Json::Creature::{}", sender.id),
-        &format!("lockedTokens.{}", input.lock_id),
-    ) {
-        Ok(m) => m,
-        Err(_) => return Err(anyhow!("lock not found")),
-    };
+    let payment_map =
+                match crate::api::model::token_locks::lock(&*trx, &sender.id, &input.lock_id)? {
+                    Some(m) => m,
+                    None => return Err(anyhow!("lock not found")),
+                };
     let mut payment: Map<String, Value> = payment_map;
     let steps_raw = match payment.get("steps") {
         Some(Value::Array(arr)) if !arr.is_empty() => arr.clone(),
@@ -1755,10 +1715,7 @@ pub(crate) fn serve_consume_lock(
         }
     }
     if remaining_amount == 0 {
-        trx.del_json(
-            &format!("Json::Creature::{}", sender.id),
-            &format!("lockedTokens.{}", input.lock_id),
-        );
+        crate::api::model::token_locks::delete_lock(&*trx, &sender.id, &input.lock_id)?;
     } else {
         let total_amount = payment.get("amount").and_then(as_i64).unwrap_or(0);
         if total_amount <= 0 {
@@ -1776,12 +1733,7 @@ pub(crate) fn serve_consume_lock(
             "consumedAmount".to_string(),
             json!(total_amount - remaining_amount),
         );
-        trx.put_json(
-            &format!("Json::Creature::{}", sender.id),
-            &format!("lockedTokens.{}", input.lock_id),
-            &Value::Object(payment),
-            true,
-        )?;
+        crate::api::model::token_locks::put_lock(&*trx, &sender.id, &input.lock_id, &payment, true)?;
     }
     Ok(json!({
         "success": true,

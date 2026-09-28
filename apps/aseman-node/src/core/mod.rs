@@ -16,6 +16,7 @@
 pub mod actor;
 pub mod globe;
 pub mod orchestrator;
+pub mod trx;
 pub mod utils;
 
 pub use actor::{Info, State};

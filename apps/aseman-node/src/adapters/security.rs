@@ -22,7 +22,7 @@ use rsa::{RsaPrivateKey, RsaPublicKey};
 use crate::api::utils::crypto as cryp;
 use crate::models::core::ICore;
 use crate::models::ports::ISecurity;
-use crate::models::transaction::ITrx;
+use crate::core::trx::Trx;
 
 const KEYS_FOLDER: &str = "keys";
 
@@ -150,7 +150,7 @@ impl ISecurity for Security {
         let user_id_owned = user_id.to_string();
         self.app.modify_state(
             true,
-            Box::new(move |trx: &dyn ITrx| {
+            Box::new(move |trx: &Trx| {
                 *slot_clone.lock().unwrap() = aseman_ports::CreatureDirectory::creature(
                     &crate::api::model::creature_ports::CreaturePorts { trx },
                     &user_id_owned,
@@ -201,7 +201,7 @@ impl ISecurity for Security {
         let user_id_owned = user_id.to_string();
         self.app.modify_state(
             true,
-            Box::new(move |trx: &dyn ITrx| {
+            Box::new(move |trx: &Trx| {
                 *god_clone.lock().unwrap() =
                     trx.get_string(&format!("god::{}", user_id_owned)) == "true";
                 Ok(())
@@ -221,7 +221,7 @@ impl ISecurity for Security {
         let (user_id, store_id) = (user_id.to_string(), store_id.to_string());
         self.app.modify_state(
             true,
-            Box::new(move |trx: &dyn ITrx| {
+            Box::new(move |trx: &Trx| {
                 // Membership goes through the store port (legacy adapter until cutover).
                 let ports = crate::api::model::store_ports::MembershipPorts { trx };
                 let member = aseman_ports::StoreAccess::is_member(&ports, &store_id, &user_id)

@@ -393,6 +393,20 @@ impl LegacyKvStore for ReplicatedKvStore {
         self.local.scan_all()
     }
 
+    fn scan_range(
+        &self,
+        start: &[u8],
+        end: &[u8],
+        reverse: bool,
+        limit: Option<usize>,
+    ) -> LegacyMigrationResult<Vec<(Vec<u8>, Vec<u8>)>> {
+        self.local.scan_range(start, end, reverse, limit)
+    }
+
+    fn has_prefix(&self, prefix: &[u8]) -> LegacyMigrationResult<bool> {
+        self.local.has_prefix(prefix)
+    }
+
     fn write_batch(&self, writes: &[LegacyKvWrite]) -> LegacyMigrationResult<()> {
         let Some(cluster) = &self.cluster else {
             return self.local.write_batch(writes);

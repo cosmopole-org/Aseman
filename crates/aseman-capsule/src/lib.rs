@@ -7,12 +7,15 @@ use aseman_contracts::capsule::{CapsuleEnvelope, CapsuleId, CapsuleKind, Capsule
 use thiserror::Error;
 
 pub mod audit;
+pub mod auto;
 pub mod capability;
 pub mod creature;
 pub mod entity;
+pub mod finance;
 pub mod gateway;
 pub mod identity;
 pub mod program;
+pub mod storage_adapter;
 pub mod store;
 mod support;
 pub mod workload;

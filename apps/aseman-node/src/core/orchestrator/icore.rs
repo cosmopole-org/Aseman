@@ -11,7 +11,6 @@ use anyhow::Result;
 use rsa::RsaPrivateKey;
 use serde_json::Value;
 
-use crate::adapters::rocksdb::trx::TrxWrapper;
 use crate::api::model::core_storage::{StateFailure, run_action};
 use crate::core::orchestrator::types::{Core, CoreWeakHandles, WeakCoreView};
 use crate::core::{Info as BaseInfo, State as ActorState};
@@ -20,9 +19,9 @@ use crate::models::action::TrxClosure;
 use crate::models::core::{ICore, StateClosure};
 use crate::models::globe::IGlobe;
 use crate::models::info::IInfo;
-use crate::models::ports::{IStorage, ITools, StateBackend};
+use crate::core::trx::Trx;
+use crate::models::ports::{IStorage, ITools};
 use crate::models::state::IState;
-use crate::models::transaction::ITrx;
 
 impl ICore for Core {
     fn owner_id(&self) -> String {
@@ -82,43 +81,9 @@ impl ICore for Core {
         store_id: &str,
         input: &str,
     ) {
-        let user_id_owned = user_id.to_string();
-        let tag_owned = tag.to_string();
-        let machine_id_owned = machine_id.to_string();
-        let store_id_owned = store_id.to_string();
-        let input_owned = input.to_string();
-        self.modify_state(
-            false,
-            Box::new(move |trx: &dyn ITrx| {
-                let tail = crate::api::utils::crypto::secure_unique_string();
-                let prefix = format!("chainCallback::{}_{}", user_id_owned, tag_owned);
-                let already = !trx.get_by_prefix(&format!("{}|>", prefix)).is_empty();
-                trx.put_bytes(&format!("{}|>{}", prefix, tail), vec![0x01]);
-                trx.put_bytes(
-                    &format!("{}|{}::machineId", prefix, tail),
-                    machine_id_owned.as_bytes().to_vec(),
-                );
-                trx.put_bytes(
-                    &format!("{}|{}::storeId", prefix, tail),
-                    store_id_owned.as_bytes().to_vec(),
-                );
-                trx.put_bytes(
-                    &format!("{}|{}::attachment", prefix, tail),
-                    input_owned.as_bytes().to_vec(),
-                );
-                if !already {
-                    trx.put_bytes(
-                        &format!("{}::targetCount", prefix),
-                        (count as u32).to_be_bytes().to_vec(),
-                    );
-                    trx.put_bytes(
-                        &format!("{}::tempCount", prefix),
-                        0u32.to_be_bytes().to_vec(),
-                    );
-                }
-                Ok(())
-            }),
-        );
+        // The legacy `chainCallback::*` rows this planted were write-only: nothing
+        // ever read them (ADR 0020), so the trigger keeps no state.
+        let _ = (count, user_id, tag, machine_id, store_id, input);
     }
     fn ip_addr(&self) -> String {
         self.ip.clone()
@@ -195,9 +160,9 @@ impl ICore for Core {
 
 impl Core {
     /// A transaction over this core's storage, when the tools are loaded.
-    pub(crate) fn checked_trx(&self, readonly: bool) -> Option<Arc<dyn ITrx>> {
+    pub(crate) fn checked_trx(&self, readonly: bool) -> Option<Arc<Trx>> {
         let tools = self.tools.lock().unwrap().clone()?;
-        begin_trx(self.weak_self(), &tools.storage(), readonly)
+        begin_trx(&tools.storage(), readonly)
     }
 
     /// Build a fresh `Arc<dyn ICore>` pointing at the same underlying
@@ -226,52 +191,35 @@ impl Core {
     }
 }
 
-/// Run a transaction closure with ADR 0026 commit ordering; a storage failure is
-/// logged (LD-10), an action failure is the closure's own answer.
-/// A transaction on the selected storage provider (ADR 0033), or `None` when the
-/// provider cannot begin one (reported).
-pub(crate) fn begin_trx(
-    core: Arc<dyn ICore>,
-    storage: &Arc<dyn IStorage>,
-    readonly: bool,
-) -> Option<Arc<dyn ITrx>> {
-    match storage.state() {
-        StateBackend::RocksDb(db) => Some(TrxWrapper::new(core, db, readonly) as Arc<dyn ITrx>),
-        StateBackend::Postgres(factory) => match factory.begin(readonly) {
-            Ok(trx) => Some(trx as Arc<dyn ITrx>),
-            Err(error) => {
-                eprintln!("storage: cannot begin a PostgreSQL transaction: {error}");
-                None
-            }
-        },
+/// A transaction on the storage provider (ADR 0036), or `None` when it cannot
+/// begin one (reported).
+pub(crate) fn begin_trx(storage: &Arc<dyn IStorage>, readonly: bool) -> Option<Arc<Trx>> {
+    match storage.begin(readonly) {
+        Ok(trx) => Some(Arc::new(trx)),
+        Err(error) => {
+            eprintln!("{error}");
+            None
+        }
     }
 }
 
-pub(crate) fn run_trx_closure(trx: &Arc<dyn ITrx>, mut fn_: TrxClosure) {
-    if let Err(StateFailure::Storage(error)) = run_action(
-        trx.readonly(),
-        || fn_(&**trx),
-        || trx.commit(),
-        || trx.discard(),
-    ) {
+/// Run a transaction closure; a storage failure is logged (LD-10), an action
+/// failure is the closure's own answer.
+pub(crate) fn run_trx_closure(trx: &Arc<Trx>, mut fn_: TrxClosure) {
+    if let Err(StateFailure::Storage(error)) = run_action(trx, || fn_(trx)) {
         eprintln!("modify_state: {error}");
     }
 }
 
-/// Run a secured state closure with ADR 0026 commit ordering.
+/// Run a secured state closure in its transaction.
 pub(crate) fn run_state_closure(
-    trx: &Arc<dyn ITrx>,
+    trx: &Arc<Trx>,
     info: Arc<dyn IInfo>,
     src: &str,
     mut fn_: StateClosure,
 ) -> Result<(), StateFailure> {
     let state: Arc<dyn IState> = Arc::new(ActorState::new(Some(info), Some(trx.clone()), src));
-    run_action(
-        trx.readonly(),
-        || fn_(state),
-        || trx.commit(),
-        || trx.discard(),
-    )
+    run_action(trx, || fn_(state))
 }
 
 // Kept for signature parity / import calm.

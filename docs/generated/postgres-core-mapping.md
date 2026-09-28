@@ -2,7 +2,7 @@
 status: GENERATED
 owner: storage/postgres
 source_of_truth: contracts/capsule/kinds, contracts/storage/postgres, and scripts/generate_postgres_core.py
-last_verified_commit: 948bfcb90f75
+last_verified_commit: 99ceca299efa
 verification: python3 scripts/generate_postgres_core.py --check
 ---
 
@@ -33,8 +33,6 @@ accepted logical schema in both layouts. No guest payload table exists.
 | `core.module_installation` | `aseman_core.module_installations` | 6 | 0 | 1 |
 | `core.guest_database_binding` | `aseman_core.guest_database_bindings` | 6 | 1 | 3 |
 | `core.guest_schema_definition` | `aseman_core.guest_schema_definitions` | 4 | 2 | 1 |
-| `core.chain` | `aseman_core.chains` | 2 | 1 | 1 |
-| `core.chain_shard` | `aseman_core.chain_shards` | 2 | 1 | 1 |
 | `core.entity` | `aseman_core.entities` | 3 | 1 | 1 |
 | `core.user_metadata` | `aseman_core.user_metadata_documents` | 3 | 1 | 1 |
 | `core.creature_metadata` | `aseman_core.creature_metadata_documents` | 3 | 1 | 1 |
@@ -52,6 +50,33 @@ accepted logical schema in both layouts. No guest payload table exists.
 | `core.bridge_grant` | `aseman_core.bridge_grants` | 6 | 0 | 1 |
 | `core.bridge_topic` | `aseman_core.bridge_topics` | 2 | 0 | 1 |
 | `core.legacy_identity` | `aseman_core.legacy_identities` | 4 | 0 | 2 |
+| `core.counter` | `aseman_core.counters` | 2 | 0 | 1 |
+| `core.marker` | `aseman_core.markers` | 2 | 0 | 1 |
+| `core.finance_account` | `aseman_core.finance_accounts` | 8 | 0 | 1 |
+| `core.finance_hold` | `aseman_core.finance_holds` | 3 | 0 | 1 |
+| `core.finance_pool` | `aseman_core.finance_pools` | 2 | 0 | 1 |
+| `core.finance_pool_reservation` | `aseman_core.finance_pool_reservations` | 2 | 0 | 1 |
+| `core.finance_live_debit` | `aseman_core.finance_live_debits` | 1 | 0 | 1 |
+| `core.finance_project_budget` | `aseman_core.finance_project_budgets` | 1 | 0 | 1 |
+| `core.finance_payout` | `aseman_core.finance_payouts` | 3 | 0 | 1 |
+| `core.finance_journal` | `aseman_core.finance_journals` | 5 | 0 | 1 |
+| `core.finance_journal_participant` | `aseman_core.finance_journal_participants` | 3 | 0 | 1 |
+| `core.billing_catalog` | `aseman_core.billing_catalogs` | 1 | 0 | 1 |
+| `core.billing_quote` | `aseman_core.billing_quotes` | 1 | 0 | 1 |
+| `core.namespace_document` | `aseman_core.namespace_documents` | 1 | 0 | 1 |
+| `core.user_email` | `aseman_core.user_emails` | 2 | 0 | 2 |
+| `core.replay_nonce` | `aseman_core.nonce_records` | 3 | 0 | 1 |
+| `core.identity_challenge` | `aseman_core.auth_challenges` | 4 | 0 | 1 |
+| `core.public_idempotency` | `aseman_core.public_idempotency_claims` | 7 | 0 | 1 |
+| `core.chain` | `aseman_core.chains` | 3 | 0 | 1 |
+| `core.chain_shard` | `aseman_core.chain_shards` | 3 | 0 | 1 |
+| `core.session_token` | `aseman_core.session_tokens` | 2 | 0 | 1 |
+| `core.vm_instance` | `aseman_core.vm_instances` | 7 | 0 | 1 |
+| `core.vm_distribution` | `aseman_core.vm_distributions` | 2 | 0 | 1 |
+| `core.vm_terminal` | `aseman_core.vm_terminals` | 4 | 0 | 1 |
+| `core.token_lock` | `aseman_core.token_locks` | 3 | 0 | 1 |
+| `core.secret_value` | `aseman_core.secret_values` | 4 | 0 | 1 |
+| `core.secret_access` | `aseman_core.secret_accesses` | 5 | 0 | 1 |
 
 The guest catalog tables contain only trusted bindings and schema definitions.
 Creature-owned rows are stored later in separate provider-native databases/namespaces

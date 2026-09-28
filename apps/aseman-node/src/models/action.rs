@@ -10,7 +10,7 @@
 use crate::core::utils::compat::AnyVal;
 use crate::models::input::IInput;
 use crate::models::state::IState;
-use crate::models::transaction::ITrx;
+use crate::core::trx::Trx;
 use anyhow::Result;
 use serde_json::{Map, Value};
 use std::sync::Arc;
@@ -18,8 +18,8 @@ use std::sync::Arc;
 /// Optional per-field getter used by extended-field search.
 pub type GetValueFn =
     Arc<dyn Fn(Arc<dyn IState>, Map<String, Value>) -> Result<Value> + Send + Sync>;
-/// Closure handed to a state modifier — operates on an [`ITrx`].
-pub type TrxClosure = Box<dyn FnMut(&dyn ITrx) -> Result<()> + Send>;
+/// Closure handed to a state modifier — runs in the action's [`Trx`].
+pub type TrxClosure = Box<dyn FnMut(&Trx) -> Result<()> + Send>;
 /// Function used to schedule a state modification. The `bool` is the
 /// readonly flag; the closure runs against the opened transaction.
 #[expect(

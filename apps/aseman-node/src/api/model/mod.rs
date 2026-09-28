@@ -1,7 +1,5 @@
-//! Translation of `shell/api/model` — the storage-backed entity models the
-//! Caspar shell uses. Each model carries a `type()` discriminator, a `push`
-//! that writes its columns/indices through the `ITrx`, and a `pull` /
-//! `all` / `list` family that reads them back.
+//! The node's legacy wire models and the ports of one state action over the storage
+//! module (ADR 0036).
 
 pub mod access;
 pub mod chain;
@@ -10,15 +8,17 @@ pub mod creature;
 pub mod creature_ports;
 pub mod entity;
 pub mod entity_ports;
-pub mod file;
 pub mod finance_ports;
 pub mod gateway_ports;
 pub mod guest_data;
 pub mod machine_program;
 pub mod program_ports;
+pub mod secrets;
 pub mod session;
 pub mod store;
 pub mod store_ports;
+pub mod token_locks;
+pub mod vm_runtime;
 
 pub use access::StorePermissions;
 pub use chain::{Chain, ChainShard};

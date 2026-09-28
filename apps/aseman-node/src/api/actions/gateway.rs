@@ -35,7 +35,7 @@ use crate::core::actor::Guard;
 use crate::models::action::ISecureAction;
 use crate::models::core::ICore;
 use crate::models::state::IState;
-use crate::models::transaction::ITrx;
+use crate::core::trx::Trx;
 
 use super::util::build_secure_action;
 
@@ -118,7 +118,7 @@ pub(crate) fn bridge_signal_packet(
 ///
 /// Returns `None` for an unknown or expired token — the caller must not be
 /// able to tell those apart, so both produce the same refusal.
-pub fn resolve_bridge_grant(trx: &dyn ITrx, token: &str) -> Option<BridgeGrant> {
+pub fn resolve_bridge_grant(trx: &Trx, token: &str) -> Option<BridgeGrant> {
     let token = token.trim();
     if token.is_empty() {
         return None;

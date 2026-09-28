@@ -1,0 +1,28 @@
+[package]
+name = "aseman-storage"
+description = "The storage API (ADR 0036): models, the Prisma-style transaction engine, and the provider plugin contract."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+aseman-config = { path = "../aseman-config" }
+aseman-contracts = { path = "../aseman-contracts" }
+aseman-ports = { path = "../aseman-ports" }
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+uuid.workspace = true
+
+[dev-dependencies]
+aseman-ports = { path = "../aseman-ports", features = ["conformance"] }
+
+[features]
+# (the conformance suite also runs the consensus-log contract)
+# The provider conformance suite and the in-memory reference provider.
+conformance = ["aseman-ports/conformance"]
+
+[lints]
+workspace = true

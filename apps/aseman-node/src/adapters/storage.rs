@@ -1,62 +1,155 @@
-//! The node's storage driver over the selected provider (ADR 0033).
+//! The node's storage module (ADR 0036): the one door to the storage provider plugin
+//! the node loaded.
 //!
-//! State transactions run on exactly one provider: the RocksDB provider's key/value
-//! store (local, or replicated through its OpenRaft cluster) or the PostgreSQL
-//! provider's compatibility transactions. The signal and build-log time series is
-//! PostgreSQL or QuestDB (`ASEMAN_SIGNAL_LOG_PROVIDER`).
+//! Every database operation of the node goes through here: transactions for state
+//! actions, id minting, and the consensus logs. The provider is a
+//! plugin chosen by `ASEMAN_CORE_STORAGE_PROVIDER` (see [`open`]); nothing in the node
+//! names a provider or a key layout.
 
 use std::sync::{Arc, Mutex};
 
 use anyhow::{Result, anyhow};
-use aseman_storage_rocksdb::{LegacySignalRow, QuestDbTimeSeries};
+use aseman_storage::client::core::counter;
+use aseman_storage::{Mode, Models, ProviderSettings, Registry, StorageError};
 use uuid::Uuid;
 
-use crate::models::core::ICore;
-use crate::models::packet::{LogPacket, LogQuery};
-use crate::models::packet::{decode_tags, encode_tags};
-use crate::models::ports::{IStorage, StateBackend};
-use crate::models::transaction::ITrx;
+use crate::core::trx::Trx;
+use crate::models::ports::IStorage;
 
-/// Where the legacy signal and build-log tables are served from.
-pub enum SignalLogTarget {
-    /// The legacy QuestDB instance on this port.
-    QuestDb(u16),
-    /// PostgreSQL at this connection URL (`ASEMAN_SIGNAL_LOG_PROVIDER=postgres`).
-    Postgres(String),
+/// How many times id minting retries a lost race before failing.
+const MINT_ATTEMPTS: usize = 16;
+
+static INSTALLED: std::sync::OnceLock<aseman_storage::Storage> = std::sync::OnceLock::new();
+
+/// Open the storage provider plugin `name` from `registry`, as the node's storage.
+pub fn open(
+    registry: &Registry,
+    name: &str,
+    settings: &ProviderSettings,
+) -> Result<aseman_storage::Storage> {
+    let storage = aseman_storage::Storage::open(registry, name, settings)
+        .map_err(|error| anyhow!("{error}"))?;
+    let _ = INSTALLED.set(storage.clone());
+    Ok(storage)
+}
+
+/// The node's storage, once [`open`] ran (services composed after the node loads).
+pub fn installed() -> Option<aseman_storage::Storage> {
+    INSTALLED.get().cloned()
+}
+
+/// PostgreSQL connections the node's transactions may hold.
+const STATE_CONNECTIONS: u32 = 16;
+/// Where module administration listens when the provider does not serve it.
+const DEFAULT_ADMIN_LISTEN: &str = "0.0.0.0:7440";
+
+/// Open the storage provider plugin the configuration names (ADR 0036), with module
+/// administration served on the provider's own listener (a RocksDB cluster) or on the
+/// node's authenticated administration listener.
+///
+/// `serve_admin` is false for one-shot commands (a stopped node's operator tools).
+pub fn open_from_config(
+    config: Option<&aseman_config::AsemanConfig>,
+    storage_root: &str,
+    base_db_path: &str,
+    serve_admin: bool,
+) -> Result<aseman_storage::Storage> {
+    use aseman_config::CoreStorageProvider;
+    let routes = if serve_admin {
+        crate::adapters::module_admin::route_handler(storage_root)
+    } else {
+        None
+    };
+    let mut settings = aseman_storage::ProviderSettings::embedded(storage_root)
+        .map_err(|error| anyhow!("{error}"))?;
+    settings.max_connections = STATE_CONNECTIONS;
+    settings.admin_routes = routes.clone();
+    // A RocksDB store from before ADR 0036 must be converted first.
+    settings.legacy_store = Some(std::path::PathBuf::from(base_db_path));
+    let name = match config {
+        Some(config) => {
+            settings.layout = config.core_storage.layout;
+            settings.binding_generation = config.core_storage.binding_generation;
+            settings.cluster = config.cluster.clone();
+            if let Some(secret) = &config.database_url_secret {
+                settings.database_url = Some(aseman_config::read_secret_file(secret, 4096)?);
+            }
+            if let Some(secret) = &config.core_storage.postgres_shards_secret {
+                settings.shard_map = Some(aseman_config::read_secret_file(secret, 64 * 1024)?);
+            }
+            match config.core_storage.provider {
+                CoreStorageProvider::Postgres => "postgres",
+                CoreStorageProvider::RocksDb => "rocksdb",
+            }
+        }
+        None => "rocksdb",
+    };
+    let storage = open(
+        &aseman_storage_providers::registry(),
+        name,
+        &settings,
+    )?;
+    if !storage.provider().serves_admin_routes()
+        && let Some(routes) = routes
+    {
+        let cluster = config.map(|config| &config.cluster);
+        let token = cluster
+            .and_then(|cluster| cluster.auth_token.clone())
+            .unwrap_or_default();
+        if !token.is_empty() {
+            let listen = cluster
+                .and_then(|cluster| cluster.listen_addr.clone())
+                .unwrap_or_else(|| DEFAULT_ADMIN_LISTEN.to_owned());
+            crate::adapters::module_admin::serve(routes, &listen, &token)?;
+        }
+    }
+    Ok(storage)
 }
 
 /// Concrete [`IStorage`] implementation.
 pub struct Storage {
-    _app: Arc<dyn ICore>,
     storage_root: String,
-    state: StateBackend,
-    tsdb: QuestDbTimeSeries,
-    lock: Mutex<()>,
+    storage: aseman_storage::Storage,
+    mint: Mutex<()>,
 }
 
 impl Storage {
-    /// Compose the driver over an already-opened provider backend.
-    pub fn new(
-        app: Arc<dyn ICore>,
-        storage_root: &str,
-        state: StateBackend,
-        signal_log: SignalLogTarget,
-    ) -> Result<Arc<Storage>> {
-        // The QuestDB client, its startup table repair, and its SQL live in the
-        // legacy storage provider; this driver never names QuestDB types.
-        let tsdb = match signal_log {
-            SignalLogTarget::QuestDb(port) => QuestDbTimeSeries::connect(port),
-            SignalLogTarget::Postgres(url) => QuestDbTimeSeries::connect_postgres(&url),
-        }
-        .map_err(|e| anyhow!("{e}"))?;
-
-        Ok(Arc::new(Storage {
-            _app: app,
+    /// Compose the node's storage over an opened provider.
+    pub fn new(storage_root: &str, storage: aseman_storage::Storage) -> Arc<Storage> {
+        Arc::new(Storage {
             storage_root: storage_root.to_string(),
-            state,
-            tsdb,
-            lock: Mutex::new(()),
-        }))
+            storage,
+            mint: Mutex::new(()),
+        })
+    }
+
+    fn mint(&self, name: &str) -> Result<i64> {
+        let _guard = self.mint.lock().unwrap_or_else(|error| error.into_inner());
+        for _ in 0..MINT_ATTEMPTS {
+            let trx = self.begin(false)?;
+            let next = trx
+                .counter()
+                .find_unique(counter::by_key(name))
+                .map_err(|error| anyhow!("{error}"))?
+                .map_or(1, |row| row.value + 1);
+            let written = trx
+                .counter()
+                .upsert(
+                    counter::by_key(name),
+                    counter::Create {
+                        key: name.to_owned(),
+                        value: next,
+                    },
+                    counter::update().value(next),
+                )
+                .and_then(|_| trx.commit());
+            match written {
+                Ok(()) => return Ok(next),
+                Err(StorageError::Conflict(_)) => continue,
+                Err(error) => return Err(anyhow!("{error}")),
+            }
+        }
+        Err(anyhow!("id counter {name} stayed contended"))
     }
 }
 
@@ -65,140 +158,27 @@ impl IStorage for Storage {
         self.storage_root.clone()
     }
 
-    fn state(&self) -> StateBackend {
-        self.state.clone()
+    fn begin(&self, readonly: bool) -> Result<Trx> {
+        self.storage
+            .begin(if readonly { Mode::ReadOnly } else { Mode::ReadWrite })
+            .map_err(|error| anyhow!("storage: cannot begin a transaction: {error}"))
     }
 
-    fn gen_id(&self, t: &dyn ITrx, origin: &str) -> String {
-        // This mutex exists ONLY to make the id-counter read-modify-write below
-        // atomic across concurrent callers. It must NOT be taken by the QuestDB
-        // (tsdb) log/read helpers: holding it across a blocking QuestDB round
-        // trip serialises every id mint behind log I/O, so a log-flooding VM
-        // could starve createMachine/createProgram into a request timeout.
-        let _guard = self.lock.lock().unwrap();
-        if origin == "global" {
-            let bytes = t.get_bytes("globalIdCounter");
-            let mut counter: i64 = if bytes.is_empty() {
-                0
-            } else if bytes.len() >= 8 {
-                i64::from_be_bytes(bytes[..8].try_into().unwrap())
-            } else {
-                0
-            };
-            counter += 1;
-            t.put_bytes("globalIdCounter", counter.to_be_bytes().to_vec());
-            format!("{}@{}", counter, origin)
-        } else {
-            let key = "localIdCounter";
-            let decode = |value: &[u8]| -> i64 {
-                if value.len() >= 8 {
-                    i64::from_be_bytes(value[..8].try_into().unwrap())
-                } else {
-                    0
-                }
-            };
-            let counter = match &self.state {
-                // RocksDB: the counter bypasses the transaction, as the original did.
-                StateBackend::RocksDb(kvdb) => {
-                    let counter =
-                        decode(&kvdb.get(key.as_bytes()).ok().flatten().unwrap_or_default()) + 1;
-                    let _ = kvdb.write_batch(&[aseman_storage_rocksdb::LegacyKvWrite::Put {
-                        key: key.as_bytes().to_vec(),
-                        value: counter.to_be_bytes().to_vec(),
-                    }]);
-                    counter
-                }
-                // PostgreSQL: the counter commits with the transaction that uses it.
-                StateBackend::Postgres(_) => {
-                    let counter = decode(&t.get_bytes(key)) + 1;
-                    t.put_bytes(key, counter.to_be_bytes().to_vec());
-                    counter
-                }
-            };
-            format!("{}@{}", counter, origin)
+    fn consensus_logs(&self) -> Arc<dyn aseman_ports::consensus_log::ConsensusLogStorage> {
+        self.storage.provider().consensus_logs()
+    }
+
+    fn gen_id(&self, origin: &str) -> String {
+        // Ids are `N@origin`: one counter for the global origin and one for every
+        // local origin, as the node always minted them.
+        let name = if origin == "global" { "global" } else { "local" };
+        match self.mint(name) {
+            Ok(value) => format!("{value}@{origin}"),
+            Err(error) => {
+                // A missed id is a failed action, not a reused one.
+                eprintln!("storage: id minting failed: {error}");
+                format!("{}@{origin}", Uuid::now_v7().simple())
+            }
         }
-    }
-
-    fn log_time_sieries(
-        &self,
-        store_id: &str,
-        user_id: &str,
-        data: &str,
-        tags: &[String],
-        time_val: i64,
-    ) -> Result<LogPacket> {
-        // A failed insert is returned, never swallowed: this row IS the message.
-        let row = LegacySignalRow {
-            id: Uuid::new_v4().to_string(),
-            store_id: store_id.to_string(),
-            user_id: user_id.to_string(),
-            data: data.to_string(),
-            encoded_tags: encode_tags(tags),
-            time_millis: time_val,
-            edited: false,
-        };
-        self.tsdb.insert_signal(&row).map_err(|e| anyhow!("{e}"))?;
-        Ok(LogPacket {
-            id: row.id,
-            user_id: row.user_id,
-            data: row.data,
-            store_id: row.store_id,
-            tags: tags.to_vec(),
-            time: time_val,
-            edited: false,
-        })
-    }
-
-    fn update_log(
-        &self,
-        store_id: &str,
-        user_id: &str,
-        signal_id: &str,
-        data: &str,
-        time_val: i64,
-    ) -> LogPacket {
-        self.tsdb.update_signal(store_id, signal_id, data);
-        LogPacket {
-            id: signal_id.to_string(),
-            user_id: user_id.to_string(),
-            data: data.to_string(),
-            store_id: store_id.to_string(),
-            // Tags are immutable: an edit rewrites the payload, never the labels
-            // a reader filtered on to find the packet in the first place.
-            tags: Vec::new(),
-            time: time_val,
-            edited: true,
-        }
-    }
-
-    fn read_store_logs(&self, store_id: &str, query: &LogQuery) -> Result<Vec<LogPacket>> {
-        // An unreachable or failing log is an ERROR, not an empty conversation.
-        Ok(self
-            .tsdb
-            .read_signals(store_id, query)
-            .map_err(|e| anyhow!("{e}"))?
-            .into_iter()
-            .map(log_packet)
-            .collect())
-    }
-
-    fn pick_store_logs(&self, store_id: &str, ids: Vec<String>) -> Vec<LogPacket> {
-        self.tsdb
-            .pick_signals(store_id, &ids)
-            .into_iter()
-            .map(log_packet)
-            .collect()
-    }
-}
-
-fn log_packet(row: LegacySignalRow) -> LogPacket {
-    LogPacket {
-        tags: decode_tags(&row.encoded_tags),
-        id: row.id,
-        user_id: row.user_id,
-        data: row.data,
-        store_id: row.store_id,
-        time: row.time_millis,
-        edited: row.edited,
     }
 }

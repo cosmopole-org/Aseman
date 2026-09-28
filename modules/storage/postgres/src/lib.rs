@@ -24,6 +24,8 @@ pub mod consensus_log;
 pub mod coordination;
 pub mod guest;
 mod layout;
+mod model_query;
+pub mod plugin;
 pub mod migration;
 pub mod public_action;
 mod replay;
@@ -104,6 +106,9 @@ struct TableMapping {
     required_fields: BTreeSet<String>,
     relationships: BTreeMap<String, RelationshipMapping>,
     unique_indexes: Vec<Vec<String>>,
+    /// Query indexes (ADR 0036); enforced by the generated DDL only.
+    #[serde(default)]
+    range_indexes: Vec<Vec<String>>,
 }
 
 #[derive(Clone, Debug, Deserialize)]
@@ -192,6 +197,7 @@ fn all_tables() -> StorageResult<&'static [TableMapping]> {
                 required_fields: row.required_fields,
                 relationships: row.relationships,
                 unique_indexes: row.unique_indexes,
+                range_indexes: Vec::new(),
             });
         }
         let physical = tables
@@ -343,6 +349,16 @@ fn validate_mapping(catalog: &MappingCatalog) -> Result<(), String> {
                 || envelope_columns.contains(field.as_str())
         }) {
             return Err(format!("document column collision in {}", mapping.kind));
+        }
+        for fields in &mapping.range_indexes {
+            if fields.is_empty()
+                || fields.iter().any(|field| {
+                    !mapping.fields.contains_key(field)
+                        && !mapping.relationships.contains_key(field)
+                })
+            {
+                return Err(format!("invalid range index in {}", mapping.kind));
+            }
         }
         for fields in &mapping.unique_indexes {
             if fields.is_empty()
@@ -880,7 +896,7 @@ pub(crate) fn write_prepared(
         expected_revision,
         columns,
         values,
-        canonical,
+        canonical: _,
     } = write;
     let capsule_id = Uuid::from_bytes(capsule.id.0);
     let changed = match expected_revision {
@@ -888,21 +904,7 @@ pub(crate) fn write_prepared(
             if capsule.revision != 1 {
                 return Err(PostgresStorageError::Conflict);
             }
-            let placeholders = (1..=columns.len())
-                .map(|index| format!("${index}"))
-                .collect::<Vec<_>>()
-                .join(", ");
-            let statement = format!(
-                "INSERT INTO {} ({}) VALUES ({placeholders}) \
-                 ON CONFLICT (id) DO NOTHING RETURNING revision",
-                qualified(mapping),
-                columns
-                    .iter()
-                    .map(|column| sql_identifier(column))
-                    .collect::<Vec<_>>()
-                    .join(", ")
-            );
-            client.query_opt(&statement, &sql_parameters(values))
+            insert_or_replay(client, write)?
         }
         Some(expected) => {
             if capsule.revision != expected.saturating_add(1) {
@@ -926,13 +928,73 @@ pub(crate) fn write_prepared(
                  AND $4 = created_at_micros AND $6 = integrity_hash RETURNING revision",
                 qualified(mapping)
             );
-            client.query_opt(&statement, &sql_parameters(&update_values))
+            client
+                .query_opt(&statement, &sql_parameters(&update_values))
+                .map_err(map_postgres_error)?
+                .is_some()
         }
-    }
-    .map_err(map_postgres_error)?;
-    if changed.is_some() {
+    };
+    if changed {
         return Ok(());
     }
+    replay_or_conflict(client, write, capsule_id)
+}
+
+/// Store a capsule of any revision exactly as given (migration import): inserted
+/// when its id is free, accepted when the identical capsule is stored, and a conflict
+/// otherwise.
+pub(crate) fn import_prepared(
+    client: &mut impl GenericClient,
+    write: &PreparedWrite<'_>,
+) -> StorageResult<()> {
+    if insert_or_replay(client, write)? {
+        return Ok(());
+    }
+    replay_or_conflict(client, write, Uuid::from_bytes(write.capsule.id.0))
+}
+
+/// Insert the capsule when its id is free; whether it was inserted.
+fn insert_or_replay(
+    client: &mut impl GenericClient,
+    write: &PreparedWrite<'_>,
+) -> StorageResult<bool> {
+    let PreparedWrite {
+        mapping,
+        columns,
+        values,
+        ..
+    } = write;
+    let placeholders = (1..=columns.len())
+                .map(|index| format!("${index}"))
+                .collect::<Vec<_>>()
+                .join(", ");
+            let statement = format!(
+                "INSERT INTO {} ({}) VALUES ({placeholders}) \
+                 ON CONFLICT (id) DO NOTHING RETURNING revision",
+                qualified(mapping),
+                columns
+                    .iter()
+                    .map(|column| sql_identifier(column))
+                    .collect::<Vec<_>>()
+                    .join(", ")
+            );
+            client
+                .query_opt(&statement, &sql_parameters(values))
+                .map_err(map_postgres_error)
+                .map(|row| row.is_some())
+}
+
+/// An identical replay of the stored capsule succeeds; anything else is a conflict.
+fn replay_or_conflict(
+    client: &mut impl GenericClient,
+    write: &PreparedWrite<'_>,
+    capsule_id: Uuid,
+) -> StorageResult<()> {
+    let PreparedWrite {
+        mapping,
+        canonical,
+        ..
+    } = write;
     let statement = format!(
         "SELECT {} FROM {} WHERE id = $1",
         layout::select_list(mapping),
@@ -1328,7 +1390,17 @@ mod tests {
     #[test]
     fn generated_mapping_is_closed_safe_and_complete() {
         let catalog = mapping_catalog().unwrap();
-        assert_eq!(catalog.tables.len(), 36);
+        let registry: serde_json::Value = serde_json::from_str(include_str!(
+            "../../../../contracts/capsule/kinds/core-registry.json"
+        ))
+        .unwrap();
+        let core_kinds = registry["kinds"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .filter(|kind| kind["storage_class"] == "core")
+            .count();
+        assert_eq!(catalog.tables.len(), core_kinds);
         assert!(
             catalog
                 .tables

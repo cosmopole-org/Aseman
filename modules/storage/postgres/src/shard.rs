@@ -114,7 +114,7 @@ impl ShardMap {
         Ok(())
     }
 
-    fn home_index(&self) -> usize {
+    pub fn home_index(&self) -> usize {
         self.shards
             .iter()
             .position(|shard| shard.name == self.home)
@@ -142,6 +142,14 @@ pub fn shard_of(id: &CapsuleId, shards: usize) -> usize {
 
 /// An open transaction on the selected provider.
 pub trait UnitOfWork: CapsuleStore {
+    /// Live capsules of `kind` matching a model query (ADR 0036).
+    fn find(
+        &self,
+        kind: &str,
+        query: &aseman_storage::FindMany,
+    ) -> StorageResult<Vec<CapsuleEnvelope>>;
+    /// How many live capsules of `kind` match `filter`.
+    fn count(&self, kind: &str, filter: Option<&aseman_storage::Where>) -> StorageResult<u64>;
     /// Commit every write of the unit, on every shard it touched. The unit is
     /// finished afterwards.
     fn commit(&self) -> StorageResult<()>;
@@ -159,6 +167,18 @@ pub trait UnitOfWorkFactory: Send + Sync {
 }
 
 impl UnitOfWork for PostgresUnitOfWork {
+    fn find(
+        &self,
+        kind: &str,
+        query: &aseman_storage::FindMany,
+    ) -> StorageResult<Vec<CapsuleEnvelope>> {
+        self.with_client(|client| crate::model_query::find_on(client, kind, query))
+    }
+
+    fn count(&self, kind: &str, filter: Option<&aseman_storage::Where>) -> StorageResult<u64> {
+        self.with_client(|client| crate::model_query::count_on(client, kind, filter))
+    }
+
     fn commit(&self) -> StorageResult<()> {
         self.finish("COMMIT")
     }
@@ -507,6 +527,57 @@ impl CapsuleStore for ShardedUnitOfWork {
 }
 
 impl UnitOfWork for ShardedUnitOfWork {
+    fn find(
+        &self,
+        kind: &str,
+        query: &aseman_storage::FindMany,
+    ) -> StorageResult<Vec<CapsuleEnvelope>> {
+        let capsule_kind = CapsuleKind(kind.to_owned());
+        let failed = |error: CapsuleStoreError| PostgresStorageError::Unavailable(error.to_string());
+        if is_reference_kind(&capsule_kind)? {
+            return self
+                .with_unit(self.factory.home, |unit| {
+                    unit.find(kind, query).map_err(store_error)
+                })
+                .map_err(failed);
+        }
+        // Each shard returns its first `skip + take` rows; the merge applies `skip`.
+        let window = query
+            .skip
+            .saturating_add(query.take.unwrap_or(crate::model_query::DEFAULT_TAKE));
+        let mut rows = Vec::new();
+        for shard in 0..self.factory.shards.len() {
+            rows.extend(
+                self.with_unit(shard, |unit| {
+                    unit.with_client(|client| {
+                        crate::model_query::find_keyed_on(client, kind, query, 0, window)
+                    })
+                    .map_err(store_error)
+                })
+                .map_err(failed)?,
+            );
+        }
+        Ok(crate::model_query::merge(rows, query))
+    }
+
+    fn count(&self, kind: &str, filter: Option<&aseman_storage::Where>) -> StorageResult<u64> {
+        let failed = |error: CapsuleStoreError| PostgresStorageError::Unavailable(error.to_string());
+        if is_reference_kind(&CapsuleKind(kind.to_owned()))? {
+            return self
+                .with_unit(self.factory.home, |unit| {
+                    unit.count(kind, filter).map_err(store_error)
+                })
+                .map_err(failed);
+        }
+        let mut total = 0;
+        for shard in 0..self.factory.shards.len() {
+            total += self
+                .with_unit(shard, |unit| unit.count(kind, filter).map_err(store_error))
+                .map_err(failed)?;
+        }
+        Ok(total)
+    }
+
     fn commit(&self) -> StorageResult<()> {
         self.commit_all()
     }

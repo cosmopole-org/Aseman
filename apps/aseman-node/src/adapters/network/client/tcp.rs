@@ -37,7 +37,7 @@ use crate::models::core::ICore;
 use crate::models::ports::ITcp;
 use crate::models::ports::Listener;
 use crate::models::ports::Protocol;
-use crate::models::transaction::ITrx;
+use crate::core::trx::Trx;
 use aseman_network_legacy::TlsConfig;
 use aseman_network_legacy::{
     TlsStream, accept, bind_tls, encode_client_response_body, encode_client_update_body,
@@ -262,7 +262,7 @@ impl Tcp {
         let member = user_id.to_string();
         self.app.modify_state(
             true,
-            Box::new(move |trx: &dyn ITrx| {
+            Box::new(move |trx: &Trx| {
                 // Membership goes through the store port (legacy adapter until cutover).
                 let ports = crate::api::model::store_ports::MembershipPorts { trx };
                 if let Ok(ids) = aseman_ports::StoreAccess::stores_of(&ports, &member) {

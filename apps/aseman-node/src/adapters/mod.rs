@@ -2,11 +2,9 @@
 //! in [`crate::models::ports`].
 //!
 //! - `blob_store` — storage-root [`aseman_ports::BlobStore`] provider (ADR 0027)
-//! - `postgres` — PostgreSQL compatibility transaction adapter
 //! - `ratelimit` — cross-protocol token-bucket request admission control
-//! - `rocksdb` — legacy RocksDB transaction adapter
 //! - `signaler` — in-process pub/sub event bus
-//! - `storage` — RocksDB + PostgreSQL persistence
+//! - `storage` — the storage module: loads the provider plugin (ADR 0036)
 //! - `security` — RSA/ECDSA signing and verification
 //! - `vmm` — in-process virtual-machine driver (wasm / docker /
 //!   javascript / elpify / elpian / firecracker)
@@ -17,9 +15,7 @@ pub(crate) mod blob_store;
 pub mod gateway_subs;
 pub mod module_admin;
 pub mod network;
-pub mod postgres;
 pub mod ratelimit;
-pub mod rocksdb;
 pub mod security;
 pub mod signaler;
 pub mod storage;

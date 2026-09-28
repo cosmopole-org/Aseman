@@ -1,11 +1,12 @@
-//! Translation of `shell/api/model/chain.go`.
-
-use std::collections::HashMap;
+//! Chains and their shards (ADR 0036): the `core.chain` and `core.chain_shard`
+//! models, keyed by chain id, in their legacy wire shapes.
 
 use anyhow::Result;
+use aseman_storage::client::core::{chain, chain_shard};
+use aseman_storage::{FindMany, Models};
 use serde::{Deserialize, Serialize};
 
-use crate::models::transaction::ITrx;
+use crate::core::trx::{Trx, failed};
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct Chain {
@@ -16,69 +17,34 @@ pub struct Chain {
 }
 
 impl Chain {
-    pub fn type_() -> &'static str {
-        "Chain"
+    /// Record the chain (idempotent).
+    pub fn save(&self, trx: &Trx) -> Result<()> {
+        trx.chain()
+            .upsert(
+                chain::by_key(self.id.clone()),
+                chain::Create {
+                    key: self.id.clone(),
+                    store_id: Some(self.store_id.clone()),
+                    status: Some("active".to_owned()),
+                },
+                chain::update().store_id(Some(self.store_id.clone())),
+            )
+            .map(drop)
+            .map_err(failed)
     }
 
-    pub fn push(&self, trx: &dyn ITrx) {
-        let mut cols: HashMap<String, Vec<u8>> = HashMap::new();
-        cols.insert("id".into(), self.id.as_bytes().to_vec());
-        cols.insert("storeId".into(), self.store_id.as_bytes().to_vec());
-        trx.put_obj(Self::type_(), &self.id, cols);
-    }
-
-    #[expect(
-        dead_code,
-        reason = "RL-004: characterized legacy action surface (A008) kept until its deletion gate"
-    )]
-    pub fn delete(&self, trx: &dyn ITrx) {
-        for c in ["|", "id", "storeId"] {
-            trx.del_key(&format!("obj::{}::{}::{}", Self::type_(), self.id, c));
-        }
-    }
-
-    #[expect(
-        dead_code,
-        reason = "RL-004: characterized legacy action surface (A008) kept until its deletion gate"
-    )]
-    pub fn pull(mut self, trx: &dyn ITrx) -> Chain {
-        let m = trx.get_obj(Self::type_(), &self.id);
-        if !m.is_empty() {
-            if let Some(v) = m.get("id") {
-                self.id = String::from_utf8_lossy(v).into_owned();
-            }
-            if let Some(v) = m.get("storeId") {
-                self.store_id = String::from_utf8_lossy(v).into_owned();
-            }
-        }
-        self
-    }
-
-    pub fn all(
-        trx: &dyn ITrx,
-        offset: i64,
-        count: i64,
-        query: &HashMap<String, String>,
-    ) -> Result<Vec<Chain>> {
-        let objs = trx.get_obj_list("Chain", &["*".to_string()], query, &[offset, count])?;
-        let mut entities: Vec<Chain> = objs
+    /// Every recorded chain, by id.
+    pub fn all(trx: &Trx) -> Result<Vec<Chain>> {
+        Ok(trx
+            .chain()
+            .find_many(FindMany::default().order_by(chain::key().asc()))
+            .map_err(failed)?
             .into_iter()
-            .filter_map(|(id, m)| {
-                if m.is_empty() {
-                    return None;
-                }
-                let mut c = Chain {
-                    id,
-                    ..Default::default()
-                };
-                if let Some(v) = m.get("storeId") {
-                    c.store_id = String::from_utf8_lossy(v).into_owned();
-                }
-                Some(c)
+            .map(|row| Chain {
+                id: row.key,
+                store_id: row.store_id.unwrap_or_default(),
             })
-            .collect();
-        entities.sort_by(|a, b| a.id.cmp(&b.id));
-        Ok(entities)
+            .collect())
     }
 }
 
@@ -91,61 +57,67 @@ pub struct ChainShard {
 }
 
 impl ChainShard {
-    pub fn type_() -> &'static str {
-        "ChainShard"
+    /// Record the shard (idempotent).
+    pub fn save(&self, trx: &Trx) -> Result<()> {
+        trx.chain_shard()
+            .upsert(
+                chain_shard::by_key(self.id.clone()),
+                chain_shard::Create {
+                    key: self.id.clone(),
+                    work_chain_id: Some(self.work_chain_id.clone()),
+                    shard_name: Some(self.id.clone()),
+                },
+                chain_shard::update().work_chain_id(Some(self.work_chain_id.clone())),
+            )
+            .map(drop)
+            .map_err(failed)
     }
 
-    pub fn push(&self, trx: &dyn ITrx) {
-        let mut cols: HashMap<String, Vec<u8>> = HashMap::new();
-        cols.insert("id".into(), self.id.as_bytes().to_vec());
-        cols.insert("workChainId".into(), self.work_chain_id.as_bytes().to_vec());
-        trx.put_obj(Self::type_(), &self.id, cols);
-    }
-
-    #[expect(
-        dead_code,
-        reason = "RL-004: characterized legacy action surface (A008) kept until its deletion gate"
-    )]
-    pub fn pull(mut self, trx: &dyn ITrx) -> ChainShard {
-        let m = trx.get_obj(Self::type_(), &self.id);
-        if !m.is_empty() {
-            if let Some(v) = m.get("id") {
-                self.id = String::from_utf8_lossy(v).into_owned();
-            }
-            if let Some(v) = m.get("workChainId") {
-                self.work_chain_id = String::from_utf8_lossy(v).into_owned();
-            }
-        }
-        self
-    }
-
-    pub fn all(
-        trx: &dyn ITrx,
-        offset: i64,
-        count: i64,
-        query: &HashMap<String, String>,
-    ) -> Result<Vec<ChainShard>> {
-        let objs = trx.get_obj_list("ChainShard", &["*".to_string()], query, &[offset, count])?;
-        let mut entities: Vec<ChainShard> = objs
+    /// Every recorded shard, by work chain then id.
+    pub fn all(trx: &Trx) -> Result<Vec<ChainShard>> {
+        Ok(trx
+            .chain_shard()
+            .find_many(
+                FindMany::default()
+                    .order_by(chain_shard::work_chain_id().asc())
+                    .order_by(chain_shard::key().asc()),
+            )
+            .map_err(failed)?
             .into_iter()
-            .filter_map(|(id, m)| {
-                if m.is_empty() {
-                    return None;
-                }
-                let mut c = ChainShard {
-                    id,
-                    ..Default::default()
-                };
-                if let Some(v) = m.get("workChainId") {
-                    c.work_chain_id = String::from_utf8_lossy(v).into_owned();
-                }
-                Some(c)
+            .map(|row| ChainShard {
+                id: row.key,
+                work_chain_id: row.work_chain_id.unwrap_or_default(),
             })
-            .collect();
-        entities.sort_by(|a, b| match a.work_chain_id.cmp(&b.work_chain_id) {
-            std::cmp::Ordering::Equal => a.id.cmp(&b.id),
-            other => other,
-        });
-        Ok(entities)
+            .collect())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn chains_and_shards_round_trip() {
+        let trx = crate::core::trx::test_trx();
+        Chain {
+            id: "c1".into(),
+            store_id: "s1".into(),
+        }
+        .save(&trx)
+        .unwrap();
+        for (id, work) in [("sh2", "c1"), ("sh1", "c1"), ("sh0", "c0")] {
+            ChainShard {
+                id: id.into(),
+                work_chain_id: work.into(),
+            }
+            .save(&trx)
+            .unwrap();
+        }
+        assert_eq!(Chain::all(&trx).unwrap()[0].store_id, "s1");
+        let shards = ChainShard::all(&trx).unwrap();
+        assert_eq!(
+            shards.iter().map(|shard| shard.id.as_str()).collect::<Vec<_>>(),
+            ["sh0", "sh1", "sh2"]
+        );
     }
 }

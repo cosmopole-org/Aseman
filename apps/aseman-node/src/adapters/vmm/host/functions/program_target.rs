@@ -16,7 +16,7 @@ use serde_json::{Map, Value, json};
 
 use crate::adapters::vmm::globals::with_global_app;
 use crate::adapters::vmm::host::functions::vm_ownership::program_owner_user;
-use crate::models::transaction::ITrx;
+use crate::core::trx::Trx;
 
 pub(crate) use aseman_contracts::guest_api::{PROGRAM_TARGET_OPS, TARGET_PROGRAM_ID_KEY};
 
@@ -34,7 +34,7 @@ pub(crate) fn machine_owner_user(machine_id: &str) -> String {
     with_global_app(|app| {
         app.modify_state(
             true,
-            Box::new(move |trx: &dyn ITrx| {
+            Box::new(move |trx: &Trx| {
                 let machine = (crate::api::model::creature_ports::CreaturePorts { trx })
                     .creature_or_empty(&machine_id.clone());
                 *slot_c.lock().unwrap() = machine.owner_id;

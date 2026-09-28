@@ -89,6 +89,13 @@ pub struct PostgresUnitOfWork {
 }
 
 impl PostgresUnitOfWork {
+    pub(crate) fn with_client<T>(
+        &self,
+        operation: impl FnOnce(&mut postgres::Client) -> StorageResult<T>,
+    ) -> StorageResult<T> {
+        self.with_connection(operation)
+    }
+
     fn with_connection<T>(
         &self,
         operation: impl FnOnce(&mut postgres::Client) -> StorageResult<T>,

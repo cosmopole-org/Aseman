@@ -44,6 +44,35 @@ pub trait LegacyKvStore: Send + Sync {
     fn scan_prefix(&self, prefix: &[u8]) -> LegacyMigrationResult<Vec<(Vec<u8>, Vec<u8>)>>;
     /// Every pair in ascending key order (recovery and diagnostics only).
     fn scan_all(&self) -> LegacyMigrationResult<Vec<(Vec<u8>, Vec<u8>)>>;
+    /// Pairs with `start <= key < end`, ascending (descending with `reverse`), at most
+    /// `limit`.
+    fn scan_range(
+        &self,
+        start: &[u8],
+        end: &[u8],
+        reverse: bool,
+        limit: Option<usize>,
+    ) -> LegacyMigrationResult<Vec<(Vec<u8>, Vec<u8>)>> {
+        let common = start
+            .iter()
+            .zip(end)
+            .take_while(|(left, right)| left == right)
+            .count();
+        let mut pairs = self
+            .scan_prefix(&start[..common])?
+            .into_iter()
+            .filter(|(key, _)| key.as_slice() >= start && key.as_slice() < end)
+            .collect::<Vec<_>>();
+        if reverse {
+            pairs.reverse();
+        }
+        pairs.truncate(limit.unwrap_or(usize::MAX));
+        Ok(pairs)
+    }
+    /// Whether any key starts with `prefix`.
+    fn has_prefix(&self, prefix: &[u8]) -> LegacyMigrationResult<bool> {
+        Ok(!self.scan_prefix(prefix)?.is_empty())
+    }
     /// Apply every write atomically, or none.
     fn write_batch(&self, writes: &[LegacyKvWrite]) -> LegacyMigrationResult<()>;
     /// Apply `writes` atomically only while every expectation holds; `Ok(false)`, with
@@ -106,6 +135,53 @@ impl LegacyKvStore for RocksDbKvStore {
             pairs.push((key.to_vec(), value.to_vec()));
         }
         Ok(pairs)
+    }
+
+    fn scan_range(
+        &self,
+        start: &[u8],
+        end: &[u8],
+        reverse: bool,
+        limit: Option<usize>,
+    ) -> LegacyMigrationResult<Vec<(Vec<u8>, Vec<u8>)>> {
+        let mode = if reverse {
+            IteratorMode::From(end, Direction::Reverse)
+        } else {
+            IteratorMode::From(start, Direction::Forward)
+        };
+        let mut pairs = Vec::new();
+        for item in self.db.iterator(mode) {
+            let (key, value) = item.map_err(storage_error)?;
+            if key.as_ref() >= end {
+                // Reverse iteration starts at or before `end`; skip it.
+                if reverse {
+                    continue;
+                }
+                break;
+            }
+            if key.as_ref() < start {
+                if reverse {
+                    break;
+                }
+                continue;
+            }
+            pairs.push((key.to_vec(), value.to_vec()));
+            if limit.is_some_and(|limit| pairs.len() >= limit) {
+                break;
+            }
+        }
+        Ok(pairs)
+    }
+
+    fn has_prefix(&self, prefix: &[u8]) -> LegacyMigrationResult<bool> {
+        match self
+            .db
+            .iterator(IteratorMode::From(prefix, Direction::Forward))
+            .next()
+        {
+            Some(item) => Ok(item.map_err(storage_error)?.0.starts_with(prefix)),
+            None => Ok(false),
+        }
     }
 
     fn scan_all(&self) -> LegacyMigrationResult<Vec<(Vec<u8>, Vec<u8>)>> {

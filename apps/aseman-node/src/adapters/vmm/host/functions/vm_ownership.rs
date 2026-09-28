@@ -18,7 +18,7 @@
 //!     action's own owner check) may delete it.
 
 use crate::adapters::vmm::globals::with_global_app;
-use crate::models::transaction::ITrx;
+use crate::core::trx::Trx;
 
 pub(crate) fn owner_link_key(vm_id: &str) -> String {
     format!("VmOwnerProgram::{}", vm_id)
@@ -37,7 +37,7 @@ pub(crate) fn record_vm_owner(vm_id: &str, program_id: &str) {
     with_global_app(|app| {
         app.modify_state(
             false,
-            Box::new(move |trx: &dyn ITrx| {
+            Box::new(move |trx: &Trx| {
                 trx.put_link(&key, &value);
                 Ok(())
             }),
@@ -59,7 +59,7 @@ pub(crate) fn vm_owner_program(vm_id: &str) -> String {
     with_global_app(|app| {
         app.modify_state(
             true,
-            Box::new(move |trx: &dyn ITrx| {
+            Box::new(move |trx: &Trx| {
                 *slot_c.lock().unwrap() = trx.get_link(&key);
                 Ok(())
             }),
@@ -90,7 +90,7 @@ pub(crate) fn program_owner_user(program_id: &str) -> String {
     with_global_app(|app| {
         app.modify_state(
             true,
-            Box::new(move |trx: &dyn ITrx| {
+            Box::new(move |trx: &Trx| {
                 if aseman_ports::ProgramDirectory::program(
                     &crate::api::model::program_ports::ProgramPorts { trx },
                     &program_id,
@@ -129,7 +129,7 @@ pub(crate) fn owns_vm_instance(program_id: &str, vm_id: &str) -> bool {
     with_global_app(|app| {
         app.modify_state(
             true,
-            Box::new(move |trx: &dyn ITrx| {
+            Box::new(move |trx: &Trx| {
                 if let Ok(links) = trx.get_links_list(&prefix, -1, -1, &[]) {
                     *found_c.lock().unwrap() = links.iter().any(|l| l.ends_with(&suffix));
                 }
@@ -214,7 +214,7 @@ pub(crate) fn clear_vm_records(vm_id: &str, program_id: &str) {
     with_global_app(|app| {
         app.modify_state(
             false,
-            Box::new(move |trx: &dyn ITrx| {
+            Box::new(move |trx: &Trx| {
                 trx.del_key(&format!("link::{}", owner_key));
                 trx.del_key(&format!("link::VmStatus::{}", vm_id_for_trx));
                 trx.del_key(&format!("link::VmStartedAt::{}", vm_id_for_trx));

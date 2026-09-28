@@ -1,82 +1,19 @@
-//! Core storage routing (ADR 0026): which provider serves the core port families.
+//! One transaction per state action (ADR 0036).
 //!
-//! By default the legacy provider serves everything. When the node is configured for
-//! PostgreSQL, every state closure runs inside one PostgreSQL unit of work. The
-//! family adapters (`CreaturePorts`, `ProgramPorts`, ...) find it on the current
-//! thread and route the core families to capsules, while the families ADR 0026 keeps
-//! on legacy (balances and finance, identity credentials, VMM runtime, chains, id
-//! allocation) stay on the legacy transaction.
-//!
-//! Commit order: PostgreSQL first, then legacy. If the legacy commit fails after
-//! PostgreSQL committed, the compensations registered during the action run in a new
-//! unit of work.
-
-use std::cell::RefCell;
-use std::rc::Rc;
-use std::sync::{Arc, OnceLock};
+//! Every state action runs in one transaction on the storage provider plugin the
+//! node loaded: it commits when the action succeeds and rolls back when the action
+//! refuses. There is one provider, so there is no cross-provider ordering or
+//! compensation (ADR 0026's dual routing is gone).
 
 use anyhow::{Result, anyhow};
-use aseman_capsule::CapsuleStore;
-use aseman_storage_postgres::shard::{UnitOfWork, UnitOfWorkFactory};
 
-static FACTORY: OnceLock<Arc<dyn UnitOfWorkFactory>> = OnceLock::new();
-
-/// Undoes a capsule write whose legacy counterpart failed to commit.
-pub(crate) type Compensation = Box<dyn FnOnce(&dyn CapsuleStore) -> Result<()>>;
-
-#[cfg(test)]
-thread_local! {
-    /// Tests route one thread to PostgreSQL without touching the process setting.
-    static TEST_FACTORY: RefCell<Option<Arc<dyn UnitOfWorkFactory>>> = const { RefCell::new(None) };
-}
-
-/// Route this test thread's actions to `factory` (or back to legacy with `None`).
-#[cfg(test)]
-pub(crate) fn set_test_factory(factory: Option<Arc<dyn UnitOfWorkFactory>>) {
-    TEST_FACTORY.with(|slot| *slot.borrow_mut() = factory);
-}
-
-fn factory() -> Option<Arc<dyn UnitOfWorkFactory>> {
-    #[cfg(test)]
-    if let Some(factory) = TEST_FACTORY.with(|slot| slot.borrow().clone()) {
-        return Some(factory);
-    }
-    FACTORY.get().cloned()
-}
-
-thread_local! {
-    static UNITS: RefCell<Vec<Rc<dyn UnitOfWork>>> = const { RefCell::new(Vec::new()) };
-    static COMPENSATIONS: RefCell<Vec<Vec<Compensation>>> = const { RefCell::new(Vec::new()) };
-}
-
-/// Route the core families to the PostgreSQL provider (one database, or a sharded
-/// cluster) for the rest of the process.
-pub(crate) fn install_postgres(factory: Arc<dyn UnitOfWorkFactory>) -> Result<()> {
-    FACTORY
-        .set(factory)
-        .map_err(|_| anyhow!("core storage is already installed"))
-}
-
-/// The unit of work of the innermost running action, when core families are on
-/// PostgreSQL.
-pub(crate) fn current_unit() -> Option<Rc<dyn UnitOfWork>> {
-    UNITS.with(|units| units.borrow().last().cloned())
-}
-
-/// Register an undo for a capsule write of the current action (ADR 0026 point 4).
-pub(crate) fn register_compensation(compensation: Compensation) {
-    COMPENSATIONS.with(|stack| {
-        if let Some(current) = stack.borrow_mut().last_mut() {
-            current.push(compensation);
-        }
-    });
-}
+use crate::core::trx::Trx;
 
 /// Why a state action did not take effect.
 pub(crate) enum StateFailure {
     /// The action itself refused; its writes were discarded (LD-15).
     Action(anyhow::Error),
-    /// A provider could not begin or commit (LD-10).
+    /// The provider could not commit (LD-10).
     Storage(anyhow::Error),
 }
 
@@ -88,239 +25,63 @@ impl StateFailure {
     }
 }
 
-/// Run one state action with ADR 0026 commit ordering.
-///
-/// Without PostgreSQL, `action` runs and the legacy transaction commits or is
-/// discarded as before.
-pub(crate) fn run_action(
-    readonly: bool,
-    action: impl FnOnce() -> Result<()>,
-    commit_legacy: impl FnOnce() -> Result<()>,
-    discard_legacy: impl FnOnce(),
-) -> Result<(), StateFailure> {
-    let Some(factory) = factory() else {
-        return match action() {
-            Ok(()) => commit_legacy().map_err(StateFailure::Storage),
-            Err(error) => {
-                discard_legacy();
-                Err(StateFailure::Action(error))
-            }
-        };
-    };
-    let begun = if readonly {
-        factory.begin_read_only()
-    } else {
-        factory.begin()
-    };
-    let unit: Rc<dyn UnitOfWork> =
-        Rc::from(begun.map_err(|error| StateFailure::Storage(anyhow!("{error}")))?);
-    UNITS.with(|units| units.borrow_mut().push(unit.clone()));
-    COMPENSATIONS.with(|stack| stack.borrow_mut().push(Vec::new()));
-    let outcome = action();
-    UNITS.with(|units| units.borrow_mut().pop());
-    let compensations = COMPENSATIONS
-        .with(|stack| stack.borrow_mut().pop())
-        .unwrap_or_default();
-    if Rc::strong_count(&unit) != 1 {
-        return Err(StateFailure::Storage(anyhow!(
-            "unit of work is still in use"
-        )));
+/// Run `action` in `trx`, then commit it, or roll it back when the action refuses.
+/// A read-only transaction is closed without writing.
+pub(crate) fn run_action(trx: &Trx, action: impl FnOnce() -> Result<()>) -> Result<(), StateFailure> {
+    match action() {
+        Ok(()) if trx.read_only() => {
+            let _ = trx.rollback();
+            Ok(())
+        }
+        Ok(()) => trx
+            .commit()
+            .map_err(|error| StateFailure::Storage(anyhow!("storage commit failed: {error}"))),
+        Err(error) => {
+            let _ = trx.rollback();
+            Err(StateFailure::Action(error))
+        }
     }
-    if let Err(error) = outcome {
-        discard_legacy();
-        let _ = unit.rollback();
-        return Err(StateFailure::Action(error));
-    }
-    if let Err(error) = unit.commit() {
-        discard_legacy();
-        return Err(StateFailure::Storage(anyhow!(
-            "core storage commit failed: {error}"
-        )));
-    }
-    if let Err(error) = commit_legacy() {
-        compensate(&factory, compensations).map_err(StateFailure::Storage)?;
-        return Err(StateFailure::Storage(error));
-    }
-    Ok(())
-}
-
-/// Undo the capsule writes of an action whose legacy commit failed (ADR 0026).
-fn compensate(
-    factory: &Arc<dyn UnitOfWorkFactory>,
-    compensations: Vec<Compensation>,
-) -> Result<()> {
-    if compensations.is_empty() {
-        return Ok(());
-    }
-    let undo = factory.begin().map_err(|error| anyhow!("{error}"))?;
-    for compensation in compensations {
-        compensation(&*undo)?;
-    }
-    undo.commit().map_err(|error| anyhow!("{error}"))
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::adapters::rocksdb::trx::TrxWrapper;
-    use crate::adapters::rocksdb::trx::tests::{StubCore, StubStorage};
-    use crate::api::model::creature_ports::CreaturePorts;
-    use crate::models::ports::IStorage;
-    use crate::models::transaction::ITrx;
-    use aseman_application::creature::{CreateCreature, NewCreature};
-    use aseman_ports::{CreatureBalances, CreatureDirectory};
+    use aseman_storage::client::core::marker;
+    use aseman_storage::{Mode, Models, Storage};
 
-    fn public_key() -> String {
-        use rsa::pkcs8::{EncodePublicKey, LineEnding};
-        rsa::RsaPublicKey::from(&rsa::RsaPrivateKey::new(&mut rsa::rand_core::OsRng, 1024).unwrap())
-            .to_public_key_pem(LineEnding::LF)
-            .unwrap()
+    fn storage() -> Storage {
+        Storage::new(
+            aseman_storage::memory::MemoryProvider::new(),
+            aseman_storage::schema::Schema::catalog().unwrap(),
+        )
     }
 
-    fn create(trx: &dyn ITrx, id: &str, name: &str) -> Result<()> {
-        let creatures = CreaturePorts { trx };
-        CreateCreature {
-            directory: &creatures,
-            balances: &creatures,
-        }
-        .execute(NewCreature {
-            id: id.to_owned(),
-            creature_type: "human".to_owned(),
-            name: name.to_owned(),
-            origin: "global".to_owned(),
-            public_key: public_key(),
-            caller_id: id.to_owned(),
-            opening_balance: 9,
-            ..NewCreature::default()
-        })
-        .map(|_| ())
-        .map_err(|error| anyhow!("{error}"))
+    fn put(trx: &Trx, key: &str) -> Result<()> {
+        trx.marker()
+            .create(marker::Create {
+                key: key.to_owned(),
+                value: "1".to_owned(),
+            })
+            .map(drop)
+            .map_err(|error| anyhow!("{error}"))
     }
 
-    fn capsule_creature(
-        store: &dyn CapsuleStore,
-        id: &str,
-    ) -> Option<aseman_domain::creature::CreatureRecord> {
-        aseman_capsule::creature::CapsuleCreaturePorts {
-            repository: store,
-            currency: "",
-            scale: 0,
-        }
-        .creature(id)
-        .unwrap()
-    }
-
-    /// ADR 0026 end to end: the identity goes to PostgreSQL and the balance to
-    /// legacy in one action; a refused action leaves neither; a failed legacy
-    /// commit compensates the committed identity.
     #[test]
-    fn live_actions_route_core_families_to_postgres_with_ordered_commits() {
-        let Some(admin_uri) = aseman_config::IntegrationTestConfig::from_process().postgres_url
-        else {
-            eprintln!("ASEMAN_TEST_POSTGRES_URL is absent; skipping core storage test");
-            return;
-        };
-        let database = format!("aseman_core_routing_{}", uuid::Uuid::now_v7().simple());
-        let mut admin = postgres::Client::connect(&admin_uri, postgres::NoTls).unwrap();
-        admin
-            .batch_execute(&format!("CREATE DATABASE {database}"))
-            .unwrap();
-        // The admin URL may carry a default database path; the new database must be
-        // targeted instead, so keep only the authority and append the fresh database.
-        let (scheme, rest) = admin_uri.split_once("://").unwrap();
-        let authority = rest.split('/').next().unwrap();
-        let uri = format!("{scheme}://{authority}/{database}");
-        let repository = aseman_storage_postgres::PostgresCapsuleRepository::connect(&uri).unwrap();
-        repository.migrate().unwrap();
-        let factory: Arc<dyn UnitOfWorkFactory> = Arc::new(
-            aseman_storage_postgres::unit_of_work::PostgresUnitOfWorkFactory::connect(
-                &uri,
-                4,
-                Some(1),
-            )
-            .unwrap(),
-        );
-        set_test_factory(Some(factory.clone()));
-
-        let storage: Arc<dyn IStorage> = StubStorage::new();
-        let begin = || {
-            TrxWrapper::over_storage(
-                Arc::new(StubCore {
-                    storage: storage.clone(),
-                }),
-                storage.clone(),
-                false,
-            )
-        };
-        let balance_key = |id: &str| format!("obj::Creature::{id}::balance");
-
-        // 1. One action: identity on PostgreSQL, balance on legacy.
-        let trx = begin();
-        run_action(
-            false,
-            || create(&*trx, "1@global", "alice"),
-            || trx.commit(),
-            || trx.discard(),
-        )
-        .map_err(StateFailure::into_error)
-        .unwrap();
-        assert_eq!(
-            capsule_creature(&repository, "1@global").map(|record| record.username),
-            Some("alice@global".to_owned())
-        );
-        let read = begin();
-        assert_eq!(
-            read.get_bytes(&balance_key("1@global")),
-            9_u64.to_le_bytes()
-        );
-        // The legacy provider holds only the balance, not the identity.
-        assert!(!read.has_obj("Creature", "1@global"));
-        run_action(
-            false,
-            || {
-                assert_eq!(
-                    CreaturePorts { trx: &*read }.balance("1@global").unwrap(),
-                    9
-                );
-                Ok(())
-            },
-            || Ok(()),
-            || {},
-        )
-        .map_err(StateFailure::into_error)
-        .unwrap();
-
-        // 2. A refused action leaves nothing on either provider.
-        let trx = begin();
-        let refused = run_action(
-            false,
-            || {
-                create(&*trx, "2@global", "bob")?;
-                Err(anyhow!("refused after writing"))
-            },
-            || trx.commit(),
-            || trx.discard(),
-        );
-        assert!(matches!(refused, Err(StateFailure::Action(_))));
-        assert_eq!(capsule_creature(&repository, "2@global"), None);
-        assert!(begin().get_bytes(&balance_key("2@global")).is_empty());
-
-        // 3. A failed legacy commit compensates the committed identity.
-        let trx = begin();
-        let failed = run_action(
-            false,
-            || create(&*trx, "3@global", "carol"),
-            || Err(anyhow!("legacy commit failed")),
-            || trx.discard(),
-        );
-        assert!(matches!(failed, Err(StateFailure::Storage(_))));
-        assert_eq!(capsule_creature(&repository, "3@global"), None);
-
-        set_test_factory(None);
-        drop(factory);
-        drop(repository);
-        admin
-            .batch_execute(&format!("DROP DATABASE {database} WITH (FORCE)"))
-            .unwrap();
+    fn an_action_commits_on_success_and_rolls_back_on_refusal() {
+        let storage = storage();
+        let trx = storage.begin(Mode::ReadWrite).unwrap();
+        assert!(run_action(&trx, || put(&trx, "kept")).is_ok());
+        let trx = storage.begin(Mode::ReadWrite).unwrap();
+        assert!(matches!(
+            run_action(&trx, || {
+                put(&trx, "dropped")?;
+                Err(anyhow!("refused"))
+            }),
+            Err(StateFailure::Action(_))
+        ));
+        let reader = storage.begin(Mode::ReadOnly).unwrap();
+        assert!(reader.marker().find_unique(marker::by_key("kept")).unwrap().is_some());
+        assert!(reader.marker().find_unique(marker::by_key("dropped")).unwrap().is_none());
+        assert!(run_action(&reader, || Ok(())).is_ok());
     }
 }

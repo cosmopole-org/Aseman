@@ -22,7 +22,7 @@ use crate::api::model::{Chain, ChainShard};
 use crate::core::globe::ChainPacketOp;
 use crate::models::core::ICore;
 use crate::models::ports::{IChain, PipelineFn};
-use crate::models::transaction::ITrx;
+use crate::core::trx::Trx;
 use aseman_consensus_hashgraph::babble::{Babble, load_key_for_config};
 use aseman_consensus_hashgraph::config::Config;
 use aseman_consensus_hashgraph::hashgraph::{Block, InternalTransactionReceipt};
@@ -261,7 +261,7 @@ impl Blockchain {
             let store_id_owned = store_id.to_string();
             self.app.modify_state(
                 false,
-                Box::new(move |trx: &dyn ITrx| {
+                Box::new(move |trx: &Trx| {
                     Chain {
                         id: chain_id_owned.clone(),
                         store_id: store_id_owned.clone(),
@@ -430,7 +430,7 @@ impl Blockchain {
             let work_chain_id_owned = wchain.id.clone();
             self.app.modify_state(
                 false,
-                Box::new(move |trx: &dyn ITrx| {
+                Box::new(move |trx: &Trx| {
                     ChainShard {
                         id: chain_id_owned.clone(),
                         work_chain_id: work_chain_id_owned.clone(),
@@ -456,7 +456,7 @@ impl Blockchain {
         let shards_clone = shards_slot.clone();
         self.app.modify_state(
             true,
-            Box::new(move |trx: &dyn ITrx| {
+            Box::new(move |trx: &Trx| {
                 if let Ok(c) = Chain::all(trx, -1, -1, &HashMap::new()) {
                     *chains_clone.lock().unwrap() = c;
                 }
@@ -524,7 +524,7 @@ impl IChain for Blockchain {
             let machine_id_owned = machine_id.to_string();
             self.app.modify_state(
                 true,
-                Box::new(move |trx: &dyn ITrx| {
+                Box::new(move |trx: &Trx| {
                     let vm = (crate::api::model::program_ports::ProgramPorts { trx })
                         .program_or_empty(&machine_id_owned.clone());
                     if vm.machine_id.is_empty() {

@@ -17,6 +17,7 @@
         "username": "text"
       },
       "kind": "core.user",
+      "range_indexes": [],
       "relationships": {},
       "required_fields": [
         "username",
@@ -55,6 +56,7 @@
         "username": "text"
       },
       "kind": "core.creature",
+      "range_indexes": [],
       "relationships": {
         "owner": {
           "on_delete": "restrict",
@@ -94,6 +96,7 @@
         "runtime": "text"
       },
       "kind": "core.program",
+      "range_indexes": [],
       "relationships": {
         "creature": {
           "on_delete": "restrict",
@@ -127,6 +130,7 @@
         "tag": "text"
       },
       "kind": "core.store",
+      "range_indexes": [],
       "relationships": {
         "creature": {
           "on_delete": "restrict",
@@ -165,6 +169,7 @@
         "permissions": "text"
       },
       "kind": "core.store_membership",
+      "range_indexes": [],
       "relationships": {
         "creature": {
           "on_delete": "cascade",
@@ -211,6 +216,7 @@
         "permissions": "bytes"
       },
       "kind": "core.access_level",
+      "range_indexes": [],
       "relationships": {
         "store": {
           "on_delete": "cascade",
@@ -265,6 +271,7 @@
         "subject_kind": "text"
       },
       "kind": "core.capability_grant",
+      "range_indexes": [],
       "relationships": {},
       "required_fields": [
         "subject_kind",
@@ -296,6 +303,7 @@
         "token_digest": "bytes"
       },
       "kind": "core.session",
+      "range_indexes": [],
       "relationships": {
         "user": {
           "on_delete": "cascade",
@@ -331,6 +339,7 @@
         "store_key": "text"
       },
       "kind": "core.file",
+      "range_indexes": [],
       "relationships": {
         "owner": {
           "on_delete": "restrict",
@@ -376,6 +385,7 @@
         "workload_name": "text"
       },
       "kind": "core.workload",
+      "range_indexes": [],
       "relationships": {
         "creature": {
           "on_delete": "restrict",
@@ -421,6 +431,7 @@
         "state": "text"
       },
       "kind": "core.workload_operation",
+      "range_indexes": [],
       "relationships": {
         "workload": {
           "on_delete": "cascade",
@@ -457,6 +468,7 @@
         "status": "text"
       },
       "kind": "core.node",
+      "range_indexes": [],
       "relationships": {},
       "required_fields": [
         "name",
@@ -485,6 +497,7 @@
         "trust_state": "text"
       },
       "kind": "core.federation_peer",
+      "range_indexes": [],
       "relationships": {},
       "required_fields": [
         "origin",
@@ -528,6 +541,7 @@
         "subject_kind": "text"
       },
       "kind": "core.identity_key",
+      "range_indexes": [],
       "relationships": {},
       "required_fields": [
         "subject_kind",
@@ -571,6 +585,7 @@
         "version": "text"
       },
       "kind": "core.module_installation",
+      "range_indexes": [],
       "relationships": {},
       "required_fields": [
         "module_name",
@@ -607,6 +622,7 @@
         "status": "text"
       },
       "kind": "core.guest_database_binding",
+      "range_indexes": [],
       "relationships": {
         "creature": {
           "on_delete": "restrict",
@@ -653,6 +669,7 @@
         "status": "text"
       },
       "kind": "core.guest_schema_definition",
+      "range_indexes": [],
       "relationships": {
         "binding": {
           "on_delete": "cascade",
@@ -685,67 +702,6 @@
     {
       "document_fields": [],
       "field_columns": {
-        "status": "status",
-        "store_id": "store_id"
-      },
-      "fields": {
-        "status": "text",
-        "store_id": "text"
-      },
-      "kind": "core.chain",
-      "relationships": {
-        "store": {
-          "on_delete": "restrict",
-          "required": true,
-          "target_kind": "core.store",
-          "target_table": "stores"
-        }
-      },
-      "required_fields": [
-        "store_id",
-        "status"
-      ],
-      "table": "chains",
-      "unique_indexes": [
-        [
-          "store_id"
-        ]
-      ]
-    },
-    {
-      "document_fields": [],
-      "field_columns": {
-        "shard_name": "shard_name",
-        "work_chain_id": "work_chain_id"
-      },
-      "fields": {
-        "shard_name": "text",
-        "work_chain_id": "text"
-      },
-      "kind": "core.chain_shard",
-      "relationships": {
-        "chain": {
-          "on_delete": "cascade",
-          "required": true,
-          "target_kind": "core.chain",
-          "target_table": "chains"
-        }
-      },
-      "required_fields": [
-        "work_chain_id",
-        "shard_name"
-      ],
-      "table": "chain_shards",
-      "unique_indexes": [
-        [
-          "work_chain_id",
-          "shard_name"
-        ]
-      ]
-    },
-    {
-      "document_fields": [],
-      "field_columns": {
         "entity_name": "entity_name",
         "entity_type": "entity_type",
         "image_name": "image_name"
@@ -756,6 +712,7 @@
         "image_name": "text"
       },
       "kind": "core.entity",
+      "range_indexes": [],
       "relationships": {
         "program": {
           "on_delete": "cascade",
@@ -791,6 +748,7 @@
         "entry_count": "integer"
       },
       "kind": "core.user_metadata",
+      "range_indexes": [],
       "relationships": {
         "creature": {
           "on_delete": "cascade",
@@ -827,6 +785,7 @@
         "entry_count": "integer"
       },
       "kind": "core.creature_metadata",
+      "range_indexes": [],
       "relationships": {
         "creature": {
           "on_delete": "cascade",
@@ -863,6 +822,7 @@
         "entry_count": "integer"
       },
       "kind": "core.store_metadata",
+      "range_indexes": [],
       "relationships": {
         "store": {
           "on_delete": "cascade",
@@ -899,6 +859,7 @@
         "entry_count": "integer"
       },
       "kind": "core.program_metadata",
+      "range_indexes": [],
       "relationships": {
         "program": {
           "on_delete": "cascade",
@@ -937,6 +898,7 @@
         "type_name": "text"
       },
       "kind": "core.creature_type",
+      "range_indexes": [],
       "relationships": {},
       "required_fields": [
         "type_name",
@@ -965,6 +927,7 @@
         "runtime": "text"
       },
       "kind": "core.gateway_route",
+      "range_indexes": [],
       "relationships": {
         "creature": {
           "on_delete": "cascade",
@@ -1005,6 +968,7 @@
         "fire_at_micros": "timestamp_micros"
       },
       "kind": "core.program_alarm",
+      "range_indexes": [],
       "relationships": {
         "program": {
           "on_delete": "cascade",
@@ -1050,6 +1014,7 @@
         "name": "text"
       },
       "kind": "core.vm_resource_store",
+      "range_indexes": [],
       "relationships": {
         "creature": {
           "on_delete": "cascade",
@@ -1098,6 +1063,7 @@
         "store_key": "text"
       },
       "kind": "core.vm_resource_entity",
+      "range_indexes": [],
       "relationships": {
         "resource_store": {
           "on_delete": "cascade",
@@ -1139,6 +1105,7 @@
         "entry_count": "integer"
       },
       "kind": "core.entity_config",
+      "range_indexes": [],
       "relationships": {
         "entity": {
           "on_delete": "cascade",
@@ -1179,6 +1146,7 @@
         "store_key": "text"
       },
       "kind": "core.entity_artifact",
+      "range_indexes": [],
       "relationships": {
         "entity": {
           "on_delete": "cascade",
@@ -1214,6 +1182,7 @@
         "name": "text"
       },
       "kind": "core.creature_secret",
+      "range_indexes": [],
       "relationships": {
         "creature": {
           "on_delete": "cascade",
@@ -1247,6 +1216,7 @@
         "grantee_ref": "text"
       },
       "kind": "core.secret_grant",
+      "range_indexes": [],
       "relationships": {
         "grantee": {
           "on_delete": "cascade",
@@ -1294,6 +1264,7 @@
         "token_digest": "bytes"
       },
       "kind": "core.bridge_grant",
+      "range_indexes": [],
       "relationships": {},
       "required_fields": [
         "token_digest",
@@ -1322,6 +1293,7 @@
         "topic": "text"
       },
       "kind": "core.bridge_topic",
+      "range_indexes": [],
       "relationships": {},
       "required_fields": [
         "topic",
@@ -1349,6 +1321,7 @@
         "target_kind": "text"
       },
       "kind": "core.legacy_identity",
+      "range_indexes": [],
       "relationships": {},
       "required_fields": [
         "family",
@@ -1365,6 +1338,819 @@
         [
           "target_kind",
           "target_id"
+        ]
+      ]
+    },
+    {
+      "document_fields": [],
+      "field_columns": {
+        "key": "key",
+        "value": "value"
+      },
+      "fields": {
+        "key": "text",
+        "value": "integer"
+      },
+      "kind": "core.counter",
+      "range_indexes": [],
+      "relationships": {},
+      "required_fields": [
+        "key",
+        "value"
+      ],
+      "table": "counters",
+      "unique_indexes": [
+        [
+          "key"
+        ]
+      ]
+    },
+    {
+      "document_fields": [],
+      "field_columns": {
+        "key": "key",
+        "value": "value"
+      },
+      "fields": {
+        "key": "text",
+        "value": "text"
+      },
+      "kind": "core.marker",
+      "range_indexes": [],
+      "relationships": {},
+      "required_fields": [
+        "key",
+        "value"
+      ],
+      "table": "markers",
+      "unique_indexes": [
+        [
+          "key"
+        ]
+      ]
+    },
+    {
+      "document_fields": [],
+      "field_columns": {
+        "debt_minor": "debt_minor",
+        "earned_minor": "earned_minor",
+        "held_minor": "held_minor",
+        "key": "key",
+        "payout_held_minor": "payout_held_minor",
+        "pool_ref": "pool_ref",
+        "spent_minor": "spent_minor",
+        "withdrawable_minor": "withdrawable_minor"
+      },
+      "fields": {
+        "debt_minor": "integer",
+        "earned_minor": "integer",
+        "held_minor": "integer",
+        "key": "text",
+        "payout_held_minor": "integer",
+        "pool_ref": "text",
+        "spent_minor": "integer",
+        "withdrawable_minor": "integer"
+      },
+      "kind": "core.finance_account",
+      "range_indexes": [],
+      "relationships": {},
+      "required_fields": [
+        "key"
+      ],
+      "table": "finance_accounts",
+      "unique_indexes": [
+        [
+          "key"
+        ]
+      ]
+    },
+    {
+      "document_fields": [
+        "document"
+      ],
+      "field_columns": {
+        "created_millis": "created_millis",
+        "key": "key",
+        "payer_ref": "payer_ref"
+      },
+      "fields": {
+        "created_millis": "integer",
+        "key": "text",
+        "payer_ref": "text"
+      },
+      "kind": "core.finance_hold",
+      "range_indexes": [
+        [
+          "payer_ref",
+          "created_millis"
+        ]
+      ],
+      "relationships": {},
+      "required_fields": [
+        "key",
+        "payer_ref",
+        "created_millis",
+        "document"
+      ],
+      "table": "finance_holds",
+      "unique_indexes": [
+        [
+          "key"
+        ]
+      ]
+    },
+    {
+      "document_fields": [
+        "document"
+      ],
+      "field_columns": {
+        "key": "key",
+        "payer_ref": "payer_ref"
+      },
+      "fields": {
+        "key": "text",
+        "payer_ref": "text"
+      },
+      "kind": "core.finance_pool",
+      "range_indexes": [
+        [
+          "payer_ref"
+        ]
+      ],
+      "relationships": {},
+      "required_fields": [
+        "key",
+        "document"
+      ],
+      "table": "finance_pools",
+      "unique_indexes": [
+        [
+          "key"
+        ]
+      ]
+    },
+    {
+      "document_fields": [
+        "document"
+      ],
+      "field_columns": {
+        "key": "key",
+        "pool_ref": "pool_ref"
+      },
+      "fields": {
+        "key": "text",
+        "pool_ref": "text"
+      },
+      "kind": "core.finance_pool_reservation",
+      "range_indexes": [
+        [
+          "pool_ref"
+        ]
+      ],
+      "relationships": {},
+      "required_fields": [
+        "key",
+        "document"
+      ],
+      "table": "finance_pool_reservations",
+      "unique_indexes": [
+        [
+          "key"
+        ]
+      ]
+    },
+    {
+      "document_fields": [
+        "document"
+      ],
+      "field_columns": {
+        "key": "key"
+      },
+      "fields": {
+        "key": "text"
+      },
+      "kind": "core.finance_live_debit",
+      "range_indexes": [],
+      "relationships": {},
+      "required_fields": [
+        "key",
+        "document"
+      ],
+      "table": "finance_live_debits",
+      "unique_indexes": [
+        [
+          "key"
+        ]
+      ]
+    },
+    {
+      "document_fields": [
+        "document"
+      ],
+      "field_columns": {
+        "key": "key"
+      },
+      "fields": {
+        "key": "text"
+      },
+      "kind": "core.finance_project_budget",
+      "range_indexes": [],
+      "relationships": {},
+      "required_fields": [
+        "key",
+        "document"
+      ],
+      "table": "finance_project_budgets",
+      "unique_indexes": [
+        [
+          "key"
+        ]
+      ]
+    },
+    {
+      "document_fields": [
+        "document"
+      ],
+      "field_columns": {
+        "created_millis": "created_millis",
+        "key": "key",
+        "user_ref": "user_ref"
+      },
+      "fields": {
+        "created_millis": "integer",
+        "key": "text",
+        "user_ref": "text"
+      },
+      "kind": "core.finance_payout",
+      "range_indexes": [
+        [
+          "user_ref",
+          "created_millis"
+        ]
+      ],
+      "relationships": {},
+      "required_fields": [
+        "key",
+        "user_ref",
+        "created_millis",
+        "document"
+      ],
+      "table": "finance_payouts",
+      "unique_indexes": [
+        [
+          "key"
+        ]
+      ]
+    },
+    {
+      "document_fields": [
+        "document"
+      ],
+      "field_columns": {
+        "created_millis": "created_millis",
+        "entry_kind": "entry_kind",
+        "hold_ref": "hold_ref",
+        "key": "key",
+        "payer_ref": "payer_ref"
+      },
+      "fields": {
+        "created_millis": "integer",
+        "entry_kind": "text",
+        "hold_ref": "text",
+        "key": "text",
+        "payer_ref": "text"
+      },
+      "kind": "core.finance_journal",
+      "range_indexes": [],
+      "relationships": {},
+      "required_fields": [
+        "key",
+        "entry_kind",
+        "created_millis",
+        "document"
+      ],
+      "table": "finance_journals",
+      "unique_indexes": [
+        [
+          "key"
+        ]
+      ]
+    },
+    {
+      "document_fields": [],
+      "field_columns": {
+        "created_millis": "created_millis",
+        "journal_ref": "journal_ref",
+        "participant_ref": "participant_ref"
+      },
+      "fields": {
+        "created_millis": "integer",
+        "journal_ref": "text",
+        "participant_ref": "text"
+      },
+      "kind": "core.finance_journal_participant",
+      "range_indexes": [
+        [
+          "participant_ref",
+          "created_millis"
+        ]
+      ],
+      "relationships": {},
+      "required_fields": [
+        "journal_ref",
+        "participant_ref",
+        "created_millis"
+      ],
+      "table": "finance_journal_participants",
+      "unique_indexes": [
+        [
+          "journal_ref",
+          "participant_ref"
+        ]
+      ]
+    },
+    {
+      "document_fields": [
+        "document"
+      ],
+      "field_columns": {
+        "key": "key"
+      },
+      "fields": {
+        "key": "text"
+      },
+      "kind": "core.billing_catalog",
+      "range_indexes": [],
+      "relationships": {},
+      "required_fields": [
+        "key",
+        "document"
+      ],
+      "table": "billing_catalogs",
+      "unique_indexes": [
+        [
+          "key"
+        ]
+      ]
+    },
+    {
+      "document_fields": [
+        "document"
+      ],
+      "field_columns": {
+        "key": "key"
+      },
+      "fields": {
+        "key": "text"
+      },
+      "kind": "core.billing_quote",
+      "range_indexes": [],
+      "relationships": {},
+      "required_fields": [
+        "key",
+        "document"
+      ],
+      "table": "billing_quotes",
+      "unique_indexes": [
+        [
+          "key"
+        ]
+      ]
+    },
+    {
+      "document_fields": [
+        "document"
+      ],
+      "field_columns": {
+        "key": "key"
+      },
+      "fields": {
+        "key": "text"
+      },
+      "kind": "core.namespace_document",
+      "range_indexes": [],
+      "relationships": {},
+      "required_fields": [
+        "key",
+        "document"
+      ],
+      "table": "namespace_documents",
+      "unique_indexes": [
+        [
+          "key"
+        ]
+      ]
+    },
+    {
+      "document_fields": [],
+      "field_columns": {
+        "key": "key",
+        "user_ref": "user_ref"
+      },
+      "fields": {
+        "key": "text",
+        "user_ref": "text"
+      },
+      "kind": "core.user_email",
+      "range_indexes": [],
+      "relationships": {},
+      "required_fields": [
+        "key",
+        "user_ref"
+      ],
+      "table": "user_emails",
+      "unique_indexes": [
+        [
+          "key"
+        ],
+        [
+          "user_ref"
+        ]
+      ]
+    },
+    {
+      "document_fields": [],
+      "field_columns": {
+        "key": "key",
+        "key_ref": "key_ref",
+        "retain_until_millis": "retain_until_millis"
+      },
+      "fields": {
+        "key": "text",
+        "key_ref": "text",
+        "retain_until_millis": "integer"
+      },
+      "kind": "core.replay_nonce",
+      "range_indexes": [
+        [
+          "retain_until_millis"
+        ]
+      ],
+      "relationships": {},
+      "required_fields": [
+        "key",
+        "key_ref",
+        "retain_until_millis"
+      ],
+      "table": "nonce_records",
+      "unique_indexes": [
+        [
+          "key"
+        ]
+      ]
+    },
+    {
+      "document_fields": [],
+      "field_columns": {
+        "audience": "audience",
+        "expires_at_millis": "expires_at_millis",
+        "key": "key",
+        "subject": "subject"
+      },
+      "fields": {
+        "audience": "text",
+        "expires_at_millis": "integer",
+        "key": "text",
+        "subject": "text"
+      },
+      "kind": "core.identity_challenge",
+      "range_indexes": [
+        [
+          "expires_at_millis"
+        ]
+      ],
+      "relationships": {},
+      "required_fields": [
+        "key",
+        "subject",
+        "audience",
+        "expires_at_millis"
+      ],
+      "table": "auth_challenges",
+      "unique_indexes": [
+        [
+          "key"
+        ]
+      ]
+    },
+    {
+      "document_fields": [],
+      "field_columns": {
+        "claimed_at_millis": "claimed_at_millis",
+        "completed": "completed",
+        "digest": "digest",
+        "key": "key",
+        "request_key": "request_key",
+        "response": "response",
+        "subject": "subject"
+      },
+      "fields": {
+        "claimed_at_millis": "integer",
+        "completed": "bool",
+        "digest": "bytes",
+        "key": "text",
+        "request_key": "text",
+        "response": "bytes",
+        "subject": "text"
+      },
+      "kind": "core.public_idempotency",
+      "range_indexes": [],
+      "relationships": {},
+      "required_fields": [
+        "key",
+        "subject",
+        "request_key",
+        "digest",
+        "claimed_at_millis",
+        "completed"
+      ],
+      "table": "public_idempotency_claims",
+      "unique_indexes": [
+        [
+          "key"
+        ]
+      ]
+    },
+    {
+      "document_fields": [],
+      "field_columns": {
+        "key": "key",
+        "status": "status",
+        "store_id": "store_id"
+      },
+      "fields": {
+        "key": "text",
+        "status": "text",
+        "store_id": "text"
+      },
+      "kind": "core.chain",
+      "range_indexes": [],
+      "relationships": {},
+      "required_fields": [
+        "key"
+      ],
+      "table": "chains",
+      "unique_indexes": [
+        [
+          "key"
+        ]
+      ]
+    },
+    {
+      "document_fields": [],
+      "field_columns": {
+        "key": "key",
+        "shard_name": "shard_name",
+        "work_chain_id": "work_chain_id"
+      },
+      "fields": {
+        "key": "text",
+        "shard_name": "text",
+        "work_chain_id": "text"
+      },
+      "kind": "core.chain_shard",
+      "range_indexes": [],
+      "relationships": {},
+      "required_fields": [
+        "key"
+      ],
+      "table": "chain_shards",
+      "unique_indexes": [
+        [
+          "key"
+        ]
+      ]
+    },
+    {
+      "document_fields": [],
+      "field_columns": {
+        "key": "key",
+        "user_ref": "user_ref"
+      },
+      "fields": {
+        "key": "text",
+        "user_ref": "text"
+      },
+      "kind": "core.session_token",
+      "range_indexes": [
+        [
+          "user_ref"
+        ]
+      ],
+      "relationships": {},
+      "required_fields": [
+        "key",
+        "user_ref"
+      ],
+      "table": "session_tokens",
+      "unique_indexes": [
+        [
+          "key"
+        ]
+      ]
+    },
+    {
+      "document_fields": [
+        "billing"
+      ],
+      "field_columns": {
+        "distributed": "distributed",
+        "entity_ref": "entity_ref",
+        "key": "key",
+        "owner_program": "owner_program",
+        "program_ref": "program_ref",
+        "started_at_millis": "started_at_millis",
+        "status": "status"
+      },
+      "fields": {
+        "distributed": "bool",
+        "entity_ref": "text",
+        "key": "text",
+        "owner_program": "text",
+        "program_ref": "text",
+        "started_at_millis": "integer",
+        "status": "text"
+      },
+      "kind": "core.vm_instance",
+      "range_indexes": [
+        [
+          "program_ref",
+          "entity_ref"
+        ],
+        [
+          "status"
+        ]
+      ],
+      "relationships": {},
+      "required_fields": [
+        "key"
+      ],
+      "table": "vm_instances",
+      "unique_indexes": [
+        [
+          "key"
+        ]
+      ]
+    },
+    {
+      "document_fields": [],
+      "field_columns": {
+        "key": "key",
+        "label": "label"
+      },
+      "fields": {
+        "key": "text",
+        "label": "text"
+      },
+      "kind": "core.vm_distribution",
+      "range_indexes": [],
+      "relationships": {},
+      "required_fields": [
+        "key",
+        "label"
+      ],
+      "table": "vm_distributions",
+      "unique_indexes": [
+        [
+          "key"
+        ]
+      ]
+    },
+    {
+      "document_fields": [],
+      "field_columns": {
+        "key": "key",
+        "program_ref": "program_ref",
+        "user_ref": "user_ref",
+        "vm_ref": "vm_ref"
+      },
+      "fields": {
+        "key": "text",
+        "program_ref": "text",
+        "user_ref": "text",
+        "vm_ref": "text"
+      },
+      "kind": "core.vm_terminal",
+      "range_indexes": [],
+      "relationships": {},
+      "required_fields": [
+        "key",
+        "program_ref",
+        "vm_ref",
+        "user_ref"
+      ],
+      "table": "vm_terminals",
+      "unique_indexes": [
+        [
+          "key"
+        ]
+      ]
+    },
+    {
+      "document_fields": [
+        "document"
+      ],
+      "field_columns": {
+        "key": "key",
+        "lock_ref": "lock_ref",
+        "owner_ref": "owner_ref"
+      },
+      "fields": {
+        "key": "text",
+        "lock_ref": "text",
+        "owner_ref": "text"
+      },
+      "kind": "core.token_lock",
+      "range_indexes": [
+        [
+          "owner_ref"
+        ]
+      ],
+      "relationships": {},
+      "required_fields": [
+        "key",
+        "owner_ref",
+        "lock_ref",
+        "document"
+      ],
+      "table": "token_locks",
+      "unique_indexes": [
+        [
+          "key"
+        ]
+      ]
+    },
+    {
+      "document_fields": [],
+      "field_columns": {
+        "blob": "blob",
+        "key": "key",
+        "name": "name",
+        "owner_ref": "owner_ref"
+      },
+      "fields": {
+        "blob": "text",
+        "key": "text",
+        "name": "text",
+        "owner_ref": "text"
+      },
+      "kind": "core.secret_value",
+      "range_indexes": [
+        [
+          "owner_ref",
+          "name"
+        ]
+      ],
+      "relationships": {},
+      "required_fields": [
+        "key",
+        "owner_ref",
+        "name",
+        "blob"
+      ],
+      "table": "secret_values",
+      "unique_indexes": [
+        [
+          "key"
+        ]
+      ]
+    },
+    {
+      "document_fields": [],
+      "field_columns": {
+        "expires_at_millis": "expires_at_millis",
+        "grantee_ref": "grantee_ref",
+        "key": "key",
+        "name": "name",
+        "owner_ref": "owner_ref"
+      },
+      "fields": {
+        "expires_at_millis": "integer",
+        "grantee_ref": "text",
+        "key": "text",
+        "name": "text",
+        "owner_ref": "text"
+      },
+      "kind": "core.secret_access",
+      "range_indexes": [
+        [
+          "grantee_ref",
+          "owner_ref",
+          "name"
+        ]
+      ],
+      "relationships": {},
+      "required_fields": [
+        "key",
+        "owner_ref",
+        "name",
+        "grantee_ref",
+        "expires_at_millis"
+      ],
+      "table": "secret_accesses",
+      "unique_indexes": [
+        [
+          "key"
         ]
       ]
     }

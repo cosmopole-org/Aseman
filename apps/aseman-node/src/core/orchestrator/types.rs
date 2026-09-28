@@ -93,17 +93,9 @@ pub(crate) struct WeakCoreView {
 
 impl WeakCoreView {
     /// A transaction over this view's storage, when the tools are loaded.
-    pub(crate) fn checked_trx(
-        &self,
-        readonly: bool,
-    ) -> Option<Arc<dyn crate::models::transaction::ITrx>> {
+    pub(crate) fn checked_trx(&self, readonly: bool) -> Option<Arc<crate::core::trx::Trx>> {
         let tools = self.inner.tools.clone()?;
-        let core_for_trx: Arc<dyn ICore> = Arc::new(WeakCoreView {
-            inner: CoreWeakHandles {
-                ..clone_handles(&self.inner)
-            },
-        });
-        crate::core::orchestrator::icore::begin_trx(core_for_trx, &tools.storage(), readonly)
+        crate::core::orchestrator::icore::begin_trx(&tools.storage(), readonly)
     }
 }
 

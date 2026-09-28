@@ -509,54 +509,6 @@ CREATE TABLE IF NOT EXISTS aseman_core."guest_schema_definitions" (
   CONSTRAINT ck_live_guest_schema_definitions_status CHECK (tombstone OR "status" IS NOT NULL)
 );
 
-CREATE TABLE IF NOT EXISTS aseman_core."chains" (
-  id UUID PRIMARY KEY,
-  schema_version INTEGER NOT NULL CHECK (schema_version > 0),
-  revision BIGINT NOT NULL CHECK (revision > 0),
-  created_at_micros BIGINT NOT NULL,
-  updated_at_micros BIGINT NOT NULL CHECK (updated_at_micros >= created_at_micros),
-  previous_integrity BYTEA,
-  integrity_hash BYTEA NOT NULL CHECK (octet_length(integrity_hash) = 32),
-  owner_type TEXT NOT NULL,
-  owner_id UUID,
-  owner_name TEXT,
-  tombstone BOOLEAN NOT NULL DEFAULT FALSE,
-  capsule_cbor BYTEA,
-  capsule_shape JSONB,
-  "store_id" TEXT,
-  "status" TEXT,
-  "store" UUID NOT NULL,
-  CONSTRAINT ck_revision_chain CHECK ((revision = 1) = (previous_integrity IS NULL)),
-  CONSTRAINT ck_previous_integrity CHECK (previous_integrity IS NULL OR octet_length(previous_integrity) = 32),
-  CONSTRAINT ck_owner_scope CHECK ((owner_type = 'global' AND owner_id IS NULL AND owner_name IS NULL) OR (owner_type IN ('node', 'creature') AND owner_id IS NOT NULL AND owner_name IS NULL) OR (owner_type = 'module' AND owner_id IS NULL AND owner_name IS NOT NULL)),
-  CONSTRAINT ck_live_chains_store_id CHECK (tombstone OR "store_id" IS NOT NULL),
-  CONSTRAINT ck_live_chains_status CHECK (tombstone OR "status" IS NOT NULL)
-);
-
-CREATE TABLE IF NOT EXISTS aseman_core."chain_shards" (
-  id UUID PRIMARY KEY,
-  schema_version INTEGER NOT NULL CHECK (schema_version > 0),
-  revision BIGINT NOT NULL CHECK (revision > 0),
-  created_at_micros BIGINT NOT NULL,
-  updated_at_micros BIGINT NOT NULL CHECK (updated_at_micros >= created_at_micros),
-  previous_integrity BYTEA,
-  integrity_hash BYTEA NOT NULL CHECK (octet_length(integrity_hash) = 32),
-  owner_type TEXT NOT NULL,
-  owner_id UUID,
-  owner_name TEXT,
-  tombstone BOOLEAN NOT NULL DEFAULT FALSE,
-  capsule_cbor BYTEA,
-  capsule_shape JSONB,
-  "work_chain_id" TEXT,
-  "shard_name" TEXT,
-  "chain" UUID NOT NULL,
-  CONSTRAINT ck_revision_chain CHECK ((revision = 1) = (previous_integrity IS NULL)),
-  CONSTRAINT ck_previous_integrity CHECK (previous_integrity IS NULL OR octet_length(previous_integrity) = 32),
-  CONSTRAINT ck_owner_scope CHECK ((owner_type = 'global' AND owner_id IS NULL AND owner_name IS NULL) OR (owner_type IN ('node', 'creature') AND owner_id IS NOT NULL AND owner_name IS NULL) OR (owner_type = 'module' AND owner_id IS NULL AND owner_name IS NOT NULL)),
-  CONSTRAINT ck_live_chain_shards_work_chain_id CHECK (tombstone OR "work_chain_id" IS NOT NULL),
-  CONSTRAINT ck_live_chain_shards_shard_name CHECK (tombstone OR "shard_name" IS NOT NULL)
-);
-
 CREATE TABLE IF NOT EXISTS aseman_core."entities" (
   id UUID PRIMARY KEY,
   schema_version INTEGER NOT NULL CHECK (schema_version > 0),
@@ -1030,6 +982,677 @@ CREATE TABLE IF NOT EXISTS aseman_core."legacy_identities" (
   CONSTRAINT ck_live_legacy_identities_target_id CHECK (tombstone OR "target_id" IS NOT NULL)
 );
 
+CREATE TABLE IF NOT EXISTS aseman_core."counters" (
+  id UUID PRIMARY KEY,
+  schema_version INTEGER NOT NULL CHECK (schema_version > 0),
+  revision BIGINT NOT NULL CHECK (revision > 0),
+  created_at_micros BIGINT NOT NULL,
+  updated_at_micros BIGINT NOT NULL CHECK (updated_at_micros >= created_at_micros),
+  previous_integrity BYTEA,
+  integrity_hash BYTEA NOT NULL CHECK (octet_length(integrity_hash) = 32),
+  owner_type TEXT NOT NULL,
+  owner_id UUID,
+  owner_name TEXT,
+  tombstone BOOLEAN NOT NULL DEFAULT FALSE,
+  capsule_cbor BYTEA,
+  capsule_shape JSONB,
+  "key" TEXT,
+  "value" BIGINT,
+  CONSTRAINT ck_revision_chain CHECK ((revision = 1) = (previous_integrity IS NULL)),
+  CONSTRAINT ck_previous_integrity CHECK (previous_integrity IS NULL OR octet_length(previous_integrity) = 32),
+  CONSTRAINT ck_owner_scope CHECK ((owner_type = 'global' AND owner_id IS NULL AND owner_name IS NULL) OR (owner_type IN ('node', 'creature') AND owner_id IS NOT NULL AND owner_name IS NULL) OR (owner_type = 'module' AND owner_id IS NULL AND owner_name IS NOT NULL)),
+  CONSTRAINT ck_live_counters_key CHECK (tombstone OR "key" IS NOT NULL),
+  CONSTRAINT ck_live_counters_value CHECK (tombstone OR "value" IS NOT NULL)
+);
+
+CREATE TABLE IF NOT EXISTS aseman_core."markers" (
+  id UUID PRIMARY KEY,
+  schema_version INTEGER NOT NULL CHECK (schema_version > 0),
+  revision BIGINT NOT NULL CHECK (revision > 0),
+  created_at_micros BIGINT NOT NULL,
+  updated_at_micros BIGINT NOT NULL CHECK (updated_at_micros >= created_at_micros),
+  previous_integrity BYTEA,
+  integrity_hash BYTEA NOT NULL CHECK (octet_length(integrity_hash) = 32),
+  owner_type TEXT NOT NULL,
+  owner_id UUID,
+  owner_name TEXT,
+  tombstone BOOLEAN NOT NULL DEFAULT FALSE,
+  capsule_cbor BYTEA,
+  capsule_shape JSONB,
+  "key" TEXT,
+  "value" TEXT,
+  CONSTRAINT ck_revision_chain CHECK ((revision = 1) = (previous_integrity IS NULL)),
+  CONSTRAINT ck_previous_integrity CHECK (previous_integrity IS NULL OR octet_length(previous_integrity) = 32),
+  CONSTRAINT ck_owner_scope CHECK ((owner_type = 'global' AND owner_id IS NULL AND owner_name IS NULL) OR (owner_type IN ('node', 'creature') AND owner_id IS NOT NULL AND owner_name IS NULL) OR (owner_type = 'module' AND owner_id IS NULL AND owner_name IS NOT NULL)),
+  CONSTRAINT ck_live_markers_key CHECK (tombstone OR "key" IS NOT NULL),
+  CONSTRAINT ck_live_markers_value CHECK (tombstone OR "value" IS NOT NULL)
+);
+
+CREATE TABLE IF NOT EXISTS aseman_core."finance_accounts" (
+  id UUID PRIMARY KEY,
+  schema_version INTEGER NOT NULL CHECK (schema_version > 0),
+  revision BIGINT NOT NULL CHECK (revision > 0),
+  created_at_micros BIGINT NOT NULL,
+  updated_at_micros BIGINT NOT NULL CHECK (updated_at_micros >= created_at_micros),
+  previous_integrity BYTEA,
+  integrity_hash BYTEA NOT NULL CHECK (octet_length(integrity_hash) = 32),
+  owner_type TEXT NOT NULL,
+  owner_id UUID,
+  owner_name TEXT,
+  tombstone BOOLEAN NOT NULL DEFAULT FALSE,
+  capsule_cbor BYTEA,
+  capsule_shape JSONB,
+  "key" TEXT,
+  "held_minor" BIGINT,
+  "debt_minor" BIGINT,
+  "withdrawable_minor" BIGINT,
+  "payout_held_minor" BIGINT,
+  "earned_minor" BIGINT,
+  "spent_minor" BIGINT,
+  "pool_ref" TEXT,
+  CONSTRAINT ck_revision_chain CHECK ((revision = 1) = (previous_integrity IS NULL)),
+  CONSTRAINT ck_previous_integrity CHECK (previous_integrity IS NULL OR octet_length(previous_integrity) = 32),
+  CONSTRAINT ck_owner_scope CHECK ((owner_type = 'global' AND owner_id IS NULL AND owner_name IS NULL) OR (owner_type IN ('node', 'creature') AND owner_id IS NOT NULL AND owner_name IS NULL) OR (owner_type = 'module' AND owner_id IS NULL AND owner_name IS NOT NULL)),
+  CONSTRAINT ck_live_finance_accounts_key CHECK (tombstone OR "key" IS NOT NULL)
+);
+
+CREATE TABLE IF NOT EXISTS aseman_core."finance_holds" (
+  id UUID PRIMARY KEY,
+  schema_version INTEGER NOT NULL CHECK (schema_version > 0),
+  revision BIGINT NOT NULL CHECK (revision > 0),
+  created_at_micros BIGINT NOT NULL,
+  updated_at_micros BIGINT NOT NULL CHECK (updated_at_micros >= created_at_micros),
+  previous_integrity BYTEA,
+  integrity_hash BYTEA NOT NULL CHECK (octet_length(integrity_hash) = 32),
+  owner_type TEXT NOT NULL,
+  owner_id UUID,
+  owner_name TEXT,
+  tombstone BOOLEAN NOT NULL DEFAULT FALSE,
+  capsule_cbor BYTEA,
+  capsule_shape JSONB,
+  "key" TEXT,
+  "payer_ref" TEXT,
+  "created_millis" BIGINT,
+  "document" JSONB,
+  CONSTRAINT ck_revision_chain CHECK ((revision = 1) = (previous_integrity IS NULL)),
+  CONSTRAINT ck_previous_integrity CHECK (previous_integrity IS NULL OR octet_length(previous_integrity) = 32),
+  CONSTRAINT ck_owner_scope CHECK ((owner_type = 'global' AND owner_id IS NULL AND owner_name IS NULL) OR (owner_type IN ('node', 'creature') AND owner_id IS NOT NULL AND owner_name IS NULL) OR (owner_type = 'module' AND owner_id IS NULL AND owner_name IS NOT NULL)),
+  CONSTRAINT ck_live_finance_holds_key CHECK (tombstone OR "key" IS NOT NULL),
+  CONSTRAINT ck_live_finance_holds_payer_ref CHECK (tombstone OR "payer_ref" IS NOT NULL),
+  CONSTRAINT ck_live_finance_holds_created_millis CHECK (tombstone OR "created_millis" IS NOT NULL)
+);
+
+CREATE TABLE IF NOT EXISTS aseman_core."finance_pools" (
+  id UUID PRIMARY KEY,
+  schema_version INTEGER NOT NULL CHECK (schema_version > 0),
+  revision BIGINT NOT NULL CHECK (revision > 0),
+  created_at_micros BIGINT NOT NULL,
+  updated_at_micros BIGINT NOT NULL CHECK (updated_at_micros >= created_at_micros),
+  previous_integrity BYTEA,
+  integrity_hash BYTEA NOT NULL CHECK (octet_length(integrity_hash) = 32),
+  owner_type TEXT NOT NULL,
+  owner_id UUID,
+  owner_name TEXT,
+  tombstone BOOLEAN NOT NULL DEFAULT FALSE,
+  capsule_cbor BYTEA,
+  capsule_shape JSONB,
+  "key" TEXT,
+  "payer_ref" TEXT,
+  "document" JSONB,
+  CONSTRAINT ck_revision_chain CHECK ((revision = 1) = (previous_integrity IS NULL)),
+  CONSTRAINT ck_previous_integrity CHECK (previous_integrity IS NULL OR octet_length(previous_integrity) = 32),
+  CONSTRAINT ck_owner_scope CHECK ((owner_type = 'global' AND owner_id IS NULL AND owner_name IS NULL) OR (owner_type IN ('node', 'creature') AND owner_id IS NOT NULL AND owner_name IS NULL) OR (owner_type = 'module' AND owner_id IS NULL AND owner_name IS NOT NULL)),
+  CONSTRAINT ck_live_finance_pools_key CHECK (tombstone OR "key" IS NOT NULL)
+);
+
+CREATE TABLE IF NOT EXISTS aseman_core."finance_pool_reservations" (
+  id UUID PRIMARY KEY,
+  schema_version INTEGER NOT NULL CHECK (schema_version > 0),
+  revision BIGINT NOT NULL CHECK (revision > 0),
+  created_at_micros BIGINT NOT NULL,
+  updated_at_micros BIGINT NOT NULL CHECK (updated_at_micros >= created_at_micros),
+  previous_integrity BYTEA,
+  integrity_hash BYTEA NOT NULL CHECK (octet_length(integrity_hash) = 32),
+  owner_type TEXT NOT NULL,
+  owner_id UUID,
+  owner_name TEXT,
+  tombstone BOOLEAN NOT NULL DEFAULT FALSE,
+  capsule_cbor BYTEA,
+  capsule_shape JSONB,
+  "key" TEXT,
+  "pool_ref" TEXT,
+  "document" JSONB,
+  CONSTRAINT ck_revision_chain CHECK ((revision = 1) = (previous_integrity IS NULL)),
+  CONSTRAINT ck_previous_integrity CHECK (previous_integrity IS NULL OR octet_length(previous_integrity) = 32),
+  CONSTRAINT ck_owner_scope CHECK ((owner_type = 'global' AND owner_id IS NULL AND owner_name IS NULL) OR (owner_type IN ('node', 'creature') AND owner_id IS NOT NULL AND owner_name IS NULL) OR (owner_type = 'module' AND owner_id IS NULL AND owner_name IS NOT NULL)),
+  CONSTRAINT ck_live_finance_pool_reservations_key CHECK (tombstone OR "key" IS NOT NULL)
+);
+
+CREATE TABLE IF NOT EXISTS aseman_core."finance_live_debits" (
+  id UUID PRIMARY KEY,
+  schema_version INTEGER NOT NULL CHECK (schema_version > 0),
+  revision BIGINT NOT NULL CHECK (revision > 0),
+  created_at_micros BIGINT NOT NULL,
+  updated_at_micros BIGINT NOT NULL CHECK (updated_at_micros >= created_at_micros),
+  previous_integrity BYTEA,
+  integrity_hash BYTEA NOT NULL CHECK (octet_length(integrity_hash) = 32),
+  owner_type TEXT NOT NULL,
+  owner_id UUID,
+  owner_name TEXT,
+  tombstone BOOLEAN NOT NULL DEFAULT FALSE,
+  capsule_cbor BYTEA,
+  capsule_shape JSONB,
+  "key" TEXT,
+  "document" JSONB,
+  CONSTRAINT ck_revision_chain CHECK ((revision = 1) = (previous_integrity IS NULL)),
+  CONSTRAINT ck_previous_integrity CHECK (previous_integrity IS NULL OR octet_length(previous_integrity) = 32),
+  CONSTRAINT ck_owner_scope CHECK ((owner_type = 'global' AND owner_id IS NULL AND owner_name IS NULL) OR (owner_type IN ('node', 'creature') AND owner_id IS NOT NULL AND owner_name IS NULL) OR (owner_type = 'module' AND owner_id IS NULL AND owner_name IS NOT NULL)),
+  CONSTRAINT ck_live_finance_live_debits_key CHECK (tombstone OR "key" IS NOT NULL)
+);
+
+CREATE TABLE IF NOT EXISTS aseman_core."finance_project_budgets" (
+  id UUID PRIMARY KEY,
+  schema_version INTEGER NOT NULL CHECK (schema_version > 0),
+  revision BIGINT NOT NULL CHECK (revision > 0),
+  created_at_micros BIGINT NOT NULL,
+  updated_at_micros BIGINT NOT NULL CHECK (updated_at_micros >= created_at_micros),
+  previous_integrity BYTEA,
+  integrity_hash BYTEA NOT NULL CHECK (octet_length(integrity_hash) = 32),
+  owner_type TEXT NOT NULL,
+  owner_id UUID,
+  owner_name TEXT,
+  tombstone BOOLEAN NOT NULL DEFAULT FALSE,
+  capsule_cbor BYTEA,
+  capsule_shape JSONB,
+  "key" TEXT,
+  "document" JSONB,
+  CONSTRAINT ck_revision_chain CHECK ((revision = 1) = (previous_integrity IS NULL)),
+  CONSTRAINT ck_previous_integrity CHECK (previous_integrity IS NULL OR octet_length(previous_integrity) = 32),
+  CONSTRAINT ck_owner_scope CHECK ((owner_type = 'global' AND owner_id IS NULL AND owner_name IS NULL) OR (owner_type IN ('node', 'creature') AND owner_id IS NOT NULL AND owner_name IS NULL) OR (owner_type = 'module' AND owner_id IS NULL AND owner_name IS NOT NULL)),
+  CONSTRAINT ck_live_finance_project_budgets_key CHECK (tombstone OR "key" IS NOT NULL)
+);
+
+CREATE TABLE IF NOT EXISTS aseman_core."finance_payouts" (
+  id UUID PRIMARY KEY,
+  schema_version INTEGER NOT NULL CHECK (schema_version > 0),
+  revision BIGINT NOT NULL CHECK (revision > 0),
+  created_at_micros BIGINT NOT NULL,
+  updated_at_micros BIGINT NOT NULL CHECK (updated_at_micros >= created_at_micros),
+  previous_integrity BYTEA,
+  integrity_hash BYTEA NOT NULL CHECK (octet_length(integrity_hash) = 32),
+  owner_type TEXT NOT NULL,
+  owner_id UUID,
+  owner_name TEXT,
+  tombstone BOOLEAN NOT NULL DEFAULT FALSE,
+  capsule_cbor BYTEA,
+  capsule_shape JSONB,
+  "key" TEXT,
+  "user_ref" TEXT,
+  "created_millis" BIGINT,
+  "document" JSONB,
+  CONSTRAINT ck_revision_chain CHECK ((revision = 1) = (previous_integrity IS NULL)),
+  CONSTRAINT ck_previous_integrity CHECK (previous_integrity IS NULL OR octet_length(previous_integrity) = 32),
+  CONSTRAINT ck_owner_scope CHECK ((owner_type = 'global' AND owner_id IS NULL AND owner_name IS NULL) OR (owner_type IN ('node', 'creature') AND owner_id IS NOT NULL AND owner_name IS NULL) OR (owner_type = 'module' AND owner_id IS NULL AND owner_name IS NOT NULL)),
+  CONSTRAINT ck_live_finance_payouts_key CHECK (tombstone OR "key" IS NOT NULL),
+  CONSTRAINT ck_live_finance_payouts_user_ref CHECK (tombstone OR "user_ref" IS NOT NULL),
+  CONSTRAINT ck_live_finance_payouts_created_millis CHECK (tombstone OR "created_millis" IS NOT NULL)
+);
+
+CREATE TABLE IF NOT EXISTS aseman_core."finance_journals" (
+  id UUID PRIMARY KEY,
+  schema_version INTEGER NOT NULL CHECK (schema_version > 0),
+  revision BIGINT NOT NULL CHECK (revision > 0),
+  created_at_micros BIGINT NOT NULL,
+  updated_at_micros BIGINT NOT NULL CHECK (updated_at_micros >= created_at_micros),
+  previous_integrity BYTEA,
+  integrity_hash BYTEA NOT NULL CHECK (octet_length(integrity_hash) = 32),
+  owner_type TEXT NOT NULL,
+  owner_id UUID,
+  owner_name TEXT,
+  tombstone BOOLEAN NOT NULL DEFAULT FALSE,
+  capsule_cbor BYTEA,
+  capsule_shape JSONB,
+  "key" TEXT,
+  "entry_kind" TEXT,
+  "hold_ref" TEXT,
+  "payer_ref" TEXT,
+  "created_millis" BIGINT,
+  "document" JSONB,
+  CONSTRAINT ck_revision_chain CHECK ((revision = 1) = (previous_integrity IS NULL)),
+  CONSTRAINT ck_previous_integrity CHECK (previous_integrity IS NULL OR octet_length(previous_integrity) = 32),
+  CONSTRAINT ck_owner_scope CHECK ((owner_type = 'global' AND owner_id IS NULL AND owner_name IS NULL) OR (owner_type IN ('node', 'creature') AND owner_id IS NOT NULL AND owner_name IS NULL) OR (owner_type = 'module' AND owner_id IS NULL AND owner_name IS NOT NULL)),
+  CONSTRAINT ck_live_finance_journals_key CHECK (tombstone OR "key" IS NOT NULL),
+  CONSTRAINT ck_live_finance_journals_entry_kind CHECK (tombstone OR "entry_kind" IS NOT NULL),
+  CONSTRAINT ck_live_finance_journals_created_millis CHECK (tombstone OR "created_millis" IS NOT NULL)
+);
+
+CREATE TABLE IF NOT EXISTS aseman_core."finance_journal_participants" (
+  id UUID PRIMARY KEY,
+  schema_version INTEGER NOT NULL CHECK (schema_version > 0),
+  revision BIGINT NOT NULL CHECK (revision > 0),
+  created_at_micros BIGINT NOT NULL,
+  updated_at_micros BIGINT NOT NULL CHECK (updated_at_micros >= created_at_micros),
+  previous_integrity BYTEA,
+  integrity_hash BYTEA NOT NULL CHECK (octet_length(integrity_hash) = 32),
+  owner_type TEXT NOT NULL,
+  owner_id UUID,
+  owner_name TEXT,
+  tombstone BOOLEAN NOT NULL DEFAULT FALSE,
+  capsule_cbor BYTEA,
+  capsule_shape JSONB,
+  "journal_ref" TEXT,
+  "participant_ref" TEXT,
+  "created_millis" BIGINT,
+  CONSTRAINT ck_revision_chain CHECK ((revision = 1) = (previous_integrity IS NULL)),
+  CONSTRAINT ck_previous_integrity CHECK (previous_integrity IS NULL OR octet_length(previous_integrity) = 32),
+  CONSTRAINT ck_owner_scope CHECK ((owner_type = 'global' AND owner_id IS NULL AND owner_name IS NULL) OR (owner_type IN ('node', 'creature') AND owner_id IS NOT NULL AND owner_name IS NULL) OR (owner_type = 'module' AND owner_id IS NULL AND owner_name IS NOT NULL)),
+  CONSTRAINT ck_live_finance_journal_participants_journal_ref CHECK (tombstone OR "journal_ref" IS NOT NULL),
+  CONSTRAINT ck_live_finance_journal_participants_participant_ref CHECK (tombstone OR "participant_ref" IS NOT NULL),
+  CONSTRAINT ck_live_finance_journal_participants_created_millis CHECK (tombstone OR "created_millis" IS NOT NULL)
+);
+
+CREATE TABLE IF NOT EXISTS aseman_core."billing_catalogs" (
+  id UUID PRIMARY KEY,
+  schema_version INTEGER NOT NULL CHECK (schema_version > 0),
+  revision BIGINT NOT NULL CHECK (revision > 0),
+  created_at_micros BIGINT NOT NULL,
+  updated_at_micros BIGINT NOT NULL CHECK (updated_at_micros >= created_at_micros),
+  previous_integrity BYTEA,
+  integrity_hash BYTEA NOT NULL CHECK (octet_length(integrity_hash) = 32),
+  owner_type TEXT NOT NULL,
+  owner_id UUID,
+  owner_name TEXT,
+  tombstone BOOLEAN NOT NULL DEFAULT FALSE,
+  capsule_cbor BYTEA,
+  capsule_shape JSONB,
+  "key" TEXT,
+  "document" JSONB,
+  CONSTRAINT ck_revision_chain CHECK ((revision = 1) = (previous_integrity IS NULL)),
+  CONSTRAINT ck_previous_integrity CHECK (previous_integrity IS NULL OR octet_length(previous_integrity) = 32),
+  CONSTRAINT ck_owner_scope CHECK ((owner_type = 'global' AND owner_id IS NULL AND owner_name IS NULL) OR (owner_type IN ('node', 'creature') AND owner_id IS NOT NULL AND owner_name IS NULL) OR (owner_type = 'module' AND owner_id IS NULL AND owner_name IS NOT NULL)),
+  CONSTRAINT ck_live_billing_catalogs_key CHECK (tombstone OR "key" IS NOT NULL)
+);
+
+CREATE TABLE IF NOT EXISTS aseman_core."billing_quotes" (
+  id UUID PRIMARY KEY,
+  schema_version INTEGER NOT NULL CHECK (schema_version > 0),
+  revision BIGINT NOT NULL CHECK (revision > 0),
+  created_at_micros BIGINT NOT NULL,
+  updated_at_micros BIGINT NOT NULL CHECK (updated_at_micros >= created_at_micros),
+  previous_integrity BYTEA,
+  integrity_hash BYTEA NOT NULL CHECK (octet_length(integrity_hash) = 32),
+  owner_type TEXT NOT NULL,
+  owner_id UUID,
+  owner_name TEXT,
+  tombstone BOOLEAN NOT NULL DEFAULT FALSE,
+  capsule_cbor BYTEA,
+  capsule_shape JSONB,
+  "key" TEXT,
+  "document" JSONB,
+  CONSTRAINT ck_revision_chain CHECK ((revision = 1) = (previous_integrity IS NULL)),
+  CONSTRAINT ck_previous_integrity CHECK (previous_integrity IS NULL OR octet_length(previous_integrity) = 32),
+  CONSTRAINT ck_owner_scope CHECK ((owner_type = 'global' AND owner_id IS NULL AND owner_name IS NULL) OR (owner_type IN ('node', 'creature') AND owner_id IS NOT NULL AND owner_name IS NULL) OR (owner_type = 'module' AND owner_id IS NULL AND owner_name IS NOT NULL)),
+  CONSTRAINT ck_live_billing_quotes_key CHECK (tombstone OR "key" IS NOT NULL)
+);
+
+CREATE TABLE IF NOT EXISTS aseman_core."namespace_documents" (
+  id UUID PRIMARY KEY,
+  schema_version INTEGER NOT NULL CHECK (schema_version > 0),
+  revision BIGINT NOT NULL CHECK (revision > 0),
+  created_at_micros BIGINT NOT NULL,
+  updated_at_micros BIGINT NOT NULL CHECK (updated_at_micros >= created_at_micros),
+  previous_integrity BYTEA,
+  integrity_hash BYTEA NOT NULL CHECK (octet_length(integrity_hash) = 32),
+  owner_type TEXT NOT NULL,
+  owner_id UUID,
+  owner_name TEXT,
+  tombstone BOOLEAN NOT NULL DEFAULT FALSE,
+  capsule_cbor BYTEA,
+  capsule_shape JSONB,
+  "key" TEXT,
+  "document" JSONB,
+  CONSTRAINT ck_revision_chain CHECK ((revision = 1) = (previous_integrity IS NULL)),
+  CONSTRAINT ck_previous_integrity CHECK (previous_integrity IS NULL OR octet_length(previous_integrity) = 32),
+  CONSTRAINT ck_owner_scope CHECK ((owner_type = 'global' AND owner_id IS NULL AND owner_name IS NULL) OR (owner_type IN ('node', 'creature') AND owner_id IS NOT NULL AND owner_name IS NULL) OR (owner_type = 'module' AND owner_id IS NULL AND owner_name IS NOT NULL)),
+  CONSTRAINT ck_live_namespace_documents_key CHECK (tombstone OR "key" IS NOT NULL)
+);
+
+CREATE TABLE IF NOT EXISTS aseman_core."user_emails" (
+  id UUID PRIMARY KEY,
+  schema_version INTEGER NOT NULL CHECK (schema_version > 0),
+  revision BIGINT NOT NULL CHECK (revision > 0),
+  created_at_micros BIGINT NOT NULL,
+  updated_at_micros BIGINT NOT NULL CHECK (updated_at_micros >= created_at_micros),
+  previous_integrity BYTEA,
+  integrity_hash BYTEA NOT NULL CHECK (octet_length(integrity_hash) = 32),
+  owner_type TEXT NOT NULL,
+  owner_id UUID,
+  owner_name TEXT,
+  tombstone BOOLEAN NOT NULL DEFAULT FALSE,
+  capsule_cbor BYTEA,
+  capsule_shape JSONB,
+  "key" TEXT,
+  "user_ref" TEXT,
+  CONSTRAINT ck_revision_chain CHECK ((revision = 1) = (previous_integrity IS NULL)),
+  CONSTRAINT ck_previous_integrity CHECK (previous_integrity IS NULL OR octet_length(previous_integrity) = 32),
+  CONSTRAINT ck_owner_scope CHECK ((owner_type = 'global' AND owner_id IS NULL AND owner_name IS NULL) OR (owner_type IN ('node', 'creature') AND owner_id IS NOT NULL AND owner_name IS NULL) OR (owner_type = 'module' AND owner_id IS NULL AND owner_name IS NOT NULL)),
+  CONSTRAINT ck_live_user_emails_key CHECK (tombstone OR "key" IS NOT NULL),
+  CONSTRAINT ck_live_user_emails_user_ref CHECK (tombstone OR "user_ref" IS NOT NULL)
+);
+
+CREATE TABLE IF NOT EXISTS aseman_core."nonce_records" (
+  id UUID PRIMARY KEY,
+  schema_version INTEGER NOT NULL CHECK (schema_version > 0),
+  revision BIGINT NOT NULL CHECK (revision > 0),
+  created_at_micros BIGINT NOT NULL,
+  updated_at_micros BIGINT NOT NULL CHECK (updated_at_micros >= created_at_micros),
+  previous_integrity BYTEA,
+  integrity_hash BYTEA NOT NULL CHECK (octet_length(integrity_hash) = 32),
+  owner_type TEXT NOT NULL,
+  owner_id UUID,
+  owner_name TEXT,
+  tombstone BOOLEAN NOT NULL DEFAULT FALSE,
+  capsule_cbor BYTEA,
+  capsule_shape JSONB,
+  "key" TEXT,
+  "key_ref" TEXT,
+  "retain_until_millis" BIGINT,
+  CONSTRAINT ck_revision_chain CHECK ((revision = 1) = (previous_integrity IS NULL)),
+  CONSTRAINT ck_previous_integrity CHECK (previous_integrity IS NULL OR octet_length(previous_integrity) = 32),
+  CONSTRAINT ck_owner_scope CHECK ((owner_type = 'global' AND owner_id IS NULL AND owner_name IS NULL) OR (owner_type IN ('node', 'creature') AND owner_id IS NOT NULL AND owner_name IS NULL) OR (owner_type = 'module' AND owner_id IS NULL AND owner_name IS NOT NULL)),
+  CONSTRAINT ck_live_nonce_records_key CHECK (tombstone OR "key" IS NOT NULL),
+  CONSTRAINT ck_live_nonce_records_key_ref CHECK (tombstone OR "key_ref" IS NOT NULL),
+  CONSTRAINT ck_live_nonce_records_retain_until_millis CHECK (tombstone OR "retain_until_millis" IS NOT NULL)
+);
+
+CREATE TABLE IF NOT EXISTS aseman_core."auth_challenges" (
+  id UUID PRIMARY KEY,
+  schema_version INTEGER NOT NULL CHECK (schema_version > 0),
+  revision BIGINT NOT NULL CHECK (revision > 0),
+  created_at_micros BIGINT NOT NULL,
+  updated_at_micros BIGINT NOT NULL CHECK (updated_at_micros >= created_at_micros),
+  previous_integrity BYTEA,
+  integrity_hash BYTEA NOT NULL CHECK (octet_length(integrity_hash) = 32),
+  owner_type TEXT NOT NULL,
+  owner_id UUID,
+  owner_name TEXT,
+  tombstone BOOLEAN NOT NULL DEFAULT FALSE,
+  capsule_cbor BYTEA,
+  capsule_shape JSONB,
+  "key" TEXT,
+  "subject" TEXT,
+  "audience" TEXT,
+  "expires_at_millis" BIGINT,
+  CONSTRAINT ck_revision_chain CHECK ((revision = 1) = (previous_integrity IS NULL)),
+  CONSTRAINT ck_previous_integrity CHECK (previous_integrity IS NULL OR octet_length(previous_integrity) = 32),
+  CONSTRAINT ck_owner_scope CHECK ((owner_type = 'global' AND owner_id IS NULL AND owner_name IS NULL) OR (owner_type IN ('node', 'creature') AND owner_id IS NOT NULL AND owner_name IS NULL) OR (owner_type = 'module' AND owner_id IS NULL AND owner_name IS NOT NULL)),
+  CONSTRAINT ck_live_auth_challenges_key CHECK (tombstone OR "key" IS NOT NULL),
+  CONSTRAINT ck_live_auth_challenges_subject CHECK (tombstone OR "subject" IS NOT NULL),
+  CONSTRAINT ck_live_auth_challenges_audience CHECK (tombstone OR "audience" IS NOT NULL),
+  CONSTRAINT ck_live_auth_challenges_expires_at_millis CHECK (tombstone OR "expires_at_millis" IS NOT NULL)
+);
+
+CREATE TABLE IF NOT EXISTS aseman_core."public_idempotency_claims" (
+  id UUID PRIMARY KEY,
+  schema_version INTEGER NOT NULL CHECK (schema_version > 0),
+  revision BIGINT NOT NULL CHECK (revision > 0),
+  created_at_micros BIGINT NOT NULL,
+  updated_at_micros BIGINT NOT NULL CHECK (updated_at_micros >= created_at_micros),
+  previous_integrity BYTEA,
+  integrity_hash BYTEA NOT NULL CHECK (octet_length(integrity_hash) = 32),
+  owner_type TEXT NOT NULL,
+  owner_id UUID,
+  owner_name TEXT,
+  tombstone BOOLEAN NOT NULL DEFAULT FALSE,
+  capsule_cbor BYTEA,
+  capsule_shape JSONB,
+  "key" TEXT,
+  "subject" TEXT,
+  "request_key" TEXT,
+  "digest" BYTEA,
+  "claimed_at_millis" BIGINT,
+  "response" BYTEA,
+  "completed" BOOLEAN,
+  CONSTRAINT ck_revision_chain CHECK ((revision = 1) = (previous_integrity IS NULL)),
+  CONSTRAINT ck_previous_integrity CHECK (previous_integrity IS NULL OR octet_length(previous_integrity) = 32),
+  CONSTRAINT ck_owner_scope CHECK ((owner_type = 'global' AND owner_id IS NULL AND owner_name IS NULL) OR (owner_type IN ('node', 'creature') AND owner_id IS NOT NULL AND owner_name IS NULL) OR (owner_type = 'module' AND owner_id IS NULL AND owner_name IS NOT NULL)),
+  CONSTRAINT ck_live_public_idempotency_claims_key CHECK (tombstone OR "key" IS NOT NULL),
+  CONSTRAINT ck_live_public_idempotency_claims_subject CHECK (tombstone OR "subject" IS NOT NULL),
+  CONSTRAINT ck_live_public_idempotency_claims_request_key CHECK (tombstone OR "request_key" IS NOT NULL),
+  CONSTRAINT ck_live_public_idempotency_claims_digest CHECK (tombstone OR "digest" IS NOT NULL),
+  CONSTRAINT ck_live_public_idempotency_claims_claimed_at_millis CHECK (tombstone OR "claimed_at_millis" IS NOT NULL),
+  CONSTRAINT ck_live_public_idempotency_claims_completed CHECK (tombstone OR "completed" IS NOT NULL)
+);
+
+CREATE TABLE IF NOT EXISTS aseman_core."chains" (
+  id UUID PRIMARY KEY,
+  schema_version INTEGER NOT NULL CHECK (schema_version > 0),
+  revision BIGINT NOT NULL CHECK (revision > 0),
+  created_at_micros BIGINT NOT NULL,
+  updated_at_micros BIGINT NOT NULL CHECK (updated_at_micros >= created_at_micros),
+  previous_integrity BYTEA,
+  integrity_hash BYTEA NOT NULL CHECK (octet_length(integrity_hash) = 32),
+  owner_type TEXT NOT NULL,
+  owner_id UUID,
+  owner_name TEXT,
+  tombstone BOOLEAN NOT NULL DEFAULT FALSE,
+  capsule_cbor BYTEA,
+  capsule_shape JSONB,
+  "key" TEXT,
+  "store_id" TEXT,
+  "status" TEXT,
+  CONSTRAINT ck_revision_chain CHECK ((revision = 1) = (previous_integrity IS NULL)),
+  CONSTRAINT ck_previous_integrity CHECK (previous_integrity IS NULL OR octet_length(previous_integrity) = 32),
+  CONSTRAINT ck_owner_scope CHECK ((owner_type = 'global' AND owner_id IS NULL AND owner_name IS NULL) OR (owner_type IN ('node', 'creature') AND owner_id IS NOT NULL AND owner_name IS NULL) OR (owner_type = 'module' AND owner_id IS NULL AND owner_name IS NOT NULL)),
+  CONSTRAINT ck_live_chains_key CHECK (tombstone OR "key" IS NOT NULL)
+);
+
+CREATE TABLE IF NOT EXISTS aseman_core."chain_shards" (
+  id UUID PRIMARY KEY,
+  schema_version INTEGER NOT NULL CHECK (schema_version > 0),
+  revision BIGINT NOT NULL CHECK (revision > 0),
+  created_at_micros BIGINT NOT NULL,
+  updated_at_micros BIGINT NOT NULL CHECK (updated_at_micros >= created_at_micros),
+  previous_integrity BYTEA,
+  integrity_hash BYTEA NOT NULL CHECK (octet_length(integrity_hash) = 32),
+  owner_type TEXT NOT NULL,
+  owner_id UUID,
+  owner_name TEXT,
+  tombstone BOOLEAN NOT NULL DEFAULT FALSE,
+  capsule_cbor BYTEA,
+  capsule_shape JSONB,
+  "key" TEXT,
+  "work_chain_id" TEXT,
+  "shard_name" TEXT,
+  CONSTRAINT ck_revision_chain CHECK ((revision = 1) = (previous_integrity IS NULL)),
+  CONSTRAINT ck_previous_integrity CHECK (previous_integrity IS NULL OR octet_length(previous_integrity) = 32),
+  CONSTRAINT ck_owner_scope CHECK ((owner_type = 'global' AND owner_id IS NULL AND owner_name IS NULL) OR (owner_type IN ('node', 'creature') AND owner_id IS NOT NULL AND owner_name IS NULL) OR (owner_type = 'module' AND owner_id IS NULL AND owner_name IS NOT NULL)),
+  CONSTRAINT ck_live_chain_shards_key CHECK (tombstone OR "key" IS NOT NULL)
+);
+
+CREATE TABLE IF NOT EXISTS aseman_core."session_tokens" (
+  id UUID PRIMARY KEY,
+  schema_version INTEGER NOT NULL CHECK (schema_version > 0),
+  revision BIGINT NOT NULL CHECK (revision > 0),
+  created_at_micros BIGINT NOT NULL,
+  updated_at_micros BIGINT NOT NULL CHECK (updated_at_micros >= created_at_micros),
+  previous_integrity BYTEA,
+  integrity_hash BYTEA NOT NULL CHECK (octet_length(integrity_hash) = 32),
+  owner_type TEXT NOT NULL,
+  owner_id UUID,
+  owner_name TEXT,
+  tombstone BOOLEAN NOT NULL DEFAULT FALSE,
+  capsule_cbor BYTEA,
+  capsule_shape JSONB,
+  "key" TEXT,
+  "user_ref" TEXT,
+  CONSTRAINT ck_revision_chain CHECK ((revision = 1) = (previous_integrity IS NULL)),
+  CONSTRAINT ck_previous_integrity CHECK (previous_integrity IS NULL OR octet_length(previous_integrity) = 32),
+  CONSTRAINT ck_owner_scope CHECK ((owner_type = 'global' AND owner_id IS NULL AND owner_name IS NULL) OR (owner_type IN ('node', 'creature') AND owner_id IS NOT NULL AND owner_name IS NULL) OR (owner_type = 'module' AND owner_id IS NULL AND owner_name IS NOT NULL)),
+  CONSTRAINT ck_live_session_tokens_key CHECK (tombstone OR "key" IS NOT NULL),
+  CONSTRAINT ck_live_session_tokens_user_ref CHECK (tombstone OR "user_ref" IS NOT NULL)
+);
+
+CREATE TABLE IF NOT EXISTS aseman_core."vm_instances" (
+  id UUID PRIMARY KEY,
+  schema_version INTEGER NOT NULL CHECK (schema_version > 0),
+  revision BIGINT NOT NULL CHECK (revision > 0),
+  created_at_micros BIGINT NOT NULL,
+  updated_at_micros BIGINT NOT NULL CHECK (updated_at_micros >= created_at_micros),
+  previous_integrity BYTEA,
+  integrity_hash BYTEA NOT NULL CHECK (octet_length(integrity_hash) = 32),
+  owner_type TEXT NOT NULL,
+  owner_id UUID,
+  owner_name TEXT,
+  tombstone BOOLEAN NOT NULL DEFAULT FALSE,
+  capsule_cbor BYTEA,
+  capsule_shape JSONB,
+  "key" TEXT,
+  "program_ref" TEXT,
+  "entity_ref" TEXT,
+  "owner_program" TEXT,
+  "status" TEXT,
+  "started_at_millis" BIGINT,
+  "distributed" BOOLEAN,
+  "billing" JSONB,
+  CONSTRAINT ck_revision_chain CHECK ((revision = 1) = (previous_integrity IS NULL)),
+  CONSTRAINT ck_previous_integrity CHECK (previous_integrity IS NULL OR octet_length(previous_integrity) = 32),
+  CONSTRAINT ck_owner_scope CHECK ((owner_type = 'global' AND owner_id IS NULL AND owner_name IS NULL) OR (owner_type IN ('node', 'creature') AND owner_id IS NOT NULL AND owner_name IS NULL) OR (owner_type = 'module' AND owner_id IS NULL AND owner_name IS NOT NULL)),
+  CONSTRAINT ck_live_vm_instances_key CHECK (tombstone OR "key" IS NOT NULL)
+);
+
+CREATE TABLE IF NOT EXISTS aseman_core."vm_distributions" (
+  id UUID PRIMARY KEY,
+  schema_version INTEGER NOT NULL CHECK (schema_version > 0),
+  revision BIGINT NOT NULL CHECK (revision > 0),
+  created_at_micros BIGINT NOT NULL,
+  updated_at_micros BIGINT NOT NULL CHECK (updated_at_micros >= created_at_micros),
+  previous_integrity BYTEA,
+  integrity_hash BYTEA NOT NULL CHECK (octet_length(integrity_hash) = 32),
+  owner_type TEXT NOT NULL,
+  owner_id UUID,
+  owner_name TEXT,
+  tombstone BOOLEAN NOT NULL DEFAULT FALSE,
+  capsule_cbor BYTEA,
+  capsule_shape JSONB,
+  "key" TEXT,
+  "label" TEXT,
+  CONSTRAINT ck_revision_chain CHECK ((revision = 1) = (previous_integrity IS NULL)),
+  CONSTRAINT ck_previous_integrity CHECK (previous_integrity IS NULL OR octet_length(previous_integrity) = 32),
+  CONSTRAINT ck_owner_scope CHECK ((owner_type = 'global' AND owner_id IS NULL AND owner_name IS NULL) OR (owner_type IN ('node', 'creature') AND owner_id IS NOT NULL AND owner_name IS NULL) OR (owner_type = 'module' AND owner_id IS NULL AND owner_name IS NOT NULL)),
+  CONSTRAINT ck_live_vm_distributions_key CHECK (tombstone OR "key" IS NOT NULL),
+  CONSTRAINT ck_live_vm_distributions_label CHECK (tombstone OR "label" IS NOT NULL)
+);
+
+CREATE TABLE IF NOT EXISTS aseman_core."vm_terminals" (
+  id UUID PRIMARY KEY,
+  schema_version INTEGER NOT NULL CHECK (schema_version > 0),
+  revision BIGINT NOT NULL CHECK (revision > 0),
+  created_at_micros BIGINT NOT NULL,
+  updated_at_micros BIGINT NOT NULL CHECK (updated_at_micros >= created_at_micros),
+  previous_integrity BYTEA,
+  integrity_hash BYTEA NOT NULL CHECK (octet_length(integrity_hash) = 32),
+  owner_type TEXT NOT NULL,
+  owner_id UUID,
+  owner_name TEXT,
+  tombstone BOOLEAN NOT NULL DEFAULT FALSE,
+  capsule_cbor BYTEA,
+  capsule_shape JSONB,
+  "key" TEXT,
+  "program_ref" TEXT,
+  "vm_ref" TEXT,
+  "user_ref" TEXT,
+  CONSTRAINT ck_revision_chain CHECK ((revision = 1) = (previous_integrity IS NULL)),
+  CONSTRAINT ck_previous_integrity CHECK (previous_integrity IS NULL OR octet_length(previous_integrity) = 32),
+  CONSTRAINT ck_owner_scope CHECK ((owner_type = 'global' AND owner_id IS NULL AND owner_name IS NULL) OR (owner_type IN ('node', 'creature') AND owner_id IS NOT NULL AND owner_name IS NULL) OR (owner_type = 'module' AND owner_id IS NULL AND owner_name IS NOT NULL)),
+  CONSTRAINT ck_live_vm_terminals_key CHECK (tombstone OR "key" IS NOT NULL),
+  CONSTRAINT ck_live_vm_terminals_program_ref CHECK (tombstone OR "program_ref" IS NOT NULL),
+  CONSTRAINT ck_live_vm_terminals_vm_ref CHECK (tombstone OR "vm_ref" IS NOT NULL),
+  CONSTRAINT ck_live_vm_terminals_user_ref CHECK (tombstone OR "user_ref" IS NOT NULL)
+);
+
+CREATE TABLE IF NOT EXISTS aseman_core."token_locks" (
+  id UUID PRIMARY KEY,
+  schema_version INTEGER NOT NULL CHECK (schema_version > 0),
+  revision BIGINT NOT NULL CHECK (revision > 0),
+  created_at_micros BIGINT NOT NULL,
+  updated_at_micros BIGINT NOT NULL CHECK (updated_at_micros >= created_at_micros),
+  previous_integrity BYTEA,
+  integrity_hash BYTEA NOT NULL CHECK (octet_length(integrity_hash) = 32),
+  owner_type TEXT NOT NULL,
+  owner_id UUID,
+  owner_name TEXT,
+  tombstone BOOLEAN NOT NULL DEFAULT FALSE,
+  capsule_cbor BYTEA,
+  capsule_shape JSONB,
+  "key" TEXT,
+  "owner_ref" TEXT,
+  "lock_ref" TEXT,
+  "document" JSONB,
+  CONSTRAINT ck_revision_chain CHECK ((revision = 1) = (previous_integrity IS NULL)),
+  CONSTRAINT ck_previous_integrity CHECK (previous_integrity IS NULL OR octet_length(previous_integrity) = 32),
+  CONSTRAINT ck_owner_scope CHECK ((owner_type = 'global' AND owner_id IS NULL AND owner_name IS NULL) OR (owner_type IN ('node', 'creature') AND owner_id IS NOT NULL AND owner_name IS NULL) OR (owner_type = 'module' AND owner_id IS NULL AND owner_name IS NOT NULL)),
+  CONSTRAINT ck_live_token_locks_key CHECK (tombstone OR "key" IS NOT NULL),
+  CONSTRAINT ck_live_token_locks_owner_ref CHECK (tombstone OR "owner_ref" IS NOT NULL),
+  CONSTRAINT ck_live_token_locks_lock_ref CHECK (tombstone OR "lock_ref" IS NOT NULL)
+);
+
+CREATE TABLE IF NOT EXISTS aseman_core."secret_values" (
+  id UUID PRIMARY KEY,
+  schema_version INTEGER NOT NULL CHECK (schema_version > 0),
+  revision BIGINT NOT NULL CHECK (revision > 0),
+  created_at_micros BIGINT NOT NULL,
+  updated_at_micros BIGINT NOT NULL CHECK (updated_at_micros >= created_at_micros),
+  previous_integrity BYTEA,
+  integrity_hash BYTEA NOT NULL CHECK (octet_length(integrity_hash) = 32),
+  owner_type TEXT NOT NULL,
+  owner_id UUID,
+  owner_name TEXT,
+  tombstone BOOLEAN NOT NULL DEFAULT FALSE,
+  capsule_cbor BYTEA,
+  capsule_shape JSONB,
+  "key" TEXT,
+  "owner_ref" TEXT,
+  "name" TEXT,
+  "blob" TEXT,
+  CONSTRAINT ck_revision_chain CHECK ((revision = 1) = (previous_integrity IS NULL)),
+  CONSTRAINT ck_previous_integrity CHECK (previous_integrity IS NULL OR octet_length(previous_integrity) = 32),
+  CONSTRAINT ck_owner_scope CHECK ((owner_type = 'global' AND owner_id IS NULL AND owner_name IS NULL) OR (owner_type IN ('node', 'creature') AND owner_id IS NOT NULL AND owner_name IS NULL) OR (owner_type = 'module' AND owner_id IS NULL AND owner_name IS NOT NULL)),
+  CONSTRAINT ck_live_secret_values_key CHECK (tombstone OR "key" IS NOT NULL),
+  CONSTRAINT ck_live_secret_values_owner_ref CHECK (tombstone OR "owner_ref" IS NOT NULL),
+  CONSTRAINT ck_live_secret_values_name CHECK (tombstone OR "name" IS NOT NULL),
+  CONSTRAINT ck_live_secret_values_blob CHECK (tombstone OR "blob" IS NOT NULL)
+);
+
+CREATE TABLE IF NOT EXISTS aseman_core."secret_accesses" (
+  id UUID PRIMARY KEY,
+  schema_version INTEGER NOT NULL CHECK (schema_version > 0),
+  revision BIGINT NOT NULL CHECK (revision > 0),
+  created_at_micros BIGINT NOT NULL,
+  updated_at_micros BIGINT NOT NULL CHECK (updated_at_micros >= created_at_micros),
+  previous_integrity BYTEA,
+  integrity_hash BYTEA NOT NULL CHECK (octet_length(integrity_hash) = 32),
+  owner_type TEXT NOT NULL,
+  owner_id UUID,
+  owner_name TEXT,
+  tombstone BOOLEAN NOT NULL DEFAULT FALSE,
+  capsule_cbor BYTEA,
+  capsule_shape JSONB,
+  "key" TEXT,
+  "owner_ref" TEXT,
+  "name" TEXT,
+  "grantee_ref" TEXT,
+  "expires_at_millis" BIGINT,
+  CONSTRAINT ck_revision_chain CHECK ((revision = 1) = (previous_integrity IS NULL)),
+  CONSTRAINT ck_previous_integrity CHECK (previous_integrity IS NULL OR octet_length(previous_integrity) = 32),
+  CONSTRAINT ck_owner_scope CHECK ((owner_type = 'global' AND owner_id IS NULL AND owner_name IS NULL) OR (owner_type IN ('node', 'creature') AND owner_id IS NOT NULL AND owner_name IS NULL) OR (owner_type = 'module' AND owner_id IS NULL AND owner_name IS NOT NULL)),
+  CONSTRAINT ck_live_secret_accesses_key CHECK (tombstone OR "key" IS NOT NULL),
+  CONSTRAINT ck_live_secret_accesses_owner_ref CHECK (tombstone OR "owner_ref" IS NOT NULL),
+  CONSTRAINT ck_live_secret_accesses_name CHECK (tombstone OR "name" IS NOT NULL),
+  CONSTRAINT ck_live_secret_accesses_grantee_ref CHECK (tombstone OR "grantee_ref" IS NOT NULL),
+  CONSTRAINT ck_live_secret_accesses_expires_at_millis CHECK (tombstone OR "expires_at_millis" IS NOT NULL)
+);
+
 CREATE UNIQUE INDEX IF NOT EXISTS uq_users_username ON aseman_core."users" ("username") WHERE NOT tombstone;
 CREATE UNIQUE INDEX IF NOT EXISTS uq_users_email ON aseman_core."users" ("email") WHERE NOT tombstone;
 CREATE UNIQUE INDEX IF NOT EXISTS uq_users_public_key ON aseman_core."users" ("public_key") WHERE NOT tombstone;
@@ -1039,16 +1662,20 @@ ALTER TABLE aseman_core."creatures" DROP CONSTRAINT IF EXISTS fk_creatures_owner
 ALTER TABLE aseman_core."creatures" ADD CONSTRAINT fk_creatures_owner FOREIGN KEY ("owner") REFERENCES aseman_core."users"(id) ON DELETE RESTRICT;
 CREATE UNIQUE INDEX IF NOT EXISTS uq_creatures_username ON aseman_core."creatures" ("username") WHERE NOT tombstone;
 CREATE UNIQUE INDEX IF NOT EXISTS uq_creatures_public_key ON aseman_core."creatures" ("public_key") WHERE NOT tombstone;
+CREATE INDEX IF NOT EXISTS ix_creatures_owner ON aseman_core."creatures" ("owner", id) WHERE NOT tombstone;
 CREATE INDEX IF NOT EXISTS ix_creatures_updated_at ON aseman_core."creatures" (updated_at_micros, id);
 
 ALTER TABLE aseman_core."programs" DROP CONSTRAINT IF EXISTS fk_programs_creature;
 ALTER TABLE aseman_core."programs" ADD CONSTRAINT fk_programs_creature FOREIGN KEY ("creature") REFERENCES aseman_core."creatures"(id) ON DELETE RESTRICT;
+CREATE INDEX IF NOT EXISTS ix_programs_creature ON aseman_core."programs" ("creature", id) WHERE NOT tombstone;
 CREATE INDEX IF NOT EXISTS ix_programs_updated_at ON aseman_core."programs" (updated_at_micros, id);
 
 ALTER TABLE aseman_core."stores" DROP CONSTRAINT IF EXISTS fk_stores_creature;
 ALTER TABLE aseman_core."stores" ADD CONSTRAINT fk_stores_creature FOREIGN KEY ("creature") REFERENCES aseman_core."creatures"(id) ON DELETE RESTRICT;
 ALTER TABLE aseman_core."stores" DROP CONSTRAINT IF EXISTS fk_stores_parent;
 ALTER TABLE aseman_core."stores" ADD CONSTRAINT fk_stores_parent FOREIGN KEY ("parent") REFERENCES aseman_core."stores"(id) ON DELETE RESTRICT;
+CREATE INDEX IF NOT EXISTS ix_stores_creature ON aseman_core."stores" ("creature", id) WHERE NOT tombstone;
+CREATE INDEX IF NOT EXISTS ix_stores_parent ON aseman_core."stores" ("parent", id) WHERE NOT tombstone;
 CREATE INDEX IF NOT EXISTS ix_stores_updated_at ON aseman_core."stores" (updated_at_micros, id);
 
 ALTER TABLE aseman_core."store_memberships" DROP CONSTRAINT IF EXISTS fk_store_memberships_store;
@@ -1058,11 +1685,15 @@ ALTER TABLE aseman_core."store_memberships" ADD CONSTRAINT fk_store_memberships_
 ALTER TABLE aseman_core."store_memberships" DROP CONSTRAINT IF EXISTS fk_store_memberships_program;
 ALTER TABLE aseman_core."store_memberships" ADD CONSTRAINT fk_store_memberships_program FOREIGN KEY ("program") REFERENCES aseman_core."programs"(id) ON DELETE CASCADE;
 CREATE UNIQUE INDEX IF NOT EXISTS uq_store_memberships_store_member_kind_member_ref ON aseman_core."store_memberships" ("store", "member_kind", "member_ref") WHERE NOT tombstone;
+CREATE INDEX IF NOT EXISTS ix_store_memberships_store ON aseman_core."store_memberships" ("store", id) WHERE NOT tombstone;
+CREATE INDEX IF NOT EXISTS ix_store_memberships_creature ON aseman_core."store_memberships" ("creature", id) WHERE NOT tombstone;
+CREATE INDEX IF NOT EXISTS ix_store_memberships_program ON aseman_core."store_memberships" ("program", id) WHERE NOT tombstone;
 CREATE INDEX IF NOT EXISTS ix_store_memberships_updated_at ON aseman_core."store_memberships" (updated_at_micros, id);
 
 ALTER TABLE aseman_core."access_levels" DROP CONSTRAINT IF EXISTS fk_access_levels_store;
 ALTER TABLE aseman_core."access_levels" ADD CONSTRAINT fk_access_levels_store FOREIGN KEY ("store") REFERENCES aseman_core."stores"(id) ON DELETE CASCADE;
 CREATE UNIQUE INDEX IF NOT EXISTS uq_access_levels_store_level ON aseman_core."access_levels" ("store", "level") WHERE NOT tombstone;
+CREATE INDEX IF NOT EXISTS ix_access_levels_store ON aseman_core."access_levels" ("store", id) WHERE NOT tombstone;
 CREATE INDEX IF NOT EXISTS ix_access_levels_updated_at ON aseman_core."access_levels" (updated_at_micros, id);
 
 CREATE INDEX IF NOT EXISTS ix_capability_grants_updated_at ON aseman_core."capability_grants" (updated_at_micros, id);
@@ -1070,6 +1701,7 @@ CREATE INDEX IF NOT EXISTS ix_capability_grants_updated_at ON aseman_core."capab
 ALTER TABLE aseman_core."sessions" DROP CONSTRAINT IF EXISTS fk_sessions_user;
 ALTER TABLE aseman_core."sessions" ADD CONSTRAINT fk_sessions_user FOREIGN KEY ("user") REFERENCES aseman_core."users"(id) ON DELETE CASCADE;
 CREATE UNIQUE INDEX IF NOT EXISTS uq_sessions_token_digest ON aseman_core."sessions" ("token_digest") WHERE NOT tombstone;
+CREATE INDEX IF NOT EXISTS ix_sessions_user ON aseman_core."sessions" ("user", id) WHERE NOT tombstone;
 CREATE INDEX IF NOT EXISTS ix_sessions_updated_at ON aseman_core."sessions" (updated_at_micros, id);
 
 ALTER TABLE aseman_core."files" DROP CONSTRAINT IF EXISTS fk_files_owner;
@@ -1077,6 +1709,8 @@ ALTER TABLE aseman_core."files" ADD CONSTRAINT fk_files_owner FOREIGN KEY ("owne
 ALTER TABLE aseman_core."files" DROP CONSTRAINT IF EXISTS fk_files_store;
 ALTER TABLE aseman_core."files" ADD CONSTRAINT fk_files_store FOREIGN KEY ("store") REFERENCES aseman_core."stores"(id) ON DELETE RESTRICT;
 CREATE UNIQUE INDEX IF NOT EXISTS uq_files_store_key ON aseman_core."files" ("store_key") WHERE NOT tombstone;
+CREATE INDEX IF NOT EXISTS ix_files_owner ON aseman_core."files" ("owner", id) WHERE NOT tombstone;
+CREATE INDEX IF NOT EXISTS ix_files_store ON aseman_core."files" ("store", id) WHERE NOT tombstone;
 CREATE INDEX IF NOT EXISTS ix_files_updated_at ON aseman_core."files" (updated_at_micros, id);
 
 ALTER TABLE aseman_core."workloads" DROP CONSTRAINT IF EXISTS fk_workloads_program;
@@ -1084,11 +1718,14 @@ ALTER TABLE aseman_core."workloads" ADD CONSTRAINT fk_workloads_program FOREIGN 
 ALTER TABLE aseman_core."workloads" DROP CONSTRAINT IF EXISTS fk_workloads_creature;
 ALTER TABLE aseman_core."workloads" ADD CONSTRAINT fk_workloads_creature FOREIGN KEY ("creature") REFERENCES aseman_core."creatures"(id) ON DELETE RESTRICT;
 CREATE UNIQUE INDEX IF NOT EXISTS uq_workloads_program_workload_name ON aseman_core."workloads" ("program", "workload_name") WHERE NOT tombstone;
+CREATE INDEX IF NOT EXISTS ix_workloads_program ON aseman_core."workloads" ("program", id) WHERE NOT tombstone;
+CREATE INDEX IF NOT EXISTS ix_workloads_creature ON aseman_core."workloads" ("creature", id) WHERE NOT tombstone;
 CREATE INDEX IF NOT EXISTS ix_workloads_updated_at ON aseman_core."workloads" (updated_at_micros, id);
 
 ALTER TABLE aseman_core."workload_operations" DROP CONSTRAINT IF EXISTS fk_workload_operations_workload;
 ALTER TABLE aseman_core."workload_operations" ADD CONSTRAINT fk_workload_operations_workload FOREIGN KEY ("workload") REFERENCES aseman_core."workloads"(id) ON DELETE CASCADE;
 CREATE UNIQUE INDEX IF NOT EXISTS uq_workload_operations_idempotency_key ON aseman_core."workload_operations" ("idempotency_key") WHERE NOT tombstone;
+CREATE INDEX IF NOT EXISTS ix_workload_operations_workload ON aseman_core."workload_operations" ("workload", id) WHERE NOT tombstone;
 CREATE INDEX IF NOT EXISTS ix_workload_operations_updated_at ON aseman_core."workload_operations" (updated_at_micros, id);
 
 CREATE UNIQUE INDEX IF NOT EXISTS uq_nodes_name ON aseman_core."nodes" ("name") WHERE NOT tombstone;
@@ -1109,6 +1746,7 @@ ALTER TABLE aseman_core."guest_database_bindings" ADD CONSTRAINT fk_guest_databa
 CREATE UNIQUE INDEX IF NOT EXISTS uq_guest_database_bindings_creature ON aseman_core."guest_database_bindings" ("creature") WHERE NOT tombstone;
 CREATE UNIQUE INDEX IF NOT EXISTS uq_guest_database_bindings_provider_id_database_name ON aseman_core."guest_database_bindings" ("provider_id", "database_name") WHERE NOT tombstone;
 CREATE UNIQUE INDEX IF NOT EXISTS uq_guest_database_bindings_provider_id_role_name ON aseman_core."guest_database_bindings" ("provider_id", "role_name") WHERE NOT tombstone;
+CREATE INDEX IF NOT EXISTS ix_guest_database_bindings_creature ON aseman_core."guest_database_bindings" ("creature", id) WHERE NOT tombstone;
 CREATE INDEX IF NOT EXISTS ix_guest_database_bindings_updated_at ON aseman_core."guest_database_bindings" (updated_at_micros, id);
 
 ALTER TABLE aseman_core."guest_schema_definitions" DROP CONSTRAINT IF EXISTS fk_guest_schema_definitions_creature;
@@ -1116,41 +1754,38 @@ ALTER TABLE aseman_core."guest_schema_definitions" ADD CONSTRAINT fk_guest_schem
 ALTER TABLE aseman_core."guest_schema_definitions" DROP CONSTRAINT IF EXISTS fk_guest_schema_definitions_binding;
 ALTER TABLE aseman_core."guest_schema_definitions" ADD CONSTRAINT fk_guest_schema_definitions_binding FOREIGN KEY ("binding") REFERENCES aseman_core."guest_database_bindings"(id) ON DELETE CASCADE;
 CREATE UNIQUE INDEX IF NOT EXISTS uq_guest_schema_definitions_creature_schema_name_schema_version ON aseman_core."guest_schema_definitions" ("creature", "schema_name", "body_schema_version") WHERE NOT tombstone;
+CREATE INDEX IF NOT EXISTS ix_guest_schema_definitions_creature ON aseman_core."guest_schema_definitions" ("creature", id) WHERE NOT tombstone;
+CREATE INDEX IF NOT EXISTS ix_guest_schema_definitions_binding ON aseman_core."guest_schema_definitions" ("binding", id) WHERE NOT tombstone;
 CREATE INDEX IF NOT EXISTS ix_guest_schema_definitions_updated_at ON aseman_core."guest_schema_definitions" (updated_at_micros, id);
-
-ALTER TABLE aseman_core."chains" DROP CONSTRAINT IF EXISTS fk_chains_store;
-ALTER TABLE aseman_core."chains" ADD CONSTRAINT fk_chains_store FOREIGN KEY ("store") REFERENCES aseman_core."stores"(id) ON DELETE RESTRICT;
-CREATE UNIQUE INDEX IF NOT EXISTS uq_chains_store_id ON aseman_core."chains" ("store_id") WHERE NOT tombstone;
-CREATE INDEX IF NOT EXISTS ix_chains_updated_at ON aseman_core."chains" (updated_at_micros, id);
-
-ALTER TABLE aseman_core."chain_shards" DROP CONSTRAINT IF EXISTS fk_chain_shards_chain;
-ALTER TABLE aseman_core."chain_shards" ADD CONSTRAINT fk_chain_shards_chain FOREIGN KEY ("chain") REFERENCES aseman_core."chains"(id) ON DELETE CASCADE;
-CREATE UNIQUE INDEX IF NOT EXISTS uq_chain_shards_work_chain_id_shard_name ON aseman_core."chain_shards" ("work_chain_id", "shard_name") WHERE NOT tombstone;
-CREATE INDEX IF NOT EXISTS ix_chain_shards_updated_at ON aseman_core."chain_shards" (updated_at_micros, id);
 
 ALTER TABLE aseman_core."entities" DROP CONSTRAINT IF EXISTS fk_entities_program;
 ALTER TABLE aseman_core."entities" ADD CONSTRAINT fk_entities_program FOREIGN KEY ("program") REFERENCES aseman_core."programs"(id) ON DELETE CASCADE;
 CREATE UNIQUE INDEX IF NOT EXISTS uq_entities_program_entity_name ON aseman_core."entities" ("program", "entity_name") WHERE NOT tombstone;
+CREATE INDEX IF NOT EXISTS ix_entities_program ON aseman_core."entities" ("program", id) WHERE NOT tombstone;
 CREATE INDEX IF NOT EXISTS ix_entities_updated_at ON aseman_core."entities" (updated_at_micros, id);
 
 ALTER TABLE aseman_core."user_metadata_documents" DROP CONSTRAINT IF EXISTS fk_user_metadata_documents_creature;
 ALTER TABLE aseman_core."user_metadata_documents" ADD CONSTRAINT fk_user_metadata_documents_creature FOREIGN KEY ("creature") REFERENCES aseman_core."creatures"(id) ON DELETE CASCADE;
 CREATE UNIQUE INDEX IF NOT EXISTS uq_user_metadata_documents_creature ON aseman_core."user_metadata_documents" ("creature") WHERE NOT tombstone;
+CREATE INDEX IF NOT EXISTS ix_user_metadata_documents_creature ON aseman_core."user_metadata_documents" ("creature", id) WHERE NOT tombstone;
 CREATE INDEX IF NOT EXISTS ix_user_metadata_documents_updated_at ON aseman_core."user_metadata_documents" (updated_at_micros, id);
 
 ALTER TABLE aseman_core."creature_metadata_documents" DROP CONSTRAINT IF EXISTS fk_creature_metadata_documents_creature;
 ALTER TABLE aseman_core."creature_metadata_documents" ADD CONSTRAINT fk_creature_metadata_documents_creature FOREIGN KEY ("creature") REFERENCES aseman_core."creatures"(id) ON DELETE CASCADE;
 CREATE UNIQUE INDEX IF NOT EXISTS uq_creature_metadata_documents_creature ON aseman_core."creature_metadata_documents" ("creature") WHERE NOT tombstone;
+CREATE INDEX IF NOT EXISTS ix_creature_metadata_documents_creature ON aseman_core."creature_metadata_documents" ("creature", id) WHERE NOT tombstone;
 CREATE INDEX IF NOT EXISTS ix_creature_metadata_documents_updated_at ON aseman_core."creature_metadata_documents" (updated_at_micros, id);
 
 ALTER TABLE aseman_core."store_metadata_documents" DROP CONSTRAINT IF EXISTS fk_store_metadata_documents_store;
 ALTER TABLE aseman_core."store_metadata_documents" ADD CONSTRAINT fk_store_metadata_documents_store FOREIGN KEY ("store") REFERENCES aseman_core."stores"(id) ON DELETE CASCADE;
 CREATE UNIQUE INDEX IF NOT EXISTS uq_store_metadata_documents_store ON aseman_core."store_metadata_documents" ("store") WHERE NOT tombstone;
+CREATE INDEX IF NOT EXISTS ix_store_metadata_documents_store ON aseman_core."store_metadata_documents" ("store", id) WHERE NOT tombstone;
 CREATE INDEX IF NOT EXISTS ix_store_metadata_documents_updated_at ON aseman_core."store_metadata_documents" (updated_at_micros, id);
 
 ALTER TABLE aseman_core."program_metadata_documents" DROP CONSTRAINT IF EXISTS fk_program_metadata_documents_program;
 ALTER TABLE aseman_core."program_metadata_documents" ADD CONSTRAINT fk_program_metadata_documents_program FOREIGN KEY ("program") REFERENCES aseman_core."programs"(id) ON DELETE CASCADE;
 CREATE UNIQUE INDEX IF NOT EXISTS uq_program_metadata_documents_program ON aseman_core."program_metadata_documents" ("program") WHERE NOT tombstone;
+CREATE INDEX IF NOT EXISTS ix_program_metadata_documents_program ON aseman_core."program_metadata_documents" ("program", id) WHERE NOT tombstone;
 CREATE INDEX IF NOT EXISTS ix_program_metadata_documents_updated_at ON aseman_core."program_metadata_documents" (updated_at_micros, id);
 
 CREATE UNIQUE INDEX IF NOT EXISTS uq_creature_types_type_name ON aseman_core."creature_types" ("type_name") WHERE NOT tombstone;
@@ -1161,6 +1796,8 @@ ALTER TABLE aseman_core."gateway_routes" ADD CONSTRAINT fk_gateway_routes_creatu
 ALTER TABLE aseman_core."gateway_routes" DROP CONSTRAINT IF EXISTS fk_gateway_routes_program;
 ALTER TABLE aseman_core."gateway_routes" ADD CONSTRAINT fk_gateway_routes_program FOREIGN KEY ("program") REFERENCES aseman_core."programs"(id) ON DELETE CASCADE;
 CREATE UNIQUE INDEX IF NOT EXISTS uq_gateway_routes_creature_path ON aseman_core."gateway_routes" ("creature", "path") WHERE NOT tombstone;
+CREATE INDEX IF NOT EXISTS ix_gateway_routes_creature ON aseman_core."gateway_routes" ("creature", id) WHERE NOT tombstone;
+CREATE INDEX IF NOT EXISTS ix_gateway_routes_program ON aseman_core."gateway_routes" ("program", id) WHERE NOT tombstone;
 CREATE INDEX IF NOT EXISTS ix_gateway_routes_updated_at ON aseman_core."gateway_routes" (updated_at_micros, id);
 
 ALTER TABLE aseman_core."program_alarms" DROP CONSTRAINT IF EXISTS fk_program_alarms_program;
@@ -1168,30 +1805,37 @@ ALTER TABLE aseman_core."program_alarms" ADD CONSTRAINT fk_program_alarms_progra
 ALTER TABLE aseman_core."program_alarms" DROP CONSTRAINT IF EXISTS fk_program_alarms_store;
 ALTER TABLE aseman_core."program_alarms" ADD CONSTRAINT fk_program_alarms_store FOREIGN KEY ("store") REFERENCES aseman_core."stores"(id) ON DELETE CASCADE;
 CREATE UNIQUE INDEX IF NOT EXISTS uq_program_alarms_program ON aseman_core."program_alarms" ("program") WHERE NOT tombstone;
+CREATE INDEX IF NOT EXISTS ix_program_alarms_program ON aseman_core."program_alarms" ("program", id) WHERE NOT tombstone;
+CREATE INDEX IF NOT EXISTS ix_program_alarms_store ON aseman_core."program_alarms" ("store", id) WHERE NOT tombstone;
 CREATE INDEX IF NOT EXISTS ix_program_alarms_updated_at ON aseman_core."program_alarms" (updated_at_micros, id);
 
 ALTER TABLE aseman_core."vm_resource_stores" DROP CONSTRAINT IF EXISTS fk_vm_resource_stores_creature;
 ALTER TABLE aseman_core."vm_resource_stores" ADD CONSTRAINT fk_vm_resource_stores_creature FOREIGN KEY ("creature") REFERENCES aseman_core."creatures"(id) ON DELETE CASCADE;
+CREATE INDEX IF NOT EXISTS ix_vm_resource_stores_creature ON aseman_core."vm_resource_stores" ("creature", id) WHERE NOT tombstone;
 CREATE INDEX IF NOT EXISTS ix_vm_resource_stores_updated_at ON aseman_core."vm_resource_stores" (updated_at_micros, id);
 
 ALTER TABLE aseman_core."vm_resource_entities" DROP CONSTRAINT IF EXISTS fk_vm_resource_entities_resource_store;
 ALTER TABLE aseman_core."vm_resource_entities" ADD CONSTRAINT fk_vm_resource_entities_resource_store FOREIGN KEY ("resource_store") REFERENCES aseman_core."vm_resource_stores"(id) ON DELETE CASCADE;
 CREATE UNIQUE INDEX IF NOT EXISTS uq_vm_resource_entities_resource_store_entity_type_entity_ref ON aseman_core."vm_resource_entities" ("resource_store", "entity_type", "entity_ref") WHERE NOT tombstone;
+CREATE INDEX IF NOT EXISTS ix_vm_resource_entities_resource_store ON aseman_core."vm_resource_entities" ("resource_store", id) WHERE NOT tombstone;
 CREATE INDEX IF NOT EXISTS ix_vm_resource_entities_updated_at ON aseman_core."vm_resource_entities" (updated_at_micros, id);
 
 ALTER TABLE aseman_core."entity_configs" DROP CONSTRAINT IF EXISTS fk_entity_configs_entity;
 ALTER TABLE aseman_core."entity_configs" ADD CONSTRAINT fk_entity_configs_entity FOREIGN KEY ("entity") REFERENCES aseman_core."entities"(id) ON DELETE CASCADE;
 CREATE UNIQUE INDEX IF NOT EXISTS uq_entity_configs_entity ON aseman_core."entity_configs" ("entity") WHERE NOT tombstone;
+CREATE INDEX IF NOT EXISTS ix_entity_configs_entity ON aseman_core."entity_configs" ("entity", id) WHERE NOT tombstone;
 CREATE INDEX IF NOT EXISTS ix_entity_configs_updated_at ON aseman_core."entity_configs" (updated_at_micros, id);
 
 ALTER TABLE aseman_core."entity_artifacts" DROP CONSTRAINT IF EXISTS fk_entity_artifacts_entity;
 ALTER TABLE aseman_core."entity_artifacts" ADD CONSTRAINT fk_entity_artifacts_entity FOREIGN KEY ("entity") REFERENCES aseman_core."entities"(id) ON DELETE CASCADE;
 CREATE UNIQUE INDEX IF NOT EXISTS uq_entity_artifacts_entity_artifact_role ON aseman_core."entity_artifacts" ("entity", "artifact_role") WHERE NOT tombstone;
+CREATE INDEX IF NOT EXISTS ix_entity_artifacts_entity ON aseman_core."entity_artifacts" ("entity", id) WHERE NOT tombstone;
 CREATE INDEX IF NOT EXISTS ix_entity_artifacts_updated_at ON aseman_core."entity_artifacts" (updated_at_micros, id);
 
 ALTER TABLE aseman_core."creature_secrets" DROP CONSTRAINT IF EXISTS fk_creature_secrets_creature;
 ALTER TABLE aseman_core."creature_secrets" ADD CONSTRAINT fk_creature_secrets_creature FOREIGN KEY ("creature") REFERENCES aseman_core."creatures"(id) ON DELETE CASCADE;
 CREATE UNIQUE INDEX IF NOT EXISTS uq_creature_secrets_creature_name ON aseman_core."creature_secrets" ("creature", "name") WHERE NOT tombstone;
+CREATE INDEX IF NOT EXISTS ix_creature_secrets_creature ON aseman_core."creature_secrets" ("creature", id) WHERE NOT tombstone;
 CREATE INDEX IF NOT EXISTS ix_creature_secrets_updated_at ON aseman_core."creature_secrets" (updated_at_micros, id);
 
 ALTER TABLE aseman_core."secret_grants" DROP CONSTRAINT IF EXISTS fk_secret_grants_secret;
@@ -1199,6 +1843,8 @@ ALTER TABLE aseman_core."secret_grants" ADD CONSTRAINT fk_secret_grants_secret F
 ALTER TABLE aseman_core."secret_grants" DROP CONSTRAINT IF EXISTS fk_secret_grants_grantee;
 ALTER TABLE aseman_core."secret_grants" ADD CONSTRAINT fk_secret_grants_grantee FOREIGN KEY ("grantee") REFERENCES aseman_core."creatures"(id) ON DELETE CASCADE;
 CREATE UNIQUE INDEX IF NOT EXISTS uq_secret_grants_secret_grantee_ref ON aseman_core."secret_grants" ("secret", "grantee_ref") WHERE NOT tombstone;
+CREATE INDEX IF NOT EXISTS ix_secret_grants_secret ON aseman_core."secret_grants" ("secret", id) WHERE NOT tombstone;
+CREATE INDEX IF NOT EXISTS ix_secret_grants_grantee ON aseman_core."secret_grants" ("grantee", id) WHERE NOT tombstone;
 CREATE INDEX IF NOT EXISTS ix_secret_grants_updated_at ON aseman_core."secret_grants" (updated_at_micros, id);
 
 CREATE UNIQUE INDEX IF NOT EXISTS uq_bridge_grants_token_digest ON aseman_core."bridge_grants" ("token_digest") WHERE NOT tombstone;
@@ -1210,5 +1856,100 @@ CREATE INDEX IF NOT EXISTS ix_bridge_topics_updated_at ON aseman_core."bridge_to
 CREATE UNIQUE INDEX IF NOT EXISTS uq_legacy_identities_family_legacy_id ON aseman_core."legacy_identities" ("family", "legacy_id") WHERE NOT tombstone;
 CREATE UNIQUE INDEX IF NOT EXISTS uq_legacy_identities_target_kind_target_id ON aseman_core."legacy_identities" ("target_kind", "target_id") WHERE NOT tombstone;
 CREATE INDEX IF NOT EXISTS ix_legacy_identities_updated_at ON aseman_core."legacy_identities" (updated_at_micros, id);
+
+CREATE UNIQUE INDEX IF NOT EXISTS uq_counters_key ON aseman_core."counters" ("key") WHERE NOT tombstone;
+CREATE INDEX IF NOT EXISTS ix_counters_updated_at ON aseman_core."counters" (updated_at_micros, id);
+
+CREATE UNIQUE INDEX IF NOT EXISTS uq_markers_key ON aseman_core."markers" ("key") WHERE NOT tombstone;
+CREATE INDEX IF NOT EXISTS ix_markers_updated_at ON aseman_core."markers" (updated_at_micros, id);
+
+CREATE UNIQUE INDEX IF NOT EXISTS uq_finance_accounts_key ON aseman_core."finance_accounts" ("key") WHERE NOT tombstone;
+CREATE INDEX IF NOT EXISTS ix_finance_accounts_updated_at ON aseman_core."finance_accounts" (updated_at_micros, id);
+
+CREATE UNIQUE INDEX IF NOT EXISTS uq_finance_holds_key ON aseman_core."finance_holds" ("key") WHERE NOT tombstone;
+CREATE INDEX IF NOT EXISTS ix_finance_holds_payer_ref_created_millis ON aseman_core."finance_holds" ("payer_ref", "created_millis", id) WHERE NOT tombstone;
+CREATE INDEX IF NOT EXISTS ix_finance_holds_updated_at ON aseman_core."finance_holds" (updated_at_micros, id);
+
+CREATE UNIQUE INDEX IF NOT EXISTS uq_finance_pools_key ON aseman_core."finance_pools" ("key") WHERE NOT tombstone;
+CREATE INDEX IF NOT EXISTS ix_finance_pools_payer_ref ON aseman_core."finance_pools" ("payer_ref", id) WHERE NOT tombstone;
+CREATE INDEX IF NOT EXISTS ix_finance_pools_updated_at ON aseman_core."finance_pools" (updated_at_micros, id);
+
+CREATE UNIQUE INDEX IF NOT EXISTS uq_finance_pool_reservations_key ON aseman_core."finance_pool_reservations" ("key") WHERE NOT tombstone;
+CREATE INDEX IF NOT EXISTS ix_finance_pool_reservations_pool_ref ON aseman_core."finance_pool_reservations" ("pool_ref", id) WHERE NOT tombstone;
+CREATE INDEX IF NOT EXISTS ix_finance_pool_reservations_updated_at ON aseman_core."finance_pool_reservations" (updated_at_micros, id);
+
+CREATE UNIQUE INDEX IF NOT EXISTS uq_finance_live_debits_key ON aseman_core."finance_live_debits" ("key") WHERE NOT tombstone;
+CREATE INDEX IF NOT EXISTS ix_finance_live_debits_updated_at ON aseman_core."finance_live_debits" (updated_at_micros, id);
+
+CREATE UNIQUE INDEX IF NOT EXISTS uq_finance_project_budgets_key ON aseman_core."finance_project_budgets" ("key") WHERE NOT tombstone;
+CREATE INDEX IF NOT EXISTS ix_finance_project_budgets_updated_at ON aseman_core."finance_project_budgets" (updated_at_micros, id);
+
+CREATE UNIQUE INDEX IF NOT EXISTS uq_finance_payouts_key ON aseman_core."finance_payouts" ("key") WHERE NOT tombstone;
+CREATE INDEX IF NOT EXISTS ix_finance_payouts_user_ref_created_millis ON aseman_core."finance_payouts" ("user_ref", "created_millis", id) WHERE NOT tombstone;
+CREATE INDEX IF NOT EXISTS ix_finance_payouts_updated_at ON aseman_core."finance_payouts" (updated_at_micros, id);
+
+CREATE UNIQUE INDEX IF NOT EXISTS uq_finance_journals_key ON aseman_core."finance_journals" ("key") WHERE NOT tombstone;
+CREATE INDEX IF NOT EXISTS ix_finance_journals_updated_at ON aseman_core."finance_journals" (updated_at_micros, id);
+
+CREATE UNIQUE INDEX IF NOT EXISTS uq_finance_journal_participants_journal_ref_participant_ref ON aseman_core."finance_journal_participants" ("journal_ref", "participant_ref") WHERE NOT tombstone;
+CREATE INDEX IF NOT EXISTS ix_finance_journal_participants_participant_ref_created_millis ON aseman_core."finance_journal_participants" ("participant_ref", "created_millis", id) WHERE NOT tombstone;
+CREATE INDEX IF NOT EXISTS ix_finance_journal_participants_updated_at ON aseman_core."finance_journal_participants" (updated_at_micros, id);
+
+CREATE UNIQUE INDEX IF NOT EXISTS uq_billing_catalogs_key ON aseman_core."billing_catalogs" ("key") WHERE NOT tombstone;
+CREATE INDEX IF NOT EXISTS ix_billing_catalogs_updated_at ON aseman_core."billing_catalogs" (updated_at_micros, id);
+
+CREATE UNIQUE INDEX IF NOT EXISTS uq_billing_quotes_key ON aseman_core."billing_quotes" ("key") WHERE NOT tombstone;
+CREATE INDEX IF NOT EXISTS ix_billing_quotes_updated_at ON aseman_core."billing_quotes" (updated_at_micros, id);
+
+CREATE UNIQUE INDEX IF NOT EXISTS uq_namespace_documents_key ON aseman_core."namespace_documents" ("key") WHERE NOT tombstone;
+CREATE INDEX IF NOT EXISTS ix_namespace_documents_updated_at ON aseman_core."namespace_documents" (updated_at_micros, id);
+
+CREATE UNIQUE INDEX IF NOT EXISTS uq_user_emails_key ON aseman_core."user_emails" ("key") WHERE NOT tombstone;
+CREATE UNIQUE INDEX IF NOT EXISTS uq_user_emails_user_ref ON aseman_core."user_emails" ("user_ref") WHERE NOT tombstone;
+CREATE INDEX IF NOT EXISTS ix_user_emails_updated_at ON aseman_core."user_emails" (updated_at_micros, id);
+
+CREATE UNIQUE INDEX IF NOT EXISTS uq_nonce_records_key ON aseman_core."nonce_records" ("key") WHERE NOT tombstone;
+CREATE INDEX IF NOT EXISTS ix_nonce_records_retain_until_millis ON aseman_core."nonce_records" ("retain_until_millis", id) WHERE NOT tombstone;
+CREATE INDEX IF NOT EXISTS ix_nonce_records_updated_at ON aseman_core."nonce_records" (updated_at_micros, id);
+
+CREATE UNIQUE INDEX IF NOT EXISTS uq_auth_challenges_key ON aseman_core."auth_challenges" ("key") WHERE NOT tombstone;
+CREATE INDEX IF NOT EXISTS ix_auth_challenges_expires_at_millis ON aseman_core."auth_challenges" ("expires_at_millis", id) WHERE NOT tombstone;
+CREATE INDEX IF NOT EXISTS ix_auth_challenges_updated_at ON aseman_core."auth_challenges" (updated_at_micros, id);
+
+CREATE UNIQUE INDEX IF NOT EXISTS uq_public_idempotency_claims_key ON aseman_core."public_idempotency_claims" ("key") WHERE NOT tombstone;
+CREATE INDEX IF NOT EXISTS ix_public_idempotency_claims_updated_at ON aseman_core."public_idempotency_claims" (updated_at_micros, id);
+
+CREATE UNIQUE INDEX IF NOT EXISTS uq_chains_key ON aseman_core."chains" ("key") WHERE NOT tombstone;
+CREATE INDEX IF NOT EXISTS ix_chains_updated_at ON aseman_core."chains" (updated_at_micros, id);
+
+CREATE UNIQUE INDEX IF NOT EXISTS uq_chain_shards_key ON aseman_core."chain_shards" ("key") WHERE NOT tombstone;
+CREATE INDEX IF NOT EXISTS ix_chain_shards_updated_at ON aseman_core."chain_shards" (updated_at_micros, id);
+
+CREATE UNIQUE INDEX IF NOT EXISTS uq_session_tokens_key ON aseman_core."session_tokens" ("key") WHERE NOT tombstone;
+CREATE INDEX IF NOT EXISTS ix_session_tokens_user_ref ON aseman_core."session_tokens" ("user_ref", id) WHERE NOT tombstone;
+CREATE INDEX IF NOT EXISTS ix_session_tokens_updated_at ON aseman_core."session_tokens" (updated_at_micros, id);
+
+CREATE UNIQUE INDEX IF NOT EXISTS uq_vm_instances_key ON aseman_core."vm_instances" ("key") WHERE NOT tombstone;
+CREATE INDEX IF NOT EXISTS ix_vm_instances_program_ref_entity_ref ON aseman_core."vm_instances" ("program_ref", "entity_ref", id) WHERE NOT tombstone;
+CREATE INDEX IF NOT EXISTS ix_vm_instances_status ON aseman_core."vm_instances" ("status", id) WHERE NOT tombstone;
+CREATE INDEX IF NOT EXISTS ix_vm_instances_updated_at ON aseman_core."vm_instances" (updated_at_micros, id);
+
+CREATE UNIQUE INDEX IF NOT EXISTS uq_vm_distributions_key ON aseman_core."vm_distributions" ("key") WHERE NOT tombstone;
+CREATE INDEX IF NOT EXISTS ix_vm_distributions_updated_at ON aseman_core."vm_distributions" (updated_at_micros, id);
+
+CREATE UNIQUE INDEX IF NOT EXISTS uq_vm_terminals_key ON aseman_core."vm_terminals" ("key") WHERE NOT tombstone;
+CREATE INDEX IF NOT EXISTS ix_vm_terminals_updated_at ON aseman_core."vm_terminals" (updated_at_micros, id);
+
+CREATE UNIQUE INDEX IF NOT EXISTS uq_token_locks_key ON aseman_core."token_locks" ("key") WHERE NOT tombstone;
+CREATE INDEX IF NOT EXISTS ix_token_locks_owner_ref ON aseman_core."token_locks" ("owner_ref", id) WHERE NOT tombstone;
+CREATE INDEX IF NOT EXISTS ix_token_locks_updated_at ON aseman_core."token_locks" (updated_at_micros, id);
+
+CREATE UNIQUE INDEX IF NOT EXISTS uq_secret_values_key ON aseman_core."secret_values" ("key") WHERE NOT tombstone;
+CREATE INDEX IF NOT EXISTS ix_secret_values_owner_ref_name ON aseman_core."secret_values" ("owner_ref", "name", id) WHERE NOT tombstone;
+CREATE INDEX IF NOT EXISTS ix_secret_values_updated_at ON aseman_core."secret_values" (updated_at_micros, id);
+
+CREATE UNIQUE INDEX IF NOT EXISTS uq_secret_accesses_key ON aseman_core."secret_accesses" ("key") WHERE NOT tombstone;
+CREATE INDEX IF NOT EXISTS ix_secret_accesses_grantee_ref_owner_ref_name ON aseman_core."secret_accesses" ("grantee_ref", "owner_ref", "name", id) WHERE NOT tombstone;
+CREATE INDEX IF NOT EXISTS ix_secret_accesses_updated_at ON aseman_core."secret_accesses" (updated_at_micros, id);
 
 COMMIT;

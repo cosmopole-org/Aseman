@@ -15,13 +15,12 @@ use crate::adapters::network::chain::Blockchain;
 use crate::adapters::network::federation::FedNet;
 use crate::adapters::security::Security;
 use crate::adapters::signaler::Signaler;
-use crate::adapters::storage::{SignalLogTarget, Storage};
+use crate::adapters::storage::Storage;
 use crate::adapters::vmm::NodeWorkloads;
 use crate::core::globe::{ChainPacketOp, Globe};
 use crate::core::orchestrator::types::{Core, Tools};
 use crate::models::chain::{ChainCallback, MessageCallback};
 use crate::models::core::ICore;
-use crate::models::ports::StateBackend;
 use crate::models::ports::{
     INetwork, IRateLimiter, ISecurity, ISignaler, IStorage, ITools, IWorkloads,
 };
@@ -52,11 +51,14 @@ impl Core {
         // the same `Arc<FedNet>` into the storage / network drivers.
         let fed: Arc<FedNet> = FedNet::first_stage(self.clone());
         let storage: Arc<dyn IStorage> = Storage::new(
-            self.clone(),
             storage_root,
-            open_state_backend(self.config.as_deref(), storage_root, base_db_path)?,
-            signal_log_target(self.config.as_deref())?,
-        )?;
+            crate::adapters::storage::open_from_config(
+                self.config.as_deref(),
+                storage_root,
+                base_db_path,
+                true,
+            )?,
+        );
         let signaler: Arc<dyn ISignaler> = Signaler::new(self.clone(), fed.clone());
         let security: Arc<dyn ISecurity> = Security::new(self.clone(), storage_root);
 
@@ -86,7 +88,7 @@ impl Core {
             self.clone(),
             storage_root,
             Some(provider),
-            open_consensus_log_storage(self.config.as_deref())?,
+            storage.consensus_logs(),
         );
         let tls_cfg = match self.config.as_ref().map(|config| &config.core) {
             Some(config) => match (&config.tls_certificate_path, &config.tls_private_key_path) {
@@ -224,114 +226,3 @@ impl Core {
 const _: fn() -> Option<Arc<AsemanConfig>> = || None;
 const _: fn() -> Option<RsaPrivateKey> = || None;
 
-/// The configured home of the legacy signal and build-log tables.
-fn signal_log_target(config: Option<&AsemanConfig>) -> Result<SignalLogTarget> {
-    let Some(config) = config else {
-        return Ok(SignalLogTarget::QuestDb(8812));
-    };
-    Ok(match config.core_storage.signal_log {
-        aseman_config::SignalLogProvider::QuestDb => {
-            SignalLogTarget::QuestDb(config.legacy_adapters.questdb_port)
-        }
-        aseman_config::SignalLogProvider::Postgres => {
-            let secret = config.database_url_secret.as_deref().ok_or_else(|| {
-                anyhow::anyhow!(
-                    "ASEMAN_SIGNAL_LOG_PROVIDER=postgres needs ASEMAN_DATABASE_URL_SECRET"
-                )
-            })?;
-            SignalLogTarget::Postgres(aseman_config::read_secret_file(secret, 4096)?)
-        }
-    })
-}
-
-/// PostgreSQL connections the node's compatibility transactions may hold.
-const STATE_CONNECTIONS: u32 = 16;
-
-/// Open the selected storage provider (ADR 0033). The RocksDB store is replicated
-/// through the provider's OpenRaft cluster when its cluster configuration enables it;
-/// module administration is served on that cluster listener, or on a standalone
-/// authenticated listener otherwise.
-/// The consensus logs' storage (ADR 0035): the selected storage provider's
-/// implementation of the consensus-log port. The engine never sees which one.
-fn open_consensus_log_storage(
-    config: Option<&AsemanConfig>,
-) -> Result<Arc<dyn aseman_ports::consensus_log::ConsensusLogStorage>> {
-    let provider = config
-        .map(|config| config.core_storage.provider)
-        .unwrap_or(aseman_config::CoreStorageProvider::RocksDb);
-    if provider == aseman_config::CoreStorageProvider::Postgres {
-        let secret = config
-            .and_then(|config| config.database_url_secret.as_deref())
-            .ok_or_else(|| anyhow::anyhow!("ASEMAN_DATABASE_URL_SECRET is required"))?;
-        let url = aseman_config::read_secret_file(secret, 4096)?;
-        return Ok(Arc::new(
-            aseman_storage_postgres::consensus_log::PostgresConsensusLogStorage::connect(
-                &url,
-                CONSENSUS_LOG_CONNECTIONS,
-            )
-            .map_err(|error| anyhow::anyhow!("{error}"))?,
-        ));
-    }
-    // Log names are the engine's absolute data directories.
-    Ok(Arc::new(
-        aseman_storage_rocksdb::consensus_log::RocksDbConsensusLogStorage::new(
-            std::path::PathBuf::new(),
-        ),
-    ))
-}
-
-/// Consensus writes are sequential per shard engine; a few connections serve every
-/// shard of a node.
-const CONSENSUS_LOG_CONNECTIONS: u32 = 4;
-
-fn open_state_backend(
-    config: Option<&AsemanConfig>,
-    storage_root: &str,
-    base_db_path: &str,
-) -> Result<StateBackend> {
-    let routes = crate::adapters::module_admin::route_handler(storage_root);
-    let provider = config
-        .map(|config| config.core_storage.provider)
-        .unwrap_or(aseman_config::CoreStorageProvider::RocksDb);
-    if provider == aseman_config::CoreStorageProvider::Postgres {
-        let config = config.ok_or_else(|| anyhow::anyhow!("PostgreSQL needs a configuration"))?;
-        let secret = config
-            .database_url_secret
-            .as_deref()
-            .ok_or_else(|| anyhow::anyhow!("ASEMAN_DATABASE_URL_SECRET is required"))?;
-        let url = aseman_config::read_secret_file(secret, 4096)?;
-        let factory =
-            crate::adapters::postgres::trx::PostgresTrxFactory::connect(&url, STATE_CONNECTIONS)?;
-        if let Some(routes) = routes {
-            let (cluster, _) = aseman_storage_rocksdb::cluster::config::ClusterConfig::bootstrap(
-                storage_root,
-                &config.cluster,
-            );
-            if !cluster.auth_token.is_empty() {
-                aseman_storage_rocksdb::cluster::server::start_route_listener(
-                    routes,
-                    cluster.listen_addr,
-                    cluster.auth_token,
-                )?;
-            }
-        }
-        return Ok(StateBackend::Postgres(Arc::new(factory)));
-    }
-    std::fs::create_dir_all(base_db_path)
-        .map_err(|error| anyhow::anyhow!("mkdir {base_db_path}: {error}"))?;
-    // Bounded-memory options: this store takes a write per signal and is never fully
-    // pruned (see `aseman_storage_rocksdb::tuning`).
-    let local = Arc::new(
-        aseman_storage_rocksdb::RocksDbKvStore::open_tuned(std::path::Path::new(base_db_path))
-            .map_err(|error| anyhow::anyhow!("open {base_db_path}: {error}"))?,
-    );
-    let default_cluster = aseman_config::ClusterBootstrapConfig::default();
-    let cluster = config.map_or(&default_cluster, |config| &config.cluster);
-    let store = aseman_storage_rocksdb::cluster::open(
-        std::path::Path::new(storage_root),
-        local,
-        cluster,
-        routes,
-    )?;
-    Ok(StateBackend::RocksDb(Arc::new(store)))
-}

@@ -61,11 +61,6 @@ impl NodeApp {
             eprintln!("telemetry server start failed: {}", e);
         }
 
-        if let Err(error) = install_core_storage(config) {
-            eprintln!("core storage could not start: {error}");
-            return Err(anyhow::anyhow!("core storage could not start: {error}"));
-        }
-
         let owner_priv = match parse_owner_key(&config.node.private_key_secret) {
             Some(key) => key,
             None => {
@@ -91,6 +86,12 @@ impl NodeApp {
         ) {
             eprintln!("app.load failed: {}", e);
             return Err(anyhow::anyhow!("app.load failed: {e}"));
+        }
+        if let Err(error) = install_core_storage(config) {
+            eprintln!("core storage services could not start: {error}");
+            return Err(anyhow::anyhow!(
+                "core storage services could not start: {error}"
+            ));
         }
 
         // Install SIGINT / SIGTERM handler: when received, close the app and
@@ -170,7 +171,7 @@ impl NodeApp {
             let blobs = crate::adapters::blob_store::node_blobs(&*app.tools().storage());
             app.modify_state(
                 true,
-                Box::new(move |trx: &dyn crate::models::transaction::ITrx| {
+                Box::new(move |trx: &crate::core::trx::Trx| {
                     let entities =
                         crate::api::model::entity_ports::EntityPorts { trx, blobs: &blobs };
                     *programs_clone.lock().unwrap() =
@@ -249,95 +250,33 @@ impl NodeApp {
     }
 }
 
-/// Select the provider of the core port families (ADR 0026). Legacy needs nothing;
-/// PostgreSQL is migrated and installed before any state action runs, with every
-/// write fenced at the configured binding generation (A309).
+/// Compose the services that run on the node's storage once it is open (ADR 0036):
+/// decision audit, guest data from each creature's own database (the PostgreSQL guest
+/// data plane, ADR 0021), and the VMM workload catalog.
 fn install_core_storage(config: &AsemanConfig) -> Result<()> {
-    use aseman_config::CoreStorageProvider;
-    if config.core_storage.provider == CoreStorageProvider::RocksDb {
-        return Ok(());
-    }
-    let secret = config
-        .database_url_secret
-        .as_deref()
-        .ok_or_else(|| anyhow::anyhow!("ASEMAN_DATABASE_URL_SECRET is required"))?;
-    let url = aseman_config::read_secret_file(secret, 4096)?;
-    // The configured capsule layout (ADR 0034) is recorded in the database, so every
-    // repository and unit of work opened below writes in it.
-    let layout = config.core_storage.layout;
-    aseman_storage_postgres::PostgresCapsuleRepository::connect(&url)?.migrate_layout(layout)?;
-    // Cluster mode (ADR 0033): capsules shard and replicate across the map's shards;
-    // `ASEMAN_DATABASE_URL_SECRET` names the home shard, which also holds coordination
-    // and the compatibility state. Otherwise one database serves everything.
-    let generation = Some(config.core_storage.binding_generation);
-    let factory: std::sync::Arc<dyn aseman_storage_postgres::shard::UnitOfWorkFactory> =
-        match &config.core_storage.postgres_shards_secret {
-            Some(secret) => {
-                let map = aseman_storage_postgres::shard::ShardMap::parse(
-                    &aseman_config::read_secret_file(secret, 64 * 1024)?,
-                )?;
-                eprintln!(
-                    "[storage] PostgreSQL cluster: {} shard(s), shard map v{}",
-                    map.shards.len(),
-                    map.version
-                );
-                std::sync::Arc::new(std::sync::Arc::new(
-                    aseman_storage_postgres::shard::ShardedUnitOfWorkFactory::connect(
-                        map,
-                        CORE_STORAGE_CONNECTIONS,
-                        generation,
-                        layout,
-                    )?,
-                ))
-            }
-            None => std::sync::Arc::new(
-                aseman_storage_postgres::unit_of_work::PostgresUnitOfWorkFactory::connect(
-                    &url,
-                    CORE_STORAGE_CONNECTIONS,
-                    generation,
-                )?,
-            ),
+    let storage = crate::adapters::storage::installed()
+        .ok_or_else(|| anyhow::anyhow!("the node's storage is not open"))?;
+    crate::api::audit::install(storage.clone())?;
+    if let Some(proxy) = &config.core_storage.guest_proxy {
+        let url = aseman_config::read_secret_file(&proxy.url_secret, 4096)?;
+        let shard_map = match &config.core_storage.postgres_shards_secret {
+            Some(secret) => Some(aseman_config::read_secret_file(secret, 64 * 1024)?),
+            None => None,
         };
-    crate::api::model::core_storage::install_postgres(factory)?;
-    // Guest data moves with the core families: each creature's own database, through
-    // the trusted guest proxy (ADR 0021, A405).
-    let proxy = config
-        .core_storage
-        .guest_proxy
-        .as_ref()
-        .ok_or_else(|| anyhow::anyhow!("the guest proxy is required on PostgreSQL"))?;
-    let proxy_url = aseman_config::read_secret_file(&proxy.url_secret, 4096)?;
-    let mut router = aseman_storage_postgres::guest::GuestPoolRouter::new(
-        &proxy_url,
-        &proxy.role,
-        proxy.max_pools,
-        proxy.max_pool_size,
-    )
-    .map_err(|error| anyhow::anyhow!("{error}"))?;
-    // In cluster mode a creature's guest databases live on its shard's server.
-    if let Some(secret) = &config.core_storage.postgres_shards_secret {
-        let map = aseman_storage_postgres::shard::ShardMap::parse(
-            &aseman_config::read_secret_file(secret, 64 * 1024)?,
-        )?;
-        for shard in &map.shards {
-            if let Some(guest_proxy) = &shard.guest_proxy {
-                router = router
-                    .with_shard_proxy(&shard.name, guest_proxy)
-                    .map_err(|error| anyhow::anyhow!("{error}"))?;
-            }
-        }
+        let kv = aseman_storage_providers::guest_kv(&aseman_storage_providers::GuestProxy {
+            url: &url,
+            role: &proxy.role,
+            max_pools: proxy.max_pools,
+            max_pool_size: proxy.max_pool_size,
+            shard_map: shard_map.as_deref(),
+        })
+        .map_err(|error| anyhow::anyhow!("{error}"))?;
+        crate::api::model::guest_data::install(kv, storage.clone())?;
     }
-    crate::api::audit::install_postgres(
-        aseman_storage_postgres::PostgresCapsuleRepository::connect(&url)?,
-    )?;
-    crate::api::model::guest_data::install_postgres(
-        aseman_storage_postgres::guest::PostgresGuestKv::new(router),
-        aseman_storage_postgres::PostgresCapsuleRepository::connect(&url)?,
-    )?;
     // Program entities run on the configured VMM; their host calls come back through
     // the guest API (P5-03, P5-04).
     if let Some(vmm) = &config.vmm {
-        crate::api::workloads::install(vmm, &config.node.id, &url, &config.storage.root_path)?;
+        crate::api::workloads::install(vmm, &config.node.id, storage, &config.storage.root_path)?;
     }
     Ok(())
 }

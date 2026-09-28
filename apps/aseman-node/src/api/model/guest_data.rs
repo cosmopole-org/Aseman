@@ -1,10 +1,9 @@
 //! Guest data routing (ADR 0021, ADR 0028, A405, ADR 0026).
 //!
-//! On the legacy provider, guest data stays in the node store and the existing code
-//! serves it. On PostgreSQL it is served from each creature's own guest database:
-//! the creature's active binding (`core.guest_database_binding`), through the guest
-//! proxy (`PostgresGuestKv`). A creature without an active binding is refused rather
-//! than served from legacy, which would split its data across two stores.
+//! Guest data is served from each creature's own guest database: the creature's
+//! active binding (`core.guest_database_binding`, read from the node's storage),
+//! through the guest data plane (`GuestKv`). A creature without an active binding is
+//! refused rather than served from anywhere else, which would split its data.
 
 use std::sync::OnceLock;
 
@@ -12,26 +11,26 @@ use aseman_capsule::workload::CapsuleWorkloads;
 use aseman_contracts::legacy_realtime::deterministic_legacy_capsule_id;
 use aseman_domain::guest::{GuestKvOperation, GuestKvOutcome, LegacyKvNamespace, MAX_GUEST_LIST};
 use aseman_domain::{BindingStatus, CreatureId, Uuid};
+use aseman_capsule::auto::AutoCommit;
 use aseman_ports::{CreatureDatabaseBindings, GuestKv};
-use aseman_storage_postgres::PostgresCapsuleRepository;
-use aseman_storage_postgres::guest::PostgresGuestKv;
+use std::sync::Arc;
 use serde_json::{Value, json};
 
 struct GuestRouting {
-    kv: PostgresGuestKv,
-    catalog: PostgresCapsuleRepository,
+    kv: Arc<dyn GuestKv>,
+    catalog: AutoCommit,
 }
 
 static ROUTING: OnceLock<GuestRouting> = OnceLock::new();
 
-/// Serve guest data from creature databases (called once when the node runs on
-/// PostgreSQL).
-pub(crate) fn install_postgres(
-    kv: PostgresGuestKv,
-    catalog: PostgresCapsuleRepository,
-) -> anyhow::Result<()> {
+/// Serve guest data from creature databases (called once, when a guest data plane is
+/// configured).
+pub(crate) fn install(kv: Arc<dyn GuestKv>, storage: aseman_storage::Storage) -> anyhow::Result<()> {
     ROUTING
-        .set(GuestRouting { kv, catalog })
+        .set(GuestRouting {
+            kv,
+            catalog: AutoCommit(storage),
+        })
         .map_err(|_| anyhow::anyhow!("guest data routing is already installed"))
 }
 
