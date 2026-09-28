@@ -522,6 +522,33 @@ impl Drop for LocalModuleProcess {
     }
 }
 
+/// Module administration as a route handler the storage provider's administration
+/// listener serves (`/v1/admin/modules…`), or `None` when it cannot be opened.
+pub(crate) fn route_handler(
+    storage_root: &str,
+) -> Option<aseman_storage_rocksdb::cluster::RouteHandler> {
+    let admin = match ModuleAdminService::open(PathBuf::from(storage_root).join("modules")) {
+        Ok(admin) => Arc::new(admin),
+        Err(error) => {
+            eprintln!("[modules] failed to initialize administration: {error}");
+            return None;
+        }
+    };
+    Some(Arc::new(move |method: &str, path: &str, body: &[u8]| {
+        if path != "/v1/admin/modules" && !path.starts_with("/v1/admin/modules/") {
+            return None;
+        }
+        Some(match admin.handle(method, path, body) {
+            Ok(value) => (200, serde_json::to_vec(&value).unwrap_or_default()),
+            Err(error) => (
+                error.status,
+                serde_json::to_vec(&serde_json::json!({ "error": error.message }))
+                    .unwrap_or_default(),
+            ),
+        })
+    }))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

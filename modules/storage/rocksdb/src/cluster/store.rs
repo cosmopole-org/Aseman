@@ -62,15 +62,15 @@ fn write_err(e: impl std::error::Error + 'static) -> StorageError<NodeId> {
 pub fn open_db(dir: &Path) -> anyhow::Result<Arc<DB>> {
     std::fs::create_dir_all(dir)?;
     // Bounded-memory options + shared block cache (see
-    // `crate::adapters::rocks_tuning`) so the raft log/state DB can't grow
+    // `crate::tuning`) so the raft log/state DB can't grow
     // resident memory without bound either.
-    let mut opts = crate::adapters::rocks_tuning::tuned_options();
+    let mut opts = crate::tuning::tuned_options();
     opts.create_missing_column_families(true);
     opts.create_if_missing(true);
     let cfs = vec![
-        ColumnFamilyDescriptor::new("meta", crate::adapters::rocks_tuning::tuned_options()),
-        ColumnFamilyDescriptor::new("logs", crate::adapters::rocks_tuning::tuned_options()),
-        ColumnFamilyDescriptor::new("sm", crate::adapters::rocks_tuning::tuned_options()),
+        ColumnFamilyDescriptor::new("meta", crate::tuning::tuned_options()),
+        ColumnFamilyDescriptor::new("logs", crate::tuning::tuned_options()),
+        ColumnFamilyDescriptor::new("sm", crate::tuning::tuned_options()),
     ];
     Ok(Arc::new(DB::open_cf_descriptors(&opts, dir, cfs)?))
 }
@@ -278,10 +278,6 @@ impl StateMachineStore {
     }
 
     /// The replicated cluster-wide config store (read side for telemetry).
-    #[expect(
-        dead_code,
-        reason = "RL-012: OpenRaft cluster surface kept until its ADR-0004 deletion gate"
-    )]
     pub fn shared_config(&self) -> std::collections::BTreeMap<String, serde_json::Value> {
         self.state.shared_config.clone()
     }

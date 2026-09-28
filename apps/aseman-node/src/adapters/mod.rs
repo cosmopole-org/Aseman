@@ -14,13 +14,11 @@
 //! - `cluster` — OpenRaft-replicated geo-distributed instance mesh
 
 pub(crate) mod blob_store;
-pub mod cluster;
 pub mod gateway_subs;
 pub mod module_admin;
 pub mod network;
 pub mod postgres;
 pub mod ratelimit;
-pub mod rocks_tuning;
 pub mod rocksdb;
 pub mod security;
 pub mod signaler;

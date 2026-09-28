@@ -1,4 +1,4 @@
-//! `casparctl cluster` — orchestrate the geo-distributed Caspar instance
+//! `asemanctl cluster` — orchestrate the RocksDB storage cluster (OpenRaft)
 //! mesh (OpenRaft-replicated cluster of same-origin nodes).
 //!
 //! The commands talk to the node's cluster HTTP listener (default
@@ -46,8 +46,8 @@ pub fn run_cluster(args: &[String]) -> Result<()> {
 
 fn print_cluster_usage() {
     println!(
-        "casparctl cluster - orchestrate the geo-distributed Caspar instance mesh\n\n\
-         Usage:\n  casparctl cluster <subcommand> [flags]\n\n\
+        "asemanctl cluster - orchestrate the RocksDB storage cluster (OpenRaft)\n\n\
+         Usage:\n  asemanctl cluster <subcommand> [flags]\n\n\
          Subcommands:\n  \
          status                       Raft state, leader, membership, peer RTT table\n  \
          init [--include-peers]      Initialize a pristine cluster on this node\n  \
@@ -140,7 +140,7 @@ fn curl(a: &ClusterArgs, method: &str, path: &str, body: Option<&Value>) -> Resu
         .arg("content-type: application/json");
     if !a.token.is_empty() {
         cmd.arg("-H")
-            .arg(format!("x-caspar-cluster-token: {}", a.token));
+            .arg(format!("x-aseman-cluster-token: {}", a.token));
     }
     if let Some(b) = body {
         cmd.arg("-d").arg(serde_json::to_string(b)?);
@@ -274,7 +274,7 @@ fn cmd_config(args: &[String]) -> Result<()> {
             let key = a
                 .positional
                 .get(1)
-                .ok_or_else(|| anyhow!("usage: casparctl cluster config get <key>"))?;
+                .ok_or_else(|| anyhow!("usage: asemanctl cluster config get <key>"))?;
             let cfg = curl(&a, "GET", "/cluster/config", None)?;
             let pointer = format!("/{}", key.replace('.', "/"));
             match cfg.pointer(&pointer) {
@@ -289,11 +289,11 @@ fn cmd_config(args: &[String]) -> Result<()> {
             let key = a
                 .positional
                 .get(1)
-                .ok_or_else(|| anyhow!("usage: casparctl cluster config set <key> <value>"))?;
+                .ok_or_else(|| anyhow!("usage: asemanctl cluster config set <key> <value>"))?;
             let value = a
                 .positional
                 .get(2)
-                .ok_or_else(|| anyhow!("usage: casparctl cluster config set <key> <value>"))?;
+                .ok_or_else(|| anyhow!("usage: asemanctl cluster config set <key> <value>"))?;
             let body = json!({"key": key, "value": value});
             print_json(&curl(&a, "POST", "/cluster/config", Some(&body))?);
             Ok(())
@@ -309,7 +309,7 @@ fn cmd_apply(args: &[String]) -> Result<()> {
         .get("f")
         .or_else(|| a.values.get("file"))
         .or_else(|| a.positional.first())
-        .ok_or_else(|| anyhow!("usage: casparctl cluster apply -f <cluster.json>"))?;
+        .ok_or_else(|| anyhow!("usage: asemanctl cluster apply -f <cluster.json>"))?;
     let raw = std::fs::read_to_string(file).map_err(|e| anyhow!("read {}: {}", file, e))?;
     let doc: Value =
         serde_json::from_str(&raw).map_err(|e| anyhow!("{} is not valid JSON: {}", file, e))?;

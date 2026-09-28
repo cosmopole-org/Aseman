@@ -10,7 +10,19 @@ verification: compatibility manifest, warnings, telemetry, and removal ledger
 
 ## Status
 
-Accepted 2026-09-19.
+Accepted 2026-09-19. **Closed 2026-09-28** by product decision, before any stable
+Aseman release, so no Caspar deployment depends on the aliases yet:
+
+- The `caspar-node`, `caspar-keygen`, and `casparctl` binaries are deleted.
+- Retired `CASPAR_*`/Caspar configuration names are refused at load with an error that
+  names the canonical key (`aseman-config::canonicalize`); they are never translated.
+- The custodial `/creatures/login` action and its login grants are deleted (RL-019).
+- The combined legacy image, `dist/`, and the Docker-era CLI lifecycle are deleted.
+
+Storage (RocksDB with OpenRaft), transports (TCP, WebSocket, custom federation), and
+the one-way importers of Caspar-era data are **not** compatibility aliases: ADR 0033
+keeps the first two as supported, selectable modules, and the importers remain the
+way an existing Caspar installation moves its data.
 
 ## Decision
 

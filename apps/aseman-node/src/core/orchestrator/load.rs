@@ -21,6 +21,7 @@ use crate::core::globe::{ChainPacketOp, Globe};
 use crate::core::orchestrator::types::{Core, Tools};
 use crate::models::chain::{ChainCallback, MessageCallback};
 use crate::models::core::ICore;
+use crate::models::ports::StateBackend;
 use crate::models::ports::{
     INetwork, IRateLimiter, ISecurity, ISignaler, IStorage, ITools, IWorkloads,
 };
@@ -53,9 +54,7 @@ impl Core {
         let storage: Arc<dyn IStorage> = Storage::new(
             self.clone(),
             storage_root,
-            base_db_path,
-            store_logs_db,
-            searcher_db,
+            open_state_backend(self.config.as_deref(), storage_root, base_db_path)?,
             signal_log_target(self.config.as_deref())?,
         )?;
         let signaler: Arc<dyn ISignaler> = Signaler::new(self.clone(), fed.clone());
@@ -239,4 +238,63 @@ fn signal_log_target(config: Option<&AsemanConfig>) -> Result<SignalLogTarget> {
             SignalLogTarget::Postgres(aseman_config::read_secret_file(secret, 4096)?)
         }
     })
+}
+
+/// PostgreSQL connections the node's compatibility transactions may hold.
+const STATE_CONNECTIONS: u32 = 16;
+
+/// Open the selected storage provider (ADR 0033). The RocksDB store is replicated
+/// through the provider's OpenRaft cluster when its cluster configuration enables it;
+/// module administration is served on that cluster listener, or on a standalone
+/// authenticated listener otherwise.
+fn open_state_backend(
+    config: Option<&AsemanConfig>,
+    storage_root: &str,
+    base_db_path: &str,
+) -> Result<StateBackend> {
+    let routes = crate::adapters::module_admin::route_handler(storage_root);
+    let provider = config
+        .map(|config| config.core_storage.provider)
+        .unwrap_or(aseman_config::CoreStorageProvider::RocksDb);
+    if provider == aseman_config::CoreStorageProvider::Postgres {
+        let config = config.ok_or_else(|| anyhow::anyhow!("PostgreSQL needs a configuration"))?;
+        let secret = config
+            .database_url_secret
+            .as_deref()
+            .ok_or_else(|| anyhow::anyhow!("ASEMAN_DATABASE_URL_SECRET is required"))?;
+        let url = aseman_config::read_secret_file(secret, 4096)?;
+        let factory =
+            crate::adapters::postgres::trx::PostgresTrxFactory::connect(&url, STATE_CONNECTIONS)?;
+        if let Some(routes) = routes {
+            let (cluster, _) = aseman_storage_rocksdb::cluster::config::ClusterConfig::bootstrap(
+                storage_root,
+                &config.cluster,
+            );
+            if !cluster.auth_token.is_empty() {
+                aseman_storage_rocksdb::cluster::server::start_route_listener(
+                    routes,
+                    cluster.listen_addr,
+                    cluster.auth_token,
+                )?;
+            }
+        }
+        return Ok(StateBackend::Postgres(Arc::new(factory)));
+    }
+    std::fs::create_dir_all(base_db_path)
+        .map_err(|error| anyhow::anyhow!("mkdir {base_db_path}: {error}"))?;
+    // Bounded-memory options: this store takes a write per signal and is never fully
+    // pruned (see `aseman_storage_rocksdb::tuning`).
+    let local = Arc::new(
+        aseman_storage_rocksdb::RocksDbKvStore::open_tuned(std::path::Path::new(base_db_path))
+            .map_err(|error| anyhow::anyhow!("open {base_db_path}: {error}"))?,
+    );
+    let default_cluster = aseman_config::ClusterBootstrapConfig::default();
+    let cluster = config.map_or(&default_cluster, |config| &config.cluster);
+    let store = aseman_storage_rocksdb::cluster::open(
+        std::path::Path::new(storage_root),
+        local,
+        cluster,
+        routes,
+    )?;
+    Ok(StateBackend::RocksDb(Arc::new(store)))
 }

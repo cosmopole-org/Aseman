@@ -48,7 +48,7 @@ Legacy roots remain until their removal-ledger gates pass.
 | `crates/aseman-module-runtime` | target package | PRESENT |
 | `crates/aseman-guest-sdk` | target package | PRESENT |
 | `modules/storage/postgres` | target package | PRESENT |
-| `modules/storage/rocksdb-legacy` | target package | PRESENT |
+| `modules/storage/rocksdb` | target package | PRESENT |
 | `modules/network/http` | target package | PRESENT |
 | `modules/network/legacy` | target package | PRESENT |
 | `modules/federation/http` | target package | PRESENT |
@@ -65,7 +65,7 @@ Legacy roots remain until their removal-ledger gates pass.
 | `modules/runtime/elpian` | target package | PRESENT |
 | `modules/runtime/elpify` | target package | PRESENT |
 | `modules/runtime/modal` | target package | PRESENT |
-| `dist` | legacy root pending removal gate | PRESENT |
+| `dist` | legacy root pending removal gate | OPEN |
 
 Target package paths still open: **0**.
-Legacy roots still present: **1**.
+Legacy roots still present: **0**.

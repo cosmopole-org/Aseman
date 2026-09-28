@@ -93,7 +93,42 @@ impl PostgresUnitOfWork {
         self.finish("ROLLBACK")
     }
 
-    fn finish(&self, statement: &str) -> StorageResult<()> {
+    /// Phase one of a cross-shard commit: make the unit's writes durable and
+    /// prepared under `gid`, keeping the connection to finish phase two.
+    pub fn prepare(self, gid: &str) -> StorageResult<PreparedUnit> {
+        if !gid
+            .bytes()
+            .all(|byte| byte.is_ascii_alphanumeric() || byte == b'-')
+        {
+            return Err(PostgresStorageError::Invalid(
+                "prepared transaction ids are alphanumeric".to_owned(),
+            ));
+        }
+        let mut guard = self.connection.lock().map_err(|_| {
+            PostgresStorageError::Unavailable("unit of work lock poisoned".to_owned())
+        })?;
+        let mut connection = guard.take().ok_or_else(|| {
+            PostgresStorageError::Unavailable("unit of work is finished".to_owned())
+        })?;
+        connection
+            .batch_execute(&format!("PREPARE TRANSACTION '{gid}'"))
+            .map_err(map_postgres_error)?;
+        Ok(PreparedUnit {
+            connection,
+            gid: gid.to_owned(),
+        })
+    }
+
+    /// A query that also returns each row's sort-column values, for merging the
+    /// results of several shards in the provider's own order.
+    pub(crate) fn query_keyed(
+        &self,
+        query: &CapsuleQuery,
+    ) -> StorageResult<Vec<(Vec<crate::SortValue>, CapsuleEnvelope)>> {
+        self.with_connection(|client| crate::query_keyed_on(client, query))
+    }
+
+    pub(crate) fn finish(&self, statement: &str) -> StorageResult<()> {
         let mut guard = self.connection.lock().map_err(|_| {
             PostgresStorageError::Unavailable("unit of work lock poisoned".to_owned())
         })?;
@@ -143,6 +178,34 @@ impl PostgresUnitOfWork {
             client.batch_execute(settle).map_err(map_postgres_error)?;
             written
         })
+    }
+}
+
+/// A unit prepared by [`PostgresUnitOfWork::prepare`], awaiting phase two.
+pub struct PreparedUnit {
+    connection: PooledConnection<Manager>,
+    gid: String,
+}
+
+impl PreparedUnit {
+    pub fn gid(&self) -> &str {
+        &self.gid
+    }
+
+    /// Phase two: make the prepared writes visible.
+    pub fn commit(mut self) -> StorageResult<()> {
+        let statement = format!("COMMIT PREPARED '{}'", self.gid);
+        self.connection
+            .batch_execute(&statement)
+            .map_err(map_postgres_error)
+    }
+
+    /// Abandon the prepared writes.
+    pub fn rollback(mut self) -> StorageResult<()> {
+        let statement = format!("ROLLBACK PREPARED '{}'", self.gid);
+        self.connection
+            .batch_execute(&statement)
+            .map_err(map_postgres_error)
     }
 }
 

@@ -46,6 +46,10 @@ pub trait IModel<T> {
 /// ([`crate::adapters::rocksdb::trx`]) carries interior mutability so a
 /// transaction handle can be cloned and shared freely.
 pub trait ITrx: Send + Sync {
+    /// Whether this transaction was opened read-only.
+    fn readonly(&self) -> bool {
+        false
+    }
     fn del_key(&self, key: &str);
     fn get_by_prefix(&self, prefix: &str) -> Vec<String>;
     fn has_obj(&self, typ: &str, key: &str) -> bool;

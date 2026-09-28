@@ -1082,7 +1082,7 @@ fn rocksdb_source_is_read_only_and_enforces_snapshot_bounds() {
         .unwrap()
         .as_nanos();
     let path = std::env::temp_dir().join(format!(
-        "aseman-storage-legacy-test-{}-{unique}",
+        "aseman-storage-rocksdb-test-{}-{unique}",
         std::process::id()
     ));
     assert!(!path.exists());

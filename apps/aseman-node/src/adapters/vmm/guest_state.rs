@@ -115,7 +115,7 @@ mod tests {
 
     fn trx() -> Arc<TrxWrapper> {
         let storage: Arc<dyn IStorage> = StubStorage::new();
-        TrxWrapper::new(
+        TrxWrapper::over_storage(
             Arc::new(StubCore {
                 storage: storage.clone(),
             }),

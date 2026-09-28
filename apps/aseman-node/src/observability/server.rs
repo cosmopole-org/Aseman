@@ -11,7 +11,7 @@ use std::time::{Duration, SystemTime};
 
 use anyhow::{Result, anyhow};
 use aseman_config::AsemanConfig;
-use aseman_storage_legacy::{LegacyKvStore, LegacyKvWrite, RocksDbKvStore};
+use aseman_storage_rocksdb::{LegacyKvStore, LegacyKvWrite, RocksDbKvStore};
 use chrono::Utc;
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};

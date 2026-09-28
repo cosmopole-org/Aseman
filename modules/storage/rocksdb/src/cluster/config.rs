@@ -1,11 +1,11 @@
 //! Cluster configuration — persisted, env-seeded, and fully editable through
-//! `casparctl cluster config …`.
+//! `asemanctl cluster config …`.
 //!
 //! The config lives as JSON at `<storage_root>/cluster/cluster.json` (override
 //! with `CLUSTER_CONFIG_PATH`). Every field is addressable by a dotted key
 //! (`heartbeat_interval_ms`, `peers.2.addr`, `extra.myKnob`) so operators can
 //! modify each knob individually from the CLI, or replace the whole file at
-//! once with `casparctl cluster apply -f cluster.json`.
+//! once with `asemanctl cluster apply -f cluster.json`.
 
 use std::collections::BTreeMap;
 use std::fs;
@@ -16,7 +16,7 @@ use aseman_config::ClusterBootstrapConfig;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
-/// A remote Caspar instance of the same origin (authority).
+/// A replica of the RocksDB storage cluster.
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct PeerConfig {
     /// Raft node id — unique across the cluster.
@@ -47,13 +47,13 @@ pub struct ClusterConfig {
     pub enabled: bool,
     /// Seed flag: exactly one instance of a brand-new cluster starts with
     /// `bootstrap: true` — it initializes itself as the first voter and
-    /// accepts the others via `casparctl cluster add-peer`. Joining
+    /// accepts the others via `asemanctl cluster add-peer`. Joining
     /// instances MUST leave this false (they stay pristine until the seed
-    /// adds them); `casparctl cluster init` can initialize manually instead.
+    /// adds them); `asemanctl cluster init` can initialize manually instead.
     pub bootstrap: bool,
     /// This node's raft id.
     pub node_id: u64,
-    /// Human-readable name shown in `casparctl cluster status`.
+    /// Human-readable name shown in `asemanctl cluster status`.
     pub node_name: String,
     /// Geographic region of this instance.
     pub region: String,
@@ -66,7 +66,7 @@ pub struct ClusterConfig {
     /// Address other instances use to reach this node (domain or IP).
     pub advertise_addr: String,
     /// Optional shared secret; when set every cluster HTTP call must carry
-    /// it in the `x-caspar-cluster-token` header.
+    /// it in the `x-aseman-cluster-token` header.
     pub auth_token: String,
 
     // ── Raft tuning ─────────────────────────────────────────────────────
@@ -169,19 +169,12 @@ impl ClusterConfig {
         apply(&source.advertise_addr, &mut cfg.advertise_addr);
         apply(&source.auth_token, &mut cfg.auth_token);
         if cfg.node_name.is_empty() {
-            cfg.node_name = format!("caspar-node-{}", cfg.node_id);
+            cfg.node_name = format!("aseman-node-{}", cfg.node_id);
         }
         (cfg, path)
     }
 
     /// Read a single dotted-key value (`peers.2.addr`, `heartbeat_interval_ms`).
-    #[cfg_attr(
-        not(test),
-        expect(
-            dead_code,
-            reason = "RL-012: OpenRaft cluster surface kept until its ADR-0004 deletion gate"
-        )
-    )]
     pub fn get_key(&self, key: &str) -> Option<Value> {
         let root = serde_json::to_value(self).ok()?;
         let pointer = format!("/{}", key.replace('.', "/"));
@@ -220,7 +213,7 @@ impl ClusterConfig {
     /// OpenRaft config derived from the tunables.
     pub fn raft_config(&self) -> openraft::Config {
         openraft::Config {
-            cluster_name: "caspar-cluster".to_string(),
+            cluster_name: "aseman-cluster".to_string(),
             heartbeat_interval: self.heartbeat_interval_ms,
             election_timeout_min: self.election_timeout_min_ms,
             election_timeout_max: self.election_timeout_max_ms,
@@ -259,9 +252,9 @@ mod tests {
             },
         );
         let updated = cfg
-            .set_key("peers.2.addr", "caspar-us.example.com:7440")
+            .set_key("peers.2.addr", "aseman-us.example.com:7440")
             .unwrap();
-        assert_eq!(updated.peers[&2].addr, "caspar-us.example.com:7440");
+        assert_eq!(updated.peers[&2].addr, "aseman-us.example.com:7440");
     }
 
     #[test]

@@ -411,7 +411,7 @@ mod tests {
     #[test]
     fn finance_ledger_documents_round_trip_with_legacy_keys() {
         let storage: Arc<dyn IStorage> = StubStorage::new();
-        let trx = TrxWrapper::new(
+        let trx = TrxWrapper::over_storage(
             Arc::new(StubCore {
                 storage: storage.clone(),
             }),
@@ -441,7 +441,7 @@ mod tests {
     #[test]
     fn finance_ledger_counters_and_markers_use_legacy_links() {
         let storage: Arc<dyn IStorage> = StubStorage::new();
-        let trx = TrxWrapper::new(
+        let trx = TrxWrapper::over_storage(
             Arc::new(StubCore {
                 storage: storage.clone(),
             }),
@@ -472,7 +472,7 @@ mod tests {
     #[test]
     fn finance_ledger_index_links_are_newest_first() {
         let storage: Arc<dyn IStorage> = StubStorage::new();
-        let trx = TrxWrapper::new(
+        let trx = TrxWrapper::over_storage(
             Arc::new(StubCore {
                 storage: storage.clone(),
             }),
@@ -494,7 +494,7 @@ mod tests {
     #[test]
     fn finance_ledger_writes_journals_with_participant_index() {
         let storage: Arc<dyn IStorage> = StubStorage::new();
-        let trx = TrxWrapper::new(
+        let trx = TrxWrapper::over_storage(
             Arc::new(StubCore {
                 storage: storage.clone(),
             }),

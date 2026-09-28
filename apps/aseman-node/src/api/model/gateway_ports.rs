@@ -148,7 +148,7 @@ mod tests {
     #[test]
     fn legacy_gateway_routes_pass_the_conformance_suite() {
         let storage: Arc<dyn IStorage> = StubStorage::new();
-        let trx = TrxWrapper::new(
+        let trx = TrxWrapper::over_storage(
             Arc::new(StubCore {
                 storage: storage.clone(),
             }),

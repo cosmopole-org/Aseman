@@ -203,8 +203,6 @@ fn signed_actions_are_authorized_for_their_signer() {
     // Minting is the root's alone.
     assert!(signed("/creatures/mint", LEGACY_ROOT, json!({"amount": 1})).is_ok());
     assert!(signed("/creatures/mint", "alice", json!({"amount": 1})).is_err());
-    // Custodial email login is shadowed until RL-019 removes it.
-    assert!(signed("/creatures/login", "", json!({})).is_ok());
     assert!(signed("/nowhere", "alice", json!({})).is_err());
 }
 

@@ -45,6 +45,7 @@ impl PostgresTrxFactory {
         Ok(Arc::new(PostgresTrx {
             transaction: self.inner.begin(readonly)?,
             state: Mutex::new(TransactionState::default()),
+            readonly,
         }))
     }
 }
@@ -53,6 +54,7 @@ impl PostgresTrxFactory {
 pub struct PostgresTrx {
     transaction: PostgresCompatibilityTransaction,
     state: Mutex<TransactionState>,
+    readonly: bool,
 }
 
 #[derive(Default)]
@@ -212,6 +214,10 @@ impl PostgresTrx {
 }
 
 impl ITrx for PostgresTrx {
+    fn readonly(&self) -> bool {
+        self.readonly
+    }
+
     fn commit(&self) -> Result<()> {
         let error = {
             let mut state = self.state.lock().unwrap();

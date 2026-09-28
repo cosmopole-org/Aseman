@@ -31,7 +31,7 @@ members = [
   "modules/runtime/wasm",
   "modules/security/capabilities",
   "modules/storage/postgres",
-  "modules/storage/rocksdb-legacy",
+  "modules/storage/rocksdb",
   "modules/vmm-backend/native-legacy",
   "modules/vmm-backend/native-legacy/crates/caspar-vm-plugins",
   "modules/vmm-backend/nomad",

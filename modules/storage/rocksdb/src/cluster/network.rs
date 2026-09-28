@@ -1,4 +1,4 @@
-//! Raft RPC transport between Caspar instances: plain HTTP + JSON.
+//! Raft RPC transport between storage replicas: plain HTTP + JSON.
 //!
 //! Each instance runs the cluster HTTP listener (see `server.rs`); this
 //! module is the client side used by openraft's replication machinery. The
@@ -47,7 +47,7 @@ impl HttpRaftClient {
         let url = format!("http://{}/raft/{}", self.addr, uri);
         let mut builder = self.client.post(&url).timeout(option.hard_ttl()).json(req);
         if !self.auth_token.is_empty() {
-            builder = builder.header("x-caspar-cluster-token", &self.auth_token);
+            builder = builder.header("x-aseman-cluster-token", &self.auth_token);
         }
         let resp = builder.send().await.map_err(|e| Unreachable::new(&e))?;
         let result: Result<Resp, RaftError<NodeId, Err>> =

@@ -109,6 +109,16 @@ ADR-0004 compatibility window gates. None of it is blocked on design.
    code also remains inside canonical packages until its named removal gates pass. Path completion is
    not treated as permission to delete them.
 
+Delivered in the second 2026-09-28 pass (ADR 0033, ADR 0004 closed):
+storage is one selected provider module per node: `postgres` (default; one database,
+or a sharded cluster with replica reads, reference/distributed kinds, and two-phase
+commit with recovery) or `rocksdb` (embedded, or replicated through OpenRaft inside
+`modules/storage/rocksdb`). PostgreSQL mode opens no RocksDB. The Caspar aliases,
+custodial login, combined image, tracked `dist/`, and Docker-era CLI lifecycle are
+deleted; retired Caspar configuration names are refused with their replacement named.
+Releases are built and published by `.github/workflows/release.yml`, and
+`scripts/install.sh` installs them with verified WasmEdge/Firecracker downloads.
+
 Delivered in the 2026-09-28 pass: the node's crate-wide `allow(dead_code)` became
 scoped, self-retiring `expect` attributes; PostgreSQL-aware, signature-trusted,
 resumable backup/restore with a clean-cluster drill; the Hashgraph mesh handover and

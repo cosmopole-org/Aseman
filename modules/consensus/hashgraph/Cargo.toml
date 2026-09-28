@@ -8,7 +8,7 @@ license.workspace = true
 repository.workspace = true
 
 [dependencies]
-aseman-storage-legacy = { path = "../../storage/rocksdb-legacy" }
+aseman-storage-rocksdb = { path = "../../storage/rocksdb" }
 aseman-config = { path = "../../../crates/aseman-config" }
 aseman-contracts = { path = "../../../crates/aseman-contracts" }
 aseman-domain = { path = "../../../crates/aseman-domain" }

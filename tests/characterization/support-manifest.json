@@ -165,79 +165,7 @@
       "current_owner": "casparctl",
       "disposition": "deprecate-alias",
       "expiry": "ADR-0004 window after replacement acceptance",
-      "id": "casparctl top_level install",
-      "support": "supported-compatibility",
-      "target_owner": "asemanctl"
-    },
-    {
-      "characterization": "tests/characterization/surface-golden.json",
-      "current_owner": "casparctl",
-      "disposition": "deprecate-alias",
-      "expiry": "ADR-0004 window after replacement acceptance",
-      "id": "casparctl top_level uninstall",
-      "support": "supported-compatibility",
-      "target_owner": "asemanctl"
-    },
-    {
-      "characterization": "tests/characterization/surface-golden.json",
-      "current_owner": "casparctl",
-      "disposition": "deprecate-alias",
-      "expiry": "ADR-0004 window after replacement acceptance",
-      "id": "casparctl top_level purge",
-      "support": "supported-compatibility",
-      "target_owner": "asemanctl"
-    },
-    {
-      "characterization": "tests/characterization/surface-golden.json",
-      "current_owner": "casparctl",
-      "disposition": "deprecate-alias",
-      "expiry": "ADR-0004 window after replacement acceptance",
-      "id": "casparctl top_level start",
-      "support": "supported-compatibility",
-      "target_owner": "asemanctl"
-    },
-    {
-      "characterization": "tests/characterization/surface-golden.json",
-      "current_owner": "casparctl",
-      "disposition": "deprecate-alias",
-      "expiry": "ADR-0004 window after replacement acceptance",
-      "id": "casparctl top_level pause",
-      "support": "supported-compatibility",
-      "target_owner": "asemanctl"
-    },
-    {
-      "characterization": "tests/characterization/surface-golden.json",
-      "current_owner": "casparctl",
-      "disposition": "deprecate-alias",
-      "expiry": "ADR-0004 window after replacement acceptance",
-      "id": "casparctl top_level resume",
-      "support": "supported-compatibility",
-      "target_owner": "asemanctl"
-    },
-    {
-      "characterization": "tests/characterization/surface-golden.json",
-      "current_owner": "casparctl",
-      "disposition": "deprecate-alias",
-      "expiry": "ADR-0004 window after replacement acceptance",
-      "id": "casparctl top_level stop",
-      "support": "supported-compatibility",
-      "target_owner": "asemanctl"
-    },
-    {
-      "characterization": "tests/characterization/surface-golden.json",
-      "current_owner": "casparctl",
-      "disposition": "deprecate-alias",
-      "expiry": "ADR-0004 window after replacement acceptance",
-      "id": "casparctl top_level stats",
-      "support": "supported-compatibility",
-      "target_owner": "asemanctl"
-    },
-    {
-      "characterization": "tests/characterization/surface-golden.json",
-      "current_owner": "casparctl",
-      "disposition": "deprecate-alias",
-      "expiry": "ADR-0004 window after replacement acceptance",
-      "id": "casparctl top_level run",
+      "id": "casparctl top_level bootstrap",
       "support": "supported-compatibility",
       "target_owner": "asemanctl"
     },
@@ -255,7 +183,7 @@
       "current_owner": "casparctl",
       "disposition": "deprecate-alias",
       "expiry": "ADR-0004 window after replacement acceptance",
-      "id": "casparctl top_level pprof",
+      "id": "casparctl top_level start",
       "support": "supported-compatibility",
       "target_owner": "asemanctl"
     },
@@ -264,25 +192,7 @@
       "current_owner": "casparctl",
       "disposition": "deprecate-alias",
       "expiry": "ADR-0004 window after replacement acceptance",
-      "id": "casparctl top_level vms",
-      "support": "supported-compatibility",
-      "target_owner": "asemanctl"
-    },
-    {
-      "characterization": "tests/characterization/surface-golden.json",
-      "current_owner": "casparctl",
-      "disposition": "deprecate-alias",
-      "expiry": "ADR-0004 window after replacement acceptance",
-      "id": "casparctl top_level cluster",
-      "support": "supported-compatibility",
-      "target_owner": "asemanctl"
-    },
-    {
-      "characterization": "tests/characterization/surface-golden.json",
-      "current_owner": "casparctl",
-      "disposition": "deprecate-alias",
-      "expiry": "ADR-0004 window after replacement acceptance",
-      "id": "casparctl top_level bootstrap",
+      "id": "casparctl top_level stop",
       "support": "supported-compatibility",
       "target_owner": "asemanctl"
     },
@@ -301,6 +211,24 @@
       "disposition": "deprecate-alias",
       "expiry": "ADR-0004 window after replacement acceptance",
       "id": "casparctl top_level modules",
+      "support": "supported-compatibility",
+      "target_owner": "asemanctl"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "casparctl",
+      "disposition": "deprecate-alias",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "casparctl top_level vms",
+      "support": "supported-compatibility",
+      "target_owner": "asemanctl"
+    },
+    {
+      "characterization": "tests/characterization/surface-golden.json",
+      "current_owner": "casparctl",
+      "disposition": "deprecate-alias",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "casparctl top_level cluster",
       "support": "supported-compatibility",
       "target_owner": "asemanctl"
     },
@@ -1049,15 +977,6 @@
       "disposition": "rewrite",
       "expiry": "ADR-0004 window after replacement acceptance",
       "id": "getVmOwnedStore",
-      "support": "supported-compatibility",
-      "target_owner": "authenticated guest gateway and typed application/VMM ports"
-    },
-    {
-      "characterization": "tests/characterization/surface-golden.json",
-      "current_owner": "unified-host-call",
-      "disposition": "rewrite",
-      "expiry": "ADR-0004 window after replacement acceptance",
-      "id": "grantLogin",
       "support": "supported-compatibility",
       "target_owner": "authenticated guest gateway and typed application/VMM ports"
     },
@@ -2148,15 +2067,6 @@
       "disposition": "rewrite",
       "expiry": "ADR-0004 window after replacement acceptance",
       "id": "/creatures/lockToken",
-      "support": "supported-compatibility",
-      "target_owner": "creature application use cases"
-    },
-    {
-      "characterization": "tests/characterization/surface-golden.json",
-      "current_owner": "signed-shell-action",
-      "disposition": "rewrite",
-      "expiry": "ADR-0004 window after replacement acceptance",
-      "id": "/creatures/login",
       "support": "supported-compatibility",
       "target_owner": "creature application use cases"
     },

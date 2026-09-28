@@ -194,17 +194,6 @@ impl NodeApp {
 
         app.run();
 
-        // ── Geo-distributed cluster mesh ──────────────────────────────────────────
-        // When cluster mode is enabled (cluster.json / CLUSTER_* env), this node
-        // joins the OpenRaft mesh of same-origin instances: shell API state and
-        // distributed-mode creature deployments replicate to every instance, and
-        // the cluster HTTP listener serves the raft RPC + `casparctl cluster`
-        // orchestration API. Standalone nodes skip this entirely.
-        {
-            let app_for_cluster: Arc<dyn crate::models::core::ICore> = app.clone();
-            crate::adapters::cluster::init(app_for_cluster, &config.cluster);
-        }
-
         // ── VMM HTTP ingress ──────────────────────────────────────────────────────
         // Inbound HTTP server that accepts requests shaped as
         // `/{creatureId}/{programId}/{entityId}/{vmId}/{path…}` and forwards them to
@@ -274,11 +263,37 @@ fn install_core_storage(config: &AsemanConfig) -> Result<()> {
         .ok_or_else(|| anyhow::anyhow!("ASEMAN_DATABASE_URL_SECRET is required"))?;
     let url = aseman_config::read_secret_file(secret, 4096)?;
     aseman_storage_postgres::PostgresCapsuleRepository::connect(&url)?.migrate()?;
-    let factory = aseman_storage_postgres::unit_of_work::PostgresUnitOfWorkFactory::connect(
-        &url,
-        CORE_STORAGE_CONNECTIONS,
-        Some(config.core_storage.binding_generation),
-    )?;
+    // Cluster mode (ADR 0033): capsules shard and replicate across the map's shards;
+    // `ASEMAN_DATABASE_URL_SECRET` names the home shard, which also holds coordination
+    // and the compatibility state. Otherwise one database serves everything.
+    let generation = Some(config.core_storage.binding_generation);
+    let factory: std::sync::Arc<dyn aseman_storage_postgres::shard::UnitOfWorkFactory> =
+        match &config.core_storage.postgres_shards_secret {
+            Some(secret) => {
+                let map = aseman_storage_postgres::shard::ShardMap::parse(
+                    &aseman_config::read_secret_file(secret, 64 * 1024)?,
+                )?;
+                eprintln!(
+                    "[storage] PostgreSQL cluster: {} shard(s), shard map v{}",
+                    map.shards.len(),
+                    map.version
+                );
+                std::sync::Arc::new(std::sync::Arc::new(
+                    aseman_storage_postgres::shard::ShardedUnitOfWorkFactory::connect(
+                        map,
+                        CORE_STORAGE_CONNECTIONS,
+                        generation,
+                    )?,
+                ))
+            }
+            None => std::sync::Arc::new(
+                aseman_storage_postgres::unit_of_work::PostgresUnitOfWorkFactory::connect(
+                    &url,
+                    CORE_STORAGE_CONNECTIONS,
+                    generation,
+                )?,
+            ),
+        };
     crate::api::model::core_storage::install_postgres(factory)?;
     // Guest data moves with the core families: each creature's own database, through
     // the trusted guest proxy (ADR 0021, A405).
@@ -288,13 +303,26 @@ fn install_core_storage(config: &AsemanConfig) -> Result<()> {
         .as_ref()
         .ok_or_else(|| anyhow::anyhow!("the guest proxy is required on PostgreSQL"))?;
     let proxy_url = aseman_config::read_secret_file(&proxy.url_secret, 4096)?;
-    let router = aseman_storage_postgres::guest::GuestPoolRouter::new(
+    let mut router = aseman_storage_postgres::guest::GuestPoolRouter::new(
         &proxy_url,
         &proxy.role,
         proxy.max_pools,
         proxy.max_pool_size,
     )
     .map_err(|error| anyhow::anyhow!("{error}"))?;
+    // In cluster mode a creature's guest databases live on its shard's server.
+    if let Some(secret) = &config.core_storage.postgres_shards_secret {
+        let map = aseman_storage_postgres::shard::ShardMap::parse(
+            &aseman_config::read_secret_file(secret, 64 * 1024)?,
+        )?;
+        for shard in &map.shards {
+            if let Some(guest_proxy) = &shard.guest_proxy {
+                router = router
+                    .with_shard_proxy(&shard.name, guest_proxy)
+                    .map_err(|error| anyhow::anyhow!("{error}"))?;
+            }
+        }
+    }
     crate::api::audit::install_postgres(
         aseman_storage_postgres::PostgresCapsuleRepository::connect(&url)?,
     )?;
@@ -388,16 +416,10 @@ fn spawn_malloc_trimmer(config: &AllocatorConfig) {
 fn spawn_malloc_trimmer(_config: &AllocatorConfig) {}
 
 /// `ASEMAN_NODE_PRIVATE_KEY_SECRET` is a secret reference: the path of a PKCS#8 PEM
-/// file. The ADR-0004 `OWNER_PRIVATE_KEY` alias carried the PEM inline, so a value that
-/// is itself a PEM is still accepted at this compatibility edge.
+/// file.
 fn parse_owner_key(secret: &str) -> Option<rsa::RsaPrivateKey> {
     use rsa::pkcs8::DecodePrivateKey;
-    let pem = if secret.trim_start().starts_with("-----BEGIN") {
-        secret.to_owned()
-    } else {
-        std::fs::read_to_string(secret).ok()?
-    };
-    rsa::RsaPrivateKey::from_pkcs8_pem(&pem).ok()
+    rsa::RsaPrivateKey::from_pkcs8_pem(&std::fs::read_to_string(secret).ok()?).ok()
 }
 
 fn install_dotenv_compat(path: &str) -> Result<(), aseman_config::ConfigError> {
@@ -437,13 +459,16 @@ mod owner_key_tests {
     use rsa::pkcs8::{EncodePrivateKey, LineEnding};
 
     #[test]
-    fn owner_key_is_read_from_its_secret_file_or_accepted_inline() {
+    fn owner_key_is_read_from_its_secret_file_only() {
         let key = rsa::RsaPrivateKey::new(&mut rsa::rand_core::OsRng, 1024).unwrap();
         let pem = key.to_pkcs8_pem(LineEnding::LF).unwrap().to_string();
         let path = std::env::temp_dir().join(format!("owner-key-{}.pem", std::process::id()));
         std::fs::write(&path, &pem).unwrap();
         assert_eq!(parse_owner_key(path.to_str().unwrap()).as_ref(), Some(&key));
-        assert_eq!(parse_owner_key(&pem).as_ref(), Some(&key));
+        assert!(
+            parse_owner_key(&pem).is_none(),
+            "an inline PEM is not a secret reference"
+        );
         assert!(parse_owner_key("/nonexistent/owner-key.pem").is_none());
         std::fs::remove_file(path).unwrap();
     }

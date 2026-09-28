@@ -57,7 +57,7 @@ impl ProvisionedGuestDatabase {
             .validate()
             .map_err(|error| GuestPostgresError::Invalid(error.to_string()))?;
         let (database, role, _) = derived_names(self.binding.creature_id, self.binding.generation)?;
-        if self.binding.provider_id != PROVIDER_ID
+        if shard_of_provider(&self.binding.provider_id).is_err()
             || self.binding.database_name != database
             || self.binding.role_name != role
         {
@@ -72,6 +72,80 @@ impl ProvisionedGuestDatabase {
 pub struct PostgresGuestProvisioner {
     admin: Config,
     proxy_role: String,
+    /// The shard this provisioner places databases on, in cluster mode (ADR 0033).
+    shard: Option<String>,
+}
+
+/// The binding `provider_id` of a guest database on `shard` (or the single database).
+fn provider_id_for(shard: Option<&str>) -> String {
+    shard.map_or_else(
+        || PROVIDER_ID.to_owned(),
+        |shard| format!("{PROVIDER_ID}@{shard}"),
+    )
+}
+
+/// The shard a binding's `provider_id` names, or `None` for the single database.
+fn shard_of_provider(provider_id: &str) -> GuestPostgresResult<Option<&str>> {
+    if provider_id == PROVIDER_ID {
+        return Ok(None);
+    }
+    match provider_id
+        .strip_prefix(PROVIDER_ID)
+        .and_then(|rest| rest.strip_prefix('@'))
+    {
+        Some(shard)
+            if !shard.is_empty()
+                && shard
+                    .bytes()
+                    .all(|b| b.is_ascii_alphanumeric() || b == b'_' || b == b'-') =>
+        {
+            Ok(Some(shard))
+        }
+        _ => Err(GuestPostgresError::Invalid(format!(
+            "unknown guest provider {provider_id}"
+        ))),
+    }
+}
+
+/// Places each creature's guest databases on a shard of a PostgreSQL cluster, by the
+/// same jump hash that places its capsules (ADR 0033).
+pub struct ShardedGuestProvisioner {
+    shards: Vec<PostgresGuestProvisioner>,
+}
+
+impl ShardedGuestProvisioner {
+    /// `shards` pairs each shard name with its administrative URL, in shard-map order.
+    pub fn new(shards: &[(String, String)], proxy_role: &str) -> GuestPostgresResult<Self> {
+        if shards.is_empty() {
+            return Err(GuestPostgresError::Invalid("no guest shards".to_owned()));
+        }
+        let shards = shards
+            .iter()
+            .map(|(name, admin)| {
+                let mut provisioner = PostgresGuestProvisioner::new(admin, proxy_role)?;
+                shard_of_provider(&provider_id_for(Some(name)))?;
+                provisioner.shard = Some(name.clone());
+                Ok(provisioner)
+            })
+            .collect::<GuestPostgresResult<Vec<_>>>()?;
+        Ok(Self { shards })
+    }
+
+    /// The shard provisioner responsible for `creature_id`.
+    #[must_use]
+    pub fn for_creature(&self, creature_id: [u8; 16]) -> &PostgresGuestProvisioner {
+        let id = aseman_contracts::capsule::CapsuleId(creature_id);
+        &self.shards[crate::shard::shard_of(&id, self.shards.len())]
+    }
+
+    pub fn provision(
+        &self,
+        creature_id: [u8; 16],
+        generation: u64,
+    ) -> GuestPostgresResult<ProvisionedGuestDatabase> {
+        self.for_creature(creature_id)
+            .provision(creature_id, generation)
+    }
 }
 
 impl PostgresGuestProvisioner {
@@ -82,6 +156,7 @@ impl PostgresGuestProvisioner {
         Ok(Self {
             admin,
             proxy_role: proxy_role.to_owned(),
+            shard: None,
         })
     }
 
@@ -113,7 +188,7 @@ impl PostgresGuestProvisioner {
         Ok(ProvisionedGuestDatabase {
             binding: GuestDatabaseBinding {
                 creature_id,
-                provider_id: PROVIDER_ID.to_owned(),
+                provider_id: provider_id_for(self.shard.as_deref()),
                 database_name: database,
                 role_name: role,
                 generation,
@@ -285,9 +360,24 @@ pub struct GuestPoolRouter {
     max_pools: usize,
     max_pool_size: u32,
     pools: Mutex<BTreeMap<PoolKey, GuestPool>>,
+    /// Proxy connections to each shard's server, in cluster mode (ADR 0033).
+    shard_proxies: BTreeMap<String, Config>,
 }
 
 impl GuestPoolRouter {
+    /// Route guest databases placed on `shard` through `proxy_connection_uri`.
+    pub fn with_shard_proxy(
+        mut self,
+        shard: &str,
+        proxy_connection_uri: &str,
+    ) -> GuestPostgresResult<Self> {
+        shard_of_provider(&provider_id_for(Some(shard)))?;
+        let proxy = Config::from_str(proxy_connection_uri)
+            .map_err(|error| GuestPostgresError::Invalid(error.to_string()))?;
+        self.shard_proxies.insert(shard.to_owned(), proxy);
+        Ok(self)
+    }
+
     pub fn new(
         proxy_connection_uri: &str,
         proxy_role: &str,
@@ -317,6 +407,7 @@ impl GuestPoolRouter {
             max_pools,
             max_pool_size,
             pools: Mutex::new(BTreeMap::new()),
+            shard_proxies: BTreeMap::new(),
         })
     }
 
@@ -508,7 +599,12 @@ impl GuestPoolRouter {
         if pools.len() >= self.max_pools {
             return Err(GuestPostgresError::PoolCapacity);
         }
-        let mut config = self.proxy.clone();
+        let mut config = match shard_of_provider(&binding.binding.provider_id)? {
+            None => self.proxy.clone(),
+            Some(shard) => self.shard_proxies.get(shard).cloned().ok_or_else(|| {
+                GuestPostgresError::Invalid(format!("no guest proxy for shard {shard}"))
+            })?,
+        };
         config.dbname(&binding.binding.database_name);
         let manager = PostgresConnectionManager::new(config, NoTls);
         let pool = Pool::builder()
@@ -953,6 +1049,37 @@ fn database_error(error: postgres::Error) -> GuestPostgresError {
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn shard_provider_ids_round_trip_and_placement_is_stable() {
+        assert_eq!(shard_of_provider(PROVIDER_ID).unwrap(), None);
+        assert_eq!(
+            shard_of_provider(&provider_id_for(Some("eu-1"))).unwrap(),
+            Some("eu-1")
+        );
+        for bad in [
+            "postgres-guest-v2",
+            "postgres-guest-v1@",
+            "postgres-guest-v1@a;b",
+        ] {
+            assert!(shard_of_provider(bad).is_err(), "{bad}");
+        }
+        let shards = vec![
+            ("a".to_owned(), "postgres://admin@a/postgres".to_owned()),
+            ("b".to_owned(), "postgres://admin@b/postgres".to_owned()),
+        ];
+        let provisioner = ShardedGuestProvisioner::new(&shards, "aseman_guest_proxy").unwrap();
+        let creature = [7_u8; 16];
+        let first = provisioner.for_creature(creature).shard.clone();
+        assert_eq!(provisioner.for_creature(creature).shard, first);
+        assert_eq!(
+            first.as_deref(),
+            Some(
+                ["a", "b"]
+                    [crate::shard::shard_of(&aseman_contracts::capsule::CapsuleId(creature), 2)]
+            )
+        );
+    }
+
     use super::*;
 
     #[test]

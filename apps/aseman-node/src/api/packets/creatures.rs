@@ -9,7 +9,6 @@ use std::collections::HashMap;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
-use crate::api::model::{Creature, Session};
 use crate::models::input::IInput;
 
 macro_rules! input_impls {
@@ -625,20 +624,6 @@ pub struct UpdateInput {
     pub username: Option<String>,
 }
 
-#[derive(Debug, Clone, Default, Serialize, Deserialize)]
-pub struct LoginInput {
-    #[serde(default)]
-    pub username: String,
-    #[serde(rename = "emailToken", default)]
-    pub email_token: String,
-    #[serde(default)]
-    pub metadata: Value,
-    /// A single-use grant from `grantLogin`, required when the node runs with
-    /// `CASPAR_LOGIN_MODE=grant`.
-    #[serde(rename = "loginGrant", default)]
-    pub login_grant: String,
-}
-
 input_impls! {
     ConsumeLockInput => "global",
     GetInput         => "",
@@ -678,7 +663,6 @@ input_impls! {
     PaymentAdjustmentInput => "global",
     TransferInput    => "global",
     UpdateInput      => "global",
-    LoginInput       => "",
     SecretPutInput    => "global",
     SecretGetInput    => "global",
     SecretGrantInput  => "global",
@@ -702,14 +686,4 @@ pub struct AuthenticateOutput {
 pub struct GetOutput {
     #[serde(default)]
     pub user: HashMap<String, Value>,
-}
-
-#[derive(Debug, Clone, Default, Serialize, Deserialize)]
-pub struct LoginOutput {
-    #[serde(default)]
-    pub user: Creature,
-    #[serde(default)]
-    pub session: Session,
-    #[serde(rename = "privateKey", default)]
-    pub private_key: String,
 }

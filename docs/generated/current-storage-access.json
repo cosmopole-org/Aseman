@@ -223,49 +223,49 @@
       "logical_template": "Json::Creature::{}",
       "method": "put_json",
       "mode": "write",
-      "source": "apps/aseman-node/src/api/actions/creature.rs:1019"
+      "source": "apps/aseman-node/src/api/actions/creature.rs:1018"
     },
     {
       "logical_template": "Json::Creature::{}",
       "method": "get_json",
       "mode": "read",
-      "source": "apps/aseman-node/src/api/actions/creature.rs:1054"
+      "source": "apps/aseman-node/src/api/actions/creature.rs:1053"
     },
     {
       "logical_template": "Json::Creature::{}",
       "method": "del_json",
       "mode": "write",
-      "source": "apps/aseman-node/src/api/actions/creature.rs:1156"
+      "source": "apps/aseman-node/src/api/actions/creature.rs:1155"
     },
     {
       "logical_template": "Json::Creature::{}",
       "method": "put_json",
       "mode": "write",
-      "source": "apps/aseman-node/src/api/actions/creature.rs:1177"
+      "source": "apps/aseman-node/src/api/actions/creature.rs:1176"
     },
     {
       "logical_template": "Json::Creature::{}",
       "method": "put_json",
       "mode": "write",
-      "source": "apps/aseman-node/src/api/actions/creature.rs:1745"
+      "source": "apps/aseman-node/src/api/actions/creature.rs:1630"
     },
     {
       "logical_template": "Json::Creature::{}",
       "method": "get_json",
       "mode": "read",
-      "source": "apps/aseman-node/src/api/actions/creature.rs:1772"
+      "source": "apps/aseman-node/src/api/actions/creature.rs:1657"
     },
     {
       "logical_template": "Json::Creature::{}",
       "method": "del_json",
       "mode": "write",
-      "source": "apps/aseman-node/src/api/actions/creature.rs:1873"
+      "source": "apps/aseman-node/src/api/actions/creature.rs:1758"
     },
     {
       "logical_template": "Json::Creature::{}",
       "method": "put_json",
       "mode": "write",
-      "source": "apps/aseman-node/src/api/actions/creature.rs:1894"
+      "source": "apps/aseman-node/src/api/actions/creature.rs:1779"
     },
     {
       "logical_template": "Json::Creature::{}",
@@ -277,7 +277,7 @@
       "logical_template": "Json::CreatureNamespace::billing",
       "method": "get_json",
       "mode": "read",
-      "source": "apps/aseman-node/src/adapters/vmm/host/vm_host_functions.rs:1169"
+      "source": "apps/aseman-node/src/adapters/vmm/host/vm_host_functions.rs:1164"
     },
     {
       "logical_template": "Json::CreatureNamespace::billing",
@@ -373,19 +373,19 @@
       "logical_template": "Json::FinanceHold::{hold_id_c}",
       "method": "get_json",
       "mode": "read",
-      "source": "apps/aseman-node/src/adapters/vmm/host/vm_host_functions.rs:1462"
+      "source": "apps/aseman-node/src/adapters/vmm/host/vm_host_functions.rs:1457"
     },
     {
       "logical_template": "Json::FinanceHold::{hold_id_c}",
       "method": "get_json",
       "mode": "read",
-      "source": "apps/aseman-node/src/adapters/vmm/host/vm_host_functions.rs:1550"
+      "source": "apps/aseman-node/src/adapters/vmm/host/vm_host_functions.rs:1545"
     },
     {
       "logical_template": "Json::FinanceHold::{hold_id_c}",
       "method": "get_json",
       "mode": "read",
-      "source": "apps/aseman-node/src/adapters/vmm/host/vm_host_functions.rs:1639"
+      "source": "apps/aseman-node/src/adapters/vmm/host/vm_host_functions.rs:1634"
     },
     {
       "logical_template": "Json::FinanceJournal::{journal_id}",
@@ -409,7 +409,7 @@
       "logical_template": "Json::FinancePool::{pool_id_c}",
       "method": "get_json",
       "mode": "read",
-      "source": "apps/aseman-node/src/adapters/vmm/host/vm_host_functions.rs:1744"
+      "source": "apps/aseman-node/src/adapters/vmm/host/vm_host_functions.rs:1739"
     },
     {
       "logical_template": "Json::VmBilling::{}",
@@ -421,19 +421,19 @@
       "logical_template": "Json::VmBilling::{}",
       "method": "put_json",
       "mode": "write",
-      "source": "apps/aseman-node/src/api/actions/program.rs:2018"
+      "source": "apps/aseman-node/src/api/actions/program.rs:1958"
     },
     {
       "logical_template": "Json::VmBilling::{}",
       "method": "del_json",
       "mode": "write",
-      "source": "apps/aseman-node/src/api/actions/program.rs:2093"
+      "source": "apps/aseman-node/src/api/actions/program.rs:2033"
     },
     {
       "logical_template": "Json::VmBilling::{}",
       "method": "del_json",
       "mode": "write",
-      "source": "apps/aseman-node/src/api/actions/program.rs:2176"
+      "source": "apps/aseman-node/src/api/actions/program.rs:2116"
     },
     {
       "logical_template": "Json::VmBilling::{}",
@@ -463,19 +463,19 @@
       "logical_template": "Json::VmBilling::{}",
       "method": "put_json",
       "mode": "write",
-      "source": "apps/aseman-node/src/api/actions/program.rs:700"
+      "source": "apps/aseman-node/src/api/actions/program.rs:689"
     },
     {
       "logical_template": "Json::VmBilling::{}",
       "method": "del_json",
       "mode": "write",
-      "source": "apps/aseman-node/src/api/actions/program.rs:779"
+      "source": "apps/aseman-node/src/api/actions/program.rs:768"
     },
     {
       "logical_template": "Json::VmBilling::{}",
       "method": "del_json",
       "mode": "write",
-      "source": "apps/aseman-node/src/api/actions/program.rs:887"
+      "source": "apps/aseman-node/src/api/actions/program.rs:876"
     },
     {
       "logical_template": "Program",
@@ -494,12 +494,6 @@
       "method": "get_obj_list",
       "mode": "read",
       "source": "apps/aseman-node/src/api/model/machine_program.rs:88"
-    },
-    {
-      "logical_template": "Session",
-      "method": "get_index",
-      "mode": "read",
-      "source": "apps/aseman-node/src/api/actions/creature.rs:1237"
     },
     {
       "logical_template": "Store",
@@ -547,19 +541,7 @@
       "logical_template": "UserEmailToId::{}",
       "method": "get_link",
       "mode": "read",
-      "source": "apps/aseman-node/src/api/actions/creature.rs:1228"
-    },
-    {
-      "logical_template": "UserEmailToId::{}",
-      "method": "put_link",
-      "mode": "write",
-      "source": "apps/aseman-node/src/api/actions/creature.rs:1295"
-    },
-    {
-      "logical_template": "UserEmailToId::{}",
-      "method": "get_link",
-      "mode": "read",
-      "source": "apps/aseman-node/src/api/actions/creature.rs:582"
+      "source": "apps/aseman-node/src/api/actions/creature.rs:581"
     },
     {
       "logical_template": "UserIdToEmail::{user_id}",
@@ -581,33 +563,15 @@
     },
     {
       "logical_template": "UserIdToEmail::{}",
-      "method": "put_link",
-      "mode": "write",
-      "source": "apps/aseman-node/src/api/actions/creature.rs:1296"
+      "method": "get_link",
+      "mode": "read",
+      "source": "apps/aseman-node/src/api/actions/creature.rs:1217"
     },
     {
       "logical_template": "UserIdToEmail::{}",
       "method": "get_link",
       "mode": "read",
-      "source": "apps/aseman-node/src/api/actions/creature.rs:1331"
-    },
-    {
-      "logical_template": "UserIdToEmail::{}",
-      "method": "get_link",
-      "mode": "read",
-      "source": "apps/aseman-node/src/api/actions/creature.rs:660"
-    },
-    {
-      "logical_template": "UserPrivateKey::{}",
-      "method": "get_link",
-      "mode": "read",
-      "source": "apps/aseman-node/src/api/actions/creature.rs:1243"
-    },
-    {
-      "logical_template": "UserPrivateKey::{}",
-      "method": "put_link",
-      "mode": "write",
-      "source": "apps/aseman-node/src/api/actions/creature.rs:1294"
+      "source": "apps/aseman-node/src/api/actions/creature.rs:659"
     },
     {
       "logical_template": "VmBilling::",
@@ -619,55 +583,55 @@
       "logical_template": "VmBilling::{}",
       "method": "put_link",
       "mode": "write",
-      "source": "apps/aseman-node/src/api/actions/program.rs:2017"
+      "source": "apps/aseman-node/src/api/actions/program.rs:1957"
     },
     {
       "logical_template": "VmBilling::{}",
       "method": "put_link",
       "mode": "write",
-      "source": "apps/aseman-node/src/api/actions/program.rs:699"
+      "source": "apps/aseman-node/src/api/actions/program.rs:688"
     },
     {
       "logical_template": "VmInstance::",
       "method": "get_links_list",
       "mode": "read",
-      "source": "apps/aseman-node/src/api/actions/program.rs:2307"
+      "source": "apps/aseman-node/src/api/actions/program.rs:2247"
     },
     {
       "logical_template": "VmInstance::",
       "method": "get_links_list",
       "mode": "read",
-      "source": "apps/aseman-node/src/api/actions/program.rs:920"
+      "source": "apps/aseman-node/src/api/actions/program.rs:909"
     },
     {
       "logical_template": "VmInstance::{}::{}::{}",
       "method": "put_link",
       "mode": "write",
-      "source": "apps/aseman-node/src/api/actions/program.rs:2035"
+      "source": "apps/aseman-node/src/api/actions/program.rs:1975"
     },
     {
       "logical_template": "VmInstance::{}::{}::{}",
       "method": "put_link",
       "mode": "write",
-      "source": "apps/aseman-node/src/api/actions/program.rs:717"
+      "source": "apps/aseman-node/src/api/actions/program.rs:706"
     },
     {
       "logical_template": "VmStartedAt::{}",
       "method": "get_link",
       "mode": "read",
-      "source": "apps/aseman-node/src/api/actions/program.rs:1026"
+      "source": "apps/aseman-node/src/api/actions/program.rs:1015"
     },
     {
       "logical_template": "VmStartedAt::{}",
       "method": "put_link",
       "mode": "write",
-      "source": "apps/aseman-node/src/api/actions/program.rs:1979"
+      "source": "apps/aseman-node/src/api/actions/program.rs:1919"
     },
     {
       "logical_template": "VmStartedAt::{}",
       "method": "get_link",
       "mode": "read",
-      "source": "apps/aseman-node/src/api/actions/program.rs:2236"
+      "source": "apps/aseman-node/src/api/actions/program.rs:2176"
     },
     {
       "logical_template": "VmStartedAt::{}",
@@ -679,19 +643,19 @@
       "logical_template": "VmStatus::{}",
       "method": "get_link",
       "mode": "read",
-      "source": "apps/aseman-node/src/api/actions/program.rs:1024"
+      "source": "apps/aseman-node/src/api/actions/program.rs:1013"
     },
     {
       "logical_template": "VmStatus::{}",
       "method": "put_link",
       "mode": "write",
-      "source": "apps/aseman-node/src/api/actions/program.rs:1978"
+      "source": "apps/aseman-node/src/api/actions/program.rs:1918"
     },
     {
       "logical_template": "VmStatus::{}",
       "method": "get_link",
       "mode": "read",
-      "source": "apps/aseman-node/src/api/actions/program.rs:2234"
+      "source": "apps/aseman-node/src/api/actions/program.rs:2174"
     },
     {
       "logical_template": "VmStatus::{}",
@@ -709,13 +673,13 @@
       "logical_template": "VmTerminal::{}::{}::{}",
       "method": "put_link",
       "mode": "write",
-      "source": "apps/aseman-node/src/api/actions/program.rs:1115"
+      "source": "apps/aseman-node/src/api/actions/program.rs:1104"
     },
     {
       "logical_template": "VmTerminal::{}::{}::{}",
       "method": "put_link",
       "mode": "write",
-      "source": "apps/aseman-node/src/api/actions/program.rs:2379"
+      "source": "apps/aseman-node/src/api/actions/program.rs:2319"
     },
     {
       "logical_template": "creatorof::",
@@ -731,15 +695,15 @@
     },
     {
       "logical_template": "globalIdCounter",
-      "method": "put_bytes",
-      "mode": "write",
-      "source": "apps/aseman-node/src/adapters/storage.rs:105"
+      "method": "get_bytes",
+      "mode": "read",
+      "source": "apps/aseman-node/src/adapters/storage.rs:80"
     },
     {
       "logical_template": "globalIdCounter",
-      "method": "get_bytes",
-      "mode": "read",
-      "source": "apps/aseman-node/src/adapters/storage.rs:96"
+      "method": "put_bytes",
+      "mode": "write",
+      "source": "apps/aseman-node/src/adapters/storage.rs:89"
     },
     {
       "logical_template": "god::{}",
@@ -763,19 +727,19 @@
       "logical_template": "json::{}::{}",
       "method": "put_bytes",
       "mode": "write",
-      "source": "apps/aseman-node/src/adapters/rocksdb/trx.rs:644"
+      "source": "apps/aseman-node/src/adapters/rocksdb/trx.rs:639"
     },
     {
       "logical_template": "json::{}::{}",
       "method": "del_key",
       "mode": "write",
-      "source": "apps/aseman-node/src/adapters/rocksdb/trx.rs:666"
+      "source": "apps/aseman-node/src/adapters/rocksdb/trx.rs:661"
     },
     {
       "logical_template": "json::{}::{}.{}",
       "method": "put_bytes",
       "mode": "write",
-      "source": "apps/aseman-node/src/adapters/rocksdb/trx.rs:657"
+      "source": "apps/aseman-node/src/adapters/rocksdb/trx.rs:652"
     },
     {
       "logical_template": "link::UserEmailToId::{}",
@@ -787,13 +751,7 @@
       "logical_template": "link::UserEmailToId::{}",
       "method": "del_key",
       "mode": "write",
-      "source": "apps/aseman-node/src/api/actions/creature.rs:1252"
-    },
-    {
-      "logical_template": "link::UserEmailToId::{}",
-      "method": "del_key",
-      "mode": "write",
-      "source": "apps/aseman-node/src/api/actions/creature.rs:1334"
+      "source": "apps/aseman-node/src/api/actions/creature.rs:1220"
     },
     {
       "logical_template": "link::UserIdToEmail::{}",
@@ -805,7 +763,7 @@
       "logical_template": "link::UserIdToEmail::{}",
       "method": "del_key",
       "mode": "write",
-      "source": "apps/aseman-node/src/api/actions/creature.rs:1332"
+      "source": "apps/aseman-node/src/api/actions/creature.rs:1218"
     },
     {
       "logical_template": "link::UserPrivateKey::{}",
@@ -817,7 +775,7 @@
       "logical_template": "link::UserPrivateKey::{}",
       "method": "del_key",
       "mode": "write",
-      "source": "apps/aseman-node/src/api/actions/creature.rs:1336"
+      "source": "apps/aseman-node/src/api/actions/creature.rs:1222"
     },
     {
       "logical_template": "link::VmBilling::{}",
@@ -829,13 +787,13 @@
       "logical_template": "link::VmBilling::{}",
       "method": "del_key",
       "mode": "write",
-      "source": "apps/aseman-node/src/api/actions/program.rs:2092"
+      "source": "apps/aseman-node/src/api/actions/program.rs:2032"
     },
     {
       "logical_template": "link::VmBilling::{}",
       "method": "del_key",
       "mode": "write",
-      "source": "apps/aseman-node/src/api/actions/program.rs:2175"
+      "source": "apps/aseman-node/src/api/actions/program.rs:2115"
     },
     {
       "logical_template": "link::VmBilling::{}",
@@ -847,31 +805,31 @@
       "logical_template": "link::VmBilling::{}",
       "method": "del_key",
       "mode": "write",
-      "source": "apps/aseman-node/src/api/actions/program.rs:778"
+      "source": "apps/aseman-node/src/api/actions/program.rs:767"
     },
     {
       "logical_template": "link::VmBilling::{}",
       "method": "del_key",
       "mode": "write",
-      "source": "apps/aseman-node/src/api/actions/program.rs:886"
+      "source": "apps/aseman-node/src/api/actions/program.rs:875"
     },
     {
       "logical_template": "link::VmContainerName::{}::{}::{}",
       "method": "del_key",
       "mode": "write",
-      "source": "apps/aseman-node/src/api/actions/program.rs:2179"
+      "source": "apps/aseman-node/src/api/actions/program.rs:2119"
     },
     {
       "logical_template": "link::VmContainerName::{}::{}::{}",
       "method": "del_key",
       "mode": "write",
-      "source": "apps/aseman-node/src/api/actions/program.rs:890"
+      "source": "apps/aseman-node/src/api/actions/program.rs:879"
     },
     {
       "logical_template": "link::VmInstance::{}::{}::{}",
       "method": "del_key",
       "mode": "write",
-      "source": "apps/aseman-node/src/api/actions/program.rs:2088"
+      "source": "apps/aseman-node/src/api/actions/program.rs:2028"
     },
     {
       "logical_template": "link::VmInstance::{}::{}::{}",
@@ -883,19 +841,19 @@
       "logical_template": "link::VmInstance::{}::{}::{}",
       "method": "del_key",
       "mode": "write",
-      "source": "apps/aseman-node/src/api/actions/program.rs:774"
+      "source": "apps/aseman-node/src/api/actions/program.rs:763"
     },
     {
       "logical_template": "link::VmOwnerProgram::{}",
       "method": "del_key",
       "mode": "write",
-      "source": "apps/aseman-node/src/api/actions/program.rs:2178"
+      "source": "apps/aseman-node/src/api/actions/program.rs:2118"
     },
     {
       "logical_template": "link::VmOwnerProgram::{}",
       "method": "del_key",
       "mode": "write",
-      "source": "apps/aseman-node/src/api/actions/program.rs:889"
+      "source": "apps/aseman-node/src/api/actions/program.rs:878"
     },
     {
       "logical_template": "link::VmStartedAt::{}",
@@ -907,25 +865,25 @@
       "logical_template": "link::VmStartedAt::{}",
       "method": "del_key",
       "mode": "write",
-      "source": "apps/aseman-node/src/api/actions/program.rs:2087"
+      "source": "apps/aseman-node/src/api/actions/program.rs:2027"
     },
     {
       "logical_template": "link::VmStartedAt::{}",
       "method": "del_key",
       "mode": "write",
-      "source": "apps/aseman-node/src/api/actions/program.rs:2173"
+      "source": "apps/aseman-node/src/api/actions/program.rs:2113"
     },
     {
       "logical_template": "link::VmStartedAt::{}",
       "method": "del_key",
       "mode": "write",
-      "source": "apps/aseman-node/src/api/actions/program.rs:773"
+      "source": "apps/aseman-node/src/api/actions/program.rs:762"
     },
     {
       "logical_template": "link::VmStartedAt::{}",
       "method": "del_key",
       "mode": "write",
-      "source": "apps/aseman-node/src/api/actions/program.rs:884"
+      "source": "apps/aseman-node/src/api/actions/program.rs:873"
     },
     {
       "logical_template": "link::VmStatus::{}",
@@ -937,13 +895,13 @@
       "logical_template": "link::VmStatus::{}",
       "method": "del_key",
       "mode": "write",
-      "source": "apps/aseman-node/src/api/actions/program.rs:2086"
+      "source": "apps/aseman-node/src/api/actions/program.rs:2026"
     },
     {
       "logical_template": "link::VmStatus::{}",
       "method": "del_key",
       "mode": "write",
-      "source": "apps/aseman-node/src/api/actions/program.rs:2172"
+      "source": "apps/aseman-node/src/api/actions/program.rs:2112"
     },
     {
       "logical_template": "link::VmStatus::{}",
@@ -955,25 +913,25 @@
       "logical_template": "link::VmStatus::{}",
       "method": "del_key",
       "mode": "write",
-      "source": "apps/aseman-node/src/api/actions/program.rs:772"
+      "source": "apps/aseman-node/src/api/actions/program.rs:761"
     },
     {
       "logical_template": "link::VmStatus::{}",
       "method": "del_key",
       "mode": "write",
-      "source": "apps/aseman-node/src/api/actions/program.rs:883"
+      "source": "apps/aseman-node/src/api/actions/program.rs:872"
     },
     {
       "logical_template": "link::VmTerminal::{}::{}::{}",
       "method": "del_key",
       "mode": "write",
-      "source": "apps/aseman-node/src/api/actions/program.rs:1151"
+      "source": "apps/aseman-node/src/api/actions/program.rs:1140"
     },
     {
       "logical_template": "link::VmTerminal::{}::{}::{}",
       "method": "del_key",
       "mode": "write",
-      "source": "apps/aseman-node/src/api/actions/program.rs:2411"
+      "source": "apps/aseman-node/src/api/actions/program.rs:2351"
     },
     {
       "logical_template": "link::creatorof::{creator_id}::{store_id}",
@@ -1045,13 +1003,13 @@
       "logical_template": "link::vmDistributed::{}",
       "method": "del_key",
       "mode": "write",
-      "source": "apps/aseman-node/src/api/actions/program.rs:2177"
+      "source": "apps/aseman-node/src/api/actions/program.rs:2117"
     },
     {
       "logical_template": "link::vmDistributed::{}",
       "method": "del_key",
       "mode": "write",
-      "source": "apps/aseman-node/src/api/actions/program.rs:888"
+      "source": "apps/aseman-node/src/api/actions/program.rs:877"
     },
     {
       "logical_template": "link::vmOwnedStore::{}::{store_id}",
@@ -1069,55 +1027,49 @@
       "logical_template": "link::vmStandaloneContainerName::{}::{}",
       "method": "del_key",
       "mode": "write",
-      "source": "apps/aseman-node/src/api/actions/program.rs:2098"
+      "source": "apps/aseman-node/src/api/actions/program.rs:2038"
     },
     {
       "logical_template": "link::vmStandaloneContainerName::{}::{}",
       "method": "del_key",
       "mode": "write",
-      "source": "apps/aseman-node/src/api/actions/program.rs:2187"
+      "source": "apps/aseman-node/src/api/actions/program.rs:2127"
     },
     {
       "logical_template": "link::vmStandaloneContainerName::{}::{}",
       "method": "del_key",
       "mode": "write",
-      "source": "apps/aseman-node/src/api/actions/program.rs:784"
+      "source": "apps/aseman-node/src/api/actions/program.rs:773"
     },
     {
       "logical_template": "link::vmStandaloneContainerName::{}::{}",
       "method": "del_key",
       "mode": "write",
-      "source": "apps/aseman-node/src/api/actions/program.rs:898"
+      "source": "apps/aseman-node/src/api/actions/program.rs:887"
     },
     {
       "logical_template": "link::vmStandaloneImageName::{}::{}",
       "method": "del_key",
       "mode": "write",
-      "source": "apps/aseman-node/src/api/actions/program.rs:2094"
+      "source": "apps/aseman-node/src/api/actions/program.rs:2034"
     },
     {
       "logical_template": "link::vmStandaloneImageName::{}::{}",
       "method": "del_key",
       "mode": "write",
-      "source": "apps/aseman-node/src/api/actions/program.rs:2183"
+      "source": "apps/aseman-node/src/api/actions/program.rs:2123"
     },
     {
       "logical_template": "link::vmStandaloneImageName::{}::{}",
       "method": "del_key",
       "mode": "write",
-      "source": "apps/aseman-node/src/api/actions/program.rs:780"
+      "source": "apps/aseman-node/src/api/actions/program.rs:769"
     },
     {
       "logical_template": "link::vmStandaloneImageName::{}::{}",
       "method": "del_key",
       "mode": "write",
-      "source": "apps/aseman-node/src/api/actions/program.rs:894"
-    },
-    {
-      "logical_template": "link::{}",
-      "method": "del_key",
-      "mode": "write",
-      "source": "apps/aseman-node/src/adapters/vmm/host/functions/login_grant.rs:85"
+      "source": "apps/aseman-node/src/api/actions/program.rs:883"
     },
     {
       "logical_template": "link::{}",
@@ -1255,73 +1207,43 @@
       "logical_template": "vmDistributed::{}",
       "method": "put_link",
       "mode": "write",
-      "source": "apps/aseman-node/src/api/actions/program.rs:2001"
-    },
-    {
-      "logical_template": "vmDistributed::{}",
-      "method": "put_link",
-      "mode": "write",
-      "source": "apps/aseman-node/src/api/actions/program.rs:678"
+      "source": "apps/aseman-node/src/api/actions/program.rs:1941"
     },
     {
       "logical_template": "vmDistribution::{}",
       "method": "put_link",
       "mode": "write",
-      "source": "apps/aseman-node/src/adapters/cluster/mod.rs:468"
+      "source": "apps/aseman-node/src/api/actions/program.rs:1386"
     },
     {
       "logical_template": "vmDistribution::{}",
       "method": "put_link",
       "mode": "write",
-      "source": "apps/aseman-node/src/api/actions/program.rs:1405"
-    },
-    {
-      "logical_template": "vmDistribution::{}",
-      "method": "put_link",
-      "mode": "write",
-      "source": "apps/aseman-node/src/api/actions/program.rs:1876"
+      "source": "apps/aseman-node/src/api/actions/program.rs:1835"
     },
     {
       "logical_template": "vmDistribution::{}",
       "method": "get_link",
       "mode": "read",
-      "source": "apps/aseman-node/src/api/actions/program.rs:1995"
-    },
-    {
-      "logical_template": "vmDistribution::{}",
-      "method": "get_link",
-      "mode": "read",
-      "source": "apps/aseman-node/src/api/actions/program.rs:672"
+      "source": "apps/aseman-node/src/api/actions/program.rs:1935"
     },
     {
       "logical_template": "vmDistribution::{}::{}",
       "method": "put_link",
       "mode": "write",
-      "source": "apps/aseman-node/src/adapters/cluster/mod.rs:469"
+      "source": "apps/aseman-node/src/api/actions/program.rs:1390"
     },
     {
       "logical_template": "vmDistribution::{}::{}",
       "method": "put_link",
       "mode": "write",
-      "source": "apps/aseman-node/src/api/actions/program.rs:1409"
-    },
-    {
-      "logical_template": "vmDistribution::{}::{}",
-      "method": "put_link",
-      "mode": "write",
-      "source": "apps/aseman-node/src/api/actions/program.rs:1880"
+      "source": "apps/aseman-node/src/api/actions/program.rs:1839"
     },
     {
       "logical_template": "vmDistribution::{}::{}",
       "method": "get_link",
       "mode": "read",
-      "source": "apps/aseman-node/src/api/actions/program.rs:1996"
-    },
-    {
-      "logical_template": "vmDistribution::{}::{}",
-      "method": "get_link",
-      "mode": "read",
-      "source": "apps/aseman-node/src/api/actions/program.rs:673"
+      "source": "apps/aseman-node/src/api/actions/program.rs:1936"
     },
     {
       "logical_template": "vmOwnedStore::{machine}::{store_id}",
@@ -1410,12 +1332,12 @@
     {
       "logical_template": "::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "apps/aseman-node/src/api/actions/program.rs:2305"
+      "source": "apps/aseman-node/src/api/actions/program.rs:2245"
     },
     {
       "logical_template": "::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "apps/aseman-node/src/api/actions/program.rs:918"
+      "source": "apps/aseman-node/src/api/actions/program.rs:907"
     },
     {
       "logical_template": "BridgeTopicOwner::{}",
@@ -1755,42 +1677,42 @@
     {
       "logical_template": "Json::Creature::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "apps/aseman-node/src/api/actions/creature.rs:1020"
+      "source": "apps/aseman-node/src/api/actions/creature.rs:1019"
     },
     {
       "logical_template": "Json::Creature::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "apps/aseman-node/src/api/actions/creature.rs:1055"
+      "source": "apps/aseman-node/src/api/actions/creature.rs:1054"
     },
     {
       "logical_template": "Json::Creature::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "apps/aseman-node/src/api/actions/creature.rs:1157"
+      "source": "apps/aseman-node/src/api/actions/creature.rs:1156"
     },
     {
       "logical_template": "Json::Creature::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "apps/aseman-node/src/api/actions/creature.rs:1178"
+      "source": "apps/aseman-node/src/api/actions/creature.rs:1177"
     },
     {
       "logical_template": "Json::Creature::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "apps/aseman-node/src/api/actions/creature.rs:1746"
+      "source": "apps/aseman-node/src/api/actions/creature.rs:1631"
     },
     {
       "logical_template": "Json::Creature::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "apps/aseman-node/src/api/actions/creature.rs:1773"
+      "source": "apps/aseman-node/src/api/actions/creature.rs:1658"
     },
     {
       "logical_template": "Json::Creature::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "apps/aseman-node/src/api/actions/creature.rs:1874"
+      "source": "apps/aseman-node/src/api/actions/creature.rs:1759"
     },
     {
       "logical_template": "Json::Creature::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "apps/aseman-node/src/api/actions/creature.rs:1895"
+      "source": "apps/aseman-node/src/api/actions/creature.rs:1780"
     },
     {
       "logical_template": "Json::Creature::{}",
@@ -1805,17 +1727,17 @@
     {
       "logical_template": "Json::FinanceHold::{hold_id_c}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "apps/aseman-node/src/adapters/vmm/host/vm_host_functions.rs:1462"
+      "source": "apps/aseman-node/src/adapters/vmm/host/vm_host_functions.rs:1457"
     },
     {
       "logical_template": "Json::FinanceHold::{hold_id_c}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "apps/aseman-node/src/adapters/vmm/host/vm_host_functions.rs:1550"
+      "source": "apps/aseman-node/src/adapters/vmm/host/vm_host_functions.rs:1545"
     },
     {
       "logical_template": "Json::FinanceHold::{hold_id_c}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "apps/aseman-node/src/adapters/vmm/host/vm_host_functions.rs:1639"
+      "source": "apps/aseman-node/src/adapters/vmm/host/vm_host_functions.rs:1634"
     },
     {
       "logical_template": "Json::FinanceHold::{hold_id}",
@@ -1875,7 +1797,7 @@
     {
       "logical_template": "Json::FinancePool::{pool_id_c}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "apps/aseman-node/src/adapters/vmm/host/vm_host_functions.rs:1744"
+      "source": "apps/aseman-node/src/adapters/vmm/host/vm_host_functions.rs:1739"
     },
     {
       "logical_template": "Json::FinancePool::{pool_id}",
@@ -1915,17 +1837,17 @@
     {
       "logical_template": "Json::VmBilling::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "apps/aseman-node/src/api/actions/program.rs:2019"
+      "source": "apps/aseman-node/src/api/actions/program.rs:1959"
     },
     {
       "logical_template": "Json::VmBilling::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "apps/aseman-node/src/api/actions/program.rs:2093"
+      "source": "apps/aseman-node/src/api/actions/program.rs:2033"
     },
     {
       "logical_template": "Json::VmBilling::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "apps/aseman-node/src/api/actions/program.rs:2176"
+      "source": "apps/aseman-node/src/api/actions/program.rs:2116"
     },
     {
       "logical_template": "Json::VmBilling::{}",
@@ -1950,27 +1872,22 @@
     {
       "logical_template": "Json::VmBilling::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "apps/aseman-node/src/api/actions/program.rs:701"
+      "source": "apps/aseman-node/src/api/actions/program.rs:690"
     },
     {
       "logical_template": "Json::VmBilling::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "apps/aseman-node/src/api/actions/program.rs:779"
+      "source": "apps/aseman-node/src/api/actions/program.rs:768"
     },
     {
       "logical_template": "Json::VmBilling::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "apps/aseman-node/src/api/actions/program.rs:887"
+      "source": "apps/aseman-node/src/api/actions/program.rs:876"
     },
     {
       "logical_template": "Json::VmResourceStore::{store_id}",
       "review_status": "candidate; caller association may be indirect",
       "source": "apps/aseman-node/src/api/model/program_ports.rs:276"
-    },
-    {
-      "logical_template": "LoginGrant::{}",
-      "review_status": "candidate; caller association may be indirect",
-      "source": "apps/aseman-node/src/adapters/vmm/host/functions/login_grant.rs:20"
     },
     {
       "logical_template": "MintApplied::{key}",
@@ -1980,7 +1897,7 @@
     {
       "logical_template": "MintApplied::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "apps/aseman-node/src/api/actions/creature.rs:567"
+      "source": "apps/aseman-node/src/api/actions/creature.rs:566"
     },
     {
       "logical_template": "ModalApp::{}",
@@ -2050,12 +1967,12 @@
     {
       "logical_template": "Secret::{}::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "apps/aseman-node/src/adapters/vmm/host/vm_host_functions.rs:843"
+      "source": "apps/aseman-node/src/adapters/vmm/host/vm_host_functions.rs:838"
     },
     {
       "logical_template": "SecretGrant::{}::{}::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "apps/aseman-node/src/adapters/vmm/host/vm_host_functions.rs:844"
+      "source": "apps/aseman-node/src/adapters/vmm/host/vm_host_functions.rs:839"
     },
     {
       "logical_template": "StoreMeta::{store_id}",
@@ -2085,17 +2002,7 @@
     {
       "logical_template": "UserEmailToId::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "apps/aseman-node/src/api/actions/creature.rs:1228"
-    },
-    {
-      "logical_template": "UserEmailToId::{}",
-      "review_status": "candidate; caller association may be indirect",
-      "source": "apps/aseman-node/src/api/actions/creature.rs:1295"
-    },
-    {
-      "logical_template": "UserEmailToId::{}",
-      "review_status": "candidate; caller association may be indirect",
-      "source": "apps/aseman-node/src/api/actions/creature.rs:582"
+      "source": "apps/aseman-node/src/api/actions/creature.rs:581"
     },
     {
       "logical_template": "UserIdToEmail::{user_id}",
@@ -2115,17 +2022,12 @@
     {
       "logical_template": "UserIdToEmail::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "apps/aseman-node/src/api/actions/creature.rs:1296"
+      "source": "apps/aseman-node/src/api/actions/creature.rs:1217"
     },
     {
       "logical_template": "UserIdToEmail::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "apps/aseman-node/src/api/actions/creature.rs:1331"
-    },
-    {
-      "logical_template": "UserIdToEmail::{}",
-      "review_status": "candidate; caller association may be indirect",
-      "source": "apps/aseman-node/src/api/actions/creature.rs:660"
+      "source": "apps/aseman-node/src/api/actions/creature.rs:659"
     },
     {
       "logical_template": "UserMeta::{creature_id}",
@@ -2133,34 +2035,24 @@
       "source": "apps/aseman-node/src/api/model/creature_ports.rs:262"
     },
     {
-      "logical_template": "UserPrivateKey::{}",
+      "logical_template": "VmBilling::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "apps/aseman-node/src/api/actions/creature.rs:1243"
-    },
-    {
-      "logical_template": "UserPrivateKey::{}",
-      "review_status": "candidate; caller association may be indirect",
-      "source": "apps/aseman-node/src/api/actions/creature.rs:1294"
+      "source": "apps/aseman-node/src/api/actions/program.rs:1957"
     },
     {
       "logical_template": "VmBilling::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "apps/aseman-node/src/api/actions/program.rs:2017"
-    },
-    {
-      "logical_template": "VmBilling::{}",
-      "review_status": "candidate; caller association may be indirect",
-      "source": "apps/aseman-node/src/api/actions/program.rs:699"
+      "source": "apps/aseman-node/src/api/actions/program.rs:688"
     },
     {
       "logical_template": "VmBuilds::{}::",
       "review_status": "candidate; caller association may be indirect",
-      "source": "apps/aseman-node/src/api/actions/program.rs:1168"
+      "source": "apps/aseman-node/src/api/actions/program.rs:1157"
     },
     {
       "logical_template": "VmBuilds::{}::",
       "review_status": "candidate; caller association may be indirect",
-      "source": "apps/aseman-node/src/api/actions/program.rs:2425"
+      "source": "apps/aseman-node/src/api/actions/program.rs:2365"
     },
     {
       "logical_template": "VmContainerName::{}::{}::{}",
@@ -2185,32 +2077,32 @@
     {
       "logical_template": "VmInstance::{}::{}::",
       "review_status": "candidate; caller association may be indirect",
-      "source": "apps/aseman-node/src/api/actions/program.rs:1015"
+      "source": "apps/aseman-node/src/api/actions/program.rs:1004"
     },
     {
       "logical_template": "VmInstance::{}::{}::",
       "review_status": "candidate; caller association may be indirect",
-      "source": "apps/aseman-node/src/api/actions/program.rs:2226"
+      "source": "apps/aseman-node/src/api/actions/program.rs:2166"
     },
     {
       "logical_template": "VmInstance::{}::{}::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "apps/aseman-node/src/api/actions/program.rs:2036"
+      "source": "apps/aseman-node/src/api/actions/program.rs:1976"
     },
     {
       "logical_template": "VmInstance::{}::{}::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "apps/aseman-node/src/api/actions/program.rs:2149"
+      "source": "apps/aseman-node/src/api/actions/program.rs:2089"
     },
     {
       "logical_template": "VmInstance::{}::{}::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "apps/aseman-node/src/api/actions/program.rs:718"
+      "source": "apps/aseman-node/src/api/actions/program.rs:707"
     },
     {
       "logical_template": "VmInstance::{}::{}::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "apps/aseman-node/src/api/actions/program.rs:855"
+      "source": "apps/aseman-node/src/api/actions/program.rs:844"
     },
     {
       "logical_template": "VmOwnerProgram::{}",
@@ -2220,17 +2112,17 @@
     {
       "logical_template": "VmStartedAt::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "apps/aseman-node/src/api/actions/program.rs:1026"
+      "source": "apps/aseman-node/src/api/actions/program.rs:1015"
     },
     {
       "logical_template": "VmStartedAt::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "apps/aseman-node/src/api/actions/program.rs:1980"
+      "source": "apps/aseman-node/src/api/actions/program.rs:1920"
     },
     {
       "logical_template": "VmStartedAt::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "apps/aseman-node/src/api/actions/program.rs:2236"
+      "source": "apps/aseman-node/src/api/actions/program.rs:2176"
     },
     {
       "logical_template": "VmStartedAt::{}",
@@ -2240,17 +2132,17 @@
     {
       "logical_template": "VmStatus::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "apps/aseman-node/src/api/actions/program.rs:1024"
+      "source": "apps/aseman-node/src/api/actions/program.rs:1013"
     },
     {
       "logical_template": "VmStatus::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "apps/aseman-node/src/api/actions/program.rs:1978"
+      "source": "apps/aseman-node/src/api/actions/program.rs:1918"
     },
     {
       "logical_template": "VmStatus::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "apps/aseman-node/src/api/actions/program.rs:2234"
+      "source": "apps/aseman-node/src/api/actions/program.rs:2174"
     },
     {
       "logical_template": "VmStatus::{}",
@@ -2265,12 +2157,12 @@
     {
       "logical_template": "VmTerminal::{}::{}::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "apps/aseman-node/src/api/actions/program.rs:1116"
+      "source": "apps/aseman-node/src/api/actions/program.rs:1105"
     },
     {
       "logical_template": "VmTerminal::{}::{}::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "apps/aseman-node/src/api/actions/program.rs:2380"
+      "source": "apps/aseman-node/src/api/actions/program.rs:2320"
     },
     {
       "logical_template": "chainCallback::{}_{}",
@@ -2305,67 +2197,67 @@
     {
       "logical_template": "index::{typ}::{from}::{to}::{value}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "apps/aseman-node/src/adapters/postgres/trx.rs:520"
+      "source": "apps/aseman-node/src/adapters/postgres/trx.rs:526"
     },
     {
       "logical_template": "index::{}::{}::{}::",
       "review_status": "candidate; caller association may be indirect",
-      "source": "apps/aseman-node/src/adapters/rocksdb/trx.rs:464"
+      "source": "apps/aseman-node/src/adapters/rocksdb/trx.rs:459"
     },
     {
       "logical_template": "index::{}::{}::{}::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "apps/aseman-node/src/adapters/rocksdb/trx.rs:266"
+      "source": "apps/aseman-node/src/adapters/rocksdb/trx.rs:261"
     },
     {
       "logical_template": "index::{}::{}::{}::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "apps/aseman-node/src/adapters/rocksdb/trx.rs:281"
+      "source": "apps/aseman-node/src/adapters/rocksdb/trx.rs:276"
     },
     {
       "logical_template": "index::{}::{}::{}::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "apps/aseman-node/src/adapters/rocksdb/trx.rs:293"
+      "source": "apps/aseman-node/src/adapters/rocksdb/trx.rs:288"
     },
     {
       "logical_template": "index::{}::{}::{}::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "apps/aseman-node/src/adapters/rocksdb/trx.rs:307"
+      "source": "apps/aseman-node/src/adapters/rocksdb/trx.rs:302"
     },
     {
       "logical_template": "json::{key}::{path}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "apps/aseman-node/src/adapters/postgres/trx.rs:146"
+      "source": "apps/aseman-node/src/adapters/postgres/trx.rs:148"
     },
     {
       "logical_template": "json::{key}::{path}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "apps/aseman-node/src/adapters/postgres/trx.rs:488"
+      "source": "apps/aseman-node/src/adapters/postgres/trx.rs:494"
     },
     {
       "logical_template": "json::{}::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "apps/aseman-node/src/adapters/rocksdb/trx.rs:425"
+      "source": "apps/aseman-node/src/adapters/rocksdb/trx.rs:420"
     },
     {
       "logical_template": "json::{}::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "apps/aseman-node/src/adapters/rocksdb/trx.rs:644"
+      "source": "apps/aseman-node/src/adapters/rocksdb/trx.rs:639"
     },
     {
       "logical_template": "json::{}::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "apps/aseman-node/src/adapters/rocksdb/trx.rs:666"
+      "source": "apps/aseman-node/src/adapters/rocksdb/trx.rs:661"
     },
     {
       "logical_template": "json::{}::{}.",
       "review_status": "candidate; caller association may be indirect",
-      "source": "apps/aseman-node/src/adapters/rocksdb/trx.rs:667"
+      "source": "apps/aseman-node/src/adapters/rocksdb/trx.rs:662"
     },
     {
       "logical_template": "json::{}::{}.{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "apps/aseman-node/src/adapters/rocksdb/trx.rs:657"
+      "source": "apps/aseman-node/src/adapters/rocksdb/trx.rs:652"
     },
     {
       "logical_template": "link::UserEmailToId::{}",
@@ -2375,12 +2267,7 @@
     {
       "logical_template": "link::UserEmailToId::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "apps/aseman-node/src/api/actions/creature.rs:1252"
-    },
-    {
-      "logical_template": "link::UserEmailToId::{}",
-      "review_status": "candidate; caller association may be indirect",
-      "source": "apps/aseman-node/src/api/actions/creature.rs:1334"
+      "source": "apps/aseman-node/src/api/actions/creature.rs:1220"
     },
     {
       "logical_template": "link::UserIdToEmail::{}",
@@ -2390,7 +2277,7 @@
     {
       "logical_template": "link::UserIdToEmail::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "apps/aseman-node/src/api/actions/creature.rs:1332"
+      "source": "apps/aseman-node/src/api/actions/creature.rs:1218"
     },
     {
       "logical_template": "link::UserPrivateKey::{}",
@@ -2400,7 +2287,7 @@
     {
       "logical_template": "link::UserPrivateKey::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "apps/aseman-node/src/api/actions/creature.rs:1336"
+      "source": "apps/aseman-node/src/api/actions/creature.rs:1222"
     },
     {
       "logical_template": "link::VmBilling::{}",
@@ -2410,12 +2297,12 @@
     {
       "logical_template": "link::VmBilling::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "apps/aseman-node/src/api/actions/program.rs:2092"
+      "source": "apps/aseman-node/src/api/actions/program.rs:2032"
     },
     {
       "logical_template": "link::VmBilling::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "apps/aseman-node/src/api/actions/program.rs:2175"
+      "source": "apps/aseman-node/src/api/actions/program.rs:2115"
     },
     {
       "logical_template": "link::VmBilling::{}",
@@ -2425,27 +2312,27 @@
     {
       "logical_template": "link::VmBilling::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "apps/aseman-node/src/api/actions/program.rs:778"
+      "source": "apps/aseman-node/src/api/actions/program.rs:767"
     },
     {
       "logical_template": "link::VmBilling::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "apps/aseman-node/src/api/actions/program.rs:886"
+      "source": "apps/aseman-node/src/api/actions/program.rs:875"
     },
     {
       "logical_template": "link::VmContainerName::{}::{}::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "apps/aseman-node/src/api/actions/program.rs:2179"
+      "source": "apps/aseman-node/src/api/actions/program.rs:2119"
     },
     {
       "logical_template": "link::VmContainerName::{}::{}::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "apps/aseman-node/src/api/actions/program.rs:890"
+      "source": "apps/aseman-node/src/api/actions/program.rs:879"
     },
     {
       "logical_template": "link::VmInstance::{}::{}::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "apps/aseman-node/src/api/actions/program.rs:2088"
+      "source": "apps/aseman-node/src/api/actions/program.rs:2028"
     },
     {
       "logical_template": "link::VmInstance::{}::{}::{}",
@@ -2455,17 +2342,17 @@
     {
       "logical_template": "link::VmInstance::{}::{}::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "apps/aseman-node/src/api/actions/program.rs:774"
+      "source": "apps/aseman-node/src/api/actions/program.rs:763"
     },
     {
       "logical_template": "link::VmOwnerProgram::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "apps/aseman-node/src/api/actions/program.rs:2178"
+      "source": "apps/aseman-node/src/api/actions/program.rs:2118"
     },
     {
       "logical_template": "link::VmOwnerProgram::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "apps/aseman-node/src/api/actions/program.rs:889"
+      "source": "apps/aseman-node/src/api/actions/program.rs:878"
     },
     {
       "logical_template": "link::VmStartedAt::{}",
@@ -2475,22 +2362,22 @@
     {
       "logical_template": "link::VmStartedAt::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "apps/aseman-node/src/api/actions/program.rs:2087"
+      "source": "apps/aseman-node/src/api/actions/program.rs:2027"
     },
     {
       "logical_template": "link::VmStartedAt::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "apps/aseman-node/src/api/actions/program.rs:2173"
+      "source": "apps/aseman-node/src/api/actions/program.rs:2113"
     },
     {
       "logical_template": "link::VmStartedAt::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "apps/aseman-node/src/api/actions/program.rs:773"
+      "source": "apps/aseman-node/src/api/actions/program.rs:762"
     },
     {
       "logical_template": "link::VmStartedAt::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "apps/aseman-node/src/api/actions/program.rs:884"
+      "source": "apps/aseman-node/src/api/actions/program.rs:873"
     },
     {
       "logical_template": "link::VmStatus::{}",
@@ -2500,12 +2387,12 @@
     {
       "logical_template": "link::VmStatus::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "apps/aseman-node/src/api/actions/program.rs:2086"
+      "source": "apps/aseman-node/src/api/actions/program.rs:2026"
     },
     {
       "logical_template": "link::VmStatus::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "apps/aseman-node/src/api/actions/program.rs:2172"
+      "source": "apps/aseman-node/src/api/actions/program.rs:2112"
     },
     {
       "logical_template": "link::VmStatus::{}",
@@ -2515,22 +2402,22 @@
     {
       "logical_template": "link::VmStatus::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "apps/aseman-node/src/api/actions/program.rs:772"
+      "source": "apps/aseman-node/src/api/actions/program.rs:761"
     },
     {
       "logical_template": "link::VmStatus::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "apps/aseman-node/src/api/actions/program.rs:883"
+      "source": "apps/aseman-node/src/api/actions/program.rs:872"
     },
     {
       "logical_template": "link::VmTerminal::{}::{}::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "apps/aseman-node/src/api/actions/program.rs:1151"
+      "source": "apps/aseman-node/src/api/actions/program.rs:1140"
     },
     {
       "logical_template": "link::VmTerminal::{}::{}::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "apps/aseman-node/src/api/actions/program.rs:2411"
+      "source": "apps/aseman-node/src/api/actions/program.rs:2351"
     },
     {
       "logical_template": "link::creatorof::{creator_id}::{store_id}",
@@ -2590,12 +2477,12 @@
     {
       "logical_template": "link::vmDistributed::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "apps/aseman-node/src/api/actions/program.rs:2177"
+      "source": "apps/aseman-node/src/api/actions/program.rs:2117"
     },
     {
       "logical_template": "link::vmDistributed::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "apps/aseman-node/src/api/actions/program.rs:888"
+      "source": "apps/aseman-node/src/api/actions/program.rs:877"
     },
     {
       "logical_template": "link::vmOwnedStore::{}::{store_id}",
@@ -2610,62 +2497,67 @@
     {
       "logical_template": "link::vmStandaloneContainerName::{}::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "apps/aseman-node/src/api/actions/program.rs:2098"
+      "source": "apps/aseman-node/src/api/actions/program.rs:2038"
     },
     {
       "logical_template": "link::vmStandaloneContainerName::{}::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "apps/aseman-node/src/api/actions/program.rs:2187"
+      "source": "apps/aseman-node/src/api/actions/program.rs:2127"
     },
     {
       "logical_template": "link::vmStandaloneContainerName::{}::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "apps/aseman-node/src/api/actions/program.rs:784"
+      "source": "apps/aseman-node/src/api/actions/program.rs:773"
     },
     {
       "logical_template": "link::vmStandaloneContainerName::{}::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "apps/aseman-node/src/api/actions/program.rs:898"
+      "source": "apps/aseman-node/src/api/actions/program.rs:887"
     },
     {
       "logical_template": "link::vmStandaloneImageName::{}::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "apps/aseman-node/src/api/actions/program.rs:2094"
+      "source": "apps/aseman-node/src/api/actions/program.rs:2034"
     },
     {
       "logical_template": "link::vmStandaloneImageName::{}::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "apps/aseman-node/src/api/actions/program.rs:2183"
+      "source": "apps/aseman-node/src/api/actions/program.rs:2123"
     },
     {
       "logical_template": "link::vmStandaloneImageName::{}::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "apps/aseman-node/src/api/actions/program.rs:780"
+      "source": "apps/aseman-node/src/api/actions/program.rs:769"
     },
     {
       "logical_template": "link::vmStandaloneImageName::{}::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "apps/aseman-node/src/api/actions/program.rs:894"
+      "source": "apps/aseman-node/src/api/actions/program.rs:883"
     },
     {
       "logical_template": "link::{key}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "apps/aseman-node/src/adapters/postgres/trx.rs:428"
+      "source": "apps/aseman-node/src/adapters/postgres/trx.rs:434"
     },
     {
       "logical_template": "link::{key}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "apps/aseman-node/src/adapters/postgres/trx.rs:437"
+      "source": "apps/aseman-node/src/adapters/postgres/trx.rs:443"
     },
     {
       "logical_template": "link::{prefix}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "apps/aseman-node/src/adapters/postgres/trx.rs:330"
+      "source": "apps/aseman-node/src/adapters/postgres/trx.rs:336"
     },
     {
       "logical_template": "link::{prefix}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "apps/aseman-node/src/adapters/postgres/trx.rs:376"
+      "source": "apps/aseman-node/src/adapters/postgres/trx.rs:382"
+    },
+    {
+      "logical_template": "link::{}",
+      "review_status": "candidate; caller association may be indirect",
+      "source": "apps/aseman-node/src/adapters/rocksdb/trx.rs:310"
     },
     {
       "logical_template": "link::{}",
@@ -2675,22 +2567,12 @@
     {
       "logical_template": "link::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "apps/aseman-node/src/adapters/rocksdb/trx.rs:320"
+      "source": "apps/aseman-node/src/adapters/rocksdb/trx.rs:436"
     },
     {
       "logical_template": "link::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "apps/aseman-node/src/adapters/rocksdb/trx.rs:441"
-    },
-    {
-      "logical_template": "link::{}",
-      "review_status": "candidate; caller association may be indirect",
-      "source": "apps/aseman-node/src/adapters/rocksdb/trx.rs:506"
-    },
-    {
-      "logical_template": "link::{}",
-      "review_status": "candidate; caller association may be indirect",
-      "source": "apps/aseman-node/src/adapters/vmm/host/functions/login_grant.rs:85"
+      "source": "apps/aseman-node/src/adapters/rocksdb/trx.rs:501"
     },
     {
       "logical_template": "link::{}",
@@ -2730,22 +2612,22 @@
     {
       "logical_template": "obj::{typ}::{key}::{column}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "apps/aseman-node/src/adapters/postgres/trx.rs:468"
+      "source": "apps/aseman-node/src/adapters/postgres/trx.rs:474"
     },
     {
       "logical_template": "obj::{typ}::{key}::|",
       "review_status": "candidate; caller association may be indirect",
-      "source": "apps/aseman-node/src/adapters/postgres/trx.rs:262"
+      "source": "apps/aseman-node/src/adapters/postgres/trx.rs:268"
     },
     {
       "logical_template": "obj::{typ}::{object_id}::{column}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "apps/aseman-node/src/adapters/postgres/trx.rs:318"
+      "source": "apps/aseman-node/src/adapters/postgres/trx.rs:324"
     },
     {
       "logical_template": "obj::{}::",
       "review_status": "candidate; caller association may be indirect",
-      "source": "apps/aseman-node/src/adapters/rocksdb/trx.rs:569"
+      "source": "apps/aseman-node/src/adapters/rocksdb/trx.rs:564"
     },
     {
       "logical_template": "obj::{}::{creature_id}::balance",
@@ -2755,17 +2637,17 @@
     {
       "logical_template": "obj::{}::{}::",
       "review_status": "candidate; caller association may be indirect",
-      "source": "apps/aseman-node/src/adapters/rocksdb/trx.rs:361"
+      "source": "apps/aseman-node/src/adapters/rocksdb/trx.rs:356"
     },
     {
       "logical_template": "obj::{}::{}::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "apps/aseman-node/src/adapters/rocksdb/trx.rs:243"
+      "source": "apps/aseman-node/src/adapters/rocksdb/trx.rs:238"
     },
     {
       "logical_template": "obj::{}::{}::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "apps/aseman-node/src/adapters/rocksdb/trx.rs:375"
+      "source": "apps/aseman-node/src/adapters/rocksdb/trx.rs:370"
     },
     {
       "logical_template": "obj::{}::{}::{}",
@@ -2785,7 +2667,7 @@
     {
       "logical_template": "obj::{}::{}::|",
       "review_status": "candidate; caller association may be indirect",
-      "source": "apps/aseman-node/src/adapters/rocksdb/trx.rs:255"
+      "source": "apps/aseman-node/src/adapters/rocksdb/trx.rs:250"
     },
     {
       "logical_template": "onaccess::{store_id}::",
@@ -2875,62 +2757,37 @@
     {
       "logical_template": "vmDistributed::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "apps/aseman-node/src/api/actions/program.rs:2001"
-    },
-    {
-      "logical_template": "vmDistributed::{}",
-      "review_status": "candidate; caller association may be indirect",
-      "source": "apps/aseman-node/src/api/actions/program.rs:678"
+      "source": "apps/aseman-node/src/api/actions/program.rs:1941"
     },
     {
       "logical_template": "vmDistribution::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "apps/aseman-node/src/adapters/cluster/mod.rs:468"
+      "source": "apps/aseman-node/src/api/actions/program.rs:1387"
     },
     {
       "logical_template": "vmDistribution::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "apps/aseman-node/src/api/actions/program.rs:1406"
+      "source": "apps/aseman-node/src/api/actions/program.rs:1836"
     },
     {
       "logical_template": "vmDistribution::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "apps/aseman-node/src/api/actions/program.rs:1877"
-    },
-    {
-      "logical_template": "vmDistribution::{}",
-      "review_status": "candidate; caller association may be indirect",
-      "source": "apps/aseman-node/src/api/actions/program.rs:1995"
-    },
-    {
-      "logical_template": "vmDistribution::{}",
-      "review_status": "candidate; caller association may be indirect",
-      "source": "apps/aseman-node/src/api/actions/program.rs:672"
+      "source": "apps/aseman-node/src/api/actions/program.rs:1935"
     },
     {
       "logical_template": "vmDistribution::{}::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "apps/aseman-node/src/adapters/cluster/mod.rs:470"
+      "source": "apps/aseman-node/src/api/actions/program.rs:1391"
     },
     {
       "logical_template": "vmDistribution::{}::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "apps/aseman-node/src/api/actions/program.rs:1410"
+      "source": "apps/aseman-node/src/api/actions/program.rs:1840"
     },
     {
       "logical_template": "vmDistribution::{}::{}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "apps/aseman-node/src/api/actions/program.rs:1881"
-    },
-    {
-      "logical_template": "vmDistribution::{}::{}",
-      "review_status": "candidate; caller association may be indirect",
-      "source": "apps/aseman-node/src/api/actions/program.rs:1996"
-    },
-    {
-      "logical_template": "vmDistribution::{}::{}",
-      "review_status": "candidate; caller association may be indirect",
-      "source": "apps/aseman-node/src/api/actions/program.rs:673"
+      "source": "apps/aseman-node/src/api/actions/program.rs:1936"
     },
     {
       "logical_template": "vmEntityPath::{}::{}",
@@ -2955,27 +2812,27 @@
     {
       "logical_template": "{SECRET_GRANTEE_PREFIX}{grantee}::",
       "review_status": "candidate; caller association may be indirect",
-      "source": "apps/aseman-node/src/api/actions/creature.rs:698"
+      "source": "apps/aseman-node/src/api/actions/creature.rs:697"
     },
     {
       "logical_template": "{SECRET_GRANTEE_PREFIX}{grantee}::{owner}::{name}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "apps/aseman-node/src/api/actions/creature.rs:687"
+      "source": "apps/aseman-node/src/api/actions/creature.rs:686"
     },
     {
       "logical_template": "{SECRET_GRANT_PREFIX}{owner}::{name}::{grantee}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "apps/aseman-node/src/api/actions/creature.rs:683"
+      "source": "apps/aseman-node/src/api/actions/creature.rs:682"
     },
     {
       "logical_template": "{SECRET_PREFIX}{owner}::",
       "review_status": "candidate; caller association may be indirect",
-      "source": "apps/aseman-node/src/api/actions/creature.rs:877"
+      "source": "apps/aseman-node/src/api/actions/creature.rs:876"
     },
     {
       "logical_template": "{SECRET_PREFIX}{owner}::{name}",
       "review_status": "candidate; caller association may be indirect",
-      "source": "apps/aseman-node/src/api/actions/creature.rs:680"
+      "source": "apps/aseman-node/src/api/actions/creature.rs:679"
     },
     {
       "logical_template": "{prefix}::{user}",
@@ -3143,7 +3000,7 @@
     ],
     "path": "<storage_root>/cluster/raft-db",
     "serialization": "JSON values; binary log keys",
-    "source": "apps/aseman-node/src/adapters/cluster/store.rs:1"
+    "source": "modules/storage/rocksdb/src/cluster/store.rs:1"
   },
   "core_objects": [
     {
@@ -3361,18 +3218,18 @@
       "operations": [
         {
           "kind": "INSERT",
-          "source": "modules/storage/rocksdb-legacy/src/questdb.rs:292"
+          "source": "modules/storage/rocksdb/src/questdb.rs:292"
         },
         {
           "kind": "SELECT",
-          "source": "modules/storage/rocksdb-legacy/src/questdb.rs:314"
+          "source": "modules/storage/rocksdb/src/questdb.rs:314"
         },
         {
           "kind": "SELECT",
-          "source": "modules/storage/rocksdb-legacy/src/questdb.rs:319"
+          "source": "modules/storage/rocksdb/src/questdb.rs:319"
         }
       ],
-      "source": "modules/storage/rocksdb-legacy/src/questdb.rs:107"
+      "source": "modules/storage/rocksdb/src/questdb.rs:107"
     },
     {
       "columns": [
@@ -3409,36 +3266,36 @@
       "operations": [
         {
           "kind": "SELECT",
-          "source": "modules/storage/rocksdb-legacy/src/questdb.rs:88"
+          "source": "modules/storage/rocksdb/src/questdb.rs:88"
         },
         {
           "kind": "SELECT",
-          "source": "modules/storage/rocksdb-legacy/src/questdb.rs:97"
+          "source": "modules/storage/rocksdb/src/questdb.rs:97"
         },
         {
           "kind": "INSERT",
-          "source": "modules/storage/rocksdb-legacy/src/questdb.rs:182"
+          "source": "modules/storage/rocksdb/src/questdb.rs:182"
         },
         {
           "kind": "UPDATE",
-          "source": "modules/storage/rocksdb-legacy/src/questdb.rs:194"
+          "source": "modules/storage/rocksdb/src/questdb.rs:194"
         },
         {
           "kind": "SELECT",
-          "source": "modules/storage/rocksdb-legacy/src/questdb.rs:254"
+          "source": "modules/storage/rocksdb/src/questdb.rs:254"
         },
         {
           "kind": "SELECT",
-          "source": "modules/storage/rocksdb-legacy/src/questdb.rs:279"
+          "source": "modules/storage/rocksdb/src/questdb.rs:279"
         }
       ],
-      "source": "modules/storage/rocksdb-legacy/src/questdb.rs:15"
+      "source": "modules/storage/rocksdb/src/questdb.rs:15"
     }
   ],
   "summary": {
-    "candidate_key_templates": 346,
+    "candidate_key_templates": 333,
     "core_object_types": 8,
-    "direct_application_accesses": 231,
+    "direct_application_accesses": 218,
     "hashgraph_key_families": 8,
     "questdb_tables": 2
   },

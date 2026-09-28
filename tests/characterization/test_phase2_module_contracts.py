@@ -48,13 +48,16 @@ class PhaseTwoModuleContractTests(unittest.TestCase):
     def test_authenticated_admin_edge_is_composed(self) -> None:
         contract = (MODULE / "admin.openapi.yaml").read_text()
         cli = (ROOT / "apps/asemanctl/src/cli/modules.rs").read_text()
-        server = (ROOT / "apps/aseman-node/src/adapters/cluster/server.rs").read_text()
+        # The storage provider's listener serves injected routes and never without a
+        # token (ADR 0033); the node injects module administration as such a route.
+        server = (ROOT / "modules/storage/rocksdb/src/cluster/server.rs").read_text()
         backend = (ROOT / "apps/aseman-node/src/adapters/module_admin.rs").read_text()
         self.assertIn("bearerAuth", contract)
         self.assertIn("artifactBase64", cli)
-        self.assertIn("/v1/admin/modules", server)
         self.assertIn("requires a configured cluster auth token", server)
-        self.assertIn("start_module_admin", server)
+        self.assertIn("start_route_listener", server)
+        self.assertIn("/v1/admin/modules", backend)
+        self.assertIn("fn route_handler", backend)
         self.assertIn("impl ModuleAdministration for ModuleAdminService", backend)
 
 

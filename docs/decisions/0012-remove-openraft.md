@@ -10,7 +10,11 @@ verification: removal ledger, dependency checks, HA chaos suite
 
 ## Status
 
-Accepted 2026-09-19.
+Accepted 2026-09-19. **Amended by ADR 0033 (2026-09-28):** OpenRaft is kept, but only
+as the RocksDB storage provider's distribution mechanism, inside
+`modules/storage/rocksdb`. It is still never a scheduler, membership authority for
+anything but its own replicas, federation directory, or finance-consensus provider,
+and no layer above the storage seam proposes to it.
 
 ## Decision
 

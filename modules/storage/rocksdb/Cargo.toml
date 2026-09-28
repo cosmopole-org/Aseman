@@ -1,6 +1,6 @@
 [package]
-name = "aseman-storage-legacy"
-description = "Read-only legacy storage source and canonical capsule migration bridge."
+name = "aseman-storage-rocksdb"
+description = "The RocksDB storage provider (ADR 0033): embedded key/value storage, its OpenRaft cluster mode, and the importers for Caspar-era data."
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
@@ -8,6 +8,12 @@ license.workspace = true
 repository.workspace = true
 
 [dependencies]
+anyhow.workspace = true
+chrono = { version = "0.4", default-features = false, features = ["clock", "std"] }
+uuid = { workspace = true, features = ["v4"] }
+openraft = { version = "0.9", features = ["serde", "storage-v2"] }
+reqwest = { version = "0.12", default-features = false, features = ["blocking", "json", "rustls-tls"] }
+tokio = { version = "1", features = ["rt", "rt-multi-thread", "macros", "time", "sync", "io-util", "net"] }
 aseman-config = { path = "../../../crates/aseman-config" }
 base64.workspace = true
 chacha20poly1305 = "0.10.1"

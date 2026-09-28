@@ -189,7 +189,7 @@ dependencies = [
  "aseman-contracts",
  "aseman-domain",
  "aseman-ports",
- "aseman-storage-legacy",
+ "aseman-storage-rocksdb",
  "base64 0.22.1",
  "chrono",
  "crossbeam-channel",
@@ -367,8 +367,8 @@ dependencies = [
  "aseman-contracts",
  "aseman-domain",
  "aseman-ports",
- "aseman-storage-legacy",
  "aseman-storage-postgres",
+ "aseman-storage-rocksdb",
  "postgres",
  "rsa",
  "serde_json",
@@ -432,8 +432,8 @@ dependencies = [
  "aseman-public-http",
  "aseman-public-service",
  "aseman-realtime-durable",
- "aseman-storage-legacy",
  "aseman-storage-postgres",
+ "aseman-storage-rocksdb",
  "aseman-vmm-http",
  "base64 0.22.1",
  "chacha20poly1305",
@@ -580,26 +580,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "aseman-storage-legacy"
-version = "0.1.0"
-dependencies = [
- "aseman-config",
- "aseman-contracts",
- "aseman-domain",
- "base64 0.22.1",
- "chacha20poly1305",
- "postgres",
- "r2d2",
- "r2d2_postgres",
- "rocksdb",
- "rsa",
- "serde",
- "serde_json",
- "sha2 0.10.9",
- "thiserror 2.0.20",
-]
-
-[[package]]
 name = "aseman-storage-postgres"
 version = "0.1.0"
 dependencies = [
@@ -622,6 +602,32 @@ dependencies = [
  "thiserror 2.0.20",
  "tokio",
  "tonic",
+ "uuid",
+]
+
+[[package]]
+name = "aseman-storage-rocksdb"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "aseman-config",
+ "aseman-contracts",
+ "aseman-domain",
+ "base64 0.22.1",
+ "chacha20poly1305",
+ "chrono",
+ "openraft",
+ "postgres",
+ "r2d2",
+ "r2d2_postgres",
+ "reqwest 0.12.28",
+ "rocksdb",
+ "rsa",
+ "serde",
+ "serde_json",
+ "sha2 0.10.9",
+ "thiserror 2.0.20",
+ "tokio",
  "uuid",
 ]
 
@@ -5046,7 +5052,7 @@ dependencies = [
 name = "scan-vmdb"
 version = "0.1.0"
 dependencies = [
- "aseman-storage-legacy",
+ "aseman-storage-rocksdb",
 ]
 
 [[package]]

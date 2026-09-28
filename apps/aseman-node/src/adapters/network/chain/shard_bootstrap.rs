@@ -68,6 +68,16 @@ fn copy_required(source_dir: &Path, destination: &Path, name: &str) -> Result<()
 }
 
 fn copy_file(source: &Path, destination: &Path) -> Result<()> {
+    // Restarts copy again: an identical copy stays, and a differing one is replaced.
+    // `fs::copy` keeps the source's mode, so a read-only key (0400) cannot be
+    // overwritten in place and is removed first.
+    if destination.is_file() {
+        if fs::read(source).ok() == fs::read(destination).ok() {
+            return Ok(());
+        }
+        fs::remove_file(destination)
+            .with_context(|| format!("replace {}", destination.display()))?;
+    }
     fs::copy(source, destination)
         .with_context(|| format!("copy {} to {}", source.display(), destination.display()))?;
     Ok(())
@@ -162,6 +172,31 @@ fn chain_api_url(root_node: &str) -> Result<String> {
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn a_restart_recopies_read_only_keys() {
+        let root = temp_dir("restart");
+        let source = root.join("priv_key");
+        let destination = root.join("copy");
+        fs::write(&source, b"key-1").unwrap();
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::PermissionsExt;
+            fs::set_permissions(&source, fs::Permissions::from_mode(0o400)).unwrap();
+        }
+        copy_file(&source, &destination).unwrap();
+        // The second boot finds the read-only copy already in place.
+        copy_file(&source, &destination).unwrap();
+        assert_eq!(fs::read(&destination).unwrap(), b"key-1");
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::PermissionsExt;
+            fs::set_permissions(&source, fs::Permissions::from_mode(0o600)).unwrap();
+        }
+        fs::write(&source, b"key-2").unwrap();
+        copy_file(&source, &destination).unwrap();
+        assert_eq!(fs::read(&destination).unwrap(), b"key-2");
+    }
+
     use super::*;
     use std::io::{Read, Write};
     use std::net::TcpListener;

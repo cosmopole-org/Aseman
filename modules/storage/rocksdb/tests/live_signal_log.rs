@@ -8,7 +8,7 @@ use std::process::Command;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use aseman_domain::signal_tags::LogQuery;
-use aseman_storage_legacy::{LegacyBuildLogRow, LegacySignalRow, QuestDbTimeSeries};
+use aseman_storage_rocksdb::{LegacyBuildLogRow, LegacySignalRow, QuestDbTimeSeries};
 
 fn psql(url: &str, sql: &str) {
     let output = Command::new("psql")

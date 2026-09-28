@@ -1,10 +1,10 @@
 //! Cluster HTTP listener — one port for both the raft RPC surface and the
-//! orchestration/admin API that `casparctl cluster …` drives.
+//! orchestration/admin API that `asemanctl cluster …` drives.
 //!
 //! Raft RPC (instance ↔ instance):
 //!   POST /raft/vote      POST /raft/append      POST /raft/snapshot
 //!
-//! Orchestration (operator / casparctl, and leader-forwarded proposals):
+//! Orchestration (operator / asemanctl, and leader-forwarded proposals):
 //!   GET  /cluster/ping               liveness + identity (RTT probes)
 //!   GET  /cluster/status             raft metrics + peer latency table
 //!   GET  /cluster/peers              configured peers
@@ -20,7 +20,8 @@
 //!
 //! The listener speaks minimal HTTP/1.1 (the same style as the telemetry
 //! server) to stay dependency-free. When `auth_token` is configured every
-//! request must present it in `x-caspar-cluster-token`.
+//! request must present it in `x-aseman-cluster-token` (or as a bearer token). Routes
+//! the composing process injects ([`RouteHandler`]) are served on the same port.
 
 use std::collections::{BTreeMap, BTreeSet};
 use std::io::{BufRead, BufReader, Read, Write};
@@ -33,10 +34,9 @@ use openraft::BasicNode;
 use openraft::raft::{AppendEntriesRequest, InstallSnapshotRequest, VoteRequest};
 use serde_json::{Value, json};
 
-use super::ClusterService;
 use super::command::{ClusterCommand, TypeConfig};
 use super::config::PeerConfig;
-use crate::adapters::module_admin::ModuleAdministration;
+use super::{ClusterService, RouteHandler};
 
 const MAX_BODY_BYTES: usize = 256 * 1024 * 1024;
 
@@ -56,28 +56,30 @@ pub fn start(svc: Arc<ClusterService>) -> Result<()> {
     Ok(())
 }
 
-pub fn start_module_admin(
-    admin: Arc<dyn ModuleAdministration>,
+/// Serve only injected routes (for example the node's module administration) on an
+/// authenticated listener, for a process that runs no cluster.
+pub fn start_route_listener(
+    handler: RouteHandler,
     listen: String,
     auth_token: String,
 ) -> Result<()> {
     if auth_token.is_empty() {
         return Err(anyhow!(
-            "standalone module administration requires an auth token"
+            "a standalone administration listener requires an auth token"
         ));
     }
-    let listener = TcpListener::bind(&listen)
-        .map_err(|error| anyhow!("module admin bind {listen}: {error}"))?;
+    let listener =
+        TcpListener::bind(&listen).map_err(|error| anyhow!("admin bind {listen}: {error}"))?;
     thread::Builder::new()
-        .name("module-admin-http".into())
+        .name("admin-http".into())
         .spawn(move || {
             for stream in listener.incoming().flatten() {
-                let admin = admin.clone();
+                let handler = handler.clone();
                 let auth_token = auth_token.clone();
-                thread::spawn(move || handle_module_admin_connection(admin, auth_token, stream));
+                thread::spawn(move || handle_route_connection(handler, auth_token, stream));
             }
         })
-        .map_err(|error| anyhow!("module admin server spawn: {error}"))?;
+        .map_err(|error| anyhow!("admin server spawn: {error}"))?;
     Ok(())
 }
 
@@ -107,7 +109,7 @@ fn read_request(stream: &TcpStream) -> Option<Request> {
         if let Some(v) = lower.strip_prefix("content-length:") {
             content_length = v.trim().parse().unwrap_or(0);
         }
-        if lower.starts_with("x-caspar-cluster-token:") {
+        if lower.starts_with("x-aseman-cluster-token:") {
             token = line
                 .split_once(':')
                 .map(|x| x.1)
@@ -155,13 +157,13 @@ fn handle_connection(svc: Arc<ClusterService>, stream: TcpStream) {
         return;
     };
     let expected = svc.auth_token();
-    if (req.path == "/v1/admin/modules" || req.path.starts_with("/v1/admin/modules/"))
-        && expected.is_empty()
+    // Injected routes are administrative: never served without a token.
+    if expected.is_empty() && !req.path.starts_with("/raft/") && !req.path.starts_with("/cluster/")
     {
         respond(
             stream,
             503,
-            br#"{"error":"module administration requires a configured cluster auth token"}"#,
+            br#"{"error":"administration requires a configured cluster auth token"}"#,
         );
         return;
     }
@@ -173,11 +175,7 @@ fn handle_connection(svc: Arc<ClusterService>, stream: TcpStream) {
     respond(stream, status, &body);
 }
 
-fn handle_module_admin_connection(
-    admin: Arc<dyn ModuleAdministration>,
-    auth_token: String,
-    stream: TcpStream,
-) {
+fn handle_route_connection(handler: RouteHandler, auth_token: String, stream: TcpStream) {
     let Some(req) = read_request(&stream) else {
         return;
     };
@@ -185,28 +183,17 @@ fn handle_module_admin_connection(
         respond(stream, 401, br#"{"error":"invalid administration token"}"#);
         return;
     }
-    if req.path != "/v1/admin/modules" && !req.path.starts_with("/v1/admin/modules/") {
-        respond(stream, 404, br#"{"error":"not found"}"#);
-        return;
-    }
-    match admin.handle(&req.method, &req.path, &req.body) {
-        Ok(value) => {
-            let (_, body) = json_ok(value);
-            respond(stream, 200, &body);
-        }
-        Err(error) => {
-            let (_, body) = json_err(error.status, error.message);
-            respond(stream, error.status, &body);
-        }
+    match handler(&req.method, &req.path, &req.body) {
+        Some((status, body)) => respond(stream, status, &body),
+        None => respond(stream, 404, br#"{"error":"not found"}"#),
     }
 }
 
 fn route(svc: &Arc<ClusterService>, req: &Request) -> (u16, Vec<u8>) {
-    if req.path == "/v1/admin/modules" || req.path.starts_with("/v1/admin/modules/") {
-        return match svc.module_admin().handle(&req.method, &req.path, &req.body) {
-            Ok(value) => json_ok(value),
-            Err(error) => json_err(error.status, error.message),
-        };
+    if let Some(handler) = svc.routes()
+        && let Some(response) = handler(&req.method, &req.path, &req.body)
+    {
+        return response;
     }
     match (req.method.as_str(), req.path.as_str()) {
         // ── raft RPC ────────────────────────────────────────────────────
@@ -260,7 +247,7 @@ fn route(svc: &Arc<ClusterService>, req: &Request) -> (u16, Vec<u8>) {
                 Err(e) => return json_err(400, format!("bad command: {}", e)),
             };
             match svc.propose_blocking(&cmd) {
-                Ok(()) => json_ok(json!({"ok": true})),
+                Ok(index) => json_ok(json!({"ok": true, "index": index})),
                 Err(e) => json_err(503, e.to_string()),
             }
         }

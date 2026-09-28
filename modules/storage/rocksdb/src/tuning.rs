@@ -43,7 +43,6 @@ fn config() -> aseman_config::LegacyAdapterConfig {
     aseman_config::legacy_adapter_snapshot().cloned().unwrap_or(
         aseman_config::LegacyAdapterConfig {
             main_port: String::new(),
-            login_grant_required: false,
             public_storage_max_bytes: 10 * 1024 * 1024,
             questdb_port: 8812,
             rocksdb_max_open_files: 512,

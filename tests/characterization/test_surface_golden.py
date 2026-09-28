@@ -32,7 +32,8 @@ class SurfaceGoldenTest(unittest.TestCase):
         }
         call_paths = {row["path"] for row in self.actual["action_call_paths"]}
         self.assertEqual(routes, call_paths)
-        self.assertEqual(77, len(routes))
+        # 76: the custodial `/creatures/login` was deleted (RL-019, ADR 0004 closed).
+        self.assertEqual(76, len(routes))
 
     def test_observed_dispatch_names_are_unique(self) -> None:
         interfaces = self.actual["interfaces"]
@@ -46,8 +47,9 @@ class SurfaceGoldenTest(unittest.TestCase):
         self.assertEqual(len(guest_operations), len(set(guest_operations)))
         self.assertEqual(len(http_routes), len(set(http_routes)))
         self.assertEqual(len(runtime_keys), len(set(runtime_keys)))
-        # 112: `stateOp` (P5-04) serves remote runtimes' creature-scoped state.
-        self.assertEqual(112, len(guest_operations))
+        # 111: `stateOp` (P5-04) serves remote runtimes' creature-scoped state;
+        # `grantLogin` was deleted with the custodial login (RL-019).
+        self.assertEqual(111, len(guest_operations))
         self.assertEqual(31, len(http_routes))
         self.assertEqual(7, len(runtime_keys))
 

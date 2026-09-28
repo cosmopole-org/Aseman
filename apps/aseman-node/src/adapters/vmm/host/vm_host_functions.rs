@@ -625,11 +625,6 @@ pub(crate) fn handle_unified_host_call(packet: &JsonValue) -> String {
         // a guest can ask about a program id but cannot claim a node owner or
         // make a remote program appear locally hosted.
         "nodeIdentity" => host_fn_node_identity(&ctx.program_id, &input),
-        // Issues a single-use login grant; node-owner programs only.
-        "grantLogin" => crate::adapters::vmm::host::functions::login_grant::host_fn_grant_login(
-            &ctx.program_id,
-            &input,
-        ),
         // Federated finance writes are deliberately not ordinary `putJson`
         // calls. Only a node-owned control program may ask the host to sign
         // them, and the resulting packet is committed on the global chain.

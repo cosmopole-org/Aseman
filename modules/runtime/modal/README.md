@@ -20,7 +20,7 @@ Optional: `MODAL_ENVIRONMENT`, `MODAL_SERVER_URL`, `MODAL_APP_NAME` (one
 app for every project sandbox on this node; default is `MODAL_APP_PREFIX` or
 `caspar`), `MODAL_APP_PREFIX`, `MODAL_DEFAULT_IMAGE`,
 `MODAL_VOLUME_MOUNT_PATH`, `MODAL_SANDBOX_TIMEOUT_SECS`,
-`MODAL_IMAGE_BUILD_TIMEOUT_SECS`. See `deploy/legacy/sample.env` for the
+`MODAL_IMAGE_BUILD_TIMEOUT_SECS`. See `docs/generated/current-configuration.md` for the
 compatibility deployment defaults.
 
 With no credentials the plugin still registers; every operation then fails with

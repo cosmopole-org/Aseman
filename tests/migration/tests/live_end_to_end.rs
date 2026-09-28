@@ -9,13 +9,13 @@ use aseman_domain::storage_migration::{
     Authority, MigrationPhase, MigrationRecord, StorageMigration,
 };
 use aseman_ports::{ClockPort, MigrationRecordSource, MigrationStateStore, PortError, PortResult};
-use aseman_storage_legacy::{
-    CapsuleImportSink, ImportDisposition, LegacyFinanceConfig, LegacyMigrationResult,
-    LegacyPhysicalRecord, LegacySnapshotGraph, LegacyTransformEvidence, import_canonical,
-};
 use aseman_storage_postgres::PostgresCapsuleRepository;
 use aseman_storage_postgres::guest::{GuestPoolRouter, PostgresGuestProvisioner};
 use aseman_storage_postgres::migration::migration_record;
+use aseman_storage_rocksdb::{
+    CapsuleImportSink, ImportDisposition, LegacyFinanceConfig, LegacyMigrationResult,
+    LegacyPhysicalRecord, LegacySnapshotGraph, LegacyTransformEvidence, import_canonical,
+};
 use postgres::{Client, Config, NoTls};
 use std::collections::{BTreeMap, BTreeSet};
 use std::str::FromStr;
@@ -330,7 +330,7 @@ fn live_legacy_migration_verifies_applies_delta_and_cuts_over_with_fencing() {
     );
 
     // Guest pairs land only in the owning creature's isolated database.
-    let owner = aseman_storage_legacy::deterministic_legacy_capsule_id("Creature", b"1@global");
+    let owner = aseman_storage_rocksdb::deterministic_legacy_capsule_id("Creature", b"1@global");
     // A fresh generation gives every run its own guest database (names derive from it).
     let run_generation = u64::try_from(
         std::time::SystemTime::now()

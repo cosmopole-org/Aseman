@@ -1,0 +1,119 @@
+{
+  "version": "2",
+  "artifact": "A903",
+  "source": "apps/asemanctl/src/cli dispatch plus this compatibility contract",
+  "exit_codes": {
+    "0": "command completed or help was displayed",
+    "1": "usage error or command execution failed",
+    "2": "typed process configuration was invalid before command dispatch"
+  },
+  "output_modes": {
+    "human": "stable for operator meaning, not for field parsing",
+    "json_optional": "a documented --json flag emits one JSON document",
+    "json": "always emits one JSON document"
+  },
+  "json_error": {
+    "schema": "aseman.cli.error.v1",
+    "required": [
+      "schema",
+      "ok",
+      "command",
+      "error"
+    ],
+    "note": "reserved target envelope; commands not marked json/json_optional must not be parsed as structured output"
+  },
+  "json_result": {
+    "schema": "aseman.cli.result.v1",
+    "required": [
+      "schema",
+      "ok",
+      "command",
+      "exit_code",
+      "data",
+      "warnings"
+    ]
+  },
+  "commands": [
+    {
+      "name": "start",
+      "class": "deployment",
+      "output": "json_optional"
+    },
+    {
+      "name": "stop",
+      "class": "deployment",
+      "output": "json_optional"
+    },
+    {
+      "name": "status",
+      "class": "deployment",
+      "output": "json_optional"
+    },
+    {
+      "name": "vms",
+      "class": "legacy_mixed",
+      "output": "json_optional"
+    },
+    {
+      "name": "cluster",
+      "class": "legacy_mixed",
+      "output": "json_optional"
+    },
+    {
+      "name": "bootstrap",
+      "class": "journaled_mutation",
+      "output": "json_optional"
+    },
+    {
+      "name": "module",
+      "class": "mixed",
+      "output": "json_optional"
+    },
+    {
+      "name": "modules",
+      "class": "alias",
+      "alias_for": "module",
+      "output": "json_optional"
+    },
+    {
+      "name": "doctor",
+      "class": "read",
+      "output": "json_optional"
+    },
+    {
+      "name": "backup",
+      "class": "journaled_mutation",
+      "output": "json_optional"
+    },
+    {
+      "name": "restore",
+      "class": "journaled_mutation",
+      "output": "json_optional"
+    },
+    {
+      "name": "upgrade",
+      "class": "journaled_mutation",
+      "output": "json_optional"
+    },
+    {
+      "name": "support-bundle",
+      "class": "journaled_mutation",
+      "output": "json_optional"
+    }
+  ],
+  "compatibility": {
+    "supersedes": "command-v1 (2026-09-19)",
+    "removed_in_v2": [
+      "install",
+      "uninstall",
+      "purge",
+      "pause",
+      "resume",
+      "stats",
+      "run",
+      "pprof"
+    ],
+    "reason": "ADR 0004 window closed 2026-09-28: the Docker-era and local legacy lifecycle commands and the casparctl alias are deleted; start/stop/status act on the bootstrapped compact deployment",
+    "change_rule": "removing or renaming a command, changing an exit meaning, or changing a structured schema requires a versioned contract and compatibility evidence"
+  }
+}

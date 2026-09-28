@@ -15,7 +15,9 @@ verification: cargo xtask fast
 - [Decisions](decisions/) — accepted ADRs.
 - [Development](development/) — dependency rules and common-change playbooks,
   including the per-runtime [creature implementation guide](development/creature-implementation.md).
-- [Operations](operations/) — topology, migration, handoff, and recovery runbooks.
+- [Operations](operations/) — topology, migration, handoff, and recovery runbooks;
+  [storage providers](operations/storage-providers.md) covers PostgreSQL sharding and
+  RocksDB/OpenRaft clusters.
 - [Generated references](generated/) — workspace, routes, configuration, contracts,
   mappings, and traceability.
 - [Archived Caspar documentation](legacy/caspar/) — explicitly historical material

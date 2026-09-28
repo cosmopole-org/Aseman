@@ -23,7 +23,7 @@ strength of an intention.
 | No dynamic library ABI for providers | MET | Providers are processes behind gRPC (A504) and HTTP (A501) |
 | Every provider publishes a manifest and passes its suite | MET | A504 kit passes for native and Nomad backends |
 | Module activation is health-checked, drainable, rollback-safe | MET | Phase 2, `aseman-sample-provider` |
-| One authoritative implementation per capability | PARTIAL | True for every capability this migration replaced; the legacy node still holds the paths listed in the removal ledger's outstanding rows |
+| One authoritative implementation per capability | MET | Storage is one selected provider per node (ADR 0033): PostgreSQL mode runs every transaction on PostgreSQL and opens no RocksDB; RocksDB mode is a self-contained provider whose OpenRaft cluster lives inside it. Transports are selectable adapters over one shared dispatch. The Caspar aliases and custodial login are deleted |
 | Dependency cycles and forbidden imports fail CI | MET | `check_architecture` |
 | No phase crosses its gate with a MISSING artifact | MET | `docs/migration/artifact-status.md`; Phase 9 is recorded PARTIAL rather than crossed |
 
@@ -104,7 +104,7 @@ strength of an intention.
 | Failed stages resume or roll back without destroying data | MET as rules | P9-01: roll-forward at and after the schema stage |
 | Backup and clean restore tested | MET (database level) | `asemanctl backup`/`restore` now carry PostgreSQL core storage: cluster roles, the core database, and every live creature guest database as consistent dumps inside the signed, hashed snapshot. `live_backup_restore` (A1002 `backup-clean-restore-drill`) restores a PostgreSQL 16 source onto an independently started, empty PostgreSQL 18 cluster with identical core row counts, guest rows, and guest grants; an untrusted-key manifest and a non-empty target are refused, and a re-run repeats no step. A restore of a full compact deployment followed by a healthy node remains Phase 9 clean-host evidence |
 | Formatting, Clippy, tests, compatibility gates in CI | MET | `cargo xtask fast` |
-| Releases commit no generated binaries | PARTIAL | The replacement workflow builds out of tree and publishes SPDX/checksum/attestation evidence without repository write permission; RL-018 keeps existing tracked `dist/*` until a tagged run is retained, independently verified, and all consumers use promoted artifacts |
+| Releases commit no generated binaries | MET (repository) | Tracked `dist/` is deleted and ignored; `release.yml` builds, scans, attests, and publishes a GitHub Release, and `check_release_policy.py` fails if `dist/` is tracked. A first tagged run is release evidence |
 
 ## Documentation and comprehension
 

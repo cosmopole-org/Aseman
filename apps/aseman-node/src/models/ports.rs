@@ -390,13 +390,23 @@ pub trait ISignaler: Send + Sync {
     fn retrive_group(&self, group_id: &str) -> Option<Arc<Group>>;
 }
 
-/// Key/value database handle — the legacy provider's store seam.
-pub type KvDb = Arc<dyn aseman_storage_legacy::LegacyKvStore>;
+/// Key/value database handle of the RocksDB provider (local or Raft-replicated).
+pub type KvDb = Arc<dyn aseman_storage_rocksdb::LegacyKvStore>;
+
+/// The selected storage provider's transaction source (ADR 0033): every node
+/// transaction runs on exactly one of them.
+#[derive(Clone)]
+pub enum StateBackend {
+    /// The RocksDB provider's store.
+    RocksDb(KvDb),
+    /// The PostgreSQL provider's compatibility transactions (ADR 0031).
+    Postgres(Arc<crate::adapters::postgres::trx::PostgresTrxFactory>),
+}
 
 /// The storage driver interface.
 pub trait IStorage: Send + Sync {
     fn storage_root(&self) -> String;
-    fn kv_db(&self) -> KvDb;
+    fn state(&self) -> StateBackend;
     fn gen_id(&self, t: &dyn ITrx, origin: &str) -> String;
     /// Append one signal packet to the store's time-series log. `tags` are the
     /// sender's labels, already validated by the caller; they are stored with

@@ -1,7 +1,7 @@
 //! RocksDB transaction adapter translated from `core/module/actor/model/trx/trx.go`.
 //!
 //! `TrxWrapper` implements [`ITrx`] on top of the legacy key/value store, reached only
-//! through the provider seam `aseman_storage_legacy::LegacyKvStore` (RocksDB types stay
+//! through the provider seam `aseman_storage_rocksdb::LegacyKvStore` (RocksDB types stay
 //! inside that provider).
 //!
 //! The transaction is a write-back overlay over the underlying store:
@@ -21,11 +21,10 @@ use std::collections::{BTreeMap, BTreeSet, HashMap};
 use std::sync::{Arc, Mutex};
 
 use anyhow::{Result, anyhow};
-use aseman_storage_legacy::LegacyKvWrite;
+use aseman_storage_rocksdb::LegacyKvWrite;
 use serde_json::{Map, Value};
 
 use crate::models::core::ICore;
-use crate::models::ports::IStorage;
 use crate::models::transaction::ITrx;
 use crate::models::update::Update;
 
@@ -78,14 +77,29 @@ fn commit_lock() -> &'static Mutex<()> {
 
 impl TrxWrapper {
     /// `NewTrx(core, storage, readonly)`.
+    /// A transaction over a test storage whose backend is RocksDB.
+    #[cfg(test)]
+    pub(crate) fn over_storage(
+        core: Arc<dyn ICore>,
+        storage: Arc<dyn crate::models::ports::IStorage>,
+        readonly: bool,
+    ) -> Arc<TrxWrapper> {
+        match storage.state() {
+            crate::models::ports::StateBackend::RocksDb(db) => Self::new(core, db, readonly),
+            crate::models::ports::StateBackend::Postgres(_) => {
+                panic!("TrxWrapper is the RocksDB provider's transaction")
+            }
+        }
+    }
+
     pub fn new(
         core: Arc<dyn ICore>,
-        storage: Arc<dyn IStorage>,
+        db: crate::models::ports::KvDb,
         readonly: bool,
     ) -> Arc<TrxWrapper> {
         Arc::new(TrxWrapper {
             _core: core,
-            db: storage.kv_db(),
+            db,
             readonly,
             inner: Mutex::new(Inner {
                 overlay: BTreeMap::new(),
@@ -174,6 +188,10 @@ impl Drop for TrxWrapper {
 // -- ITrx implementation ---------------------------------------------------
 
 impl ITrx for TrxWrapper {
+    fn readonly(&self) -> bool {
+        self.readonly
+    }
+
     fn commit(&self) -> Result<()> {
         {
             let mut inner = self.inner.lock().unwrap();
@@ -189,47 +207,24 @@ impl ITrx for TrxWrapper {
         if inner.finalized {
             return Ok(());
         }
-        // When this instance is part of a geo-distributed cluster, the
-        // committed write-set is proposed to the OpenRaft log so every other
-        // instance applies the same mutations. `should_replicate` is false
-        // for raft-apply threads (no echo) and for scopes the VMM marked as
-        // local-only (non-distributed VMs).
-        let replicate = crate::adapters::cluster::should_replicate();
-        let mut replicated_ops: Vec<crate::adapters::cluster::command::KvOp> = Vec::new();
+        // The store is the provider's: in cluster mode its write batch commits through
+        // the RocksDB provider's Raft log before it returns (ADR 0033).
         let mut batch: Vec<LegacyKvWrite> = Vec::with_capacity(inner.overlay.len());
         for (k, v) in &inner.overlay {
             match v {
-                Some(val) => {
-                    batch.push(LegacyKvWrite::Put {
-                        key: k.clone(),
-                        value: val.clone(),
-                    });
-                    if replicate {
-                        replicated_ops.push(crate::adapters::cluster::command::KvOp::put(
-                            String::from_utf8_lossy(k).into_owned(),
-                            val,
-                        ));
-                    }
-                }
-                None => {
-                    batch.push(LegacyKvWrite::Delete { key: k.clone() });
-                    if replicate {
-                        replicated_ops.push(crate::adapters::cluster::command::KvOp::del(
-                            String::from_utf8_lossy(k).into_owned(),
-                        ));
-                    }
-                }
+                Some(val) => batch.push(LegacyKvWrite::Put {
+                    key: k.clone(),
+                    value: val.clone(),
+                }),
+                None => batch.push(LegacyKvWrite::Delete { key: k.clone() }),
             }
         }
-        // LD-10: a failed batch is reported, and nothing is replicated for it.
+        // LD-10: a failed batch is reported.
         let written = self.db.write_batch(&batch);
         inner.overlay.clear();
         inner.finalized = true;
         drop(inner);
         written.map_err(|error| anyhow!("state commit failed: {error}"))?;
-        if !replicated_ops.is_empty() {
-            crate::adapters::cluster::on_local_commit(replicated_ops);
-        }
         Ok(())
     }
 
@@ -747,6 +742,7 @@ pub(crate) mod tests {
     use crate::models::ports::INetwork;
     use crate::models::ports::ISecurity;
     use crate::models::ports::ISignaler;
+    use crate::models::ports::IStorage;
     use crate::models::ports::ITools;
     use crate::models::ports::IWorkloads;
     use std::sync::Arc;
@@ -786,7 +782,7 @@ pub(crate) mod tests {
             String::new()
         }
         fn modify_state(&self, _: bool, mut fn_: crate::models::action::TrxClosure) {
-            let tw = TrxWrapper::new(
+            let tw = TrxWrapper::over_storage(
                 Arc::new(StubCore {
                     storage: self.storage.clone(),
                 }),
@@ -850,7 +846,7 @@ pub(crate) mod tests {
             );
             std::fs::create_dir_all(&dir).unwrap();
             let kv: crate::models::ports::KvDb = Arc::new(
-                aseman_storage_legacy::RocksDbKvStore::open_default(std::path::Path::new(&dir))
+                aseman_storage_rocksdb::RocksDbKvStore::open_default(std::path::Path::new(&dir))
                     .expect("rocksdb"),
             );
             Arc::new(StubStorage { root: dir, kv })
@@ -861,8 +857,8 @@ pub(crate) mod tests {
         fn storage_root(&self) -> String {
             self.root.clone()
         }
-        fn kv_db(&self) -> crate::models::ports::KvDb {
-            self.kv.clone()
+        fn state(&self) -> crate::models::ports::StateBackend {
+            crate::models::ports::StateBackend::RocksDb(self.kv.clone())
         }
         fn gen_id(&self, _t: &dyn ITrx, _: &str) -> String {
             String::new()
@@ -908,7 +904,7 @@ pub(crate) mod tests {
         let core: Arc<dyn ICore> = Arc::new(StubCore {
             storage: storage.clone(),
         });
-        let tw = TrxWrapper::new(core, storage.clone(), readonly);
+        let tw = TrxWrapper::over_storage(core, storage.clone(), readonly);
         (storage, tw)
     }
 
@@ -922,7 +918,7 @@ pub(crate) mod tests {
         let core: Arc<dyn ICore> = Arc::new(StubCore {
             storage: storage.clone(),
         });
-        let b = TrxWrapper::new(core.clone(), storage.clone(), false);
+        let b = TrxWrapper::over_storage(core.clone(), storage.clone(), false);
         a.put_json(
             "Json::Runs",
             "runs",
@@ -939,7 +935,7 @@ pub(crate) mod tests {
         .unwrap();
         a.commit().unwrap();
         b.commit().unwrap();
-        let read = TrxWrapper::new(core, storage, true);
+        let read = TrxWrapper::over_storage(core, storage, true);
         let runs = read.get_json("Json::Runs", "runs").unwrap();
         assert_eq!(
             runs["r1"]["state"], "succeeded",
@@ -965,7 +961,7 @@ pub(crate) mod tests {
         tw.put_json("Json::Doc", "doc", &serde_json::json!({"n": 2}), true)
             .unwrap();
         tw.commit().unwrap();
-        let read = TrxWrapper::new(
+        let read = TrxWrapper::over_storage(
             Arc::new(StubCore {
                 storage: storage.clone(),
             }),
@@ -991,10 +987,10 @@ pub(crate) mod tests {
         )
         .unwrap();
         tw.commit().unwrap();
-        let del = TrxWrapper::new(core.clone(), storage.clone(), false);
+        let del = TrxWrapper::over_storage(core.clone(), storage.clone(), false);
         del.del_json("Json::DvFrame::f1", "doc");
         del.commit().unwrap();
-        let read = TrxWrapper::new(core, storage, true);
+        let read = TrxWrapper::over_storage(core, storage, true);
         assert!(
             read.get_json("Json::DvFrame::f1", "doc").is_err(),
             "the document must be gone"
@@ -1020,7 +1016,7 @@ pub(crate) mod tests {
         let (storage, tw) = fresh_trx(false);
         tw.put_string("persist", "yes");
         tw.commit().unwrap();
-        let tw2 = TrxWrapper::new(
+        let tw2 = TrxWrapper::over_storage(
             Arc::new(StubCore {
                 storage: storage.clone(),
             }),
@@ -1061,7 +1057,7 @@ pub(crate) mod tests {
         tw.put_string("temp", "v");
         tw.discard();
         // A fresh wrapper must not see the put.
-        let tw2 = TrxWrapper::new(
+        let tw2 = TrxWrapper::over_storage(
             Arc::new(StubCore {
                 storage: storage.clone(),
             }),
@@ -1114,26 +1110,26 @@ pub(crate) mod tests {
     /// A store whose batch writes always fail, as a full disk would.
     struct FailingKv;
 
-    impl aseman_storage_legacy::LegacyKvStore for FailingKv {
-        fn get(&self, _: &[u8]) -> aseman_storage_legacy::LegacyMigrationResult<Option<Vec<u8>>> {
+    impl aseman_storage_rocksdb::LegacyKvStore for FailingKv {
+        fn get(&self, _: &[u8]) -> aseman_storage_rocksdb::LegacyMigrationResult<Option<Vec<u8>>> {
             Ok(None)
         }
         fn scan_prefix(
             &self,
             _: &[u8],
-        ) -> aseman_storage_legacy::LegacyMigrationResult<Vec<(Vec<u8>, Vec<u8>)>> {
+        ) -> aseman_storage_rocksdb::LegacyMigrationResult<Vec<(Vec<u8>, Vec<u8>)>> {
             Ok(Vec::new())
         }
         fn scan_all(
             &self,
-        ) -> aseman_storage_legacy::LegacyMigrationResult<Vec<(Vec<u8>, Vec<u8>)>> {
+        ) -> aseman_storage_rocksdb::LegacyMigrationResult<Vec<(Vec<u8>, Vec<u8>)>> {
             Ok(Vec::new())
         }
         fn write_batch(
             &self,
             _: &[LegacyKvWrite],
-        ) -> aseman_storage_legacy::LegacyMigrationResult<()> {
-            Err(aseman_storage_legacy::LegacyMigrationError::Invalid(
+        ) -> aseman_storage_rocksdb::LegacyMigrationResult<()> {
+            Err(aseman_storage_rocksdb::LegacyMigrationError::Invalid(
                 "disk full".to_owned(),
             ))
         }
@@ -1146,7 +1142,7 @@ pub(crate) mod tests {
             root: String::new(),
             kv: Arc::new(FailingKv),
         });
-        let tw = TrxWrapper::new(
+        let tw = TrxWrapper::over_storage(
             Arc::new(StubCore {
                 storage: storage.clone(),
             }),
@@ -1167,7 +1163,7 @@ pub(crate) mod tests {
         tw.commit().unwrap();
         // A second commit on the same wrapper must not double-apply nor panic.
         tw.commit().unwrap();
-        let tw2 = TrxWrapper::new(
+        let tw2 = TrxWrapper::over_storage(
             Arc::new(StubCore {
                 storage: storage.clone(),
             }),

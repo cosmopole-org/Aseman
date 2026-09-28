@@ -110,7 +110,7 @@ impl RocksDbStore {
         // never pruned, so the default unlimited `max_open_files` pinned an
         // ever-growing set of index/filter blocks in RAM. See
         // `crate::drivers::rocks_tuning`.
-        let mut opts = aseman_storage_legacy::tuning::tuned_options();
+        let mut opts = aseman_storage_rocksdb::tuning::tuned_options();
         opts.create_if_missing(true);
         let db = DB::open(&opts, path)?;
 

@@ -329,8 +329,7 @@
       "type": "string",
       "x-legacy-aliases": [
         "MODAL_APP_PREFIX"
-      ],
-      "x-observed-sample": "caspar"
+      ]
     },
     "ASEMAN_LEGACY_MODAL_BUILDER_VERSION": {
       "description": "Typed replacement for legacy MODAL_BUILDER_VERSION (application).",
@@ -351,8 +350,7 @@
       "type": "string",
       "x-legacy-aliases": [
         "MODAL_DEFAULT_IMAGE"
-      ],
-      "x-observed-sample": "ubuntu:24.04"
+      ]
     },
     "ASEMAN_LEGACY_MODAL_ENVIRONMENT": {
       "description": "Typed replacement for legacy MODAL_ENVIRONMENT (application).",
@@ -366,24 +364,21 @@
       "type": "string",
       "x-legacy-aliases": [
         "MODAL_IMAGE_BUILD_TIMEOUT_SECS"
-      ],
-      "x-observed-sample": "900"
+      ]
     },
     "ASEMAN_LEGACY_MODAL_SANDBOX_TIMEOUT_SECS": {
       "description": "Typed replacement for legacy MODAL_SANDBOX_TIMEOUT_SECS (application).",
       "type": "string",
       "x-legacy-aliases": [
         "MODAL_SANDBOX_TIMEOUT_SECS"
-      ],
-      "x-observed-sample": "3600"
+      ]
     },
     "ASEMAN_LEGACY_MODAL_SERVER_URL": {
       "description": "Typed replacement for legacy MODAL_SERVER_URL (network).",
       "type": "string",
       "x-legacy-aliases": [
         "MODAL_SERVER_URL"
-      ],
-      "x-observed-sample": "https://api.modal.com:443"
+      ]
     },
     "ASEMAN_LEGACY_MODAL_TASK_READY_TIMEOUT_SECS": {
       "description": "Typed replacement for legacy MODAL_TASK_READY_TIMEOUT_SECS (application).",
@@ -415,8 +410,7 @@
       "type": "string",
       "x-legacy-aliases": [
         "MODAL_VOLUME_MOUNT_PATH"
-      ],
-      "x-observed-sample": "/data"
+      ]
     },
     "ASEMAN_LEGACY_MODAL_VOLUME_SETTLE_MS": {
       "description": "Typed replacement for legacy MODAL_VOLUME_SETTLE_MS (application).",
@@ -518,64 +512,56 @@
       "type": "string",
       "x-legacy-aliases": [
         "RATE_LIMIT_ANON_BURST"
-      ],
-      "x-observed-sample": "20"
+      ]
     },
     "ASEMAN_LEGACY_RATE_LIMIT_ANON_RPS": {
       "description": "Typed replacement for legacy RATE_LIMIT_ANON_RPS (application).",
       "type": "string",
       "x-legacy-aliases": [
         "RATE_LIMIT_ANON_RPS"
-      ],
-      "x-observed-sample": "10"
+      ]
     },
     "ASEMAN_LEGACY_RATE_LIMIT_AUTH_BURST": {
       "description": "Typed replacement for legacy RATE_LIMIT_AUTH_BURST (application).",
       "type": "string",
       "x-legacy-aliases": [
         "RATE_LIMIT_AUTH_BURST"
-      ],
-      "x-observed-sample": "100"
+      ]
     },
     "ASEMAN_LEGACY_RATE_LIMIT_AUTH_RPS": {
       "description": "Typed replacement for legacy RATE_LIMIT_AUTH_RPS (application).",
       "type": "string",
       "x-legacy-aliases": [
         "RATE_LIMIT_AUTH_RPS"
-      ],
-      "x-observed-sample": "50"
+      ]
     },
     "ASEMAN_LEGACY_RATE_LIMIT_ENABLED": {
       "description": "Typed replacement for legacy RATE_LIMIT_ENABLED (application).",
       "type": "boolean",
       "x-legacy-aliases": [
         "RATE_LIMIT_ENABLED"
-      ],
-      "x-observed-sample": "true"
+      ]
     },
     "ASEMAN_LEGACY_RATE_LIMIT_GLOBAL_BURST": {
       "description": "Typed replacement for legacy RATE_LIMIT_GLOBAL_BURST (application).",
       "type": "string",
       "x-legacy-aliases": [
         "RATE_LIMIT_GLOBAL_BURST"
-      ],
-      "x-observed-sample": "10000"
+      ]
     },
     "ASEMAN_LEGACY_RATE_LIMIT_GLOBAL_RPS": {
       "description": "Typed replacement for legacy RATE_LIMIT_GLOBAL_RPS (application).",
       "type": "string",
       "x-legacy-aliases": [
         "RATE_LIMIT_GLOBAL_RPS"
-      ],
-      "x-observed-sample": "5000"
+      ]
     },
     "ASEMAN_LEGACY_RATE_LIMIT_IDLE_EVICT_SECS": {
       "description": "Typed replacement for legacy RATE_LIMIT_IDLE_EVICT_SECS (application).",
       "type": "string",
       "x-legacy-aliases": [
         "RATE_LIMIT_IDLE_EVICT_SECS"
-      ],
-      "x-observed-sample": "300"
+      ]
     },
     "ASEMAN_LEGACY_ROOT_NODE": {
       "description": "Typed replacement for legacy ROOT_NODE (runtime-or-storage).",
@@ -621,8 +607,7 @@
       "type": "integer",
       "x-legacy-aliases": [
         "TELEMETRY_API_PORT"
-      ],
-      "x-observed-sample": "9099"
+      ]
     },
     "ASEMAN_LEGACY_TELEMETRY_DB_PATH": {
       "description": "Typed replacement for legacy TELEMETRY_DB_PATH (runtime-or-storage).",
@@ -855,6 +840,11 @@
     },
     "ASEMAN_TEST_POSTGRES_RESTORE_URL": {
       "description": "Typed replacement for legacy ASEMAN_TEST_POSTGRES_RESTORE_URL (network).",
+      "type": "string",
+      "x-legacy-aliases": []
+    },
+    "ASEMAN_TEST_POSTGRES_SHARDS_URL": {
+      "description": "Typed replacement for legacy ASEMAN_TEST_POSTGRES_SHARDS_URL (network).",
       "type": "string",
       "x-legacy-aliases": []
     },

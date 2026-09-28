@@ -68,10 +68,15 @@ def check() -> list[str]:
     # Packaging consumes these exact executable names. Checking only the package name
     # let a `runner` target masquerade as `aseman-node` until image construction.
     required_bins = {
-        "apps/aseman-node/Cargo.toml": {"aseman-node", "caspar-node"},
-        "apps/aseman-keygen/Cargo.toml": {"aseman-keygen", "caspar-keygen"},
-        "apps/asemanctl/Cargo.toml": {"casparctl"},
+        "apps/aseman-node/Cargo.toml": {"aseman-node"},
+        "apps/aseman-keygen/Cargo.toml": {"aseman-keygen"},
     }
+    # ADR 0004's window is closed: the Caspar alias executables must not return.
+    for manifest in ["apps/aseman-node/Cargo.toml", "apps/aseman-keygen/Cargo.toml", "apps/asemanctl/Cargo.toml"]:
+        text = (ROOT / manifest).read_text(encoding="utf-8")
+        for alias in ["caspar-node", "caspar-keygen", "casparctl"]:
+            if f'name = "{alias}"' in text:
+                fail(problems, f"{manifest} still packages the retired alias {alias}")
     for manifest, expected in required_bins.items():
         data = tomllib.loads((ROOT / manifest).read_text(encoding="utf-8"))
         actual = {binary["name"] for binary in data.get("bin", [])}

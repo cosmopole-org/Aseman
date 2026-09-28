@@ -38,7 +38,7 @@
     "crates/aseman-module-runtime",
     "crates/aseman-guest-sdk",
     "modules/storage/postgres",
-    "modules/storage/rocksdb-legacy",
+    "modules/storage/rocksdb",
     "modules/network/http",
     "modules/network/legacy",
     "modules/federation/http",

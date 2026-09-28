@@ -1,7 +1,7 @@
 //! Diagnostic: list the `vmEntityType` links in a legacy application store, read
 //! through the legacy provider's read-only snapshot source.
 
-use aseman_storage_legacy::{LegacyRecordSource, RocksDbLegacySource};
+use aseman_storage_rocksdb::{LegacyRecordSource, RocksDbLegacySource};
 
 fn main() {
     let path = std::env::args()
@@ -11,8 +11,8 @@ fn main() {
         .expect("open db");
     let snapshot = source
         .read_snapshot(
-            aseman_storage_legacy::DEFAULT_MAX_EXPORT_RECORDS,
-            aseman_storage_legacy::DEFAULT_MAX_EXPORT_BYTES,
+            aseman_storage_rocksdb::DEFAULT_MAX_EXPORT_RECORDS,
+            aseman_storage_rocksdb::DEFAULT_MAX_EXPORT_BYTES,
         )
         .expect("read db");
     for record in snapshot.records {

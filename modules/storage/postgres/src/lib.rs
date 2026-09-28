@@ -23,6 +23,7 @@ pub mod guest;
 pub mod migration;
 pub mod public_action;
 mod replay;
+pub mod shard;
 pub mod unit_of_work;
 pub mod vmm;
 
@@ -617,6 +618,136 @@ pub(crate) fn query_on(
                 .map_err(|error| PostgresStorageError::Invalid(error.to_string()))
         })
         .collect()
+}
+
+/// One sort-column value of a row, compared the way PostgreSQL orders it
+/// (`NULL` sorts last ascending, like PostgreSQL's default).
+#[derive(Clone, Debug, PartialEq, PartialOrd)]
+pub enum SortValue {
+    Integer(i64),
+    Float(f64),
+    Text(String),
+    Boolean(bool),
+    Bytes(Vec<u8>),
+    Null,
+}
+
+impl SortValue {
+    fn read(row: &postgres::Row, index: usize) -> Self {
+        if let Ok(value) = row.try_get::<_, Option<i64>>(index) {
+            return value.map_or(Self::Null, Self::Integer);
+        }
+        if let Ok(value) = row.try_get::<_, Option<i32>>(index) {
+            return value.map_or(Self::Null, |value| Self::Integer(i64::from(value)));
+        }
+        if let Ok(value) = row.try_get::<_, Option<f64>>(index) {
+            return value.map_or(Self::Null, Self::Float);
+        }
+        if let Ok(value) = row.try_get::<_, Option<bool>>(index) {
+            return value.map_or(Self::Null, Self::Boolean);
+        }
+        if let Ok(value) = row.try_get::<_, Option<String>>(index) {
+            return value.map_or(Self::Null, Self::Text);
+        }
+        if let Ok(value) = row.try_get::<_, Option<Vec<u8>>>(index) {
+            return value.map_or(Self::Null, Self::Bytes);
+        }
+        if let Ok(value) = row.try_get::<_, Option<uuid::Uuid>>(index) {
+            return value.map_or(Self::Null, |value| Self::Text(value.to_string()));
+        }
+        Self::Null
+    }
+
+    /// Total order for merging: `NULL` after every value, like PostgreSQL ascending.
+    pub fn compare(&self, other: &Self) -> std::cmp::Ordering {
+        use std::cmp::Ordering;
+        match (self, other) {
+            (Self::Null, Self::Null) => Ordering::Equal,
+            (Self::Null, _) => Ordering::Greater,
+            (_, Self::Null) => Ordering::Less,
+            (left, right) => left.partial_cmp(right).unwrap_or(Ordering::Equal),
+        }
+    }
+}
+
+/// [`query_on`], also returning each row's sort-column values followed by its id.
+pub(crate) fn query_keyed_on(
+    client: &mut impl GenericClient,
+    query: &CapsuleQuery,
+) -> StorageResult<Vec<(Vec<SortValue>, CapsuleEnvelope)>> {
+    if query.limit == 0 || query.limit > MAX_QUERY_LIMIT {
+        return Err(PostgresStorageError::Invalid(
+            "query limit is outside provider bounds".to_owned(),
+        ));
+    }
+    if !query.aggregates.is_empty() || !query.traversals.is_empty() || query.cursor.is_some() {
+        return Err(PostgresStorageError::Unsupported(
+            "aggregates, traversal, and cursors are not advertised by postgres-core-v1".to_owned(),
+        ));
+    }
+    let mapping = table_mapping(&query.kind)?;
+    for field in &query.projection {
+        require_query_field(mapping, field)?;
+    }
+    let mut values = Vec::new();
+    let mut filters = vec!["NOT tombstone".to_owned()];
+    if let Some(predicate) = &query.predicate {
+        filters.push(predicate_sql(predicate, mapping, &mut values, 1)?);
+    }
+    let mut order = Vec::new();
+    let mut keys = Vec::new();
+    for sort in &query.sort {
+        let column = sql_identifier(require_query_field(mapping, &sort.field)?);
+        let direction = match sort.direction {
+            aseman_contracts::capsule::SortDirection::Ascending => "ASC",
+            aseman_contracts::capsule::SortDirection::Descending => "DESC",
+        };
+        order.push(format!("{column} {direction}"));
+        keys.push(column);
+    }
+    order.push("id ASC".to_owned());
+    keys.push("id::text".to_owned());
+    values.push(SqlParam::I64(Some(i64::from(query.limit))));
+    let limit_parameter = values.len();
+    let statement = format!(
+        "SELECT capsule_cbor, {} FROM {} WHERE {} ORDER BY {} LIMIT ${limit_parameter}",
+        keys.join(", "),
+        qualified(mapping),
+        filters.join(" AND "),
+        order.join(", ")
+    );
+    let parameters = sql_parameters(&values);
+    let rows = client
+        .query(&statement, &parameters)
+        .map_err(map_postgres_error)?;
+    rows.into_iter()
+        .map(|row| {
+            let bytes: Vec<u8> = row.get(0);
+            let envelope = CapsuleEnvelope::from_canonical_bytes(&bytes)
+                .map_err(|error| PostgresStorageError::Invalid(error.to_string()))?;
+            let sort_values = (1..row.len())
+                .map(|index| SortValue::read(&row, index))
+                .collect();
+            Ok((sort_values, envelope))
+        })
+        .collect()
+}
+
+/// Whether a kind is a *reference* kind in cluster mode (ADR 0033): replicated to
+/// every shard because another kind references it or it carries a uniqueness
+/// constraint beyond its id, so every foreign key and unique index stays enforced by
+/// PostgreSQL on each shard. Every other kind is hash-distributed.
+pub(crate) fn is_reference_kind(kind: &CapsuleKind) -> StorageResult<bool> {
+    let mapping = table_mapping(kind)?;
+    if !mapping.unique_indexes.is_empty() {
+        return Ok(true);
+    }
+    Ok(all_tables()?.iter().any(|other| {
+        other
+            .relationships
+            .values()
+            .any(|relationship| relationship.target_kind == mapping.kind)
+    }))
 }
 
 /// A validated write, ready to run inside a transaction.

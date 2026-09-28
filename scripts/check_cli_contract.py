@@ -9,7 +9,7 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-CONTRACT = ROOT / "contracts/cli/command-v1.json"
+CONTRACT = ROOT / "contracts/cli/command-v2.json"
 INVENTORY = ROOT / "docs/generated/current-cli-ops.json"
 
 

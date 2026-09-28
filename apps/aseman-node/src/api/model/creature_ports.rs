@@ -618,7 +618,7 @@ mod tests {
     #[test]
     fn legacy_creatures_pass_the_directory_conformance_suite() {
         let storage: Arc<dyn IStorage> = StubStorage::new();
-        let trx = TrxWrapper::new(
+        let trx = TrxWrapper::over_storage(
             Arc::new(StubCore {
                 storage: storage.clone(),
             }),
@@ -652,7 +652,7 @@ mod tests {
     #[test]
     fn owner_links_follow_the_record() {
         let storage: Arc<dyn IStorage> = StubStorage::new();
-        let trx = TrxWrapper::new(
+        let trx = TrxWrapper::over_storage(
             Arc::new(StubCore {
                 storage: storage.clone(),
             }),
@@ -693,7 +693,7 @@ mod tests {
     #[test]
     fn accounts_write_only_the_balance_and_never_create_ghost_creatures() {
         let storage: Arc<dyn IStorage> = StubStorage::new();
-        let trx = TrxWrapper::new(
+        let trx = TrxWrapper::over_storage(
             Arc::new(StubCore {
                 storage: storage.clone(),
             }),

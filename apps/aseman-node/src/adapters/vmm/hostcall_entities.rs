@@ -2248,8 +2248,8 @@ mod exec_shell_action_tests {
 
     #[test]
     fn an_explicitly_empty_user_stays_anonymous() {
-        // How the auth creature reaches /creatures/login: no identity, no
-        // signature, an anon-guarded action.
+        // How an anonymous caller reaches an anon-guarded action: no identity, no
+        // signature.
         let input = json!({"userId": ""});
         let (user, sig) = acting_identity("42@global", &input, "1@global").unwrap();
         assert_eq!(user, "");
@@ -2258,7 +2258,7 @@ mod exec_shell_action_tests {
 
     #[test]
     fn an_omitted_user_still_defaults_to_the_owner() {
-        let input = json!({"path": "/creatures/login"});
+        let input = json!({"path": "/creatures/authenticate"});
         let (user, _) = acting_identity("42@global", &input, "1@global").unwrap();
         assert_eq!(
             user, "1@global",

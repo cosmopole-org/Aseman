@@ -1,20 +1,9 @@
-//! Replicated command set of the Caspar geo-distributed cluster.
+//! The replicated command set of the RocksDB provider's cluster (ADR 0033).
 //!
-//! Every state change that must be visible on all Caspar instances of the
-//! same authority travels through the OpenRaft log as a [`ClusterCommand`].
-//! Three producers feed the log:
-//!
-//! * **Shell API write-sets** — every non-readonly shell action commit is
-//!   captured as a [`ClusterCommand::KvBatch`] so the resulting state is
-//!   available on every instance (accounts, machines, programs, stores, …).
-//! * **Distributed creature deployments** — a `/programs/deploy` call with
-//!   `distribution: "cluster"` emits a [`ClusterCommand::Deploy`] carrying the
-//!   creature artifact itself, so every instance can serve the VM locally.
-//! * **Distributed VM state** — key-value mutations made by VMs that were
-//!   deployed in distributed mode commit locally first (edge-style, on the
-//!   instance that received the request) and are then propagated as
-//!   [`ClusterCommand::KvBatch`]. VMs deployed in local mode never enter the
-//!   raft log.
+//! Every write batch of the replicated store travels through the OpenRaft log as a
+//! [`ClusterCommand::KvBatch`] and is applied, in log order, to every replica's
+//! RocksDB. Cluster configuration changes travel as [`ClusterCommand::ConfigPut`]. The
+//! log carries storage only: nothing above the storage provider proposes to it.
 
 use std::io::Cursor;
 
@@ -59,36 +48,8 @@ impl KvOp {
 
 /// A creature program artifact replicated to every instance on a
 /// distributed deploy.
-#[derive(Debug, Clone, Default, Serialize, Deserialize)]
-pub struct DeployArtifact {
-    pub program_id: String,
-    pub entity_id: String,
-    pub entity_type: String,
-    /// Owning Machine of the program (ownership resolution on replicas).
-    pub machine_id: String,
-    pub runtime: String,
-    pub path: String,
-    pub comment: String,
-    /// Primary artifact file name declared by the runtime plugin.
-    pub primary_file_name: String,
-    /// `(file_name, base64_data)` — primary file first, extras after.
-    pub files: Vec<(String, String)>,
-    pub set_entity_links: bool,
-    pub build_on_deploy: bool,
-    /// Normalized custom VM gateway route prefix bound to this entity, or empty
-    /// when it exposes no custom route. Reached at `/{creatureUsername}/{path…}`
-    /// where the username belongs to `machine_id` (the owning creature).
-    #[serde(default)]
-    pub gateway_route: String,
-    /// Optional specific VM instance the custom route targets (empty ⇒ default).
-    #[serde(default)]
-    pub gateway_vm_id: String,
-}
-
-/// The application data payload of a raft log entry.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(tag = "type")]
-#[allow(clippy::large_enum_variant)] // DeployArtifact is inherently large
 pub enum ClusterCommand {
     /// No-op used for leader-commit probes.
     #[serde(rename = "noop")]
@@ -102,11 +63,6 @@ pub enum ClusterCommand {
         ops: Vec<KvOp>,
     },
     /// Replicated creature program deployment.
-    #[serde(rename = "deploy")]
-    Deploy {
-        origin: u64,
-        artifact: DeployArtifact,
-    },
     /// Cluster-wide configuration entry (kept in the replicated config store).
     #[serde(rename = "config")]
     ConfigPut { key: String, value: Value },
@@ -137,7 +93,7 @@ impl ClusterResponse {
 }
 
 openraft::declare_raft_types!(
-    /// Raft type bundle of the Caspar cluster: `D` is the replicated command,
+    /// Raft type bundle of the storage cluster: `D` is the replicated command,
     /// `R` the apply result; node ids are `u64` and nodes are addressed
     /// `openraft::BasicNode`s (host:port of the cluster HTTP listener).
     pub TypeConfig:
