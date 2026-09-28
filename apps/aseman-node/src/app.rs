@@ -265,7 +265,7 @@ impl NodeApp {
 /// write fenced at the configured binding generation (A309).
 fn install_core_storage(config: &AsemanConfig) -> Result<()> {
     use aseman_config::CoreStorageProvider;
-    if config.core_storage.provider == CoreStorageProvider::Legacy {
+    if config.core_storage.provider == CoreStorageProvider::RocksDb {
         return Ok(());
     }
     let secret = config

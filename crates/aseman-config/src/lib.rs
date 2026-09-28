@@ -50,12 +50,11 @@ pub struct CoreStorageConfig {
 /// The server holding the legacy signal (`storage`) and build-log tables.
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
 pub enum SignalLogProvider {
-    /// The legacy QuestDB instance on `ASEMAN_LEGACY_QUESTDB_PORT` (the default, so
-    /// an existing deployment keeps reading its history).
-    #[default]
+    /// QuestDB on `ASEMAN_LEGACY_QUESTDB_PORT`: the RocksDB provider's default.
     QuestDb,
-    /// PostgreSQL through `ASEMAN_DATABASE_URL_SECRET`; needs the PostgreSQL core
-    /// storage provider. History already in QuestDB is not moved by selecting it.
+    /// PostgreSQL through `ASEMAN_DATABASE_URL_SECRET`: the PostgreSQL provider's
+    /// default. History already in QuestDB is not moved by selecting it.
+    #[default]
     Postgres,
 }
 
@@ -71,10 +70,12 @@ pub struct GuestProxyConfig {
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum CoreStorageProvider {
-    /// The wrapped legacy provider (RocksDB); the default until cutover.
-    Legacy,
-    /// PostgreSQL capsules through `ASEMAN_DATABASE_URL_SECRET`.
+    /// PostgreSQL through `ASEMAN_DATABASE_URL_SECRET` (the default): capsules, the
+    /// compatibility transaction surface, and every PostgreSQL-backed port.
     Postgres,
+    /// Embedded RocksDB under the storage root, self-contained on one host; in
+    /// cluster mode its commits replicate through OpenRaft (ADR 0012 amendment).
+    RocksDb,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -1153,12 +1154,12 @@ impl CoreStorageConfig {
             .get("ASEMAN_CORE_STORAGE_PROVIDER")
             .map(String::as_str)
         {
-            None | Some("legacy") => CoreStorageProvider::Legacy,
-            Some("postgres") => CoreStorageProvider::Postgres,
+            None | Some("postgres") => CoreStorageProvider::Postgres,
+            Some("rocksdb") => CoreStorageProvider::RocksDb,
             Some(_) => {
                 return Err(ConfigError::Invalid {
                     key: "ASEMAN_CORE_STORAGE_PROVIDER",
-                    reason: "expected legacy or postgres",
+                    reason: "expected postgres or rocksdb",
                 });
             }
         };
@@ -1170,6 +1171,7 @@ impl CoreStorageConfig {
             return Err(ConfigError::Missing("ASEMAN_DATABASE_URL_SECRET"));
         }
         let signal_log = match values.get("ASEMAN_SIGNAL_LOG_PROVIDER").map(String::as_str) {
+            None if provider == CoreStorageProvider::Postgres => SignalLogProvider::Postgres,
             None | Some("questdb") => SignalLogProvider::QuestDb,
             Some("postgres") if provider == CoreStorageProvider::Postgres => {
                 SignalLogProvider::Postgres
@@ -1386,6 +1388,8 @@ mod tests {
                 "ASEMAN_NODE_PRIVATE_KEY_SECRET".into(),
                 "secret://node/private-key".into(),
             ),
+            // The self-contained provider, so most cases need no database secret.
+            ("ASEMAN_CORE_STORAGE_PROVIDER".into(), "rocksdb".into()),
         ])
     }
 
@@ -1434,19 +1438,21 @@ mod tests {
     }
 
     #[test]
-    fn core_storage_defaults_to_legacy_and_postgres_needs_its_secret() {
+    fn core_storage_defaults_to_postgres_and_rocksdb_is_selectable() {
         let config = AsemanConfig::from_map(&base()).unwrap();
         assert_eq!(
             config.core_storage,
             CoreStorageConfig {
-                provider: CoreStorageProvider::Legacy,
+                provider: CoreStorageProvider::RocksDb,
                 binding_generation: 0,
                 guest_proxy: None,
                 signal_log: SignalLogProvider::QuestDb,
             }
         );
         let mut values = base();
-        values.insert("ASEMAN_CORE_STORAGE_PROVIDER".into(), "postgres".into());
+        values.insert("ASEMAN_CORE_STORAGE_PROVIDER".into(), "legacy".into());
+        assert!(AsemanConfig::from_map(&values).is_err(), "the Caspar name is gone");
+        values.remove("ASEMAN_CORE_STORAGE_PROVIDER");
         assert_eq!(
             AsemanConfig::from_map(&values),
             Err(ConfigError::Missing("ASEMAN_DATABASE_URL_SECRET"))
@@ -1514,6 +1520,7 @@ mod tests {
             ("CLIENT_TCP_API_PORT".into(), "7001".into()),
             ("STORAGE_ROOT_PATH".into(), "/srv/aseman".into()),
             ("CASPAR_MALLOC_ARENA_MAX".into(), "4".into()),
+            ("ASEMAN_CORE_STORAGE_PROVIDER".into(), "rocksdb".into()),
         ]);
         let config = AsemanConfig::from_map(&values).unwrap();
         assert_eq!(config.node.id, "legacy-node");
@@ -1578,6 +1585,10 @@ mod tests {
             (
                 "ASEMAN_NODE_PRIVATE_KEY_SECRET".to_owned(),
                 "/run/secrets/key".to_owned(),
+            ),
+            (
+                "ASEMAN_CORE_STORAGE_PROVIDER".to_owned(),
+                "rocksdb".to_owned(),
             ),
         ]);
         assert_eq!(AsemanConfig::from_map(&values).unwrap().vmm, None);

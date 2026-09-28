@@ -8,9 +8,6 @@ license.workspace = true
 repository.workspace = true
 default-run = "asemanctl"
 
-[[bin]]
-name = "casparctl"
-path = "src/bin/casparctl.rs"
 
 [dependencies]
 aseman-config = { path = "../../crates/aseman-config" }

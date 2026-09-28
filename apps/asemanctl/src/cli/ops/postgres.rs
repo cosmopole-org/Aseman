@@ -4,30 +4,47 @@
 //! definitions (without passwords), a custom-format dump of the core database, and
 //! one dump per live creature guest database named in
 //! `aseman_core.guest_database_bindings` (ADR 0001). Each dump is a consistent
-//! snapshot, so the node may keep running. `databases.json` records which databases
-//! were captured and the row count of every core table, which restore re-checks.
+//! snapshot. `databases.json` records which databases were captured and the row count
+//! of every core table, which restore re-checks.
 //!
-//! Restore only ever targets an explicitly configured, empty cluster: a core
-//! database without the `aseman_core` schema and no pre-existing guest database of
-//! the same name. It never drops or overwrites anything.
+//! The databases are reached one of two ways ([`PgAccess`]): by URL from a node
+//! configuration, with the PostgreSQL client tools on this host's `PATH` at a major
+//! version no older than the server; or inside the compact deployment's `postgres`
+//! service, which is unreachable from the host by design, so the tools run there and
+//! the dumps stream through files here.
 //!
-//! The PostgreSQL client tools (`psql`, `pg_dump`, `pg_dumpall`, `pg_restore`) must be
-//! on `PATH`; their major version must be at least the server's.
+//! Restore only ever targets an explicitly selected, empty cluster: a core database
+//! without the `aseman_core` schema and no pre-existing guest database of the same
+//! name. It never drops or overwrites anything.
 
 use std::collections::BTreeMap;
 use std::fs;
 use std::path::Path;
-use std::process::Command;
+use std::process::{Command, Output, Stdio};
 
 use anyhow::{Context, Result, anyhow, bail};
 use aseman_config::{AsemanConfig, CoreStorageProvider};
 use serde::{Deserialize, Serialize};
+
+use crate::cli::compact::Compact;
 
 /// Where the PostgreSQL artifacts live inside a backup's `snapshot/` tree.
 pub(super) const SNAPSHOT_DIR: &str = "postgres";
 
 const CATALOG_FILE: &str = "databases.json";
 const CORE_SCHEMA: &str = "aseman_core";
+/// The compact profile's database owner and core database (`POSTGRES_USER`/`_DB`).
+const COMPACT_USER: &str = "aseman";
+const COMPACT_DATABASE: &str = "aseman";
+
+/// How the PostgreSQL tools reach the databases.
+#[derive(Clone, Debug)]
+pub(super) enum PgAccess {
+    /// A core-database URL; the tools run on this host.
+    Url(String),
+    /// The compact deployment's `postgres` service; the tools run inside it.
+    Compact(Compact),
+}
 
 /// What a PostgreSQL backup captured.
 #[derive(Clone, Debug, Default, Deserialize, Eq, PartialEq, Serialize)]
@@ -62,39 +79,118 @@ pub(super) fn database_url(config: &AsemanConfig) -> Result<Option<String>> {
     Ok(Some(url))
 }
 
+impl PgAccess {
+    fn core_database(&self) -> Result<String> {
+        match self {
+            Self::Url(url) => Ok(database_name(url)?.to_owned()),
+            Self::Compact(_) => Ok(COMPACT_DATABASE.to_owned()),
+        }
+    }
+
+    /// Run a PostgreSQL client `program` against `database`, streaming stdin from and
+    /// stdout to files.
+    fn run(
+        &self,
+        program: &str,
+        database: &str,
+        extra: &[&str],
+        stdin: Option<&Path>,
+        stdout: Option<&Path>,
+    ) -> Result<Output> {
+        match self {
+            Self::Url(url) => {
+                let mut command = Command::new(program);
+                command
+                    .arg(format!("--dbname={}", with_database(url, database)?))
+                    .args(extra);
+                if let Some(path) = stdin {
+                    command.stdin(Stdio::from(
+                        fs::File::open(path).with_context(|| format!("open {}", path.display()))?,
+                    ));
+                }
+                if let Some(path) = stdout {
+                    command.stdout(Stdio::from(
+                        fs::File::create(path)
+                            .with_context(|| format!("create {}", path.display()))?,
+                    ));
+                }
+                let output = command.output().with_context(|| {
+                    format!("run {program} (is the PostgreSQL client installed?)")
+                })?;
+                if !output.status.success() {
+                    bail!(
+                        "{program} failed: {}",
+                        String::from_utf8_lossy(&output.stderr).trim()
+                    );
+                }
+                Ok(output)
+            }
+            Self::Compact(compact) => {
+                let mut arguments = vec![program, "-U", COMPACT_USER];
+                if program == "pg_dumpall" {
+                    arguments.extend(["-l", database]);
+                } else {
+                    arguments.extend(["-d", database]);
+                }
+                arguments.extend_from_slice(extra);
+                compact.exec_postgres(&arguments, stdin, stdout)
+            }
+        }
+    }
+
+    fn query(&self, database: &str, sql: &str) -> Result<String> {
+        let output = self.run(
+            "psql",
+            database,
+            &[
+                "--no-psqlrc",
+                "--tuples-only",
+                "--no-align",
+                "-v",
+                "ON_ERROR_STOP=1",
+                "-c",
+                sql,
+            ],
+            None,
+            None,
+        )?;
+        Ok(String::from_utf8_lossy(&output.stdout).into_owned())
+    }
+}
+
 /// Dump the cluster globals, the core database, and every live guest database into
-/// `directory`, which must not yet exist or be empty.
-pub(super) fn dump(url: &str, directory: &Path) -> Result<Catalog> {
+/// `directory`.
+pub(super) fn dump(access: &PgAccess, directory: &Path) -> Result<Catalog> {
     fs::create_dir_all(directory.join("guest"))?;
-    let core_database = database_name(url)?.to_owned();
-    run(
-        Command::new("pg_dumpall")
-            .arg(format!("--dbname={url}"))
-            .args(["--globals-only", "--no-role-passwords", "--file"])
-            .arg(directory.join("globals.sql")),
-        "pg_dumpall --globals-only",
+    let core_database = access.core_database()?;
+    access.run(
+        "pg_dumpall",
+        &core_database,
+        &["--globals-only", "--no-role-passwords"],
+        None,
+        Some(&directory.join("globals.sql")),
     )?;
-    run(
-        Command::new("pg_dump")
-            .arg(format!("--dbname={url}"))
-            .args(["--format=custom", "--file"])
-            .arg(directory.join("core.dump")),
-        "pg_dump core database",
+    access.run(
+        "pg_dump",
+        &core_database,
+        &["--format=custom"],
+        None,
+        Some(&directory.join("core.dump")),
     )?;
-    let guest_databases = guest_databases(url)?;
+    let guest_databases = guest_databases(access, &core_database)?;
     for name in &guest_databases {
-        run(
-            Command::new("pg_dump")
-                .arg(format!("--dbname={}", with_database(url, name)?))
-                .args(["--format=custom", "--create", "--file"])
-                .arg(directory.join("guest").join(format!("{name}.dump"))),
-            "pg_dump guest database",
+        access.run(
+            "pg_dump",
+            name,
+            &["--format=custom", "--create"],
+            None,
+            Some(&directory.join("guest").join(format!("{name}.dump"))),
         )?;
     }
     let catalog = Catalog {
+        core_row_counts: core_row_counts(access, &core_database)?,
         core_database,
         guest_databases,
-        core_row_counts: core_row_counts(url)?,
     };
     fs::write(
         directory.join(CATALOG_FILE),
@@ -117,9 +213,10 @@ pub(super) fn read_catalog(directory: &Path) -> Result<Option<Catalog>> {
 
 /// Refuse a target that already holds Aseman core state or any of the guest
 /// databases the backup would create.
-pub(super) fn ensure_empty_target(url: &str, catalog: &Catalog) -> Result<()> {
-    let schema = query(
-        url,
+pub(super) fn ensure_empty_target(access: &PgAccess, catalog: &Catalog) -> Result<()> {
+    let core = access.core_database()?;
+    let schema = access.query(
+        &core,
         &format!("SELECT count(*) FROM pg_namespace WHERE nspname = '{CORE_SCHEMA}'"),
     )?;
     if schema.trim() != "0" {
@@ -129,54 +226,87 @@ pub(super) fn ensure_empty_target(url: &str, catalog: &Catalog) -> Result<()> {
         );
     }
     for name in &catalog.guest_databases {
-        let exists = query(
-            url,
-            &format!(
-                "SELECT count(*) FROM pg_database WHERE datname = '{}'",
-                checked_identifier(name)?
-            ),
-        )?;
-        if exists.trim() != "0" {
+        if database_exists(access, &core, name)? {
             bail!("the target already has a guest database named {name}");
         }
     }
     Ok(())
 }
 
+/// Prepare a compact deployment to receive a restore. Its core schema already exists
+/// (the node migrates on start), so it counts as empty when no core table holds a row
+/// and no guest database exists; otherwise only an explicit `replace` proceeds. The
+/// core database is then recreated and the deployment's own guest databases dropped,
+/// so the restore lands on a clean catalog. Callers stop every writer first.
+pub(super) fn prepare_compact_target(access: &PgAccess, replace: bool) -> Result<()> {
+    let PgAccess::Compact(_) = access else {
+        bail!("only a compact deployment is prepared in place");
+    };
+    let core = access.core_database()?;
+    let rows: u64 = core_row_counts(access, &core)?.values().sum();
+    let guests = guest_databases(access, &core)?;
+    if (rows > 0 || !guests.is_empty()) && !replace {
+        bail!(
+            "the target deployment holds {rows} core row(s) and {} guest database(s); \
+             pass --replace to overwrite it",
+            guests.len()
+        );
+    }
+    for name in &guests {
+        access.query(
+            "postgres",
+            &format!(
+                "DROP DATABASE IF EXISTS {} WITH (FORCE)",
+                checked_identifier(name)?
+            ),
+        )?;
+    }
+    access.query(
+        "postgres",
+        &format!("DROP DATABASE {COMPACT_DATABASE} WITH (FORCE)"),
+    )?;
+    access.query(
+        "postgres",
+        &format!("CREATE DATABASE {COMPACT_DATABASE} OWNER {COMPACT_USER}"),
+    )?;
+    Ok(())
+}
+
 /// Restore globals, the core database, and every guest database from `directory`.
-pub(super) fn restore(url: &str, directory: &Path, catalog: &Catalog) -> Result<()> {
+pub(super) fn restore(access: &PgAccess, directory: &Path, catalog: &Catalog) -> Result<()> {
+    let core = access.core_database()?;
     // Roles are cluster-wide; ones that already exist on the target (the restoring
     // role itself, for example) are reported and kept. Anything else is fatal.
-    let output = Command::new("psql")
-        .arg(format!("--dbname={url}"))
-        .args(["--quiet", "--no-psqlrc", "-v", "ON_ERROR_STOP=0", "--file"])
-        .arg(directory.join("globals.sql"))
-        .output()
-        .context("run psql (is the PostgreSQL client installed?)")?;
-    let stderr = String::from_utf8_lossy(&output.stderr);
+    let globals = access.run(
+        "psql",
+        &core,
+        &["--quiet", "--no-psqlrc", "-v", "ON_ERROR_STOP=0"],
+        Some(&directory.join("globals.sql")),
+        None,
+    )?;
+    let stderr = String::from_utf8_lossy(&globals.stderr);
     let fatal: Vec<&str> = stderr
         .lines()
         .filter(|line| line.contains("ERROR:") && !line.contains("already exists"))
         .collect();
-    if !output.status.success() || !fatal.is_empty() {
+    if !fatal.is_empty() {
         bail!("restoring cluster roles failed: {}", fatal.join("; "));
     }
-    run(
-        Command::new("pg_restore")
-            .arg(format!("--dbname={url}"))
-            .arg("--exit-on-error")
-            .arg(directory.join("core.dump")),
-        "pg_restore core database",
+    access.run(
+        "pg_restore",
+        &core,
+        &["--exit-on-error"],
+        Some(&directory.join("core.dump")),
+        None,
     )?;
-    let maintenance = with_database(url, "postgres")?;
     for name in &catalog.guest_databases {
         checked_identifier(name)?;
-        run(
-            Command::new("pg_restore")
-                .arg(format!("--dbname={maintenance}"))
-                .args(["--create", "--exit-on-error"])
-                .arg(directory.join("guest").join(format!("{name}.dump"))),
-            "pg_restore guest database",
+        access.run(
+            "pg_restore",
+            "postgres",
+            &["--create", "--exit-on-error"],
+            Some(&directory.join("guest").join(format!("{name}.dump"))),
+            None,
         )?;
     }
     Ok(())
@@ -184,8 +314,9 @@ pub(super) fn restore(url: &str, directory: &Path, catalog: &Catalog) -> Result<
 
 /// Check that the restored core database holds exactly the rows the backup counted,
 /// and that every guest database exists.
-pub(super) fn verify(url: &str, catalog: &Catalog) -> Result<()> {
-    let actual = core_row_counts(url)?;
+pub(super) fn verify(access: &PgAccess, catalog: &Catalog) -> Result<()> {
+    let core = access.core_database()?;
+    let actual = core_row_counts(access, &core)?;
     if actual != catalog.core_row_counts {
         let differing: Vec<&String> = catalog
             .core_row_counts
@@ -196,30 +327,34 @@ pub(super) fn verify(url: &str, catalog: &Catalog) -> Result<()> {
         bail!("restored core row counts differ for tables {differing:?}");
     }
     for name in &catalog.guest_databases {
-        let exists = query(
-            url,
-            &format!(
-                "SELECT count(*) FROM pg_database WHERE datname = '{}'",
-                checked_identifier(name)?
-            ),
-        )?;
-        if exists.trim() != "1" {
+        if !database_exists(access, &core, name)? {
             bail!("guest database {name} is missing after restore");
         }
     }
     Ok(())
 }
 
-fn guest_databases(url: &str) -> Result<Vec<String>> {
-    let table = query(
-        url,
+fn database_exists(access: &PgAccess, core: &str, name: &str) -> Result<bool> {
+    let count = access.query(
+        core,
+        &format!(
+            "SELECT count(*) FROM pg_database WHERE datname = '{}'",
+            checked_identifier(name)?
+        ),
+    )?;
+    Ok(count.trim() == "1")
+}
+
+fn guest_databases(access: &PgAccess, core: &str) -> Result<Vec<String>> {
+    let table = access.query(
+        core,
         &format!("SELECT to_regclass('{CORE_SCHEMA}.guest_database_bindings') IS NOT NULL"),
     )?;
     if table.trim() != "t" {
         return Ok(Vec::new());
     }
-    let rows = query(
-        url,
+    let rows = access.query(
+        core,
         &format!(
             "SELECT DISTINCT b.database_name FROM {CORE_SCHEMA}.guest_database_bindings b \
              JOIN pg_database d ON d.datname = b.database_name \
@@ -232,10 +367,10 @@ fn guest_databases(url: &str) -> Result<Vec<String>> {
         .collect()
 }
 
-fn core_row_counts(url: &str) -> Result<BTreeMap<String, u64>> {
+fn core_row_counts(access: &PgAccess, core: &str) -> Result<BTreeMap<String, u64>> {
     // `query_to_xml` counts every table in one round trip without dynamic SQL.
-    let rows = query(
-        url,
+    let rows = access.query(
+        core,
         &format!(
             "SELECT c.relname || '|' || (xpath('/row/n/text()', query_to_xml(format(\
              'SELECT count(*) AS n FROM {CORE_SCHEMA}.%I', c.relname), false, true, '')))[1]::text \
@@ -251,42 +386,6 @@ fn core_row_counts(url: &str) -> Result<BTreeMap<String, u64>> {
         counts.insert(table.to_owned(), count.parse()?);
     }
     Ok(counts)
-}
-
-fn query(url: &str, sql: &str) -> Result<String> {
-    let output = Command::new("psql")
-        .arg(format!("--dbname={url}"))
-        .args([
-            "--no-psqlrc",
-            "--tuples-only",
-            "--no-align",
-            "-v",
-            "ON_ERROR_STOP=1",
-            "-c",
-        ])
-        .arg(sql)
-        .output()
-        .context("run psql (is the PostgreSQL client installed?)")?;
-    if !output.status.success() {
-        bail!(
-            "psql query failed: {}",
-            String::from_utf8_lossy(&output.stderr).trim()
-        );
-    }
-    Ok(String::from_utf8_lossy(&output.stdout).into_owned())
-}
-
-fn run(command: &mut Command, what: &str) -> Result<()> {
-    let output = command
-        .output()
-        .with_context(|| format!("run {what} (is the PostgreSQL client installed?)"))?;
-    if !output.status.success() {
-        bail!(
-            "{what} failed: {}",
-            String::from_utf8_lossy(&output.stderr).trim()
-        );
-    }
-    Ok(())
 }
 
 /// Guest database names come from the binding table and are interpolated into SQL and

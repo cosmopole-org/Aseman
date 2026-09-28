@@ -5,7 +5,7 @@ FROM ${RUNTIME_IMAGE}
 RUN apt-get update \
     && apt-get install --yes --no-install-recommends ca-certificates libgcc-s1 \
     && rm -rf /var/lib/apt/lists/*
-COPY --chmod=0555 dist/bin/aseman-vmm-backend-nomad /usr/local/bin/aseman-vmm-backend-nomad
+COPY --chmod=0555 bin/aseman-vmm-backend-nomad /usr/local/bin/aseman-vmm-backend-nomad
 
 USER 65532:65532
 WORKDIR /var/empty

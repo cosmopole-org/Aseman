@@ -1,0 +1,42 @@
+{
+  "schema_version": 1,
+  "artifact": "A906",
+  "description": "Third-party runtime binaries Aseman needs but does not ship in its release archive. The installer downloads each from its upstream release and refuses it unless the SHA-256 matches. scripts/check_release_policy.py holds scripts/install.sh to these pins.",
+  "dependencies": {
+    "wasmedge": {
+      "version": "0.17.1",
+      "needed_by": ["aseman-vmm-backend-native"],
+      "purpose": "the WebAssembly runtime of the native VMM backend (libwasmedge.so.0, linked dynamically and found through the binary's $ORIGIN/../lib/aseman RPATH)",
+      "install": "required",
+      "archives": {
+        "amd64": {
+          "url": "https://github.com/WasmEdge/WasmEdge/releases/download/0.17.1/WasmEdge-0.17.1-manylinux_2_28_x86_64.tar.gz",
+          "sha256": "27a1abec072ddf45b40e2e81e33c1e5fe9b241f31fd1bbf0182f05097489a07a"
+        },
+        "arm64": {
+          "url": "https://github.com/WasmEdge/WasmEdge/releases/download/0.17.1/WasmEdge-0.17.1-manylinux_2_28_aarch64.tar.gz",
+          "sha256": "6d7762429083e787ccbddf629868bb59de4325ccdcc31d9f7bd240adcdd9fe9d"
+        }
+      },
+      "extract": {"lib64/libwasmedge.so.0.1.1": "lib/aseman/libwasmedge.so.0.1.1"},
+      "links": {"lib/aseman/libwasmedge.so.0": "libwasmedge.so.0.1.1"}
+    },
+    "firecracker": {
+      "version": "1.17.0",
+      "needed_by": ["aseman-vmm-agent"],
+      "purpose": "the microVM monitor the host agent drives (A603); only on KVM-capable worker hosts",
+      "install": "optional (--with-firecracker)",
+      "archives": {
+        "amd64": {
+          "url": "https://github.com/firecracker-microvm/firecracker/releases/download/v1.17.0/firecracker-v1.17.0-x86_64.tgz",
+          "sha256": "06094a1108ae9e82aa4c23a775aa92758f53f1175d422270d9d6162cb9ade558"
+        },
+        "arm64": {
+          "url": "https://github.com/firecracker-microvm/firecracker/releases/download/v1.17.0/firecracker-v1.17.0-aarch64.tgz",
+          "sha256": "e351ebe4f7a16b5873bbd51005d2e6767103cff4d5ebc829df2d3f95a93e2256"
+        }
+      },
+      "extract": {"release-v1.17.0-{uname_arch}/firecracker-v1.17.0-{uname_arch}": "bin/firecracker"}
+    }
+  }
+}

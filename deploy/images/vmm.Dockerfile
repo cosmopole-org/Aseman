@@ -6,7 +6,7 @@ RUN apt-get update \
     && apt-get install --yes --no-install-recommends ca-certificates libgcc-s1 \
     && rm -rf /var/lib/apt/lists/* \
     && install -d -o 65532 -g 65532 /var/lib/aseman
-COPY --chmod=0555 dist/bin/aseman-vmm /usr/local/bin/aseman-vmm
+COPY --chmod=0555 bin/aseman-vmm /usr/local/bin/aseman-vmm
 
 USER 65532:65532
 WORKDIR /var/lib/aseman

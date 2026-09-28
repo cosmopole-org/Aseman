@@ -345,7 +345,7 @@ def markdown(inventory: dict[str, Any]) -> str:
             "- The future root workspace must account for both existing workspace roots and all path dependencies.",
             "- The two committed Cargo lockfiles must not be collapsed until the root-workspace build is reproducible.",
             "- Runtime crates are currently compile-time dependencies of `caspar-node` through the generated aggregator.",
-            "- `dist/` is tracked release/runtime material and requires a separate removal-ledger entry before deletion.",
+            "- `dist/` is never tracked: release binaries are published as GitHub Release assets (A906, RL-018).",
             "",
         ]
     )

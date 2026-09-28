@@ -47,7 +47,6 @@ impl Options {
             print_usage();
             return Err(anyhow!("help requested"));
         }
-        let root = std::env::current_dir().context("resolve current directory")?;
         let state_dir = aseman_config::cli_config()
             .and_then(|config| config.state_dir.as_deref())
             .map(PathBuf::from)
@@ -56,7 +55,7 @@ impl Options {
             profile: "compact".to_owned(),
             config_dir: state_dir.join("compact"),
             state_dir,
-            compose_file: root.join("deploy/compose/compact.compose.yaml"),
+            compose_file: super::compact::default_compose_file(arguments),
             node_image: "aseman-node:local".to_owned(),
             vmm_image: "aseman-vmm:local".to_owned(),
             meter_image: "aseman-meter:local".to_owned(),

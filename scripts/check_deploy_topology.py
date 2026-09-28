@@ -90,7 +90,7 @@ def check() -> list[str]:
     # Each unprivileged Aseman service is a separate, single-process, non-root image.
     # The privileged agent deliberately has no image until its authenticated server
     # executable exists; inventing a container for a library would be false evidence.
-    build_script = (ROOT / "scripts" / "build-dist.sh").read_text(encoding="utf-8")
+    build_script = (ROOT / "scripts" / "stage-release.sh").read_text(encoding="utf-8")
     for service, (dockerfile, binary) in IMAGES.items():
         path = ROOT / dockerfile
         if not path.exists():
@@ -104,7 +104,7 @@ def check() -> list[str]:
             if forbidden in source:
                 fail(problems, f"{dockerfile} asks for forbidden privilege {forbidden}")
         if binary not in build_script:
-            fail(problems, f"build-dist.sh does not publish {binary} for {dockerfile}")
+            fail(problems, f"stage-release.sh does not stage {binary} for {dockerfile}")
 
     agent_unit = ROOT / "deploy/systemd/aseman-vmm-agent.service"
     if not agent_unit.exists():
@@ -122,7 +122,7 @@ def check() -> list[str]:
         if "docker.sock" in unit:
             fail(problems, "the agent systemd unit must not receive the Docker socket")
     if "aseman-vmm-agent" not in build_script:
-        fail(problems, "build-dist.sh does not publish the host agent executable")
+        fail(problems, "stage-release.sh does not stage the host agent executable")
 
     compact_path = ROOT / COMPACT_PROFILE
     if not compact_path.exists():

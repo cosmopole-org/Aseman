@@ -12,9 +12,6 @@ default-run = "aseman-node"
 name = "aseman-node"
 path = "src/runner.rs"
 
-[[bin]]
-name = "caspar-node"
-path = "src/bin/caspar-node.rs"
 
 [dependencies]
 aseman-application = { path = "../../crates/aseman-application" }
