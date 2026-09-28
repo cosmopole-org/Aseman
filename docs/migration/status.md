@@ -18,9 +18,12 @@ operator cutover to `ASEMAN_CORE_STORAGE_PROVIDER=postgres` has been performed a
 observed on a development host; production-cluster observation and the legacy deletion
 gate remain. Phases 9 and 10 are recorded as **partial**, honestly, because their criteria are observable outcomes
 (a clean host bootstrapping in one command; every acceptance criterion passing) and
-those have not been observed. What remains is mostly deployment evidence — streaming
-and federation handoff, clean-host bootstrap/restore, tagged artifact promotion,
-production-shaped operational scenarios, and their legacy deletion gates — not design.
+only part of them is observed: a compact deployment now bootstraps to healthy in one
+command on a development host, a PostgreSQL backup restores onto a clean cluster, and a
+checkpointed Hashgraph switch runs on a live local mesh. What remains is production
+evidence — signed-image and clustered runs, whole-deployment restore, tagged artifact
+promotion, production-shaped operational scenarios — and the legacy deletions that the
+ADR-0004 compatibility window gates. None of it is blocked on design.
 
 ## Phase gates
 
@@ -80,14 +83,17 @@ production-shaped operational scenarios, and their legacy deletion gates — not
    deterministic archives, SPDX SBOMs, checksums, and signed attestations. Tracked
    `dist/*` blobs stay until a successful tagged run, scanning, independent verification,
    consumer cutover, and rollback evidence complete RL-018's second gate.
-4. **Compose the Hashgraph financial epoch switch** (RL-011). The complete engine now
+4. **Observe the Hashgraph financial epoch switch in production** (RL-011). A
+   checkpointed switch and its rollback now pass on a live four-validator local mesh
+   over real TCP (`live_mesh_handover`), which also exposed and fixed an unbounded RPC
+   read that let a silent peer wedge `Node::shutdown`. The complete engine now
    lives in `modules/consensus/hashgraph`; its `HashgraphConsensusProvider` sends
    records through the real Babble proxy and derives finalizations/checkpoints from
    committed blocks. The node now composes this provider into its finance flow: the
    migrated finance actions offer each written journal record for ordering through the
    `ConsensusProvider` port (`aseman_application::consensus`), and the composition
-   installs a `HashgraphConsensusProvider`. Observing a checkpointed switch on a live
-   peer mesh remains.
+   installs a `HashgraphConsensusProvider`. The same switch on a production peer mesh
+   remains.
 5. **Execute the operational scenario manifest at production shape.** Parser property
    fuzzing, public-action load-lite, and focused PostgreSQL realtime/metering load/soak
    runs pass. A checked nine-scenario manifest and HTTP load probe define numeric
@@ -103,7 +109,13 @@ production-shaped operational scenarios, and their legacy deletion gates — not
    code also remains inside canonical packages until its named removal gates pass. Path completion is
    not treated as permission to delete them.
 
-Delivered in this pass: the requirements traceability report (A1005) runs in
+Delivered in the 2026-09-28 pass: the node's crate-wide `allow(dead_code)` became
+scoped, self-retiring `expect` attributes; PostgreSQL-aware, signature-trusted,
+resumable backup/restore with a clean-cluster drill; the Hashgraph mesh handover and
+its transport fix; `ASEMAN_SIGNAL_LOG_PROVIDER=postgres`; and the first real compact
+bootstrap, which found and fixed eight profile/driver defects (see the Phase 9 gate).
+
+Delivered in the previous pass: the requirements traceability report (A1005) runs in
 `cargo xtask fast` and records 25 requirements, 0 violations, 16 MET, 9 PARTIAL, 0
 OPEN. The repository-structure deviations from the plan's proposed hierarchy are
 documented below.

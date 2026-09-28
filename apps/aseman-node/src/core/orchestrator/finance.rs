@@ -64,6 +64,10 @@ impl Finance {
     }
 
     /// Add a free node.
+    #[expect(
+        dead_code,
+        reason = "RL-003: legacy orchestration surface kept until its deletion gate"
+    )]
     pub(crate) fn add_free_node(&self, node_id: &str) {
         if node_id.is_empty() {
             return;

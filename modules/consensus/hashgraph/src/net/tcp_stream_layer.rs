@@ -47,6 +47,12 @@ impl Conn for TcpConn {
         let _ = self.stream.shutdown(Shutdown::Both);
         Ok(())
     }
+
+    fn set_timeout(&mut self, timeout: Option<Duration>) -> Result<()> {
+        self.stream.set_read_timeout(timeout)?;
+        self.stream.set_write_timeout(timeout)?;
+        Ok(())
+    }
 }
 
 /// Plain-TCP [`StreamLayer`].

@@ -42,6 +42,10 @@ use aseman_ports::{BlobStore, EntityDirectory};
 
 use super::util::build_secure_action;
 
+#[expect(
+    dead_code,
+    reason = "RL-004: characterized legacy action surface (A008) kept until its deletion gate"
+)]
 const PLUGINS_TEMPLATE_NAME: &str = "/machines/";
 
 fn user_guard() -> Guard {
@@ -78,6 +82,10 @@ pub(crate) fn resolve_program_owner_machine(trx: &dyn ITrx, program: &Program) -
 }
 
 /// Read a program entity record through the entity port, or `None`.
+#[expect(
+    dead_code,
+    reason = "RL-004: characterized legacy action surface (A008) kept until its deletion gate"
+)]
 pub(crate) fn read_program_entity(
     app: &Arc<dyn ICore>,
     trx: &dyn ITrx,
@@ -91,11 +99,19 @@ pub(crate) fn read_program_entity(
 }
 
 /// Normalized VM launch resources (defaults for non-positive fields).
+#[expect(
+    dead_code,
+    reason = "RL-004: characterized legacy action surface (A008) kept until its deletion gate"
+)]
 pub(crate) fn normalized_vm_resources(input: &VmResourcesInput) -> VmResources {
     normalize_vm_resources(input)
 }
 
 /// Build the legacy per-minute billing record for a standalone VM launch.
+#[expect(
+    dead_code,
+    reason = "RL-004: characterized legacy action surface (A008) kept until its deletion gate"
+)]
 pub(crate) fn build_vm_billing(
     app: &Arc<dyn ICore>,
     trx: &dyn ITrx,
@@ -2432,6 +2448,10 @@ pub(crate) fn serve_list_programs(
 }
 
 /// `/machines/listProgramMachines` (`program.list`) body.
+#[expect(
+    dead_code,
+    reason = "RL-004: characterized legacy action surface (A008) kept until its deletion gate"
+)]
 pub(crate) fn serve_list_program_machines(
     _app: &Arc<dyn ICore>,
     trx: &dyn ITrx,

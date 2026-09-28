@@ -60,6 +60,10 @@ enum OutboundFrame {
 /// Per-connection state.  The owning `TlsStream` lives inside the I/O thread;
 /// everything reachable through this struct is safe to call from any thread.
 pub struct Socket {
+    #[expect(
+        dead_code,
+        reason = "RL-010: legacy federation surface kept for the ADR-0004 window"
+    )]
     pub id: String,
     peer: String,
     disconnected: AtomicBool,
@@ -146,6 +150,10 @@ pub type FedApi = Arc<dyn Fn(Arc<Socket>, String, OriginPacket) + Send + Sync>;
 
 /// Federation TLS-TCP server.
 pub struct Tcp {
+    #[expect(
+        dead_code,
+        reason = "RL-010: legacy federation surface kept for the ADR-0004 window"
+    )]
     app: Arc<dyn ICore>,
     bridge: Mutex<Option<FedApi>>,
     sockets: Arc<DashMap<String, Arc<Socket>>>,

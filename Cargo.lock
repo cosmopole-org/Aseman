@@ -184,6 +184,7 @@ name = "aseman-consensus-hashgraph"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "aseman-application",
  "aseman-config",
  "aseman-contracts",
  "aseman-domain",

@@ -12,7 +12,8 @@ services:
       POSTGRES_USER: aseman
       POSTGRES_PASSWORD_FILE: /run/aseman/secrets/postgres-password
     volumes:
-      - postgres-data:/var/lib/postgresql/data
+      # PostgreSQL 18+ images keep versioned data below this directory.
+      - postgres-data:/var/lib/postgresql
       - ${ASEMAN_CONFIG_DIR:?set ASEMAN_CONFIG_DIR}/secrets/postgres-password:/run/aseman/secrets/postgres-password:ro
       - ${ASEMAN_CONFIG_DIR}/postgres-init:/docker-entrypoint-initdb.d:ro
     healthcheck:
@@ -20,9 +21,8 @@ services:
       interval: 5s
       timeout: 3s
       retries: 30
-    networks: [control, scheduler]
-    extra_hosts:
-      - host.docker.internal:host-gateway
+    # Only the node and the VMM reach PostgreSQL (A602); it has no route off-host.
+    networks: [control]
 
   vmm:
     image: ${ASEMAN_VMM_IMAGE:?set ASEMAN_VMM_IMAGE}
@@ -48,7 +48,11 @@ services:
       - node-data:/var/lib/aseman
     ports:
       - "127.0.0.1:8444:8444"
-    networks: [control]
+    # The Nomad backend shares this network namespace and must reach the operator's
+    # Nomad; the control network alone is internal.
+    networks: [control, scheduler]
+    extra_hosts:
+      - host.docker.internal:host-gateway
     read_only: true
     tmpfs: [/tmp]
     cap_drop: [ALL]
@@ -83,6 +87,8 @@ services:
       ASEMAN_NODE_ID: ${ASEMAN_NODE_ID:?set ASEMAN_NODE_ID}
       ASEMAN_NODE_PRIVATE_KEY_SECRET: /run/aseman/secrets/node-private-key.pem
       ASEMAN_CORE_STORAGE_PROVIDER: postgres
+      # Store signal and build-log history live in PostgreSQL; the profile ships no QuestDB.
+      ASEMAN_SIGNAL_LOG_PROVIDER: postgres
       ASEMAN_CORE_BINDING_GENERATION: ${ASEMAN_CORE_BINDING_GENERATION:-1}
       ASEMAN_DATABASE_URL_SECRET: /run/aseman/secrets/database-url
       ASEMAN_GUEST_PROXY_URL_SECRET: /run/aseman/secrets/guest-proxy-url
@@ -109,7 +115,12 @@ services:
       ASEMAN_LEGACY_TCP_PORT: "0"
       ASEMAN_LEGACY_WS_PORT: "0"
       ASEMAN_LEGACY_FEDERATION_PORT: "0"
-      ASEMAN_LEGACY_CONSENSUS_PORT: "0"
+      # The compact node heads its own single-validator Hashgraph chain (RL-011) on
+      # an unpublished loopback address named by the generated genesis.
+      ASEMAN_LEGACY_CONSENSUS_PORT: "1337"
+      ASEMAN_LEGACY_IPADDR: 127.0.0.1
+      ASEMAN_LEGACY_IS_HEAD: "true"
+      ASEMAN_LEGACY_BABBLE_DATA_DIR: /etc/aseman/babble
     volumes:
       - ${ASEMAN_CONFIG_DIR}/tls/ca-cert.pem:/etc/aseman/tls/ca-cert.pem:ro
       - ${ASEMAN_CONFIG_DIR}/tls/node-cert.pem:/etc/aseman/tls/node-cert.pem:ro
@@ -118,11 +129,14 @@ services:
       - ${ASEMAN_CONFIG_DIR}/secrets/database-url:/run/aseman/secrets/database-url:ro
       - ${ASEMAN_CONFIG_DIR}/secrets/guest-proxy-url:/run/aseman/secrets/guest-proxy-url:ro
       - ${ASEMAN_CONFIG_DIR}/secrets/node-vmm-identity.pem:/run/aseman/secrets/node-vmm-identity.pem:ro
+      - ${ASEMAN_CONFIG_DIR}/babble:/etc/aseman/babble:ro
       - node-data:/var/lib/aseman
     ports:
       - "${ASEMAN_PUBLIC_PORT:-443}:443"
       - "127.0.0.1:${ASEMAN_HEALTH_PORT:-8080}:8080"
-    networks: [control]
+    # Docker publishes no port of a container that is only on internal networks; the
+    # routed public network carries the node's published API and health ports.
+    networks: [control, public]
     read_only: true
     tmpfs: [/tmp]
     cap_drop: [ALL]
@@ -157,6 +171,7 @@ networks:
   control:
     internal: true
   scheduler:
+  public:
 
 volumes:
   postgres-data:

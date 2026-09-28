@@ -1,0 +1,52 @@
+[
+  {
+    "scenario": "contract-parser-properties",
+    "result": "PASS",
+    "seconds": 37.373
+  },
+  {
+    "scenario": "public-action-load-lite",
+    "result": "PASS",
+    "seconds": 15.181
+  },
+  {
+    "scenario": "public-http-deployment-load",
+    "result": "SKIP",
+    "seconds": 0
+  },
+  {
+    "scenario": "realtime-postgres-capacity",
+    "result": "PASS",
+    "seconds": 14.598
+  },
+  {
+    "scenario": "guest-database-isolation-load",
+    "result": "PASS",
+    "seconds": 36.83
+  },
+  {
+    "scenario": "federation-partition-recovery",
+    "result": "PASS",
+    "seconds": 22.678
+  },
+  {
+    "scenario": "worker-loss-and-drain",
+    "result": "PASS",
+    "seconds": 38.024
+  },
+  {
+    "scenario": "metering-settlement-soak",
+    "result": "PASS",
+    "seconds": 7.848
+  },
+  {
+    "scenario": "backup-clean-restore-drill",
+    "result": "PASS",
+    "seconds": 17.916
+  },
+  {
+    "scenario": "release-rollback-drill",
+    "result": "PASS",
+    "seconds": 0.039
+  }
+]

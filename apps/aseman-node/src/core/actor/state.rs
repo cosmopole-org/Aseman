@@ -35,6 +35,10 @@ impl State {
     }
 
     /// `state.SetInfo(...)` — not part of the trait but kept inherent.
+    #[expect(
+        dead_code,
+        reason = "RL-003: legacy orchestration surface kept until its deletion gate"
+    )]
     pub fn set_info(&self, info: Arc<dyn IInfo>) {
         self.inner.lock().unwrap().info = Some(info);
     }

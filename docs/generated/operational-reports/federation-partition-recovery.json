@@ -1,0 +1,68 @@
+{
+  "scenario": "federation-partition-recovery",
+  "kind": "chaos",
+  "command": "cargo test -p aseman-federation-http --test live_two_clusters -- --nocapture",
+  "started_at": "2026-09-28T07:57:56.597490+00:00",
+  "environment": {
+    "commit": "34d499704239e612dcd42fc3a47f68dcbdcdc4a5+dirty",
+    "host": "srv8666213564",
+    "platform": "Linux-7.0.0-31-generic-x86_64-with-glibc2.43",
+    "required_env_present": [
+      "ASEMAN_TEST_POSTGRES_URL"
+    ],
+    "required_env_missing": []
+  },
+  "thresholds": {
+    "duplicate_executions": 0,
+    "routing_loops": 0,
+    "unauthorized_acceptances": 0
+  },
+  "duration_seconds": 22.678,
+  "measurements": {
+    "exit_code": 0,
+    "tests": {
+      "passed": 1,
+      "failed": 0,
+      "ignored": 0
+    },
+    "output_tail": [
+      "",
+      "running 1 test",
+      "test two_clusters_federate_and_the_destination_decides ... ok",
+      "",
+      "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.84s",
+      "",
+      "   Compiling futures-util v0.3.34",
+      "   Compiling serde v1.0.229",
+      "   Compiling rustls v0.23.45",
+      "   Compiling aseman-domain v0.1.0 (/home/ubuntu/Aseman/crates/aseman-domain)",
+      "   Compiling hyper-util v0.1.20",
+      "   Compiling tower v0.5.3",
+      "   Compiling axum-core v0.4.5",
+      "   Compiling rustls-webpki v0.103.15",
+      "   Compiling axum v0.7.9",
+      "   Compiling hyper-timeout v0.5.2",
+      "   Compiling tower v0.4.13",
+      "   Compiling url v2.5.8",
+      "   Compiling tonic v0.12.3",
+      "   Compiling tokio-postgres v0.7.18",
+      "   Compiling tokio-rustls v0.26.5",
+      "   Compiling aseman-ports v0.1.0 (/home/ubuntu/Aseman/crates/aseman-ports)",
+      "   Compiling bitflags v2.13.2",
+      "   Compiling aseman-contracts v0.1.0 (/home/ubuntu/Aseman/crates/aseman-contracts)",
+      "   Compiling tower-http v0.6.11",
+      "   Compiling serde_urlencoded v0.7.1",
+      "   Compiling hyper-rustls v0.27.9",
+      "   Compiling postgres v0.19.14",
+      "   Compiling aseman-application v0.1.0 (/home/ubuntu/Aseman/crates/aseman-application)",
+      "   Compiling r2d2_postgres v0.18.2",
+      "   Compiling reqwest v0.12.28",
+      "   Compiling aseman-federation-http v0.1.0 (/home/ubuntu/Aseman/modules/federation/http)",
+      "   Compiling aseman-policy-native v0.1.0 (/home/ubuntu/Aseman/modules/security/capabilities)",
+      "   Compiling aseman-config v0.1.0 (/home/ubuntu/Aseman/crates/aseman-config)",
+      "    Finished `test` profile [unoptimized + debuginfo] target(s) in 21.77s",
+      "     Running tests/live_two_clusters.rs (target/debug/deps/live_two_clusters-a62d6b1168540b27)"
+    ]
+  },
+  "passed": true
+}

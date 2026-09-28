@@ -15,7 +15,7 @@ use crate::adapters::network::chain::Blockchain;
 use crate::adapters::network::federation::FedNet;
 use crate::adapters::security::Security;
 use crate::adapters::signaler::Signaler;
-use crate::adapters::storage::Storage;
+use crate::adapters::storage::{SignalLogTarget, Storage};
 use crate::adapters::vmm::NodeWorkloads;
 use crate::core::globe::{ChainPacketOp, Globe};
 use crate::core::orchestrator::types::{Core, Tools};
@@ -56,10 +56,7 @@ impl Core {
             base_db_path,
             store_logs_db,
             searcher_db,
-            self.config
-                .as_ref()
-                .map(|config| config.legacy_adapters.questdb_port)
-                .unwrap_or(8812),
+            signal_log_target(self.config.as_deref())?,
         )?;
         let signaler: Arc<dyn ISignaler> = Signaler::new(self.clone(), fed.clone());
         let security: Arc<dyn ISecurity> = Security::new(self.clone(), storage_root);
@@ -223,3 +220,23 @@ impl Core {
 // Kept for import calm on the composition-root type contracts.
 const _: fn() -> Option<Arc<AsemanConfig>> = || None;
 const _: fn() -> Option<RsaPrivateKey> = || None;
+
+/// The configured home of the legacy signal and build-log tables.
+fn signal_log_target(config: Option<&AsemanConfig>) -> Result<SignalLogTarget> {
+    let Some(config) = config else {
+        return Ok(SignalLogTarget::QuestDb(8812));
+    };
+    Ok(match config.core_storage.signal_log {
+        aseman_config::SignalLogProvider::QuestDb => {
+            SignalLogTarget::QuestDb(config.legacy_adapters.questdb_port)
+        }
+        aseman_config::SignalLogProvider::Postgres => {
+            let secret = config.database_url_secret.as_deref().ok_or_else(|| {
+                anyhow::anyhow!(
+                    "ASEMAN_SIGNAL_LOG_PROVIDER=postgres needs ASEMAN_DATABASE_URL_SECRET"
+                )
+            })?;
+            SignalLogTarget::Postgres(aseman_config::read_secret_file(secret, 4096)?)
+        }
+    })
+}

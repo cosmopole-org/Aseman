@@ -874,7 +874,7 @@
       "request_type": "VmTerminalInput",
       "routes_via_chain": false,
       "services": [],
-      "source": "apps/aseman-node/src/api/actions/program.rs:1112",
+      "source": "apps/aseman-node/src/api/actions/program.rs:1128",
       "spawns_background_work": false,
       "transaction_operations": [
         "del_key"
@@ -889,7 +889,7 @@
       "request_type": "ListInput",
       "routes_via_chain": false,
       "services": [],
-      "source": "apps/aseman-node/src/api/actions/program.rs:1471",
+      "source": "apps/aseman-node/src/api/actions/program.rs:1487",
       "spawns_background_work": false,
       "transaction_operations": [],
       "vmm_operations": []
@@ -902,7 +902,7 @@
       "request_type": "RunProgramEntityInput",
       "routes_via_chain": false,
       "services": [],
-      "source": "apps/aseman-node/src/api/actions/program.rs:965",
+      "source": "apps/aseman-node/src/api/actions/program.rs:981",
       "spawns_background_work": false,
       "transaction_operations": [
         "get_link",
@@ -918,7 +918,7 @@
       "request_type": "ListAppMachsInput",
       "routes_via_chain": false,
       "services": [],
-      "source": "apps/aseman-node/src/api/actions/program.rs:1550",
+      "source": "apps/aseman-node/src/api/actions/program.rs:1566",
       "spawns_background_work": false,
       "transaction_operations": [],
       "vmm_operations": []
@@ -931,7 +931,7 @@
       "request_type": "VmTerminalInput",
       "routes_via_chain": false,
       "services": [],
-      "source": "apps/aseman-node/src/api/actions/program.rs:1076",
+      "source": "apps/aseman-node/src/api/actions/program.rs:1092",
       "spawns_background_work": false,
       "transaction_operations": [
         "put_link"
@@ -946,7 +946,7 @@
       "request_type": "MachineBuildsInput",
       "routes_via_chain": false,
       "services": [],
-      "source": "apps/aseman-node/src/api/actions/program.rs:1145",
+      "source": "apps/aseman-node/src/api/actions/program.rs:1161",
       "spawns_background_work": false,
       "transaction_operations": [
         "get_links_list"
@@ -961,7 +961,7 @@
       "request_type": "ReadVmLogsInput",
       "routes_via_chain": false,
       "services": [],
-      "source": "apps/aseman-node/src/api/actions/program.rs:890",
+      "source": "apps/aseman-node/src/api/actions/program.rs:906",
       "spawns_background_work": false,
       "transaction_operations": [
         "get_links_list"
@@ -976,7 +976,7 @@
       "request_type": "CreateMachineInput",
       "routes_via_chain": false,
       "services": [],
-      "source": "apps/aseman-node/src/api/actions/program.rs:504",
+      "source": "apps/aseman-node/src/api/actions/program.rs:520",
       "spawns_background_work": false,
       "transaction_operations": [],
       "vmm_operations": []
@@ -989,7 +989,7 @@
       "request_type": "DeleteProgramInput",
       "routes_via_chain": false,
       "services": [],
-      "source": "apps/aseman-node/src/api/actions/program.rs:541",
+      "source": "apps/aseman-node/src/api/actions/program.rs:557",
       "spawns_background_work": false,
       "transaction_operations": [],
       "vmm_operations": []
@@ -1002,7 +1002,7 @@
       "request_type": "RunProgramEntityInput",
       "routes_via_chain": false,
       "services": [],
-      "source": "apps/aseman-node/src/api/actions/program.rs:801",
+      "source": "apps/aseman-node/src/api/actions/program.rs:817",
       "spawns_background_work": false,
       "transaction_operations": [
         "del_json",
@@ -1022,7 +1022,7 @@
         "storage",
         "workloads"
       ],
-      "source": "apps/aseman-node/src/api/actions/program.rs:1218",
+      "source": "apps/aseman-node/src/api/actions/program.rs:1234",
       "spawns_background_work": false,
       "transaction_operations": [
         "put_link"
@@ -1039,7 +1039,7 @@
       "services": [
         "storage"
       ],
-      "source": "apps/aseman-node/src/api/actions/program.rs:1428",
+      "source": "apps/aseman-node/src/api/actions/program.rs:1444",
       "spawns_background_work": false,
       "transaction_operations": [],
       "vmm_operations": []
@@ -1052,7 +1052,7 @@
       "request_type": "ListInput",
       "routes_via_chain": false,
       "services": [],
-      "source": "apps/aseman-node/src/api/actions/program.rs:1528",
+      "source": "apps/aseman-node/src/api/actions/program.rs:1544",
       "spawns_background_work": false,
       "transaction_operations": [],
       "vmm_operations": []
@@ -1065,7 +1065,7 @@
       "request_type": "RunProgramEntityInput",
       "routes_via_chain": false,
       "services": [],
-      "source": "apps/aseman-node/src/api/actions/program.rs:596",
+      "source": "apps/aseman-node/src/api/actions/program.rs:612",
       "spawns_background_work": false,
       "transaction_operations": [
         "get_link",
@@ -1082,7 +1082,7 @@
       "request_type": "RunProgramEntityInput",
       "routes_via_chain": false,
       "services": [],
-      "source": "apps/aseman-node/src/api/actions/program.rs:723",
+      "source": "apps/aseman-node/src/api/actions/program.rs:739",
       "spawns_background_work": false,
       "transaction_operations": [
         "del_json",
@@ -1098,7 +1098,7 @@
       "request_type": "UpdateProgramInput",
       "routes_via_chain": false,
       "services": [],
-      "source": "apps/aseman-node/src/api/actions/program.rs:564",
+      "source": "apps/aseman-node/src/api/actions/program.rs:580",
       "spawns_background_work": false,
       "transaction_operations": [],
       "vmm_operations": []

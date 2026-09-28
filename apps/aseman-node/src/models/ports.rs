@@ -63,12 +63,20 @@ impl Protocol {
 #[derive(Debug, Clone)]
 pub struct RateLimitKey {
     /// Transport the request arrived on (telemetry only).
+    #[expect(
+        dead_code,
+        reason = "RL-002: legacy model surface kept until its deletion gate"
+    )]
     pub protocol: Protocol,
     /// Verified authenticated user id, or empty for anonymous traffic.
     pub user_id: String,
     /// Remote peer IP (best-effort; may be empty for in-process callers).
     pub peer_ip: String,
     /// Action path / request target being invoked (telemetry only).
+    #[expect(
+        dead_code,
+        reason = "RL-002: legacy model surface kept until its deletion gate"
+    )]
     pub path: String,
 }
 
@@ -123,6 +131,10 @@ pub enum RateLimitDecision {
     /// The request may proceed. `remaining` is the whole tokens left in the
     /// identity bucket after this request (best-effort, for `X-RateLimit-*`
     /// style headers).
+    #[expect(
+        dead_code,
+        reason = "RL-002: legacy model surface kept until its deletion gate"
+    )]
     Allowed { remaining: u32 },
     /// The request is rejected. `retry_after` is the minimum wait before a
     /// retry could succeed against the exhausted bucket; `scope` says which
@@ -135,6 +147,13 @@ pub enum RateLimitDecision {
 
 impl RateLimitDecision {
     /// Convenience: whether the request was allowed through.
+    #[cfg_attr(
+        not(test),
+        expect(
+            dead_code,
+            reason = "RL-002: legacy model surface kept until its deletion gate"
+        )
+    )]
     pub fn is_allowed(&self) -> bool {
         matches!(self, RateLimitDecision::Allowed { .. })
     }
@@ -142,6 +161,13 @@ impl RateLimitDecision {
 
 /// A point-in-time snapshot of limiter counters for telemetry.
 #[derive(Debug, Clone, Default)]
+#[cfg_attr(
+    not(test),
+    expect(
+        dead_code,
+        reason = "RL-002: legacy model surface kept until its deletion gate"
+    )
+)]
 pub struct RateLimiterSnapshot {
     /// Whether enforcement is currently on.
     pub enabled: bool,
@@ -152,6 +178,13 @@ pub struct RateLimiterSnapshot {
     /// Total requests rejected by a per-identity bucket since start.
     pub limited_identity: u64,
     /// Total requests rejected by the global limiter since start.
+    #[cfg_attr(
+        test,
+        expect(
+            dead_code,
+            reason = "RL-002: legacy model surface kept until its deletion gate"
+        )
+    )]
     pub limited_global: u64,
 }
 
@@ -182,9 +215,20 @@ pub trait IRateLimiter: Send + Sync {
 
     /// Whether enforcement is currently active. When `false`, [`check`](Self::check)
     /// always returns [`RateLimitDecision::Allowed`].
+    #[expect(
+        dead_code,
+        reason = "RL-002: legacy model surface kept until its deletion gate"
+    )]
     fn enabled(&self) -> bool;
 
     /// Cheap snapshot of counters for telemetry / diagnostics.
+    #[cfg_attr(
+        not(test),
+        expect(
+            dead_code,
+            reason = "RL-002: legacy model surface kept until its deletion gate"
+        )
+    )]
     fn snapshot(&self) -> RateLimiterSnapshot;
 }
 
@@ -193,7 +237,15 @@ pub trait ISecurity: Send + Sync {
     fn load_keys(&self);
     fn generate_secure_key_pair(&self, tag: &str);
     fn fetch_key_pair(&self, tag: &str) -> Vec<Vec<u8>>;
+    #[expect(
+        dead_code,
+        reason = "RL-002: legacy model surface kept until its deletion gate"
+    )]
     fn encrypt(&self, tag: &str, plain_text: &str) -> String;
+    #[expect(
+        dead_code,
+        reason = "RL-002: legacy model surface kept until its deletion gate"
+    )]
     fn decrypt(&self, tag: &str, cipher_text: &str) -> String;
     /// Returns `(authenticated, resolvedUserId, isGod)`.
     fn auth_with_signature(
@@ -226,7 +278,15 @@ pub struct Group {
 #[derive(Clone)]
 pub struct Listener {
     pub id: String,
+    #[expect(
+        dead_code,
+        reason = "RL-002: legacy model surface kept until its deletion gate"
+    )]
     pub paused: bool,
+    #[expect(
+        dead_code,
+        reason = "RL-002: legacy model surface kept until its deletion gate"
+    )]
     pub dis_time: i64,
     pub signal: SignalFn,
 }
@@ -246,13 +306,43 @@ pub struct JoinListener {
 
 /// The signaler driver interface — realtime pub/sub fan-out.
 pub trait ISignaler: Send + Sync {
+    #[expect(
+        dead_code,
+        reason = "RL-002: legacy model surface kept until its deletion gate"
+    )]
     fn lock(&self);
+    #[expect(
+        dead_code,
+        reason = "RL-002: legacy model surface kept until its deletion gate"
+    )]
     fn unlock(&self);
     fn listeners(&self) -> Arc<DashMap<String, Arc<Listener>>>;
+    #[cfg_attr(
+        not(test),
+        expect(
+            dead_code,
+            reason = "RL-002: legacy model surface kept until its deletion gate"
+        )
+    )]
     fn groups(&self) -> Arc<DashMap<String, Arc<Group>>>;
     fn listen_to_single(&self, listener: Arc<Listener>);
+    #[cfg_attr(
+        not(test),
+        expect(
+            dead_code,
+            reason = "RL-002: legacy model surface kept until its deletion gate"
+        )
+    )]
     fn listen_to_group(&self, listener: Arc<Listener>, override_functionaly: bool);
+    #[expect(
+        dead_code,
+        reason = "RL-002: legacy model surface kept until its deletion gate"
+    )]
     fn brdige_globally(&self, listener: Arc<GlobalListener>, override_functionaly: bool);
+    #[expect(
+        dead_code,
+        reason = "RL-002: legacy model surface kept until its deletion gate"
+    )]
     fn listen_to_join(&self, listener: Arc<JoinListener>);
     fn signal_user(&self, key: &str, listener_id: &str, data: Value, pack: bool);
     fn signal_group(
@@ -323,6 +413,10 @@ pub trait IStorage: Send + Sync {
         tags: &[String],
         time_val: i64,
     ) -> Result<LogPacket>;
+    #[expect(
+        dead_code,
+        reason = "RL-002: legacy model surface kept until its deletion gate"
+    )]
     fn update_log(
         &self,
         store_id: &str,
@@ -337,6 +431,10 @@ pub trait IStorage: Send + Sync {
     /// Errors rather than returning an empty page: "the log is unreachable" and
     /// "this store has nothing to say" must not look the same to a reader.
     fn read_store_logs(&self, store_id: &str, query: &LogQuery) -> Result<Vec<LogPacket>>;
+    #[expect(
+        dead_code,
+        reason = "RL-002: legacy model surface kept until its deletion gate"
+    )]
     fn pick_store_logs(&self, store_id: &str, ids: Vec<String>) -> Vec<LogPacket>;
 }
 
@@ -406,8 +504,20 @@ pub trait IWorkloads: Send + Sync {
 pub trait INetwork: Send + Sync {
     fn chain(&self) -> Arc<dyn IChain>;
     fn federation(&self) -> Arc<dyn IFederation>;
+    #[expect(
+        dead_code,
+        reason = "RL-002: legacy model surface kept until its deletion gate"
+    )]
     fn tcp(&self) -> Arc<dyn ITcp>;
+    #[expect(
+        dead_code,
+        reason = "RL-002: legacy model surface kept until its deletion gate"
+    )]
     fn ws(&self) -> Arc<dyn IWs>;
+    #[expect(
+        dead_code,
+        reason = "RL-002: legacy model surface kept until its deletion gate"
+    )]
     fn tls_config(&self) -> Option<TlsConfig>;
     fn run(&self, ports: HashMap<String, i64>);
 }
@@ -421,9 +531,25 @@ pub trait IChain: Send + Sync {
     fn restore_from_storage(&self);
     fn submit_trx(&self, chain_id: &str, machine_id: &str, typ: &str, payload: Vec<u8>);
     fn register_pipeline(&self, pipeline: PipelineFn);
+    #[expect(
+        dead_code,
+        reason = "RL-002: legacy model surface kept until its deletion gate"
+    )]
     fn notify_new_machine_created(&self, chain_id: &str, machine_id: &str);
+    #[expect(
+        dead_code,
+        reason = "RL-002: legacy model surface kept until its deletion gate"
+    )]
     fn create_temp_chain(&self, store_id: &str) -> String;
+    #[expect(
+        dead_code,
+        reason = "RL-002: legacy model surface kept until its deletion gate"
+    )]
     fn create_work_chain(&self, store_id: &str) -> String;
+    #[expect(
+        dead_code,
+        reason = "RL-002: legacy model surface kept until its deletion gate"
+    )]
     fn create_shard_chain(
         &self,
         chain_id: &str,
@@ -431,7 +557,15 @@ pub trait IChain: Send + Sync {
         peers: Vec<String>,
     ) -> String;
     fn peers(&self) -> Vec<String>;
+    #[expect(
+        dead_code,
+        reason = "RL-002: legacy model surface kept until its deletion gate"
+    )]
     fn user_owns_origin(&self, user_id: &str, origin: &str) -> bool;
+    #[expect(
+        dead_code,
+        reason = "RL-002: legacy model surface kept until its deletion gate"
+    )]
     fn get_node_owner_id(&self, origin: &str) -> String;
     fn close(&self);
 
@@ -476,6 +610,10 @@ pub type FedRequestCallback = Box<dyn Fn(Vec<u8>, i64, Option<GoError>) + Send +
 /// The federation (inter-organization) network driver interface.
 pub trait IFederation: Send + Sync {
     fn listen(&self, port: i64, tls_config: Option<TlsConfig>);
+    #[expect(
+        dead_code,
+        reason = "RL-002: legacy model surface kept until its deletion gate"
+    )]
     fn send_fed_request(
         &self,
         dest_org: &str,
@@ -485,6 +623,10 @@ pub trait IFederation: Send + Sync {
         payload: Vec<u8>,
         signature: &str,
     );
+    #[expect(
+        dead_code,
+        reason = "RL-002: legacy model surface kept until its deletion gate"
+    )]
     fn send_fed_response(&self, dest_org: &str, request_id: &str, res_code: i64, res: Value);
     fn send_fed_update(
         &self,

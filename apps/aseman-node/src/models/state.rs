@@ -12,6 +12,10 @@ use crate::models::transaction::ITrx;
 pub trait IState: Send + Sync {
     fn info(&self) -> Arc<dyn IInfo>;
     fn trx(&self) -> Arc<dyn ITrx>;
+    #[expect(
+        dead_code,
+        reason = "RL-002: legacy model surface kept until its deletion gate"
+    )]
     fn set_trx(&self, trx: Arc<dyn ITrx>);
     fn source(&self) -> String;
     fn set_source(&self, source: &str);

@@ -387,9 +387,17 @@ fn spawn_malloc_trimmer(config: &AllocatorConfig) {
 #[cfg(not(all(target_os = "linux", target_env = "gnu")))]
 fn spawn_malloc_trimmer(_config: &AllocatorConfig) {}
 
-fn parse_owner_key(pem: &str) -> Option<rsa::RsaPrivateKey> {
+/// `ASEMAN_NODE_PRIVATE_KEY_SECRET` is a secret reference: the path of a PKCS#8 PEM
+/// file. The ADR-0004 `OWNER_PRIVATE_KEY` alias carried the PEM inline, so a value that
+/// is itself a PEM is still accepted at this compatibility edge.
+fn parse_owner_key(secret: &str) -> Option<rsa::RsaPrivateKey> {
     use rsa::pkcs8::DecodePrivateKey;
-    rsa::RsaPrivateKey::from_pkcs8_pem(pem).ok()
+    let pem = if secret.trim_start().starts_with("-----BEGIN") {
+        secret.to_owned()
+    } else {
+        std::fs::read_to_string(secret).ok()?
+    };
+    rsa::RsaPrivateKey::from_pkcs8_pem(&pem).ok()
 }
 
 fn install_dotenv_compat(path: &str) -> Result<(), aseman_config::ConfigError> {
@@ -421,4 +429,22 @@ fn install_signal_handler<F: FnOnce() + Send + 'static>(callback: F) {
         }
         callback();
     });
+}
+
+#[cfg(test)]
+mod owner_key_tests {
+    use super::parse_owner_key;
+    use rsa::pkcs8::{EncodePrivateKey, LineEnding};
+
+    #[test]
+    fn owner_key_is_read_from_its_secret_file_or_accepted_inline() {
+        let key = rsa::RsaPrivateKey::new(&mut rsa::rand_core::OsRng, 1024).unwrap();
+        let pem = key.to_pkcs8_pem(LineEnding::LF).unwrap().to_string();
+        let path = std::env::temp_dir().join(format!("owner-key-{}.pem", std::process::id()));
+        std::fs::write(&path, &pem).unwrap();
+        assert_eq!(parse_owner_key(path.to_str().unwrap()).as_ref(), Some(&key));
+        assert_eq!(parse_owner_key(&pem).as_ref(), Some(&key));
+        assert!(parse_owner_key("/nonexistent/owner-key.pem").is_none());
+        std::fs::remove_file(path).unwrap();
+    }
 }

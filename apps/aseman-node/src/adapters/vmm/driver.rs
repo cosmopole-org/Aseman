@@ -348,11 +348,19 @@ impl IWorkloads for NodeWorkloads {
 }
 
 /// `normalizeRuntime` — Go's `strings.ToLower(TrimSpace(.))`.
+#[expect(
+    dead_code,
+    reason = "RL-006/RL-013: legacy VM host-call surface kept for the ADR-0004 window"
+)]
 pub(super) fn normalize_runtime(runtime: &str) -> String {
     runtime.trim().to_lowercase()
 }
 
 /// Field-getter helper — emulates Go's generic `checkField[T]`.
+#[expect(
+    dead_code,
+    reason = "RL-006/RL-013: legacy VM host-call surface kept for the ADR-0004 window"
+)]
 pub(super) fn check_field<'a>(input: &'a Value, key: &str) -> Option<&'a Value> {
     input.get(key)
 }
@@ -385,6 +393,10 @@ pub(super) fn check_bool(input: &Value, key: &str, default: bool) -> bool {
 }
 
 /// Convenience for `time.Now().UnixMilli()`.
+#[expect(
+    dead_code,
+    reason = "RL-006/RL-013: legacy VM host-call surface kept for the ADR-0004 window"
+)]
 pub(super) fn now_unix_ms() -> i64 {
     SystemTime::now()
         .duration_since(UNIX_EPOCH)

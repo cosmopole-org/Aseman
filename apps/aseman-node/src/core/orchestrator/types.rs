@@ -60,6 +60,10 @@ pub struct Core {
     pub(crate) actor: Arc<dyn IActor>,
     pub(crate) tools: Mutex<Option<Arc<dyn ITools>>>,
     pub(crate) globe: Mutex<Option<Arc<dyn IGlobe>>>,
+    #[expect(
+        dead_code,
+        reason = "RL-003: legacy orchestration surface kept until its deletion gate"
+    )]
     pub(crate) started: Mutex<bool>,
     pub(crate) gods: Mutex<Vec<String>>,
     pub(crate) finance: super::finance::Finance,

@@ -11,6 +11,13 @@ use crossbeam_channel::{Receiver, select, tick};
 /// Periodic scheduler. `period` is the cadence, `offset` shifts the first
 /// firing relative to the wall-clock period boundary, and `f` is invoked with
 /// the firing instant. Returns when `cancel` is closed.
+#[cfg_attr(
+    not(test),
+    expect(
+        dead_code,
+        reason = "RL-004: characterized legacy action surface (A008) kept until its deletion gate"
+    )
+)]
 pub fn schedule<F>(period: Duration, offset: Duration, mut f: F, cancel: Receiver<()>)
 where
     F: FnMut(SystemTime) + Send,

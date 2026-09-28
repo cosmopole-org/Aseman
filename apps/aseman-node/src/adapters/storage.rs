@@ -19,6 +19,14 @@ use crate::models::packet::{decode_tags, encode_tags};
 use crate::models::ports::{IStorage, KvDb};
 use crate::models::transaction::ITrx;
 
+/// Where the legacy signal and build-log tables are served from.
+pub enum SignalLogTarget {
+    /// The legacy QuestDB instance on this port.
+    QuestDb(u16),
+    /// PostgreSQL at this connection URL (`ASEMAN_SIGNAL_LOG_PROVIDER=postgres`).
+    Postgres(String),
+}
+
 /// Concrete [`IStorage`] implementation.
 pub struct Storage {
     _app: Arc<dyn ICore>,
@@ -38,7 +46,7 @@ impl Storage {
         base_db_path: &str,
         _logs_db_path: &str,
         _searcher_db_path: &str,
-        questdb_port: u16,
+        signal_log: SignalLogTarget,
     ) -> Result<Arc<Storage>> {
         fs::create_dir_all(base_db_path).map_err(|e| anyhow!("mkdir {}: {}", base_db_path, e))?;
         // Bounded-memory options instead of `open_default`: this DB takes a
@@ -52,7 +60,11 @@ impl Storage {
 
         // The QuestDB client, its startup table repair, and its SQL live in the
         // legacy storage provider; this driver never names QuestDB types.
-        let tsdb = QuestDbTimeSeries::connect(questdb_port).map_err(|e| anyhow!("{e}"))?;
+        let tsdb = match signal_log {
+            SignalLogTarget::QuestDb(port) => QuestDbTimeSeries::connect(port),
+            SignalLogTarget::Postgres(url) => QuestDbTimeSeries::connect_postgres(&url),
+        }
+        .map_err(|e| anyhow!("{e}"))?;
 
         Ok(Arc::new(Storage {
             _app: app,

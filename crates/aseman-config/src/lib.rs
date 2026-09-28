@@ -42,6 +42,21 @@ pub struct CoreStorageConfig {
     /// The trusted guest proxy (A306/A405), required on PostgreSQL: guest data is
     /// served from each creature's own database once the node runs there.
     pub guest_proxy: Option<GuestProxyConfig>,
+    /// Where the legacy store-signal and build-log families live
+    /// (`ASEMAN_SIGNAL_LOG_PROVIDER`).
+    pub signal_log: SignalLogProvider,
+}
+
+/// The server holding the legacy signal (`storage`) and build-log tables.
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
+pub enum SignalLogProvider {
+    /// The legacy QuestDB instance on `ASEMAN_LEGACY_QUESTDB_PORT` (the default, so
+    /// an existing deployment keeps reading its history).
+    #[default]
+    QuestDb,
+    /// PostgreSQL through `ASEMAN_DATABASE_URL_SECRET`; needs the PostgreSQL core
+    /// storage provider. History already in QuestDB is not moved by selecting it.
+    Postgres,
 }
 
 /// The guest proxy login that assumes creature roles (A306).
@@ -327,6 +342,9 @@ pub struct CliConfig {
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct IntegrationTestConfig {
     pub postgres_url: Option<String>,
+    /// A second, separate cluster a restore drill restores onto, so its target is
+    /// genuinely clean (A902).
+    pub postgres_restore_url: Option<String>,
     /// The Nomad cluster a live backend test runs against; absent skips the test,
     /// because Aseman never installs a scheduler (ADR 0002).
     pub nomad_endpoint: Option<String>,
@@ -341,6 +359,9 @@ impl IntegrationTestConfig {
     pub fn from_process() -> Self {
         Self {
             postgres_url: std::env::var("ASEMAN_TEST_POSTGRES_URL")
+                .ok()
+                .filter(|value| !value.trim().is_empty()),
+            postgres_restore_url: std::env::var("ASEMAN_TEST_POSTGRES_RESTORE_URL")
                 .ok()
                 .filter(|value| !value.trim().is_empty()),
             nomad_endpoint: std::env::var("ASEMAN_TEST_NOMAD_ENDPOINT")
@@ -1148,6 +1169,24 @@ impl CoreStorageConfig {
         {
             return Err(ConfigError::Missing("ASEMAN_DATABASE_URL_SECRET"));
         }
+        let signal_log = match values.get("ASEMAN_SIGNAL_LOG_PROVIDER").map(String::as_str) {
+            None | Some("questdb") => SignalLogProvider::QuestDb,
+            Some("postgres") if provider == CoreStorageProvider::Postgres => {
+                SignalLogProvider::Postgres
+            }
+            Some("postgres") => {
+                return Err(ConfigError::Invalid {
+                    key: "ASEMAN_SIGNAL_LOG_PROVIDER",
+                    reason: "postgres needs ASEMAN_CORE_STORAGE_PROVIDER=postgres",
+                });
+            }
+            Some(_) => {
+                return Err(ConfigError::Invalid {
+                    key: "ASEMAN_SIGNAL_LOG_PROVIDER",
+                    reason: "expected questdb or postgres",
+                });
+            }
+        };
         let guest_proxy = if provider == CoreStorageProvider::Postgres {
             Some(GuestProxyConfig {
                 url_secret: required(values, "ASEMAN_GUEST_PROXY_URL_SECRET")?,
@@ -1162,6 +1201,7 @@ impl CoreStorageConfig {
             provider,
             binding_generation: parse_or(values, "ASEMAN_CORE_BINDING_GENERATION", 0)?,
             guest_proxy,
+            signal_log,
         })
     }
 }
@@ -1359,6 +1399,41 @@ mod tests {
     }
 
     #[test]
+    fn the_signal_log_moves_to_postgres_only_with_postgres_core_storage() {
+        let mut values = base();
+        values.insert("ASEMAN_SIGNAL_LOG_PROVIDER".into(), "postgres".into());
+        assert_eq!(
+            AsemanConfig::from_map(&values),
+            Err(ConfigError::Invalid {
+                key: "ASEMAN_SIGNAL_LOG_PROVIDER",
+                reason: "postgres needs ASEMAN_CORE_STORAGE_PROVIDER=postgres",
+            })
+        );
+        values.insert("ASEMAN_CORE_STORAGE_PROVIDER".into(), "postgres".into());
+        values.insert(
+            "ASEMAN_DATABASE_URL_SECRET".into(),
+            "/run/secrets/db".into(),
+        );
+        values.insert(
+            "ASEMAN_GUEST_PROXY_URL_SECRET".into(),
+            "/run/secrets/proxy".into(),
+        );
+        values.insert(
+            "ASEMAN_GUEST_PROXY_ROLE".into(),
+            "aseman_guest_proxy".into(),
+        );
+        assert_eq!(
+            AsemanConfig::from_map(&values)
+                .unwrap()
+                .core_storage
+                .signal_log,
+            SignalLogProvider::Postgres
+        );
+        values.insert("ASEMAN_SIGNAL_LOG_PROVIDER".into(), "sqlite".into());
+        assert!(AsemanConfig::from_map(&values).is_err());
+    }
+
+    #[test]
     fn core_storage_defaults_to_legacy_and_postgres_needs_its_secret() {
         let config = AsemanConfig::from_map(&base()).unwrap();
         assert_eq!(
@@ -1367,6 +1442,7 @@ mod tests {
                 provider: CoreStorageProvider::Legacy,
                 binding_generation: 0,
                 guest_proxy: None,
+                signal_log: SignalLogProvider::QuestDb,
             }
         );
         let mut values = base();

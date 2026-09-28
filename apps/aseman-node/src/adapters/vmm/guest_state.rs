@@ -15,6 +15,10 @@ use serde_json::{Map, Value, json};
 use crate::models::transaction::ITrx;
 
 /// The guest state operations.
+#[expect(
+    dead_code,
+    reason = "RL-006/RL-013: legacy VM host-call surface kept for the ADR-0004 window"
+)]
 pub(crate) const GUEST_STATE_OPS: [&str; 5] =
     ["putJson", "getJson", "getByPrefix", "delKey", "getLink"];
 

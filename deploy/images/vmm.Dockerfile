@@ -1,4 +1,5 @@
-ARG RUNTIME_IMAGE=debian:12-slim
+# glibc 2.41: at least the release builders (ubuntu-24.04, glibc 2.39); aseman-node needs GLIBC_2.39.
+ARG RUNTIME_IMAGE=debian:13-slim
 FROM ${RUNTIME_IMAGE}
 
 RUN apt-get update \

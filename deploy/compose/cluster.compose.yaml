@@ -7,6 +7,7 @@ x-node-environment: &node-environment
   ASEMAN_NODE_ID: ${ASEMAN_NODE_ID:?set ASEMAN_NODE_ID}
   ASEMAN_NODE_PRIVATE_KEY_SECRET: /run/aseman/secrets/node-private-key.pem
   ASEMAN_CORE_STORAGE_PROVIDER: postgres
+  ASEMAN_SIGNAL_LOG_PROVIDER: postgres
   ASEMAN_CORE_BINDING_GENERATION: ${ASEMAN_CORE_BINDING_GENERATION:?set ASEMAN_CORE_BINDING_GENERATION}
   ASEMAN_DATABASE_URL_SECRET: /run/aseman/secrets/database-url
   ASEMAN_GUEST_PROXY_URL_SECRET: /run/aseman/secrets/guest-proxy-url

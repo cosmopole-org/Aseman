@@ -49,6 +49,10 @@ pub(crate) struct ChainSubmission {
 /// A work chain: one main shard + many sub-shards.
 struct WorkChain {
     id: String,
+    #[expect(
+        dead_code,
+        reason = "RL-011: legacy chain surface kept until the live epoch switch"
+    )]
     store_id: String,
     blockchain: std::sync::Weak<Blockchain>,
     main_ledger: Mutex<Option<Arc<Mutex<Babble>>>>,
@@ -58,6 +62,10 @@ struct WorkChain {
 
 /// A single shard.
 struct ShardChain {
+    #[expect(
+        dead_code,
+        reason = "RL-011: legacy chain surface kept until the live epoch switch"
+    )]
     id: String,
     shard_ledger: Arc<Mutex<Babble>>,
     shard_proxy: Arc<InmemProxy>,
@@ -107,6 +115,10 @@ pub struct Blockchain {
 
 impl Blockchain {
     /// `NewChain(core, storageRoot)`.
+    #[expect(
+        dead_code,
+        reason = "RL-011: legacy chain surface kept until the live epoch switch"
+    )]
     pub fn new(app: Arc<dyn ICore>, storage_root: &str) -> Arc<Blockchain> {
         Self::with_consensus(app, storage_root, None)
     }
@@ -197,6 +209,10 @@ impl Blockchain {
         machine_ids
     }
 
+    #[expect(
+        dead_code,
+        reason = "RL-011: legacy chain surface kept until the live epoch switch"
+    )]
     fn pipeline_callback(&self) -> Option<&'static PipelineFn> {
         // We can't return a borrow safely; the actual call sites pull the
         // Mutex and invoke it inline. This helper is here so the API of
@@ -769,6 +785,10 @@ impl ProxyHandler for HgHandler {
 /// this through a hand-written builder rather than viper, so it only
 /// carries the fields the runtime currently exposes.
 #[derive(Debug, Clone, Default)]
+#[expect(
+    dead_code,
+    reason = "RL-011: legacy chain surface kept until the live epoch switch"
+)]
 pub struct CliConfig {
     pub proxy_addr: String,
     pub client_addr: String,

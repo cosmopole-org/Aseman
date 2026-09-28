@@ -12,6 +12,13 @@ use std::thread::JoinHandle;
 /// Spawn `runnable` on a background thread. If `retriable` is `true`, the
 /// thread restarts the runnable in a loop, swallowing panics so a single
 /// crash doesn't terminate the loop.
+#[cfg_attr(
+    not(test),
+    expect(
+        dead_code,
+        reason = "RL-004: characterized legacy action surface (A008) kept until its deletion gate"
+    )
+)]
 pub fn r#async<F>(runnable: F, retriable: bool) -> JoinHandle<()>
 where
     F: Fn() + Send + 'static,
@@ -19,7 +26,7 @@ where
     if retriable {
         std::thread::spawn(move || {
             loop {
-                let _ = catch_unwind(AssertUnwindSafe(|| runnable()));
+                let _ = catch_unwind(AssertUnwindSafe(&runnable));
             }
         })
     } else {

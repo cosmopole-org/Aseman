@@ -1154,112 +1154,112 @@
     {
       "path": "/machines/closeVmTerminal",
       "request_type": "VmTerminalInput",
-      "source": "apps/aseman-node/src/api/actions/program.rs:1114",
+      "source": "apps/aseman-node/src/api/actions/program.rs:1130",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/machines/list",
       "request_type": "ListInput",
-      "source": "apps/aseman-node/src/api/actions/program.rs:1473",
+      "source": "apps/aseman-node/src/api/actions/program.rs:1489",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/machines/listEntityVms",
       "request_type": "RunProgramEntityInput",
-      "source": "apps/aseman-node/src/api/actions/program.rs:967",
+      "source": "apps/aseman-node/src/api/actions/program.rs:983",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/machines/listProgramMachines",
       "request_type": "ListAppMachsInput",
-      "source": "apps/aseman-node/src/api/actions/program.rs:1552",
+      "source": "apps/aseman-node/src/api/actions/program.rs:1568",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/machines/openVmTerminal",
       "request_type": "VmTerminalInput",
-      "source": "apps/aseman-node/src/api/actions/program.rs:1078",
+      "source": "apps/aseman-node/src/api/actions/program.rs:1094",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/machines/readMachineBuilds",
       "request_type": "MachineBuildsInput",
-      "source": "apps/aseman-node/src/api/actions/program.rs:1147",
+      "source": "apps/aseman-node/src/api/actions/program.rs:1163",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/machines/readVmLogs",
       "request_type": "ReadVmLogsInput",
-      "source": "apps/aseman-node/src/api/actions/program.rs:892",
+      "source": "apps/aseman-node/src/api/actions/program.rs:908",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/programs/create",
       "request_type": "CreateMachineInput",
-      "source": "apps/aseman-node/src/api/actions/program.rs:507",
+      "source": "apps/aseman-node/src/api/actions/program.rs:523",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/programs/delete",
       "request_type": "DeleteProgramInput",
-      "source": "apps/aseman-node/src/api/actions/program.rs:543",
+      "source": "apps/aseman-node/src/api/actions/program.rs:559",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/programs/deleteEntity",
       "request_type": "RunProgramEntityInput",
-      "source": "apps/aseman-node/src/api/actions/program.rs:803",
+      "source": "apps/aseman-node/src/api/actions/program.rs:819",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/programs/deploy",
       "request_type": "DeployInput",
-      "source": "apps/aseman-node/src/api/actions/program.rs:1221",
+      "source": "apps/aseman-node/src/api/actions/program.rs:1237",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/programs/downloadEntity",
       "request_type": "DownloadEntityInput",
-      "source": "apps/aseman-node/src/api/actions/program.rs:1430",
+      "source": "apps/aseman-node/src/api/actions/program.rs:1446",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/programs/list",
       "request_type": "ListInput",
-      "source": "apps/aseman-node/src/api/actions/program.rs:1530",
+      "source": "apps/aseman-node/src/api/actions/program.rs:1546",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/programs/runEntity",
       "request_type": "RunProgramEntityInput",
-      "source": "apps/aseman-node/src/api/actions/program.rs:599",
+      "source": "apps/aseman-node/src/api/actions/program.rs:615",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/programs/stopEntity",
       "request_type": "RunProgramEntityInput",
-      "source": "apps/aseman-node/src/api/actions/program.rs:726",
+      "source": "apps/aseman-node/src/api/actions/program.rs:742",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/programs/update",
       "request_type": "UpdateProgramInput",
-      "source": "apps/aseman-node/src/api/actions/program.rs:566",
+      "source": "apps/aseman-node/src/api/actions/program.rs:582",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },

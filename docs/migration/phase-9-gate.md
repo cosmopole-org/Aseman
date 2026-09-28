@@ -10,11 +10,34 @@ verification: cargo test -p aseman-domain bootstrap; cargo xtask fast
 
 ## Decision
 
-**Not accepted.** The bootstrap driver, packaging policy, deployment profiles, and
-operational assets are delivered and proven statically; the required clean-host outcome
-has not been retained. This gate is partial because its criterion is observable — "a
-clean host reaches healthy compact mode through one workflow" — not because another
-repository implementation is standing in for that observation.
+**Not accepted.** The first half of the criterion is now observed: from empty state,
+`asemanctl bootstrap --profile compact` brought all five services (PostgreSQL 18, VMM,
+Nomad backend, node, meter) to healthy in 15 seconds on a development host against an
+operator-run Nomad, and a re-run is a no-op. The gate stays partial because the rest of
+its criterion — a production topology adding/draining workers and restoring from backup
+— and the signed-release inputs are not yet retained as evidence.
+
+## Compact bootstrap observation (2026-09-28)
+
+The first real end-to-end run found eight defects that static checks had passed; each
+is fixed and, where a check can hold it, guarded:
+
+| Defect | Fix and guard |
+|---|---|
+| PostgreSQL 18 images refuse a volume at `/var/lib/postgresql/data` | mount `/var/lib/postgresql` |
+| Services run as uid 65532 but secrets were `0600` operator-owned | `hand_to_runtime`: private files `0400` owned by their consumer (65532, or the postgres image's own user), certificates world-readable |
+| The roles init script failed unreadable and the schema stage still passed | the stage verifies `aseman_guest_proxy` exists |
+| Health probed a fixed `127.0.0.1:8080`, which another service may own | `--public-port`/`--health-port`, persisted in `compact.env`; preflight refuses a bound port |
+| `debian:12-slim` (glibc 2.36) cannot run binaries from the `ubuntu-24.04` builders | all images on `debian:13-slim` |
+| The node parsed `ASEMAN_NODE_PRIVATE_KEY_SECRET` as inline PEM, not the secret file the contract names | read the file; inline PEM stays for the `OWNER_PRIVATE_KEY` alias |
+| PostgreSQL had an off-host route while the VMM/Nomad-backend namespace had none; the node's published ports were on an internal-only network, so Docker published nothing | PostgreSQL `control` only; VMM `control`+`scheduler`; node `control`+`public` — held by `check_deploy_topology.py` |
+| The node required QuestDB and a pre-provisioned Babble validator, neither of which the profile supplies | `ASEMAN_SIGNAL_LOG_PROVIDER=postgres` (both profiles); bootstrap generates the validator key with the image's `aseman-keygen` and a single-peer genesis |
+
+Observed: every service healthy and non-root (uid 65532 for Aseman images), the node
+heading its own Hashgraph chain, `{"status":"ok"}` on the host-local health port, and
+the A701 listener answering over TLS with an RFC 9457 `401` for an unauthenticated
+contract route. The images were built locally from this commit with
+`--allow-unsigned-local`; a run from signed, digest-pinned release images remains.
 
 ## What is delivered
 
@@ -49,15 +72,15 @@ repository implementation is standing in for that observation.
   Every command now supports one redacted `--json` result/error envelope, and generated
   TypeScript/Python public clients cover all 76 A701 operations. Only compatibility-
   usage/expiry observation remains open (RL-015).
-- **Deployment observation.** The compact and clustered profiles and resumable compact
-  driver now exist and pass static/configuration and identity-generation tests, but a
-  clean-host compact run and a production clustered run have not yet been retained as
-  gate evidence. The stable cluster load balancer, HA PostgreSQL, and Nomad quorum are
-  operator-owned inputs.
-- **Upgrade, backup, restore, doctor, and support bundle drivers operating
-  databases.** The file/directory/process drivers run; database-level backup for
-  PostgreSQL core storage goes through the A309 capsule export, schema migration runs
-  on node start, and a clean-host restore drill has not yet been executed.
+- **Deployment observation.** The compact run is observed (above) from locally built,
+  unsigned images. A run from signed release images, and a production clustered run
+  with worker add/drain, have not yet been retained. The stable cluster load balancer,
+  HA PostgreSQL, and Nomad quorum are operator-owned inputs.
+- **Restore of a whole deployment.** `backup`/`restore`/`upgrade` now carry
+  PostgreSQL core storage (roles, core database, every creature guest database) in
+  the signed, hashed snapshot, and the `live_backup_restore` drill restores onto an
+  independently started empty cluster. Restoring a complete compact deployment and
+  passing its health gate remains.
 - **Moving tracked `dist/*` blobs out of source control** (RL-018). Deleting them
   before the new out-of-tree release workflow has a retained successful tagged run,
   independent checksum/attestation verification, scanner evidence, promoted artifacts,

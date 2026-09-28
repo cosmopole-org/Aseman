@@ -27,12 +27,20 @@ impl Chain {
         trx.put_obj(Self::type_(), &self.id, cols);
     }
 
+    #[expect(
+        dead_code,
+        reason = "RL-004: characterized legacy action surface (A008) kept until its deletion gate"
+    )]
     pub fn delete(&self, trx: &dyn ITrx) {
         for c in ["|", "id", "storeId"] {
             trx.del_key(&format!("obj::{}::{}::{}", Self::type_(), self.id, c));
         }
     }
 
+    #[expect(
+        dead_code,
+        reason = "RL-004: characterized legacy action surface (A008) kept until its deletion gate"
+    )]
     pub fn pull(mut self, trx: &dyn ITrx) -> Chain {
         let m = trx.get_obj(Self::type_(), &self.id);
         if !m.is_empty() {
@@ -94,6 +102,10 @@ impl ChainShard {
         trx.put_obj(Self::type_(), &self.id, cols);
     }
 
+    #[expect(
+        dead_code,
+        reason = "RL-004: characterized legacy action surface (A008) kept until its deletion gate"
+    )]
     pub fn pull(mut self, trx: &dyn ITrx) -> ChainShard {
         let m = trx.get_obj(Self::type_(), &self.id);
         if !m.is_empty() {

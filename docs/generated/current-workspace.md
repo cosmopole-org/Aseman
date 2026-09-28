@@ -52,7 +52,7 @@ from separate manifests. This is current behavior, not the target topology.
 | `aseman-module-runtime` | `crates/aseman-module-runtime/Cargo.toml` | {'workspace': True} | lib:aseman-module-runtime | 10 | 0 |
 | `aseman-observability` | `crates/aseman-observability/Cargo.toml` | {'workspace': True} | lib:aseman-observability | 1 | 0 |
 | `aseman-ports` | `crates/aseman-ports/Cargo.toml` | {'workspace': True} | lib:aseman-ports | 3 | 1 |
-| `aseman-consensus-hashgraph` | `modules/consensus/hashgraph/Cargo.toml` | {'workspace': True} | lib:aseman-consensus-hashgraph | 21 | 0 |
+| `aseman-consensus-hashgraph` | `modules/consensus/hashgraph/Cargo.toml` | {'workspace': True} | lib:aseman-consensus-hashgraph | 22 | 0 |
 | `aseman-federation-http` | `modules/federation/http/Cargo.toml` | {'workspace': True} | lib:aseman-federation-http | 27 | 0 |
 | `aseman-finance-ledger` | `modules/finance/ledger/Cargo.toml` | {'workspace': True} | lib:aseman-finance-ledger | 8 | 0 |
 | `aseman-guest-http` | `modules/guest-http/Cargo.toml` | {'workspace': True} | lib:aseman-guest-http | 14 | 0 |
@@ -98,6 +98,7 @@ from separate manifests. This is current behavior, not the target topology.
 | `aseman-capsule` | normal | `aseman-contracts` | `crates/aseman-contracts` |
 | `aseman-capsule` | normal | `aseman-domain` | `crates/aseman-domain` |
 | `aseman-capsule` | normal | `aseman-ports` | `crates/aseman-ports` |
+| `aseman-consensus-hashgraph` | dev | `aseman-application` | `crates/aseman-application` |
 | `aseman-consensus-hashgraph` | normal | `aseman-config` | `crates/aseman-config` |
 | `aseman-consensus-hashgraph` | normal | `aseman-contracts` | `crates/aseman-contracts` |
 | `aseman-consensus-hashgraph` | normal | `aseman-domain` | `crates/aseman-domain` |

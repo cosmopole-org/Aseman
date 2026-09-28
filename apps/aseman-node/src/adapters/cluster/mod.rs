@@ -73,6 +73,13 @@ pub fn is_active() -> bool {
 /// Run `f` with replication switched on/off for the current thread. Used by
 /// the VMM to keep non-distributed VM mutations out of the consensus while
 /// letting distributed VM mutations through.
+#[cfg_attr(
+    not(test),
+    expect(
+        dead_code,
+        reason = "RL-012: OpenRaft cluster surface kept until its ADR-0004 deletion gate"
+    )
+)]
 pub fn with_replication_scope<R>(replicate: bool, f: impl FnOnce() -> R) -> R {
     REPLICATE_SCOPE.with(|s| {
         let prev = s.get();
@@ -144,6 +151,10 @@ pub struct PeerHealth {
 
 pub struct ClusterService {
     pub node_id: u64,
+    #[expect(
+        dead_code,
+        reason = "RL-012: OpenRaft cluster surface kept until its ADR-0004 deletion gate"
+    )]
     app: Arc<dyn ICore>,
     raft: Raft<TypeConfig>,
     rt: tokio::runtime::Runtime,

@@ -175,6 +175,13 @@ impl ClusterConfig {
     }
 
     /// Read a single dotted-key value (`peers.2.addr`, `heartbeat_interval_ms`).
+    #[cfg_attr(
+        not(test),
+        expect(
+            dead_code,
+            reason = "RL-012: OpenRaft cluster surface kept until its ADR-0004 deletion gate"
+        )
+    )]
     pub fn get_key(&self, key: &str) -> Option<Value> {
         let root = serde_json::to_value(self).ok()?;
         let pointer = format!("/{}", key.replace('.', "/"));

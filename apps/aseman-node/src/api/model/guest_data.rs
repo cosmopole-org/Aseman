@@ -61,6 +61,10 @@ fn execute(
 }
 
 /// Whether guest data is served from creature databases.
+#[expect(
+    dead_code,
+    reason = "RL-004: characterized legacy action surface (A008) kept until its deletion gate"
+)]
 pub(crate) fn on_postgres() -> bool {
     ROUTING.get().is_some()
 }
@@ -180,6 +184,13 @@ fn db_op_with(
 
 /// Split a runtime `dbOp` key `{creature}::{guestKey}`; runtimes build it from the
 /// node-assigned machine id, so the first segment is the creature.
+#[cfg_attr(
+    not(test),
+    expect(
+        dead_code,
+        reason = "RL-004: characterized legacy action surface (A008) kept until its deletion gate"
+    )
+)]
 pub(crate) fn split_runtime_key(key: &str) -> Option<(&str, &str)> {
     key.split_once("::")
         .filter(|(creature, _)| creature.contains('@'))

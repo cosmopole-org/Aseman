@@ -6,6 +6,14 @@
 //! conformance/backfill work but is not selected as authority until the removal-ledger
 //! cutover gate passes.
 
+#![cfg_attr(
+    not(test),
+    expect(
+        dead_code,
+        reason = "ADR 0031: backfill/comparison surface exercised by tests until a family cutover composes it"
+    )
+)]
+
 use std::collections::{BTreeMap, HashMap};
 use std::sync::{Arc, Mutex};
 

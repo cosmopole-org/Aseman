@@ -712,6 +712,10 @@ impl TrxWrapper {
 
     /// Iterator-only access to the underlying DB for callers that need raw
     /// key/value pairs without overlay filtering (e.g. recovery / debug).
+    #[expect(
+        dead_code,
+        reason = "RL-005: legacy RocksDB surface kept until its deletion gate"
+    )]
     pub fn raw_db_iterator(&self) -> Vec<(Vec<u8>, Vec<u8>)> {
         self.db.scan_all().unwrap_or_default()
     }

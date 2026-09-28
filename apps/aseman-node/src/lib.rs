@@ -13,14 +13,10 @@
 //
 // [`app::NodeApp`] is where the pieces are wired.
 //
-// The single remaining crate-wide suppression is `#![allow(dead_code)]`. It is
-// strangler-gated: the Go translation carries translated-but-not-yet-wired items that
-// are the A008 characterized legacy surface, so they must survive until the
-// removal-ledger rows (RL-002..RL-012) pass their replacement and deletion gates.
-// The lint must not be removed by deleting that surface ahead of the gates; it is
-// removed when the last row retires.
-
-#![allow(dead_code)]
+// There is no crate-wide lint suppression. Translated-but-unwired items of the A008
+// characterized legacy surface carry a scoped `expect(dead_code, reason = ...)` naming
+// the removal-ledger row (RL-002..RL-013) that owns them. `expect` fails the build
+// once an item becomes used or is deleted, so each attribute retires with its row.
 
 mod adapters;
 mod api;

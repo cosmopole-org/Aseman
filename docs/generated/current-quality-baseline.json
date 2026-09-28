@@ -13,20 +13,21 @@
   ],
   "ratchet_counts": {
     "environment_reads": {
-      "count": 8,
+      "count": 9,
       "sample_locations": [
-        "crates/aseman-config/src/lib.rs:343",
-        "crates/aseman-config/src/lib.rs:346",
-        "crates/aseman-config/src/lib.rs:349",
-        "crates/aseman-config/src/lib.rs:351",
-        "crates/aseman-config/src/lib.rs:393",
-        "crates/aseman-config/src/lib.rs:396",
-        "crates/aseman-config/src/lib.rs:465",
-        "crates/aseman-config/src/lib.rs:469"
+        "crates/aseman-config/src/lib.rs:361",
+        "crates/aseman-config/src/lib.rs:364",
+        "crates/aseman-config/src/lib.rs:367",
+        "crates/aseman-config/src/lib.rs:370",
+        "crates/aseman-config/src/lib.rs:372",
+        "crates/aseman-config/src/lib.rs:414",
+        "crates/aseman-config/src/lib.rs:417",
+        "crates/aseman-config/src/lib.rs:486",
+        "crates/aseman-config/src/lib.rs:490"
       ]
     },
     "rust_allow_attributes": {
-      "count": 54,
+      "count": 52,
       "sample_locations": [
         "apps/aseman-node/src/adapters/cluster/command.rs:91",
         "apps/aseman-node/src/adapters/cluster/network.rs:35",
@@ -37,34 +38,34 @@
         "apps/aseman-node/src/adapters/cluster/store.rs:270",
         "apps/aseman-node/src/adapters/cluster/tests.rs:353",
         "apps/aseman-node/src/adapters/network/client/ws.rs:567",
-        "apps/aseman-node/src/adapters/network/federation/fednet.rs:514",
-        "apps/aseman-node/src/adapters/network/federation/netserver.rs:465",
+        "apps/aseman-node/src/adapters/network/federation/fednet.rs:518",
+        "apps/aseman-node/src/adapters/network/federation/netserver.rs:473",
         "apps/aseman-node/src/adapters/network/net.rs:92",
-        "apps/aseman-node/src/adapters/rocksdb/trx.rs:1193",
+        "apps/aseman-node/src/adapters/rocksdb/trx.rs:1197",
         "apps/aseman-node/src/adapters/signaler.rs:443",
-        "apps/aseman-node/src/api/actions/program.rs:253",
+        "apps/aseman-node/src/api/actions/program.rs:269",
         "apps/aseman-node/src/api/public_http.rs:2020",
-        "apps/aseman-node/src/api/utils/timer.rs:54",
+        "apps/aseman-node/src/api/utils/timer.rs:61",
         "apps/aseman-node/src/api/workloads.rs:147",
         "apps/aseman-node/src/api/workloads.rs:293",
-        "apps/aseman-node/src/core/globe/mod.rs:36",
+        "apps/aseman-node/src/core/globe/mod.rs:43",
         "apps/aseman-node/src/core/globe/transport.rs:57",
         "apps/aseman-node/src/core/globe/transport.rs:109",
         "apps/aseman-node/src/core/globe/types.rs:33",
         "apps/aseman-node/src/core/orchestrator/load.rs:35",
-        "apps/aseman-node/src/lib.rs:16"
+        "apps/aseman-node/src/models/action.rs:61"
       ]
     },
     "rust_expect_calls": {
-      "count": 610,
+      "count": 616,
       "sample_locations": [
-        "apps/aseman-node/src/adapters/cluster/mod.rs:313",
-        "apps/aseman-node/src/adapters/cluster/mod.rs:361",
+        "apps/aseman-node/src/adapters/cluster/mod.rs:324",
+        "apps/aseman-node/src/adapters/cluster/mod.rs:372",
         "apps/aseman-node/src/adapters/cluster/store.rs:91",
         "apps/aseman-node/src/adapters/cluster/store.rs:95",
         "apps/aseman-node/src/adapters/cluster/store.rs:257",
         "apps/aseman-node/src/adapters/cluster/store.rs:267",
-        "apps/aseman-node/src/adapters/cluster/store.rs:307",
+        "apps/aseman-node/src/adapters/cluster/store.rs:311",
         "apps/aseman-node/src/adapters/cluster/tests.rs:49",
         "apps/aseman-node/src/adapters/cluster/tests.rs:392",
         "apps/aseman-node/src/adapters/cluster/tests.rs:396",
@@ -74,7 +75,7 @@
         "apps/aseman-node/src/adapters/cluster/tests.rs:425",
         "apps/aseman-node/src/adapters/cluster/tests.rs:582",
         "apps/aseman-node/src/adapters/cluster/tests.rs:680",
-        "apps/aseman-node/src/adapters/rocksdb/trx.rs:850",
+        "apps/aseman-node/src/adapters/rocksdb/trx.rs:854",
         "apps/aseman-node/src/adapters/signaler.rs:187",
         "apps/aseman-node/src/adapters/vmm/proxy.rs:759",
         "apps/aseman-node/src/adapters/vmm/proxy.rs:803",
@@ -86,20 +87,20 @@
       ]
     },
     "rust_json_value_mentions": {
-      "count": 1743,
+      "count": 1741,
       "sample_locations": [
         "apps/aseman-node/src/adapters/cluster/command.rs:24",
         "apps/aseman-node/src/adapters/cluster/command.rs:112",
         "apps/aseman-node/src/adapters/cluster/config.rs:17",
         "apps/aseman-node/src/adapters/cluster/config.rs:92",
-        "apps/aseman-node/src/adapters/cluster/config.rs:178",
-        "apps/aseman-node/src/adapters/cluster/config.rs:188",
-        "apps/aseman-node/src/adapters/cluster/config.rs:189",
-        "apps/aseman-node/src/adapters/cluster/config.rs:198",
-        "apps/aseman-node/src/adapters/cluster/config.rs:200",
+        "apps/aseman-node/src/adapters/cluster/config.rs:185",
+        "apps/aseman-node/src/adapters/cluster/config.rs:195",
+        "apps/aseman-node/src/adapters/cluster/config.rs:196",
         "apps/aseman-node/src/adapters/cluster/config.rs:205",
+        "apps/aseman-node/src/adapters/cluster/config.rs:207",
+        "apps/aseman-node/src/adapters/cluster/config.rs:212",
         "apps/aseman-node/src/adapters/cluster/mod.rs:41",
-        "apps/aseman-node/src/adapters/cluster/mod.rs:266",
+        "apps/aseman-node/src/adapters/cluster/mod.rs:277",
         "apps/aseman-node/src/adapters/cluster/server.rs:34",
         "apps/aseman-node/src/adapters/cluster/server.rs:251",
         "apps/aseman-node/src/adapters/cluster/server.rs:285",
@@ -107,7 +108,7 @@
         "apps/aseman-node/src/adapters/cluster/server.rs:415",
         "apps/aseman-node/src/adapters/cluster/server.rs:424",
         "apps/aseman-node/src/adapters/cluster/store.rs:239",
-        "apps/aseman-node/src/adapters/cluster/store.rs:281",
+        "apps/aseman-node/src/adapters/cluster/store.rs:285",
         "apps/aseman-node/src/adapters/cluster/tests.rs:26",
         "apps/aseman-node/src/adapters/cluster/tests.rs:113",
         "apps/aseman-node/src/adapters/cluster/tests.rs:114",
@@ -125,9 +126,9 @@
         "apps/aseman-node/src/adapters/cluster/tests.rs:342",
         "apps/aseman-node/src/adapters/cluster/tests.rs:436",
         "apps/aseman-node/src/adapters/ratelimit.rs:511",
-        "apps/aseman-node/src/adapters/rocksdb/trx.rs:769",
-        "apps/aseman-node/src/adapters/rocksdb/trx.rs:776",
-        "apps/aseman-node/src/adapters/rocksdb/trx.rs:828",
+        "apps/aseman-node/src/adapters/rocksdb/trx.rs:773",
+        "apps/aseman-node/src/adapters/rocksdb/trx.rs:780",
+        "apps/aseman-node/src/adapters/rocksdb/trx.rs:832",
         "apps/aseman-node/src/adapters/signaler.rs:421",
         "apps/aseman-node/src/adapters/signaler.rs:446",
         "apps/aseman-node/src/adapters/signaler.rs:452",
@@ -146,29 +147,29 @@
       ]
     },
     "rust_sleep_calls": {
-      "count": 79,
+      "count": 81,
       "sample_locations": [
         "apps/aseman-meter/src/main.rs:54",
-        "apps/aseman-node/src/adapters/cluster/mod.rs:306",
-        "apps/aseman-node/src/adapters/cluster/mod.rs:358",
+        "apps/aseman-node/src/adapters/cluster/mod.rs:317",
+        "apps/aseman-node/src/adapters/cluster/mod.rs:369",
         "apps/aseman-node/src/adapters/cluster/tests.rs:434",
         "apps/aseman-node/src/adapters/module_admin.rs:484",
         "apps/aseman-node/src/adapters/module_admin.rs:506",
         "apps/aseman-node/src/adapters/network/chain/shard_bootstrap.rs:121",
         "apps/aseman-node/src/adapters/network/client/tcp.rs:441",
         "apps/aseman-node/src/adapters/network/client/ws.rs:475",
-        "apps/aseman-node/src/adapters/network/federation/fednet.rs:475",
-        "apps/aseman-node/src/adapters/network/federation/netserver.rs:202",
+        "apps/aseman-node/src/adapters/network/federation/fednet.rs:479",
+        "apps/aseman-node/src/adapters/network/federation/netserver.rs:210",
         "apps/aseman-node/src/adapters/ratelimit.rs:337",
-        "apps/aseman-node/src/adapters/vmm/globals.rs:232",
-        "apps/aseman-node/src/adapters/vmm/hostcall_entities.rs:1872",
+        "apps/aseman-node/src/adapters/vmm/globals.rs:239",
+        "apps/aseman-node/src/adapters/vmm/hostcall_entities.rs:1888",
         "apps/aseman-node/src/adapters/vmm/proxy.rs:723",
-        "apps/aseman-node/src/api/actions/program.rs:1647",
-        "apps/aseman-node/src/api/actions/program.rs:1718",
+        "apps/aseman-node/src/api/actions/program.rs:1663",
+        "apps/aseman-node/src/api/actions/program.rs:1734",
         "apps/aseman-node/src/api/audit.rs:36",
-        "apps/aseman-node/src/api/utils/future.rs:96",
-        "apps/aseman-node/src/api/utils/future.rs:106",
-        "apps/aseman-node/src/api/utils/timer.rs:113",
+        "apps/aseman-node/src/api/utils/future.rs:103",
+        "apps/aseman-node/src/api/utils/future.rs:113",
+        "apps/aseman-node/src/api/utils/timer.rs:120",
         "apps/aseman-node/src/api/workloads.rs:496",
         "apps/aseman-node/src/app.rs:258",
         "apps/aseman-node/src/app.rs:378",
@@ -176,33 +177,33 @@
       ]
     },
     "rust_spawn_calls": {
-      "count": 80,
+      "count": 81,
       "sample_locations": [
         "apps/aseman-node/src/adapters/cluster/server.rs:52",
         "apps/aseman-node/src/adapters/cluster/server.rs:77",
-        "apps/aseman-node/src/adapters/network/chain/blockchain.rs:143",
-        "apps/aseman-node/src/adapters/network/chain/blockchain.rs:414",
-        "apps/aseman-node/src/adapters/network/chain/shard_bootstrap.rs:257",
+        "apps/aseman-node/src/adapters/network/chain/blockchain.rs:155",
+        "apps/aseman-node/src/adapters/network/chain/blockchain.rs:430",
+        "apps/aseman-node/src/adapters/network/chain/shard_bootstrap.rs:259",
         "apps/aseman-node/src/adapters/network/client/tcp.rs:440",
         "apps/aseman-node/src/adapters/network/client/tcp.rs:545",
         "apps/aseman-node/src/adapters/network/client/tcp.rs:563",
         "apps/aseman-node/src/adapters/network/client/ws.rs:474",
         "apps/aseman-node/src/adapters/network/client/ws.rs:531",
         "apps/aseman-node/src/adapters/network/client/ws.rs:549",
-        "apps/aseman-node/src/adapters/network/federation/fednet.rs:474",
-        "apps/aseman-node/src/adapters/network/federation/netserver.rs:227",
-        "apps/aseman-node/src/adapters/network/federation/netserver.rs:417",
-        "apps/aseman-node/src/adapters/vmm/globals.rs:225",
-        "apps/aseman-node/src/adapters/vmm/hostcall_entities.rs:1847",
+        "apps/aseman-node/src/adapters/network/federation/fednet.rs:478",
+        "apps/aseman-node/src/adapters/network/federation/netserver.rs:235",
+        "apps/aseman-node/src/adapters/network/federation/netserver.rs:425",
+        "apps/aseman-node/src/adapters/vmm/globals.rs:232",
+        "apps/aseman-node/src/adapters/vmm/hostcall_entities.rs:1863",
         "apps/aseman-node/src/adapters/vmm/network/ingress.rs:71",
         "apps/aseman-node/src/adapters/vmm/network/ingress.rs:86",
         "apps/aseman-node/src/adapters/vmm/proxy.rs:721",
-        "apps/aseman-node/src/api/actions/program.rs:1715",
+        "apps/aseman-node/src/api/actions/program.rs:1731",
         "apps/aseman-node/src/api/storage_http.rs:49",
         "apps/aseman-node/src/api/storage_http.rs:52",
         "apps/aseman-node/src/api/storage_http.rs:262",
-        "apps/aseman-node/src/api/utils/future.rs:20",
-        "apps/aseman-node/src/api/utils/future.rs:26"
+        "apps/aseman-node/src/api/utils/future.rs:27",
+        "apps/aseman-node/src/api/utils/future.rs:33"
       ]
     },
     "rust_unsafe_tokens": {
@@ -211,8 +212,8 @@
         "apps/aseman-node/src/adapters/signaler.rs:163",
         "apps/aseman-node/src/app.rs:346",
         "apps/aseman-node/src/app.rs:379",
-        "apps/aseman-node/src/app.rs:400",
-        "apps/aseman-node/src/app.rs:413",
+        "apps/aseman-node/src/app.rs:408",
+        "apps/aseman-node/src/app.rs:421",
         "apps/aseman-node/src/observability/resources.rs:144",
         "apps/aseman-node/src/observability/resources.rs:206",
         "apps/aseman-node/src/observability/resources.rs:207",
@@ -236,21 +237,21 @@
       ]
     },
     "rust_unwrap_calls": {
-      "count": 3474,
+      "count": 3543,
       "sample_locations": [
         "apps/aseman-node/src/adapters/blob_store.rs:128",
         "apps/aseman-node/src/adapters/blob_store.rs:136",
         "apps/aseman-node/src/adapters/blob_store.rs:143",
-        "apps/aseman-node/src/adapters/cluster/config.rs:235",
-        "apps/aseman-node/src/adapters/cluster/config.rs:256",
-        "apps/aseman-node/src/adapters/cluster/config.rs:265",
-        "apps/aseman-node/src/adapters/cluster/config.rs:281",
-        "apps/aseman-node/src/adapters/cluster/mod.rs:168",
-        "apps/aseman-node/src/adapters/cluster/mod.rs:172",
-        "apps/aseman-node/src/adapters/cluster/mod.rs:181",
-        "apps/aseman-node/src/adapters/cluster/mod.rs:189",
-        "apps/aseman-node/src/adapters/cluster/mod.rs:257",
-        "apps/aseman-node/src/adapters/cluster/mod.rs:338",
+        "apps/aseman-node/src/adapters/cluster/config.rs:242",
+        "apps/aseman-node/src/adapters/cluster/config.rs:263",
+        "apps/aseman-node/src/adapters/cluster/config.rs:272",
+        "apps/aseman-node/src/adapters/cluster/config.rs:288",
+        "apps/aseman-node/src/adapters/cluster/mod.rs:179",
+        "apps/aseman-node/src/adapters/cluster/mod.rs:183",
+        "apps/aseman-node/src/adapters/cluster/mod.rs:192",
+        "apps/aseman-node/src/adapters/cluster/mod.rs:200",
+        "apps/aseman-node/src/adapters/cluster/mod.rs:268",
+        "apps/aseman-node/src/adapters/cluster/mod.rs:349",
         "apps/aseman-node/src/adapters/cluster/tests.rs:46",
         "apps/aseman-node/src/adapters/cluster/tests.rs:109",
         "apps/aseman-node/src/adapters/cluster/tests.rs:303",
@@ -267,11 +268,11 @@
     }
   },
   "source": {
-    "file_count": 616,
+    "file_count": 621,
     "files_by_suffix": {
       ".js": 2,
-      ".py": 45,
-      ".rs": 565,
+      ".py": 46,
+      ".rs": 569,
       ".sh": 2,
       ".ts": 2
     },
@@ -297,7 +298,7 @@
         "path": "modules/consensus/hashgraph/src/hashgraph/hashgraph.rs"
       },
       {
-        "lines": 2479,
+        "lines": 2499,
         "path": "apps/aseman-node/src/api/actions/program.rs"
       },
       {
@@ -305,7 +306,7 @@
         "path": "modules/runtime/elpian/crates/elpian-vm/src/sdk/stdlib/mod.rs"
       },
       {
-        "lines": 2283,
+        "lines": 2311,
         "path": "apps/aseman-node/src/adapters/vmm/hostcall_entities.rs"
       },
       {
@@ -329,16 +330,16 @@
         "path": "apps/aseman-node/src/adapters/vmm/host/vm_host_functions.rs"
       },
       {
+        "lines": 1869,
+        "path": "crates/aseman-config/src/lib.rs"
+      },
+      {
         "lines": 1862,
         "path": "modules/runtime/elpian/crates/elpian-vm/src/sdk/compiler.rs"
       },
       {
         "lines": 1796,
         "path": "apps/aseman-client/index.ts"
-      },
-      {
-        "lines": 1793,
-        "path": "crates/aseman-config/src/lib.rs"
       },
       {
         "lines": 1673,
@@ -357,7 +358,7 @@
         "path": "modules/network/http/src/lib.rs"
       }
     ],
-    "nonblank_lines": 176855,
-    "physical_lines": 189448
+    "nonblank_lines": 179433,
+    "physical_lines": 192155
   }
 }

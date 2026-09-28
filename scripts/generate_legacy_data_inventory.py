@@ -234,12 +234,21 @@ def questdb_tables() -> list[dict[str, Any]]:
             "operations": [],
         }
     sql_pattern = re.compile(r'"((?:INSERT INTO|update|SELECT .*? FROM)\s+[^\"]+)"', re.I)
+    # The client serves both dialects, so the table is a `{}` filled by an accessor
+    # named after the QuestDB table it characterizes.
+    accessors = {"self.signals_table()": "storage", "self.build_logs_table()": "buildlogs"}
     for found in sql_pattern.finditer(value):
         sql = found.group(1)
-        table_match = re.search(r"(?:INTO|update|FROM)\s+([a-zA-Z0-9_]+)", sql, re.I)
+        table_match = re.search(r"(?:INTO|update|FROM)\s+([a-zA-Z0-9_]+|\{\})", sql, re.I)
         if not table_match:
             continue
         name = table_match.group(1).lower()
+        if name == "{}":
+            arguments = value[found.end() : found.end() + 240]
+            resolved = [table for call, table in accessors.items() if call in arguments]
+            if len(resolved) != 1:
+                continue
+            name = resolved[0]
         if name in creates:
             creates[name]["operations"].append(
                 {

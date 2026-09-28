@@ -17,14 +17,30 @@ pub type ChainCallbackFn = Arc<dyn Fn(Vec<u8>, i64, Option<GoError>) + Send + Sy
 #[derive(Clone)]
 pub struct ChainCallback {
     pub fn_: ChainCallbackFn,
+    #[expect(
+        dead_code,
+        reason = "RL-002: legacy model surface kept until its deletion gate"
+    )]
     pub executors: HashMap<String, bool>,
+    #[expect(
+        dead_code,
+        reason = "RL-002: legacy model surface kept until its deletion gate"
+    )]
     pub responses: HashMap<String, String>,
+    #[expect(
+        dead_code,
+        reason = "RL-002: legacy model surface kept until its deletion gate"
+    )]
     pub tag: String,
 }
 
 /// Callback awaiting a single typed chain message reply.
 #[derive(Clone)]
 pub struct MessageCallback {
+    #[expect(
+        dead_code,
+        reason = "RL-002: legacy model surface kept until its deletion gate"
+    )]
     pub id: String,
     pub fn_: Arc<dyn Fn(String, Vec<u8>) + Send + Sync>,
 }

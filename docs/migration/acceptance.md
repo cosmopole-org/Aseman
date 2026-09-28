@@ -92,17 +92,17 @@ strength of an intention.
 | Every ledger mutation balanced and idempotent | MET | `live_finance`; an unbalanced record leaves no half-entry |
 | Every charge traces to workload, interval, sample, price version | MET | The idempotency key *is* the settlement identity |
 | Insufficient funds uses policy and authorized operations | MET as rules | `enforcement`; the enforcement loop is open |
-| Consensus providers change only at a verified epoch | PARTIAL | `modules/consensus/hashgraph::HashgraphConsensusProvider` implements submission, committed-block finalization, pending checks, snapshots, checkpoints, and adoption over the real Babble proxy; node settlement composition and a live peer handoff remain (RL-011) |
+| Consensus providers change only at a verified epoch | MET (local mesh) | `live_mesh_handover`: four Hashgraph validators over real TCP finalize identical records, every peer checkpoints the same order at the finalized epoch, `CheckHandoverReadiness` refuses any other epoch, the outgoing mesh stops, a second four-validator mesh adopts the checkpoint and keeps ordering on top of it, a provider with its own history cannot adopt, and a fresh provider restores the prior order (rollback). The run exposed and fixed an unbounded RPC read that let one silent peer wedge `Node::shutdown`. A switch on a production peer mesh remains release evidence (RL-011) |
 
 ## Packaging and operations
 
 | Criterion | State | Evidence |
 |---|---|---|
 | Node, VMM, meter have separate least-privilege artifacts | PARTIAL | Separate checked non-root images exist for node/VMM/meter/Nomad backend, and the authenticated privileged agent has a checked systemd profile; signed image publication and deployment-backed privilege inspection remain open |
-| Compact setup through one idempotent command | PARTIAL | `asemanctl bootstrap` now drives the seven-stage resumable workflow and checked compact Compose profile; a retained clean-host end-to-end observation remains required by the Phase 9 gate |
+| Compact setup through one idempotent command | MET (dev host) | `asemanctl bootstrap --profile compact` took empty state to five healthy, non-root services in 15 s against an operator-run Nomad; a re-run is a no-op (Phase 9 gate, 2026-09-28 observation). The run used locally built unsigned images; the signed-image run is Phase 9 release evidence |
 | Re-running bootstrap is safe | MET as rules | P9-01: re-running a finished stage is an error |
 | Failed stages resume or roll back without destroying data | MET as rules | P9-01: roll-forward at and after the schema stage |
-| Backup and clean restore tested | OPEN | Phase 9 |
+| Backup and clean restore tested | MET (database level) | `asemanctl backup`/`restore` now carry PostgreSQL core storage: cluster roles, the core database, and every live creature guest database as consistent dumps inside the signed, hashed snapshot. `live_backup_restore` (A1002 `backup-clean-restore-drill`) restores a PostgreSQL 16 source onto an independently started, empty PostgreSQL 18 cluster with identical core row counts, guest rows, and guest grants; an untrusted-key manifest and a non-empty target are refused, and a re-run repeats no step. A restore of a full compact deployment followed by a healthy node remains Phase 9 clean-host evidence |
 | Formatting, Clippy, tests, compatibility gates in CI | MET | `cargo xtask fast` |
 | Releases commit no generated binaries | PARTIAL | The replacement workflow builds out of tree and publishes SPDX/checksum/attestation evidence without repository write permission; RL-018 keeps existing tracked `dist/*` until a tagged run is retained, independently verified, and all consumers use promoted artifacts |
 
@@ -126,7 +126,7 @@ strength of an intention.
 |---|---|---|
 | One workspace, lockfile, toolchain, lint policy, task runner | MET | Phase 1 |
 | Explicit canonical hierarchy and ownership | PARTIAL | All ownership roots, app roots, canonical crates, and planned module package paths now exist and own implementation source; `docs/generated/repository-layout.md` reports 0 open target package paths and one gated legacy root (`dist`). Compatibility code within canonical packages remains governed by the removal ledger. |
-| No broad lint suppressions | PARTIAL | `apps/aseman-node` and `modules/consensus/hashgraph` now compile clippy-clean across all targets under a single crate-wide `#![allow(dead_code)]` in the node (strangler-gated on the A008 legacy surface). The `unused_imports`, `module_inception`, and `type_complexity` crate allows were removed and their warnings fixed with type aliases and scoped per-item allows; the hashgraph engine's warnings (collapsible-if, inspect-err, derivable defaults, unused fields) were fixed outright. The node's remaining suppression expires with the removal-ledger rows (RL-002..RL-012). |
+| No broad lint suppressions | MET | No crate-wide suppression remains. The node's former `#![allow(dead_code)]` became scoped `expect(dead_code, reason = "RL-0xx ...")` attributes on each unwired A008 legacy item (test-only uses are `cfg_attr(not(test), ...)`), so an attribute fails the build once its item is wired or deleted and retires with its removal-ledger row; `apps/aseman-node` and `aseman-application` pass `clippy --all-targets -D warnings` |
 | Direct environment reads outside the config adapter rejected | MET | The ratchet; all four reads are in `aseman-config` |
 | Internal APIs avoid unvalidated JSON and stringly-typed states | PARTIAL | True of every new contract; the legacy action handlers still pass `serde_json::Value` |
 | Shared session behavior has one transport-neutral owner | MET | `check_legacy_transports.py` |

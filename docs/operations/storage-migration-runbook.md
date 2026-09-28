@@ -70,6 +70,14 @@ verification: ASEMAN_TEST_POSTGRES_URL=... cargo test -p aseman-migration-e2e
      `audit.event`. The families ADR 0026 keeps on legacy (finance and balances,
      identity credentials, VMM runtime, chains, id allocation) stay on the legacy
      store.
+   - The legacy store-signal history and VM build logs stay on QuestDB until you set
+     `ASEMAN_SIGNAL_LOG_PROVIDER=postgres` (allowed only with PostgreSQL core
+     storage). The node then serves both from the `aseman_legacy_log` schema of the
+     core database, with the same rows, ordering, bounds, tags, and edit semantics.
+     Selecting it does not move history already in QuestDB: export it first (A308
+     maps `storage` to `realtime.event` and `buildlogs` to `telemetry.build_log`), or
+     accept that older signals stay readable only from QuestDB. New deployments —
+     both compose profiles — start on PostgreSQL and run no QuestDB.
    - Issue the workload egress grants (`network.egress` on `network:{host}`) before
      `network.egress` leaves shadow mode (A406).
 8. **Observe the rollback window.** If rollback is needed, and only while

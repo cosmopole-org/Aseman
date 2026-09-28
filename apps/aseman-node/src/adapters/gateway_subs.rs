@@ -58,6 +58,10 @@ pub struct Subscriber {
     pub id: String,
     /// The creature whose grant this subscriber authenticated with. Recorded
     /// so a publish can be attributed and a revoked grant traced back.
+    #[expect(
+        dead_code,
+        reason = "RL-008: process-local subscriber surface kept for rollback"
+    )]
     pub creature_id: String,
     /// Topics this subscriber receives.
     pub topics: Vec<String>,
@@ -214,6 +218,13 @@ pub fn publish(topic: &str, creature_id: &str, key: &str, data: &Value) -> PortR
 }
 
 /// How many connections currently subscribe to `topic`.
+#[cfg_attr(
+    not(test),
+    expect(
+        dead_code,
+        reason = "RL-008: process-local subscriber surface kept for rollback"
+    )
+)]
 pub fn subscriber_count(topic: &str) -> usize {
     REGISTRY
         .by_topic
@@ -223,6 +234,10 @@ pub fn subscriber_count(topic: &str) -> usize {
 }
 
 /// Counters for the node's health/telemetry surface.
+#[expect(
+    dead_code,
+    reason = "RL-008: process-local subscriber surface kept for rollback"
+)]
 pub fn stats() -> Value {
     serde_json::json!({
         "topics": REGISTRY.by_topic.len(),

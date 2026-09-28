@@ -22,6 +22,13 @@ pub fn secure_unique_string() -> String {
 }
 
 /// Returns `<uuid>@<fed>` — used by the shell to mint federation-scoped ids.
+#[cfg_attr(
+    not(test),
+    expect(
+        dead_code,
+        reason = "RL-004: characterized legacy action surface (A008) kept until its deletion gate"
+    )
+)]
 pub fn secure_unique_id(fed: &str) -> String {
     format!("{}@{}", Uuid::new_v4(), fed)
 }
@@ -60,6 +67,13 @@ pub fn secure_key_pairs(save_path: &str) -> Result<(Vec<u8>, Vec<u8>)> {
 }
 
 /// Parses a PKCS#8 PEM-encoded RSA private key.
+#[cfg_attr(
+    not(test),
+    expect(
+        dead_code,
+        reason = "RL-004: characterized legacy action surface (A008) kept until its deletion gate"
+    )
+)]
 pub fn parse_private_key(data: &[u8]) -> Result<RsaPrivateKey> {
     let s = std::str::from_utf8(data).map_err(|e| anyhow!("utf-8: {}", e))?;
     RsaPrivateKey::from_pkcs8_pem(s).map_err(|e| anyhow!("decode pkcs8: {}", e))

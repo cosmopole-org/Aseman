@@ -544,6 +544,10 @@ impl NodeWorkloads {
     /// signals are forwarded to the target with the data attached (see
     /// `drivers::vmm::proxy`). Host-call deploys are always local — cluster
     /// distribution stays a shell-API concern.
+    #[expect(
+        dead_code,
+        reason = "RL-006/RL-013: legacy VM host-call surface kept for the ADR-0004 window"
+    )]
     pub(crate) fn handle_deploy_entity(&self, input: &Value, req_id: i64) -> (String, i64) {
         use crate::adapters::vmm::proxy;
 
@@ -1052,6 +1056,10 @@ impl NodeWorkloads {
         (r#"{"ok":true}"#.into(), req_id)
     }
 
+    #[expect(
+        dead_code,
+        reason = "RL-006/RL-013: legacy VM host-call surface kept for the ADR-0004 window"
+    )]
     pub(crate) fn handle_vm_chain_request(
         &self,
         op: &str,
@@ -1778,6 +1786,10 @@ impl NodeWorkloads {
         }
     }
 
+    #[expect(
+        dead_code,
+        reason = "RL-006/RL-013: legacy VM host-call surface kept for the ADR-0004 window"
+    )]
     pub(crate) fn handle_check_token_validity(&self, input: &Value, req_id: i64) -> (String, i64) {
         let token_owner_id = check_str(input, "tokenOwnerId", "");
         let token_id = check_str(input, "tokenId", "");
@@ -1813,6 +1825,10 @@ impl NodeWorkloads {
         (serde_json::to_string(&out).unwrap_or_default(), req_id)
     }
 
+    #[expect(
+        dead_code,
+        reason = "RL-006/RL-013: legacy VM host-call surface kept for the ADR-0004 window"
+    )]
     pub(crate) fn handle_plant_trigger(&self, input: &Value, req_id: i64) -> (String, i64) {
         use std::thread;
         use std::time::Duration;
@@ -2029,6 +2045,10 @@ impl NodeWorkloads {
         }
     }
 
+    #[expect(
+        dead_code,
+        reason = "RL-006/RL-013: legacy VM host-call surface kept for the ADR-0004 window"
+    )]
     pub(crate) fn handle_send_message_on_chain(&self, input: &Value, req_id: i64) -> (String, i64) {
         let chain_id = check_str(input, "chainId", "main");
         let mut key = check_str(input, "msgKey", "");
@@ -2081,6 +2101,10 @@ impl NodeWorkloads {
     }
 }
 
+#[expect(
+    dead_code,
+    reason = "RL-006/RL-013: legacy VM host-call surface kept for the ADR-0004 window"
+)]
 fn parse_chain_receivers(input: &Value) -> HashMap<String, HashMap<String, bool>> {
     let mut receivers: HashMap<String, HashMap<String, bool>> = HashMap::new();
     let Some(nodes) = input.get("receivers").and_then(Value::as_object) else {
@@ -2104,6 +2128,10 @@ fn parse_chain_receivers(input: &Value) -> HashMap<String, HashMap<String, bool>
     receivers
 }
 
+#[expect(
+    dead_code,
+    reason = "RL-006/RL-013: legacy VM host-call surface kept for the ADR-0004 window"
+)]
 fn parse_chain_pay_packet(input: &Value) -> Option<crate::models::chain::ChainPayPacket> {
     let pay_obj = input.get("pay").and_then(Value::as_object)?;
     use crate::models::chain::ChainPayPacket;

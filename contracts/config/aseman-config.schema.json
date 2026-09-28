@@ -853,6 +853,11 @@
       "type": "string",
       "x-legacy-aliases": []
     },
+    "ASEMAN_TEST_POSTGRES_RESTORE_URL": {
+      "description": "Typed replacement for legacy ASEMAN_TEST_POSTGRES_RESTORE_URL (network).",
+      "type": "string",
+      "x-legacy-aliases": []
+    },
     "ASEMAN_TEST_POSTGRES_URL": {
       "description": "Typed replacement for legacy ASEMAN_TEST_POSTGRES_URL (network).",
       "type": "string",

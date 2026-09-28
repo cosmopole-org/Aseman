@@ -16,6 +16,10 @@ use crate::models::action::{IAction, ISecureAction};
 pub struct Actor {
     actions: DashMap<String, Arc<dyn IAction>>,
     secure_actions: DashMap<String, Arc<dyn ISecureAction>>,
+    #[expect(
+        dead_code,
+        reason = "RL-003: legacy orchestration surface kept until its deletion gate"
+    )]
     services: Mutex<Vec<AnyVal>>,
 }
 

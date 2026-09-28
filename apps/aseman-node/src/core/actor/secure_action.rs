@@ -22,6 +22,9 @@ use crate::models::state::IState;
 
 use super::guard::Guard;
 
+/// The single-shot slot an action's `(code, value)` result is parked in.
+type ResultSlot = Arc<Mutex<Option<Result<(i64, Value)>>>>;
+
 /// Input parser keyed by protocol name (`"tcp"`, `"ws"`, `"chain"`, `"*"`).
 pub type Parse = Arc<dyn Fn(Value) -> Result<Arc<dyn IInput>> + Send + Sync>;
 
@@ -96,7 +99,7 @@ impl ISecureAction for SecureAction {
         if !ok {
             return Err(anyhow!("authorization failed"));
         }
-        let slot: Arc<Mutex<Option<Result<(i64, Value)>>>> = Arc::new(Mutex::new(None));
+        let slot: ResultSlot = Arc::new(Mutex::new(None));
         let slot_clone = slot.clone();
         let action = self.action.clone();
         let input_clone = input.clone();
@@ -151,7 +154,7 @@ impl ISecureAction for SecureAction {
             if !ok {
                 return Err(anyhow!("authorization failed"));
             }
-            let slot: Arc<Mutex<Option<Result<(i64, Value)>>>> = Arc::new(Mutex::new(None));
+            let slot: ResultSlot = Arc::new(Mutex::new(None));
             let slot_clone = slot.clone();
             let action = self.action.clone();
             let input_clone = input.clone();
@@ -204,7 +207,7 @@ impl ISecureAction for SecureAction {
         if !ok {
             return Err(anyhow!("authorization failed"));
         }
-        let slot: Arc<Mutex<Option<Result<(i64, Value)>>>> = Arc::new(Mutex::new(None));
+        let slot: ResultSlot = Arc::new(Mutex::new(None));
         let slot_clone = slot.clone();
         let action = self.action.clone();
         let input_clone = input.clone();
@@ -239,10 +242,10 @@ impl SecureAction {
         let (tx, rx) = mpsc::channel::<(i64, Value, Option<GoError>)>();
         let cb: BaseResponseCallback = Box::new(move |data, res_code, err| {
             let mut value = Value::Object(Map::new());
-            if !data.is_empty() {
-                if let Ok(v) = serde_json::from_slice::<Value>(&data) {
-                    value = v;
-                }
+            if !data.is_empty()
+                && let Ok(v) = serde_json::from_slice::<Value>(&data)
+            {
+                value = v;
             }
             let _ = tx.send((res_code, value, err));
         });

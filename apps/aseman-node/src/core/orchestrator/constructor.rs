@@ -14,6 +14,10 @@ use crate::core::orchestrator::types::Core;
 
 impl Core {
     /// `NewCore(origin, ownerId, ownerPrivateKey)`.
+    #[expect(
+        dead_code,
+        reason = "RL-003: legacy orchestration surface kept until its deletion gate"
+    )]
     pub fn new(origin: &str, owner_id: &str, owner_priv_key: Arc<RsaPrivateKey>) -> Arc<Core> {
         Self::new_inner(origin, owner_id, owner_priv_key, None)
     }
@@ -50,6 +54,10 @@ impl Core {
         })
     }
 
+    #[expect(
+        dead_code,
+        reason = "RL-003: legacy orchestration surface kept until its deletion gate"
+    )]
     pub fn mark_as_started(&self) {
         *self.started.lock().unwrap() = true;
     }

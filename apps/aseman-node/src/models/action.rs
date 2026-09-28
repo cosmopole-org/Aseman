@@ -22,13 +22,25 @@ pub type GetValueFn =
 pub type TrxClosure = Box<dyn FnMut(&dyn ITrx) -> Result<()> + Send>;
 /// Function used to schedule a state modification. The `bool` is the
 /// readonly flag; the closure runs against the opened transaction.
+#[expect(
+    dead_code,
+    reason = "RL-002: legacy model surface kept until its deletion gate"
+)]
 pub type StateModifierFn = Box<dyn Fn(bool, TrxClosure) + Send + Sync>;
 /// A collection of actions that can be installed onto a state machine.
+#[expect(
+    dead_code,
+    reason = "RL-002: legacy model surface kept until its deletion gate"
+)]
 pub trait IActions: Send + Sync {
     fn install(&self, state: Arc<dyn IState>, args: Vec<AnyVal>);
 }
 /// A single action.
 pub trait IAction: Send + Sync {
+    #[expect(
+        dead_code,
+        reason = "RL-002: legacy model surface kept until its deletion gate"
+    )]
     fn state_modifier(&self) -> StateModifierFn;
     fn key(&self) -> String;
     fn act(&self, state: Arc<dyn IState>, input: Arc<dyn IInput>) -> Result<(i64, Value)>;
@@ -40,6 +52,10 @@ pub trait ISecureAction: Send + Sync {
     /// invoke the handler directly (without re-entering the secured path and
     /// deadlocking the state processor).
     fn inner_action(&self) -> Arc<dyn IAction>;
+    #[expect(
+        dead_code,
+        reason = "RL-002: legacy model surface kept until its deletion gate"
+    )]
     fn has_global_parser(&self) -> bool;
     fn parse_input(&self, protocol: &str, raw: Value) -> Result<Arc<dyn IInput>>;
     #[allow(clippy::too_many_arguments)]
@@ -75,15 +91,80 @@ pub trait ISecureAction: Send + Sync {
 /// Describes a dynamically pluggable field on an entity (user, store, ...).
 #[derive(Clone, Default)]
 pub struct ExtendedField {
+    #[cfg_attr(
+        not(test),
+        expect(
+            dead_code,
+            reason = "RL-002: legacy model surface kept until its deletion gate"
+        )
+    )]
     pub name: String,
     pub path: String,
+    #[cfg_attr(
+        not(test),
+        expect(
+            dead_code,
+            reason = "RL-002: legacy model surface kept until its deletion gate"
+        )
+    )]
     pub typ: String,
     pub default: Value,
+    #[cfg_attr(
+        not(test),
+        expect(
+            dead_code,
+            reason = "RL-002: legacy model surface kept until its deletion gate"
+        )
+    )]
     pub required: bool,
+    #[cfg_attr(
+        not(test),
+        expect(
+            dead_code,
+            reason = "RL-002: legacy model surface kept until its deletion gate"
+        )
+    )]
     pub searchable: bool,
+    #[cfg_attr(
+        not(test),
+        expect(
+            dead_code,
+            reason = "RL-002: legacy model surface kept until its deletion gate"
+        )
+    )]
     pub primary_prop: bool,
     pub get_value: Option<GetValueFn>,
 }
+/// Registry of actions and services.
+///
+/// Secure actions are tracked on their own channel because
+/// `Arc<dyn IAction>` cannot be downcast to `Arc<dyn ISecureAction>` at
+/// runtime; callers register them with [`IActor::inject_secure_action`]
+/// and look them up with [`IActor::fetch_secure_action`].
+pub trait IActor: Send + Sync {
+    #[expect(
+        dead_code,
+        reason = "RL-002: legacy model surface kept until its deletion gate"
+    )]
+    fn inject_action(&self, action: Arc<dyn IAction>);
+    #[expect(
+        dead_code,
+        reason = "RL-002: legacy model surface kept until its deletion gate"
+    )]
+    fn inject_service(&self, service: AnyVal);
+    fn fetch_action(&self, key: &str) -> Option<Arc<dyn IAction>>;
+    fn inject_secure_action(&self, action: Arc<dyn ISecureAction>);
+    fn fetch_secure_action(&self, key: &str) -> Option<Arc<dyn ISecureAction>>;
+}
+/// A plugger exposes a set of actions to be installed onto the node.
+#[expect(
+    dead_code,
+    reason = "RL-002: legacy model surface kept until its deletion gate"
+)]
+pub trait IPlugger: Send + Sync {
+    fn actions(&self) -> Arc<dyn IActions>;
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -120,21 +201,4 @@ mod tests {
         // the same callable.
         assert!(c.get_value.is_some());
     }
-}
-/// Registry of actions and services.
-///
-/// Secure actions are tracked on their own channel because
-/// `Arc<dyn IAction>` cannot be downcast to `Arc<dyn ISecureAction>` at
-/// runtime; callers register them with [`IActor::inject_secure_action`]
-/// and look them up with [`IActor::fetch_secure_action`].
-pub trait IActor: Send + Sync {
-    fn inject_action(&self, action: Arc<dyn IAction>);
-    fn inject_service(&self, service: AnyVal);
-    fn fetch_action(&self, key: &str) -> Option<Arc<dyn IAction>>;
-    fn inject_secure_action(&self, action: Arc<dyn ISecureAction>);
-    fn fetch_secure_action(&self, key: &str) -> Option<Arc<dyn ISecureAction>>;
-}
-/// A plugger exposes a set of actions to be installed onto the node.
-pub trait IPlugger: Send + Sync {
-    fn actions(&self) -> Arc<dyn IActions>;
 }

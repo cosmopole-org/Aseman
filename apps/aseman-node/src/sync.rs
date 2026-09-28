@@ -2,6 +2,13 @@
 
 /// Clones a `OnceLock`, preserving an already-initialised value. Used to make
 /// translated structs that carry lazy caches cloneable.
+#[cfg_attr(
+    not(test),
+    expect(
+        dead_code,
+        reason = "RL-002: legacy helper kept until its deletion gate"
+    )
+)]
 pub fn clone_once_lock<T: Clone>(o: &std::sync::OnceLock<T>) -> std::sync::OnceLock<T> {
     let new = std::sync::OnceLock::new();
     if let Some(v) = o.get() {

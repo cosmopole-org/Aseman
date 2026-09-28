@@ -382,7 +382,7 @@ impl NetworkTransport {
         &self,
         target: &str,
         rpc_type: u8,
-        _timeout: Duration,
+        timeout: Duration,
         args: &Req,
     ) -> Result<Resp>
     where
@@ -402,7 +402,7 @@ impl NetworkTransport {
                 return Err(anyhow!("transport shutdown"));
             }
 
-            let mut conn = match self.get_conn(target, _timeout) {
+            let mut conn = match self.get_conn(target, timeout) {
                 Ok(c) => c,
                 Err(e) => {
                     last_err = e;
@@ -413,6 +413,15 @@ impl NetworkTransport {
                     continue;
                 }
             };
+
+            // Every exchange is bounded, as Go's per-RPC `SetDeadline` bounded it: a
+            // peer that stalls or drops a request must fail this RPC, not park the
+            // calling gossip routine forever (and with it `Node::shutdown`).
+            if let Err(e) = conn.conn.set_timeout(Some(timeout)) {
+                conn.release();
+                last_err = e;
+                continue;
+            }
 
             // Write the request frame.
             if let Err(e) = write_frame(conn.conn.as_mut(), &frame) {

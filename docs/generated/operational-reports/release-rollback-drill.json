@@ -1,0 +1,31 @@
+{
+  "scenario": "release-rollback-drill",
+  "kind": "rollback",
+  "command": "python3 scripts/check_rollout_policy.py --check",
+  "started_at": "2026-09-28T07:59:23.066497+00:00",
+  "environment": {
+    "commit": "34d499704239e612dcd42fc3a47f68dcbdcdc4a5+dirty",
+    "host": "srv8666213564",
+    "platform": "Linux-7.0.0-31-generic-x86_64-with-glibc2.43",
+    "required_env_present": [],
+    "required_env_missing": []
+  },
+  "thresholds": {
+    "semantic_mismatches": 0,
+    "duplicate_effects": 0,
+    "missing_audit_records": 0
+  },
+  "duration_seconds": 0.039,
+  "measurements": {
+    "exit_code": 0,
+    "tests": {
+      "passed": 0,
+      "failed": 0,
+      "ignored": 0
+    },
+    "output_tail": [
+      "rollout policy passed"
+    ]
+  },
+  "passed": true
+}

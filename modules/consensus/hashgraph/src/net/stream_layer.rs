@@ -25,6 +25,12 @@ use anyhow::Result;
 pub trait Conn: Read + Write + Send {
     /// Closes the connection.
     fn close(&mut self) -> Result<()>;
+
+    /// Bound every subsequent read and write (Go's `SetDeadline`). `None` blocks
+    /// indefinitely. Connections without a socket underneath need not implement it.
+    fn set_timeout(&mut self, _timeout: Option<Duration>) -> Result<()> {
+        Ok(())
+    }
 }
 
 /// Provides the low-level stream abstraction used by [`NetworkTransport`].

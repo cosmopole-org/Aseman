@@ -278,6 +278,10 @@ impl StateMachineStore {
     }
 
     /// The replicated cluster-wide config store (read side for telemetry).
+    #[expect(
+        dead_code,
+        reason = "RL-012: OpenRaft cluster surface kept until its ADR-0004 deletion gate"
+    )]
     pub fn shared_config(&self) -> std::collections::BTreeMap<String, serde_json::Value> {
         self.state.shared_config.clone()
     }

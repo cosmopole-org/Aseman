@@ -64,6 +64,13 @@ impl ResourceLockRegistry {
 
     /// Number of live lock entries — used by tests (and available for metrics)
     /// to assert the map does not grow without bound.
+    #[cfg_attr(
+        not(test),
+        expect(
+            dead_code,
+            reason = "RL-006/RL-013: legacy VM host-call surface kept for the ADR-0004 window"
+        )
+    )]
     pub(crate) fn len(&self) -> usize {
         self.locks.len()
     }

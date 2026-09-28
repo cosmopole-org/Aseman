@@ -1447,6 +1447,11 @@
             ],
             "name": "uuid",
             "scope": "normal"
+          },
+          {
+            "name": "aseman-application",
+            "path": "crates/aseman-application",
+            "scope": "dev"
           }
         ],
         "description": "The extracted legacy Hashgraph/Babble consensus engine for Aseman.",

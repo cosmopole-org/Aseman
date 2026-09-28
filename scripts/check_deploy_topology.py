@@ -136,6 +136,7 @@ def check() -> list[str]:
             "network_mode: service:vmm",
             "127.0.0.1:9090",
             "ASEMAN_CORE_STORAGE_PROVIDER: postgres",
+            "ASEMAN_SIGNAL_LOG_PROVIDER: postgres",
             "cap_drop: [ALL]",
             "read_only: true",
         ]:
@@ -144,6 +145,18 @@ def check() -> list[str]:
         for forbidden in ["/var/run/docker.sock", "/dev/kvm", "image: nomad"]:
             if forbidden in compact:
                 fail(problems, f"{COMPACT_PROFILE} includes forbidden compact input {forbidden}")
+        # PostgreSQL is reachable by the node and VMM only; the VMM network namespace,
+        # which the Nomad backend shares, needs the routed scheduler network.
+        blocks = re.split(r"^  (?=[a-z0-9-]+:$)", compact, flags=re.MULTILINE)
+        service_block = {block.split(":", 1)[0]: block for block in blocks[1:]}
+        if "scheduler" in service_block.get("postgres", ""):
+            fail(problems, f"{COMPACT_PROFILE} routes PostgreSQL onto the scheduler network")
+        if "scheduler" not in service_block.get("vmm", ""):
+            fail(problems, f"{COMPACT_PROFILE} leaves the VMM/Nomad backend namespace without a route to Nomad")
+        # Published ports need a routed network: Docker publishes none for a container
+        # that is only on internal networks.
+        if not re.search(r"networks: \[[^\]]*\bpublic\b", service_block.get("node", "")):
+            fail(problems, f"{COMPACT_PROFILE} publishes node ports without a routed network")
 
     cluster_path = ROOT / CLUSTER_PROFILE
     if not cluster_path.exists():
@@ -156,6 +169,7 @@ def check() -> list[str]:
         for required in [
             "network_mode: service:vmm",
             "ASEMAN_CORE_STORAGE_PROVIDER: postgres",
+            "ASEMAN_SIGNAL_LOG_PROVIDER: postgres",
             "cap_drop: [ALL]",
             "read_only: true",
         ]:

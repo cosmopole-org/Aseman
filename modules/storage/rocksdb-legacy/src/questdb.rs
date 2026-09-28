@@ -14,9 +14,30 @@ pub const MAX_SIGNAL_ROWS: i64 = 500;
 const CREATE_STORAGE: &str = "create table if not exists storage(id text, store_id text, user_id text, data text, tags text, time bigint, edited boolean);";
 const CREATE_STORAGE_FRESH: &str = "create table storage(id text, store_id text, user_id text, data text, tags text, time bigint, edited boolean);";
 
-/// Pooled QuestDB client for the `storage` (signals) and `buildlogs` tables.
+/// Schema holding the signal and build-log tables when PostgreSQL serves them.
+pub const POSTGRES_SIGNAL_LOG_SCHEMA: &str = "aseman_legacy_log";
+
+const CREATE_POSTGRES: &str = "CREATE SCHEMA IF NOT EXISTS aseman_legacy_log;
+REVOKE ALL ON SCHEMA aseman_legacy_log FROM PUBLIC;
+CREATE TABLE IF NOT EXISTS aseman_legacy_log.signals(id text PRIMARY KEY, store_id text NOT NULL, user_id text NOT NULL, data text NOT NULL, tags text, time bigint NOT NULL, edited boolean NOT NULL DEFAULT false);
+CREATE INDEX IF NOT EXISTS signals_store_time ON aseman_legacy_log.signals(store_id, time DESC);
+CREATE TABLE IF NOT EXISTS aseman_legacy_log.build_logs(id text PRIMARY KEY, build_id text, machine_id text, vm_id text, log_type text, data text, time bigint);
+CREATE INDEX IF NOT EXISTS build_logs_vm_time ON aseman_legacy_log.build_logs(vm_id, log_type, time DESC);";
+
+/// Which server speaks the PostgreSQL wire protocol for the log tables.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+enum Dialect {
+    /// The legacy QuestDB instance (`storage` and `buildlogs`).
+    QuestDb,
+    /// PostgreSQL (`aseman_legacy_log.signals` and `aseman_legacy_log.build_logs`).
+    Postgres,
+}
+
+/// Pooled client for the legacy signal (`storage`) and build-log tables, served by
+/// QuestDB or, under `ASEMAN_SIGNAL_LOG_PROVIDER=postgres`, by PostgreSQL.
 pub struct QuestDbTimeSeries {
     pool: r2d2::Pool<PostgresConnectionManager<NoTls>>,
+    dialect: Dialect,
 }
 
 fn unavailable(context: &str, error: impl std::fmt::Display) -> LegacyMigrationError {
@@ -94,7 +115,56 @@ impl QuestDbTimeSeries {
             );
         }
         drop(client);
-        Ok(Self { pool })
+        Ok(Self {
+            pool,
+            dialect: Dialect::QuestDb,
+        })
+    }
+
+    /// Serve the same two families from PostgreSQL, in their own schema with
+    /// declared indexes. The rows, ordering, bounds, and tag semantics are unchanged;
+    /// only QuestDB's startup repair and `LIMIT lo, hi` form do not apply.
+    pub fn connect_postgres(connection_uri: &str) -> LegacyMigrationResult<Self> {
+        let manager = PostgresConnectionManager::new(
+            connection_uri
+                .parse()
+                .map_err(|error| unavailable("parse signal log database URL", error))?,
+            NoTls,
+        );
+        let pool = r2d2::Pool::builder()
+            .connection_timeout(Duration::from_secs(3))
+            .build(manager)
+            .map_err(|error| unavailable("signal log pool", error))?;
+        pool.get()
+            .map_err(|error| unavailable("signal log database", error))?
+            .batch_execute(CREATE_POSTGRES)
+            .map_err(|error| unavailable("create signal log schema", error))?;
+        Ok(Self {
+            pool,
+            dialect: Dialect::Postgres,
+        })
+    }
+
+    fn signals_table(&self) -> &'static str {
+        match self.dialect {
+            Dialect::QuestDb => "storage",
+            Dialect::Postgres => "aseman_legacy_log.signals",
+        }
+    }
+
+    fn build_logs_table(&self) -> &'static str {
+        match self.dialect {
+            Dialect::QuestDb => "buildlogs",
+            Dialect::Postgres => "aseman_legacy_log.build_logs",
+        }
+    }
+
+    /// Rows `lo..hi` of an ordered result.
+    fn range(&self, lo: i64, hi: i64) -> String {
+        match self.dialect {
+            Dialect::QuestDb => format!("LIMIT {lo}, {hi}"),
+            Dialect::Postgres => format!("LIMIT {} OFFSET {lo}", hi - lo),
+        }
     }
 
     fn client(
@@ -109,7 +179,7 @@ impl QuestDbTimeSeries {
     pub fn insert_signal(&self, row: &LegacySignalRow) -> LegacyMigrationResult<()> {
         self.client()?
             .execute(
-                "INSERT INTO storage (id, store_id, user_id, data, tags, time, edited) VALUES ($1, $2, $3, $4, $5, $6, $7)",
+                &format!("INSERT INTO {} (id, store_id, user_id, data, tags, time, edited) VALUES ($1, $2, $3, $4, $5, $6, $7)", self.signals_table()),
                 &[&row.id, &row.store_id, &row.user_id, &row.data, &row.encoded_tags, &row.time_millis, &row.edited],
             )
             .map(|_| ())
@@ -120,7 +190,10 @@ impl QuestDbTimeSeries {
     pub fn update_signal(&self, store_id: &str, signal_id: &str, data: &str) {
         if let Ok(mut client) = self.client() {
             let _ = client.execute(
-                "update storage set data = $1 where store_id = $2 and id = $3 and edited = $4",
+                &format!(
+                    "update {} set data = $1 where store_id = $2 and id = $3 and edited = $4",
+                    self.signals_table()
+                ),
                 &[&data, &store_id, &signal_id, &true],
             );
         }
@@ -178,7 +251,8 @@ impl QuestDbTimeSeries {
         }
         // QuestDB takes no bound parameter in LIMIT; `count` is a validated i64.
         let sql = format!(
-            "SELECT id, user_id, data, tags, time, edited FROM storage WHERE {} order by time desc limit {count}",
+            "SELECT id, user_id, data, tags, time, edited FROM {} WHERE {} order by time desc limit {count}",
+            self.signals_table(),
             clauses.join(" AND ")
         );
         let rows = client
@@ -202,7 +276,8 @@ impl QuestDbTimeSeries {
             .collect::<Vec<_>>()
             .join(",");
         let sql = format!(
-            "SELECT id, user_id, data, tags, time, edited FROM storage WHERE store_id = $1 and id in ({quoted})"
+            "SELECT id, user_id, data, tags, time, edited FROM {} WHERE store_id = $1 and id in ({quoted})",
+            self.signals_table()
         );
         client
             .query(&sql, &[&store_id])
@@ -214,13 +289,13 @@ impl QuestDbTimeSeries {
     pub fn insert_build_log(&self, row: &LegacyBuildLogRow) {
         if let Ok(mut client) = self.client() {
             let _ = client.execute(
-                "INSERT INTO buildlogs (id, build_id, machine_id, vm_id, log_type, data, time) VALUES ($1, $2, $3, $4, $5, $6, $7)",
+                &format!("INSERT INTO {} (id, build_id, machine_id, vm_id, log_type, data, time) VALUES ($1, $2, $3, $4, $5, $6, $7)", self.build_logs_table()),
                 &[&row.id, &row.build_id, &row.machine_id, &row.vm_id, &row.log_type, &row.data, &row.time_millis],
             );
         }
     }
 
-    /// A VM's logs, newest first, using QuestDB's `LIMIT lo, hi` range form.
+    /// A VM's logs, newest first, rows `offset..offset + count`.
     pub fn read_build_logs(
         &self,
         vm_id: &str,
@@ -236,12 +311,12 @@ impl QuestDbTimeSeries {
         };
         let rows = if log_type.is_empty() {
             client.query(
-                &format!("SELECT id, build_id, machine_id, vm_id, log_type, data, time FROM buildlogs WHERE vm_id = $1 ORDER BY time DESC LIMIT {lo}, {hi}"),
+                &format!("SELECT id, build_id, machine_id, vm_id, log_type, data, time FROM {} WHERE vm_id = $1 ORDER BY time DESC {}", self.build_logs_table(), self.range(lo, hi)),
                 &[&vm_id],
             )
         } else {
             client.query(
-                &format!("SELECT id, build_id, machine_id, vm_id, log_type, data, time FROM buildlogs WHERE vm_id = $1 AND log_type = $2 ORDER BY time DESC LIMIT {lo}, {hi}"),
+                &format!("SELECT id, build_id, machine_id, vm_id, log_type, data, time FROM {} WHERE vm_id = $1 AND log_type = $2 ORDER BY time DESC {}", self.build_logs_table(), self.range(lo, hi)),
                 &[&vm_id, &log_type],
             )
         };

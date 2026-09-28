@@ -254,6 +254,8 @@ mod tests {
     fn follower_fetches_genesis_and_falls_back_when_current_peers_are_unavailable() {
         let listener = TcpListener::bind("127.0.0.1:0").unwrap();
         let endpoint = format!("http://{}", listener.local_addr().unwrap());
+        // Every response closes its connection, so each request arrives on a fresh
+        // `accept()` instead of racing the client's keep-alive reuse.
         let server = thread::spawn(move || {
             for expected_path in ["/genesispeers", "/peers"] {
                 let (mut stream, _) = listener.accept().unwrap();
@@ -269,11 +271,15 @@ mod tests {
                 );
                 if expected_path == "/genesispeers" {
                     stream
-                        .write_all(b"HTTP/1.1 200 OK\r\nContent-Length: 8\r\n\r\n[remote]")
+                        .write_all(
+                            b"HTTP/1.1 200 OK\r\nConnection: close\r\nContent-Length: 8\r\n\r\n[remote]",
+                        )
                         .unwrap();
                 } else {
                     stream
-                        .write_all(b"HTTP/1.1 503 Unavailable\r\nContent-Length: 0\r\n\r\n")
+                        .write_all(
+                            b"HTTP/1.1 503 Unavailable\r\nConnection: close\r\nContent-Length: 0\r\n\r\n",
+                        )
                         .unwrap();
                 }
             }
