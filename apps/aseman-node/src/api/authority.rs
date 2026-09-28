@@ -34,14 +34,8 @@ pub(crate) const LEGACY_ROOT: &str = "1@global";
 
 /// Decided and logged, not yet refused, with the rollout that ends the exception:
 /// - `network.egress`: until A406 egress grants are issued to existing workloads;
-/// - `identity.session.login_by_email`: the custodial login, removed by RL-019
-///   (ADR 0019, ADR 0004 window);
 /// - `creature.list`: legacy bulk listing, until P7-01 defines discovery scopes.
-pub(crate) const SHADOW_ACTIONS: [&str; 3] = [
-    "network.egress",
-    "identity.session.login_by_email",
-    "creature.list",
-];
+pub(crate) const SHADOW_ACTIONS: [&str; 2] = ["network.egress", "creature.list"];
 
 /// What the resolver reads about the node's state.
 pub(crate) trait AuthorityLookups {

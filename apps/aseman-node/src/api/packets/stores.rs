@@ -238,6 +238,10 @@ pub struct UpdateMember {
 }
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[expect(
+    dead_code,
+    reason = "RL-004: characterized legacy action surface (A008) kept until its deletion gate"
+)]
 pub struct Join {
     #[serde(rename = "storeId", default)]
     pub store_id: String,

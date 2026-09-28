@@ -7,7 +7,7 @@ verification: python3 scripts/generate_security_registry.py --check
 
 # A402 action registry
 
-124 actions over 34 resource types. Every inventoried surface maps to exactly one action; unknown actions deny (ADR 0008).
+122 actions over 34 resource types. Every inventoried surface maps to exactly one action; unknown actions deny (ADR 0008).
 
 ## Conditions
 
@@ -45,7 +45,6 @@ verification: python3 scripts/generate_security_registry.py --check
 | `raw_state.read` | raw_state | read | workload | `never` (removed: P4-04 guest gateway (LD-24)) | guest | 0 |
 | `raw_state.write` | raw_state | write | workload | `never` (removed: P4-04 guest gateway (LD-24)) | guest | 0 |
 | `identity.session.create` | session | security | user, creature, node, service, workload, module_publisher | `public` (removed: P7-05 (legacy framing expiry)) | user | 1 |
-| `identity.session.login_by_email` | session | security | user | `never` (removed: RL-019 (ADR 0019)) | public | 1 |
 | `identity.signature.check` | identity_key | read | user, creature, node, service, workload, module_publisher | `authenticated` | user | 2 |
 | `identity.key.rotate` | identity_key | security | user, creature, node, service, workload | `self` | new | 0 |
 | `identity.key.revoke` | identity_key | security | user, creature, node, service, workload | `self` or `node_admin` | new | 0 |
@@ -53,7 +52,6 @@ verification: python3 scripts/generate_security_registry.py --check
 | `identity.challenge.issue` | challenge | security | user, creature, node, service, workload, module_publisher | `public` | new | 0 |
 | `identity.trust_root.enroll` | trust_root | administrative | user, service | `node_admin` | new | 0 |
 | `identity.introduction.accept` | trust_root | administrative | node | `granted` | new | 0 |
-| `identity.login_grant.issue` | login_grant | security | workload | `same_creature` | guest | 1 |
 | `identity.bridge_token.issue` | bridge_token | security | workload | `same_creature` | guest | 1 |
 | `identity.bridge_token.revoke` | bridge_token | security | workload | `same_creature` | guest | 1 |
 | `creature.create` | creature | write | user, creature, workload | `public` or `owner` or `same_creature` | public | 3 |

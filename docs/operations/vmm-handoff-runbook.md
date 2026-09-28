@@ -2,7 +2,7 @@
 status: CURRENT
 owner: vmm
 source_of_truth: ADR 0022, ADR 0030, docs/migration/work-units/P5-05.md
-verification: cargo test -p aseman-storage-legacy vmhandoff
+verification: cargo test -p aseman-storage-rocksdb vmhandoff
 ---
 
 # Rolling a node onto its VMM (ADR 0030) and adopting its legacy instances

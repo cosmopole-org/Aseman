@@ -12,6 +12,10 @@ pub struct Info {
 }
 
 struct Inner {
+    #[expect(
+        dead_code,
+        reason = "RL-003: legacy orchestration surface kept until its deletion gate"
+    )]
     is_god: bool,
     user_id: String,
     store_id: String,

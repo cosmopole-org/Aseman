@@ -349,8 +349,8 @@ mod tests {
             fn storage_root(&self) -> String {
                 String::new()
             }
-            fn kv_db(&self) -> KvDb {
-                self.kv.clone()
+            fn state(&self) -> crate::models::ports::StateBackend {
+                crate::models::ports::StateBackend::RocksDb(self.kv.clone())
             }
             fn gen_id(&self, _: &dyn ITrx, _: &str) -> String {
                 String::new()
@@ -408,11 +408,11 @@ mod tests {
                     .as_nanos()
             ));
             let storage: Arc<RecordingStorage> = Arc::new(RecordingStorage {
-                kv: Arc::new(aseman_storage_legacy::RocksDbKvStore::open_default(&dir).unwrap()),
+                kv: Arc::new(aseman_storage_rocksdb::RocksDbKvStore::open_default(&dir).unwrap()),
                 signals: Mutex::new(Vec::new()),
             });
             let dyn_storage: Arc<dyn IStorage> = storage.clone();
-            let trx = TrxWrapper::new(
+            let trx = TrxWrapper::over_storage(
                 Arc::new(StubCore {
                     storage: dyn_storage.clone(),
                 }),
@@ -512,10 +512,10 @@ mod tests {
                     .as_nanos()
             ));
             let storage: Arc<dyn IStorage> = Arc::new(RecordingStorage {
-                kv: Arc::new(aseman_storage_legacy::RocksDbKvStore::open_default(&dir).unwrap()),
+                kv: Arc::new(aseman_storage_rocksdb::RocksDbKvStore::open_default(&dir).unwrap()),
                 signals: Mutex::new(Vec::new()),
             });
-            let trx = TrxWrapper::new(
+            let trx = TrxWrapper::over_storage(
                 Arc::new(StubCore {
                     storage: storage.clone(),
                 }),

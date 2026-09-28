@@ -19,7 +19,7 @@ use anyhow::{Context, Result, anyhow};
 use aseman_application::creature::{
     CreateCreature, CreaturePatch, DeleteCreature, GetCreature, NewCreature, UpdateCreature,
 };
-use aseman_application::federation::SendFederatedRequest;
+use aseman_application::federation::{FederatedAction, SendFederatedRequest};
 use aseman_application::finance as finance_use_cases;
 use aseman_application::identity::VerifierPolicy;
 use aseman_application::program::{CreateProgram, DeleteProgram, NewProgram, UpdateProgramPath};
@@ -206,15 +206,15 @@ impl PublicActionExecutor {
             clock: &self.clock,
             node_id: outbound.node_id,
         }
-        .send(
+        .send(FederatedAction {
             request_id,
             subject,
-            workload.home_node,
+            destination_node: workload.home_node,
             target,
             action,
-            body,
+            payload: body,
             facts,
-        )?;
+        })?;
         match reply {
             FederationReply::Executed(answer) | FederationReply::Replayed(answer) => {
                 Ok(Some(answer.into_bytes()))

@@ -39,6 +39,10 @@ pub struct ReadVmLogsInput {
 }
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[expect(
+    dead_code,
+    reason = "RL-004: characterized legacy action surface (A008) kept until its deletion gate"
+)]
 pub struct CreateAppInput {
     #[serde(rename = "chainId", default)]
     pub chain_id: String,
@@ -71,6 +75,10 @@ pub struct CreateMachineInput {
 }
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[expect(
+    dead_code,
+    reason = "RL-004: characterized legacy action surface (A008) kept until its deletion gate"
+)]
 pub struct DeleteAppInput {
     #[serde(rename = "appId", default)]
     pub app_id: String,
@@ -127,6 +135,10 @@ pub struct ListInput {
 }
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[expect(
+    dead_code,
+    reason = "RL-004: characterized legacy action surface (A008) kept until its deletion gate"
+)]
 pub struct UpdateAppInput {
     #[serde(rename = "appId", default)]
     pub app_id: String,
@@ -145,6 +157,10 @@ pub struct MachineBuildsInput {
 }
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[expect(
+    dead_code,
+    reason = "RL-004: characterized legacy action surface (A008) kept until its deletion gate"
+)]
 pub struct SignalInput {
     #[serde(default)]
     pub data: String,

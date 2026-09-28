@@ -68,6 +68,16 @@ fn copy_required(source_dir: &Path, destination: &Path, name: &str) -> Result<()
 }
 
 fn copy_file(source: &Path, destination: &Path) -> Result<()> {
+    // Restarts copy again: an identical copy stays, and a differing one is replaced.
+    // `fs::copy` keeps the source's mode, so a read-only key (0400) cannot be
+    // overwritten in place and is removed first.
+    if destination.is_file() {
+        if fs::read(source).ok() == fs::read(destination).ok() {
+            return Ok(());
+        }
+        fs::remove_file(destination)
+            .with_context(|| format!("replace {}", destination.display()))?;
+    }
     fs::copy(source, destination)
         .with_context(|| format!("copy {} to {}", source.display(), destination.display()))?;
     Ok(())
@@ -162,6 +172,31 @@ fn chain_api_url(root_node: &str) -> Result<String> {
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn a_restart_recopies_read_only_keys() {
+        let root = temp_dir("restart");
+        let source = root.join("priv_key");
+        let destination = root.join("copy");
+        fs::write(&source, b"key-1").unwrap();
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::PermissionsExt;
+            fs::set_permissions(&source, fs::Permissions::from_mode(0o400)).unwrap();
+        }
+        copy_file(&source, &destination).unwrap();
+        // The second boot finds the read-only copy already in place.
+        copy_file(&source, &destination).unwrap();
+        assert_eq!(fs::read(&destination).unwrap(), b"key-1");
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::PermissionsExt;
+            fs::set_permissions(&source, fs::Permissions::from_mode(0o600)).unwrap();
+        }
+        fs::write(&source, b"key-2").unwrap();
+        copy_file(&source, &destination).unwrap();
+        assert_eq!(fs::read(&destination).unwrap(), b"key-2");
+    }
+
     use super::*;
     use std::io::{Read, Write};
     use std::net::TcpListener;
@@ -254,6 +289,8 @@ mod tests {
     fn follower_fetches_genesis_and_falls_back_when_current_peers_are_unavailable() {
         let listener = TcpListener::bind("127.0.0.1:0").unwrap();
         let endpoint = format!("http://{}", listener.local_addr().unwrap());
+        // Every response closes its connection, so each request arrives on a fresh
+        // `accept()` instead of racing the client's keep-alive reuse.
         let server = thread::spawn(move || {
             for expected_path in ["/genesispeers", "/peers"] {
                 let (mut stream, _) = listener.accept().unwrap();
@@ -269,11 +306,15 @@ mod tests {
                 );
                 if expected_path == "/genesispeers" {
                     stream
-                        .write_all(b"HTTP/1.1 200 OK\r\nContent-Length: 8\r\n\r\n[remote]")
+                        .write_all(
+                            b"HTTP/1.1 200 OK\r\nConnection: close\r\nContent-Length: 8\r\n\r\n[remote]",
+                        )
                         .unwrap();
                 } else {
                     stream
-                        .write_all(b"HTTP/1.1 503 Unavailable\r\nContent-Length: 0\r\n\r\n")
+                        .write_all(
+                            b"HTTP/1.1 503 Unavailable\r\nConnection: close\r\nContent-Length: 0\r\n\r\n",
+                        )
                         .unwrap();
                 }
             }

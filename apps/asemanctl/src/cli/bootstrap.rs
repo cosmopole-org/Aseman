@@ -15,6 +15,9 @@ use sha2::{Digest, Sha256};
 #[cfg(unix)]
 use std::os::unix::fs::{OpenOptionsExt, PermissionsExt};
 
+/// The host-local port the compact profile publishes node health on by default.
+const DEFAULT_HEALTH_PORT: u16 = 8080;
+
 const EXPECTED_SERVICES: [&str; 5] = ["postgres", "vmm", "nomad-backend", "node", "meter"];
 
 #[derive(Clone, Debug)]
@@ -29,6 +32,8 @@ struct Options {
     backend_image: String,
     postgres_image: String,
     nomad_endpoint: String,
+    public_port: u16,
+    health_port: u16,
     allow_unsigned_local: bool,
     plan: bool,
 }
@@ -42,7 +47,6 @@ impl Options {
             print_usage();
             return Err(anyhow!("help requested"));
         }
-        let root = std::env::current_dir().context("resolve current directory")?;
         let state_dir = aseman_config::cli_config()
             .and_then(|config| config.state_dir.as_deref())
             .map(PathBuf::from)
@@ -51,13 +55,15 @@ impl Options {
             profile: "compact".to_owned(),
             config_dir: state_dir.join("compact"),
             state_dir,
-            compose_file: root.join("deploy/compose/compact.compose.yaml"),
+            compose_file: super::compact::default_compose_file(arguments),
             node_image: "aseman-node:local".to_owned(),
             vmm_image: "aseman-vmm:local".to_owned(),
             meter_image: "aseman-meter:local".to_owned(),
             backend_image: "aseman-vmm-backend-nomad:local".to_owned(),
             postgres_image: "postgres:18-bookworm".to_owned(),
             nomad_endpoint: "http://host.docker.internal:4646".to_owned(),
+            public_port: 443,
+            health_port: DEFAULT_HEALTH_PORT,
             allow_unsigned_local: false,
             plan: false,
         };
@@ -70,7 +76,7 @@ impl Options {
                 "--plan" => options.plan = true,
                 "--profile" | "--state-dir" | "--config-dir" | "--compose-file"
                 | "--node-image" | "--vmm-image" | "--meter-image" | "--backend-image"
-                | "--postgres-image" | "--nomad-endpoint" => {
+                | "--postgres-image" | "--nomad-endpoint" | "--public-port" | "--health-port" => {
                     index += 1;
                     let value = arguments
                         .get(index)
@@ -89,6 +95,8 @@ impl Options {
                         "--backend-image" => options.backend_image.clone_from(value),
                         "--postgres-image" => options.postgres_image.clone_from(value),
                         "--nomad-endpoint" => options.nomad_endpoint.clone_from(value),
+                        "--public-port" => options.public_port = parse_port(flag, value)?,
+                        "--health-port" => options.health_port = parse_port(flag, value)?,
                         _ => unreachable!(),
                     }
                 }
@@ -187,6 +195,22 @@ fn preflight(options: &Options) -> Result<()> {
             "not available; container workloads remain supported".to_owned()
         },
     });
+    // A port already bound would make the health gate probe someone else's service.
+    for (check, port) in [
+        ("public-port", options.public_port),
+        ("health-port", options.health_port),
+    ] {
+        let busy = port_in_use(port);
+        findings.push(aseman_domain::bootstrap::Finding {
+            check: check.to_owned(),
+            fatal: busy,
+            detail: if busy {
+                format!("127.0.0.1:{port} is already in use; choose another with --{check}")
+            } else {
+                format!("{port} free")
+            },
+        });
+    }
     for finding in &findings {
         println!(
             "preflight: {}: {}{}",
@@ -245,12 +269,13 @@ fn artifacts(options: &Options) -> Result<()> {
 
 fn identity(options: &Options) -> Result<()> {
     if options.config_dir.exists() {
-        return validate_identity(&options.config_dir).with_context(|| {
+        validate_identity(&options.config_dir).with_context(|| {
             format!(
                 "validate identity left by an interrupted bootstrap in {}",
                 options.config_dir.display()
             )
-        });
+        })?;
+        return hand_to_runtime(options);
     }
     let parent = options
         .config_dir
@@ -269,7 +294,132 @@ fn identity(options: &Options) -> Result<()> {
         return Err(error);
     }
     fs::rename(&staging, &options.config_dir).context("activate generated configuration")?;
+    hand_to_runtime(options)
+}
+
+/// The uid:gid every Aseman image runs as (`deploy/images/*.Dockerfile`).
+const RUNTIME_OWNER: &str = "65532:65532";
+
+/// Private material each Aseman service reads, relative to the configuration dir.
+const RUNTIME_PRIVATE: [&str; 10] = [
+    "nomad-backend.json",
+    "babble/priv_key",
+    "secrets/database-url",
+    "secrets/guest-proxy-url",
+    "secrets/node-private-key.pem",
+    "secrets/node-vmm-identity.pem",
+    "secrets/meter-vmm-identity.pem",
+    "tls/node-key.pem",
+    "tls/vmm-key.pem",
+    "tls/meter-key.pem",
+];
+
+/// Public material any service may read.
+const RUNTIME_PUBLIC: [&str; 7] = [
+    "babble/key.pub",
+    "babble/peers.genesis.json",
+    "tls/ca-cert.pem",
+    "tls/node-cert.pem",
+    "tls/vmm-cert.pem",
+    "tls/meter-cert.pem",
+    "postgres-init/001-roles.sql",
+];
+
+/// Give each service exactly the files it mounts: private material becomes `0400`
+/// owned by the service's own uid (65532 for Aseman images, the image's `postgres`
+/// user for the database password), and certificates and the role script become
+/// world-readable. Nothing gains group or other access to a secret. Without this the
+/// non-root services cannot read their own secrets. Idempotent, so a resumed
+/// bootstrap re-applies it.
+fn hand_to_runtime(options: &Options) -> Result<()> {
+    let root = &options.config_dir;
+    for relative in RUNTIME_PUBLIC {
+        #[cfg(unix)]
+        fs::set_permissions(root.join(relative), fs::Permissions::from_mode(0o644))?;
+    }
+    let postgres_owner = image_user(&options.postgres_image, "postgres")?;
+    let mut assignments: Vec<(&str, String)> = RUNTIME_PRIVATE
+        .iter()
+        .map(|relative| (*relative, RUNTIME_OWNER.to_owned()))
+        .collect();
+    assignments.push(("secrets/postgres-password", postgres_owner));
+    for (relative, _) in &assignments {
+        let path = root.join(relative);
+        // A file already handed over may no longer be ours to chmod; its mode was set
+        // before the transfer.
+        #[cfg(unix)]
+        if owned_by_operator(&path)? {
+            fs::set_permissions(&path, fs::Permissions::from_mode(0o400))?;
+        }
+    }
+    if running_as_root(root)? {
+        for (relative, owner) in &assignments {
+            let (uid, gid) = parse_owner(owner)?;
+            #[cfg(unix)]
+            std::os::unix::fs::chown(root.join(relative), Some(uid), Some(gid))
+                .with_context(|| format!("hand {relative} to {owner}"))?;
+        }
+        return Ok(());
+    }
+    // Docker access is already root-equivalent and required by this profile; a
+    // one-shot, network-less container performs the ownership change an unprivileged
+    // operator cannot.
+    let mut by_owner: std::collections::BTreeMap<&str, Vec<String>> = Default::default();
+    for (relative, owner) in &assignments {
+        by_owner
+            .entry(owner.as_str())
+            .or_default()
+            .push(format!("/config/{relative}"));
+    }
+    for (owner, files) in by_owner {
+        let mut command = Command::new("docker");
+        command
+            .args(["run", "--rm", "--network", "none", "--user", "0:0"])
+            .args(["--entrypoint", "chown", "--volume"])
+            .arg(format!("{}:/config", path_str(root)?))
+            .arg(&options.node_image)
+            .arg(owner)
+            .args(files);
+        checked_output(&mut command).context("hand private configuration to the services")?;
+    }
     Ok(())
+}
+
+/// `uid:gid` of `user` inside `image`.
+fn image_user(image: &str, user: &str) -> Result<String> {
+    let id = |flag: &str| -> Result<String> {
+        let output = checked_output(
+            Command::new("docker")
+                .args(["run", "--rm", "--network", "none", "--entrypoint", "id"])
+                .arg(image)
+                .args([flag, user]),
+        )?;
+        Ok(String::from_utf8(output.stdout)?.trim().to_owned())
+    };
+    let owner = format!("{}:{}", id("-u")?, id("-g")?);
+    parse_owner(&owner)?;
+    Ok(owner)
+}
+
+fn parse_owner(owner: &str) -> Result<(u32, u32)> {
+    let (uid, gid) = owner
+        .split_once(':')
+        .ok_or_else(|| anyhow!("invalid owner {owner:?}"))?;
+    Ok((uid.parse()?, gid.parse()?))
+}
+
+#[cfg(unix)]
+fn running_as_root(root: &Path) -> Result<bool> {
+    use std::os::unix::fs::MetadataExt;
+    // compact.env stays with the operator, so its owner is the user running bootstrap.
+    Ok(fs::metadata(root.join("compact.env"))?.uid() == 0)
+}
+
+#[cfg(unix)]
+fn owned_by_operator(path: &Path) -> Result<bool> {
+    use std::os::unix::fs::MetadataExt;
+    let operator = fs::metadata(path.parent().unwrap_or(path))?.uid();
+    Ok(fs::metadata(path)?.uid() == operator)
 }
 
 fn generate_identity(root: &Path, options: &Options) -> Result<()> {
@@ -296,6 +446,7 @@ fn generate_identity(root: &Path, options: &Options) -> Result<()> {
         "-out",
         path_str(&secrets.join("node-private-key.pem"))?,
     ])?;
+    generate_consensus_identity(root, options)?;
     openssl(&[
         "req",
         "-x509",
@@ -355,7 +506,7 @@ fn generate_identity(root: &Path, options: &Options) -> Result<()> {
         "DO $$ BEGIN IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'aseman_guest_proxy') THEN CREATE ROLE aseman_guest_proxy NOLOGIN; END IF; END $$;\n",
     )?;
     let env = format!(
-        "ASEMAN_CONFIG_DIR={}\nASEMAN_NODE_ID={}\nASEMAN_NODE_IMAGE={}\nASEMAN_VMM_IMAGE={}\nASEMAN_METER_IMAGE={}\nASEMAN_NOMAD_BACKEND_IMAGE={}\nPOSTGRES_IMAGE={}\nVMM_NODE_CERT_SHA256={}\nVMM_METER_CERT_SHA256={}\nNOMAD_ENDPOINT={}\n",
+        "ASEMAN_CONFIG_DIR={}\nASEMAN_NODE_ID={}\nASEMAN_NODE_IMAGE={}\nASEMAN_VMM_IMAGE={}\nASEMAN_METER_IMAGE={}\nASEMAN_NOMAD_BACKEND_IMAGE={}\nPOSTGRES_IMAGE={}\nVMM_NODE_CERT_SHA256={}\nVMM_METER_CERT_SHA256={}\nNOMAD_ENDPOINT={}\nASEMAN_PUBLIC_PORT={}\nASEMAN_HEALTH_PORT={}\n",
         options.config_dir.display(),
         uuid::Uuid::now_v7(),
         options.node_image,
@@ -366,6 +517,8 @@ fn generate_identity(root: &Path, options: &Options) -> Result<()> {
         node_fingerprint,
         meter_fingerprint,
         options.nomad_endpoint,
+        options.public_port,
+        options.health_port,
     );
     write_secret(&root.join("compact.env"), &env)?;
     fs::remove_dir_all(authority).context("remove bootstrap certificate authority key")?;
@@ -373,9 +526,61 @@ fn generate_identity(root: &Path, options: &Options) -> Result<()> {
     Ok(())
 }
 
+/// The loopback address the compact node's single-validator Hashgraph chain gossips
+/// on; it is never published, and the genesis names it as the only peer.
+const COMPACT_CONSENSUS_ADDRESS: &str = "127.0.0.1:1337";
+
+/// The legacy Hashgraph validator identity the node's consensus provider needs
+/// (RL-011): a key pair from the image's own `aseman-keygen`, generated as the
+/// operator, and a genesis naming this node as the chain's only peer — the same
+/// material `asemanctl install --local` produces.
+fn generate_consensus_identity(root: &Path, options: &Options) -> Result<()> {
+    use std::os::unix::fs::MetadataExt;
+    let babble = root.join("babble");
+    let home = root.join("authority").join("keygen-home");
+    fs::create_dir_all(&babble)?;
+    fs::create_dir_all(&home)?;
+    let metadata = fs::metadata(root)?;
+    checked_output(
+        Command::new("docker")
+            .args(["run", "--rm", "--network", "none", "--user"])
+            .arg(format!("{}:{}", metadata.uid(), metadata.gid()))
+            .args(["--env", "HOME=/keygen", "--volume"])
+            .arg(format!("{}:/keygen", path_str(&home)?))
+            .args(["--entrypoint", "/usr/local/bin/aseman-keygen"])
+            .arg(&options.node_image),
+    )
+    .context("generate the consensus validator key")?;
+    let generated = home.join(".babble");
+    let private = fs::read(generated.join("priv_key")).context("read generated priv_key")?;
+    write_secret_bytes(&babble.join("priv_key"), &private)?;
+    let public = fs::read_to_string(generated.join("key.pub"))
+        .context("read generated key.pub")?
+        .split_whitespace()
+        .collect::<String>();
+    if public.is_empty() || !public.bytes().all(|byte| byte.is_ascii_hexdigit()) {
+        bail!("the generated consensus public key is not hex");
+    }
+    fs::write(babble.join("key.pub"), &public)?;
+    let genesis = serde_json::json!([{
+        "NetAddr": COMPACT_CONSENSUS_ADDRESS,
+        "PubKeyHex": format!("0X{}", public.to_uppercase()),
+        "Moniker": "compact-node",
+    }]);
+    fs::write(
+        babble.join("peers.genesis.json"),
+        serde_json::to_vec(&genesis)?,
+    )?;
+    fs::remove_dir_all(&home).context("remove key generation scratch")?;
+    Ok(())
+}
+
 fn validate_identity(root: &Path) -> Result<()> {
-    const REQUIRED: [&str; 15] = [
+    const REQUIRED: [&str; 18] = [
         "compact.env",
+        "babble/priv_key",
+        "babble/key.pub",
+        "babble/peers.genesis.json",
         "nomad-backend.json",
         "postgres-init/001-roles.sql",
         "secrets/postgres-password",
@@ -421,6 +626,26 @@ fn schema(options: &Options) -> Result<()> {
             "aseman",
         ],
     )?;
+    // Init scripts that fail (for example an unreadable file) do not stop the
+    // container, so the stage checks the roles they provision.
+    let output = compose_output(
+        options,
+        &[
+            "exec",
+            "-T",
+            "postgres",
+            "psql",
+            "-U",
+            "aseman",
+            "-d",
+            "aseman",
+            "-Atc",
+            "SELECT count(*) FROM pg_roles WHERE rolname = 'aseman_guest_proxy'",
+        ],
+    )?;
+    if String::from_utf8_lossy(&output.stdout).trim() != "1" {
+        bail!("PostgreSQL initialization did not provision the aseman_guest_proxy role");
+    }
     Ok(())
 }
 
@@ -445,13 +670,44 @@ fn health(options: &Options) -> Result<()> {
     if !missing.is_empty() {
         bail!("services not running: {}", missing.join(", "));
     }
+    // The port the deployment was generated with, so a resumed run probes this
+    // deployment's node and never another service on the default port.
+    let health_port = env_value(&options.env_file(), "ASEMAN_HEALTH_PORT")?
+        .map(|value| parse_port("ASEMAN_HEALTH_PORT", &value))
+        .transpose()?
+        .unwrap_or(DEFAULT_HEALTH_PORT);
     checked_output(Command::new("curl").args([
         "--fail",
         "--silent",
         "--show-error",
-        "http://127.0.0.1:8080/telemetry/health",
+        &format!("http://127.0.0.1:{health_port}/telemetry/health"),
     ]))?;
     Ok(())
+}
+
+fn parse_port(flag: &str, value: &str) -> Result<u16> {
+    match value.parse::<u16>() {
+        Ok(port) if port > 0 => Ok(port),
+        _ => bail!("{flag} must be a TCP port, got {value:?}"),
+    }
+}
+
+/// One `KEY=value` from the generated environment file, if present.
+fn env_value(path: &Path, key: &str) -> Result<Option<String>> {
+    let text = fs::read_to_string(path).with_context(|| format!("read {}", path.display()))?;
+    Ok(text.lines().find_map(|line| {
+        line.strip_prefix(key)
+            .and_then(|rest| rest.strip_prefix('='))
+            .map(str::to_owned)
+    }))
+}
+
+fn port_in_use(port: u16) -> bool {
+    std::net::TcpStream::connect_timeout(
+        &std::net::SocketAddr::from(([127, 0, 0, 1], port)),
+        std::time::Duration::from_millis(300),
+    )
+    .is_ok()
 }
 
 fn compose(options: &Options, arguments: &[&str]) -> Result<()> {
@@ -604,6 +860,7 @@ fn print_usage() {
          Options:\n  --state-dir DIR\n  --config-dir DIR\n  --compose-file FILE\n  \
          --node-image IMAGE\n  --vmm-image IMAGE\n  --meter-image IMAGE\n  \
          --backend-image IMAGE\n  --postgres-image IMAGE\n  --nomad-endpoint URL\n  \
+         --public-port PORT (default 443)\n  --health-port PORT (default 8080, host-local)\n  \
          --allow-unsigned-local\n  --plan"
     );
 }

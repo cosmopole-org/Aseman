@@ -57,7 +57,7 @@ crates/                     reusable in-process Rust libraries
 
 modules/                    independently deployable provider packages
   storage/postgres/
-  storage/rocksdb-legacy/
+  storage/rocksdb/
   network/http/
   network/legacy/
   federation/http/

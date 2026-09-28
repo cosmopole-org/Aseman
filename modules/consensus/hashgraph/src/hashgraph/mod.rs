@@ -3,8 +3,8 @@
 //!
 //! Phase 2 part 2 translates the data model: errors, events, blocks, frames,
 //! roots, round info and internal transactions. The stores (`caches`,
-//! `inmem_store`, the RocksDB store) and the consensus engine (`hashgraph.go`)
-//! follow in subsequent parts.
+//! `inmem_store`, and the persistent store over the consensus-log port) and the
+//! consensus engine (`hashgraph.go`) follow in subsequent parts.
 //!
 //! Serialization note: the Go code marshalled `Frame`/`RoundInfo` with
 //! `ugorji/go/codec` in canonical mode (sorted keys). The translation uses
@@ -20,7 +20,7 @@ pub mod frame;
 pub mod hashgraph;
 pub mod inmem_store;
 pub mod internal_transaction;
-pub mod rocks_store;
+pub mod persistent_store;
 pub mod root;
 pub mod round_info;
 pub mod store;
@@ -42,7 +42,7 @@ pub use inmem_store::InmemStore;
 pub use internal_transaction::{
     InternalTransaction, InternalTransactionBody, InternalTransactionReceipt, TransactionType,
 };
-pub use rocks_store::RocksDbStore;
+pub use persistent_store::PersistentStore;
 pub use root::Root;
 pub use round_info::{RoundEvent, RoundInfo};
 pub use store::Store;

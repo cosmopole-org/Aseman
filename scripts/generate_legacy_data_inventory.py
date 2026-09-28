@@ -215,7 +215,7 @@ def core_objects() -> list[dict[str, Any]]:
 def questdb_tables() -> list[dict[str, Any]]:
     # The legacy QuestDB client moved into the legacy storage provider (P3-06); the
     # physical tables it creates are unchanged.
-    path = ROOT / "modules/storage/rocksdb-legacy/src/questdb.rs"
+    path = ROOT / "modules/storage/rocksdb/src/questdb.rs"
     value = production_source(path)
     creates: dict[str, dict[str, Any]] = {}
     for found in re.finditer(
@@ -234,12 +234,21 @@ def questdb_tables() -> list[dict[str, Any]]:
             "operations": [],
         }
     sql_pattern = re.compile(r'"((?:INSERT INTO|update|SELECT .*? FROM)\s+[^\"]+)"', re.I)
+    # The client serves both dialects, so the table is a `{}` filled by an accessor
+    # named after the QuestDB table it characterizes.
+    accessors = {"self.signals_table()": "storage", "self.build_logs_table()": "buildlogs"}
     for found in sql_pattern.finditer(value):
         sql = found.group(1)
-        table_match = re.search(r"(?:INTO|update|FROM)\s+([a-zA-Z0-9_]+)", sql, re.I)
+        table_match = re.search(r"(?:INTO|update|FROM)\s+([a-zA-Z0-9_]+|\{\})", sql, re.I)
         if not table_match:
             continue
         name = table_match.group(1).lower()
+        if name == "{}":
+            arguments = value[found.end() : found.end() + 240]
+            resolved = [table for call, table in accessors.items() if call in arguments]
+            if len(resolved) != 1:
+                continue
+            name = resolved[0]
         if name in creates:
             creates[name]["operations"].append(
                 {
@@ -251,7 +260,7 @@ def questdb_tables() -> list[dict[str, Any]]:
 
 
 def hashgraph_families() -> list[dict[str, str]]:
-    path = ROOT / "modules/consensus/hashgraph/src/hashgraph/rocks_store.rs"
+    path = ROOT / "modules/consensus/hashgraph/src/hashgraph/persistent_store.rs"
     value = production_source(path)
     rows = [
         ("repertoire", "rep_{public_key}", "Peer marshal bytes"),
@@ -276,7 +285,7 @@ def hashgraph_families() -> list[dict[str, str]]:
 
 
 def cluster_store() -> dict[str, Any]:
-    path = ROOT / "apps/aseman-node/src/adapters/cluster/store.rs"
+    path = ROOT / "modules/storage/rocksdb/src/cluster/store.rs"
     value = production_source(path)
     cfs = re.findall(r'ColumnFamilyDescriptor::new\("([^\"]+)"', value)
     metadata = sorted(set(re.findall(r'(?:get_meta|put_meta)\("([^\"]+)"', value)))

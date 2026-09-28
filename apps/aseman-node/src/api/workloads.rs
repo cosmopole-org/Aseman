@@ -1051,13 +1051,13 @@ fn catalog_program_machine(catalog: &PostgresCapsuleRepository, program: &str) -
 /// match the store), runs every adopted instance as a workload of the configured VMM,
 /// and only then removes the decided observed records from the legacy store.
 pub(crate) fn handoff(config: &aseman_config::AsemanConfig, arguments: &[String]) -> Result<()> {
-    let legacy = aseman_storage_legacy::RocksDbKvStore::open_tuned(std::path::Path::new(
+    let legacy = aseman_storage_rocksdb::RocksDbKvStore::open_tuned(std::path::Path::new(
         &config.storage.base_db_path,
     ))
     .map_err(|error| anyhow!("{error}"))?;
     match arguments {
         [command, out] if command == "plan" => {
-            let plan = aseman_storage_legacy::plan_legacy_vm_handoff(&legacy)
+            let plan = aseman_storage_rocksdb::plan_legacy_vm_handoff(&legacy)
                 .map_err(|error| anyhow!("{error}"))?;
             std::fs::write(out, serde_json::to_vec_pretty(&plan)?)?;
             println!(
@@ -1069,18 +1069,18 @@ pub(crate) fn handoff(config: &aseman_config::AsemanConfig, arguments: &[String]
             Ok(())
         }
         [command, plan_path, decisions_path] if command == "apply" => {
-            let approved: aseman_storage_legacy::LegacyVmHandoffPlan =
+            let approved: aseman_storage_rocksdb::LegacyVmHandoffPlan =
                 serde_json::from_slice(&std::fs::read(plan_path)?)?;
-            let decisions: aseman_storage_legacy::LegacyVmHandoffDecisions =
+            let decisions: aseman_storage_rocksdb::LegacyVmHandoffDecisions =
                 serde_json::from_slice(&std::fs::read(decisions_path)?)?;
-            let current = aseman_storage_legacy::plan_legacy_vm_handoff(&legacy)
+            let current = aseman_storage_rocksdb::plan_legacy_vm_handoff(&legacy)
                 .map_err(|error| anyhow!("{error}"))?;
             if current.digest != approved.digest {
                 return Err(anyhow!(
                     "the legacy VM handoff plan changed since it was approved; plan again"
                 ));
             }
-            aseman_storage_legacy::check_legacy_vm_decisions(&current, &decisions)
+            aseman_storage_rocksdb::check_legacy_vm_decisions(&current, &decisions)
                 .map_err(|error| anyhow!("{error}"))?;
             let vmm = config
                 .vmm
@@ -1101,7 +1101,7 @@ pub(crate) fn handoff(config: &aseman_config::AsemanConfig, arguments: &[String]
             )?;
             for instance in &current.instances {
                 if decisions.instances.get(&instance.key())
-                    != Some(&aseman_storage_legacy::LegacyVmDecision::Adopt)
+                    != Some(&aseman_storage_rocksdb::LegacyVmDecision::Adopt)
                 {
                     continue;
                 }
@@ -1123,7 +1123,7 @@ pub(crate) fn handoff(config: &aseman_config::AsemanConfig, arguments: &[String]
                 )?;
                 println!("adopted {} as workload {workload}", instance.key());
             }
-            let removed = aseman_storage_legacy::complete_legacy_vm_handoff(
+            let removed = aseman_storage_rocksdb::complete_legacy_vm_handoff(
                 &legacy,
                 approved.digest,
                 &decisions,

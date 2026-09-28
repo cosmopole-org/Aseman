@@ -19,11 +19,145 @@ pub fn object_to_map<T: Serialize>(obj: &T) -> Result<Map<String, Value>> {
     Ok(m)
 }
 /// Serialize a JSON object map then deserialize it into a concrete object.
+#[cfg_attr(
+    not(test),
+    expect(
+        dead_code,
+        reason = "RL-002: legacy model surface kept until its deletion gate"
+    )
+)]
 pub fn map_to_object<T: DeserializeOwned>(m: &Map<String, Value>) -> Result<T> {
     let data = serde_json::to_vec(m)?;
     let obj: T = serde_json::from_slice(&data)?;
     Ok(obj)
 }
+/// Generic model contract — parses a value of type `T` out of a transaction.
+#[expect(
+    dead_code,
+    reason = "RL-002: legacy model surface kept until its deletion gate"
+)]
+pub trait IModel<T> {
+    fn type_(&self) -> String;
+    fn parse(&self, trx: &dyn ITrx) -> T;
+}
+/// A storage transaction over the node's key/value database.
+///
+/// Methods take `&self`; the concrete implementation
+/// ([`crate::adapters::rocksdb::trx`]) carries interior mutability so a
+/// transaction handle can be cloned and shared freely.
+pub trait ITrx: Send + Sync {
+    /// Whether this transaction was opened read-only.
+    fn readonly(&self) -> bool {
+        false
+    }
+    fn del_key(&self, key: &str);
+    fn get_by_prefix(&self, prefix: &str) -> Vec<String>;
+    fn has_obj(&self, typ: &str, key: &str) -> bool;
+    fn get_index(
+        &self,
+        typ: &str,
+        from_column: &str,
+        to_column: &str,
+        from_column_val: &str,
+    ) -> String;
+    fn put_index(
+        &self,
+        typ: &str,
+        from_column: &str,
+        to_column: &str,
+        from_column_val: &str,
+        to_column_val: Vec<u8>,
+    );
+    fn del_index(&self, typ: &str, from_column: &str, to_column: &str, from_column_val: &str);
+    #[cfg_attr(
+        not(test),
+        expect(
+            dead_code,
+            reason = "RL-002: legacy model surface kept until its deletion gate"
+        )
+    )]
+    fn has_index(
+        &self,
+        typ: &str,
+        from_column: &str,
+        to_column: &str,
+        from_column_val: &str,
+    ) -> bool;
+    fn get_column(&self, typ: &str, obj_id: &str, column_name: &str) -> Vec<u8>;
+    fn get_links_list(
+        &self,
+        p: &str,
+        offset: i64,
+        count: i64,
+        should_be_global: &[bool],
+    ) -> Result<Vec<String>>;
+    #[allow(clippy::too_many_arguments)] // legacy storage query surface
+    fn search_link_vals_list(
+        &self,
+        typ: &str,
+        from_column: &str,
+        to_column: &str,
+        word: &str,
+        filter: &HashMap<String, String>,
+        offset: i64,
+        count: i64,
+    ) -> Result<Vec<String>>;
+    #[allow(clippy::too_many_arguments)]
+    #[cfg_attr(
+        not(test),
+        expect(
+            dead_code,
+            reason = "RL-002: legacy model surface kept until its deletion gate"
+        )
+    )]
+    fn search_link_keys_list_by_prefix(
+        &self,
+        p: &str,
+        typ: &str,
+        filter: &HashMap<String, String>,
+        in_arr_filter: &HashMap<String, Vec<String>>,
+        offset: i64,
+        count: i64,
+        should_be_global: &[bool],
+    ) -> Result<Vec<String>>;
+    fn get_obj_list(
+        &self,
+        typ: &str,
+        obj_ids: &[String],
+        query: &HashMap<String, String>,
+        meta: &[i64],
+    ) -> Result<HashMap<String, HashMap<String, Vec<u8>>>>;
+    fn get_link(&self, key: &str) -> String;
+    fn put_link(&self, key: &str, value: &str);
+    fn put_bytes(&self, key: &str, value: Vec<u8>);
+    fn get_bytes(&self, key: &str) -> Vec<u8>;
+    #[cfg_attr(
+        not(test),
+        expect(
+            dead_code,
+            reason = "RL-002: legacy model surface kept until its deletion gate"
+        )
+    )]
+    fn put_string(&self, key: &str, value: &str);
+    fn get_string(&self, key: &str) -> String;
+    fn get_obj(&self, typ: &str, key: &str) -> HashMap<String, Vec<u8>>;
+    fn put_obj(&self, typ: &str, key: &str, keys: HashMap<String, Vec<u8>>);
+    fn put_json(&self, key: &str, path: &str, json_obj: &Value, merge: bool) -> Result<()>;
+    fn del_json(&self, key: &str, path: &str);
+    fn get_json(&self, key: &str, path: &str) -> Result<Map<String, Value>>;
+    #[cfg_attr(
+        not(test),
+        expect(
+            dead_code,
+            reason = "RL-002: legacy model surface kept until its deletion gate"
+        )
+    )]
+    fn updates(&self) -> Vec<Update>;
+    /// Write the transaction atomically. A failed write is reported (LD-10).
+    fn commit(&self) -> Result<()>;
+    fn discard(&self);
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -83,94 +217,4 @@ mod tests {
         let m = object_to_map(&original).unwrap();
         assert_eq!(m, original);
     }
-}
-/// Generic model contract — parses a value of type `T` out of a transaction.
-pub trait IModel<T> {
-    fn type_(&self) -> String;
-    fn parse(&self, trx: &dyn ITrx) -> T;
-}
-/// A storage transaction over the node's key/value database.
-///
-/// Methods take `&self`; the concrete implementation
-/// ([`crate::adapters::rocksdb::trx`]) carries interior mutability so a
-/// transaction handle can be cloned and shared freely.
-pub trait ITrx: Send + Sync {
-    fn del_key(&self, key: &str);
-    fn get_by_prefix(&self, prefix: &str) -> Vec<String>;
-    fn has_obj(&self, typ: &str, key: &str) -> bool;
-    fn get_index(
-        &self,
-        typ: &str,
-        from_column: &str,
-        to_column: &str,
-        from_column_val: &str,
-    ) -> String;
-    fn put_index(
-        &self,
-        typ: &str,
-        from_column: &str,
-        to_column: &str,
-        from_column_val: &str,
-        to_column_val: Vec<u8>,
-    );
-    fn del_index(&self, typ: &str, from_column: &str, to_column: &str, from_column_val: &str);
-    fn has_index(
-        &self,
-        typ: &str,
-        from_column: &str,
-        to_column: &str,
-        from_column_val: &str,
-    ) -> bool;
-    fn get_column(&self, typ: &str, obj_id: &str, column_name: &str) -> Vec<u8>;
-    fn get_links_list(
-        &self,
-        p: &str,
-        offset: i64,
-        count: i64,
-        should_be_global: &[bool],
-    ) -> Result<Vec<String>>;
-    #[allow(clippy::too_many_arguments)] // legacy storage query surface
-    fn search_link_vals_list(
-        &self,
-        typ: &str,
-        from_column: &str,
-        to_column: &str,
-        word: &str,
-        filter: &HashMap<String, String>,
-        offset: i64,
-        count: i64,
-    ) -> Result<Vec<String>>;
-    #[allow(clippy::too_many_arguments)]
-    fn search_link_keys_list_by_prefix(
-        &self,
-        p: &str,
-        typ: &str,
-        filter: &HashMap<String, String>,
-        in_arr_filter: &HashMap<String, Vec<String>>,
-        offset: i64,
-        count: i64,
-        should_be_global: &[bool],
-    ) -> Result<Vec<String>>;
-    fn get_obj_list(
-        &self,
-        typ: &str,
-        obj_ids: &[String],
-        query: &HashMap<String, String>,
-        meta: &[i64],
-    ) -> Result<HashMap<String, HashMap<String, Vec<u8>>>>;
-    fn get_link(&self, key: &str) -> String;
-    fn put_link(&self, key: &str, value: &str);
-    fn put_bytes(&self, key: &str, value: Vec<u8>);
-    fn get_bytes(&self, key: &str) -> Vec<u8>;
-    fn put_string(&self, key: &str, value: &str);
-    fn get_string(&self, key: &str) -> String;
-    fn get_obj(&self, typ: &str, key: &str) -> HashMap<String, Vec<u8>>;
-    fn put_obj(&self, typ: &str, key: &str, keys: HashMap<String, Vec<u8>>);
-    fn put_json(&self, key: &str, path: &str, json_obj: &Value, merge: bool) -> Result<()>;
-    fn del_json(&self, key: &str, path: &str);
-    fn get_json(&self, key: &str, path: &str) -> Result<Map<String, Value>>;
-    fn updates(&self) -> Vec<Update>;
-    /// Write the transaction atomically. A failed write is reported (LD-10).
-    fn commit(&self) -> Result<()>;
-    fn discard(&self);
 }

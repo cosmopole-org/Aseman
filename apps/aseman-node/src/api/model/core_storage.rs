@@ -17,9 +17,9 @@ use std::sync::{Arc, OnceLock};
 
 use anyhow::{Result, anyhow};
 use aseman_capsule::CapsuleStore;
-use aseman_storage_postgres::unit_of_work::{PostgresUnitOfWork, PostgresUnitOfWorkFactory};
+use aseman_storage_postgres::shard::{UnitOfWork, UnitOfWorkFactory};
 
-static FACTORY: OnceLock<Arc<PostgresUnitOfWorkFactory>> = OnceLock::new();
+static FACTORY: OnceLock<Arc<dyn UnitOfWorkFactory>> = OnceLock::new();
 
 /// Undoes a capsule write whose legacy counterpart failed to commit.
 pub(crate) type Compensation = Box<dyn FnOnce(&dyn CapsuleStore) -> Result<()>>;
@@ -27,16 +27,16 @@ pub(crate) type Compensation = Box<dyn FnOnce(&dyn CapsuleStore) -> Result<()>>;
 #[cfg(test)]
 thread_local! {
     /// Tests route one thread to PostgreSQL without touching the process setting.
-    static TEST_FACTORY: RefCell<Option<Arc<PostgresUnitOfWorkFactory>>> = const { RefCell::new(None) };
+    static TEST_FACTORY: RefCell<Option<Arc<dyn UnitOfWorkFactory>>> = const { RefCell::new(None) };
 }
 
 /// Route this test thread's actions to `factory` (or back to legacy with `None`).
 #[cfg(test)]
-pub(crate) fn set_test_factory(factory: Option<Arc<PostgresUnitOfWorkFactory>>) {
+pub(crate) fn set_test_factory(factory: Option<Arc<dyn UnitOfWorkFactory>>) {
     TEST_FACTORY.with(|slot| *slot.borrow_mut() = factory);
 }
 
-fn factory() -> Option<Arc<PostgresUnitOfWorkFactory>> {
+fn factory() -> Option<Arc<dyn UnitOfWorkFactory>> {
     #[cfg(test)]
     if let Some(factory) = TEST_FACTORY.with(|slot| slot.borrow().clone()) {
         return Some(factory);
@@ -45,20 +45,21 @@ fn factory() -> Option<Arc<PostgresUnitOfWorkFactory>> {
 }
 
 thread_local! {
-    static UNITS: RefCell<Vec<Rc<PostgresUnitOfWork>>> = const { RefCell::new(Vec::new()) };
+    static UNITS: RefCell<Vec<Rc<dyn UnitOfWork>>> = const { RefCell::new(Vec::new()) };
     static COMPENSATIONS: RefCell<Vec<Vec<Compensation>>> = const { RefCell::new(Vec::new()) };
 }
 
-/// Route the core families to PostgreSQL for the rest of the process.
-pub(crate) fn install_postgres(factory: PostgresUnitOfWorkFactory) -> Result<()> {
+/// Route the core families to the PostgreSQL provider (one database, or a sharded
+/// cluster) for the rest of the process.
+pub(crate) fn install_postgres(factory: Arc<dyn UnitOfWorkFactory>) -> Result<()> {
     FACTORY
-        .set(Arc::new(factory))
+        .set(factory)
         .map_err(|_| anyhow!("core storage is already installed"))
 }
 
 /// The unit of work of the innermost running action, when core families are on
 /// PostgreSQL.
-pub(crate) fn current_unit() -> Option<Rc<PostgresUnitOfWork>> {
+pub(crate) fn current_unit() -> Option<Rc<dyn UnitOfWork>> {
     UNITS.with(|units| units.borrow().last().cloned())
 }
 
@@ -92,6 +93,7 @@ impl StateFailure {
 /// Without PostgreSQL, `action` runs and the legacy transaction commits or is
 /// discarded as before.
 pub(crate) fn run_action(
+    readonly: bool,
     action: impl FnOnce() -> Result<()>,
     commit_legacy: impl FnOnce() -> Result<()>,
     discard_legacy: impl FnOnce(),
@@ -105,11 +107,13 @@ pub(crate) fn run_action(
             }
         };
     };
-    let unit = Rc::new(
-        factory
-            .begin()
-            .map_err(|error| StateFailure::Storage(anyhow!("{error}")))?,
-    );
+    let begun = if readonly {
+        factory.begin_read_only()
+    } else {
+        factory.begin()
+    };
+    let unit: Rc<dyn UnitOfWork> =
+        Rc::from(begun.map_err(|error| StateFailure::Storage(anyhow!("{error}")))?);
     UNITS.with(|units| units.borrow_mut().push(unit.clone()));
     COMPENSATIONS.with(|stack| stack.borrow_mut().push(Vec::new()));
     let outcome = action();
@@ -117,8 +121,11 @@ pub(crate) fn run_action(
     let compensations = COMPENSATIONS
         .with(|stack| stack.borrow_mut().pop())
         .unwrap_or_default();
-    let unit = Rc::try_unwrap(unit)
-        .map_err(|_| StateFailure::Storage(anyhow!("unit of work is still in use")))?;
+    if Rc::strong_count(&unit) != 1 {
+        return Err(StateFailure::Storage(anyhow!(
+            "unit of work is still in use"
+        )));
+    }
     if let Err(error) = outcome {
         discard_legacy();
         let _ = unit.rollback();
@@ -138,13 +145,16 @@ pub(crate) fn run_action(
 }
 
 /// Undo the capsule writes of an action whose legacy commit failed (ADR 0026).
-fn compensate(factory: &PostgresUnitOfWorkFactory, compensations: Vec<Compensation>) -> Result<()> {
+fn compensate(
+    factory: &Arc<dyn UnitOfWorkFactory>,
+    compensations: Vec<Compensation>,
+) -> Result<()> {
     if compensations.is_empty() {
         return Ok(());
     }
     let undo = factory.begin().map_err(|error| anyhow!("{error}"))?;
     for compensation in compensations {
-        compensation(&undo)?;
+        compensation(&*undo)?;
     }
     undo.commit().map_err(|error| anyhow!("{error}"))
 }
@@ -222,12 +232,19 @@ mod tests {
         let uri = format!("{scheme}://{authority}/{database}");
         let repository = aseman_storage_postgres::PostgresCapsuleRepository::connect(&uri).unwrap();
         repository.migrate().unwrap();
-        let factory = Arc::new(PostgresUnitOfWorkFactory::connect(&uri, 4, Some(1)).unwrap());
+        let factory: Arc<dyn UnitOfWorkFactory> = Arc::new(
+            aseman_storage_postgres::unit_of_work::PostgresUnitOfWorkFactory::connect(
+                &uri,
+                4,
+                Some(1),
+            )
+            .unwrap(),
+        );
         set_test_factory(Some(factory.clone()));
 
         let storage: Arc<dyn IStorage> = StubStorage::new();
         let begin = || {
-            TrxWrapper::new(
+            TrxWrapper::over_storage(
                 Arc::new(StubCore {
                     storage: storage.clone(),
                 }),
@@ -240,6 +257,7 @@ mod tests {
         // 1. One action: identity on PostgreSQL, balance on legacy.
         let trx = begin();
         run_action(
+            false,
             || create(&*trx, "1@global", "alice"),
             || trx.commit(),
             || trx.discard(),
@@ -258,6 +276,7 @@ mod tests {
         // The legacy provider holds only the balance, not the identity.
         assert!(!read.has_obj("Creature", "1@global"));
         run_action(
+            false,
             || {
                 assert_eq!(
                     CreaturePorts { trx: &*read }.balance("1@global").unwrap(),
@@ -274,6 +293,7 @@ mod tests {
         // 2. A refused action leaves nothing on either provider.
         let trx = begin();
         let refused = run_action(
+            false,
             || {
                 create(&*trx, "2@global", "bob")?;
                 Err(anyhow!("refused after writing"))
@@ -288,6 +308,7 @@ mod tests {
         // 3. A failed legacy commit compensates the committed identity.
         let trx = begin();
         let failed = run_action(
+            false,
             || create(&*trx, "3@global", "carol"),
             || Err(anyhow!("legacy commit failed")),
             || trx.discard(),

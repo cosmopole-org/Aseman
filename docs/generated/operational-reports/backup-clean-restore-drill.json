@@ -1,0 +1,65 @@
+{
+  "scenario": "backup-clean-restore-drill",
+  "kind": "rollback",
+  "command": "cargo test -p asemanctl --test live_backup_restore -- --nocapture",
+  "started_at": "2026-09-28T07:59:05.149729+00:00",
+  "environment": {
+    "commit": "34d499704239e612dcd42fc3a47f68dcbdcdc4a5+dirty",
+    "host": "srv8666213564",
+    "platform": "Linux-7.0.0-31-generic-x86_64-with-glibc2.43",
+    "required_env_present": [
+      "ASEMAN_TEST_POSTGRES_RESTORE_URL",
+      "ASEMAN_TEST_POSTGRES_URL"
+    ],
+    "required_env_missing": []
+  },
+  "thresholds": {
+    "core_row_count_mismatches": 0,
+    "missing_guest_databases": 0,
+    "untrusted_manifests_accepted": 0,
+    "non_empty_targets_overwritten": 0,
+    "completed_steps_repeated": 0
+  },
+  "duration_seconds": 17.916,
+  "measurements": {
+    "exit_code": 0,
+    "tests": {
+      "passed": 1,
+      "failed": 0,
+      "ignored": 0
+    },
+    "output_tail": [
+      "",
+      "running 1 test",
+      "test postgres_backup_restores_onto_a_clean_cluster ... ok",
+      "",
+      "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 3.10s",
+      "",
+      "   Compiling syn v3.0.6",
+      "   Compiling num-traits v0.2.19",
+      "   Compiling getrandom v0.4.3",
+      "   Compiling aho-corasick v1.1.5",
+      "   Compiling clap_builder v4.6.7",
+      "   Compiling serde_derive v1.0.229",
+      "   Compiling thiserror-impl v2.0.20",
+      "   Compiling serde v1.0.229",
+      "   Compiling clap_derive v4.6.7",
+      "   Compiling thiserror v2.0.20",
+      "   Compiling regex-automata v0.4.18",
+      "   Compiling nix v0.31.3",
+      "   Compiling uuid v1.26.1",
+      "   Compiling getrandom v0.2.17",
+      "   Compiling ring v0.17.14",
+      "   Compiling chrono v0.4.45",
+      "   Compiling aseman-domain v0.1.0 (/home/ubuntu/Aseman/crates/aseman-domain)",
+      "   Compiling regex v1.13.1",
+      "   Compiling ctrlc v3.5.2",
+      "   Compiling aseman-config v0.1.0 (/home/ubuntu/Aseman/crates/aseman-config)",
+      "   Compiling clap v4.6.7",
+      "   Compiling asemanctl v0.1.0 (/home/ubuntu/Aseman/apps/asemanctl)",
+      "    Finished `test` profile [unoptimized + debuginfo] target(s) in 14.78s",
+      "     Running tests/live_backup_restore.rs (target/debug/deps/live_backup_restore-48745822a46e02bf)"
+    ]
+  },
+  "passed": true
+}

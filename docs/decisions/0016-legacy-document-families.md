@@ -36,10 +36,11 @@ A reviewed legacy document family becomes a typed **document capsule**:
   `entry_count` (top-level member count), `content_digest` (domain-separated SHA-256,
   `ASEMAN-LEGACY-DOCUMENT-DIGEST-V1`, over the length-prefixed canonical encoding of the
   document value), and exactly one field of the logical type `document`.
-- A `document` field holds a canonical capsule object value. It has **no native column**:
-  no JSONB, no shared payload table, and no opaque byte column. Its content travels in
-  the canonical envelope that every native table already stores in `capsule_cbor`, so it
-  stays structured, hashable, comparable, and exportable. Physical behavior is enforced
+- A `document` field holds a canonical capsule object value. ~~It has **no native
+  column**~~ (amended by ADR 0034: in the default flattened layout it is a JSONB column
+  named after the field, losslessly tagged; in capsule mode it travels in the packed
+  envelope in `capsule_cbor`). There is no shared payload table and no opaque byte
+  column; the document stays structured, hashable, comparable, and exportable. Physical behavior is enforced
   by the subject foreign key, the partial unique index, `entry_count`, and
   `content_digest`.
 - Native filtering inside a document field is unsupported in Phase 3. A query that names

@@ -71,7 +71,7 @@ already disagree, so it must be reconciled before export.
 Legacy creature deletion never removed memberships (LD-12), so real installations hold
 links the rules above refuse. The export stays strict. Instead, a separate step run by
 an operator reconciles the data before export
-(`audit_legacy_memberships` / `repair_legacy_memberships` in `aseman-storage-legacy`).
+(`audit_legacy_memberships` / `repair_legacy_memberships` in `aseman-storage-rocksdb`).
 The audit applies this ADR's resolution rules and the export's derived-link checks. It reports:
 
 | Defect | Repair |

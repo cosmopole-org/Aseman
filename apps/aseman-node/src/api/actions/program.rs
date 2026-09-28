@@ -42,6 +42,10 @@ use aseman_ports::{BlobStore, EntityDirectory};
 
 use super::util::build_secure_action;
 
+#[expect(
+    dead_code,
+    reason = "RL-004: characterized legacy action surface (A008) kept until its deletion gate"
+)]
 const PLUGINS_TEMPLATE_NAME: &str = "/machines/";
 
 fn user_guard() -> Guard {
@@ -78,6 +82,10 @@ pub(crate) fn resolve_program_owner_machine(trx: &dyn ITrx, program: &Program) -
 }
 
 /// Read a program entity record through the entity port, or `None`.
+#[expect(
+    dead_code,
+    reason = "RL-004: characterized legacy action surface (A008) kept until its deletion gate"
+)]
 pub(crate) fn read_program_entity(
     app: &Arc<dyn ICore>,
     trx: &dyn ITrx,
@@ -91,11 +99,19 @@ pub(crate) fn read_program_entity(
 }
 
 /// Normalized VM launch resources (defaults for non-positive fields).
+#[expect(
+    dead_code,
+    reason = "RL-004: characterized legacy action surface (A008) kept until its deletion gate"
+)]
 pub(crate) fn normalized_vm_resources(input: &VmResourcesInput) -> VmResources {
     normalize_vm_resources(input)
 }
 
 /// Build the legacy per-minute billing record for a standalone VM launch.
+#[expect(
+    dead_code,
+    reason = "RL-004: characterized legacy action surface (A008) kept until its deletion gate"
+)]
 pub(crate) fn build_vm_billing(
     app: &Arc<dyn ICore>,
     trx: &dyn ITrx,
@@ -649,17 +665,6 @@ fn run_program_entity(app: Arc<dyn ICore>) -> Arc<dyn ISecureAction> {
                     &vm_id,
                     &entity_type,
                 )?;
-            }
-            // Tag VMs of cluster-distributed programs so their state commits
-            // are propagated through the raft consensus (local-mode VMs are
-            // deliberately left untagged and never enter the log).
-            if trx.get_link(&format!("vmDistribution::{}", program.id)) == "cluster"
-                || trx.get_link(&format!(
-                    "vmDistribution::{}::{}",
-                    program.id, input.entity_id
-                )) == "cluster"
-            {
-                trx.put_link(&format!("vmDistributed::{}", vm_id), "true");
             }
             let resources = normalize_vm_resources(&input.resources);
             // Free-tier bypass: when every VM cost rate is zero there is nothing
@@ -1293,20 +1298,14 @@ fn deploy(app: Arc<dyn ICore>) -> Arc<dyn ISecureAction> {
             let data = base64::engine::general_purpose::STANDARD
                 .decode(&input.payload)
                 .map_err(|e| anyhow!("{}", e))?;
-            // The developer chooses the deployment scope: "cluster" ships the
-            // creature to every instance of this origin (edge execution +
-            // raft-propagated state), "local" pins it to this instance and
-            // keeps all of its VM state out of the consensus.
-            let distributed = input.wants_distribution() && crate::adapters::cluster::is_active();
+            // The requested scope is recorded; the deployment is as replicated as the
+            // storage provider that holds it (ADR 0033).
+            let distributed = input.wants_distribution();
             let distribution_label = if distributed { "cluster" } else { "local" };
             let blobs =
                 crate::adapters::blob_store::node_blobs(&*app_for_handler.tools().storage());
             let primary =
                 blobs.put_entity_file(&program.id, &input.entity_id, &primary_file_name, &data)?;
-            // Artifact files shipped to the other instances on a distributed
-            // deploy (base64 as received; primary file first).
-            let mut artifact_files: Vec<(String, String)> =
-                vec![(primary_file_name.clone(), input.payload.clone())];
             if accepts_extra_files {
                 let mut files: HashMap<String, Value> = HashMap::new();
                 if let Some(files_raw) = input.metadata.get("files") {
@@ -1327,7 +1326,6 @@ fn deploy(app: Arc<dyn ICore>) -> Arc<dyn ISecureAction> {
                         .decode(&data_str)
                         .map_err(|e| anyhow!("{}", e))?;
                     blobs.put_entity_file(&program.id, &input.entity_id, k, &raw)?;
-                    artifact_files.push((k.clone(), data_str));
                 }
             }
             // Custom VM gateway route: the deployer may bind this entity's HTTP
@@ -1384,8 +1382,7 @@ fn deploy(app: Arc<dyn ICore>) -> Arc<dyn ISecureAction> {
                 config: None,
             })
             .map_err(|error| anyhow!("{error}"))?;
-            // Persist the chosen scope; the VMM consults these links to decide
-            // whether a VM's state mutations enter the raft consensus.
+            // Persist the requested scope (reported back as `distribution`).
             trx.put_link(
                 &format!("vmDistribution::{}", program.id),
                 distribution_label,
@@ -1394,25 +1391,6 @@ fn deploy(app: Arc<dyn ICore>) -> Arc<dyn ISecureAction> {
                 &format!("vmDistribution::{}::{}", program.id, input.entity_id),
                 distribution_label,
             );
-            if distributed {
-                crate::adapters::cluster::propose_deploy(
-                    crate::adapters::cluster::command::DeployArtifact {
-                        program_id: program.id.clone(),
-                        entity_id: input.entity_id.clone(),
-                        entity_type: entity_type.clone(),
-                        machine_id: program.machine_id.clone(),
-                        runtime: program.runtime.clone(),
-                        path: program.path.clone(),
-                        comment: program.comment.clone(),
-                        primary_file_name: primary_file_name.clone(),
-                        files: artifact_files,
-                        set_entity_links: true,
-                        build_on_deploy: conventions.build_on_deploy,
-                        gateway_route: gateway_path.clone(),
-                        gateway_vm_id: gateway_vm_id.clone(),
-                    },
-                );
-            }
             let mut result = serde_json::to_value(PlugInput::default())?;
             if let Value::Object(map) = &mut result {
                 map.insert("distribution".into(), json!(distribution_label));
@@ -1787,13 +1765,11 @@ pub(crate) fn serve_deploy_entity(
     let data = base64::engine::general_purpose::STANDARD
         .decode(&input.payload)
         .map_err(|e| anyhow!("{}", e))?;
-    let distributed = input.wants_distribution() && crate::adapters::cluster::is_active();
+    let distributed = input.wants_distribution();
     let distribution_label = if distributed { "cluster" } else { "local" };
     let blobs = crate::adapters::blob_store::node_blobs(&*app.tools().storage());
     let primary =
         blobs.put_entity_file(&program.id, &input.entity_id, &primary_file_name, &data)?;
-    let mut artifact_files: Vec<(String, String)> =
-        vec![(primary_file_name.clone(), input.payload.clone())];
     if accepts_extra_files {
         let mut files: HashMap<String, Value> = HashMap::new();
         if let Some(files_raw) = input.metadata.get("files") {
@@ -1814,7 +1790,6 @@ pub(crate) fn serve_deploy_entity(
                 .decode(&data_str)
                 .map_err(|e| anyhow!("{}", e))?;
             blobs.put_entity_file(&program.id, &input.entity_id, k, &raw)?;
-            artifact_files.push((k.clone(), data_str));
         }
     }
     let gateway_path = crate::adapters::vmm::http_route::normalize_path(
@@ -1865,25 +1840,6 @@ pub(crate) fn serve_deploy_entity(
         &format!("vmDistribution::{}::{}", program.id, input.entity_id),
         distribution_label,
     );
-    if distributed {
-        crate::adapters::cluster::propose_deploy(
-            crate::adapters::cluster::command::DeployArtifact {
-                program_id: program.id.clone(),
-                entity_id: input.entity_id.clone(),
-                entity_type: entity_type.clone(),
-                machine_id: program.machine_id.clone(),
-                runtime: program.runtime.clone(),
-                path: program.path.clone(),
-                comment: program.comment.clone(),
-                primary_file_name: primary_file_name.clone(),
-                files: artifact_files,
-                set_entity_links: true,
-                build_on_deploy: conventions.build_on_deploy,
-                gateway_route: gateway_path.clone(),
-                gateway_vm_id: gateway_vm_id.clone(),
-            },
-        );
-    }
     let mut result = serde_json::to_value(PlugInput::default())?;
     if let Value::Object(map) = &mut result {
         map.insert("distribution".into(), json!(distribution_label));
@@ -2432,6 +2388,10 @@ pub(crate) fn serve_list_programs(
 }
 
 /// `/machines/listProgramMachines` (`program.list`) body.
+#[expect(
+    dead_code,
+    reason = "RL-004: characterized legacy action surface (A008) kept until its deletion gate"
+)]
 pub(crate) fn serve_list_program_machines(
     _app: &Arc<dyn ICore>,
     trx: &dyn ITrx,

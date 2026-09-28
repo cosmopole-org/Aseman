@@ -12,7 +12,7 @@ name = "scan-vmdb"
 path = "src/main.rs"
 
 [dependencies]
-aseman-storage-legacy = { path = "../../modules/storage/rocksdb-legacy" }
+aseman-storage-rocksdb = { path = "../../modules/storage/rocksdb" }
 
 [lints]
 workspace = true

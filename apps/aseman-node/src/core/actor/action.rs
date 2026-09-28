@@ -22,6 +22,10 @@ pub type StateModifierShared = Arc<dyn Fn(bool, TrxClosure) + Send + Sync>;
 /// errors as `Err(...)` (matches Go's `(0, value, nil)` convention; non-zero
 /// codes are reserved for error conditions).
 pub struct Action {
+    #[expect(
+        dead_code,
+        reason = "RL-003: legacy orchestration surface kept until its deletion gate"
+    )]
     modifier: StateModifierShared,
     key: String,
     func: ActionFn,

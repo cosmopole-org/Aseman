@@ -12,9 +12,9 @@ verification: python3 scripts/generate_current_surface_inventories.py --check
 
 This records current legacy surfaces. It is not the target HTTP/VMM contract.
 
-- Signed shell actions: 77
+- Signed shell actions: 76
 - HTTP routes/patterns: 31
-- Guest host operations and aliases: 112
+- Guest host operations and aliases: 111
 - A node-facing VMM control API does not currently exist.
 - Federation carries signed action paths over a custom framed transport.
 
@@ -27,25 +27,24 @@ This records current legacy surfaces. It is not the target HTTP/VMM contract.
 | `/api/time` | `HelloInput` | `apps/aseman-node/src/api/actions/dummy.rs:45` |
 | `/auths/getServerPublicKey` | `GetServerKeyInput` | `apps/aseman-node/src/api/actions/auth.rs:41` |
 | `/auths/getServersMap` | `GetServersMapInput` | `apps/aseman-node/src/api/actions/auth.rs:57` |
-| `/creatures/authenticate` | `AuthenticateInput` | `apps/aseman-node/src/api/actions/creature.rs:501` |
-| `/creatures/checkSign` | `CheckSignInput` | `apps/aseman-node/src/api/actions/creature.rs:637` |
+| `/creatures/authenticate` | `AuthenticateInput` | `apps/aseman-node/src/api/actions/creature.rs:500` |
+| `/creatures/checkSign` | `CheckSignInput` | `apps/aseman-node/src/api/actions/creature.rs:636` |
 | `/creatures/closePool` | `ClosePoolInput` | `apps/aseman-node/src/api/actions/creature/finance.rs:2482` |
-| `/creatures/consumeLock` | `ConsumeLockInput` | `apps/aseman-node/src/api/actions/creature.rs:1035` |
-| `/creatures/create` | `CreatureCreateInput` | `apps/aseman-node/src/api/actions/creature.rs:201` |
+| `/creatures/consumeLock` | `ConsumeLockInput` | `apps/aseman-node/src/api/actions/creature.rs:1034` |
+| `/creatures/create` | `CreatureCreateInput` | `apps/aseman-node/src/api/actions/creature.rs:200` |
 | `/creatures/createHold` | `CreateHoldInput` | `apps/aseman-node/src/api/actions/creature/finance.rs:1083` |
 | `/creatures/debitPool` | `DebitPoolInput` | `apps/aseman-node/src/api/actions/creature/finance.rs:3027` |
-| `/creatures/delete` | `DeleteInput` | `apps/aseman-node/src/api/actions/creature.rs:1307` |
-| `/creatures/find` | `FindInput` | `apps/aseman-node/src/api/actions/creature.rs:1457` |
-| `/creatures/get` | `GetInput` | `apps/aseman-node/src/api/actions/creature.rs:252` |
-| `/creatures/getByUsername` | `GetByUsernameInput` | `apps/aseman-node/src/api/actions/creature.rs:1430` |
+| `/creatures/delete` | `DeleteInput` | `apps/aseman-node/src/api/actions/creature.rs:1193` |
+| `/creatures/find` | `FindInput` | `apps/aseman-node/src/api/actions/creature.rs:1343` |
+| `/creatures/get` | `GetInput` | `apps/aseman-node/src/api/actions/creature.rs:251` |
+| `/creatures/getByUsername` | `GetByUsernameInput` | `apps/aseman-node/src/api/actions/creature.rs:1316` |
 | `/creatures/getFinancialAccount` | `GetFinancialAccountInput` | `apps/aseman-node/src/api/actions/creature/finance.rs:1937` |
 | `/creatures/getHold` | `GetHoldInput` | `apps/aseman-node/src/api/actions/creature/finance.rs:1807` |
-| `/creatures/list` | `ListInput` | `apps/aseman-node/src/api/actions/creature.rs:271` |
+| `/creatures/list` | `ListInput` | `apps/aseman-node/src/api/actions/creature.rs:270` |
 | `/creatures/listPayouts` | `ListPayoutsInput` | `apps/aseman-node/src/api/actions/creature/finance.rs:2205` |
-| `/creatures/lockToken` | `LockTokenInput` | `apps/aseman-node/src/api/actions/creature.rs:948` |
-| `/creatures/login` | `LoginInput` | `apps/aseman-node/src/api/actions/creature.rs:1195` |
-| `/creatures/meta` | `MetaInput` | `apps/aseman-node/src/api/actions/creature.rs:1371` |
-| `/creatures/mint` | `MintInput` | `apps/aseman-node/src/api/actions/creature.rs:541` |
+| `/creatures/lockToken` | `LockTokenInput` | `apps/aseman-node/src/api/actions/creature.rs:947` |
+| `/creatures/meta` | `MetaInput` | `apps/aseman-node/src/api/actions/creature.rs:1257` |
+| `/creatures/mint` | `MintInput` | `apps/aseman-node/src/api/actions/creature.rs:540` |
 | `/creatures/openPool` | `OpenPoolInput` | `apps/aseman-node/src/api/actions/creature/finance.rs:2272` |
 | `/creatures/paymentAdjustment` | `PaymentAdjustmentInput` | `apps/aseman-node/src/api/actions/creature/finance.rs:3950` |
 | `/creatures/publishFinanceCatalog` | `PublishFinanceCatalogInput` | `apps/aseman-node/src/api/actions/creature/finance.rs:395` |
@@ -62,39 +61,39 @@ This records current legacy surfaces. It is not the target HTTP/VMM contract.
 | `/creatures/retireFinanceNode` | `RetireFinanceNodeInput` | `apps/aseman-node/src/api/actions/creature/finance.rs:592` |
 | `/creatures/retireFinanceResource` | `RetireFinanceResourceInput` | `apps/aseman-node/src/api/actions/creature/finance.rs:781` |
 | `/creatures/reviewFinanceResource` | `ReviewFinanceResourceInput` | `apps/aseman-node/src/api/actions/creature/finance.rs:743` |
-| `/creatures/secretGet` | `SecretGetInput` | `apps/aseman-node/src/api/actions/creature.rs:747` |
-| `/creatures/secretGrant` | `SecretGrantInput` | `apps/aseman-node/src/api/actions/creature.rs:788` |
-| `/creatures/secretList` | `SecretListInput` | `apps/aseman-node/src/api/actions/creature.rs:868` |
-| `/creatures/secretListGranted` | `SecretListGrantedInput` | `apps/aseman-node/src/api/actions/creature.rs:852` |
-| `/creatures/secretPut` | `SecretPutInput` | `apps/aseman-node/src/api/actions/creature.rs:720` |
-| `/creatures/secretRevoke` | `SecretRevokeInput` | `apps/aseman-node/src/api/actions/creature.rs:827` |
+| `/creatures/secretGet` | `SecretGetInput` | `apps/aseman-node/src/api/actions/creature.rs:746` |
+| `/creatures/secretGrant` | `SecretGrantInput` | `apps/aseman-node/src/api/actions/creature.rs:787` |
+| `/creatures/secretList` | `SecretListInput` | `apps/aseman-node/src/api/actions/creature.rs:867` |
+| `/creatures/secretListGranted` | `SecretListGrantedInput` | `apps/aseman-node/src/api/actions/creature.rs:851` |
+| `/creatures/secretPut` | `SecretPutInput` | `apps/aseman-node/src/api/actions/creature.rs:719` |
+| `/creatures/secretRevoke` | `SecretRevokeInput` | `apps/aseman-node/src/api/actions/creature.rs:826` |
 | `/creatures/settleHold` | `SettleHoldInput` | `apps/aseman-node/src/api/actions/creature/finance.rs:1416` |
 | `/creatures/settlePool` | `SettlePoolInput` | `apps/aseman-node/src/api/actions/creature/finance.rs:2688` |
-| `/creatures/signal` | `CreatureSignalInput` | `apps/aseman-node/src/api/actions/creature.rs:393` |
+| `/creatures/signal` | `CreatureSignalInput` | `apps/aseman-node/src/api/actions/creature.rs:392` |
 | `/creatures/startHold` | `StartHoldInput` | `apps/aseman-node/src/api/actions/creature/finance.rs:1336` |
-| `/creatures/transfer` | `TransferInput` | `apps/aseman-node/src/api/actions/creature.rs:293` |
-| `/creatures/types` | `ListInput` | `apps/aseman-node/src/api/actions/creature.rs:1483` |
-| `/creatures/update` | `UpdateInput` | `apps/aseman-node/src/api/actions/creature.rs:1343` |
+| `/creatures/transfer` | `TransferInput` | `apps/aseman-node/src/api/actions/creature.rs:292` |
+| `/creatures/types` | `ListInput` | `apps/aseman-node/src/api/actions/creature.rs:1369` |
+| `/creatures/update` | `UpdateInput` | `apps/aseman-node/src/api/actions/creature.rs:1229` |
 | `/gateway/signal` | `GatewaySignalInput` | `apps/aseman-node/src/api/actions/gateway.rs:253` |
 | `/gateway/subscribe` | `GatewaySubscribeInput` | `apps/aseman-node/src/api/actions/gateway.rs:182` |
 | `/gateway/unsubscribe` | `GatewayUnsubscribeInput` | `apps/aseman-node/src/api/actions/gateway.rs:228` |
-| `/machines/closeVmTerminal` | `VmTerminalInput` | `apps/aseman-node/src/api/actions/program.rs:1114` |
-| `/machines/list` | `ListInput` | `apps/aseman-node/src/api/actions/program.rs:1473` |
-| `/machines/listEntityVms` | `RunProgramEntityInput` | `apps/aseman-node/src/api/actions/program.rs:967` |
-| `/machines/listProgramMachines` | `ListAppMachsInput` | `apps/aseman-node/src/api/actions/program.rs:1552` |
-| `/machines/openVmTerminal` | `VmTerminalInput` | `apps/aseman-node/src/api/actions/program.rs:1078` |
-| `/machines/readMachineBuilds` | `MachineBuildsInput` | `apps/aseman-node/src/api/actions/program.rs:1147` |
-| `/machines/readVmLogs` | `ReadVmLogsInput` | `apps/aseman-node/src/api/actions/program.rs:892` |
-| `/programs/create` | `CreateMachineInput` | `apps/aseman-node/src/api/actions/program.rs:507` |
-| `/programs/delete` | `DeleteProgramInput` | `apps/aseman-node/src/api/actions/program.rs:543` |
-| `/programs/deleteEntity` | `RunProgramEntityInput` | `apps/aseman-node/src/api/actions/program.rs:803` |
-| `/programs/deploy` | `DeployInput` | `apps/aseman-node/src/api/actions/program.rs:1221` |
-| `/programs/downloadEntity` | `DownloadEntityInput` | `apps/aseman-node/src/api/actions/program.rs:1430` |
-| `/programs/list` | `ListInput` | `apps/aseman-node/src/api/actions/program.rs:1530` |
-| `/programs/runEntity` | `RunProgramEntityInput` | `apps/aseman-node/src/api/actions/program.rs:599` |
-| `/programs/stopEntity` | `RunProgramEntityInput` | `apps/aseman-node/src/api/actions/program.rs:726` |
-| `/programs/update` | `UpdateProgramInput` | `apps/aseman-node/src/api/actions/program.rs:566` |
-| `/storage/upload` | `StorageUploadInput` | `apps/aseman-node/src/api/actions/creature.rs:896` |
+| `/machines/closeVmTerminal` | `VmTerminalInput` | `apps/aseman-node/src/api/actions/program.rs:1119` |
+| `/machines/list` | `ListInput` | `apps/aseman-node/src/api/actions/program.rs:1451` |
+| `/machines/listEntityVms` | `RunProgramEntityInput` | `apps/aseman-node/src/api/actions/program.rs:972` |
+| `/machines/listProgramMachines` | `ListAppMachsInput` | `apps/aseman-node/src/api/actions/program.rs:1530` |
+| `/machines/openVmTerminal` | `VmTerminalInput` | `apps/aseman-node/src/api/actions/program.rs:1083` |
+| `/machines/readMachineBuilds` | `MachineBuildsInput` | `apps/aseman-node/src/api/actions/program.rs:1152` |
+| `/machines/readVmLogs` | `ReadVmLogsInput` | `apps/aseman-node/src/api/actions/program.rs:897` |
+| `/programs/create` | `CreateMachineInput` | `apps/aseman-node/src/api/actions/program.rs:523` |
+| `/programs/delete` | `DeleteProgramInput` | `apps/aseman-node/src/api/actions/program.rs:559` |
+| `/programs/deleteEntity` | `RunProgramEntityInput` | `apps/aseman-node/src/api/actions/program.rs:808` |
+| `/programs/deploy` | `DeployInput` | `apps/aseman-node/src/api/actions/program.rs:1226` |
+| `/programs/downloadEntity` | `DownloadEntityInput` | `apps/aseman-node/src/api/actions/program.rs:1408` |
+| `/programs/list` | `ListInput` | `apps/aseman-node/src/api/actions/program.rs:1508` |
+| `/programs/runEntity` | `RunProgramEntityInput` | `apps/aseman-node/src/api/actions/program.rs:615` |
+| `/programs/stopEntity` | `RunProgramEntityInput` | `apps/aseman-node/src/api/actions/program.rs:731` |
+| `/programs/update` | `UpdateProgramInput` | `apps/aseman-node/src/api/actions/program.rs:582` |
+| `/storage/upload` | `StorageUploadInput` | `apps/aseman-node/src/api/actions/creature.rs:895` |
 | `/stores/getAccess` | `GetAccessInput` | `apps/aseman-node/src/api/actions/store.rs:242` |
 | `/stores/history` | `HistoryInput` | `apps/aseman-node/src/api/actions/store.rs:173` |
 | `/stores/setAccess` | `SetAccessInput` | `apps/aseman-node/src/api/actions/store.rs:213` |
@@ -104,21 +103,21 @@ This records current legacy surfaces. It is not the target HTTP/VMM contract.
 
 | Surface | Method | Path | Source |
 |---|---|---|---|
-| cluster-admin-and-raft | POST | `/cluster/add-peer` | `apps/aseman-node/src/adapters/cluster/server.rs:245` |
-| cluster-admin-and-raft | GET | `/cluster/config` | `apps/aseman-node/src/adapters/cluster/server.rs:250` |
-| cluster-admin-and-raft | POST | `/cluster/config` | `apps/aseman-node/src/adapters/cluster/server.rs:253` |
-| cluster-admin-and-raft | POST | `/cluster/config/apply` | `apps/aseman-node/src/adapters/cluster/server.rs:254` |
-| cluster-admin-and-raft | POST | `/cluster/init` | `apps/aseman-node/src/adapters/cluster/server.rs:244` |
-| cluster-admin-and-raft | GET | `/cluster/nearest` | `apps/aseman-node/src/adapters/cluster/server.rs:241` |
-| cluster-admin-and-raft | GET | `/cluster/peers` | `apps/aseman-node/src/adapters/cluster/server.rs:237` |
-| cluster-admin-and-raft | GET | `/cluster/ping` | `apps/aseman-node/src/adapters/cluster/server.rs:227` |
-| cluster-admin-and-raft | POST | `/cluster/promote` | `apps/aseman-node/src/adapters/cluster/server.rs:247` |
-| cluster-admin-and-raft | POST | `/cluster/propose` | `apps/aseman-node/src/adapters/cluster/server.rs:257` |
-| cluster-admin-and-raft | POST | `/cluster/remove-peer` | `apps/aseman-node/src/adapters/cluster/server.rs:246` |
-| cluster-admin-and-raft | GET | `/cluster/status` | `apps/aseman-node/src/adapters/cluster/server.rs:236` |
-| cluster-admin-and-raft | POST | `/raft/append` | `apps/aseman-node/src/adapters/cluster/server.rs:217` |
-| cluster-admin-and-raft | POST | `/raft/snapshot` | `apps/aseman-node/src/adapters/cluster/server.rs:221` |
-| cluster-admin-and-raft | POST | `/raft/vote` | `apps/aseman-node/src/adapters/cluster/server.rs:213` |
+| cluster-admin-and-raft | POST | `/cluster/add-peer` | `modules/storage/rocksdb/src/cluster/server.rs:232` |
+| cluster-admin-and-raft | GET | `/cluster/config` | `modules/storage/rocksdb/src/cluster/server.rs:237` |
+| cluster-admin-and-raft | POST | `/cluster/config` | `modules/storage/rocksdb/src/cluster/server.rs:240` |
+| cluster-admin-and-raft | POST | `/cluster/config/apply` | `modules/storage/rocksdb/src/cluster/server.rs:241` |
+| cluster-admin-and-raft | POST | `/cluster/init` | `modules/storage/rocksdb/src/cluster/server.rs:231` |
+| cluster-admin-and-raft | GET | `/cluster/nearest` | `modules/storage/rocksdb/src/cluster/server.rs:228` |
+| cluster-admin-and-raft | GET | `/cluster/peers` | `modules/storage/rocksdb/src/cluster/server.rs:224` |
+| cluster-admin-and-raft | GET | `/cluster/ping` | `modules/storage/rocksdb/src/cluster/server.rs:214` |
+| cluster-admin-and-raft | POST | `/cluster/promote` | `modules/storage/rocksdb/src/cluster/server.rs:234` |
+| cluster-admin-and-raft | POST | `/cluster/propose` | `modules/storage/rocksdb/src/cluster/server.rs:244` |
+| cluster-admin-and-raft | POST | `/cluster/remove-peer` | `modules/storage/rocksdb/src/cluster/server.rs:233` |
+| cluster-admin-and-raft | GET | `/cluster/status` | `modules/storage/rocksdb/src/cluster/server.rs:223` |
+| cluster-admin-and-raft | POST | `/raft/append` | `modules/storage/rocksdb/src/cluster/server.rs:204` |
+| cluster-admin-and-raft | POST | `/raft/snapshot` | `modules/storage/rocksdb/src/cluster/server.rs:208` |
+| cluster-admin-and-raft | POST | `/raft/vote` | `modules/storage/rocksdb/src/cluster/server.rs:200` |
 | profiling-http | GET | `/debug/pprof` | `apps/aseman-node/src/observability/pprof.rs:86` |
 | profiling-http | GET | `/debug/pprof/` | `apps/aseman-node/src/observability/pprof.rs:86` |
 | profiling-http | GET | `/debug/pprof/flamegraph` | `apps/aseman-node/src/observability/pprof.rs:90` |

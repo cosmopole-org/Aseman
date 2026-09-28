@@ -1,0 +1,69 @@
+{
+  "scenario": "contract-parser-properties",
+  "kind": "fuzz",
+  "command": "cargo test -p aseman-contracts parser_properties",
+  "started_at": "2026-09-28T07:56:12.609398+00:00",
+  "environment": {
+    "commit": "34d499704239e612dcd42fc3a47f68dcbdcdc4a5+dirty",
+    "host": "srv8666213564",
+    "platform": "Linux-7.0.0-31-generic-x86_64-with-glibc2.43",
+    "required_env_present": [],
+    "required_env_missing": []
+  },
+  "thresholds": {
+    "cases_per_property": 512,
+    "panics": 0
+  },
+  "duration_seconds": 37.373,
+  "measurements": {
+    "exit_code": 0,
+    "tests": {
+      "passed": 4,
+      "failed": 0,
+      "ignored": 0
+    },
+    "output_tail": [
+      "   Compiling prost-build v0.13.5",
+      "   Compiling hyper v1.11.1",
+      "   Compiling serde v1.0.229",
+      "   Compiling digest v0.10.7",
+      "   Compiling protox-parse v0.7.0",
+      "   Compiling ring v0.17.14",
+      "   Compiling prost-reflect v0.14.7",
+      "   Compiling num-integer v0.1.47",
+      "   Compiling async-trait v0.1.92",
+      "   Compiling axum-core v0.4.5",
+      "   Compiling protox v0.7.2",
+      "   Compiling num-iter v0.1.46",
+      "   Compiling hyper-util v0.1.20",
+      "   Compiling tonic-build v0.12.3",
+      "   Compiling tower v0.5.3",
+      "   Compiling thiserror-impl v2.0.20",
+      "   Compiling wait-timeout v0.2.1",
+      "   Compiling axum v0.7.9",
+      "   Compiling thiserror v2.0.20",
+      "   Compiling rusty-fork v0.3.1",
+      "   Compiling sha2 v0.10.9",
+      "   Compiling aseman-contracts v0.1.0 (/home/ubuntu/Aseman/crates/aseman-contracts)",
+      "   Compiling hyper-timeout v0.5.2",
+      "   Compiling num-bigint-dig v0.8.6",
+      "   Compiling tower v0.4.13",
+      "   Compiling signature v2.2.0",
+      "   Compiling rand_chacha v0.9.0",
+      "   Compiling rand v0.9.5",
+      "   Compiling rand_xorshift v0.4.0",
+      "   Compiling uuid v1.26.1",
+      "   Compiling tokio-stream v0.1.19",
+      "   Compiling socket2 v0.5.10",
+      "   Compiling subtle v2.6.1",
+      "   Compiling tonic v0.12.3",
+      "   Compiling proptest v1.11.0",
+      "   Compiling rsa v0.9.10",
+      "   Compiling aseman-domain v0.1.0 (/home/ubuntu/Aseman/crates/aseman-domain)",
+      "   Compiling serde_json v1.0.151",
+      "    Finished `test` profile [unoptimized + debuginfo] target(s) in 34.73s",
+      "     Running unittests src/lib.rs (target/debug/deps/aseman_contracts-6b78088b3e70bf58)"
+    ]
+  },
+  "passed": true
+}

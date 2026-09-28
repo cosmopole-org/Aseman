@@ -1,10 +1,11 @@
-ARG RUNTIME_IMAGE=debian:12-slim
+# glibc 2.41: at least the release builders (ubuntu-24.04, glibc 2.39); aseman-node needs GLIBC_2.39.
+ARG RUNTIME_IMAGE=debian:13-slim
 FROM ${RUNTIME_IMAGE}
 
 RUN apt-get update \
     && apt-get install --yes --no-install-recommends ca-certificates libgcc-s1 \
     && rm -rf /var/lib/apt/lists/*
-COPY --chmod=0555 dist/bin/aseman-vmm-backend-nomad /usr/local/bin/aseman-vmm-backend-nomad
+COPY --chmod=0555 bin/aseman-vmm-backend-nomad /usr/local/bin/aseman-vmm-backend-nomad
 
 USER 65532:65532
 WORKDIR /var/empty

@@ -1,0 +1,56 @@
+{
+  "scenario": "worker-loss-and-drain",
+  "kind": "failover",
+  "command": "cargo test -p aseman-vmm-backend-nomad --test live_workers -- --nocapture",
+  "started_at": "2026-09-28T07:58:19.276041+00:00",
+  "environment": {
+    "commit": "34d499704239e612dcd42fc3a47f68dcbdcdc4a5+dirty",
+    "host": "srv8666213564",
+    "platform": "Linux-7.0.0-31-generic-x86_64-with-glibc2.43",
+    "required_env_present": [
+      "ASEMAN_TEST_NOMAD_ENDPOINT"
+    ],
+    "required_env_missing": []
+  },
+  "thresholds": {
+    "identity_changes": 0,
+    "duplicate_workloads": 0,
+    "unrecovered_workloads": 0
+  },
+  "duration_seconds": 38.024,
+  "measurements": {
+    "exit_code": 0,
+    "tests": {
+      "passed": 2,
+      "failed": 0,
+      "ignored": 0
+    },
+    "output_tail": [
+      "",
+      "running 2 tests",
+      "test a_worker_is_cordoned_drained_and_returned_without_touching_identity ... ok",
+      "test a_lost_workload_is_observed_and_restarted_as_itself ... ok",
+      "",
+      "test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 21.69s",
+      "",
+      "   Compiling tempfile v3.27.0",
+      "   Compiling tower v0.5.3",
+      "   Compiling prost-build v0.13.5",
+      "   Compiling aseman-domain v0.1.0 (/home/ubuntu/Aseman/crates/aseman-domain)",
+      "   Compiling tonic-build v0.12.3",
+      "   Compiling axum v0.7.9",
+      "   Compiling aseman-contracts v0.1.0 (/home/ubuntu/Aseman/crates/aseman-contracts)",
+      "   Compiling tonic v0.12.3",
+      "   Compiling rsa v0.9.10",
+      "   Compiling aseman-ports v0.1.0 (/home/ubuntu/Aseman/crates/aseman-ports)",
+      "   Compiling tower-http v0.6.11",
+      "   Compiling reqwest v0.12.28",
+      "   Compiling aseman-vmm-backend-grpc v0.1.0 (/home/ubuntu/Aseman/modules/vmm-backend-grpc)",
+      "   Compiling aseman-vmm-backend-nomad v0.1.0 (/home/ubuntu/Aseman/modules/vmm-backend/nomad)",
+      "   Compiling aseman-vmm-backend-conformance v0.1.0 (/home/ubuntu/Aseman/tests/contracts/vmm-backend)",
+      "    Finished `test` profile [unoptimized + debuginfo] target(s) in 16.23s",
+      "     Running tests/live_workers.rs (target/debug/deps/live_workers-1553d4d2b18913f4)"
+    ]
+  },
+  "passed": true
+}

@@ -381,12 +381,20 @@ impl FinanceLedger for FinanceLedgerPorts<'_> {
 }
 
 /// The finance ledger ports of one state action.
+#[expect(
+    dead_code,
+    reason = "RL-004: characterized legacy action surface (A008) kept until its deletion gate"
+)]
 pub(crate) struct FinancePorts<'a> {
     pub(crate) trx: &'a dyn ITrx,
 }
 
 impl FinancePorts<'_> {
     /// The finance ledger adapter over this action's transaction.
+    #[expect(
+        dead_code,
+        reason = "RL-004: characterized legacy action surface (A008) kept until its deletion gate"
+    )]
     pub(crate) fn ledger(&self) -> FinanceLedgerPorts<'_> {
         FinanceLedgerPorts { trx: self.trx }
     }
@@ -403,7 +411,7 @@ mod tests {
     #[test]
     fn finance_ledger_documents_round_trip_with_legacy_keys() {
         let storage: Arc<dyn IStorage> = StubStorage::new();
-        let trx = TrxWrapper::new(
+        let trx = TrxWrapper::over_storage(
             Arc::new(StubCore {
                 storage: storage.clone(),
             }),
@@ -433,7 +441,7 @@ mod tests {
     #[test]
     fn finance_ledger_counters_and_markers_use_legacy_links() {
         let storage: Arc<dyn IStorage> = StubStorage::new();
-        let trx = TrxWrapper::new(
+        let trx = TrxWrapper::over_storage(
             Arc::new(StubCore {
                 storage: storage.clone(),
             }),
@@ -464,7 +472,7 @@ mod tests {
     #[test]
     fn finance_ledger_index_links_are_newest_first() {
         let storage: Arc<dyn IStorage> = StubStorage::new();
-        let trx = TrxWrapper::new(
+        let trx = TrxWrapper::over_storage(
             Arc::new(StubCore {
                 storage: storage.clone(),
             }),
@@ -486,7 +494,7 @@ mod tests {
     #[test]
     fn finance_ledger_writes_journals_with_participant_index() {
         let storage: Arc<dyn IStorage> = StubStorage::new();
-        let trx = TrxWrapper::new(
+        let trx = TrxWrapper::over_storage(
             Arc::new(StubCore {
                 storage: storage.clone(),
             }),

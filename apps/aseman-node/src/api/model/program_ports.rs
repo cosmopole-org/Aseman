@@ -484,7 +484,7 @@ mod tests {
     #[test]
     fn legacy_programs_pass_the_directory_conformance_suite() {
         let storage: Arc<dyn IStorage> = StubStorage::new();
-        let trx = TrxWrapper::new(
+        let trx = TrxWrapper::over_storage(
             Arc::new(StubCore {
                 storage: storage.clone(),
             }),

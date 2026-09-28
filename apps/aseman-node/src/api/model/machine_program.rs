@@ -77,6 +77,10 @@ impl Program {
         self
     }
 
+    #[expect(
+        dead_code,
+        reason = "RL-004: characterized legacy action surface (A008) kept until its deletion gate"
+    )]
     pub fn all(trx: &dyn ITrx, offset: i64, count: i64) -> Result<Vec<Program>> {
         let objs = if count == -1 {
             trx.get_obj_list("Program", &["*".to_string()], &HashMap::new(), &[])?
@@ -106,6 +110,10 @@ impl Program {
         Ok(entities)
     }
 
+    #[expect(
+        dead_code,
+        reason = "RL-004: characterized legacy action surface (A008) kept until its deletion gate"
+    )]
     pub fn list(trx: &dyn ITrx, prefix: &str) -> Result<Vec<Program>> {
         let mut list = trx.get_links_list(prefix, -1, -1, &[])?;
         for entry in list.iter_mut() {

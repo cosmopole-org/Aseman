@@ -351,24 +351,6 @@
       ]
     },
     {
-      "id": "identity.session.login_by_email",
-      "resource": "session",
-      "class": "security",
-      "summary": "Legacy email login returning a custodial key",
-      "subjects": [
-        "user"
-      ],
-      "rule": [
-        "never"
-      ],
-      "legacy_guard": "public",
-      "delegable": false,
-      "removal": "RL-019 (ADR 0019)",
-      "surfaces": [
-        "signed-shell-action /creatures/login"
-      ]
-    },
-    {
       "id": "identity.signature.check",
       "resource": "identity_key",
       "class": "read",
@@ -496,23 +478,6 @@
       "legacy_guard": "new",
       "delegable": false,
       "surfaces": []
-    },
-    {
-      "id": "identity.login_grant.issue",
-      "resource": "login_grant",
-      "class": "security",
-      "summary": "Grant a delegated login",
-      "subjects": [
-        "workload"
-      ],
-      "rule": [
-        "same_creature"
-      ],
-      "legacy_guard": "guest",
-      "delegable": false,
-      "surfaces": [
-        "unified-host-call grantLogin"
-      ]
     },
     {
       "id": "identity.bridge_token.issue",

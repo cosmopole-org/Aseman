@@ -17,7 +17,7 @@ use super::event::{
     sort_frame_events,
 };
 use super::frame::Frame;
-use super::rocks_store::RocksDbStore;
+use super::persistent_store::PersistentStore;
 use super::root::Root;
 use super::round_info::RoundInfo;
 use super::store::Store;
@@ -1207,11 +1207,11 @@ impl Hashgraph {
         // Phase 1: read everything from the persistent DB.
         let mut batches: Vec<Vec<Event>> = Vec::new();
         let mut restore_maintenance = false;
-        let mut has_rocks = false;
+        let mut has_persistent = false;
 
         {
-            if let Some(rocks) = self.store.as_any().downcast_ref::<RocksDbStore>() {
-                has_rocks = true;
+            if let Some(rocks) = self.store.as_any().downcast_ref::<PersistentStore>() {
+                has_persistent = true;
                 if !rocks.get_maintenance_mode() {
                     restore_maintenance = true;
                 }
@@ -1246,7 +1246,7 @@ impl Hashgraph {
             }
         }
 
-        if !has_rocks {
+        if !has_persistent {
             return Ok(());
         }
 
@@ -1259,7 +1259,7 @@ impl Hashgraph {
         }
 
         if restore_maintenance
-            && let Some(rocks) = self.store.as_any().downcast_ref::<RocksDbStore>()
+            && let Some(rocks) = self.store.as_any().downcast_ref::<PersistentStore>()
         {
             rocks.set_maintenance_mode(false);
         }
@@ -1415,7 +1415,7 @@ mod tests {
     use super::super::block::BlockSignature;
     use super::super::event::{CoordinatesMap, Event, EventCoordinates};
     use super::super::inmem_store::InmemStore;
-    use super::super::rocks_store::RocksDbStore;
+    use super::super::persistent_store::PersistentStore;
     use super::super::round_info::{RoundEvent, RoundInfo};
     use crate::common;
     use crate::common::Trilean;
@@ -1539,7 +1539,10 @@ mod tests {
 
     fn create_hashgraph(db: bool, ordered_events: &mut [Event], peer_set: PeerSet) -> Hashgraph {
         let store: Box<dyn Store> = if db {
-            Box::new(RocksDbStore::new(CACHE_SIZE, &temp_badger_dir(), false).unwrap())
+            Box::new(PersistentStore::open_for_test(
+                CACHE_SIZE,
+                &temp_badger_dir(),
+            ))
         } else {
             Box::new(InmemStore::new(CACHE_SIZE))
         };
@@ -2680,7 +2683,7 @@ mod tests {
     fn test_bootstrap() {
         let dir = temp_badger_dir();
 
-        // Build a first Hashgraph with a RocksDB backend; run consensus.
+        // Build a first Hashgraph with a persistent backend; run consensus.
         let (mut nodes, mut index, mut ordered_events, peer_set) = init_hashgraph_nodes(N);
         play_events(
             &consensus_plays(),
@@ -2688,7 +2691,7 @@ mod tests {
             &mut index,
             &mut ordered_events,
         );
-        let store: Box<dyn Store> = Box::new(RocksDbStore::new(CACHE_SIZE, &dir, false).unwrap());
+        let store: Box<dyn Store> = Box::new(PersistentStore::open_for_test(CACHE_SIZE, &dir));
         let mut h = Hashgraph::new(
             store,
             Box::new(dummy_internal_commit_callback),
@@ -2703,7 +2706,7 @@ mod tests {
         h.decide_round_received().unwrap();
         h.process_decided_rounds().unwrap();
 
-        // Capture h's state, then close + drop it to release the RocksDB lock.
+        // Capture h's state, then close and drop it.
         let h_consensus_events = h.store.consensus_events();
         let h_known = h.store.known_events();
         let h_last_consensus_round = h.last_consensus_round;
@@ -2714,8 +2717,7 @@ mod tests {
         drop(h);
 
         // Reopen the database and bootstrap a fresh Hashgraph from it.
-        let recycled: Box<dyn Store> =
-            Box::new(RocksDbStore::new(CACHE_SIZE, &dir, false).unwrap());
+        let recycled: Box<dyn Store> = Box::new(PersistentStore::open_for_test(CACHE_SIZE, &dir));
         let mut nh = Hashgraph::new(recycled, Box::new(dummy_internal_commit_callback), None);
         nh.bootstrap().expect("bootstrap");
 

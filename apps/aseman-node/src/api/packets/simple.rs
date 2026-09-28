@@ -6,6 +6,10 @@ use serde::{Deserialize, Serialize};
 use crate::models::input::IInput;
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[expect(
+    dead_code,
+    reason = "RL-004: characterized legacy action surface (A008) kept until its deletion gate"
+)]
 pub struct EmptyInput {}
 
 impl IInput for EmptyInput {
@@ -39,6 +43,10 @@ impl IInput for HelloInput {
 }
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[expect(
+    dead_code,
+    reason = "RL-004: characterized legacy action surface (A008) kept until its deletion gate"
+)]
 pub struct PingInput {}
 
 impl IInput for PingInput {

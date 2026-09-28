@@ -132,14 +132,15 @@ fn live_postgres_passes_storage_and_grpc_conformance() {
     let id = uuid::Uuid::parse_str("09090909-0909-0909-0909-090909090909").unwrap();
     let row = client
         .query_one(
-            "SELECT tombstone, username, octet_length(capsule_cbor) \
+            "SELECT tombstone, username, capsule_cbor IS NULL \
              FROM aseman_core.users WHERE id = $1",
             &[&id],
         )
         .unwrap();
     assert!(row.get::<_, bool>(0));
     assert_eq!(row.get::<_, Option<String>>(1), None);
-    assert!(row.get::<_, Option<i32>>(2).unwrap_or_default() > 0);
+    // The default flattened layout (ADR 0034) packs nothing.
+    assert!(row.get::<_, bool>(2));
 
     let class_tables: i64 = client
         .query_one(

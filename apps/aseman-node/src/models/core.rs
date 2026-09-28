@@ -19,10 +19,18 @@ use crate::models::state::IState;
 
 /// An empty action payload.
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[expect(
+    dead_code,
+    reason = "RL-002: legacy model surface kept until its deletion gate"
+)]
 pub struct EmptyPayload {}
 
 /// Holds a response payload together with its produced effects.
 #[derive(Debug, Clone, Default)]
+#[expect(
+    dead_code,
+    reason = "RL-002: legacy model surface kept until its deletion gate"
+)]
 pub struct ResponseHolder {
     pub payload: Vec<u8>,
     pub effects: Effects,
@@ -35,14 +43,38 @@ pub type StateClosure = Box<dyn FnMut(Arc<dyn IState>) -> Result<()> + Send>;
 pub trait ICore: Send + Sync {
     fn owner_id(&self) -> String;
     fn id(&self) -> String;
+    #[expect(
+        dead_code,
+        reason = "RL-002: legacy model surface kept until its deletion gate"
+    )]
     fn gods(&self) -> Vec<String>;
+    #[expect(
+        dead_code,
+        reason = "RL-002: legacy model surface kept until its deletion gate"
+    )]
     fn add_god(&self, username: &str);
     fn tools(&self) -> Arc<dyn ITools>;
+    #[expect(
+        dead_code,
+        reason = "RL-002: legacy model surface kept until its deletion gate"
+    )]
     fn free_nodes(&self) -> HashMap<String, bool>;
+    #[expect(
+        dead_code,
+        reason = "RL-002: legacy model surface kept until its deletion gate"
+    )]
     fn add_free_node(&self, node_id: &str);
     fn actor(&self) -> Arc<dyn IActor>;
+    #[expect(
+        dead_code,
+        reason = "RL-002: legacy model surface kept until its deletion gate"
+    )]
     fn load(&self, args: Vec<String>, config: HashMap<String, Value>);
     fn close(&self);
+    #[expect(
+        dead_code,
+        reason = "RL-002: legacy model surface kept until its deletion gate"
+    )]
     fn plant_chain_trigger(
         &self,
         count: i64,
@@ -76,6 +108,10 @@ pub trait ICore: Send + Sync {
     }
     fn sign_packet(&self, data: &[u8]) -> String;
     fn sign_packet_as_owner(&self, data: &[u8]) -> String;
+    #[expect(
+        dead_code,
+        reason = "RL-002: legacy model surface kept until its deletion gate"
+    )]
     fn execution_cost_per_second(&self) -> i64;
     fn vm_ram_cost_per_mb_per_minute(&self) -> i64;
     fn vm_cpu_core_cost_per_minute(&self) -> i64;

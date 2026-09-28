@@ -307,25 +307,6 @@
       "vmm_operations": []
     },
     {
-      "guard_expression": "anon_guard()",
-      "handler": "apps/aseman-node/src/api/actions/creature.rs::login",
-      "models": [
-        "Session"
-      ],
-      "path": "/creatures/login",
-      "request_type": "LoginInput",
-      "routes_via_chain": false,
-      "services": [],
-      "spawns_background_work": false,
-      "transaction_operations": [
-        "del_key",
-        "get_index",
-        "get_link",
-        "put_link"
-      ],
-      "vmm_operations": []
-    },
-    {
       "guard_expression": "user_guard()",
       "handler": "apps/aseman-node/src/api/actions/creature.rs::meta",
       "models": [],
@@ -1006,7 +987,6 @@
       "services": [],
       "spawns_background_work": false,
       "transaction_operations": [
-        "get_link",
         "put_json",
         "put_link"
       ],
@@ -1178,88 +1158,56 @@
       ],
       "top_level": [
         {
-          "command": "install",
-          "handler": ""
-        },
-        {
-          "command": "uninstall",
-          "handler": "run_uninstall(&args[2..])"
-        },
-        {
-          "command": "purge",
-          "handler": "run_purge(&args[2..])"
-        },
-        {
-          "command": "start",
-          "handler": "run_start(&args[2..])"
-        },
-        {
-          "command": "pause",
-          "handler": "run_pause(&args[2..])"
-        },
-        {
-          "command": "resume",
-          "handler": "run_resume(&args[2..])"
-        },
-        {
-          "command": "stop",
-          "handler": "run_stop(&args[2..])"
-        },
-        {
-          "command": "stats",
-          "handler": "run_stats(&args[2..])"
-        },
-        {
-          "command": "run",
-          "handler": "run::run_run(&args[2..])"
+          "command": "bootstrap",
+          "handler": "bootstrap::run_bootstrap(rest)"
         },
         {
           "command": "status",
-          "handler": "run::run_status(&args[2..])"
+          "handler": "compact::run_status(rest)"
         },
         {
-          "command": "pprof",
-          "handler": "run_pprof(&args[2..])"
+          "command": "start",
+          "handler": "compact::run_start(rest)"
         },
         {
-          "command": "vms",
-          "handler": "vms::run_vms(&args[2..])"
-        },
-        {
-          "command": "cluster",
-          "handler": "cluster::run_cluster(&args[2..])"
-        },
-        {
-          "command": "bootstrap",
-          "handler": "bootstrap::run_bootstrap(&args[2..])"
+          "command": "stop",
+          "handler": "compact::run_stop(rest)"
         },
         {
           "command": "module",
-          "handler": "modules::run_modules(&args[2..])"
+          "handler": "modules::run_modules(rest)"
         },
         {
           "command": "modules",
-          "handler": "modules::run_modules(&args[2..])"
+          "handler": "modules::run_modules(rest)"
+        },
+        {
+          "command": "vms",
+          "handler": "vms::run_vms(rest)"
+        },
+        {
+          "command": "cluster",
+          "handler": "cluster::run_cluster(rest)"
         },
         {
           "command": "doctor",
-          "handler": "ops::run_doctor(&args[2..])"
+          "handler": "ops::run_doctor(rest)"
         },
         {
           "command": "backup",
-          "handler": "ops::run_backup(&args[2..])"
+          "handler": "ops::run_backup(rest)"
         },
         {
           "command": "restore",
-          "handler": "ops::run_restore(&args[2..])"
+          "handler": "ops::run_restore(rest)"
         },
         {
           "command": "upgrade",
-          "handler": "ops::run_upgrade(&args[2..])"
+          "handler": "ops::run_upgrade(rest)"
         },
         {
           "command": "support-bundle",
-          "handler": "ops::run_support_bundle(&args[2..])"
+          "handler": "ops::run_support_bundle(rest)"
         }
       ],
       "vms": [
@@ -1556,10 +1504,6 @@
       {
         "gateway": "unified-host-call",
         "operation": "getVmOwnedStore"
-      },
-      {
-        "gateway": "unified-host-call",
-        "operation": "grantLogin"
       },
       {
         "gateway": "unified-host-call",
@@ -2087,12 +2031,6 @@
       {
         "path": "/creatures/lockToken",
         "request_type": "LockTokenInput",
-        "surface": "signed-shell-action",
-        "transport": "TCP/WebSocket/federation adapters"
-      },
-      {
-        "path": "/creatures/login",
-        "request_type": "LoginInput",
         "surface": "signed-shell-action",
         "transport": "TCP/WebSocket/federation adapters"
       },

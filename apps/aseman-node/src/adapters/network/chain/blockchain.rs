@@ -49,6 +49,10 @@ pub(crate) struct ChainSubmission {
 /// A work chain: one main shard + many sub-shards.
 struct WorkChain {
     id: String,
+    #[expect(
+        dead_code,
+        reason = "RL-011: legacy chain surface kept until the live epoch switch"
+    )]
     store_id: String,
     blockchain: std::sync::Weak<Blockchain>,
     main_ledger: Mutex<Option<Arc<Mutex<Babble>>>>,
@@ -58,6 +62,10 @@ struct WorkChain {
 
 /// A single shard.
 struct ShardChain {
+    #[expect(
+        dead_code,
+        reason = "RL-011: legacy chain surface kept until the live epoch switch"
+    )]
     id: String,
     shard_ledger: Arc<Mutex<Babble>>,
     shard_proxy: Arc<InmemProxy>,
@@ -94,6 +102,9 @@ pub struct Blockchain {
     /// transactions are forwarded to the registered pipeline; everything else is
     /// consumed by the provider.
     consensus: Option<Arc<aseman_consensus_hashgraph::provider::HashgraphConsensusProvider>>,
+    /// Where every shard engine keeps its persistent log: the selected storage
+    /// provider's consensus-log storage (ADR 0035).
+    log_storage: Option<Arc<dyn aseman_ports::consensus_log::ConsensusLogStorage>>,
     /// Chain base-request response callbacks (chain-module-owned, RL-011).
     callbacks: Mutex<HashMap<String, Arc<crate::models::chain::ChainCallback>>>,
     /// Typed-message reply callbacks (chain-module-owned, RL-011).
@@ -107,8 +118,12 @@ pub struct Blockchain {
 
 impl Blockchain {
     /// `NewChain(core, storageRoot)`.
+    #[expect(
+        dead_code,
+        reason = "RL-011: legacy chain surface kept until the live epoch switch"
+    )]
     pub fn new(app: Arc<dyn ICore>, storage_root: &str) -> Arc<Blockchain> {
-        Self::with_consensus(app, storage_root, None)
+        Self::build(app, storage_root, None, None)
     }
 
     /// `NewChain` with the RL-011 consensus provider installed as the main
@@ -117,6 +132,16 @@ impl Blockchain {
         app: Arc<dyn ICore>,
         storage_root: &str,
         consensus: Option<Arc<aseman_consensus_hashgraph::provider::HashgraphConsensusProvider>>,
+        log_storage: Arc<dyn aseman_ports::consensus_log::ConsensusLogStorage>,
+    ) -> Arc<Blockchain> {
+        Self::build(app, storage_root, consensus, Some(log_storage))
+    }
+
+    fn build(
+        app: Arc<dyn ICore>,
+        storage_root: &str,
+        consensus: Option<Arc<aseman_consensus_hashgraph::provider::HashgraphConsensusProvider>>,
+        log_storage: Option<Arc<dyn aseman_ports::consensus_log::ConsensusLogStorage>>,
     ) -> Arc<Blockchain> {
         let storage_root = storage_root.to_string();
         let (chain_tx, chain_rx) = crossbeam_channel::unbounded::<ChainSubmission>();
@@ -128,6 +153,7 @@ impl Blockchain {
             storage_root,
             chain_tx,
             consensus,
+            log_storage,
             callbacks: Mutex::new(HashMap::new()),
             message_callbacks: Mutex::new(HashMap::new()),
             weak_self: weak.clone(),
@@ -197,6 +223,10 @@ impl Blockchain {
         machine_ids
     }
 
+    #[expect(
+        dead_code,
+        reason = "RL-011: legacy chain surface kept until the live epoch switch"
+    )]
     fn pipeline_callback(&self) -> Option<&'static PipelineFn> {
         // We can't return a borrow safely; the actual call sites pull the
         // Mutex and invoke it inline. This helper is here so the API of
@@ -344,11 +374,11 @@ impl Blockchain {
             .unwrap_or((1337, ""));
         let mut config = Config::new_default_config(&format!("{}:{}", ip_address, blockchain_port));
         config.bind_addr = format!("0.0.0.0:{}", blockchain_port);
-        // set_data_dir() also relocates database_dir off the default
-        // (/root/.babble) so multiple nodes on one host don't clobber each
-        // other's RocksDB.
+        // set_data_dir() also relocates database_dir (the consensus log's name) off
+        // the default (/root/.babble) so multiple nodes on one host keep separate logs.
         config.set_data_dir(&data_dir);
         config.proxy = Some(proxy.clone());
+        config.log_storage = self.log_storage.clone();
         // Load the validator key so Babble can sign events.
         if let Err(e) = load_key_for_config(&mut config) {
             eprintln!("load chain key for {}/{}: {}", wchain.id, chain_id, e);
@@ -707,6 +737,7 @@ fn self_clone(b: &Blockchain) -> Arc<Blockchain> {
         storage_root: b.storage_root.clone(),
         chain_tx: b.chain_tx.clone(),
         consensus: b.consensus.clone(),
+        log_storage: b.log_storage.clone(),
         callbacks: Mutex::new(HashMap::new()),
         message_callbacks: Mutex::new(HashMap::new()),
         weak_self: b.weak_self.clone(),
@@ -769,6 +800,10 @@ impl ProxyHandler for HgHandler {
 /// this through a hand-written builder rather than viper, so it only
 /// carries the fields the runtime currently exposes.
 #[derive(Debug, Clone, Default)]
+#[expect(
+    dead_code,
+    reason = "RL-011: legacy chain surface kept until the live epoch switch"
+)]
 pub struct CliConfig {
     pub proxy_addr: String,
     pub client_addr: String,

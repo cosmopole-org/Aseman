@@ -134,18 +134,7 @@
       "reason": "forbidden",
       "matched": null
     },
-    {
-      "name": "custodial email login is forbidden",
-      "subject": "user",
-      "action": "identity.session.login_by_email",
-      "resource": "session",
-      "facts": [
-        "self"
-      ],
-      "allowed": false,
-      "reason": "forbidden",
-      "matched": null
-    },
+    
     {
       "name": "minting needs the node administrator",
       "subject": "user",

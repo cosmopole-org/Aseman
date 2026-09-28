@@ -8,6 +8,13 @@ use crate::models::update::Update;
 pub type BaseResponseCallback = Box<dyn Fn(Vec<u8>, i64, Option<GoError>) + Send + Sync>;
 
 /// Callback receiving a typed chain message reply.
+#[cfg_attr(
+    not(test),
+    expect(
+        dead_code,
+        reason = "RL-002: legacy model surface kept until its deletion gate"
+    )
+)]
 pub type TypedMessageCallback = Box<dyn Fn(String, Vec<u8>) + Send + Sync>;
 
 /// The "globe" — the node's window onto the global chain network.
@@ -26,6 +33,13 @@ pub trait IGlobe: Send + Sync {
         callback: BaseResponseCallback,
     );
     #[allow(clippy::too_many_arguments)]
+    #[cfg_attr(
+        not(test),
+        expect(
+            dead_code,
+            reason = "RL-002: legacy model surface kept until its deletion gate"
+        )
+    )]
     fn send_typed_message_on_chain(
         &self,
         chain_id: &str,

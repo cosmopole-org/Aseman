@@ -30,6 +30,7 @@ use thiserror::Error;
 #[cfg(feature = "conformance")]
 pub mod conformance;
 pub mod consensus;
+pub mod consensus_log;
 pub mod coordination;
 pub mod federation;
 pub mod finance;

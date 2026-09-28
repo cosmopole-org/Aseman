@@ -28,6 +28,13 @@ pub struct Globe {
     sign_packet_fn: SignPacketFn,
     submit_chain_packet_fn: SubmitChainPacketFn,
     set_chain_callback_fn: SetChainCallbackFn,
+    #[cfg_attr(
+        not(test),
+        expect(
+            dead_code,
+            reason = "RL-003: legacy orchestration surface kept until its deletion gate"
+        )
+    )]
     set_message_cb_fn: SetMessageCbFn,
 }
 

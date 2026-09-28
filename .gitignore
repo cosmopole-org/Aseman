@@ -21,3 +21,4 @@ caspar-data/
 # Python inventory-tool caches
 __pycache__/
 *.py[cod]
+/dist/

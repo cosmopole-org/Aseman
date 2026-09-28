@@ -78,6 +78,15 @@
       "thresholds": {"minimum_intervals": 1000, "duplicate_settlements": 0, "unbalanced_journals": 0, "maximum_settlement_lag_seconds": 300}
     },
     {
+      "id": "backup-clean-restore-drill",
+      "kind": "rollback",
+      "targets": ["storage", "guest_data", "release"],
+      "command": "cargo test -p asemanctl --test live_backup_restore -- --nocapture",
+      "required_env": ["ASEMAN_TEST_POSTGRES_URL", "ASEMAN_TEST_POSTGRES_RESTORE_URL"],
+      "evidence": ["apps/asemanctl/tests/live_backup_restore.rs", "docs/operations/backup-restore.md"],
+      "thresholds": {"core_row_count_mismatches": 0, "missing_guest_databases": 0, "untrusted_manifests_accepted": 0, "non_empty_targets_overwritten": 0, "completed_steps_repeated": 0}
+    },
+    {
       "id": "release-rollback-drill",
       "kind": "rollback",
       "targets": ["release", "storage"],

@@ -252,7 +252,7 @@ mod tests {
             storage: storage.clone(),
         });
         let key = RsaPrivateKey::new(&mut OsRng, 1024).unwrap();
-        let trx = TrxWrapper::new(app.clone(), storage.clone(), false);
+        let trx = TrxWrapper::over_storage(app.clone(), storage.clone(), false);
         aseman_ports::CreatureDirectory::create(
             &crate::api::model::creature_ports::CreaturePorts { trx: &*trx },
             &aseman_domain::creature::CreatureRecord {

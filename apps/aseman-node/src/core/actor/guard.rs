@@ -34,8 +34,7 @@ fn read_user_type(app: &Arc<dyn ICore>, user_id: &str) -> String {
             Ok(())
         }),
     );
-    let out = slot.lock().unwrap().clone();
-    out
+    slot.lock().unwrap().clone()
 }
 
 /// `Guard{IsUser, IsInStore}` flags — derived directly from the action

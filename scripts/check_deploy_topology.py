@@ -68,10 +68,15 @@ def check() -> list[str]:
     # Packaging consumes these exact executable names. Checking only the package name
     # let a `runner` target masquerade as `aseman-node` until image construction.
     required_bins = {
-        "apps/aseman-node/Cargo.toml": {"aseman-node", "caspar-node"},
-        "apps/aseman-keygen/Cargo.toml": {"aseman-keygen", "caspar-keygen"},
-        "apps/asemanctl/Cargo.toml": {"casparctl"},
+        "apps/aseman-node/Cargo.toml": {"aseman-node"},
+        "apps/aseman-keygen/Cargo.toml": {"aseman-keygen"},
     }
+    # ADR 0004's window is closed: the Caspar alias executables must not return.
+    for manifest in ["apps/aseman-node/Cargo.toml", "apps/aseman-keygen/Cargo.toml", "apps/asemanctl/Cargo.toml"]:
+        text = (ROOT / manifest).read_text(encoding="utf-8")
+        for alias in ["caspar-node", "caspar-keygen", "casparctl"]:
+            if f'name = "{alias}"' in text:
+                fail(problems, f"{manifest} still packages the retired alias {alias}")
     for manifest, expected in required_bins.items():
         data = tomllib.loads((ROOT / manifest).read_text(encoding="utf-8"))
         actual = {binary["name"] for binary in data.get("bin", [])}
@@ -90,7 +95,7 @@ def check() -> list[str]:
     # Each unprivileged Aseman service is a separate, single-process, non-root image.
     # The privileged agent deliberately has no image until its authenticated server
     # executable exists; inventing a container for a library would be false evidence.
-    build_script = (ROOT / "scripts" / "build-dist.sh").read_text(encoding="utf-8")
+    build_script = (ROOT / "scripts" / "stage-release.sh").read_text(encoding="utf-8")
     for service, (dockerfile, binary) in IMAGES.items():
         path = ROOT / dockerfile
         if not path.exists():
@@ -104,7 +109,7 @@ def check() -> list[str]:
             if forbidden in source:
                 fail(problems, f"{dockerfile} asks for forbidden privilege {forbidden}")
         if binary not in build_script:
-            fail(problems, f"build-dist.sh does not publish {binary} for {dockerfile}")
+            fail(problems, f"stage-release.sh does not stage {binary} for {dockerfile}")
 
     agent_unit = ROOT / "deploy/systemd/aseman-vmm-agent.service"
     if not agent_unit.exists():
@@ -122,7 +127,7 @@ def check() -> list[str]:
         if "docker.sock" in unit:
             fail(problems, "the agent systemd unit must not receive the Docker socket")
     if "aseman-vmm-agent" not in build_script:
-        fail(problems, "build-dist.sh does not publish the host agent executable")
+        fail(problems, "stage-release.sh does not stage the host agent executable")
 
     compact_path = ROOT / COMPACT_PROFILE
     if not compact_path.exists():
@@ -136,6 +141,7 @@ def check() -> list[str]:
             "network_mode: service:vmm",
             "127.0.0.1:9090",
             "ASEMAN_CORE_STORAGE_PROVIDER: postgres",
+            "ASEMAN_SIGNAL_LOG_PROVIDER: postgres",
             "cap_drop: [ALL]",
             "read_only: true",
         ]:
@@ -144,6 +150,18 @@ def check() -> list[str]:
         for forbidden in ["/var/run/docker.sock", "/dev/kvm", "image: nomad"]:
             if forbidden in compact:
                 fail(problems, f"{COMPACT_PROFILE} includes forbidden compact input {forbidden}")
+        # PostgreSQL is reachable by the node and VMM only; the VMM network namespace,
+        # which the Nomad backend shares, needs the routed scheduler network.
+        blocks = re.split(r"^  (?=[a-z0-9-]+:$)", compact, flags=re.MULTILINE)
+        service_block = {block.split(":", 1)[0]: block for block in blocks[1:]}
+        if "scheduler" in service_block.get("postgres", ""):
+            fail(problems, f"{COMPACT_PROFILE} routes PostgreSQL onto the scheduler network")
+        if "scheduler" not in service_block.get("vmm", ""):
+            fail(problems, f"{COMPACT_PROFILE} leaves the VMM/Nomad backend namespace without a route to Nomad")
+        # Published ports need a routed network: Docker publishes none for a container
+        # that is only on internal networks.
+        if not re.search(r"networks: \[[^\]]*\bpublic\b", service_block.get("node", "")):
+            fail(problems, f"{COMPACT_PROFILE} publishes node ports without a routed network")
 
     cluster_path = ROOT / CLUSTER_PROFILE
     if not cluster_path.exists():
@@ -156,6 +174,7 @@ def check() -> list[str]:
         for required in [
             "network_mode: service:vmm",
             "ASEMAN_CORE_STORAGE_PROVIDER: postgres",
+            "ASEMAN_SIGNAL_LOG_PROVIDER: postgres",
             "cap_drop: [ALL]",
             "read_only: true",
         ]:

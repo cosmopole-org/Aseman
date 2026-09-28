@@ -60,6 +60,10 @@ pub struct Core {
     pub(crate) actor: Arc<dyn IActor>,
     pub(crate) tools: Mutex<Option<Arc<dyn ITools>>>,
     pub(crate) globe: Mutex<Option<Arc<dyn IGlobe>>>,
+    #[expect(
+        dead_code,
+        reason = "RL-003: legacy orchestration surface kept until its deletion gate"
+    )]
     pub(crate) started: Mutex<bool>,
     pub(crate) gods: Mutex<Vec<String>>,
     pub(crate) finance: super::finance::Finance,
@@ -92,18 +96,14 @@ impl WeakCoreView {
     pub(crate) fn checked_trx(
         &self,
         readonly: bool,
-    ) -> Option<Arc<crate::adapters::rocksdb::trx::TrxWrapper>> {
+    ) -> Option<Arc<dyn crate::models::transaction::ITrx>> {
         let tools = self.inner.tools.clone()?;
         let core_for_trx: Arc<dyn ICore> = Arc::new(WeakCoreView {
             inner: CoreWeakHandles {
                 ..clone_handles(&self.inner)
             },
         });
-        Some(crate::adapters::rocksdb::trx::TrxWrapper::new(
-            core_for_trx,
-            tools.storage(),
-            readonly,
-        ))
+        crate::core::orchestrator::icore::begin_trx(core_for_trx, &tools.storage(), readonly)
     }
 }
 

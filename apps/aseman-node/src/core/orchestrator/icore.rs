@@ -20,7 +20,7 @@ use crate::models::action::TrxClosure;
 use crate::models::core::{ICore, StateClosure};
 use crate::models::globe::IGlobe;
 use crate::models::info::IInfo;
-use crate::models::ports::ITools;
+use crate::models::ports::{IStorage, ITools, StateBackend};
 use crate::models::state::IState;
 use crate::models::transaction::ITrx;
 
@@ -195,9 +195,9 @@ impl ICore for Core {
 
 impl Core {
     /// A transaction over this core's storage, when the tools are loaded.
-    pub(crate) fn checked_trx(&self, readonly: bool) -> Option<Arc<TrxWrapper>> {
+    pub(crate) fn checked_trx(&self, readonly: bool) -> Option<Arc<dyn ITrx>> {
         let tools = self.tools.lock().unwrap().clone()?;
-        Some(TrxWrapper::new(self.weak_self(), tools.storage(), readonly))
+        begin_trx(self.weak_self(), &tools.storage(), readonly)
     }
 
     /// Build a fresh `Arc<dyn ICore>` pointing at the same underlying
@@ -228,23 +228,50 @@ impl Core {
 
 /// Run a transaction closure with ADR 0026 commit ordering; a storage failure is
 /// logged (LD-10), an action failure is the closure's own answer.
-pub(crate) fn run_trx_closure(trx: &Arc<TrxWrapper>, mut fn_: TrxClosure) {
-    if let Err(StateFailure::Storage(error)) =
-        run_action(|| fn_(&**trx), || trx.commit(), || trx.discard())
-    {
+/// A transaction on the selected storage provider (ADR 0033), or `None` when the
+/// provider cannot begin one (reported).
+pub(crate) fn begin_trx(
+    core: Arc<dyn ICore>,
+    storage: &Arc<dyn IStorage>,
+    readonly: bool,
+) -> Option<Arc<dyn ITrx>> {
+    match storage.state() {
+        StateBackend::RocksDb(db) => Some(TrxWrapper::new(core, db, readonly) as Arc<dyn ITrx>),
+        StateBackend::Postgres(factory) => match factory.begin(readonly) {
+            Ok(trx) => Some(trx as Arc<dyn ITrx>),
+            Err(error) => {
+                eprintln!("storage: cannot begin a PostgreSQL transaction: {error}");
+                None
+            }
+        },
+    }
+}
+
+pub(crate) fn run_trx_closure(trx: &Arc<dyn ITrx>, mut fn_: TrxClosure) {
+    if let Err(StateFailure::Storage(error)) = run_action(
+        trx.readonly(),
+        || fn_(&**trx),
+        || trx.commit(),
+        || trx.discard(),
+    ) {
         eprintln!("modify_state: {error}");
     }
 }
 
 /// Run a secured state closure with ADR 0026 commit ordering.
 pub(crate) fn run_state_closure(
-    trx: &Arc<TrxWrapper>,
+    trx: &Arc<dyn ITrx>,
     info: Arc<dyn IInfo>,
     src: &str,
     mut fn_: StateClosure,
 ) -> Result<(), StateFailure> {
     let state: Arc<dyn IState> = Arc::new(ActorState::new(Some(info), Some(trx.clone()), src));
-    run_action(|| fn_(state), || trx.commit(), || trx.discard())
+    run_action(
+        trx.readonly(),
+        || fn_(state),
+        || trx.commit(),
+        || trx.discard(),
+    )
 }
 
 // Kept for signature parity / import calm.

@@ -1,63 +1,59 @@
-//! Translation of `drivers/storage/storage.go`.
+//! The node's storage driver over the selected provider (ADR 0033).
 //!
-//! `Storage` implements [`IStorage`] over the legacy storage provider
-//! (`aseman-storage-legacy`): the key/value store is its `LegacyKvStore` seam and the
-//! time-series store is its `QuestDbTimeSeries` client, which preserves the legacy
-//! connect-and-repair startup for the `storage` table. This driver names no RocksDB or
-//! QuestDB types (Phase 3 gate).
+//! State transactions run on exactly one provider: the RocksDB provider's key/value
+//! store (local, or replicated through its OpenRaft cluster) or the PostgreSQL
+//! provider's compatibility transactions. The signal and build-log time series is
+//! PostgreSQL or QuestDB (`ASEMAN_SIGNAL_LOG_PROVIDER`).
 
-use std::fs;
 use std::sync::{Arc, Mutex};
 
 use anyhow::{Result, anyhow};
-use aseman_storage_legacy::{LegacySignalRow, QuestDbTimeSeries};
+use aseman_storage_rocksdb::{LegacySignalRow, QuestDbTimeSeries};
 use uuid::Uuid;
 
 use crate::models::core::ICore;
 use crate::models::packet::{LogPacket, LogQuery};
 use crate::models::packet::{decode_tags, encode_tags};
-use crate::models::ports::{IStorage, KvDb};
+use crate::models::ports::{IStorage, StateBackend};
 use crate::models::transaction::ITrx;
+
+/// Where the legacy signal and build-log tables are served from.
+pub enum SignalLogTarget {
+    /// The legacy QuestDB instance on this port.
+    QuestDb(u16),
+    /// PostgreSQL at this connection URL (`ASEMAN_SIGNAL_LOG_PROVIDER=postgres`).
+    Postgres(String),
+}
 
 /// Concrete [`IStorage`] implementation.
 pub struct Storage {
     _app: Arc<dyn ICore>,
     storage_root: String,
-    kvdb: KvDb,
+    state: StateBackend,
     tsdb: QuestDbTimeSeries,
     lock: Mutex<()>,
 }
 
 impl Storage {
-    /// `NewStorage(core, storageRoot, baseDbPath, _logsDbPath,
-    /// _searcherDbPath)`. The trailing arguments are kept for parity but the
-    /// log/searcher tables live inside the QuestDB instance, not on disk.
+    /// Compose the driver over an already-opened provider backend.
     pub fn new(
         app: Arc<dyn ICore>,
         storage_root: &str,
-        base_db_path: &str,
-        _logs_db_path: &str,
-        _searcher_db_path: &str,
-        questdb_port: u16,
+        state: StateBackend,
+        signal_log: SignalLogTarget,
     ) -> Result<Arc<Storage>> {
-        fs::create_dir_all(base_db_path).map_err(|e| anyhow!("mkdir {}: {}", base_db_path, e))?;
-        // Bounded-memory options instead of `open_default`: this DB takes a
-        // write per signal and is never fully pruned, so the default unlimited
-        // `max_open_files` grew resident memory without bound as SST files
-        // accumulated. See `aseman_storage_legacy::tuning`.
-        let kvdb: KvDb = Arc::new(
-            aseman_storage_legacy::RocksDbKvStore::open_tuned(std::path::Path::new(base_db_path))
-                .map_err(|e| anyhow!("open kvdb {}: {}", base_db_path, e))?,
-        );
-
         // The QuestDB client, its startup table repair, and its SQL live in the
         // legacy storage provider; this driver never names QuestDB types.
-        let tsdb = QuestDbTimeSeries::connect(questdb_port).map_err(|e| anyhow!("{e}"))?;
+        let tsdb = match signal_log {
+            SignalLogTarget::QuestDb(port) => QuestDbTimeSeries::connect(port),
+            SignalLogTarget::Postgres(url) => QuestDbTimeSeries::connect_postgres(&url),
+        }
+        .map_err(|e| anyhow!("{e}"))?;
 
         Ok(Arc::new(Storage {
             _app: app,
             storage_root: storage_root.to_string(),
-            kvdb,
+            state,
             tsdb,
             lock: Mutex::new(()),
         }))
@@ -69,8 +65,8 @@ impl IStorage for Storage {
         self.storage_root.clone()
     }
 
-    fn kv_db(&self) -> KvDb {
-        self.kvdb.clone()
+    fn state(&self) -> StateBackend {
+        self.state.clone()
     }
 
     fn gen_id(&self, t: &dyn ITrx, origin: &str) -> String {
@@ -93,23 +89,31 @@ impl IStorage for Storage {
             t.put_bytes("globalIdCounter", counter.to_be_bytes().to_vec());
             format!("{}@{}", counter, origin)
         } else {
-            // Use the kvdb directly when origin != "global", matching Go.
-            let key = b"localIdCounter";
-            let counter = {
-                let val = self.kvdb.get(key).ok().flatten().unwrap_or_default();
-                let mut counter: i64 = if val.len() >= 8 {
-                    i64::from_be_bytes(val[..8].try_into().unwrap())
+            let key = "localIdCounter";
+            let decode = |value: &[u8]| -> i64 {
+                if value.len() >= 8 {
+                    i64::from_be_bytes(value[..8].try_into().unwrap())
                 } else {
                     0
-                };
-                counter += 1;
-                let _ = self
-                    .kvdb
-                    .write_batch(&[aseman_storage_legacy::LegacyKvWrite::Put {
-                        key: key.to_vec(),
+                }
+            };
+            let counter = match &self.state {
+                // RocksDB: the counter bypasses the transaction, as the original did.
+                StateBackend::RocksDb(kvdb) => {
+                    let counter =
+                        decode(&kvdb.get(key.as_bytes()).ok().flatten().unwrap_or_default()) + 1;
+                    let _ = kvdb.write_batch(&[aseman_storage_rocksdb::LegacyKvWrite::Put {
+                        key: key.as_bytes().to_vec(),
                         value: counter.to_be_bytes().to_vec(),
                     }]);
-                counter
+                    counter
+                }
+                // PostgreSQL: the counter commits with the transaction that uses it.
+                StateBackend::Postgres(_) => {
+                    let counter = decode(&t.get_bytes(key)) + 1;
+                    t.put_bytes(key, counter.to_be_bytes().to_vec());
+                    counter
+                }
             };
             format!("{}@{}", counter, origin)
         }

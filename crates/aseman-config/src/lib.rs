@@ -30,7 +30,6 @@ pub struct AsemanConfig {
     pub vmm: Option<VmmClientConfig>,
     pub database_url_secret: Option<String>,
     pub core_storage: CoreStorageConfig,
-    pub legacy_aliases_used: Vec<String>,
 }
 
 /// Which provider is authoritative for the core port families (ADR 0026), and the
@@ -42,6 +41,49 @@ pub struct CoreStorageConfig {
     /// The trusted guest proxy (A306/A405), required on PostgreSQL: guest data is
     /// served from each creature's own database once the node runs there.
     pub guest_proxy: Option<GuestProxyConfig>,
+    /// Where the legacy store-signal and build-log families live
+    /// (`ASEMAN_SIGNAL_LOG_PROVIDER`).
+    pub signal_log: SignalLogProvider,
+    /// The PostgreSQL provider's cluster mode: a shard-map file
+    /// (`ASEMAN_POSTGRES_SHARDS_SECRET`, ADR 0033). Absent, one database serves.
+    pub postgres_shards_secret: Option<String>,
+    /// How the provider lays out a capsule (`ASEMAN_STORAGE_CAPSULE_MODE`).
+    pub layout: CapsuleLayout,
+}
+
+/// How a storage provider lays out one capsule (ADR 0034).
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
+pub enum CapsuleLayout {
+    /// Capsule mode off (the default): every field of the entity is a real column of
+    /// its table (or its own key in a key/value provider), and the provider keeps the
+    /// columns in step with the mapping.
+    #[default]
+    Flattened,
+    /// Capsule mode on: the canonical envelope is packed into one column (one value),
+    /// beside the typed columns queries use.
+    Capsule,
+}
+
+impl CapsuleLayout {
+    /// Parse `ASEMAN_STORAGE_CAPSULE_MODE` (`on`/`off`, `true`/`false`, `1`/`0`).
+    pub fn from_mode(value: Option<&str>) -> Option<Self> {
+        match value.map(str::to_ascii_lowercase).as_deref() {
+            None | Some("" | "off" | "false" | "0") => Some(Self::Flattened),
+            Some("on" | "true" | "1") => Some(Self::Capsule),
+            Some(_) => None,
+        }
+    }
+}
+
+/// The server holding the legacy signal (`storage`) and build-log tables.
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
+pub enum SignalLogProvider {
+    /// QuestDB on `ASEMAN_LEGACY_QUESTDB_PORT`: the RocksDB provider's default.
+    QuestDb,
+    /// PostgreSQL through `ASEMAN_DATABASE_URL_SECRET`: the PostgreSQL provider's
+    /// default. History already in QuestDB is not moved by selecting it.
+    #[default]
+    Postgres,
 }
 
 /// The guest proxy login that assumes creature roles (A306).
@@ -56,10 +98,12 @@ pub struct GuestProxyConfig {
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum CoreStorageProvider {
-    /// The wrapped legacy provider (RocksDB); the default until cutover.
-    Legacy,
-    /// PostgreSQL capsules through `ASEMAN_DATABASE_URL_SECRET`.
+    /// PostgreSQL through `ASEMAN_DATABASE_URL_SECRET` (the default): capsules, the
+    /// compatibility transaction surface, and every PostgreSQL-backed port.
     Postgres,
+    /// Embedded RocksDB under the storage root, self-contained on one host; in
+    /// cluster mode its commits replicate through OpenRaft (ADR 0012 amendment).
+    RocksDb,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -104,7 +148,8 @@ pub struct TelemetryConfig {
     pub vm_port: u16,
 }
 
-#[derive(Clone, Debug, Eq, PartialEq)]
+/// The RocksDB provider's cluster bootstrap inputs (ADR 0033).
+#[derive(Clone, Debug, Default, Eq, PartialEq)]
 pub struct ClusterBootstrapConfig {
     pub config_path: Option<String>,
     pub enabled: Option<bool>,
@@ -143,7 +188,6 @@ pub struct RateLimitConfig {
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct LegacyAdapterConfig {
     pub main_port: String,
-    pub login_grant_required: bool,
     pub public_storage_max_bytes: usize,
     pub questdb_port: u16,
     pub rocksdb_max_open_files: i32,
@@ -327,6 +371,12 @@ pub struct CliConfig {
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct IntegrationTestConfig {
     pub postgres_url: Option<String>,
+    /// A second, separate cluster a restore drill restores onto, so its target is
+    /// genuinely clean (A902).
+    pub postgres_restore_url: Option<String>,
+    /// An administrative URL of a server with `max_prepared_transactions > 0`, on
+    /// which the sharding suite creates its shards (ADR 0033).
+    pub postgres_shards_url: Option<String>,
     /// The Nomad cluster a live backend test runs against; absent skips the test,
     /// because Aseman never installs a scheduler (ADR 0002).
     pub nomad_endpoint: Option<String>,
@@ -341,6 +391,12 @@ impl IntegrationTestConfig {
     pub fn from_process() -> Self {
         Self {
             postgres_url: std::env::var("ASEMAN_TEST_POSTGRES_URL")
+                .ok()
+                .filter(|value| !value.trim().is_empty()),
+            postgres_restore_url: std::env::var("ASEMAN_TEST_POSTGRES_RESTORE_URL")
+                .ok()
+                .filter(|value| !value.trim().is_empty()),
+            postgres_shards_url: std::env::var("ASEMAN_TEST_POSTGRES_SHARDS_URL")
                 .ok()
                 .filter(|value| !value.trim().is_empty()),
             nomad_endpoint: std::env::var("ASEMAN_TEST_NOMAD_ENDPOINT")
@@ -476,8 +532,8 @@ pub fn process_home_dir() -> Option<String> {
 pub enum ConfigError {
     #[error("missing configuration key {0}")]
     Missing(&'static str),
-    #[error("conflicting canonical and legacy values for {canonical}/{legacy}")]
-    AliasConflict { canonical: String, legacy: String },
+    #[error("{legacy} is a retired Caspar configuration name; set {canonical} instead")]
+    RetiredName { canonical: String, legacy: String },
     #[error("invalid value for {key}: {reason}")]
     Invalid {
         key: &'static str,
@@ -528,6 +584,22 @@ struct AliasCatalog {
 struct AliasRow {
     legacy: String,
     canonical: String,
+    category: String,
+}
+
+impl AliasRow {
+    /// A variable owned by the operating system or another tool (`HOME`, `PATH`,
+    /// `XDG_STATE_HOME`, Modal's `MODAL_*` namespace, ...). Reading it is how the node
+    /// learns its environment, not a Caspar alias, so it keeps flowing into its
+    /// canonical key.
+    fn is_standard_environment(&self) -> bool {
+        self.category == "process-environment"
+            || self.legacy.starts_with("MODAL_")
+            || matches!(
+                self.legacy.as_str(),
+                "XDG_STATE_HOME" | "DEBIAN_FRONTEND" | "WASMEDGE_LIB_DIR"
+            )
+    }
 }
 
 impl AsemanConfig {
@@ -547,7 +619,7 @@ impl AsemanConfig {
     }
 
     pub fn from_map(values: &BTreeMap<String, String>) -> Result<Self, ConfigError> {
-        let (values, legacy_aliases_used) = canonicalize(values)?;
+        let (values, _) = canonicalize(values)?;
         let vmm = VmmClientConfig::from_canonical(&values)?;
         let core_storage = CoreStorageConfig::from_canonical(&values)?;
         // Remote workloads are `core.workload` capsules resolved by the guest API: the
@@ -655,10 +727,6 @@ impl AsemanConfig {
             },
             legacy_adapters: LegacyAdapterConfig {
                 main_port: optional(&values, "ASEMAN_LEGACY_MAIN_PORT"),
-                login_grant_required: values
-                    .get("ASEMAN_LOGIN_MODE")
-                    .map(|value| value.trim().eq_ignore_ascii_case("grant"))
-                    .unwrap_or(false),
                 public_storage_max_bytes: parse_or(
                     &values,
                     "ASEMAN_STORAGE_MAX_BYTES",
@@ -684,7 +752,6 @@ impl AsemanConfig {
             vmm,
             database_url_secret: values.get("ASEMAN_DATABASE_URL_SECRET").cloned(),
             core_storage,
-            legacy_aliases_used,
         })
     }
 }
@@ -1132,12 +1199,12 @@ impl CoreStorageConfig {
             .get("ASEMAN_CORE_STORAGE_PROVIDER")
             .map(String::as_str)
         {
-            None | Some("legacy") => CoreStorageProvider::Legacy,
-            Some("postgres") => CoreStorageProvider::Postgres,
+            None | Some("postgres") => CoreStorageProvider::Postgres,
+            Some("rocksdb") => CoreStorageProvider::RocksDb,
             Some(_) => {
                 return Err(ConfigError::Invalid {
                     key: "ASEMAN_CORE_STORAGE_PROVIDER",
-                    reason: "expected legacy or postgres",
+                    reason: "expected postgres or rocksdb",
                 });
             }
         };
@@ -1148,6 +1215,44 @@ impl CoreStorageConfig {
         {
             return Err(ConfigError::Missing("ASEMAN_DATABASE_URL_SECRET"));
         }
+        let signal_log = match values.get("ASEMAN_SIGNAL_LOG_PROVIDER").map(String::as_str) {
+            None if provider == CoreStorageProvider::Postgres => SignalLogProvider::Postgres,
+            None | Some("questdb") => SignalLogProvider::QuestDb,
+            Some("postgres") if provider == CoreStorageProvider::Postgres => {
+                SignalLogProvider::Postgres
+            }
+            Some("postgres") => {
+                return Err(ConfigError::Invalid {
+                    key: "ASEMAN_SIGNAL_LOG_PROVIDER",
+                    reason: "postgres needs ASEMAN_CORE_STORAGE_PROVIDER=postgres",
+                });
+            }
+            Some(_) => {
+                return Err(ConfigError::Invalid {
+                    key: "ASEMAN_SIGNAL_LOG_PROVIDER",
+                    reason: "expected questdb or postgres",
+                });
+            }
+        };
+        let postgres_shards_secret = values
+            .get("ASEMAN_POSTGRES_SHARDS_SECRET")
+            .filter(|value| !value.is_empty())
+            .cloned();
+        if postgres_shards_secret.is_some() && provider != CoreStorageProvider::Postgres {
+            return Err(ConfigError::Invalid {
+                key: "ASEMAN_POSTGRES_SHARDS_SECRET",
+                reason: "a shard map needs ASEMAN_CORE_STORAGE_PROVIDER=postgres",
+            });
+        }
+        let layout = CapsuleLayout::from_mode(
+            values
+                .get("ASEMAN_STORAGE_CAPSULE_MODE")
+                .map(String::as_str),
+        )
+        .ok_or(ConfigError::Invalid {
+            key: "ASEMAN_STORAGE_CAPSULE_MODE",
+            reason: "expected on or off",
+        })?;
         let guest_proxy = if provider == CoreStorageProvider::Postgres {
             Some(GuestProxyConfig {
                 url_secret: required(values, "ASEMAN_GUEST_PROXY_URL_SECRET")?,
@@ -1162,6 +1267,9 @@ impl CoreStorageConfig {
             provider,
             binding_generation: parse_or(values, "ASEMAN_CORE_BINDING_GENERATION", 0)?,
             guest_proxy,
+            signal_log,
+            postgres_shards_secret,
+            layout,
         })
     }
 }
@@ -1304,35 +1412,32 @@ pub fn parse_dotenv(contents: &str) -> Result<BTreeMap<String, String>, ConfigEr
     Ok(output)
 }
 
-/// Translate the complete generated A003 legacy-key catalog to canonical names.
-/// Canonical/legacy collisions fail even when their values match.
+/// Map the A003 catalog onto canonical keys. The ADR-0004 compatibility window is
+/// closed: a retired Caspar name is refused with the canonical name to use instead.
+/// Standard environment variables owned by the system or another tool still feed
+/// their canonical keys, since reading them is not compatibility.
 pub fn canonicalize(
     values: &BTreeMap<String, String>,
 ) -> Result<(BTreeMap<String, String>, Vec<String>), ConfigError> {
     let catalog: AliasCatalog =
         serde_json::from_str(LEGACY_ALIASES_JSON).map_err(|_| ConfigError::InvalidAliasCatalog)?;
     let mut output = values.clone();
-    let mut used = Vec::new();
     for row in catalog.aliases {
         if row.legacy == row.canonical {
             continue;
         }
-        match (values.get(&row.canonical), values.get(&row.legacy)) {
-            (Some(_), Some(_)) => {
-                return Err(ConfigError::AliasConflict {
-                    canonical: row.canonical,
-                    legacy: row.legacy,
-                });
-            }
-            (None, Some(value)) => {
-                output.insert(row.canonical, value.clone());
-                used.push(row.legacy);
-            }
-            _ => {}
+        let Some(value) = values.get(&row.legacy) else {
+            continue;
+        };
+        if !row.is_standard_environment() {
+            return Err(ConfigError::RetiredName {
+                canonical: row.canonical,
+                legacy: row.legacy,
+            });
         }
+        output.entry(row.canonical).or_insert_with(|| value.clone());
     }
-    used.sort();
-    Ok((output, used))
+    Ok((output, Vec::new()))
 }
 
 #[cfg(test)]
@@ -1346,6 +1451,8 @@ mod tests {
                 "ASEMAN_NODE_PRIVATE_KEY_SECRET".into(),
                 "secret://node/private-key".into(),
             ),
+            // The self-contained provider, so most cases need no database secret.
+            ("ASEMAN_CORE_STORAGE_PROVIDER".into(), "rocksdb".into()),
         ])
     }
 
@@ -1355,22 +1462,72 @@ mod tests {
         assert_eq!(config.network.public_http_port, 8080);
         assert_eq!(config.runtime.docker_gateway_port, 8079);
         assert_eq!(config.allocator.trim_interval_seconds, 30);
-        assert!(config.legacy_aliases_used.is_empty());
     }
 
     #[test]
-    fn core_storage_defaults_to_legacy_and_postgres_needs_its_secret() {
+    fn the_signal_log_moves_to_postgres_only_with_postgres_core_storage() {
+        let mut values = base();
+        values.insert("ASEMAN_SIGNAL_LOG_PROVIDER".into(), "postgres".into());
+        assert_eq!(
+            AsemanConfig::from_map(&values),
+            Err(ConfigError::Invalid {
+                key: "ASEMAN_SIGNAL_LOG_PROVIDER",
+                reason: "postgres needs ASEMAN_CORE_STORAGE_PROVIDER=postgres",
+            })
+        );
+        values.insert("ASEMAN_CORE_STORAGE_PROVIDER".into(), "postgres".into());
+        values.insert(
+            "ASEMAN_DATABASE_URL_SECRET".into(),
+            "/run/secrets/db".into(),
+        );
+        values.insert(
+            "ASEMAN_GUEST_PROXY_URL_SECRET".into(),
+            "/run/secrets/proxy".into(),
+        );
+        values.insert(
+            "ASEMAN_GUEST_PROXY_ROLE".into(),
+            "aseman_guest_proxy".into(),
+        );
+        assert_eq!(
+            AsemanConfig::from_map(&values)
+                .unwrap()
+                .core_storage
+                .signal_log,
+            SignalLogProvider::Postgres
+        );
+        values.insert("ASEMAN_SIGNAL_LOG_PROVIDER".into(), "sqlite".into());
+        assert!(AsemanConfig::from_map(&values).is_err());
+    }
+
+    #[test]
+    fn core_storage_defaults_to_postgres_and_rocksdb_is_selectable() {
         let config = AsemanConfig::from_map(&base()).unwrap();
         assert_eq!(
             config.core_storage,
             CoreStorageConfig {
-                provider: CoreStorageProvider::Legacy,
+                provider: CoreStorageProvider::RocksDb,
                 binding_generation: 0,
                 guest_proxy: None,
+                signal_log: SignalLogProvider::QuestDb,
+                postgres_shards_secret: None,
+                layout: CapsuleLayout::Flattened,
             }
         );
         let mut values = base();
-        values.insert("ASEMAN_CORE_STORAGE_PROVIDER".into(), "postgres".into());
+        values.insert("ASEMAN_STORAGE_CAPSULE_MODE".into(), "on".into());
+        assert_eq!(
+            AsemanConfig::from_map(&values).unwrap().core_storage.layout,
+            CapsuleLayout::Capsule
+        );
+        values.insert("ASEMAN_STORAGE_CAPSULE_MODE".into(), "sometimes".into());
+        assert!(AsemanConfig::from_map(&values).is_err());
+        let mut values = base();
+        values.insert("ASEMAN_CORE_STORAGE_PROVIDER".into(), "legacy".into());
+        assert!(
+            AsemanConfig::from_map(&values).is_err(),
+            "the Caspar name is gone"
+        );
+        values.remove("ASEMAN_CORE_STORAGE_PROVIDER");
         assert_eq!(
             AsemanConfig::from_map(&values),
             Err(ConfigError::Missing("ASEMAN_DATABASE_URL_SECRET"))
@@ -1413,37 +1570,33 @@ mod tests {
     }
 
     #[test]
-    fn conflicting_aliases_fail_closed() {
+    fn standard_environment_variables_still_feed_their_canonical_keys() {
         let mut values = base();
-        values.insert("OWNER_ID".into(), "legacy".into());
-        assert!(matches!(
-            AsemanConfig::from_map(&values),
-            Err(ConfigError::AliasConflict { .. })
-        ));
+        values.insert("HOME".into(), "/home/operator".into());
+        values.insert("XDG_STATE_HOME".into(), "/state".into());
+        let (canonical, _) = canonicalize(&values).unwrap();
+        assert_eq!(canonical["ASEMAN_LEGACY_HOME"], "/home/operator");
+        assert!(AsemanConfig::from_map(&values).is_ok());
     }
 
     #[test]
-    fn generated_catalog_translates_non_core_legacy_keys() {
-        let values = BTreeMap::from([("CASPAR_STORAGE_PORT".into(), "8091".into())]);
-        let (canonical, used) = canonicalize(&values).unwrap();
-        assert_eq!(canonical["ASEMAN_PUBLIC_STORAGE_PORT"], "8091");
-        assert_eq!(used, vec!["CASPAR_STORAGE_PORT"]);
-    }
-
-    #[test]
-    fn legacy_node_map_preserves_ports_paths_and_allocator_defaults() {
-        let values = BTreeMap::from([
-            ("OWNER_ID".into(), "legacy-node".into()),
-            ("OWNER_PRIVATE_KEY".into(), "legacy-pem".into()),
-            ("CLIENT_TCP_API_PORT".into(), "7001".into()),
-            ("STORAGE_ROOT_PATH".into(), "/srv/aseman".into()),
-            ("CASPAR_MALLOC_ARENA_MAX".into(), "4".into()),
-        ]);
-        let config = AsemanConfig::from_map(&values).unwrap();
-        assert_eq!(config.node.id, "legacy-node");
-        assert_eq!(config.network.legacy_tcp_port, 7001);
-        assert_eq!(config.storage.root_path, "/srv/aseman");
-        assert_eq!(config.allocator.arena_max, 4);
+    fn retired_caspar_names_are_refused_with_their_replacement() {
+        for (legacy, canonical) in [
+            ("OWNER_ID", "ASEMAN_NODE_ID"),
+            ("CASPAR_STORAGE_PORT", "ASEMAN_PUBLIC_STORAGE_PORT"),
+        ] {
+            let mut values = base();
+            values.insert(legacy.into(), "value".into());
+            let error = AsemanConfig::from_map(&values).unwrap_err();
+            assert_eq!(
+                error,
+                ConfigError::RetiredName {
+                    canonical: canonical.to_owned(),
+                    legacy: legacy.to_owned(),
+                }
+            );
+            assert!(error.to_string().contains(canonical));
+        }
     }
 
     #[test]
@@ -1502,6 +1655,10 @@ mod tests {
             (
                 "ASEMAN_NODE_PRIVATE_KEY_SECRET".to_owned(),
                 "/run/secrets/key".to_owned(),
+            ),
+            (
+                "ASEMAN_CORE_STORAGE_PROVIDER".to_owned(),
+                "rocksdb".to_owned(),
             ),
         ]);
         assert_eq!(AsemanConfig::from_map(&values).unwrap().vmm, None);

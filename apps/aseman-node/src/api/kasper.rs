@@ -13,9 +13,17 @@ use rsa::RsaPrivateKey;
 use crate::core::orchestrator::Core;
 use crate::models::core::ICore;
 
+#[expect(
+    dead_code,
+    reason = "RL-004: characterized legacy action surface (A008) kept until its deletion gate"
+)]
 pub type Kasper = Arc<dyn ICore>;
 
 /// Equivalent of Go's `NewApp(origin, ownerId, ownerPrivateKey)`.
+#[expect(
+    dead_code,
+    reason = "RL-004: characterized legacy action surface (A008) kept until its deletion gate"
+)]
 pub fn new_app(origin: &str, owner_id: &str, owner_private_key: RsaPrivateKey) -> Arc<Core> {
     Core::new(origin, owner_id, Arc::new(owner_private_key))
 }

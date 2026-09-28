@@ -36,6 +36,10 @@ struct FedPacketCallback {
     /// Caller-supplied correlation id (Go: `UserRequestId`). Stored so
     /// downstream tooling can match a federation response back to the
     /// original user-facing request that triggered it.
+    #[expect(
+        dead_code,
+        reason = "RL-010: legacy federation surface kept for the ADR-0004 window"
+    )]
     user_request_id: String,
     callback: Arc<Mutex<Option<FedRequestCallback>>>,
 }

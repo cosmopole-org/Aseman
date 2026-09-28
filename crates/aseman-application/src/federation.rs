@@ -83,19 +83,30 @@ pub struct SendFederatedRequest<'a> {
     pub node_id: Uuid,
 }
 
+/// One canonical cross-node action, as the source node sends it.
+pub struct FederatedAction<'a> {
+    pub request_id: Uuid,
+    pub subject: Subject,
+    pub destination_node: Uuid,
+    pub target: ResourceRef,
+    pub action: &'a str,
+    pub payload: &'a [u8],
+    pub facts: BTreeSet<Condition>,
+}
+
 impl SendFederatedRequest<'_> {
-    /// Send an action to `destination_node` after the source node authorizes the same
-    /// subject/action/target tuple the destination will independently reauthorize.
-    pub fn send(
-        &self,
-        request_id: Uuid,
-        subject: Subject,
-        destination_node: Uuid,
-        target: ResourceRef,
-        action: &str,
-        payload: &[u8],
-        facts: BTreeSet<Condition>,
-    ) -> Result<FederationReply, PortError> {
+    /// Send an action to its destination node after the source node authorizes the
+    /// same subject/action/target tuple the destination will independently reauthorize.
+    pub fn send(&self, request: FederatedAction<'_>) -> Result<FederationReply, PortError> {
+        let FederatedAction {
+            request_id,
+            subject,
+            destination_node,
+            target,
+            action,
+            payload,
+            facts,
+        } = request;
         if !matches!(subject.kind, SubjectKind::Workload | SubjectKind::Creature) {
             return Err(PortError::Denied("invalid federated subject"));
         }
@@ -358,15 +369,15 @@ mod outbound_tests {
             clock: &FixedClock(4_000),
             node_id: source,
         }
-        .send(
+        .send(FederatedAction {
             request_id,
             subject,
-            destination,
-            target.clone(),
-            "workload.signal",
-            b"payload",
-            BTreeSet::from([Condition::Authenticated]),
-        )
+            destination_node: destination,
+            target: target.clone(),
+            action: "workload.signal",
+            payload: b"payload",
+            facts: BTreeSet::from([Condition::Authenticated]),
+        })
         .unwrap();
         assert_eq!(reply, FederationReply::Executed("answer".to_owned()));
         let (_, envelope, payload) = transport.0.lock().unwrap().clone().unwrap();

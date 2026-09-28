@@ -24,18 +24,17 @@ use crate::api::packets::creatures::{
     AuthenticateInput, AuthenticateOutput, CheckSignInput, ClosePoolInput, ConsumeLockInput,
     CreateHoldInput, CreateInput as CreatureCreateInput, DebitPoolInput, DeleteInput, FindInput,
     GetByUsernameInput, GetFinancialAccountInput, GetHoldInput, GetInput, GetOutput, ListInput,
-    ListPayoutsInput, LockTokenInput, LoginInput, LoginOutput, MetaInput, MintInput, OpenPoolInput,
-    PaymentAdjustmentInput, PublishFinanceCatalogInput, PublishFinanceQuoteInput,
-    ReconcileFinancialSystemInput, RefreshPoolInput, RegisterFinanceNodeInput,
-    RegisterFinanceResourceInput, ReleaseHoldInput, ReleasePoolInput, RequestPayoutInput,
-    ReservePoolInput, ResolvePayoutInput, RetireFinanceNodeInput, RetireFinanceResourceInput,
-    ReviewFinanceResourceInput, SecretGetInput, SecretGrantInput, SecretListGrantedInput,
-    SecretListInput, SecretPutInput, SecretRevokeInput, SettleHoldInput, SettlePoolInput,
-    SignalInput as CreatureSignalInput, StartHoldInput, StorageUploadInput, TransferInput,
-    UpdateInput,
+    ListPayoutsInput, LockTokenInput, MetaInput, MintInput, OpenPoolInput, PaymentAdjustmentInput,
+    PublishFinanceCatalogInput, PublishFinanceQuoteInput, ReconcileFinancialSystemInput,
+    RefreshPoolInput, RegisterFinanceNodeInput, RegisterFinanceResourceInput, ReleaseHoldInput,
+    ReleasePoolInput, RequestPayoutInput, ReservePoolInput, ResolvePayoutInput,
+    RetireFinanceNodeInput, RetireFinanceResourceInput, ReviewFinanceResourceInput, SecretGetInput,
+    SecretGrantInput, SecretListGrantedInput, SecretListInput, SecretPutInput, SecretRevokeInput,
+    SettleHoldInput, SettlePoolInput, SignalInput as CreatureSignalInput, StartHoldInput,
+    StorageUploadInput, TransferInput, UpdateInput,
 };
 use crate::api::packets::stores::Send as StoresSend;
-use crate::api::utils::crypto::{secure_key_pairs, secure_unique_string};
+use crate::api::utils::crypto::secure_unique_string;
 use crate::api::utils::future::async_once;
 use crate::api::utils::secret_crypto;
 use crate::core::actor::Guard;
@@ -1190,119 +1189,6 @@ fn consume_lock(app: Arc<dyn ICore>) -> Arc<dyn ISecureAction> {
     )
 }
 
-fn login(app: Arc<dyn ICore>) -> Arc<dyn ISecureAction> {
-    let app_for_handler = app.clone();
-    build_secure_action::<LoginInput, _>(
-        app,
-        "/creatures/login",
-        anon_guard(),
-        move |state: Arc<dyn IState>, input: LoginInput| -> Result<Value> {
-            // DEV-mode Firebase-Auth fallback. The Go module optionally
-            // verified the supplied emailToken with the Firebase Admin SDK;
-            // the Rust workspace doesn't carry a Firebase dependency so this
-            // port short-circuits straight to the DEV path. Treat the token as
-            // the raw email or fall back to a synthetic `username@dev.local`.
-            let mut email = input.email_token.trim().to_string();
-            let trx = state.trx();
-            if crate::adapters::vmm::host::functions::login_grant::grant_mode() {
-                // An email alone proves nothing, and for an existing account
-                // this path answers with its private key. In grant mode the
-                // caller must present a single-use grant a node-owner program
-                // issued after verifying the person (password, mail, Google).
-                email = email.to_lowercase();
-                crate::adapters::vmm::host::functions::login_grant::consume(
-                    &*trx,
-                    &input.login_grant,
-                    &email,
-                )?;
-            } else {
-                if email.is_empty() || !email.contains('@') {
-                    email = format!("{}@dev.local", input.username);
-                }
-                log::info!(
-                    "[DEV] firebase disabled; accepting login for email: {}",
-                    email
-                );
-            }
-
-            let user_id = trx.get_link(&format!("UserEmailToId::{}", email));
-            if !user_id.is_empty() {
-                let creatures = CreaturePorts { trx: &*trx };
-                // LD-13: the old `user.id.is_empty()` check never fired, so a stale
-                // email link was never dropped; the directory lookup makes it real.
-                let found = aseman_ports::CreatureDirectory::creature(&creatures, &user_id)
-                    .map_err(|error| anyhow!("{error}"))?;
-                if let Some(record) = found {
-                    let user = creature_view(record, creatures.account_or_empty(&user_id)?.balance);
-                    let session_id = trx.get_index("Session", "userId", "id", &user.id);
-                    let session = Session {
-                        id: session_id,
-                        ..Default::default()
-                    }
-                    .pull(&*trx);
-                    let private_key = trx.get_link(&format!("UserPrivateKey::{}", user.id));
-                    return Ok(serde_json::to_value(LoginOutput {
-                        user,
-                        session,
-                        private_key,
-                    })?);
-                }
-                // Stale email link (creature was deleted but UserEmailToId was
-                // not). Drop it so this login mints a new identity.
-                trx.del_key(&format!("link::UserEmailToId::{}", email));
-            }
-            let expected_username = format!("{}@{}", input.username, app_for_handler.id());
-            if aseman_ports::CreatureDirectory::creature_id_by_username(
-                &CreaturePorts { trx: &*trx },
-                &expected_username,
-            )
-            .map_err(|error| anyhow!("{error}"))?
-            .is_some()
-            {
-                return Err(anyhow!("username already exist"));
-            }
-            let (priv_raw, pub_raw) = secure_key_pairs("")?;
-            let priv_key = String::from_utf8_lossy(&priv_raw).into_owned();
-            let pub_key = String::from_utf8_lossy(&pub_raw).into_owned();
-            let create_input = CreatureCreateInput {
-                typ: "human".to_string(),
-                username: input.username.clone(),
-                public_key: pub_key,
-                metadata: input.metadata.clone(),
-                ..Default::default()
-            };
-            // Call /creatures/create's action directly on the current state.
-            // Going through the secured chain re-submits the request and
-            // deadlocks the chain processor (single-threaded), exactly like
-            // the Go side.
-            let create_action = app_for_handler
-                .actor()
-                .fetch_action("/creatures/create")
-                .ok_or_else(|| anyhow!("/creatures/create not registered"))?;
-            let typed_input: Arc<dyn IInput> = Arc::new(create_input);
-            let (_code, res) = create_action.act(state.clone(), typed_input)?;
-            let creature: Creature = res
-                .get("creature")
-                .cloned()
-                .and_then(|v| serde_json::from_value(v).ok())
-                .unwrap_or_default();
-            let session: Session = res
-                .get("session")
-                .cloned()
-                .and_then(|v| serde_json::from_value(v).ok())
-                .unwrap_or_default();
-            trx.put_link(&format!("UserPrivateKey::{}", creature.id), &priv_key);
-            trx.put_link(&format!("UserEmailToId::{}", email), &creature.id);
-            trx.put_link(&format!("UserIdToEmail::{}", creature.id), &email);
-            Ok(serde_json::to_value(LoginOutput {
-                user: creature,
-                session,
-                private_key: priv_key,
-            })?)
-        },
-    )
-}
-
 fn delete(app: Arc<dyn ICore>) -> Arc<dyn ISecureAction> {
     build_secure_action::<DeleteInput, _>(
         app,
@@ -1531,7 +1417,6 @@ pub fn install(
     handlers.extend([
         lock_token(app.clone()),
         consume_lock(app.clone()),
-        login(app.clone()),
         delete(app.clone()),
         update(app.clone()),
         meta(app.clone()),

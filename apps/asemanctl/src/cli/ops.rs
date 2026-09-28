@@ -22,7 +22,10 @@ use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
 use sha2::{Digest, Sha256};
 
-use super::run;
+use super::args;
+use super::compact::Compact;
+
+mod postgres;
 
 // ───────────────────────── shared context ─────────────────────────────────
 
@@ -106,8 +109,9 @@ impl BackupManifest {
 /// Everything a driver needs beyond the journal itself.
 struct OpContext<'a> {
     args: &'a [String],
-    repo: PathBuf,
-    data_dir: PathBuf,
+    /// A host node's data directory (`--data-dir`), whose `.env` holds its
+    /// configuration. Absent, the drivers act on the bootstrapped compact deployment.
+    data_dir: Option<PathBuf>,
     state_dir: PathBuf,
     config: Option<AsemanConfig>,
     config_error: Option<String>,
@@ -119,13 +123,11 @@ struct OpContext<'a> {
 
 impl<'a> OpContext<'a> {
     fn new(args: &'a [String]) -> Result<Self> {
-        let repo = run::resolve_repo_dir(args)?;
-        let data_dir = run::data_dir(args, &repo);
+        let data_dir = args::flag_value(args, "data-dir").map(PathBuf::from);
         let state_dir = state_dir(args);
         fs::create_dir_all(&state_dir)?;
         Ok(Self {
             args,
-            repo,
             data_dir,
             state_dir,
             config: None,
@@ -133,7 +135,7 @@ impl<'a> OpContext<'a> {
             findings: Vec::new(),
             backup_dir: None,
             manifest: None,
-            signing_key: run::flag_value(args, "signing-key").map(PathBuf::from),
+            signing_key: args::flag_value(args, "signing-key").map(PathBuf::from),
         })
     }
 
@@ -143,7 +145,7 @@ impl<'a> OpContext<'a> {
         if self.config.is_some() {
             return true;
         }
-        let candidates = [self.data_dir.join(".env"), self.repo.join(".env")];
+        let candidates: Vec<PathBuf> = self.data_dir.iter().map(|dir| dir.join(".env")).collect();
         let mut last_error = None;
         for dotenv in candidates {
             if dotenv.exists() {
@@ -185,15 +187,81 @@ impl<'a> OpContext<'a> {
         Ok(self.config.as_ref().expect("configuration was loaded"))
     }
 
+    /// Rebuild what earlier steps established from the arguments and persisted
+    /// artifacts, so a resumed journal continues where it stopped instead of failing on
+    /// state that only existed in the interrupted process.
+    fn rehydrate(&mut self, kind: OperationKind) -> Result<()> {
+        match kind {
+            OperationKind::Backup => {
+                if let Some(out) = args::flag_value(self.args, "out") {
+                    let out = PathBuf::from(out);
+                    for name in [PENDING_MANIFEST, "backup-manifest.json"] {
+                        let path = out.join(name);
+                        if path.exists() {
+                            self.manifest = Some(
+                                serde_json::from_slice(&fs::read(&path)?)
+                                    .with_context(|| format!("{} is invalid", path.display()))?,
+                            );
+                            break;
+                        }
+                    }
+                    self.backup_dir = Some(out);
+                }
+            }
+            OperationKind::Restore => {
+                if let Some(from) = args::flag_value(self.args, "from") {
+                    self.backup_dir = Some(restore_base(Path::new(&from)));
+                }
+            }
+            OperationKind::SupportBundle => {
+                let current = self.state_dir.join(SUPPORT_BUNDLE_CURRENT);
+                if current.exists() {
+                    self.backup_dir = Some(PathBuf::from(fs::read_to_string(current)?.trim()));
+                }
+            }
+            _ => {}
+        }
+        Ok(())
+    }
+
+    /// The compact deployment the drivers act on, unless `--data-dir` selects a host
+    /// node.
+    fn compact(&self) -> Option<Compact> {
+        if self.data_dir.is_some() {
+            return None;
+        }
+        Compact::locate(self.args)
+    }
+
+    /// How to reach the PostgreSQL core storage, if the target uses it.
+    fn pg_access(&mut self) -> Result<Option<postgres::PgAccess>> {
+        if let Some(compact) = self.compact() {
+            return Ok(Some(postgres::PgAccess::Compact(compact)));
+        }
+        Ok(self
+            .require_config()
+            .and_then(postgres::database_url)?
+            .map(postgres::PgAccess::Url))
+    }
+
+    /// A host node's file stores. A compact deployment keeps its authoritative state
+    /// in PostgreSQL; its node volume holds only state the node rebuilds.
+    fn file_stores(&mut self) -> Result<Vec<(&'static str, PathBuf)>> {
+        if self.compact().is_some() {
+            return Ok(Vec::new());
+        }
+        self.require_config().map(storage_dirs)
+    }
+
     fn node_running(&self) -> bool {
-        run::port_open(8074)
+        self.compact().is_some_and(|compact| compact.node_healthy())
     }
 }
 
 // ───────────────────────── state directory and journal ────────────────────
 
 fn state_dir(args: &[String]) -> PathBuf {
-    if let Some(dir) = run::flag_value(args, "state-dir") {
+    if let Some(dir) = args::flag_value(args, "state-dir") {
         return PathBuf::from(dir);
     }
     aseman_config::cli_config()
@@ -241,6 +309,7 @@ fn drive_journal(
     let mut ctx = OpContext::new(args)?;
     let path = journal_path(kind, &ctx.state_dir);
     let mut journal = load_journal(&path, kind);
+    ctx.rehydrate(kind)?;
     if journal.complete() {
         println!("{}: already complete", kind_name(kind));
         return Ok(());
@@ -403,22 +472,9 @@ fn storage_dirs(config: &AsemanConfig) -> Vec<(&'static str, PathBuf)> {
 
 fn provider_str(provider: &aseman_config::CoreStorageProvider) -> &'static str {
     match provider {
-        aseman_config::CoreStorageProvider::Legacy => "legacy",
+        aseman_config::CoreStorageProvider::RocksDb => "rocksdb",
         aseman_config::CoreStorageProvider::Postgres => "postgres",
     }
-}
-
-/// The node binary a driver can launch or check.
-fn node_binary(repo: &Path) -> Option<PathBuf> {
-    let dist = run::arch_dist(repo).join("bin");
-    [
-        dist.join("aseman-node"),
-        repo.join("target/release/aseman-node"),
-        dist.join("caspar-node"),
-        repo.join("target/release/caspar-node"),
-    ]
-    .into_iter()
-    .find(|path| path.exists())
 }
 
 // ───────────────────────── signing (Ed25519 via ring) ─────────────────────
@@ -460,13 +516,54 @@ fn verify_bytes(public_key_hex: &str, signature_hex: &str, bytes: &[u8]) -> Resu
         .map_err(|_| anyhow!("the manifest signature does not verify"))
 }
 
+/// The operator public key (hex) a restored manifest must be signed by: `--trusted-key`,
+/// else derived from `--signing-key`/`ASEMAN_OPERATOR_SIGNING_KEY`.
+fn trusted_public_key(ctx: &OpContext<'_>) -> Result<String> {
+    use ring::signature::KeyPair;
+    if let Some(hex) = args::flag_value(ctx.args, "trusted-key") {
+        let hex = hex.trim().to_ascii_lowercase();
+        if decode_hex(&hex)?.len() != 32 {
+            bail!("--trusted-key must be a 32-byte Ed25519 public key in hex");
+        }
+        return Ok(hex);
+    }
+    let path = ctx
+        .signing_key
+        .clone()
+        .or_else(|| {
+            aseman_config::cli_config()
+                .and_then(|config| config.operator_signing_key.clone())
+                .map(PathBuf::from)
+        })
+        .ok_or_else(|| {
+            anyhow!(
+                "a trusted operator key is required to restore (--trusted-key, \
+                 --signing-key, or ASEMAN_OPERATOR_SIGNING_KEY)"
+            )
+        })?;
+    Ok(encode_hex(load_signing_key(&path)?.public_key().as_ref()))
+}
+
+/// `base/relative`, refusing a manifest name that would escape `base`.
+fn safe_join(base: &Path, relative: &str) -> Result<PathBuf> {
+    let path = Path::new(relative);
+    if path.is_absolute()
+        || path
+            .components()
+            .any(|component| !matches!(component, std::path::Component::Normal(_)))
+    {
+        bail!("backup artifact name {relative:?} escapes the backup directory");
+    }
+    Ok(base.join(path))
+}
+
 // ───────────────────────── doctor ─────────────────────────────────────────
 
 /// `asemanctl doctor` — run every health check, collect findings, and fail only at
 /// the `Health` step if a fatal finding exists. A doctor run is always fresh; the
 /// persisted journal records the last outcome.
 pub fn run_doctor(args: &[String]) -> Result<()> {
-    if run::has_flag(args, "help") {
+    if args::has_flag(args, "help") {
         print_doctor_usage();
         return Ok(());
     }
@@ -488,7 +585,7 @@ pub fn run_doctor(args: &[String]) -> Result<()> {
         .iter()
         .filter(|finding| finding.fatal)
         .collect();
-    if run::has_flag(args, "json") {
+    if args::has_flag(args, "json") {
         println!(
             "{}",
             json!({
@@ -540,26 +637,39 @@ fn doctor_step(step: OperationStep, ctx: &mut OpContext<'_>) -> Result<()> {
             }
         }
         OperationStep::CheckDependencies => {
-            match node_binary(&ctx.repo) {
-                Some(binary) => ctx.findings.push(Finding::ok(
-                    "node-binary",
-                    format!("{} present", binary.display()),
-                )),
-                None => ctx.findings.push(Finding::fatal(
-                    "node-binary",
-                    "no node binary in dist/bin or target/release",
-                )),
-            }
-            let keygen = run::arch_dist(&ctx.repo).join("bin").join("aseman-keygen");
-            if keygen.exists() {
-                ctx.findings.push(Finding::ok(
-                    "keygen",
-                    format!("{} present", keygen.display()),
-                ));
-            } else {
+            let present = |program: &str, argument: &str| {
+                Command::new(program)
+                    .arg(argument)
+                    .stdout(Stdio::null())
+                    .stderr(Stdio::null())
+                    .status()
+                    .is_ok_and(|status| status.success())
+            };
+            if ctx.compact().is_some() {
+                for (check, program, argument) in [
+                    ("docker", "docker", "version"),
+                    ("docker-compose", "docker", "compose"),
+                ] {
+                    let ok = if check == "docker-compose" {
+                        Command::new(program)
+                            .args([argument, "version"])
+                            .stdout(Stdio::null())
+                            .stderr(Stdio::null())
+                            .status()
+                            .is_ok_and(|status| status.success())
+                    } else {
+                        present(program, argument)
+                    };
+                    ctx.findings.push(if ok {
+                        Finding::ok(check, "available")
+                    } else {
+                        Finding::fatal(check, "required to operate the compact deployment")
+                    });
+                }
+            } else if !present("pg_dump", "--version") {
                 ctx.findings.push(Finding::warn(
-                    "keygen",
-                    "aseman-keygen not found in dist/bin (install/build-dist)",
+                    "postgres-client",
+                    "pg_dump not on PATH; PostgreSQL backups need the client tools",
                 ));
             }
             if Command::new("tar").arg("--version").output().is_err() {
@@ -598,12 +708,12 @@ fn doctor_step(step: OperationStep, ctx: &mut OpContext<'_>) -> Result<()> {
             if ctx.node_running() {
                 ctx.findings.push(Finding::ok(
                     "runtime",
-                    "node is listening on the legacy TCP port (8074)",
+                    "the node answers its health endpoint",
                 ));
             } else {
                 ctx.findings.push(Finding::warn(
                     "runtime",
-                    "node is not running (start it with `asemanctl run`)",
+                    "the node is not healthy (see `asemanctl status`)",
                 ));
             }
         }
@@ -701,7 +811,7 @@ fn print_doctor_usage() {
 /// `asemanctl backup` — snapshot the node's storage into a target directory and
 /// produce a signed backup manifest.
 pub fn run_backup(args: &[String]) -> Result<()> {
-    if run::has_flag(args, "help") {
+    if args::has_flag(args, "help") {
         print_backup_usage();
         return Ok(());
     }
@@ -711,8 +821,8 @@ pub fn run_backup(args: &[String]) -> Result<()> {
 fn backup_step(step: OperationStep, ctx: &mut OpContext<'_>) -> Result<()> {
     match step {
         OperationStep::Preflight => {
-            let out =
-                run::flag_value(ctx.args, "out").ok_or_else(|| anyhow!("--out DIR is required"))?;
+            let out = args::flag_value(ctx.args, "out")
+                .ok_or_else(|| anyhow!("--out DIR is required"))?;
             let target = PathBuf::from(&out);
             if target.exists() {
                 let existing = fs::read_dir(&target)?.count();
@@ -726,29 +836,34 @@ fn backup_step(step: OperationStep, ctx: &mut OpContext<'_>) -> Result<()> {
             ctx.backup_dir = Some(target);
         }
         OperationStep::QuiesceWrites => {
-            if ctx.node_running() && !run::has_flag(ctx.args, "allow-running") {
+            if ctx.node_running() && !args::has_flag(ctx.args, "allow-running") {
                 bail!(
                     "the node is running; stop it first (`asemanctl stop`) or pass --allow-running"
                 );
             }
-            let provider = ctx
-                .require_config()
-                .map(|config| config.core_storage.provider)?;
-            if provider == aseman_config::CoreStorageProvider::Postgres {
-                bail!(
-                    "core storage is PostgreSQL; back it up through the capsule export \
-                     (docs/operations/storage-migration-runbook.md) rather than a file snapshot"
-                );
-            }
         }
         OperationStep::SnapshotStores => {
-            let dirs = ctx.require_config().map(storage_dirs)?;
+            let dirs = ctx.file_stores()?;
+            let database = ctx.pg_access()?;
             let target = ctx
                 .backup_dir
                 .clone()
                 .ok_or_else(|| anyhow!("backup target was not prepared"))?;
             for (name, path) in dirs {
                 copy_tree(&path, &target.join("snapshot").join(name))?;
+            }
+            // Each database dump is a consistent snapshot, so PostgreSQL core storage
+            // needs no write quiesce of its own.
+            if let Some(access) = database {
+                let catalog = postgres::dump(
+                    &access,
+                    &target.join("snapshot").join(postgres::SNAPSHOT_DIR),
+                )?;
+                print!(
+                    "(PostgreSQL: core {} and {} guest database(s)); ",
+                    catalog.core_database,
+                    catalog.guest_databases.len()
+                );
             }
         }
         OperationStep::CaptureCatalog => {
@@ -779,6 +894,7 @@ fn backup_step(step: OperationStep, ctx: &mut OpContext<'_>) -> Result<()> {
                 artifacts: Vec::new(),
                 signature: None,
             });
+            persist_pending_manifest(ctx)?;
         }
         OperationStep::HashArtifacts => {
             let target = ctx
@@ -807,6 +923,7 @@ fn backup_step(step: OperationStep, ctx: &mut OpContext<'_>) -> Result<()> {
                 .as_mut()
                 .ok_or_else(|| anyhow!("manifest was not captured"))?
                 .artifacts = artifacts;
+            persist_pending_manifest(ctx)?;
         }
         OperationStep::SignManifest => {
             let key_path = ctx.signing_key.clone().or_else(|| {
@@ -841,6 +958,7 @@ fn backup_step(step: OperationStep, ctx: &mut OpContext<'_>) -> Result<()> {
                 target.join("backup-manifest.json"),
                 serde_json::to_vec_pretty(manifest)?,
             )?;
+            let _ = fs::remove_file(target.join(PENDING_MANIFEST));
         }
         OperationStep::ResumeWrites => {
             // A file snapshot under `--allow-running` is already consistent per file;
@@ -883,6 +1001,20 @@ fn backup_step(step: OperationStep, ctx: &mut OpContext<'_>) -> Result<()> {
     Ok(())
 }
 
+/// Where an interrupted backup keeps its not-yet-signed manifest, outside `snapshot/`.
+const PENDING_MANIFEST: &str = ".backup-manifest.pending.json";
+
+fn persist_pending_manifest(ctx: &OpContext<'_>) -> Result<()> {
+    let (Some(target), Some(manifest)) = (&ctx.backup_dir, &ctx.manifest) else {
+        bail!("backup target or manifest was not prepared");
+    };
+    fs::write(
+        target.join(PENDING_MANIFEST),
+        serde_json::to_vec_pretty(manifest)?,
+    )?;
+    Ok(())
+}
+
 fn print_backup_usage() {
     println!(
         "asemanctl backup - snapshot node storage into a signed backup\n\n\
@@ -895,7 +1027,8 @@ fn print_backup_usage() {
          --data-dir PATH     node data directory (default <repo>/caspar-data/node1)\n  \
          --state-dir PATH    state/journal directory (default $XDG_STATE_HOME/asemanctl)\n\n\
          Writes <out>/snapshot/* and a signed <out>/backup-manifest.json. PostgreSQL\n\
-         core storage is backed up through the capsule export, not a file snapshot."
+         core storage adds snapshot/postgres/: cluster roles (no passwords), the core\n\
+         database, and every live creature guest database, each a consistent dump."
     );
 }
 
@@ -903,7 +1036,7 @@ fn print_backup_usage() {
 
 /// `asemanctl restore` — restore a node from a backup directory or manifest.
 pub fn run_restore(args: &[String]) -> Result<()> {
-    if run::has_flag(args, "help") {
+    if args::has_flag(args, "help") {
         print_restore_usage();
         return Ok(());
     }
@@ -913,50 +1046,53 @@ pub fn run_restore(args: &[String]) -> Result<()> {
 fn restore_step(step: OperationStep, ctx: &mut OpContext<'_>) -> Result<()> {
     match step {
         OperationStep::Preflight => {
-            let from = run::flag_value(ctx.args, "from")
+            let from = args::flag_value(ctx.args, "from")
                 .ok_or_else(|| anyhow!("--from DIR|MANIFEST is required"))?;
             let from = PathBuf::from(&from);
             if !from.exists() {
                 bail!("--from path {} does not exist", from.display());
             }
-            let base = if from.is_dir() {
-                from.clone()
-            } else {
-                from.parent().map(PathBuf::from).unwrap_or_default()
-            };
-            ctx.backup_dir = Some(base);
+            ctx.backup_dir = Some(restore_base(&from));
         }
         OperationStep::VerifyManifest => {
             let base = ctx
                 .backup_dir
-                .as_ref()
+                .clone()
                 .ok_or_else(|| anyhow!("restore source was not resolved"))?;
-            let manifest_path = base.join("backup-manifest.json");
-            let text = fs::read_to_string(&manifest_path)
-                .with_context(|| format!("cannot read {}", manifest_path.display()))?;
-            let manifest: BackupManifest =
-                serde_json::from_str(&text).context("backup-manifest.json is invalid")?;
-            if manifest.version != 1 {
-                bail!("unsupported backup manifest version {}", manifest.version);
-            }
-            if let Some(signature) = &manifest.signature {
-                verify_bytes(
-                    &signature.key_id,
-                    &signature.value,
-                    &manifest.signing_bytes()?,
-                )?;
-            }
+            let manifest = load_verified_manifest(ctx, &base)?;
             ctx.manifest = Some(manifest);
         }
         OperationStep::PrepareTarget => {
-            let root = PathBuf::from(&ctx.require_config()?.storage.root_path);
-            fs::create_dir_all(&root)?;
-            let non_empty = fs::read_dir(&root)?.count() > 0;
-            if non_empty && !run::has_flag(ctx.args, "force") {
-                bail!(
-                    "{} already contains data; pass --force to restore over it",
-                    root.display()
-                );
+            let base = ctx
+                .backup_dir
+                .clone()
+                .ok_or_else(|| anyhow!("restore source was not resolved"))?;
+            let catalog =
+                postgres::read_catalog(&base.join("snapshot").join(postgres::SNAPSHOT_DIR))?;
+            let database = ctx.pg_access()?;
+            match (&catalog, &database) {
+                (Some(_), Some(access @ postgres::PgAccess::Compact(compact))) => {
+                    // Every writer stops before the catalog is replaced.
+                    compact.compose(&["stop", "node", "meter", "vmm", "nomad-backend"])?;
+                    postgres::prepare_compact_target(access, args::has_flag(ctx.args, "replace"))?;
+                }
+                (Some(catalog), Some(access)) => postgres::ensure_empty_target(access, catalog)?,
+                (Some(_), None) => bail!(
+                    "the backup holds PostgreSQL core storage but the target is not configured \
+                     for it (ASEMAN_CORE_STORAGE_PROVIDER=postgres and ASEMAN_DATABASE_URL_SECRET)"
+                ),
+                (None, _) => {}
+            }
+            if ctx.compact().is_none() {
+                let root = PathBuf::from(&ctx.require_config()?.storage.root_path);
+                fs::create_dir_all(&root)?;
+                let non_empty = fs::read_dir(&root)?.count() > 0;
+                if non_empty && !args::has_flag(ctx.args, "force") {
+                    bail!(
+                        "{} already contains data; pass --force to restore over it",
+                        root.display()
+                    );
+                }
             }
         }
         OperationStep::RestoreStores => {
@@ -964,7 +1100,7 @@ fn restore_step(step: OperationStep, ctx: &mut OpContext<'_>) -> Result<()> {
                 .backup_dir
                 .clone()
                 .ok_or_else(|| anyhow!("restore source was not resolved"))?;
-            let dirs = ctx.require_config().map(storage_dirs)?;
+            let dirs = ctx.file_stores()?;
             let snapshot = base.join("snapshot");
             if !snapshot.exists() {
                 bail!("restore source has no snapshot/ tree");
@@ -975,22 +1111,38 @@ fn restore_step(step: OperationStep, ctx: &mut OpContext<'_>) -> Result<()> {
                     copy_tree(&source, &destination)?;
                 }
             }
+            let dumps = snapshot.join(postgres::SNAPSHOT_DIR);
+            if let Some(catalog) = postgres::read_catalog(&dumps)? {
+                let access = ctx.pg_access()?.ok_or_else(|| {
+                    anyhow!("the target has no PostgreSQL core storage configured")
+                })?;
+                postgres::restore(&access, &dumps, &catalog)?;
+            }
         }
         OperationStep::ApplyCatalog => {
             let base = ctx
                 .backup_dir
                 .clone()
                 .ok_or_else(|| anyhow!("restore source was not resolved"))?;
+            // The restored deployment keeps the manifest it came from.
             fs::copy(
                 base.join("backup-manifest.json"),
-                ctx.data_dir.join("backup-manifest.json"),
+                ctx.state_dir.join("restored-backup-manifest.json"),
             )?;
         }
         OperationStep::VerifyIntegrity => {
-            let dirs = ctx.require_config().map(storage_dirs)?;
+            let dirs = ctx.file_stores()?;
+            if ctx.manifest.is_none() {
+                // Resumed after verification: verify again rather than trust memory.
+                let base = ctx
+                    .backup_dir
+                    .clone()
+                    .ok_or_else(|| anyhow!("restore source was not resolved"))?;
+                ctx.manifest = Some(load_verified_manifest(ctx, &base)?);
+            }
             let manifest = ctx
                 .manifest
-                .as_ref()
+                .clone()
                 .ok_or_else(|| anyhow!("manifest was not verified"))?;
             let snapshot = ctx
                 .backup_dir
@@ -1018,22 +1170,76 @@ fn restore_step(step: OperationStep, ctx: &mut OpContext<'_>) -> Result<()> {
                     }
                 }
             }
-        }
-        OperationStep::StartServices => {
-            if ctx.node_running() {
-                print!("(node already running); ");
-            } else if run::has_flag(ctx.args, "start") {
-                run::launch_node(&ctx.repo, &ctx.data_dir, true)?;
-            } else {
-                print!("(node stopped; start with `asemanctl run` or --start); ");
+            if let Some(catalog) = postgres::read_catalog(&snapshot.join(postgres::SNAPSHOT_DIR))? {
+                let access = ctx.pg_access()?.ok_or_else(|| {
+                    anyhow!("the target has no PostgreSQL core storage configured")
+                })?;
+                postgres::verify(&access, &catalog)?;
             }
         }
-        OperationStep::Health if !ctx.node_running() => {
-            bail!("node is not running after restore")
+        OperationStep::StartServices => {
+            if let Some(compact) = ctx.compact() {
+                compact.compose(&["up", "-d", "--wait"])?;
+            } else {
+                print!("(start the host node with its service manager); ");
+            }
+        }
+        OperationStep::Health => {
+            let healthy = ctx
+                .compact()
+                .is_some_and(|compact| compact.wait_healthy(std::time::Duration::from_secs(120)));
+            if !healthy {
+                bail!("node is not running after restore")
+            }
         }
         _ => {}
     }
     Ok(())
+}
+
+/// The backup directory a restore reads: `--from` itself, or the directory holding a
+/// named `backup-manifest.json`.
+fn restore_base(from: &Path) -> PathBuf {
+    if from.is_dir() {
+        from.to_path_buf()
+    } else {
+        from.parent().map(PathBuf::from).unwrap_or_default()
+    }
+}
+
+/// Read the manifest under `base`, require its signature by the trusted operator key,
+/// and check every artifact hash before anything touches the target.
+fn load_verified_manifest(ctx: &OpContext<'_>, base: &Path) -> Result<BackupManifest> {
+    let manifest_path = base.join("backup-manifest.json");
+    let text = fs::read_to_string(&manifest_path)
+        .with_context(|| format!("cannot read {}", manifest_path.display()))?;
+    let manifest: BackupManifest =
+        serde_json::from_str(&text).context("backup-manifest.json is invalid")?;
+    if manifest.version != 1 {
+        bail!("unsupported backup manifest version {}", manifest.version);
+    }
+    // An unsigned manifest is not a backup, and a signature only means something
+    // when it is checked against a key the operator trusts rather than the key
+    // the manifest itself names.
+    let signature = manifest
+        .signature
+        .as_ref()
+        .ok_or_else(|| anyhow!("the backup manifest is unsigned; refusing to restore"))?;
+    let trusted = trusted_public_key(ctx)?;
+    if signature.algorithm != "ed25519" || signature.key_id != trusted {
+        bail!("the backup manifest is not signed by the trusted operator key");
+    }
+    verify_bytes(&trusted, &signature.value, &manifest.signing_bytes()?)?;
+    // Every artifact is checked before the target is touched.
+    for artifact in &manifest.artifacts {
+        let path = safe_join(base, &artifact.logical_name)?;
+        let actual = hash_file(&path)
+            .with_context(|| format!("backup artifact {} is missing", artifact.logical_name))?;
+        if actual != artifact.sha256 {
+            bail!("backup artifact {} hash mismatch", artifact.logical_name);
+        }
+    }
+    Ok(manifest)
 }
 
 /// Files under `root`, relative to `root` (POSIX separators).
@@ -1056,9 +1262,10 @@ fn print_restore_usage() {
          Usage:\n  asemanctl restore --from DIR [flags]\n\n\
          Flags:\n  \
          --from DIR|FILE     backup directory (or its backup-manifest.json)\n  \
-         --force             restore over an existing data directory\n  \
+         --force             restore over an existing data directory (never a database)\n  \
          --start             start the node after a successful restore\n  \
-         --signing-key FILE  Ed25519 seed to verify the manifest signature\n  \
+         --trusted-key HEX   operator Ed25519 public key the manifest must be signed by\n  \
+         --signing-key FILE  or derive the trusted public key from this Ed25519 seed\n  \
          --repo-dir PATH     repo root containing dist/ (auto-detected)\n  \
          --data-dir PATH     node data directory (default <repo>/caspar-data/node1)\n  \
          --state-dir PATH    state/journal directory (default $XDG_STATE_HOME/asemanctl)"
@@ -1070,94 +1277,99 @@ fn print_restore_usage() {
 /// `asemanctl upgrade` — snapshot the running tree, stop the node, replace the
 /// binaries, migrate the schema, and bring the node back up.
 pub fn run_upgrade(args: &[String]) -> Result<()> {
-    if run::has_flag(args, "help") {
+    if args::has_flag(args, "help") {
         print_upgrade_usage();
         return Ok(());
     }
     drive_journal(OperationKind::Upgrade, args, upgrade_step)
 }
 
+/// The compact services an upgrade can move, with their `compact.env` image keys.
+const UPGRADE_IMAGES: [(&str, &str); 4] = [
+    ("node-image", "ASEMAN_NODE_IMAGE"),
+    ("vmm-image", "ASEMAN_VMM_IMAGE"),
+    ("meter-image", "ASEMAN_METER_IMAGE"),
+    ("backend-image", "ASEMAN_NOMAD_BACKEND_IMAGE"),
+];
+
+/// The images named by `--node-image` and friends, with their `compact.env` keys.
+fn requested_images(args: &[String]) -> Vec<(&'static str, String)> {
+    UPGRADE_IMAGES
+        .iter()
+        .filter_map(|(flag, key)| args::flag_value(args, flag).map(|image| (*key, image)))
+        .collect()
+}
+
 fn upgrade_step(step: OperationStep, ctx: &mut OpContext<'_>) -> Result<()> {
     match step {
         OperationStep::Preflight => {
-            if node_binary(&ctx.repo).is_none() {
-                bail!("no node binary in dist/bin or target/release to upgrade to");
+            Compact::require(ctx.args)?;
+            if requested_images(ctx.args).is_empty() {
+                bail!(
+                    "name at least one new image (--node-image, --vmm-image, --meter-image, --backend-image)"
+                );
             }
         }
         OperationStep::VerifyArtifacts => {
-            let install_dir = run::flag_value(ctx.args, "install-dir")
-                .map(PathBuf::from)
-                .unwrap_or_else(|| ctx.repo.join("dist/bin"));
-            fs::create_dir_all(&install_dir)?;
-            let binary = node_binary(&ctx.repo).ok_or_else(|| anyhow!("no node binary"))?;
-            let digest = hash_file(&binary)?;
-            print!("({} sha256 {digest}); ", binary.display());
-            ctx.backup_dir = Some(install_dir);
+            let unsigned = args::has_flag(ctx.args, "allow-unsigned-local");
+            for (_, image) in requested_images(ctx.args) {
+                let pinned = image.rsplit_once("@sha256:").is_some_and(|(_, digest)| {
+                    digest.len() == 64 && digest.bytes().all(|byte| byte.is_ascii_hexdigit())
+                });
+                if !pinned && !unsigned {
+                    bail!(
+                        "{image} is not digest-pinned; use a release digest or --allow-unsigned-local"
+                    );
+                }
+                let present = Command::new("docker")
+                    .args(["image", "inspect", &image])
+                    .stdout(Stdio::null())
+                    .stderr(Stdio::null())
+                    .status()
+                    .is_ok_and(|status| status.success());
+                if !present {
+                    let pulled = Command::new("docker")
+                        .args(["pull", &image])
+                        .status()
+                        .is_ok_and(|status| status.success());
+                    if !pulled {
+                        bail!("image {image} is neither present nor pullable");
+                    }
+                }
+            }
         }
         OperationStep::SnapshotStores => {
-            let dirs = ctx.require_config().map(storage_dirs)?;
+            let compact = Compact::require(ctx.args)?;
             let snapshot = ctx.state_dir.join(format!(
                 "upgrade-snapshot-{}",
                 chrono::Utc::now().timestamp()
             ));
-            for (name, path) in dirs {
-                copy_tree(&path, &snapshot.join(name))?;
-            }
+            fs::create_dir_all(&snapshot)?;
+            postgres::dump(
+                &postgres::PgAccess::Compact(compact),
+                &snapshot.join(postgres::SNAPSHOT_DIR),
+            )?;
+            print!("(database snapshot in {}); ", snapshot.display());
         }
         OperationStep::DrainServices => {
-            if ctx.node_running() {
-                run::stop_local(ctx.args)?;
-                print!("(node stopped); ");
-            } else {
-                print!("(node already stopped); ");
-            }
+            Compact::require(ctx.args)?.compose(&["stop", "node", "meter"])?;
         }
         OperationStep::ApplyUpgrade => {
-            let install_dir = ctx
-                .backup_dir
-                .clone()
-                .ok_or_else(|| anyhow!("install directory was not resolved"))?;
-            let binary = node_binary(&ctx.repo).ok_or_else(|| anyhow!("no node binary"))?;
-            if install_dir == ctx.repo.join("dist/bin") {
-                println!(
-                    "(binaries already staged in {}; nothing to copy)",
-                    install_dir.display()
-                );
-            } else {
-                fs::copy(&binary, install_dir.join("aseman-node"))?;
+            let compact = Compact::require(ctx.args)?;
+            for (key, image) in requested_images(ctx.args) {
+                compact.set_env_value(key, &image)?;
             }
         }
         OperationStep::MigrateSchema => {
-            let (provider, secret) = ctx.require_config().map(|config| {
-                (
-                    config.core_storage.provider,
-                    config.database_url_secret.clone(),
-                )
-            })?;
-            if provider == aseman_config::CoreStorageProvider::Postgres {
-                let secret = secret
-                    .ok_or_else(|| anyhow!("ASEMAN_DATABASE_URL_SECRET is not configured"))?;
-                if !Path::new(&secret).exists() {
-                    bail!("database URL secret {} is missing", secret);
-                }
-                print!(
-                    "(PostgreSQL schema migrations run on node start; secret {secret} verified); "
-                );
-            } else {
-                print!("(legacy storage has no schema migration); ");
-            }
+            print!("(schema migrations run when the node starts); ");
         }
         OperationStep::StartServices => {
-            if ctx.node_running() {
-                print!("(node already running); ");
-            } else if run::has_flag(ctx.args, "start") {
-                run::launch_node(&ctx.repo, &ctx.data_dir, true)?;
-            } else {
-                print!("(node stopped; start with `asemanctl run` or --start); ");
-            }
+            Compact::require(ctx.args)?.compose(&["up", "-d", "--wait"])?;
         }
-        OperationStep::Health if !ctx.node_running() => {
-            bail!("node is not running after upgrade")
+        OperationStep::Health
+            if !Compact::require(ctx.args)?.wait_healthy(std::time::Duration::from_secs(120)) =>
+        {
+            bail!("the node did not become healthy after the upgrade");
         }
         _ => {}
     }
@@ -1166,14 +1378,14 @@ fn upgrade_step(step: OperationStep, ctx: &mut OpContext<'_>) -> Result<()> {
 
 fn print_upgrade_usage() {
     println!(
-        "asemanctl upgrade - snapshot, stop, replace binaries, migrate, restart\n\n\
-         Usage:\n  asemanctl upgrade [flags]\n\n\
+        "asemanctl upgrade - back up, then move the compact deployment to new images\n\n\
+         Usage:\n  asemanctl upgrade --node-image IMAGE [--vmm-image IMAGE] [--meter-image IMAGE]\n\
+         \x20                   [--backend-image IMAGE] [--allow-unsigned-local] [flags]\n\n\
          Flags:\n  \
-         --install-dir PATH  copy the new binary here (default <repo>/dist/bin, no copy)\n  \
-         --start             start the node after the upgrade\n  \
-         --repo-dir PATH     repo root containing dist/ (auto-detected)\n  \
-         --data-dir PATH     node data directory (default <repo>/caspar-data/node1)\n  \
-         --state-dir PATH    state/journal directory (default $XDG_STATE_HOME/asemanctl)"
+         --state-dir PATH    state/journal directory (default $XDG_STATE_HOME/asemanctl)\n  \
+         --config-dir PATH   compact configuration (default <state>/compact)\n\n\
+         Snapshots the databases, stops the node and meter, records the new images in\n\
+         compact.env, restarts the deployment, and waits for node health."
     );
 }
 
@@ -1182,12 +1394,15 @@ fn print_upgrade_usage() {
 /// `asemanctl support-bundle` — collect diagnostics, redact secrets against the
 /// checked contract, and package a tar.gz.
 pub fn run_support_bundle(args: &[String]) -> Result<()> {
-    if run::has_flag(args, "help") {
+    if args::has_flag(args, "help") {
         print_support_bundle_usage();
         return Ok(());
     }
     drive_journal(OperationKind::SupportBundle, args, support_bundle_step)
 }
+
+/// Records the collection directory of the support bundle being built, for resume.
+const SUPPORT_BUNDLE_CURRENT: &str = "support-bundle.current";
 
 fn support_bundle_step(step: OperationStep, ctx: &mut OpContext<'_>) -> Result<()> {
     match step {
@@ -1196,6 +1411,10 @@ fn support_bundle_step(step: OperationStep, ctx: &mut OpContext<'_>) -> Result<(
                 .state_dir
                 .join(format!("support-bundle-{}", chrono::Utc::now().timestamp()));
             fs::create_dir_all(&collection)?;
+            fs::write(
+                ctx.state_dir.join(SUPPORT_BUNDLE_CURRENT),
+                collection.to_string_lossy().as_bytes(),
+            )?;
             ctx.backup_dir = Some(collection.clone());
 
             let summary = ctx.try_config().map(|config| {
@@ -1208,8 +1427,8 @@ fn support_bundle_step(step: OperationStep, ctx: &mut OpContext<'_>) -> Result<(
             let config_error = ctx.config_error.clone();
             let mut overview = json!({
                 "asemanctl_version": env!("CARGO_PKG_VERSION"),
-                "repo": ctx.repo.display().to_string(),
-                "data_dir": ctx.data_dir.display().to_string(),
+                "target": if ctx.compact().is_some() { "compact" } else { "host" },
+                "data_dir": ctx.data_dir.as_ref().map(|dir| dir.display().to_string()),
                 "node_running": ctx.node_running(),
             });
             if let Some((node_id, provider, root)) = summary {
@@ -1226,8 +1445,14 @@ fn support_bundle_step(step: OperationStep, ctx: &mut OpContext<'_>) -> Result<(
                 serde_json::to_vec_pretty(&overview)?,
             )?;
 
-            let log = ctx.data_dir.join("node.log");
-            if log.exists() {
+            if let Some(compact) = ctx.compact() {
+                // Service state only: raw logs could carry secrets past the JSON redaction.
+                if let Ok(output) = compact.compose(&["ps", "--all", "--format", "json"]) {
+                    fs::write(collection.join("services.txt"), &output.stdout)?;
+                }
+            } else if let Some(log) = ctx.data_dir.as_ref().map(|dir| dir.join("node.log"))
+                && log.exists()
+            {
                 fs::copy(&log, collection.join("node.log"))?;
             }
             let dirs = ctx.try_config().map(storage_dirs).unwrap_or_default();
@@ -1256,7 +1481,7 @@ fn support_bundle_step(step: OperationStep, ctx: &mut OpContext<'_>) -> Result<(
                 .backup_dir
                 .as_ref()
                 .ok_or_else(|| anyhow!("diagnostics were not collected"))?;
-            let out = run::flag_value(ctx.args, "out")
+            let out = args::flag_value(ctx.args, "out")
                 .map(PathBuf::from)
                 .unwrap_or_else(|| collection.with_extension("tar.gz"));
             let status = Command::new("tar")

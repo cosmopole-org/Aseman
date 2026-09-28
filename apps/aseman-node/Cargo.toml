@@ -12,9 +12,6 @@ default-run = "aseman-node"
 name = "aseman-node"
 path = "src/runner.rs"
 
-[[bin]]
-name = "caspar-node"
-path = "src/bin/caspar-node.rs"
 
 [dependencies]
 aseman-application = { path = "../../crates/aseman-application" }
@@ -27,7 +24,7 @@ aseman-observability = { path = "../../crates/aseman-observability" }
 aseman-ports = { path = "../../crates/aseman-ports" }
 aseman-capsule = { path = "../../crates/aseman-capsule" }
 aseman-consensus-hashgraph = { path = "../../modules/consensus/hashgraph" }
-aseman-storage-legacy = { path = "../../modules/storage/rocksdb-legacy" }
+aseman-storage-rocksdb = { path = "../../modules/storage/rocksdb" }
 aseman-storage-postgres = { path = "../../modules/storage/postgres" }
 aseman-policy-native = { path = "../../modules/security/capabilities" }
 aseman-public-http = { path = "../../modules/network/http" }

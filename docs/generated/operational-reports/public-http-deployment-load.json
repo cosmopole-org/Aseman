@@ -1,0 +1,26 @@
+{
+  "scenario": "public-http-deployment-load",
+  "kind": "load",
+  "command": "python3 scripts/run_http_load.py --url $ASEMAN_LOAD_URL --session-env ASEMAN_LOAD_SESSION --requests 10000 --concurrency 64 --p95-ms 1000 --max-error-rate 0.001",
+  "started_at": "2026-09-28T07:57:05.168333+00:00",
+  "environment": {
+    "commit": "34d499704239e612dcd42fc3a47f68dcbdcdc4a5+dirty",
+    "host": "srv8666213564",
+    "platform": "Linux-7.0.0-31-generic-x86_64-with-glibc2.43",
+    "required_env_present": [],
+    "required_env_missing": [
+      "ASEMAN_LOAD_URL",
+      "ASEMAN_LOAD_SESSION"
+    ]
+  },
+  "thresholds": {
+    "requests": 10000,
+    "concurrency": 64,
+    "p95_millis": 1000,
+    "maximum_error_rate": 0.001
+  },
+  "duration_seconds": 0,
+  "measurements": {},
+  "passed": null,
+  "skipped": "required environment not set: ASEMAN_LOAD_URL, ASEMAN_LOAD_SESSION"
+}

@@ -49,7 +49,7 @@ crates/               reusable in-process Rust libraries
   aseman-guest-sdk
 
 modules/              independently deployable provider packages
-  storage/{postgres,rocksdb-legacy}
+  storage/{postgres,rocksdb}
   network/{http,legacy}
   federation/http
   realtime/{durable,memory}

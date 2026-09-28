@@ -1,0 +1,191 @@
+name: Release
+
+# Builds every Aseman binary for amd64 and arm64, scans, attests, and publishes a
+# GitHub Release with deterministic archives, SPDX SBOMs, checksums, and the installer.
+# Nothing is written back to the source tree. Third-party runtime libraries (WasmEdge,
+# Firecracker) are not bundled: scripts/install.sh downloads them at install time and
+# verifies them against contracts/release/runtime-dependencies.json.
+#
+# A pushed tag vX.Y.Z builds and publishes. A manual run builds and uploads workflow
+# artifacts only, as a dry run.
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: aseman-release-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  CARGO_TERM_COLOR: always
+  CARGO_INCREMENTAL: '0'
+
+jobs:
+  build:
+    name: Build ${{ matrix.arch }}
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 120
+    permissions:
+      contents: read
+      id-token: write
+      attestations: write
+      checks: write
+    strategy:
+      fail-fast: true
+      matrix:
+        include:
+          - arch: amd64
+            runner: ubuntu-24.04
+            wasmedge_url: https://github.com/WasmEdge/WasmEdge/releases/download/0.17.1/WasmEdge-0.17.1-manylinux_2_28_x86_64.tar.gz
+            wasmedge_sha256: 27a1abec072ddf45b40e2e81e33c1e5fe9b241f31fd1bbf0182f05097489a07a
+          - arch: arm64
+            runner: ubuntu-24.04-arm
+            wasmedge_url: https://github.com/WasmEdge/WasmEdge/releases/download/0.17.1/WasmEdge-0.17.1-manylinux_2_28_aarch64.tar.gz
+            wasmedge_sha256: 6d7762429083e787ccbddf629868bb59de4325ccdcc31d9f7bd240adcdd9fe9d
+
+    steps:
+      - name: Check out the source commit
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+
+      - name: Enforce the release, license, and runtime-pin policy
+        run: python3 scripts/check_release_policy.py --check
+
+      - name: Install build prerequisites and the pinned WasmEdge SDK
+        env:
+          WASMEDGE_URL: ${{ matrix.wasmedge_url }}
+          WASMEDGE_SHA256: ${{ matrix.wasmedge_sha256 }}
+        run: |
+          set -euo pipefail
+          sudo apt-get update -y
+          sudo apt-get install -y --no-install-recommends clang libclang-dev cmake pkg-config protobuf-compiler
+          curl -fsSL --retry 3 -o "$RUNNER_TEMP/wasmedge.tgz" "$WASMEDGE_URL"
+          echo "$WASMEDGE_SHA256  $RUNNER_TEMP/wasmedge.tgz" | sha256sum --check --strict
+          mkdir -p "$HOME/.wasmedge"
+          tar -xzf "$RUNNER_TEMP/wasmedge.tgz" -C "$HOME/.wasmedge" --strip-components=1
+          echo "WASMEDGE_DIR=$HOME/.wasmedge" >> "$GITHUB_ENV"
+          echo "LD_LIBRARY_PATH=$HOME/.wasmedge/lib64" >> "$GITHUB_ENV"
+          rustup show active-toolchain
+
+      - name: Restore the Cargo cache
+        uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
+        with:
+          key: release-${{ matrix.arch }}
+          cache-on-failure: true
+
+      - name: Audit Cargo.lock against RustSec
+        if: matrix.arch == 'amd64'
+        uses: rustsec/audit-check@69366f33c96575abad1ee0dba8212993eecbe998 # v2.0.0
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build every release binary and stage the archive tree
+        run: scripts/stage-release.sh "$RUNNER_TEMP/stage"
+
+      - name: Scan the staged files for high and critical vulnerabilities
+        uses: anchore/scan-action@e1165082ffb1fe366ebaf02d8526e7c4989ea9d2 # v7.4.0
+        with:
+          path: ${{ runner.temp }}/stage
+          fail-build: true
+          severity-cutoff: high
+          output-format: json
+          output-file: ${{ runner.temp }}/grype.json
+
+      - name: Create the deterministic archive, SPDX SBOM, and checksums
+        env:
+          ARCH: ${{ matrix.arch }}
+          STAGE: ${{ runner.temp }}/stage
+          OUT: ${{ runner.temp }}/release
+        run: |
+          set -euo pipefail
+          mkdir -p "$OUT"
+          export SOURCE_DATE_EPOCH="$(git show -s --format=%ct "$GITHUB_SHA")"
+          version="${GITHUB_REF_NAME#v}"
+          archive="aseman-dist-${ARCH}.tgz"
+          sbom="aseman-dist-${ARCH}.spdx.json"
+          scan="aseman-dist-${ARCH}.vulnerabilities.json"
+          cp "$RUNNER_TEMP/grype.json" "$OUT/$scan"
+          tar --sort=name --mtime="@${SOURCE_DATE_EPOCH}" --owner=0 --group=0 \
+            --numeric-owner --use-compress-program='gzip -n' \
+            -cf "$OUT/$archive" -C "$STAGE" .
+          python3 scripts/generate_release_sbom.py \
+            --artifact-root "$STAGE" \
+            --output "$OUT/$sbom" \
+            --name "aseman-dist-${ARCH}" \
+            --version "$version" \
+            --namespace "https://github.com/${GITHUB_REPOSITORY}/spdx/${GITHUB_SHA}/${ARCH}"
+          (cd "$OUT" && sha256sum "$archive" "$sbom" "$scan" > "aseman-dist-${ARCH}.SHA256SUMS")
+
+      - name: Prove the installer works on the fresh archive
+        env:
+          ARCH: ${{ matrix.arch }}
+        run: |
+          set -euo pipefail
+          sudo bash scripts/install.sh --archive "$RUNNER_TEMP/release/aseman-dist-${ARCH}.tgz" \
+            --prefix "$RUNNER_TEMP/aseman" --no-link
+          env -u LD_LIBRARY_PATH ldd "$RUNNER_TEMP/aseman/bin/aseman-vmm-backend-native" | tee /dev/stderr \
+            | grep -q "$RUNNER_TEMP/aseman/bin/../lib/aseman/libwasmedge.so.0"
+          "$RUNNER_TEMP/aseman/bin/asemanctl" --help > /dev/null
+
+      - name: Attest build provenance
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4
+        with:
+          subject-path: ${{ runner.temp }}/release/aseman-dist-${{ matrix.arch }}.tgz
+
+      - name: Attest the SPDX SBOM
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4
+        with:
+          subject-path: ${{ runner.temp }}/release/aseman-dist-${{ matrix.arch }}.tgz
+          sbom-path: ${{ runner.temp }}/release/aseman-dist-${{ matrix.arch }}.spdx.json
+
+      - name: Upload the release files
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: aseman-release-${{ matrix.arch }}
+          path: ${{ runner.temp }}/release/
+          if-no-files-found: error
+          retention-days: 30
+
+  publish:
+    name: Publish the GitHub Release
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: build
+    runs-on: ubuntu-24.04
+    # The only job that may write, and it writes a Release, never the source tree.
+    permissions:
+      contents: write
+    steps:
+      - name: Check out the installer and pins
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+          sparse-checkout: |
+            scripts/install.sh
+            scripts/check_release_policy.py
+            contracts/release
+
+      - name: Download both architectures
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          pattern: aseman-release-*
+          path: ${{ runner.temp }}/release
+          merge-multiple: true
+
+      - name: Verify the bundle before publishing
+        run: python3 scripts/check_release_policy.py --bundle-only "$RUNNER_TEMP/release"
+
+      - name: Create the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          cp scripts/install.sh contracts/release/runtime-dependencies.json "$RUNNER_TEMP/release/"
+          gh release create "$TAG" --repo "$GITHUB_REPOSITORY" --verify-tag \
+            --title "Aseman $TAG" --generate-notes "$RUNNER_TEMP"/release/*

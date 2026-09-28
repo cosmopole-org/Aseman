@@ -7,6 +7,10 @@ use serde::{Deserialize, Serialize};
 use crate::models::transaction::ITrx;
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[expect(
+    dead_code,
+    reason = "RL-004: characterized legacy action surface (A008) kept until its deletion gate"
+)]
 pub struct File {
     #[serde(default)]
     pub id: String,
@@ -17,10 +21,18 @@ pub struct File {
 }
 
 impl File {
+    #[expect(
+        dead_code,
+        reason = "RL-004: characterized legacy action surface (A008) kept until its deletion gate"
+    )]
     pub fn type_() -> &'static str {
         "File"
     }
 
+    #[expect(
+        dead_code,
+        reason = "RL-004: characterized legacy action surface (A008) kept until its deletion gate"
+    )]
     pub fn push(&self, trx: &dyn ITrx) {
         let mut cols: HashMap<String, Vec<u8>> = HashMap::new();
         cols.insert("storeId".into(), self.store_id.as_bytes().to_vec());
@@ -28,6 +40,10 @@ impl File {
         trx.put_obj(Self::type_(), &self.id, cols);
     }
 
+    #[expect(
+        dead_code,
+        reason = "RL-004: characterized legacy action surface (A008) kept until its deletion gate"
+    )]
     pub fn pull(mut self, trx: &dyn ITrx) -> File {
         let m = trx.get_obj(Self::type_(), &self.id);
         if !m.is_empty() {

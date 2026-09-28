@@ -156,6 +156,32 @@ fn tcp_transport_round_trip_pools_connection() {
     let _ = trans2.close();
 }
 
+// A peer that accepts a connection and never answers must fail the RPC within the
+// transport timeout rather than park the caller forever: a parked gossip routine
+// blocks `Node::shutdown`, which a consensus handover needs to complete.
+#[test]
+fn tcp_rpc_to_a_silent_peer_times_out() {
+    let silent = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
+    let target = silent.local_addr().unwrap().to_string();
+    let held = thread::spawn(move || {
+        let (connection, _) = silent.accept().unwrap();
+        thread::sleep(Duration::from_secs(10));
+        drop(connection);
+    });
+    let trans = new_tcp("caller");
+    let started = std::time::Instant::now();
+    let result = trans.sync(&target, &SyncRequest::default());
+    assert!(result.is_err());
+    // Three attempts, each bounded by the one-second timeout, plus backoff.
+    assert!(
+        started.elapsed() < Duration::from_secs(6),
+        "{:?}",
+        started.elapsed()
+    );
+    let _ = trans.close();
+    drop(held);
+}
+
 // -- transport_test.go ------------------------------------------------------
 
 #[derive(Copy, Clone, Debug)]

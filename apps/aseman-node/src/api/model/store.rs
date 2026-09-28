@@ -57,6 +57,10 @@ impl Store {
         trx.put_obj(Self::type_(), &me.id, cols);
     }
 
+    #[expect(
+        dead_code,
+        reason = "RL-004: characterized legacy action surface (A008) kept until its deletion gate"
+    )]
     pub fn delete(&self, trx: &dyn ITrx) {
         for c in [
             "|",
@@ -116,6 +120,13 @@ impl Store {
         self
     }
 
+    #[cfg_attr(
+        not(test),
+        expect(
+            dead_code,
+            reason = "RL-004: characterized legacy action surface (A008) kept until its deletion gate"
+        )
+    )]
     pub fn list(
         trx: &dyn ITrx,
         prefix: &str,
@@ -153,6 +164,10 @@ impl Store {
         Ok(entities)
     }
 
+    #[expect(
+        dead_code,
+        reason = "RL-004: characterized legacy action surface (A008) kept until its deletion gate"
+    )]
     pub fn all(
         trx: &dyn ITrx,
         offset: i64,
@@ -178,6 +193,10 @@ impl Store {
         Ok(entities)
     }
 
+    #[expect(
+        dead_code,
+        reason = "RL-004: characterized legacy action surface (A008) kept until its deletion gate"
+    )]
     pub fn search(
         trx: &dyn ITrx,
         offset: i64,

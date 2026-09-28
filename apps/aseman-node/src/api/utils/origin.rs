@@ -2,6 +2,13 @@
 
 /// Returns the part of `id` after the last `@`, or an empty string if `id`
 /// doesn't contain one.
+#[cfg_attr(
+    not(test),
+    expect(
+        dead_code,
+        reason = "RL-004: characterized legacy action surface (A008) kept until its deletion gate"
+    )
+)]
 pub fn find_origin(id: &str) -> String {
     if id.is_empty() {
         return String::new();
@@ -14,6 +21,13 @@ pub fn find_origin(id: &str) -> String {
 
 /// Maps the synthetic `"global"` origin to an empty string, leaving every
 /// other value alone.
+#[cfg_attr(
+    not(test),
+    expect(
+        dead_code,
+        reason = "RL-004: characterized legacy action surface (A008) kept until its deletion gate"
+    )
+)]
 pub fn local_only(value: &str) -> String {
     if value == "global" {
         String::new()
@@ -23,6 +37,10 @@ pub fn local_only(value: &str) -> String {
 }
 
 /// Convenience: `local_only(find_origin(id))`.
+#[expect(
+    dead_code,
+    reason = "RL-004: characterized legacy action surface (A008) kept until its deletion gate"
+)]
 pub fn find_origin_local(id: &str) -> String {
     local_only(&find_origin(id))
 }

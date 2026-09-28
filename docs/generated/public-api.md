@@ -15,7 +15,7 @@ The legacy TCP and WebSocket transports carry the same actions and contain
 framing only.
 
 - Published operations: 76
-- Withheld (policy `never`): 1
+- Withheld (policy `never`): 0
 
 A mutating action requires an `Idempotency-Key`: a retry under the same key
 returns the first outcome instead of repeating the effect.
@@ -98,10 +98,3 @@ returns the first outcome instead of repeating the effect.
 | `POST /v1/actions/stores/history` | `store.history.read` | read | user, creature, workload |
 | `POST /v1/actions/stores/setAccess` | `store.access.write` | security | user, creature, workload |
 | `POST /v1/actions/stores/signal` | `store.signal` | write | user, creature, workload |
-
-## Withheld
-
-These surfaces exist in the legacy transports but the policy refuses them
-outright, so publishing them would be a trap for a client author.
-
-- `/creatures/login` (`identity.session.login_by_email`)

@@ -26,7 +26,8 @@ SCHEMAS = {
     "outbox": "aseman_outbox",
     "realtime": "aseman_realtime",
 }
-# ADR 0016: document fields travel in `capsule_cbor` and never receive a column.
+# ADR 0016/0034: a document field is one JSONB column named after the field; it is
+# filled in the flattened layout and left empty when capsule mode packs the envelope.
 DOCUMENT_TYPE = "document"
 SQL_TYPES = {
     "bool": "BOOLEAN",
@@ -40,7 +41,7 @@ SQL_TYPES = {
 ENVELOPE_COLUMNS = {
     "id", "schema_version", "revision", "created_at_micros", "updated_at_micros",
     "previous_integrity", "integrity_hash", "owner_type", "owner_id", "owner_name",
-    "tombstone", "capsule_cbor",
+    "tombstone", "capsule_cbor", "capsule_shape",
 }
 SAFE = re.compile(r"^[a-z][a-z0-9_]{0,62}$")
 
@@ -135,6 +136,11 @@ def validate(mapping: dict[str, object]) -> None:
         physical = set(row["field_columns"].values())
         if len(physical) != len(row["fields"]) or physical & ENVELOPE_COLUMNS:
             raise ValueError(f"physical column collision in {row['kind']}")
+        documents = set(row["document_fields"])
+        if documents & (set(row["fields"]) | physical | ENVELOPE_COLUMNS | set(row["relationships"])) or any(
+            not SAFE.fullmatch(name) for name in documents
+        ):
+            raise ValueError(f"document column collision in {row['kind']}")
         if not set(row["required_fields"]) <= set(row["fields"]) | set(row["document_fields"]):
             raise ValueError(f"undeclared required field in {row['kind']}")
         declared = set(row["fields"]) | set(row["relationships"])
@@ -180,10 +186,15 @@ def ddl(mapping: dict[str, object]) -> str:
             "  owner_id UUID",
             "  owner_name TEXT",
             "  tombstone BOOLEAN NOT NULL DEFAULT FALSE",
-            "  capsule_cbor BYTEA NOT NULL",
+            # ADR 0034: the packed envelope in capsule mode, empty in the flattened
+            # layout (the default), where `capsule_shape` keeps what columns cannot.
+            "  capsule_cbor BYTEA",
+            "  capsule_shape JSONB",
         ]
         for name, field_type in row["fields"].items():
             columns.append(f"  {quoted(row['field_columns'][name])} {SQL_TYPES[field_type]}")
+        for name in row["document_fields"]:
+            columns.append(f"  {quoted(name)} JSONB")
         for name, relationship in row["relationships"].items():
             columns.append(f"  {quoted(name)} UUID" + (" NOT NULL" if relationship["required"] else ""))
         checks = [

@@ -14,8 +14,10 @@ in [`../docs/operations/topology.md`](../docs/operations/topology.md).
 
 `images/` contains separate one-process definitions for the node, VMM, meter, and Nomad
 backend. They run as uid/gid 65532, declare a process health check, request no Docker
-socket or KVM device, and are intended to run with a read-only root. `build-dist.sh`
-publishes each canonical binary they copy. Production builds must override
+socket or KVM device, and are intended to run with a read-only root. Their build
+context is a staged release tree (`scripts/stage-release.sh OUT`, or an unpacked
+`aseman-dist-<arch>.tgz` from a GitHub Release), e.g.
+`docker build -f deploy/images/node.Dockerfile OUT`. Production builds must override
 `RUNTIME_IMAGE` with the release's digest-pinned base and attach the signed SBOM and
 provenance; a floating `latest` tag is never a release input.
 
@@ -42,3 +44,11 @@ profile because they are deployment authority, not application containers.
 Nomad is operator-provided under ADR 0002 and must not be downloaded, bundled,
 mirrored, or redistributed by these assets. The compact profile connects to the
 operator's endpoint through `nomad-backend.json` and never creates or removes Nomad.
+
+## Installing on a host
+
+`scripts/install.sh` (also attached to every GitHub Release) installs the release
+binaries into `/opt/aseman` and downloads the third-party runtime libraries they need
+— WasmEdge for the native VMM backend, and Firecracker with `--with-firecracker` —
+refusing any archive whose SHA-256 differs from `contracts/release/runtime-dependencies.json`.
+Then run `asemanctl bootstrap --profile compact`.

@@ -48,6 +48,13 @@ impl Creature {
         "Creature"
     }
 
+    #[cfg_attr(
+        not(test),
+        expect(
+            dead_code,
+            reason = "RL-004: characterized legacy action surface (A008) kept until its deletion gate"
+        )
+    )]
     pub fn push(&self, trx: &dyn ITrx) {
         let bal = (self.balance as u64).to_le_bytes().to_vec();
         let mut cols: HashMap<String, Vec<u8>> = HashMap::new();
@@ -135,11 +142,19 @@ impl Creature {
         trx.del_json(&format!("CreatMeta::{}", self.id), "metadata");
     }
 
+    #[expect(
+        dead_code,
+        reason = "RL-004: characterized legacy action surface (A008) kept until its deletion gate"
+    )]
     pub fn all(trx: &dyn ITrx, offset: i64, count: i64) -> Result<Vec<Creature>> {
         Self::all_query(trx, offset, count, &HashMap::new())
     }
 
     /// List creatures referenced by a link prefix (mirrors the old User::list).
+    #[expect(
+        dead_code,
+        reason = "RL-004: characterized legacy action surface (A008) kept until its deletion gate"
+    )]
     pub fn list(
         trx: &dyn ITrx,
         prefix: &str,
@@ -171,6 +186,10 @@ impl Creature {
     }
 
     /// `all` with an object-column filter (e.g. `{"type": "machine"}`).
+    #[expect(
+        dead_code,
+        reason = "RL-004: characterized legacy action surface (A008) kept until its deletion gate"
+    )]
     pub fn all_query(
         trx: &dyn ITrx,
         offset: i64,

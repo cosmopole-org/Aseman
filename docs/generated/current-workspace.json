@@ -39,8 +39,8 @@
       "Cargo.lock",
       "apps/aseman-client/package-lock.json"
     ],
-    "tracked_dist_file_count": 29,
-    "tracked_file_count": 1070,
+    "tracked_dist_file_count": 0,
+    "tracked_file_count": 1055,
     "tracked_files_by_top_level": {
       ".cargo": 1,
       ".gitattributes": 1,
@@ -54,24 +54,23 @@
       "Cargo.toml": 1,
       "README.md": 1,
       "SECURITY.md": 1,
-      "apps": 216,
+      "apps": 206,
       "clippy.toml": 1,
-      "contracts": 101,
+      "contracts": 102,
       "crates": 129,
-      "deploy": 16,
-      "dist": 29,
-      "docs": 159,
-      "modules": 319,
+      "deploy": 12,
+      "docs": 172,
+      "modules": 331,
       "plan": 18,
       "rust-toolchain.toml": 1,
       "rustfmt.toml": 1,
-      "scripts": 36,
+      "scripts": 38,
       "tests": 29,
       "xtask": 3
     },
     "tracked_source_files_by_extension": {
-      ".py": 45,
-      ".rs": 565,
+      ".py": 46,
+      ".rs": 567,
       ".sh": 2,
       ".ts": 2
     }
@@ -117,11 +116,6 @@
             "kind": "bin",
             "name": "aseman-keygen",
             "path": "src/main.rs"
-          },
-          {
-            "kind": "bin",
-            "name": "caspar-keygen",
-            "path": "src/bin/caspar-keygen.rs"
           },
           {
             "kind": "lib",
@@ -276,13 +270,13 @@
             "scope": "normal"
           },
           {
-            "name": "aseman-storage-legacy",
-            "path": "modules/storage/rocksdb-legacy",
+            "name": "aseman-storage-postgres",
+            "path": "modules/storage/postgres",
             "scope": "normal"
           },
           {
-            "name": "aseman-storage-postgres",
-            "path": "modules/storage/postgres",
+            "name": "aseman-storage-rocksdb",
+            "path": "modules/storage/rocksdb",
             "scope": "normal"
           },
           {
@@ -526,11 +520,6 @@
             "kind": "bin",
             "name": "aseman-node",
             "path": "src/runner.rs"
-          },
-          {
-            "kind": "bin",
-            "name": "caspar-node",
-            "path": "src/bin/caspar-node.rs"
           },
           {
             "kind": "lib",
@@ -878,11 +867,6 @@
             "path": "src/main.rs"
           },
           {
-            "kind": "bin",
-            "name": "casparctl",
-            "path": "src/bin/casparctl.rs"
-          },
-          {
             "kind": "lib",
             "name": "asemanctl",
             "path": "src/lib.rs"
@@ -895,8 +879,8 @@
       {
         "dependencies": [
           {
-            "name": "aseman-storage-legacy",
-            "path": "modules/storage/rocksdb-legacy",
+            "name": "aseman-storage-rocksdb",
+            "path": "modules/storage/rocksdb",
             "scope": "normal"
           }
         ],
@@ -1364,11 +1348,6 @@
             "scope": "normal"
           },
           {
-            "name": "aseman-storage-legacy",
-            "path": "modules/storage/rocksdb-legacy",
-            "scope": "normal"
-          },
-          {
             "name": "base64",
             "scope": "normal"
           },
@@ -1416,10 +1395,6 @@
             "version": "0.10.1"
           },
           {
-            "name": "rocksdb",
-            "scope": "normal"
-          },
-          {
             "name": "serde",
             "scope": "normal"
           },
@@ -1447,6 +1422,19 @@
             ],
             "name": "uuid",
             "scope": "normal"
+          },
+          {
+            "name": "aseman-application",
+            "path": "crates/aseman-application",
+            "scope": "dev"
+          },
+          {
+            "features": [
+              "conformance"
+            ],
+            "name": "aseman-ports",
+            "path": "crates/aseman-ports",
+            "scope": "dev"
           }
         ],
         "description": "The extracted legacy Hashgraph/Babble consensus engine for Aseman.",
@@ -2974,6 +2962,15 @@
       {
         "dependencies": [
           {
+            "name": "anyhow",
+            "scope": "normal"
+          },
+          {
+            "name": "aseman-capsule",
+            "path": "crates/aseman-capsule",
+            "scope": "normal"
+          },
+          {
             "name": "aseman-config",
             "path": "crates/aseman-config",
             "scope": "normal"
@@ -2989,6 +2986,11 @@
             "scope": "normal"
           },
           {
+            "name": "aseman-ports",
+            "path": "crates/aseman-ports",
+            "scope": "normal"
+          },
+          {
             "name": "base64",
             "scope": "normal"
           },
@@ -2996,6 +2998,25 @@
             "name": "chacha20poly1305",
             "scope": "normal",
             "version": "0.10.1"
+          },
+          {
+            "default-features": false,
+            "features": [
+              "clock",
+              "std"
+            ],
+            "name": "chrono",
+            "scope": "normal",
+            "version": "0.4"
+          },
+          {
+            "features": [
+              "serde",
+              "storage-v2"
+            ],
+            "name": "openraft",
+            "scope": "normal",
+            "version": "0.9"
           },
           {
             "name": "postgres",
@@ -3008,6 +3029,17 @@
           {
             "name": "r2d2_postgres",
             "scope": "normal"
+          },
+          {
+            "default-features": false,
+            "features": [
+              "blocking",
+              "json",
+              "rustls-tls"
+            ],
+            "name": "reqwest",
+            "scope": "normal",
+            "version": "0.12"
           },
           {
             "name": "rocksdb",
@@ -3032,19 +3064,53 @@
           {
             "name": "thiserror",
             "scope": "normal"
+          },
+          {
+            "features": [
+              "io-util",
+              "macros",
+              "net",
+              "rt",
+              "rt-multi-thread",
+              "sync",
+              "time"
+            ],
+            "name": "tokio",
+            "scope": "normal",
+            "version": "1"
+          },
+          {
+            "features": [
+              "v4"
+            ],
+            "name": "uuid",
+            "scope": "normal"
+          },
+          {
+            "features": [
+              "conformance"
+            ],
+            "name": "aseman-ports",
+            "path": "crates/aseman-ports",
+            "scope": "dev"
+          },
+          {
+            "name": "aseman-storage-conformance",
+            "path": "tests/contracts/storage",
+            "scope": "dev"
           }
         ],
-        "description": "Read-only legacy storage source and canonical capsule migration bridge.",
+        "description": "The RocksDB storage provider (ADR 0033): embedded key/value storage, its OpenRaft cluster mode, and the importers for Caspar-era data.",
         "edition": {
           "workspace": true
         },
         "features": {},
-        "manifest": "modules/storage/rocksdb-legacy/Cargo.toml",
-        "name": "aseman-storage-legacy",
+        "manifest": "modules/storage/rocksdb/Cargo.toml",
+        "name": "aseman-storage-rocksdb",
         "targets": [
           {
             "kind": "lib",
-            "name": "aseman-storage-legacy",
+            "name": "aseman-storage-rocksdb",
             "path": "src/lib.rs"
           }
         ],
@@ -3800,13 +3866,13 @@
             "scope": "dev"
           },
           {
-            "name": "aseman-storage-legacy",
-            "path": "modules/storage/rocksdb-legacy",
+            "name": "aseman-storage-postgres",
+            "path": "modules/storage/postgres",
             "scope": "dev"
           },
           {
-            "name": "aseman-storage-postgres",
-            "path": "modules/storage/postgres",
+            "name": "aseman-storage-rocksdb",
+            "path": "modules/storage/rocksdb",
             "scope": "dev"
           },
           {
@@ -3917,7 +3983,7 @@
           "modules/runtime/wasm",
           "modules/security/capabilities",
           "modules/storage/postgres",
-          "modules/storage/rocksdb-legacy",
+          "modules/storage/rocksdb",
           "modules/vmm-backend/native-legacy",
           "modules/vmm-backend/native-legacy/crates/caspar-vm-plugins",
           "modules/vmm-backend/nomad",

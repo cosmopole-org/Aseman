@@ -39,8 +39,8 @@ struct InmemStoreInner {
 /// carrying its own maps). Caching `cache_size` (10 000 by default) of them
 /// pinned hundreds of MB to GBs of ever-growing snapshots in RAM — the bulk of
 /// the node's daylong memory climb (heaptrack traced it to `set_frame`'s frame
-/// clone). Frames are persisted to RocksDB and re-read on a miss (see
-/// `RocksDbStore::get_frame`), so only a small hot set needs to stay resident:
+/// clone). Frames are persisted to the consensus log and re-read on a miss (see
+/// `PersistentStore::get_frame`), so only a small hot set needs to stay resident:
 /// the last 25 consensus rounds' frames by default, env-tunable through
 /// `CASPAR_BABBLE_FRAME_CACHE`.
 const DEFAULT_MAX_FRAME_CACHE: usize = 25;

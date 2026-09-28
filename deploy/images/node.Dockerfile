@@ -1,15 +1,14 @@
-ARG RUNTIME_IMAGE=debian:12-slim
+# glibc 2.41: at least the release builders (ubuntu-24.04, glibc 2.39); aseman-node needs GLIBC_2.39.
+ARG RUNTIME_IMAGE=debian:13-slim
 FROM ${RUNTIME_IMAGE}
 
 RUN apt-get update \
     && apt-get install --yes --no-install-recommends ca-certificates libgcc-s1 libstdc++6 \
     && rm -rf /var/lib/apt/lists/* \
     && install -d -o 65532 -g 65532 /var/lib/aseman
-COPY --chmod=0555 dist/bin/aseman-node /usr/local/bin/aseman-node
-COPY --chmod=0555 dist/bin/aseman-keygen /usr/local/bin/aseman-keygen
-COPY dist/lib/wasmedge/ /usr/local/lib/
+COPY --chmod=0555 bin/aseman-node /usr/local/bin/aseman-node
+COPY --chmod=0555 bin/aseman-keygen /usr/local/bin/aseman-keygen
 
-ENV LD_LIBRARY_PATH=/usr/local/lib
 USER 65532:65532
 WORKDIR /var/lib/aseman
 VOLUME ["/var/lib/aseman"]

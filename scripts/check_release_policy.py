@@ -13,7 +13,9 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 POLICY_PATH = ROOT / "contracts/release/policy-v1.json"
-WORKFLOW_PATH = ROOT / ".github/workflows/build-node.yml"
+WORKFLOW_PATH = ROOT / ".github/workflows/release.yml"
+RUNTIME_PATH = ROOT / "contracts/release/runtime-dependencies.json"
+INSTALLER_PATH = ROOT / "scripts/install.sh"
 SHA = re.compile(r"^[0-9a-f]{40}$")
 
 
@@ -58,7 +60,7 @@ def check_repository(policy: dict) -> list[str]:
     artifacts = policy.get("artifacts", {})
     expected = {
         "aseman-node", "aseman-keygen", "asemanctl", "aseman-vmm", "aseman-meter",
-        "aseman-vmm-agent", "aseman-vmm-backend-nomad",
+        "aseman-vmm-agent", "aseman-vmm-backend-nomad", "aseman-vmm-backend-native",
     }
     if set(artifacts.get("required_binaries", [])) != expected:
         problems.append("canonical release binary set drifted")
@@ -74,9 +76,33 @@ def check_repository(policy: dict) -> list[str]:
         problems.append("provenance must bind SHA256 subjects")
 
     workflow = WORKFLOW_PATH.read_text(encoding="utf-8")
-    for forbidden in ("git add dist", "git push", "Commit & push", "contents: write"):
+    for forbidden in ("git add", "git push", "git commit", "dist/"):
         if forbidden in workflow:
-            problems.append(f"release workflow still contains forbidden source-tree publication: {forbidden}")
+            problems.append(f"release workflow writes the source tree or tracked dist/: {forbidden}")
+    # Only the publish job may write, and it writes a GitHub Release.
+    publish = workflow.split("\n  publish:", 1)
+    if workflow.count("contents: write") != 1 or len(publish) != 2 or "contents: write" not in publish[1]:
+        problems.append("contents: write must appear once, in the publish job only")
+    tracked = subprocess.run(
+        ["git", "ls-files", "dist"], cwd=ROOT, check=True, stdout=subprocess.PIPE, text=True
+    ).stdout.strip()
+    if tracked:
+        problems.append("dist/ is tracked; release binaries are published, never committed")
+    installer = INSTALLER_PATH.read_text(encoding="utf-8")
+    stage = (ROOT / "scripts/stage-release.sh").read_text(encoding="utf-8")
+    runtime = load_json(RUNTIME_PATH)
+    for name, dependency in runtime.get("dependencies", {}).items():
+        for arch, row in dependency.get("archives", {}).items():
+            if not re.fullmatch(r"[0-9a-f]{64}", row.get("sha256", "")):
+                problems.append(f"{name}/{arch} has no SHA-256 pin")
+            for label, text in (("scripts/install.sh", installer), ("the release workflow", workflow)):
+                if name == "firecracker" and label == "the release workflow":
+                    continue
+                if row["url"] not in text or row["sha256"] not in text:
+                    problems.append(f"{label} does not carry the {name}/{arch} pin")
+    for binary in artifacts.get("required_binaries", []):
+        if binary not in stage or binary not in installer:
+            problems.append(f"{binary} is not staged by stage-release.sh and installed by install.sh")
     for permission in policy.get("ci", {}).get("required_permissions", []):
         if permission not in workflow:
             problems.append(f"release workflow omits permission {permission}")
@@ -89,8 +115,8 @@ def check_repository(policy: dict) -> list[str]:
     for required in ("fail-build: true", "severity-cutoff: high"):
         if required not in workflow:
             problems.append(f"artifact vulnerability scan omits {required}")
-    if "--dist-dir" not in workflow:
-        problems.append("release workflow must build outside tracked dist/")
+    if "scripts/stage-release.sh" not in workflow or "cargo build --release --locked" not in stage:
+        problems.append("the workflow must build through the locked scripts/stage-release.sh")
     uses = re.findall(r"^\s*uses:\s*[^@\s]+@([^\s#]+)", workflow, re.MULTILINE)
     if not uses or any(not SHA.fullmatch(revision) for revision in uses):
         problems.append("every release workflow action must be pinned to a full commit SHA")
@@ -161,8 +187,17 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--check", action="store_true")
     parser.add_argument("--bundle", type=Path)
+    parser.add_argument(
+        "--bundle-only", type=Path, help="verify a release bundle without the source checks"
+    )
     args = parser.parse_args()
     policy = load_json(POLICY_PATH)
+    if args.bundle_only is not None:
+        problems = check_bundle(policy, args.bundle_only)
+        for problem in problems:
+            print(f"release policy: {problem}", file=sys.stderr)
+        print("release bundle holds" if not problems else "release bundle is invalid")
+        return 1 if problems else 0
     problems = check_repository(policy)
     if args.bundle is not None:
         problems.extend(check_bundle(policy, args.bundle))

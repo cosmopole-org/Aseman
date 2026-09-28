@@ -130,7 +130,7 @@ def shell_actions() -> list[dict[str, str]]:
 def static_http_routes() -> list[dict[str, str]]:
     rows: list[dict[str, str]] = []
     sources = {
-        "apps/aseman-node/src/adapters/cluster/server.rs": "cluster-admin-and-raft",
+        "modules/storage/rocksdb/src/cluster/server.rs": "cluster-admin-and-raft",
         "apps/aseman-node/src/api/storage_http.rs": "public-storage-http",
     }
     pair = re.compile(r'\(\s*"(GET|POST|PUT|DELETE|HEAD|PATCH)"\s*,\s*"([^\"]+)"\s*\)')
@@ -251,7 +251,11 @@ def route_inventory() -> dict[str, Any]:
 
 
 def sample_env() -> dict[str, str]:
+    # The combined legacy image and its sample environment were retired with the
+    # ADR-0004 window; their declarations are no longer an inventory input.
     values: dict[str, str] = {}
+    if not (ROOT / "deploy/legacy/sample.env").exists():
+        return values
     for line in text("deploy/legacy/sample.env").splitlines():
         found = re.match(r"^([A-Z][A-Z0-9_]*)=(.*)$", line.strip())
         if found:
@@ -309,7 +313,11 @@ def configuration_inventory() -> dict[str, Any]:
             {"kind": "sample-declaration", "source": location("deploy/legacy/sample.env", sample_text, offset)}
         )
 
-    dockerfile = text("deploy/legacy/node.Dockerfile")
+    dockerfile = (
+        text("deploy/legacy/node.Dockerfile")
+        if (ROOT / "deploy/legacy/node.Dockerfile").exists()
+        else ""
+    )
     for found in re.finditer(r'^(ENV|ARG)\s+([A-Z][A-Z0-9_]*)', dockerfile, re.M):
         occurrences[found.group(2)].append(
             {"kind": f"docker-{found.group(1).lower()}", "source": location("deploy/legacy/node.Dockerfile", dockerfile, found.start())}

@@ -47,12 +47,21 @@ journal under the state directory (`ASEMAN_CTL_STATE_DIR`, else
 - `asemanctl backup --out DIR --signing-key FILE` — preflight (target must be empty),
   quiesce writes (refused while the node is running unless `--allow-running`), snapshot
   the storage directories, capture the catalog, hash every artifact, sign the manifest
-  (Ed25519 seed; also `ASEMAN_OPERATOR_SIGNING_KEY`), resume writes, and verify. Core
-  storage on PostgreSQL is backed up through the A309 capsule export, not a file
-  snapshot; the `SnapshotStores` step refuses that case.
-- `asemanctl restore --from DIR --signing-key FILE [--force] [--start]` — verify the
-  manifest signature and every artifact hash, prepare an empty target, restore the
-  stores, apply the catalog, re-verify, and gate on node health after services start.
+  (Ed25519 seed; also `ASEMAN_OPERATOR_SIGNING_KEY`), resume writes, and verify. When
+  core storage is PostgreSQL, `snapshot/postgres/` adds the cluster role definitions
+  (never passwords), a custom-format dump of the core database, one dump of every live
+  creature guest database named in `aseman_core.guest_database_bindings`, and
+  `databases.json` with the row count of every core table. Every dump is a consistent
+  snapshot and is hashed and signed like any other artifact. The PostgreSQL client
+  tools must be on `PATH` at a major version no older than either server.
+- `asemanctl restore --from DIR (--trusted-key HEX | --signing-key FILE) [--force]
+  [--start]` — refuse an unsigned manifest or one not signed by the trusted operator
+  key, check every artifact hash before touching the target, prepare an empty target,
+  restore the stores, apply the catalog, re-verify, and gate on node health after
+  services start. A PostgreSQL target must be a core database without the
+  `aseman_core` schema on a cluster holding none of the backup's guest databases;
+  `--force` never applies to databases. Restore recreates roles, the core database,
+  and each guest database with its grants, then checks every core row count.
 - `asemanctl upgrade [--start]` — verify the staged binary, snapshot the current stores,
   drain (stop) the node, apply the upgrade, migrate the schema (PostgreSQL migrations
   run on node start), restart, and pass health.
@@ -60,6 +69,13 @@ journal under the state directory (`ASEMAN_CTL_STATE_DIR`, else
   redaction contract, package a tar.gz, and verify the archive. The `never_collect`
   list governs what is never read in the first place.
 
+The rehearsed drill is `cargo test -p asemanctl --test live_backup_restore` with
+`ASEMAN_TEST_POSTGRES_URL` (source) and `ASEMAN_TEST_POSTGRES_RESTORE_URL` (a separate,
+empty target cluster), recorded as the A1002 `backup-clean-restore-drill` scenario.
+
 A failed step is retried, never skipped: the journal records the failing step and a
-re-run resumes there. The `health` gate deliberately fails an upgrade or restore whose
-node has not been started, so a half-finished restart is never recorded as success.
+re-run resumes there. Resumption rebuilds what earlier steps established from the
+arguments and persisted files — the backup's pending manifest, the restore source
+(re-verified), the upgrade install directory, the support-bundle collection — so an
+interrupted process never strands its journal. The `health` gate deliberately fails
+an upgrade or restore whose node has not been started, so a half-finished restart is never recorded as success.

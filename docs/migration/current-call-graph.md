@@ -26,7 +26,7 @@ TCP / WebSocket / chain / federation packet
   -> transaction/model/service/VMM calls
 ```
 
-Registered actions: 77; distinct guard expressions: 5.
+Registered actions: 76; distinct guard expressions: 5.
 
 ## Actions
 
@@ -53,7 +53,6 @@ Registered actions: 77; distinct guard expressions: 5.
 | `/creatures/list` | `apps/aseman-node/src/api/actions/creature.rs::list` | `user_guard()` | — | — | — |
 | `/creatures/listPayouts` | `apps/aseman-node/src/api/actions/creature/finance.rs::list_payouts` | `finance_guard()` | `get_by_prefix` | — | — |
 | `/creatures/lockToken` | `apps/aseman-node/src/api/actions/creature.rs::lock_token` | `user_guard()` | `put_json` | — | — |
-| `/creatures/login` | `apps/aseman-node/src/api/actions/creature.rs::login` | `anon_guard()` | `del_key`, `get_index`, `get_link`, `put_link` | — | — |
 | `/creatures/meta` | `apps/aseman-node/src/api/actions/creature.rs::meta` | `user_guard()` | — | — | — |
 | `/creatures/mint` | `apps/aseman-node/src/api/actions/creature.rs::mint` | `user_guard()` | `get_link`, `put_link` | — | — |
 | `/creatures/openPool` | `apps/aseman-node/src/api/actions/creature/finance.rs::open_pool` | `finance_guard()` | `get_link`, `put_link` | — | — |
@@ -101,7 +100,7 @@ Registered actions: 77; distinct guard expressions: 5.
 | `/programs/deploy` | `apps/aseman-node/src/api/actions/program.rs::deploy` | `user_guard()` | `put_link` | `storage`, `workloads` | — |
 | `/programs/downloadEntity` | `apps/aseman-node/src/api/actions/program.rs::download_entity` | `user_guard()` | — | `storage` | — |
 | `/programs/list` | `apps/aseman-node/src/api/actions/program.rs::list_programs` | `user_guard()` | — | — | — |
-| `/programs/runEntity` | `apps/aseman-node/src/api/actions/program.rs::run_program_entity` | `user_guard()` | `get_link`, `put_json`, `put_link` | — | — |
+| `/programs/runEntity` | `apps/aseman-node/src/api/actions/program.rs::run_program_entity` | `user_guard()` | `put_json`, `put_link` | — | — |
 | `/programs/stopEntity` | `apps/aseman-node/src/api/actions/program.rs::stop_program_entity` | `user_guard()` | `del_json`, `del_key` | — | — |
 | `/programs/update` | `apps/aseman-node/src/api/actions/program.rs::update_program` | `user_guard()` | — | — | — |
 | `/storage/upload` | `apps/aseman-node/src/api/actions/creature.rs::storage_upload` | `user_guard()` | — | `storage` | — |
