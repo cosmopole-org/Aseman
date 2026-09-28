@@ -3102,56 +3102,56 @@
       "database": "separate Hashgraph RocksDB",
       "family": "repertoire",
       "physical_pattern": "rep_{public_key}",
-      "source": "modules/consensus/hashgraph/src/hashgraph/rocks_store.rs:35",
+      "source": "modules/consensus/hashgraph/src/hashgraph/persistent_store.rs:35",
       "value_shape": "Peer marshal bytes"
     },
     {
       "database": "separate Hashgraph RocksDB",
       "family": "peer-set",
       "physical_pattern": "peerset_{round:09}",
-      "source": "modules/consensus/hashgraph/src/hashgraph/rocks_store.rs:35",
+      "source": "modules/consensus/hashgraph/src/hashgraph/persistent_store.rs:35",
       "value_shape": "PeerSet marshal bytes"
     },
     {
       "database": "separate Hashgraph RocksDB",
       "family": "topological-event",
       "physical_pattern": "topo_{index:09}",
-      "source": "modules/consensus/hashgraph/src/hashgraph/rocks_store.rs:35",
+      "source": "modules/consensus/hashgraph/src/hashgraph/persistent_store.rs:35",
       "value_shape": "Event marshal bytes"
     },
     {
       "database": "separate Hashgraph RocksDB",
       "family": "participant-event",
       "physical_pattern": "{participant}__event_{index:09}",
-      "source": "modules/consensus/hashgraph/src/hashgraph/rocks_store.rs:35",
+      "source": "modules/consensus/hashgraph/src/hashgraph/persistent_store.rs:35",
       "value_shape": "Event marshal bytes"
     },
     {
       "database": "separate Hashgraph RocksDB",
       "family": "participant-root",
       "physical_pattern": "{participant}_root",
-      "source": "modules/consensus/hashgraph/src/hashgraph/rocks_store.rs:35",
+      "source": "modules/consensus/hashgraph/src/hashgraph/persistent_store.rs:35",
       "value_shape": "Root marshal bytes"
     },
     {
       "database": "separate Hashgraph RocksDB",
       "family": "round",
       "physical_pattern": "round_{index:09}",
-      "source": "modules/consensus/hashgraph/src/hashgraph/rocks_store.rs:35",
+      "source": "modules/consensus/hashgraph/src/hashgraph/persistent_store.rs:35",
       "value_shape": "RoundInfo marshal bytes"
     },
     {
       "database": "separate Hashgraph RocksDB",
       "family": "block",
       "physical_pattern": "block_{index:09}",
-      "source": "modules/consensus/hashgraph/src/hashgraph/rocks_store.rs:35",
+      "source": "modules/consensus/hashgraph/src/hashgraph/persistent_store.rs:35",
       "value_shape": "Block marshal bytes"
     },
     {
       "database": "separate Hashgraph RocksDB",
       "family": "frame",
       "physical_pattern": "frame_{index:09}",
-      "source": "modules/consensus/hashgraph/src/hashgraph/rocks_store.rs:35",
+      "source": "modules/consensus/hashgraph/src/hashgraph/persistent_store.rs:35",
       "value_shape": "Frame marshal bytes; retention applies"
     }
   ],

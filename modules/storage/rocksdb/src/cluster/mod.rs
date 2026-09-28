@@ -27,9 +27,10 @@ use openraft::{BasicNode, Raft};
 use serde_json::{Value, json};
 
 use crate::{
-    LegacyKvStore, LegacyKvWrite, LegacyMigrationError, LegacyMigrationResult, RocksDbKvStore,
+    KvExpectation, LegacyKvStore, LegacyKvWrite, LegacyMigrationError, LegacyMigrationResult,
+    RocksDbKvStore,
 };
-use command::{ClusterCommand, KvOp, TypeConfig};
+use command::{ClusterCommand, KvExpect, KvOp, TypeConfig};
 use config::{ClusterConfig, PeerConfig};
 use store::{CommandApplier, LogStore, StateMachineStore};
 
@@ -271,14 +272,63 @@ impl CommandApplier for KvApplier {
             ClusterCommand::Noop | ClusterCommand::ConfigPut { .. } => {
                 command::ClusterResponse::ok()
             }
-            ClusterCommand::KvBatch { ops, .. } => {
+            ClusterCommand::KvBatch { ops, expects, .. } => {
                 let batch: Vec<LegacyKvWrite> = ops.iter().map(KvOp::to_write).collect();
-                match self.store.write_batch(&batch) {
-                    Ok(()) => command::ClusterResponse::ok(),
+                if expects.is_empty() {
+                    return match self.store.write_batch(&batch) {
+                        Ok(()) => command::ClusterResponse::ok(),
+                        Err(e) => command::ClusterResponse::err(format!("kv batch: {e}")),
+                    };
+                }
+                let expected = match expects
+                    .iter()
+                    .map(KvExpect::to_expectation)
+                    .collect::<Option<Vec<_>>>()
+                {
+                    Some(expected) => expected,
+                    None => {
+                        return command::ClusterResponse::err("kv batch: malformed precondition");
+                    }
+                };
+                match self.store.write_batch_if(&expected, &batch) {
+                    Ok(true) => command::ClusterResponse::ok(),
+                    Ok(false) => command::ClusterResponse::err(command::PRECONDITION_FAILED),
                     Err(e) => command::ClusterResponse::err(format!("kv batch: {e}")),
                 }
             }
         }
+    }
+}
+
+impl KvExpect {
+    fn from_expectation(expectation: &KvExpectation) -> LegacyMigrationResult<Self> {
+        use base64::Engine as _;
+        Ok(Self {
+            key: String::from_utf8(expectation.key.clone()).map_err(|_| {
+                LegacyMigrationError::Storage("replicated keys must be UTF-8".to_owned())
+            })?,
+            sha256_b64: expectation
+                .digest
+                .map(|digest| base64::engine::general_purpose::STANDARD.encode(digest)),
+        })
+    }
+
+    fn to_expectation(&self) -> Option<KvExpectation> {
+        use base64::Engine as _;
+        let digest = match &self.sha256_b64 {
+            None => None,
+            Some(encoded) => Some(
+                base64::engine::general_purpose::STANDARD
+                    .decode(encoded)
+                    .ok()?
+                    .try_into()
+                    .ok()?,
+            ),
+        };
+        Some(KvExpectation {
+            key: self.key.as_bytes().to_vec(),
+            digest,
+        })
     }
 }
 
@@ -359,9 +409,41 @@ impl LegacyKvStore for ReplicatedKvStore {
             .propose_blocking(&ClusterCommand::KvBatch {
                 origin: cluster.node_id,
                 ops,
+                expects: Vec::new(),
             })
             .map_err(storage)?;
         cluster.wait_applied(index).map_err(storage)
+    }
+
+    fn write_batch_if(
+        &self,
+        expected: &[KvExpectation],
+        writes: &[LegacyKvWrite],
+    ) -> LegacyMigrationResult<bool> {
+        let Some(cluster) = &self.cluster else {
+            return self.local.write_batch_if(expected, writes);
+        };
+        // The precondition is checked by the state machine, in log order, on every
+        // replica: a write another replica committed first makes this one a no-op
+        // everywhere.
+        let ops = writes
+            .iter()
+            .map(KvOp::from_write)
+            .collect::<LegacyMigrationResult<Vec<_>>>()?;
+        let expects = expected
+            .iter()
+            .map(KvExpect::from_expectation)
+            .collect::<LegacyMigrationResult<Vec<_>>>()?;
+        let storage = |error: anyhow::Error| LegacyMigrationError::Storage(error.to_string());
+        match cluster.propose_blocking(&ClusterCommand::KvBatch {
+            origin: cluster.node_id,
+            ops,
+            expects,
+        }) {
+            Ok(index) => cluster.wait_applied(index).map(|()| true).map_err(storage),
+            Err(error) if error.to_string().contains(command::PRECONDITION_FAILED) => Ok(false),
+            Err(error) => Err(storage(error)),
+        }
     }
 }
 

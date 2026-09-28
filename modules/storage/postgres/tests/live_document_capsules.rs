@@ -1,6 +1,7 @@
 //! ADR 0016: document capsules persist through a real PostgreSQL schema without a
 //! native document column, keep their subject foreign key and uniqueness, and refuse
 //! filtering inside the document.
+use aseman_config::CapsuleLayout;
 use aseman_contracts::capsule::{
     CapsuleDigest, CapsuleEnvelope, CapsuleId, CapsuleKind, CapsuleQuery, CapsuleRelationship,
     CapsuleValue, ComparisonOperator, OwnerScope, QueryPredicate, StorageClass,
@@ -73,7 +74,7 @@ fn program_metadata(id: u8, document: CapsuleValue) -> CapsuleEnvelope {
 }
 
 #[test]
-fn live_postgres_round_trips_document_capsules_without_a_document_column() {
+fn live_postgres_round_trips_document_capsules_in_both_layouts() {
     let _serial = LIVE_DATABASE
         .lock()
         .unwrap_or_else(std::sync::PoisonError::into_inner);
@@ -83,8 +84,9 @@ fn live_postgres_round_trips_document_capsules_without_a_document_column() {
         return;
     };
     let repository = PostgresCapsuleRepository::connect(&connection_uri).unwrap();
+    repository.migrate_layout(CapsuleLayout::Flattened).unwrap();
     repository.migrate().unwrap();
-    repository.migrate().unwrap();
+    assert_eq!(repository.layout(), CapsuleLayout::Flattened);
     Client::connect(&connection_uri, NoTls)
         .unwrap()
         .batch_execute("TRUNCATE TABLE aseman_core.users CASCADE")
@@ -156,8 +158,76 @@ fn live_postgres_round_trips_document_capsules_without_a_document_column() {
         .into_iter()
         .map(|row| row.get::<_, String>(0))
         .collect::<BTreeSet<_>>();
-    assert!(!columns.contains("document"));
+    assert!(columns.contains("document") && columns.contains("capsule_shape"));
     assert!(columns.contains("content_digest") && columns.contains("program"));
+
+    // Flattened (the default): every field is a real column, nothing is packed.
+    let id = uuid::Uuid::from_bytes(metadata.id.0);
+    let stored = |client: &mut Client| {
+        let row = client
+            .query_one(
+                "SELECT capsule_cbor IS NULL, document, document_path                  FROM aseman_core.program_metadata_documents WHERE id = $1",
+                &[&id],
+            )
+            .unwrap();
+        (
+            row.get::<_, bool>(0),
+            row.get::<_, Option<serde_json::Value>>(1),
+            row.get::<_, Option<String>>(2),
+        )
+    };
+    let manifest = serde_json::json!({
+        "manifest": {"tools": ["a", null], "ratio": {"$float": "0.25"}}
+    });
+    assert_eq!(
+        stored(&mut client),
+        (true, Some(manifest.clone()), Some("metadata".to_owned()))
+    );
+
+    // Capsule mode packs every mutable row; switching back flattens it again. Reads
+    // return the exact capsule throughout.
+    repository.migrate_layout(CapsuleLayout::Capsule).unwrap();
+    assert_eq!(
+        stored(&mut client),
+        (false, None, Some("metadata".to_owned()))
+    );
+    assert_eq!(
+        PostgresCapsuleRepository::connect(&connection_uri)
+            .unwrap()
+            .layout(),
+        CapsuleLayout::Capsule
+    );
+    assert_eq!(
+        repository.get(&metadata.kind, &metadata.id).unwrap(),
+        Some(metadata.clone())
+    );
+    repository.migrate_layout(CapsuleLayout::Flattened).unwrap();
+    assert_eq!(
+        stored(&mut client),
+        (true, Some(manifest), Some("metadata".to_owned()))
+    );
+    assert_eq!(
+        repository.get(&metadata.kind, &metadata.id).unwrap(),
+        Some(metadata.clone())
+    );
+
+    // A flattened row edited outside the provider no longer matches its integrity hash.
+    client
+        .execute(
+            "UPDATE aseman_core.program_metadata_documents SET document_path = 'edited' WHERE id = $1",
+            &[&id],
+        )
+        .unwrap();
+    assert!(matches!(
+        repository.get(&metadata.kind, &metadata.id),
+        Err(PostgresStorageError::Invalid(_))
+    ));
+    client
+        .execute(
+            "UPDATE aseman_core.program_metadata_documents SET document_path = 'metadata' WHERE id = $1",
+            &[&id],
+        )
+        .unwrap();
 
     // One document per subject; the subject foreign key is enforced natively.
     assert!(matches!(

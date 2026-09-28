@@ -43,6 +43,7 @@ ENVELOPE_COLUMNS = {
     "owner_name",
     "tombstone",
     "capsule_cbor",
+    "capsule_shape",
 }
 SAFE = re.compile(r"^[a-z][a-z0-9_]{0,62}$")
 
@@ -136,8 +137,10 @@ def validate(mapping: dict[str, object]) -> None:
         for field_type in row["fields"].values():
             if field_type not in SQL_TYPES:
                 raise ValueError(f"unsupported field type: {field_type}")
-        if set(row["document_fields"]) & set(row["fields"]):
-            raise ValueError(f"document field also has a column in {row['kind']}")
+        if set(row["document_fields"]) & (set(row["fields"]) | physical | ENVELOPE_COLUMNS | set(row["relationships"])):
+            raise ValueError(f"document column collision in {row['kind']}")
+        if any(not SAFE.fullmatch(name) for name in row["document_fields"]):
+            raise ValueError(f"unsafe document field in {row['kind']}")
         if not set(row["required_fields"]) <= set(row["fields"]) | set(row["document_fields"]):
             raise ValueError(f"required field is undeclared in {row['kind']}")
         declared = set(row["fields"]) | set(row["relationships"])
@@ -181,7 +184,10 @@ def ddl(mapping: dict[str, object]) -> str:
             "  owner_id UUID",
             "  owner_name TEXT",
             "  tombstone BOOLEAN NOT NULL DEFAULT FALSE",
-            "  capsule_cbor BYTEA NOT NULL",
+            # ADR 0034: the packed envelope in capsule mode, empty in the flattened
+            # layout (the default), where `capsule_shape` keeps what columns cannot.
+            "  capsule_cbor BYTEA",
+            "  capsule_shape JSONB",
         ]
         body_checks = []
         for name, field_type in row["fields"].items():
@@ -189,6 +195,8 @@ def ddl(mapping: dict[str, object]) -> str:
                 f"  {quoted(row['field_columns'][name])} {SQL_TYPES[field_type]}"
             )
             body_checks.append(name)
+        for name in row["document_fields"]:
+            columns.append(f"  {quoted(name)} JSONB")
         for name, relationship in row["relationships"].items():
             nullable = " NOT NULL" if relationship["required"] else ""
             columns.append(f"  {quoted(name)} UUID{nullable}")
@@ -248,9 +256,11 @@ def markdown(mapping: dict[str, object]) -> str:
         "",
         "# PostgreSQL core mapping",
         "",
-        "Every core kind has its own native table in `aseman_core`. `capsule_cbor` preserves",
-        "the signed canonical envelope while typed columns, foreign keys, partial unique",
-        "indexes, and checks enforce the accepted logical schema. No guest payload table exists.",
+        "Every core kind has its own native table in `aseman_core`. By default (ADR 0034)",
+        "every field is a real column (a document field is a JSONB column) and the envelope is",
+        "rebuilt from the row; with capsule mode on, `capsule_cbor` also packs the signed",
+        "canonical envelope. Foreign keys, partial unique indexes, and checks enforce the",
+        "accepted logical schema in both layouts. No guest payload table exists.",
         "",
         "| Kind | Table | Typed fields | Relationships | Unique indexes |",
         "|---|---|---:|---:|---:|",

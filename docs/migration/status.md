@@ -109,6 +109,17 @@ ADR-0004 compatibility window gates. None of it is blocked on design.
    code also remains inside canonical packages until its named removal gates pass. Path completion is
    not treated as permission to delete them.
 
+Delivered in the third 2026-09-28 pass (ADR 0034): both storage providers offer a
+flattened layout (the default: every entity field is its own column, or its own key in
+RocksDB) and capsule mode (`ASEMAN_STORAGE_CAPSULE_MODE=on`: the signed envelope packed
+in one column or key). The layout is recorded in the database, columns are reconciled
+with the mapping on every migration, and switching rewrites rows in place. The RocksDB
+provider gained a conforming capsule store with unique indexes whose compare-and-set is
+checked by the Raft state machine in cluster mode. The Hashgraph engine no longer
+opens a database (ADR 0035): it persists through a consensus-log port that the
+selected provider implements (RocksDB or PostgreSQL), and `cargo xtask fast` forbids a
+consensus module from depending on a storage provider or driver.
+
 Delivered in the second 2026-09-28 pass (ADR 0033, ADR 0004 closed):
 storage is one selected provider module per node: `postgres` (default; one database,
 or a sharded cluster with replica reads, reference/distributed kinds, and two-phase

@@ -3,6 +3,7 @@
 //! The legacy adapters and the capsule adapters run the same suite, so a use case
 //! behaves identically before and after cutover.
 
+pub mod consensus_log;
 pub mod coordination;
 pub mod federation;
 pub mod public_action;

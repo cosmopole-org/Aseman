@@ -260,7 +260,7 @@ def questdb_tables() -> list[dict[str, Any]]:
 
 
 def hashgraph_families() -> list[dict[str, str]]:
-    path = ROOT / "modules/consensus/hashgraph/src/hashgraph/rocks_store.rs"
+    path = ROOT / "modules/consensus/hashgraph/src/hashgraph/persistent_store.rs"
     value = production_source(path)
     rows = [
         ("repertoire", "rep_{public_key}", "Peer marshal bytes"),

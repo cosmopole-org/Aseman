@@ -102,6 +102,9 @@ pub struct Blockchain {
     /// transactions are forwarded to the registered pipeline; everything else is
     /// consumed by the provider.
     consensus: Option<Arc<aseman_consensus_hashgraph::provider::HashgraphConsensusProvider>>,
+    /// Where every shard engine keeps its persistent log: the selected storage
+    /// provider's consensus-log storage (ADR 0035).
+    log_storage: Option<Arc<dyn aseman_ports::consensus_log::ConsensusLogStorage>>,
     /// Chain base-request response callbacks (chain-module-owned, RL-011).
     callbacks: Mutex<HashMap<String, Arc<crate::models::chain::ChainCallback>>>,
     /// Typed-message reply callbacks (chain-module-owned, RL-011).
@@ -120,7 +123,7 @@ impl Blockchain {
         reason = "RL-011: legacy chain surface kept until the live epoch switch"
     )]
     pub fn new(app: Arc<dyn ICore>, storage_root: &str) -> Arc<Blockchain> {
-        Self::with_consensus(app, storage_root, None)
+        Self::build(app, storage_root, None, None)
     }
 
     /// `NewChain` with the RL-011 consensus provider installed as the main
@@ -129,6 +132,16 @@ impl Blockchain {
         app: Arc<dyn ICore>,
         storage_root: &str,
         consensus: Option<Arc<aseman_consensus_hashgraph::provider::HashgraphConsensusProvider>>,
+        log_storage: Arc<dyn aseman_ports::consensus_log::ConsensusLogStorage>,
+    ) -> Arc<Blockchain> {
+        Self::build(app, storage_root, consensus, Some(log_storage))
+    }
+
+    fn build(
+        app: Arc<dyn ICore>,
+        storage_root: &str,
+        consensus: Option<Arc<aseman_consensus_hashgraph::provider::HashgraphConsensusProvider>>,
+        log_storage: Option<Arc<dyn aseman_ports::consensus_log::ConsensusLogStorage>>,
     ) -> Arc<Blockchain> {
         let storage_root = storage_root.to_string();
         let (chain_tx, chain_rx) = crossbeam_channel::unbounded::<ChainSubmission>();
@@ -140,6 +153,7 @@ impl Blockchain {
             storage_root,
             chain_tx,
             consensus,
+            log_storage,
             callbacks: Mutex::new(HashMap::new()),
             message_callbacks: Mutex::new(HashMap::new()),
             weak_self: weak.clone(),
@@ -360,11 +374,11 @@ impl Blockchain {
             .unwrap_or((1337, ""));
         let mut config = Config::new_default_config(&format!("{}:{}", ip_address, blockchain_port));
         config.bind_addr = format!("0.0.0.0:{}", blockchain_port);
-        // set_data_dir() also relocates database_dir off the default
-        // (/root/.babble) so multiple nodes on one host don't clobber each
-        // other's RocksDB.
+        // set_data_dir() also relocates database_dir (the consensus log's name) off
+        // the default (/root/.babble) so multiple nodes on one host keep separate logs.
         config.set_data_dir(&data_dir);
         config.proxy = Some(proxy.clone());
+        config.log_storage = self.log_storage.clone();
         // Load the validator key so Babble can sign events.
         if let Err(e) = load_key_for_config(&mut config) {
             eprintln!("load chain key for {}/{}: {}", wchain.id, chain_id, e);
@@ -723,6 +737,7 @@ fn self_clone(b: &Blockchain) -> Arc<Blockchain> {
         storage_root: b.storage_root.clone(),
         chain_tx: b.chain_tx.clone(),
         consensus: b.consensus.clone(),
+        log_storage: b.log_storage.clone(),
         callbacks: Mutex::new(HashMap::new()),
         message_callbacks: Mutex::new(HashMap::new()),
         weak_self: b.weak_self.clone(),

@@ -149,6 +149,131 @@ fn writes_through_any_replica_reach_every_replica_in_log_order() {
     let _ = std::fs::remove_dir_all(&root);
 }
 
+/// Three joined replicas whose seed leads.
+fn joined_cluster(root: &Path) -> [Replica; 3] {
+    let seed = replica(root, 1, true);
+    let seed_cluster = seed.store.cluster().unwrap().clone();
+    eventually("the seed to lead", || {
+        seed_cluster.raft().metrics().borrow().current_leader == Some(1)
+    });
+    let second = replica(root, 2, false);
+    let third = replica(root, 3, false);
+    for joining in [&second, &third] {
+        let id = joining.store.cluster().unwrap().node_id;
+        admin_post(
+            &seed.addr,
+            "/cluster/add-peer",
+            serde_json::json!({"id": id, "addr": joining.addr, "voter": true}),
+        );
+    }
+    let replicas = [seed, second, third];
+    eventually("every replica to know the leader", || {
+        replicas.iter().all(|replica| {
+            replica
+                .store
+                .cluster()
+                .unwrap()
+                .raft()
+                .metrics()
+                .borrow()
+                .current_leader
+                == Some(1)
+        })
+    });
+    replicas
+}
+
+#[test]
+fn capsules_replicate_and_compare_and_set_holds_across_replicas() {
+    use crate::capsule_store::RocksDbCapsuleStore;
+    use aseman_capsule::{CapsuleStore, CapsuleStoreError};
+    use aseman_contracts::capsule::{
+        CapsuleDigest, CapsuleEnvelope, CapsuleId, CapsuleKind, CapsuleValue, DIGEST_ALGORITHM,
+        ENCODING_VERSION, OwnerScope, StorageClass,
+    };
+
+    let root = std::env::temp_dir().join(format!("aseman-rocksdb-capsules-{}", uuid_like()));
+    let [seed, second, third] = joined_cluster(&root);
+    let locals = [
+        seed.local.clone(),
+        second.local.clone(),
+        third.local.clone(),
+    ];
+    let stores = [seed, second, third].map(|replica| {
+        let kv: Arc<dyn LegacyKvStore> = Arc::new(replica.store);
+        RocksDbCapsuleStore::open(kv, true).unwrap()
+    });
+    let user = |revision: u64, status: &str, previous: Option<&CapsuleEnvelope>| {
+        CapsuleEnvelope {
+            encoding_version: ENCODING_VERSION,
+            id: CapsuleId([4; 16]),
+            kind: CapsuleKind("core.user".to_owned()),
+            storage_class: StorageClass::Core,
+            owner_scope: OwnerScope::Global,
+            schema_version: 1,
+            revision,
+            created_at_micros: 1,
+            updated_at_micros: i64::try_from(revision).unwrap(),
+            previous_integrity: previous.map(|previous| previous.integrity_hash.clone()),
+            integrity_hash: CapsuleDigest {
+                algorithm: DIGEST_ALGORITHM.to_owned(),
+                bytes: vec![0; 32],
+            },
+            tombstone: false,
+            relationships: Vec::new(),
+            body: Some(CapsuleValue::Object(BTreeMap::from([
+                ("username".to_owned(), CapsuleValue::Text("ada".to_owned())),
+                ("public_key".to_owned(), CapsuleValue::Bytes(vec![4; 8])),
+                ("status".to_owned(), CapsuleValue::Text(status.to_owned())),
+            ]))),
+        }
+        .seal()
+        .unwrap()
+    };
+
+    // A follower's write is readable on that follower at once and on every replica.
+    let first = user(1, "active", None);
+    stores[1].put(&first, None).unwrap();
+    assert_eq!(
+        stores[1].get(&first.kind, &first.id).unwrap(),
+        Some(first.clone())
+    );
+    let away = user(2, "away", Some(&first));
+    stores[0].put(&away, Some(1)).unwrap();
+    for store in &stores {
+        eventually("replication", || {
+            store.get(&away.kind, &away.id).unwrap() == Some(away.clone())
+        });
+    }
+
+    // A competing revision 2 from another replica loses: the state machine checks the
+    // precondition in log order on every replica.
+    let busy = user(2, "busy", Some(&first));
+    assert_eq!(
+        stores[2].put(&busy, Some(1)),
+        Err(CapsuleStoreError::Conflict)
+    );
+    // The unique username holds cluster-wide.
+    let mut impostor = user(1, "active", None);
+    impostor.id = CapsuleId([5; 16]);
+    let impostor = impostor.seal().unwrap();
+    assert_eq!(
+        stores[2].put(&impostor, None),
+        Err(CapsuleStoreError::Conflict)
+    );
+    for (store, local) in stores.iter().zip(&locals) {
+        assert_eq!(store.get(&away.kind, &away.id).unwrap(), Some(away.clone()));
+        assert_eq!(store.get(&impostor.kind, &impostor.id).unwrap(), None);
+        assert!(
+            !local
+                .scan_prefix(b"aseman/capsule/row/")
+                .unwrap()
+                .is_empty()
+        );
+    }
+    let _ = std::fs::remove_dir_all(&root);
+}
+
 #[test]
 fn a_single_host_store_writes_locally() {
     let root = std::env::temp_dir().join(format!("aseman-rocksdb-local-{}", uuid_like()));

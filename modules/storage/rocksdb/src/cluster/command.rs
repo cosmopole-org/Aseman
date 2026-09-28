@@ -46,8 +46,19 @@ impl KvOp {
     }
 }
 
-/// A creature program artifact replicated to every instance on a
-/// distributed deploy.
+/// A precondition of a conditional batch: the key's value hashes to `sha256_b64`, or
+/// the key is absent when it is `None`.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct KvExpect {
+    pub key: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub sha256_b64: Option<String>,
+}
+
+/// The applier's answer when a conditional batch's precondition no longer holds. Every
+/// replica reaches the same answer: it applies the same log to the same state.
+pub const PRECONDITION_FAILED: &str = "kv precondition failed";
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(tag = "type")]
 pub enum ClusterCommand {
@@ -61,6 +72,9 @@ pub enum ClusterCommand {
         /// already applied the batch locally, so it skips re-application.
         origin: u64,
         ops: Vec<KvOp>,
+        /// Applied only while every expectation holds (compare-and-set).
+        #[serde(default, skip_serializing_if = "Vec::is_empty")]
+        expects: Vec<KvExpect>,
     },
     /// Replicated creature program deployment.
     /// Cluster-wide configuration entry (kept in the replicated config store).

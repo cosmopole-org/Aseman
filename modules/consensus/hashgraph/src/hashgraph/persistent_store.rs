@@ -1,11 +1,10 @@
 //! Translation of `chain/hashgraph/badger_store.go`.
 //!
-//! The Go node persisted the hashgraph in a Badger key-value database. As
-//! requested, the translation uses a **RocksDB** instance instead (a separate
-//! database, co-located with the appengine's RocksDB). The struct is named
-//! `RocksDbStore`; its behaviour — an `InmemStore` cache in front of an
-//! on-disk key-value store — is otherwise a faithful translation of
-//! `BadgerStore`.
+//! The Go node persisted the hashgraph in a Badger key-value database. This store
+//! keeps that behaviour — an `InmemStore` cache in front of a persistent ordered
+//! key/value log — but owns no database: it persists through the storage-neutral
+//! [`ConsensusLog`] port (ADR 0035), which the selected storage provider implements
+//! (embedded RocksDB, PostgreSQL, ...). Nothing here names a database driver.
 //!
 //! The `mobile`-tagged `badger_store_mobile.go` was a near-duplicate behind a
 //! build tag (with stale `babble/...` import paths); it is not translated
@@ -15,7 +14,7 @@ use std::cell::Cell;
 use std::sync::{Arc, Mutex};
 
 use anyhow::{Result, anyhow};
-use rocksdb::{DB, Direction, IteratorMode, WriteBatch};
+use aseman_ports::consensus_log::{ConsensusLog, ConsensusLogWrite};
 
 use super::block::Block;
 use super::event::Event;
@@ -91,35 +90,73 @@ fn frame_prune_every_rounds(retention: i64) -> i64 {
     retention.clamp(1, FRAME_PRUNE_EVERY_ROUNDS)
 }
 
-/// Contains references to the RocksDB database and the in-memory store. When
+/// The persistent log behind the store, with port errors as `anyhow` errors.
+struct Log(Arc<dyn ConsensusLog>);
+
+impl Log {
+    fn get(&self, key: &[u8]) -> Result<Option<Vec<u8>>> {
+        Ok(self.0.get(key)?)
+    }
+
+    fn put(&self, key: &[u8], value: Vec<u8>) -> Result<()> {
+        self.write(vec![ConsensusLogWrite::Put {
+            key: key.to_vec(),
+            value,
+        }])
+    }
+
+    fn scan_prefix(&self, prefix: &[u8]) -> Result<Vec<(Vec<u8>, Vec<u8>)>> {
+        Ok(self.0.scan_prefix(prefix)?)
+    }
+
+    fn write(&self, batch: Vec<ConsensusLogWrite>) -> Result<()> {
+        Ok(self.0.write(&batch)?)
+    }
+
+    fn flush(&self) -> Result<()> {
+        Ok(self.0.flush()?)
+    }
+}
+
+/// Contains the persistent consensus log and the in-memory store. When
 /// `maintenance_mode` is active, data is written only to the caches.
-pub struct RocksDbStore {
+pub struct PersistentStore {
     inmem_store: InmemStore,
-    db: DB,
+    db: Log,
     path: String,
     maintenance_mode: Cell<bool>,
 }
 
-impl RocksDbStore {
-    /// Opens an existing database or creates a new one at `path`. The
-    /// `maintenance_mode` option deactivates writing to the persistent
-    /// database, while still adding/updating the in-memory store.
-    pub fn new(cache_size: i64, path: &str, maintenance_mode: bool) -> Result<RocksDbStore> {
-        // Bounded-memory options (capped open files + shared LRU block cache):
-        // the consensus DB gains an SST file on every decided round and is
-        // never pruned, so the default unlimited `max_open_files` pinned an
-        // ever-growing set of index/filter blocks in RAM. See
-        // `crate::drivers::rocks_tuning`.
-        let mut opts = aseman_storage_rocksdb::tuning::tuned_options();
-        opts.create_if_missing(true);
-        let db = DB::open(&opts, path)?;
-
-        Ok(RocksDbStore {
+impl PersistentStore {
+    /// A store over `log`, the persistent consensus log named `path`. The
+    /// `maintenance_mode` option deactivates writing to the persistent log, while
+    /// still adding/updating the in-memory store.
+    pub fn new(
+        cache_size: i64,
+        log: Arc<dyn ConsensusLog>,
+        path: &str,
+        maintenance_mode: bool,
+    ) -> PersistentStore {
+        PersistentStore {
             inmem_store: InmemStore::new(cache_size),
-            db,
+            db: Log(log),
             path: path.to_string(),
             maintenance_mode: Cell::new(maintenance_mode),
-        })
+        }
+    }
+
+    /// A store over the process-wide in-memory reference log `name` (tests only):
+    /// reopening a name sees what was written under it.
+    #[cfg(test)]
+    pub(crate) fn open_for_test(cache_size: i64, name: &str) -> PersistentStore {
+        use aseman_ports::conformance::consensus_log::MemoryConsensusLogStorage;
+        use aseman_ports::consensus_log::ConsensusLogStorage as _;
+        static LOGS: std::sync::OnceLock<MemoryConsensusLogStorage> = std::sync::OnceLock::new();
+        let log = LOGS
+            .get_or_init(MemoryConsensusLogStorage::default)
+            .open(name, false)
+            .unwrap();
+        PersistentStore::new(cache_size, log, name, false)
     }
 
     /// Getter for the maintenance-mode flag.
@@ -151,15 +188,7 @@ impl RocksDbStore {
     #[allow(dead_code)] // exercised by the store's own tests
     fn db_get_repertoire(&self) -> Result<std::collections::HashMap<String, Peer>> {
         let mut repertoire = std::collections::HashMap::new();
-        let prefix = REPERTOIRE_PREFIX.as_bytes();
-        let iter = self
-            .db
-            .iterator(IteratorMode::From(prefix, Direction::Forward));
-        for item in iter {
-            let (k, v) = item?;
-            if !k.starts_with(prefix) {
-                break;
-            }
+        for (_, v) in self.db.scan_prefix(REPERTOIRE_PREFIX.as_bytes())? {
             let mut peer = Peer::default();
             peer.unmarshal(&v)?;
             repertoire.insert(peer.pub_key_string(), peer);
@@ -201,18 +230,27 @@ impl RocksDbStore {
     }
 
     fn db_set_events(&self, events: &[&Event]) -> Result<()> {
-        let mut batch = WriteBatch::default();
+        let mut batch = Vec::new();
         for event in events {
             let event_hex = event.hex();
             let val = event.marshal_db()?;
             // check if it already exists
             let is_new = self.db.get(event_hex.as_bytes())?.is_none();
-            batch.put(event_hex.as_bytes(), &val);
+            batch.push(ConsensusLogWrite::Put {
+                key: event_hex.as_bytes().to_vec(),
+                value: val,
+            });
             if is_new {
                 let topo_key = topological_event_key(event.topological_index);
-                batch.put(topo_key.as_bytes(), event_hex.as_bytes());
+                batch.push(ConsensusLogWrite::Put {
+                    key: topo_key.into_bytes(),
+                    value: event_hex.as_bytes().to_vec(),
+                });
                 let pe_key = participant_event_key(&event.creator(), event.index());
-                batch.put(pe_key.as_bytes(), event_hex.as_bytes());
+                batch.push(ConsensusLogWrite::Put {
+                    key: pe_key.into_bytes(),
+                    value: event_hex.as_bytes().to_vec(),
+                });
             }
         }
         self.db.write(batch)?;
@@ -348,16 +386,17 @@ impl RocksDbStore {
         if frame.round > 0 && frame.round % frame_prune_every_rounds(retention) == 0 {
             let cutoff = frame.round - retention;
             if cutoff > 0 {
-                let mut batch = WriteBatch::default();
-                batch.delete_range(frame_key(0).as_bytes(), frame_key(cutoff).as_bytes());
-                let _ = self.db.write(batch);
+                let _ = self.db.write(vec![ConsensusLogWrite::DeleteRange {
+                    start: frame_key(0).into_bytes(),
+                    end: frame_key(cutoff).into_bytes(),
+                }]);
             }
         }
         Ok(())
     }
 }
 
-impl Store for RocksDbStore {
+impl Store for PersistentStore {
     fn cache_size(&self) -> i64 {
         self.inmem_store.cache_size()
     }
@@ -385,7 +424,7 @@ impl Store for RocksDbStore {
     fn get_frame(&self, rr: i64) -> Result<Frame> {
         // Frames are held in a small in-memory hot set (see
         // `inmem_store::max_frame_cache`); on a miss fall back to the durable
-        // RocksDB copy written by `db_set_frame`. Without this fallback, evicting
+        // persisted copy written by `db_set_frame`. Without this fallback, evicting
         // a frame from the cache would make it unreadable even though it is on
         // disk. The DB read is not re-cached, so the hot set stays bounded.
         match self.inmem_store.get_frame(rr) {
@@ -577,18 +616,18 @@ mod tests {
     use crate::peers::Peer;
     use std::collections::{BTreeMap, HashMap};
 
-    fn temp_store(cache_size: i64) -> (RocksDbStore, std::path::PathBuf) {
+    fn temp_store(cache_size: i64) -> (PersistentStore, std::path::PathBuf) {
         let nanos = std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
             .unwrap()
             .as_nanos();
         let dir =
             std::env::temp_dir().join(format!("babble-rocks-{}-{}", std::process::id(), nanos));
-        let store = RocksDbStore::new(cache_size, dir.to_str().unwrap(), false).unwrap();
+        let store = PersistentStore::open_for_test(cache_size, dir.to_str().unwrap());
         (store, dir)
     }
 
-    fn remove_store(store: RocksDbStore, dir: &std::path::PathBuf) {
+    fn remove_store(store: PersistentStore, dir: &std::path::PathBuf) {
         store.close().unwrap();
         drop(store);
         let _ = std::fs::remove_dir_all(dir);
@@ -596,9 +635,11 @@ mod tests {
 
     // Translation of badger_store_test.go::TestNewBadgerStore.
     #[test]
-    fn test_new_rocks_store() {
+    fn test_new_persistent_store() {
+        // The store names its log; where the log lives is the provider's concern.
         let (store, dir) = temp_store(1000);
-        assert!(std::path::Path::new(&store.path).exists());
+        assert_eq!(store.store_path(), dir.to_string_lossy());
+        assert!(store.db.scan_prefix(b"").unwrap().is_empty());
         remove_store(store, &dir);
     }
 

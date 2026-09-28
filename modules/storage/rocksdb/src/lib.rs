@@ -24,7 +24,9 @@ pub const DEFAULT_MAX_LEGACY_FILE_BYTES: usize = 1024 * 1024 * 1024;
 
 mod bridge;
 mod capsule;
+pub mod capsule_store;
 pub mod cluster;
+pub mod consensus_log;
 mod custody;
 mod documents;
 mod export;

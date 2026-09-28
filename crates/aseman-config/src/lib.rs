@@ -47,6 +47,32 @@ pub struct CoreStorageConfig {
     /// The PostgreSQL provider's cluster mode: a shard-map file
     /// (`ASEMAN_POSTGRES_SHARDS_SECRET`, ADR 0033). Absent, one database serves.
     pub postgres_shards_secret: Option<String>,
+    /// How the provider lays out a capsule (`ASEMAN_STORAGE_CAPSULE_MODE`).
+    pub layout: CapsuleLayout,
+}
+
+/// How a storage provider lays out one capsule (ADR 0034).
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
+pub enum CapsuleLayout {
+    /// Capsule mode off (the default): every field of the entity is a real column of
+    /// its table (or its own key in a key/value provider), and the provider keeps the
+    /// columns in step with the mapping.
+    #[default]
+    Flattened,
+    /// Capsule mode on: the canonical envelope is packed into one column (one value),
+    /// beside the typed columns queries use.
+    Capsule,
+}
+
+impl CapsuleLayout {
+    /// Parse `ASEMAN_STORAGE_CAPSULE_MODE` (`on`/`off`, `true`/`false`, `1`/`0`).
+    pub fn from_mode(value: Option<&str>) -> Option<Self> {
+        match value.map(str::to_ascii_lowercase).as_deref() {
+            None | Some("" | "off" | "false" | "0") => Some(Self::Flattened),
+            Some("on" | "true" | "1") => Some(Self::Capsule),
+            Some(_) => None,
+        }
+    }
 }
 
 /// The server holding the legacy signal (`storage`) and build-log tables.
@@ -1218,6 +1244,15 @@ impl CoreStorageConfig {
                 reason: "a shard map needs ASEMAN_CORE_STORAGE_PROVIDER=postgres",
             });
         }
+        let layout = CapsuleLayout::from_mode(
+            values
+                .get("ASEMAN_STORAGE_CAPSULE_MODE")
+                .map(String::as_str),
+        )
+        .ok_or(ConfigError::Invalid {
+            key: "ASEMAN_STORAGE_CAPSULE_MODE",
+            reason: "expected on or off",
+        })?;
         let guest_proxy = if provider == CoreStorageProvider::Postgres {
             Some(GuestProxyConfig {
                 url_secret: required(values, "ASEMAN_GUEST_PROXY_URL_SECRET")?,
@@ -1234,6 +1269,7 @@ impl CoreStorageConfig {
             guest_proxy,
             signal_log,
             postgres_shards_secret,
+            layout,
         })
     }
 }
@@ -1474,8 +1510,17 @@ mod tests {
                 guest_proxy: None,
                 signal_log: SignalLogProvider::QuestDb,
                 postgres_shards_secret: None,
+                layout: CapsuleLayout::Flattened,
             }
         );
+        let mut values = base();
+        values.insert("ASEMAN_STORAGE_CAPSULE_MODE".into(), "on".into());
+        assert_eq!(
+            AsemanConfig::from_map(&values).unwrap().core_storage.layout,
+            CapsuleLayout::Capsule
+        );
+        values.insert("ASEMAN_STORAGE_CAPSULE_MODE".into(), "sometimes".into());
+        assert!(AsemanConfig::from_map(&values).is_err());
         let mut values = base();
         values.insert("ASEMAN_CORE_STORAGE_PROVIDER".into(), "legacy".into());
         assert!(

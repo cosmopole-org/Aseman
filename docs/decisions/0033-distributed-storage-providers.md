@@ -12,7 +12,8 @@ verification: storage conformance kit per provider and per cluster mode; live sh
 
 Accepted 2026-09-28. Amends ADR 0012 (OpenRaft is kept, but only inside the RocksDB
 provider) and ADR 0026 (the provider selection is total: a node never splits its
-state across two providers).
+state across two providers). Amended by ADR 0034 (each provider offers the flattened
+and capsule layouts) and ADR 0035 (consensus logs are provider storage).
 
 ## Context
 

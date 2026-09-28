@@ -340,7 +340,6 @@
         "aseman-contracts",
         "aseman-domain",
         "aseman-ports",
-        "aseman-storage-rocksdb",
         "base64",
         "chrono",
         "crossbeam-channel",
@@ -349,14 +348,14 @@
         "k256",
         "num-bigint",
         "rand",
-        "rocksdb",
         "serde",
         "serde_json",
         "serde_repr",
         "sha2",
         "thiserror",
         "uuid",
-        "aseman-application"
+        "aseman-application",
+        "aseman-ports"
       ],
       "current_owner": "modules/consensus/hashgraph/Cargo.toml",
       "disposition": "move-or-wrap-per-parent-ledger",
@@ -772,9 +771,11 @@
     {
       "callers": [
         "anyhow",
+        "aseman-capsule",
         "aseman-config",
         "aseman-contracts",
         "aseman-domain",
+        "aseman-ports",
         "base64",
         "chacha20poly1305",
         "chrono",
@@ -790,7 +791,9 @@
         "sha2",
         "thiserror",
         "tokio",
-        "uuid"
+        "uuid",
+        "aseman-ports",
+        "aseman-storage-conformance"
       ],
       "current_owner": "modules/storage/rocksdb/Cargo.toml",
       "disposition": "move-or-wrap-per-parent-ledger",
@@ -1064,7 +1067,7 @@
     {
       "callers": [
         "contracts/config/legacy-aliases.json:54",
-        "crates/aseman-config/src/lib.rs:379"
+        "crates/aseman-config/src/lib.rs:405"
       ],
       "current_owner": "runtime-or-storage",
       "disposition": "move",
@@ -1076,7 +1079,7 @@
     {
       "callers": [
         "contracts/config/legacy-aliases.json:71",
-        "crates/aseman-config/src/lib.rs:381"
+        "crates/aseman-config/src/lib.rs:407"
       ],
       "current_owner": "runtime-or-storage",
       "disposition": "move",
@@ -1088,7 +1091,7 @@
     {
       "callers": [
         "contracts/config/legacy-aliases.json:88",
-        "crates/aseman-config/src/lib.rs:376"
+        "crates/aseman-config/src/lib.rs:402"
       ],
       "current_owner": "network",
       "disposition": "move",
@@ -1100,7 +1103,7 @@
     {
       "callers": [
         "contracts/config/legacy-aliases.json:105",
-        "crates/aseman-config/src/lib.rs:370"
+        "crates/aseman-config/src/lib.rs:396"
       ],
       "current_owner": "network",
       "disposition": "move",
@@ -1112,7 +1115,7 @@
     {
       "callers": [
         "contracts/config/legacy-aliases.json:122",
-        "crates/aseman-config/src/lib.rs:373"
+        "crates/aseman-config/src/lib.rs:399"
       ],
       "current_owner": "network",
       "disposition": "move",
@@ -1124,7 +1127,7 @@
     {
       "callers": [
         "contracts/config/legacy-aliases.json:139",
-        "crates/aseman-config/src/lib.rs:367"
+        "crates/aseman-config/src/lib.rs:393"
       ],
       "current_owner": "network",
       "disposition": "move",
@@ -1747,8 +1750,8 @@
     {
       "callers": [
         "contracts/config/legacy-aliases.json:895",
-        "crates/aseman-config/src/lib.rs:426",
-        "crates/aseman-config/src/lib.rs:495"
+        "crates/aseman-config/src/lib.rs:452",
+        "crates/aseman-config/src/lib.rs:521"
       ],
       "current_owner": "process-environment",
       "disposition": "move",
@@ -2013,7 +2016,7 @@
     {
       "callers": [
         "contracts/config/legacy-aliases.json:1215",
-        "crates/aseman-config/src/lib.rs:406"
+        "crates/aseman-config/src/lib.rs:432"
       ],
       "current_owner": "process-environment",
       "disposition": "move",
@@ -2300,7 +2303,7 @@
     {
       "callers": [
         "contracts/config/legacy-aliases.json:1557",
-        "crates/aseman-config/src/lib.rs:499"
+        "crates/aseman-config/src/lib.rs:525"
       ],
       "current_owner": "process-environment",
       "disposition": "move",
@@ -2389,7 +2392,7 @@
     {
       "callers": [
         "contracts/config/legacy-aliases.json:1665",
-        "crates/aseman-config/src/lib.rs:423"
+        "crates/aseman-config/src/lib.rs:449"
       ],
       "current_owner": "runtime-or-storage",
       "disposition": "move",
@@ -7825,7 +7828,7 @@
       "callers": [
         "rep_{public_key}"
       ],
-      "current_owner": "modules/consensus/hashgraph/src/hashgraph/rocks_store.rs:35",
+      "current_owner": "modules/consensus/hashgraph/src/hashgraph/persistent_store.rs:35",
       "disposition": "move",
       "expiry": "Phase 8 provider gate",
       "id": "hashgraph-key:repertoire",
@@ -7836,7 +7839,7 @@
       "callers": [
         "peerset_{round:09}"
       ],
-      "current_owner": "modules/consensus/hashgraph/src/hashgraph/rocks_store.rs:35",
+      "current_owner": "modules/consensus/hashgraph/src/hashgraph/persistent_store.rs:35",
       "disposition": "move",
       "expiry": "Phase 8 provider gate",
       "id": "hashgraph-key:peer-set",
@@ -7847,7 +7850,7 @@
       "callers": [
         "topo_{index:09}"
       ],
-      "current_owner": "modules/consensus/hashgraph/src/hashgraph/rocks_store.rs:35",
+      "current_owner": "modules/consensus/hashgraph/src/hashgraph/persistent_store.rs:35",
       "disposition": "move",
       "expiry": "Phase 8 provider gate",
       "id": "hashgraph-key:topological-event",
@@ -7858,7 +7861,7 @@
       "callers": [
         "{participant}__event_{index:09}"
       ],
-      "current_owner": "modules/consensus/hashgraph/src/hashgraph/rocks_store.rs:35",
+      "current_owner": "modules/consensus/hashgraph/src/hashgraph/persistent_store.rs:35",
       "disposition": "move",
       "expiry": "Phase 8 provider gate",
       "id": "hashgraph-key:participant-event",
@@ -7869,7 +7872,7 @@
       "callers": [
         "{participant}_root"
       ],
-      "current_owner": "modules/consensus/hashgraph/src/hashgraph/rocks_store.rs:35",
+      "current_owner": "modules/consensus/hashgraph/src/hashgraph/persistent_store.rs:35",
       "disposition": "move",
       "expiry": "Phase 8 provider gate",
       "id": "hashgraph-key:participant-root",
@@ -7880,7 +7883,7 @@
       "callers": [
         "round_{index:09}"
       ],
-      "current_owner": "modules/consensus/hashgraph/src/hashgraph/rocks_store.rs:35",
+      "current_owner": "modules/consensus/hashgraph/src/hashgraph/persistent_store.rs:35",
       "disposition": "move",
       "expiry": "Phase 8 provider gate",
       "id": "hashgraph-key:round",
@@ -7891,7 +7894,7 @@
       "callers": [
         "block_{index:09}"
       ],
-      "current_owner": "modules/consensus/hashgraph/src/hashgraph/rocks_store.rs:35",
+      "current_owner": "modules/consensus/hashgraph/src/hashgraph/persistent_store.rs:35",
       "disposition": "move",
       "expiry": "Phase 8 provider gate",
       "id": "hashgraph-key:block",
@@ -7902,7 +7905,7 @@
       "callers": [
         "frame_{index:09}"
       ],
-      "current_owner": "modules/consensus/hashgraph/src/hashgraph/rocks_store.rs:35",
+      "current_owner": "modules/consensus/hashgraph/src/hashgraph/persistent_store.rs:35",
       "disposition": "move",
       "expiry": "Phase 8 provider gate",
       "id": "hashgraph-key:frame",

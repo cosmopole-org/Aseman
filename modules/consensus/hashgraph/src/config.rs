@@ -8,10 +8,12 @@ use k256::ecdsa::SigningKey;
 
 use crate::logrus::{Entry, Level, Logger};
 use crate::proxy::AppProxy;
+use aseman_ports::consensus_log::ConsensusLogStorage;
 
 /// Default name of the file containing the validator's private key.
 pub const DEFAULT_KEYFILE: &str = "priv_key";
-/// Default name of the folder containing the database.
+/// Default name of the persistent consensus log under the data directory. The name
+/// predates ADR 0035 and is kept so existing logs keep their name on every provider.
 pub const DEFAULT_DB_FILE: &str = "rocksdb_db";
 /// Default name of the signal-server TLS certificate file.
 pub const DEFAULT_CERT_FILE: &str = "cert.pem";
@@ -90,6 +92,9 @@ pub struct Config {
     pub ice_password: String,
     /// The application proxy that lets Babble communicate with the app.
     pub proxy: Option<Arc<dyn AppProxy>>,
+    /// Where a persistent store (`store`) keeps its log (ADR 0035): supplied by the
+    /// node's selected storage provider. `database_dir` names the log.
+    pub log_storage: Option<Arc<dyn ConsensusLogStorage>>,
     /// The private key of the validator.
     pub key: Option<SigningKey>,
 }
@@ -126,6 +131,7 @@ impl Config {
             bootstrap: false,
             moniker: String::new(),
             proxy: None,
+            log_storage: None,
             key: None,
         }
     }

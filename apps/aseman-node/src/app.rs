@@ -262,7 +262,10 @@ fn install_core_storage(config: &AsemanConfig) -> Result<()> {
         .as_deref()
         .ok_or_else(|| anyhow::anyhow!("ASEMAN_DATABASE_URL_SECRET is required"))?;
     let url = aseman_config::read_secret_file(secret, 4096)?;
-    aseman_storage_postgres::PostgresCapsuleRepository::connect(&url)?.migrate()?;
+    // The configured capsule layout (ADR 0034) is recorded in the database, so every
+    // repository and unit of work opened below writes in it.
+    let layout = config.core_storage.layout;
+    aseman_storage_postgres::PostgresCapsuleRepository::connect(&url)?.migrate_layout(layout)?;
     // Cluster mode (ADR 0033): capsules shard and replicate across the map's shards;
     // `ASEMAN_DATABASE_URL_SECRET` names the home shard, which also holds coordination
     // and the compatibility state. Otherwise one database serves everything.
@@ -283,6 +286,7 @@ fn install_core_storage(config: &AsemanConfig) -> Result<()> {
                         map,
                         CORE_STORAGE_CONNECTIONS,
                         generation,
+                        layout,
                     )?,
                 ))
             }

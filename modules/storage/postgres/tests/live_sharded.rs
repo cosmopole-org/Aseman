@@ -9,6 +9,7 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use aseman_capsule::CapsuleStore;
+use aseman_config::CapsuleLayout;
 use aseman_contracts::capsule::{
     CapsuleDigest, CapsuleEnvelope, CapsuleId, CapsuleKind, CapsuleQuery, CapsuleValue,
     DIGEST_ALGORITHM, ENCODING_VERSION, OwnerScope, ProviderCapabilities, QueryError, QuerySort,
@@ -47,7 +48,7 @@ impl Drop for Cluster {
     }
 }
 
-fn cluster(admin: &str) -> Cluster {
+fn cluster(admin: &str, layout: CapsuleLayout) -> Cluster {
     let suffix = uuid::Uuid::now_v7().simple().to_string();
     let names: Vec<String> = ["a", "b"]
         .iter()
@@ -80,7 +81,7 @@ fn cluster(admin: &str) -> Cluster {
     };
     Cluster {
         admin: admin.to_owned(),
-        factory: Arc::new(ShardedUnitOfWorkFactory::connect(map, 4, None).unwrap()),
+        factory: Arc::new(ShardedUnitOfWorkFactory::connect(map, 4, None, layout).unwrap()),
         shards: names,
     }
 }
@@ -233,7 +234,15 @@ fn a_sharded_cluster_keeps_every_guarantee_of_one_database() {
         eprintln!("ASEMAN_TEST_POSTGRES_SHARDS_URL is absent; skipping the sharding suite");
         return;
     };
-    let cluster = cluster(&admin);
+    // Both capsule layouts (ADR 0034) keep every guarantee.
+    for layout in [CapsuleLayout::Flattened, CapsuleLayout::Capsule] {
+        sharded_guarantees(&admin, layout);
+    }
+}
+
+fn sharded_guarantees(admin: &str, layout: CapsuleLayout) {
+    let admin = admin.to_owned();
+    let cluster = cluster(&admin, layout);
     let shard_urls: Vec<String> = cluster
         .shards
         .iter()
@@ -256,6 +265,17 @@ fn a_sharded_cluster_keeps_every_guarantee_of_one_database() {
     let unit = cluster.factory.begin().unwrap();
     unit.put(&user, None).unwrap();
     unit.commit().unwrap();
+    let packed = format!(
+        "SELECT count(*) FROM aseman_core.users WHERE capsule_cbor IS NOT NULL AND id = '{}'",
+        uuid::Uuid::from_bytes(user.id.0)
+    );
+    for url in &shard_urls {
+        assert_eq!(
+            count(url, &packed),
+            i64::from(layout == CapsuleLayout::Capsule),
+            "{layout:?} packs a capsule only in capsule mode"
+        );
+    }
     for (url, before) in shard_urls.iter().zip(&before) {
         assert_eq!(
             count(url, users),

@@ -13,6 +13,7 @@ use crate::{
     query_on, write_prepared,
 };
 use aseman_capsule::{CapsuleStore, CapsuleStoreError, CapsuleStoreResult};
+use aseman_config::CapsuleLayout;
 use aseman_contracts::capsule::{CapsuleEnvelope, CapsuleId, CapsuleKind, CapsuleQuery};
 use postgres::NoTls;
 use r2d2::{Pool, PooledConnection};
@@ -25,6 +26,7 @@ type Manager = PostgresConnectionManager<NoTls>;
 pub struct PostgresUnitOfWorkFactory {
     pool: Pool<Manager>,
     generation: Option<u64>,
+    layout: CapsuleLayout,
 }
 
 impl PostgresUnitOfWorkFactory {
@@ -44,7 +46,22 @@ impl PostgresUnitOfWorkFactory {
             .max_size(max_connections.max(1))
             .build(manager)
             .map_err(|error| PostgresStorageError::Unavailable(error.to_string()))?;
-        Ok(Self { pool, generation })
+        // Units write in the layout the database was last migrated to (ADR 0034).
+        let layout = pool
+            .get()
+            .map_err(|error| PostgresStorageError::Unavailable(error.to_string()))
+            .and_then(|mut connection| crate::layout::recorded_layout(&mut *connection))?;
+        Ok(Self {
+            pool,
+            generation,
+            layout,
+        })
+    }
+
+    /// The layout this factory's units write.
+    #[must_use]
+    pub fn layout(&self) -> CapsuleLayout {
+        self.layout
     }
 
     /// Begin a unit of work on its own connection.
@@ -59,6 +76,7 @@ impl PostgresUnitOfWorkFactory {
         Ok(PostgresUnitOfWork {
             connection: Mutex::new(Some(connection)),
             generation: self.generation,
+            layout: self.layout,
         })
     }
 }
@@ -67,6 +85,7 @@ impl PostgresUnitOfWorkFactory {
 pub struct PostgresUnitOfWork {
     connection: Mutex<Option<PooledConnection<Manager>>>,
     generation: Option<u64>,
+    layout: CapsuleLayout,
 }
 
 impl PostgresUnitOfWork {
@@ -143,7 +162,7 @@ impl PostgresUnitOfWork {
     fn write_all(&self, writes: &[(CapsuleEnvelope, Option<u64>)]) -> StorageResult<()> {
         let mut prepared = Vec::with_capacity(writes.len());
         for (capsule, expected_revision) in writes {
-            prepared.push(prepare_write(capsule, *expected_revision)?);
+            prepared.push(prepare_write(capsule, *expected_revision, self.layout)?);
         }
         let generation = self.generation;
         self.with_connection(|client| {

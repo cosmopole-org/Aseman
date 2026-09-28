@@ -2,15 +2,17 @@
 status: GENERATED
 owner: storage/postgres
 source_of_truth: contracts/capsule/kinds, contracts/storage/postgres, and scripts/generate_postgres_core.py
-last_verified_commit: d4abc642944c
+last_verified_commit: 948bfcb90f75
 verification: python3 scripts/generate_postgres_core.py --check
 ---
 
 # PostgreSQL core mapping
 
-Every core kind has its own native table in `aseman_core`. `capsule_cbor` preserves
-the signed canonical envelope while typed columns, foreign keys, partial unique
-indexes, and checks enforce the accepted logical schema. No guest payload table exists.
+Every core kind has its own native table in `aseman_core`. By default (ADR 0034)
+every field is a real column (a document field is a JSONB column) and the envelope is
+rebuilt from the row; with capsule mode on, `capsule_cbor` also packs the signed
+canonical envelope. Foreign keys, partial unique indexes, and checks enforce the
+accepted logical schema in both layouts. No guest payload table exists.
 
 | Kind | Table | Typed fields | Relationships | Unique indexes |
 |---|---|---:|---:|---:|

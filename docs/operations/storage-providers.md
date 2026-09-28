@@ -1,8 +1,8 @@
 ---
 status: CURRENT
 owner: architecture/storage
-source_of_truth: docs/decisions/0033-distributed-storage-providers.md
-verification: cargo test -p aseman-storage-postgres --test live_sharded; cargo test -p aseman-storage-rocksdb --lib cluster::
+source_of_truth: docs/decisions/0033-distributed-storage-providers.md and docs/decisions/0034-capsule-layouts.md, docs/decisions/0035-consensus-log-port.md
+verification: cargo test -p aseman-storage-postgres --test live_sharded --test live_document_capsules; cargo test -p aseman-storage-rocksdb --lib cluster:: capsule_store
 ---
 
 # Storage providers
@@ -15,6 +15,28 @@ storage seam knows whether it runs on one host or a cluster (ADR 0033).
 |---|---|---|
 | `postgres` (default) | one PostgreSQL database (`ASEMAN_DATABASE_URL_SECRET`) | shards with replicas (`ASEMAN_POSTGRES_SHARDS_SECRET`) |
 | `rocksdb` | embedded RocksDB under the storage root | replicas kept identical by OpenRaft (`asemanctl cluster`) |
+
+## Consensus logs
+
+The Hashgraph engine persists its log through the consensus-log port (ADR 0035), so
+consensus data lives in the selected provider: one embedded RocksDB database per shard
+log under the data directory, or rows of `aseman_consensus.log_entries` in the home
+PostgreSQL database. The engine does not know which.
+
+## Capsule layout
+
+`ASEMAN_STORAGE_CAPSULE_MODE` chooses how both providers lay out an entity (ADR 0034):
+
+| Mode | PostgreSQL row | RocksDB keys |
+|---|---|---|
+| `off` (default): flattened | every field is its own column; a document field is a JSONB column; `capsule_cbor` is empty | one key per field plus a metadata key |
+| `on`: capsule mode | the signed envelope is packed into `capsule_cbor` beside the typed columns | one key holding the envelope |
+
+Reads return the exact signed capsule in both layouts and refuse a row that was edited
+outside the provider. The node records the layout in the database when it migrates;
+changing the setting and restarting the node rewrites the mutable rows into the new
+layout (append-only rows stay as they are and remain readable). The provider adds and
+retypes columns as the mapping changes; it never drops one.
 
 ## PostgreSQL
 

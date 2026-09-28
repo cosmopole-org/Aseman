@@ -1,10 +1,7 @@
-//! Shared RocksDB memory tuning for every legacy store in the process (moved from
-//! the node so core storage no longer names RocksDB types; the node re-exports it for
-//! the OpenRaft and Hashgraph stores until RL-012/RL-011 remove them).
+//! Shared RocksDB memory tuning for every RocksDB database this provider opens.
 //!
-//! Every store the node opens (the hashgraph consensus DB in
-//! `network::chain::hashgraph::rocks_store`, the application key/value DB in
-//! `storage`, and the cluster raft DB) used to open with bare
+//! Every store the node opens (the consensus logs in `consensus_log`, the
+//! application key/value DB in `kv`, and the cluster raft DB) used to open with bare
 //! `Options::default()`. That default sets `max_open_files = -1` (unlimited):
 //! RocksDB keeps a table reader open for *every* SST file for the life of the
 //! process, and each reader pins that file's index and filter blocks in RAM.

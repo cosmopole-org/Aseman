@@ -13,11 +13,10 @@ use std::path::Path;
 use std::sync::Arc;
 
 use anyhow::{Result, anyhow};
-use chrono::{DateTime, Utc};
 
 use crate::config::Config;
 use crate::crypto::keys::{KeyReaderWriter, SimpleKeyfile};
-use crate::hashgraph::{InmemStore, RocksDbStore, Store};
+use crate::hashgraph::{InmemStore, PersistentStore, Store};
 use crate::logrus::Entry;
 use crate::net::{Transport, new_tcp_transport};
 use crate::node::{Node, Validator};
@@ -198,29 +197,23 @@ impl Babble {
             self.store = Some(Box::new(InmemStore::new(self.config.cache_size)));
         } else {
             let db_path = &self.config.database_dir;
+            let storage = self.config.log_storage.as_ref().ok_or_else(|| {
+                anyhow!("a persistent consensus store needs the node's log storage")
+            })?;
             self.logger
-                .with_field("path", db_path)
-                .debug("Creating RocksDB store");
-
-            if !self.config.bootstrap {
-                let backup = backup_file_name(db_path);
-                match fs::rename(db_path, &backup) {
-                    Ok(()) => self
-                        .logger
-                        .with_field("path", &backup)
-                        .debug("Created backup"),
-                    Err(e) if e.kind() == std::io::ErrorKind::NotFound => {
-                        self.logger.debug("Nothing to backup");
-                    }
-                    Err(e) => return Err(anyhow!("backup db dir: {}", e)),
-                }
-            }
-
-            let store = RocksDbStore::new(
+                .with_field("log", db_path)
+                .debug("Opening the persistent consensus log");
+            // Without bootstrap the engine starts from genesis: the provider sets the
+            // previous log aside (kept for inspection) and opens an empty one.
+            let log = storage
+                .open(db_path, !self.config.bootstrap)
+                .map_err(|error| anyhow!("open consensus log {db_path}: {error}"))?;
+            let store = PersistentStore::new(
                 self.config.cache_size,
+                log,
                 db_path,
                 self.config.maintenance_mode,
-            )?;
+            );
             self.store = Some(Box::new(store));
         }
         Ok(())
@@ -367,26 +360,6 @@ pub fn load_key_for_config(config: &mut Config) -> Result<()> {
     Ok(())
 }
 
-/// `<base>--UTC--<ts>` — matches Go's backup naming convention.
-fn backup_file_name(base: &str) -> String {
-    format!("{}--UTC--{}", base, to_iso8601(Utc::now()))
-}
-
-fn to_iso8601(t: DateTime<Utc>) -> String {
-    use chrono::Datelike;
-    use chrono::Timelike;
-    format!(
-        "{:04}-{:02}-{:02}T{:02}-{:02}-{:02}.{:09}Z",
-        t.year(),
-        t.month(),
-        t.day(),
-        t.hour(),
-        t.minute(),
-        t.second(),
-        t.nanosecond()
-    )
-}
-
 // Unused-import suppression in case `Path` becomes needed later.
 const _: fn() -> Option<&'static Path> = || None;
 
@@ -459,24 +432,6 @@ mod tests {
             "keyfile should have been written to disk"
         );
         let _ = std::fs::remove_dir_all(&dir);
-    }
-
-    #[test]
-    fn backup_file_name_appends_utc_timestamp_suffix() {
-        let name = backup_file_name("peers.json");
-        // Format: "<base>--UTC--<YYYY-MM-DDThh-mm-ss.nnnnnnnnnZ>".
-        assert!(name.starts_with("peers.json--UTC--"));
-        let suffix = &name["peers.json--UTC--".len()..];
-        assert!(suffix.ends_with('Z'));
-        assert!(suffix.contains('T'));
-    }
-
-    #[test]
-    fn to_iso8601_format_is_path_safe() {
-        let t = chrono::DateTime::<chrono::Utc>::from_timestamp(0, 0).unwrap();
-        let s = to_iso8601(t);
-        // Path-safe representation (no colons) of the unix epoch.
-        assert_eq!(s, "1970-01-01T00-00-00.000000000Z");
     }
 
     #[test]

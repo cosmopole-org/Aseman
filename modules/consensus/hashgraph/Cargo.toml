@@ -8,7 +8,6 @@ license.workspace = true
 repository.workspace = true
 
 [dependencies]
-aseman-storage-rocksdb = { path = "../../storage/rocksdb" }
 aseman-config = { path = "../../../crates/aseman-config" }
 aseman-contracts = { path = "../../../crates/aseman-contracts" }
 aseman-domain = { path = "../../../crates/aseman-domain" }
@@ -21,7 +20,6 @@ getrandom = "0.2"
 hex.workspace = true
 k256 = { version = "0.13.4", features = ["ecdsa", "arithmetic"] }
 num-bigint = "0.4.6"
-rocksdb.workspace = true
 rand = "0.10.1"
 serde.workspace = true
 serde_json.workspace = true
@@ -31,6 +29,7 @@ thiserror.workspace = true
 uuid = { workspace = true, features = ["v4"] }
 
 [dev-dependencies]
+aseman-ports = { path = "../../../crates/aseman-ports", features = ["conformance"] }
 aseman-application = { path = "../../../crates/aseman-application" }
 
 [lints]

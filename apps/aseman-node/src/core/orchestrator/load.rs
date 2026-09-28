@@ -82,8 +82,12 @@ impl Core {
 
         // The provider is owned by the chain module (installed as the main-chain
         // application handler); the core orchestrator reaches it via the chain.
-        let chain: Arc<dyn crate::models::ports::IChain> =
-            Blockchain::with_consensus(self.clone(), storage_root, Some(provider));
+        let chain: Arc<dyn crate::models::ports::IChain> = Blockchain::with_consensus(
+            self.clone(),
+            storage_root,
+            Some(provider),
+            open_consensus_log_storage(self.config.as_deref())?,
+        );
         let tls_cfg = match self.config.as_ref().map(|config| &config.core) {
             Some(config) => match (&config.tls_certificate_path, &config.tls_private_key_path) {
                 (Some(cert), Some(key)) => match tls_config_from_files(cert, key) {
@@ -247,6 +251,39 @@ const STATE_CONNECTIONS: u32 = 16;
 /// through the provider's OpenRaft cluster when its cluster configuration enables it;
 /// module administration is served on that cluster listener, or on a standalone
 /// authenticated listener otherwise.
+/// The consensus logs' storage (ADR 0035): the selected storage provider's
+/// implementation of the consensus-log port. The engine never sees which one.
+fn open_consensus_log_storage(
+    config: Option<&AsemanConfig>,
+) -> Result<Arc<dyn aseman_ports::consensus_log::ConsensusLogStorage>> {
+    let provider = config
+        .map(|config| config.core_storage.provider)
+        .unwrap_or(aseman_config::CoreStorageProvider::RocksDb);
+    if provider == aseman_config::CoreStorageProvider::Postgres {
+        let secret = config
+            .and_then(|config| config.database_url_secret.as_deref())
+            .ok_or_else(|| anyhow::anyhow!("ASEMAN_DATABASE_URL_SECRET is required"))?;
+        let url = aseman_config::read_secret_file(secret, 4096)?;
+        return Ok(Arc::new(
+            aseman_storage_postgres::consensus_log::PostgresConsensusLogStorage::connect(
+                &url,
+                CONSENSUS_LOG_CONNECTIONS,
+            )
+            .map_err(|error| anyhow::anyhow!("{error}"))?,
+        ));
+    }
+    // Log names are the engine's absolute data directories.
+    Ok(Arc::new(
+        aseman_storage_rocksdb::consensus_log::RocksDbConsensusLogStorage::new(
+            std::path::PathBuf::new(),
+        ),
+    ))
+}
+
+/// Consensus writes are sequential per shard engine; a few connections serve every
+/// shard of a node.
+const CONSENSUS_LOG_CONNECTIONS: u32 = 4;
+
 fn open_state_backend(
     config: Option<&AsemanConfig>,
     storage_root: &str,

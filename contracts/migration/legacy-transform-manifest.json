@@ -4449,7 +4449,7 @@
       "family": "repertoire",
       "note": "ADR 0025: consensus-provider private state kept by the Hashgraph module (RL-011); strictly classified, block-digest checkpoint; decoded only by P8",
       "physical_pattern": "rep_{public_key}",
-      "source": "modules/consensus/hashgraph/src/hashgraph/rocks_store.rs:35",
+      "source": "modules/consensus/hashgraph/src/hashgraph/persistent_store.rs:35",
       "target_kind": null,
       "value_shape": "Peer marshal bytes"
     },
@@ -4459,7 +4459,7 @@
       "family": "peer-set",
       "note": "ADR 0025: consensus-provider private state kept by the Hashgraph module (RL-011); strictly classified, block-digest checkpoint; decoded only by P8",
       "physical_pattern": "peerset_{round:09}",
-      "source": "modules/consensus/hashgraph/src/hashgraph/rocks_store.rs:35",
+      "source": "modules/consensus/hashgraph/src/hashgraph/persistent_store.rs:35",
       "target_kind": null,
       "value_shape": "PeerSet marshal bytes"
     },
@@ -4469,7 +4469,7 @@
       "family": "topological-event",
       "note": "ADR 0025: consensus-provider private state kept by the Hashgraph module (RL-011); strictly classified, block-digest checkpoint; decoded only by P8",
       "physical_pattern": "topo_{index:09}",
-      "source": "modules/consensus/hashgraph/src/hashgraph/rocks_store.rs:35",
+      "source": "modules/consensus/hashgraph/src/hashgraph/persistent_store.rs:35",
       "target_kind": null,
       "value_shape": "Event marshal bytes"
     },
@@ -4479,7 +4479,7 @@
       "family": "participant-event",
       "note": "ADR 0025: consensus-provider private state kept by the Hashgraph module (RL-011); strictly classified, block-digest checkpoint; decoded only by P8",
       "physical_pattern": "{participant}__event_{index:09}",
-      "source": "modules/consensus/hashgraph/src/hashgraph/rocks_store.rs:35",
+      "source": "modules/consensus/hashgraph/src/hashgraph/persistent_store.rs:35",
       "target_kind": null,
       "value_shape": "Event marshal bytes"
     },
@@ -4489,7 +4489,7 @@
       "family": "participant-root",
       "note": "ADR 0025: consensus-provider private state kept by the Hashgraph module (RL-011); strictly classified, block-digest checkpoint; decoded only by P8",
       "physical_pattern": "{participant}_root",
-      "source": "modules/consensus/hashgraph/src/hashgraph/rocks_store.rs:35",
+      "source": "modules/consensus/hashgraph/src/hashgraph/persistent_store.rs:35",
       "target_kind": null,
       "value_shape": "Root marshal bytes"
     },
@@ -4499,7 +4499,7 @@
       "family": "round",
       "note": "ADR 0025: consensus-provider private state kept by the Hashgraph module (RL-011); strictly classified, block-digest checkpoint; decoded only by P8",
       "physical_pattern": "round_{index:09}",
-      "source": "modules/consensus/hashgraph/src/hashgraph/rocks_store.rs:35",
+      "source": "modules/consensus/hashgraph/src/hashgraph/persistent_store.rs:35",
       "target_kind": null,
       "value_shape": "RoundInfo marshal bytes"
     },
@@ -4509,7 +4509,7 @@
       "family": "block",
       "note": "ADR 0025: consensus-provider private state kept by the Hashgraph module (RL-011); strictly classified, block-digest checkpoint; decoded only by P8",
       "physical_pattern": "block_{index:09}",
-      "source": "modules/consensus/hashgraph/src/hashgraph/rocks_store.rs:35",
+      "source": "modules/consensus/hashgraph/src/hashgraph/persistent_store.rs:35",
       "target_kind": null,
       "value_shape": "Block marshal bytes"
     },
@@ -4519,7 +4519,7 @@
       "family": "frame",
       "note": "ADR 0025: consensus-provider private state kept by the Hashgraph module (RL-011); strictly classified, block-digest checkpoint; decoded only by P8",
       "physical_pattern": "frame_{index:09}",
-      "source": "modules/consensus/hashgraph/src/hashgraph/rocks_store.rs:35",
+      "source": "modules/consensus/hashgraph/src/hashgraph/persistent_store.rs:35",
       "target_kind": null,
       "value_shape": "Frame marshal bytes; retention applies"
     }

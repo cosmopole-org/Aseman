@@ -8,6 +8,11 @@ ROOT = pathlib.Path(__file__).resolve().parents[2]
 CAPSULE = ROOT / "contracts/capsule"
 
 
+
+def json_columns(migration: str) -> set[str]:
+    """Every column a generated migration declares as JSONB."""
+    return set(re.findall(r'^\s+"?([a-z_][a-z0-9_]*)"? JSONB', migration, re.MULTILINE))
+
 class PhaseThreeCapsuleContractTests(unittest.TestCase):
     def test_capsule_schemas_are_closed_and_parseable(self) -> None:
         schemas = list(CAPSULE.rglob("*.schema.json"))
@@ -125,7 +130,10 @@ class PhaseThreeCapsuleContractTests(unittest.TestCase):
         ).read_text()
         self.assertEqual(migration.count("CREATE TABLE IF NOT EXISTS"), len(core))
         self.assertIn("REVOKE ALL ON SCHEMA aseman_core FROM PUBLIC", migration)
-        self.assertNotIn("JSONB", migration.upper())
+        # A305: no JSONB entity bucket. ADR 0034 allows JSONB only for the row shape
+        # and for declared document fields, each in its own named column.
+        documents = {name for row in mapped.values() for name in row["document_fields"]}
+        self.assertLessEqual(json_columns(migration), {"capsule_shape"} | documents)
 
     def test_guest_contract_forbids_caller_routing_and_shared_tenancy(self) -> None:
         guest = CAPSULE / "guest"
@@ -241,7 +249,13 @@ class PhaseThreeCapsuleContractTests(unittest.TestCase):
         migration = (
             ROOT / "modules/storage/postgres/migrations/0002_storage_classes.sql"
         ).read_text()
-        self.assertNotIn("JSONB", migration.upper())
+        class_mapping = json.loads(
+            (ROOT / "contracts/storage/postgres/storage-class-mapping.json").read_text()
+        )
+        documents = {
+            name for row in class_mapping["tables"] for name in row["document_fields"]
+        }
+        self.assertLessEqual(json_columns(migration), {"capsule_shape"} | documents)
         self.assertNotIn("guest_capsules", migration)
         self.assertEqual(
             migration.count("CREATE TABLE IF NOT EXISTS"), len(classes["kinds"])

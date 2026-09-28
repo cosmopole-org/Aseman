@@ -122,6 +122,41 @@ fn check_architecture(root: &Path) -> Result<()> {
             }
         }
     }
+    // ADR 0035: consensus engines persist through the consensus-log port only. They
+    // never name a storage provider or a database driver, so any provider can serve
+    // them.
+    const STORAGE_DRIVERS: [&str; 6] = [
+        "rocksdb",
+        "postgres",
+        "tokio-postgres",
+        "r2d2_postgres",
+        "sqlx",
+        "openraft",
+    ];
+    for package in packages {
+        let (Some(name), Some(manifest)) =
+            (package["name"].as_str(), package["manifest_path"].as_str())
+        else {
+            continue;
+        };
+        if !manifest.contains("/modules/consensus/") {
+            continue;
+        }
+        for dependency in package["dependencies"]
+            .as_array()
+            .context("package dependencies")?
+        {
+            let dependency_name = dependency["name"].as_str().context("dependency name")?;
+            if dependency_name.starts_with("aseman-storage-")
+                || STORAGE_DRIVERS.contains(&dependency_name)
+            {
+                bail!(
+                    "forbidden dependency: consensus module {name} -> {dependency_name} \
+                     (use the consensus-log port, ADR 0035)"
+                );
+            }
+        }
+    }
     println!("architecture dependency rules passed");
     Ok(())
 }

@@ -189,17 +189,19 @@ pub struct ShardedUnitOfWorkFactory {
 }
 
 impl ShardedUnitOfWorkFactory {
-    /// Connect every shard, migrate it, and resolve prepared transactions a previous
+    /// Connect every shard, migrate it to `layout`, and resolve prepared transactions a previous
     /// coordinator left behind.
     pub fn connect(
         map: ShardMap,
         max_connections_per_shard: u32,
         generation: Option<u64>,
+        layout: aseman_config::CapsuleLayout,
     ) -> StorageResult<Self> {
         map.validate()?;
         let mut shards = Vec::with_capacity(map.shards.len());
         for spec in &map.shards {
-            PostgresCapsuleRepository::connect(&spec.primary)?.migrate()?;
+            // Every shard holds its rows in the cluster's one layout (ADR 0034).
+            PostgresCapsuleRepository::connect(&spec.primary)?.migrate_layout(layout)?;
             let mut replicas = Vec::with_capacity(spec.replicas.len());
             for replica in &spec.replicas {
                 replicas.push(PostgresUnitOfWorkFactory::connect(
