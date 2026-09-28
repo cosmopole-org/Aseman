@@ -55,6 +55,7 @@ execution count stays at one.
 - **Federation deployed evidence**: the package now delivers the
   mandatory-mTLS endpoint/client, A401 verification, signed responses, backoff, and
   circuit breaker, plus the A706 trust/partition runbook. The node supplies its
-  verifier, destination executor, response signer, durable state, and listener.
-  Outbound caller cutover and the rotation/partition drill remain to be observed.
+  verifier, destination executor, response signer, durable state, listener, and
+  descriptor-routed outbound workload caller. The rotation/partition drill remains to
+  be observed on deployed clusters.
 - **Retiring the legacy transports** is ADR 0004's window and the removal ledger's.

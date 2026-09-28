@@ -4,7 +4,7 @@
 //! cache, and a cache is only ever allowed to move forward.
 
 use aseman_domain::Uuid;
-use aseman_domain::federation::{Envelope, NodeDescriptor, WorkloadDescriptor};
+use aseman_domain::federation::{Envelope, FederationReply, NodeDescriptor, WorkloadDescriptor};
 
 use crate::PortResult;
 
@@ -68,6 +68,11 @@ pub trait EnvelopeGuard: Send + Sync {
     /// When the store is unreachable.
     fn remember_nonce(&self, envelope: &Envelope) -> PortResult<bool>;
 
+    /// Release a nonce when execution failed before an answer was recorded. This is
+    /// never called after a successful effect; it keeps a transient dependency error
+    /// from permanently poisoning the request's bounded retry window.
+    fn forget_nonce(&self, envelope: &Envelope) -> PortResult<()>;
+
     /// The recorded answer to a request, when it has one. A retry is answered from
     /// here rather than executed again.
     ///
@@ -94,4 +99,17 @@ pub trait EnvelopeGuard: Send + Sync {
     ///
     /// When the store is unreachable.
     fn purge_expired(&self, now_millis: i64) -> PortResult<u64>;
+}
+
+/// An authenticated, descriptor-routed cross-node transport.
+///
+/// Implementations must authenticate the source, use the descriptor endpoint, and
+/// verify the signed response against the descriptor keys before returning it.
+pub trait Transport: Send + Sync {
+    fn send(
+        &self,
+        destination: &NodeDescriptor,
+        envelope: &Envelope,
+        payload: &[u8],
+    ) -> PortResult<FederationReply>;
 }

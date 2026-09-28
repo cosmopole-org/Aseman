@@ -85,6 +85,17 @@ pub struct Envelope {
     pub version: String,
 }
 
+/// The destination's authenticated answer to one federated request.
+///
+/// Transport signatures are deliberately absent here: an adapter may return this
+/// value only after it has verified the destination descriptor's key.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub enum FederationReply {
+    Executed(String),
+    Replayed(String),
+    Refused(String),
+}
+
 /// The most hops an envelope may ever declare. A loop cannot outlive this even if a
 /// node misbehaves.
 pub const MAX_HOP_LIMIT: u8 = 4;

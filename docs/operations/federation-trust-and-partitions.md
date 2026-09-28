@@ -12,6 +12,16 @@ on first use. Enrolling a peer pins its federation root, stable node ID, current
 epoch, and expected HTTPS endpoint. The TLS root and the descriptor-signing root are
 checked independently; passing one boundary never substitutes for the other.
 
+Each node configures inbound mTLS with `ASEMAN_FEDERATION_HTTP_TLS_CERTIFICATE`,
+`ASEMAN_FEDERATION_HTTP_TLS_KEY_SECRET`, and
+`ASEMAN_FEDERATION_HTTP_CLIENT_CA`. Outbound calls use the independently explicit
+`ASEMAN_FEDERATION_HTTP_SERVER_CA`,
+`ASEMAN_FEDERATION_HTTP_CLIENT_CERTIFICATE`, and
+`ASEMAN_FEDERATION_HTTP_CLIENT_KEY_SECRET`; A401 request proofs use
+`ASEMAN_FEDERATION_REQUEST_SIGNING_KEY_SECRET`. The configured inbound audience must
+be `node:{node-uuid}/federation/v1`. The node's own current descriptor must exist in
+the durable directory before outbound composition starts.
+
 ## Bootstrap a peer
 
 1. Obtain the peer root, node ID, initial signed descriptor, and fingerprint through an
@@ -50,6 +60,11 @@ backoff and the circuit breaker; callers receive an unavailable result after the
 deadline and retain their request ID for an explicit retry. Never route around a
 partition through an untrusted node. A hop limit decreases on every trusted relay and
 ends a loop at zero.
+
+Canonical public mutations derive the A705 request ID from the source node, subject,
+action, target, and public idempotency key. A later caller retry therefore reaches the
+destination's durable recorded answer instead of creating a second effect. Reads use
+the public request ID as their stable input.
 
 ## Recovery
 

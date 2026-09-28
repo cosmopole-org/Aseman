@@ -255,6 +255,7 @@ dependencies = [
  "r2d2",
  "r2d2_postgres",
  "reqwest 0.12.28",
+ "ring",
  "rustls 0.23.45",
  "rustls-pemfile 2.2.0",
  "serde",

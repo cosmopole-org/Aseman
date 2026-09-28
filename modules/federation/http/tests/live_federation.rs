@@ -148,6 +148,13 @@ fn live_federation_records_only_move_forward() {
     // Another source may use the same nonce value: nonces are per source node.
     let other = envelope(Uuid::now_v7(), "nonce-one");
     assert!(federation.remember_nonce(&other).unwrap());
+    let failed = envelope(source, "failed-effect");
+    assert!(federation.remember_nonce(&failed).unwrap());
+    federation.forget_nonce(&failed).unwrap();
+    assert!(
+        federation.remember_nonce(&failed).unwrap(),
+        "a failed effect can retry the exact envelope"
+    );
 
     // A retry is answered from the record rather than executed again.
     assert!(

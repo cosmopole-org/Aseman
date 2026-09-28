@@ -9,8 +9,9 @@ pub mod http;
 pub mod store;
 
 pub use client::{
-    FederationClientConfig, FederationClientError, FederationProofSigner,
-    FederationResponseVerifier, FederationTls, HttpFederationClient,
+    DescriptorHttpTransport, FederationClientConfig, FederationClientError,
+    FederationNodeCredential, FederationProofSigner, FederationResponseVerifier, FederationTls,
+    HttpFederationClient, federation_audience,
 };
 pub use http::{
     FederationExecutor, FederationHttpConfig, FederationHttpError, FederationHttpHandler,

@@ -474,6 +474,14 @@ pub enum PublicActionClaim {
     Mismatch,
 }
 
+/// Stable request identity supplied to an action executor. Federation adapters use
+/// this context to preserve one A705 request identity across caller retries.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct ActionExecutionContext {
+    pub request_id: String,
+    pub idempotency_key: Option<String>,
+}
+
 /// Resolves the resource an action targets and runs it (P7-06, RL-004). The node
 /// shell implements this seam over the migrated application use cases, so the
 /// transport and the composition never call a legacy handler directly.
@@ -488,6 +496,18 @@ pub trait ActionExecutor: Send + Sync {
     ) -> PortResult<(ResourceRef, std::collections::BTreeSet<Condition>)>;
     /// Run the action. The caller has authenticated and authorized it.
     fn execute(&self, subject: Subject, action: &str, body: &[u8]) -> PortResult<Vec<u8>>;
+
+    /// Run with the originating request identity. Existing in-process adapters may
+    /// use the default; remote adapters override it to retain cross-retry identity.
+    fn execute_with_context(
+        &self,
+        subject: Subject,
+        action: &str,
+        body: &[u8],
+        _context: &ActionExecutionContext,
+    ) -> PortResult<Vec<u8>> {
+        self.execute(subject, action, body)
+    }
 }
 
 /// Session resolution (A701 "session" authentication). Sessions are legacy bearer

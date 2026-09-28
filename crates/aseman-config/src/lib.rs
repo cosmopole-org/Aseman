@@ -908,6 +908,94 @@ pub struct FederationListenerConfig {
     pub drain_timeout_seconds: u64,
 }
 
+/// Outbound A705 mutual-TLS and retry configuration. The destination endpoint and
+/// response keys always come from its signed directory descriptor.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct FederationOutboundConfig {
+    pub server_ca: String,
+    pub client_certificate: String,
+    pub client_key_secret: String,
+    pub request_signing_key_secret: String,
+    pub deadline_millis: u64,
+    pub attempts: u32,
+    pub initial_backoff_millis: u64,
+    pub maximum_backoff_millis: u64,
+    pub circuit_failure_threshold: u32,
+    pub circuit_open_seconds: u64,
+}
+
+impl FederationOutboundConfig {
+    pub fn from_process_optional() -> Result<Option<Self>, ConfigError> {
+        Self::from_map_optional(&std::env::vars().collect())
+    }
+
+    pub fn from_map_optional(
+        values: &BTreeMap<String, String>,
+    ) -> Result<Option<Self>, ConfigError> {
+        let configured = [
+            "ASEMAN_FEDERATION_HTTP_SERVER_CA",
+            "ASEMAN_FEDERATION_HTTP_CLIENT_CERTIFICATE",
+            "ASEMAN_FEDERATION_HTTP_CLIENT_KEY_SECRET",
+            "ASEMAN_FEDERATION_REQUEST_SIGNING_KEY_SECRET",
+        ]
+        .iter()
+        .any(|key| values.get(*key).is_some_and(|value| !value.is_empty()));
+        if configured {
+            Self::from_map(values).map(Some)
+        } else {
+            Ok(None)
+        }
+    }
+
+    pub fn from_process() -> Result<Self, ConfigError> {
+        Self::from_map(&std::env::vars().collect())
+    }
+
+    pub fn from_map(values: &BTreeMap<String, String>) -> Result<Self, ConfigError> {
+        let attempts = parse_or(values, "ASEMAN_FEDERATION_HTTP_ATTEMPTS", 4)?;
+        let threshold = parse_or(
+            values,
+            "ASEMAN_FEDERATION_HTTP_CIRCUIT_FAILURE_THRESHOLD",
+            5,
+        )?;
+        if attempts == 0 {
+            return Err(ConfigError::Invalid {
+                key: "ASEMAN_FEDERATION_HTTP_ATTEMPTS",
+                reason: "must be nonzero",
+            });
+        }
+        if threshold == 0 {
+            return Err(ConfigError::Invalid {
+                key: "ASEMAN_FEDERATION_HTTP_CIRCUIT_FAILURE_THRESHOLD",
+                reason: "must be nonzero",
+            });
+        }
+        Ok(Self {
+            server_ca: required(values, "ASEMAN_FEDERATION_HTTP_SERVER_CA")?,
+            client_certificate: required(values, "ASEMAN_FEDERATION_HTTP_CLIENT_CERTIFICATE")?,
+            client_key_secret: required(values, "ASEMAN_FEDERATION_HTTP_CLIENT_KEY_SECRET")?,
+            request_signing_key_secret: required(
+                values,
+                "ASEMAN_FEDERATION_REQUEST_SIGNING_KEY_SECRET",
+            )?,
+            deadline_millis: parse_or(values, "ASEMAN_FEDERATION_HTTP_DEADLINE_MILLIS", 30_000)?,
+            attempts,
+            initial_backoff_millis: parse_or(
+                values,
+                "ASEMAN_FEDERATION_HTTP_INITIAL_BACKOFF_MILLIS",
+                100,
+            )?,
+            maximum_backoff_millis: parse_or(
+                values,
+                "ASEMAN_FEDERATION_HTTP_MAXIMUM_BACKOFF_MILLIS",
+                2_000,
+            )?,
+            circuit_failure_threshold: threshold,
+            circuit_open_seconds: parse_or(values, "ASEMAN_FEDERATION_HTTP_CIRCUIT_OPEN_SECS", 30)?,
+        })
+    }
+}
+
 impl FederationListenerConfig {
     pub fn from_process() -> Result<Self, ConfigError> {
         Self::from_map(&std::env::vars().collect())
@@ -1622,6 +1710,49 @@ mod tests {
             missing.remove(key);
             assert!(
                 FederationListenerConfig::from_map(&missing).is_err(),
+                "{key}"
+            );
+        }
+    }
+
+    #[test]
+    fn federation_outbound_requires_separate_peer_roots_identity_and_node_key() {
+        let values = BTreeMap::from([
+            (
+                "ASEMAN_FEDERATION_HTTP_SERVER_CA".to_owned(),
+                "/peer-ca".to_owned(),
+            ),
+            (
+                "ASEMAN_FEDERATION_HTTP_CLIENT_CERTIFICATE".to_owned(),
+                "/client-cert".to_owned(),
+            ),
+            (
+                "ASEMAN_FEDERATION_HTTP_CLIENT_KEY_SECRET".to_owned(),
+                "/client-key".to_owned(),
+            ),
+            (
+                "ASEMAN_FEDERATION_REQUEST_SIGNING_KEY_SECRET".to_owned(),
+                "/node-key".to_owned(),
+            ),
+        ]);
+        let config = FederationOutboundConfig::from_map(&values).unwrap();
+        assert_eq!(config.attempts, 4);
+        assert_eq!(config.deadline_millis, 30_000);
+        assert!(
+            FederationOutboundConfig::from_map_optional(&BTreeMap::new())
+                .unwrap()
+                .is_none()
+        );
+        for key in [
+            "ASEMAN_FEDERATION_HTTP_SERVER_CA",
+            "ASEMAN_FEDERATION_HTTP_CLIENT_CERTIFICATE",
+            "ASEMAN_FEDERATION_HTTP_CLIENT_KEY_SECRET",
+            "ASEMAN_FEDERATION_REQUEST_SIGNING_KEY_SECRET",
+        ] {
+            let mut missing = values.clone();
+            missing.remove(key);
+            assert!(
+                FederationOutboundConfig::from_map(&missing).is_err(),
                 "{key}"
             );
         }

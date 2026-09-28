@@ -21,6 +21,7 @@ postgres = { workspace = true, features = ["with-uuid-1"] }
 r2d2.workspace = true
 r2d2_postgres.workspace = true
 reqwest = { version = "0.12", default-features = false, features = ["blocking", "json", "rustls-tls"] }
+ring.workspace = true
 rustls = { version = "0.23", default-features = false, features = ["std", "ring", "tls12"] }
 rustls-pemfile = "2"
 serde.workspace = true

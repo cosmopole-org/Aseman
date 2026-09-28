@@ -205,6 +205,17 @@ impl EnvelopeGuard for PostgresFederation {
         Ok(inserted == 1)
     }
 
+    fn forget_nonce(&self, envelope: &Envelope) -> PortResult<()> {
+        let mut connection = self.connection()?;
+        connection
+            .execute(
+                "DELETE FROM aseman_core.federation_nonce WHERE source_node = $1 AND nonce = $2",
+                &[&envelope.source_node, &envelope.nonce],
+            )
+            .map_err(db)?;
+        Ok(())
+    }
+
     fn recorded_answer(&self, request_id: Uuid) -> PortResult<Option<String>> {
         let mut connection = self.connection()?;
         Ok(connection

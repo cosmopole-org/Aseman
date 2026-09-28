@@ -379,6 +379,7 @@
         "r2d2",
         "r2d2_postgres",
         "reqwest",
+        "ring",
         "rustls",
         "rustls-pemfile",
         "serde",
@@ -6640,7 +6641,7 @@
     },
     {
       "callers": [
-        "apps/aseman-node/src/api/public_http.rs:728"
+        "apps/aseman-node/src/api/public_http.rs:826"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",

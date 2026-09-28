@@ -15,7 +15,7 @@ The complete dependency and feature data is in `current-workspace.json`.
 
 ## Repository summary
 
-- Tracked files: 1064
+- Tracked files: 1070
 - Tracked files under `dist/`: 29
 - Rust package manifests: 51
 - Declared Cargo workspace roots: 1
@@ -53,7 +53,7 @@ from separate manifests. This is current behavior, not the target topology.
 | `aseman-observability` | `crates/aseman-observability/Cargo.toml` | {'workspace': True} | lib:aseman-observability | 1 | 0 |
 | `aseman-ports` | `crates/aseman-ports/Cargo.toml` | {'workspace': True} | lib:aseman-ports | 3 | 1 |
 | `aseman-consensus-hashgraph` | `modules/consensus/hashgraph/Cargo.toml` | {'workspace': True} | lib:aseman-consensus-hashgraph | 21 | 0 |
-| `aseman-federation-http` | `modules/federation/http/Cargo.toml` | {'workspace': True} | lib:aseman-federation-http | 26 | 0 |
+| `aseman-federation-http` | `modules/federation/http/Cargo.toml` | {'workspace': True} | lib:aseman-federation-http | 27 | 0 |
 | `aseman-finance-ledger` | `modules/finance/ledger/Cargo.toml` | {'workspace': True} | lib:aseman-finance-ledger | 8 | 0 |
 | `aseman-guest-http` | `modules/guest-http/Cargo.toml` | {'workspace': True} | lib:aseman-guest-http | 14 | 0 |
 | `aseman-identity-native` | `modules/identity-native/Cargo.toml` | {'workspace': True} | lib:aseman-identity-native | 5 | 0 |

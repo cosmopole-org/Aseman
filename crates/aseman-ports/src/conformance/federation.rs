@@ -155,6 +155,18 @@ pub fn check_envelope_guard(guard: &dyn EnvelopeGuard) {
         "another source may use the same nonce value"
     );
 
+    let mut transient = envelope.clone();
+    transient.nonce = format!("transient-{}", Uuid::now_v7());
+    transient.request_id = Uuid::now_v7();
+    assert!(guard.remember_nonce(&transient).expect("remember"));
+    guard
+        .forget_nonce(&transient)
+        .expect("release failed effect");
+    assert!(
+        guard.remember_nonce(&transient).expect("remember again"),
+        "a failed effect releases its nonce so the same request can recover"
+    );
+
     // A retry is answered from the record rather than executed again.
     assert!(
         guard

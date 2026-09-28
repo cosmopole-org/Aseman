@@ -59,10 +59,11 @@ production-shaped operational scenarios, and their legacy deletion gates — not
    legacy ROOT user, which a UUID subject cannot map to). Creature-scoped SSE now
    replays A707 from PostgreSQL with explicit retention resync, and bridge updates append
    durably before compatibility fan-out. The authorized WebSocket log-terminal stream,
-   A702 RPC server, live A703 generation broker, and inbound federation verifier,
-   executor, and response signer are now composed. What remains is outbound federation
-   caller cutover plus deployed default/rollback and rotation/partition observation
-   (RL-009/RL-010).
+   A702 RPC server, live A703 generation broker, and both federation directions are
+   now composed. Canonical workload actions resolve the remote home node, authorize at
+   source and destination, sign the request, and verify the descriptor-bound response.
+   What remains is deployed default/rollback and rotation/partition observation
+   (RL-009/RL-010); the old protocol remains only for ADR-0004 compatibility IDs.
 3. **Finish `asemanctl` and packaging** (RL-015, RL-018). The canonical
    `apps/asemanctl` crate owns the command implementation and `casparctl` is a
    one-way warning compatibility shim. The `doctor`/`backup`/`restore`/`upgrade`/

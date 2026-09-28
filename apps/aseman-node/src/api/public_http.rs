@@ -19,6 +19,7 @@ use anyhow::{Context, Result, anyhow};
 use aseman_application::creature::{
     CreateCreature, CreaturePatch, DeleteCreature, GetCreature, NewCreature, UpdateCreature,
 };
+use aseman_application::federation::SendFederatedRequest;
 use aseman_application::finance as finance_use_cases;
 use aseman_application::identity::VerifierPolicy;
 use aseman_application::program::{CreateProgram, DeleteProgram, NewProgram, UpdateProgramPath};
@@ -27,21 +28,26 @@ use aseman_application::{Diagnostics, GetServerPeers, GetServerPublicKey};
 use aseman_capsule::audit::CapsuleDecisionAudit;
 use aseman_capsule::capability::CapsuleGrantStore;
 use aseman_capsule::identity::CapsuleKeyDirectory;
-use aseman_config::{AsemanConfig, FederationListenerConfig, PublicHttpListenerConfig};
+use aseman_config::{
+    AsemanConfig, FederationListenerConfig, FederationOutboundConfig, PublicHttpListenerConfig,
+};
 use aseman_domain::authority::{ActionRegistry, Condition, ResourceRef};
-use aseman_domain::federation::Envelope;
+use aseman_domain::federation::{Envelope, FederationReply};
 use aseman_domain::identity::Subject;
 use aseman_domain::realtime::{can_replay_from, may_deliver};
 use aseman_domain::signal_tags::LogQuery;
 use aseman_federation_http::{
-    FederationExecutor, FederationHttpConfig, FederationResponseSigner, FederationServerTls,
-    FederationService, PostgresFederation,
+    DescriptorHttpTransport, FederationClientConfig, FederationExecutor, FederationHttpConfig,
+    FederationNodeCredential, FederationResponseSigner, FederationServerTls, FederationService,
+    FederationTls, PostgresFederation, federation_audience,
 };
 use aseman_identity_native::NativeIdentityVerifier;
+use aseman_ports::federation::{Directory, Transport};
 use aseman_ports::realtime::EventLog;
 use aseman_ports::{
-    ActionExecutor, BlobStore, DecisionAudit, GrantStore, IdentityVerifier, KeyDirectory,
-    PolicyDecisionPort, PortError, PublicActionIdempotency, ReplayGuard, SessionDirectory,
+    ActionExecutionContext, ActionExecutor, BlobStore, ClockPort, DecisionAudit, GrantStore,
+    IdentityVerifier, KeyDirectory, PolicyDecisionPort, PortError, PublicActionIdempotency,
+    ReplayGuard, SessionDirectory,
 };
 use aseman_public_http::{
     PublicActionError, PublicActionRequest, PublicActionResponse, PublicActionService,
@@ -55,6 +61,7 @@ use aseman_storage_postgres::PostgresCapsuleRepository;
 use ring::signature::Ed25519KeyPair;
 use rustls::pki_types::{CertificateDer, PrivateKeyDer};
 use serde_json::{Value, json};
+use sha2::{Digest, Sha256};
 
 use crate::adapters::blob_store::{PUBLIC_FILES, node_blobs};
 use crate::adapters::gateway_subs;
@@ -107,6 +114,14 @@ struct PublicActionExecutor {
     advertised_port: String,
     origin: String,
     consensus: Option<Arc<dyn aseman_ports::consensus::ConsensusProvider>>,
+    federation: Option<Arc<NodeFederationOutbound>>,
+}
+
+struct NodeFederationOutbound {
+    directory: Arc<dyn Directory>,
+    transport: Arc<dyn Transport>,
+    policy: Arc<dyn PolicyDecisionPort>,
+    node_id: aseman_domain::Uuid,
 }
 
 fn resource_id(kind: &str, body: &[u8]) -> Option<String> {
@@ -115,6 +130,7 @@ fn resource_id(kind: &str, body: &[u8]) -> Option<String> {
         "creature" => &["id", "creatureId", "username", "userId", "name"],
         "store" => &["storeId", "id", "name"],
         "program" => &["programId", "id", "name"],
+        "workload" => &["workloadId", "targetVmId", "vmId", "id", "name"],
         _ => &["id", "name", "creatureId", "storeId", "programId", "userId"],
     };
     for candidate in key {
@@ -130,6 +146,85 @@ fn resource_id(kind: &str, body: &[u8]) -> Option<String> {
 }
 
 impl PublicActionExecutor {
+    fn federated_answer(
+        &self,
+        subject: Subject,
+        action: &str,
+        body: &[u8],
+        context: Option<&ActionExecutionContext>,
+    ) -> Result<Option<Vec<u8>>, PortError> {
+        let Some(outbound) = &self.federation else {
+            return Ok(None);
+        };
+        let (target, facts) = self.resolve(&subject, action, body)?;
+        if target.kind != "workload" {
+            return Ok(None);
+        }
+        let Ok(workload_id) = target.id.parse::<aseman_domain::Uuid>() else {
+            // Non-canonical legacy IDs remain local compatibility input.
+            return Ok(None);
+        };
+        let Some(workload) = outbound
+            .directory
+            .workload(workload_id, self.clock.unix_millis())?
+        else {
+            return Ok(None);
+        };
+        if workload.home_node == outbound.node_id {
+            return Ok(None);
+        }
+        let request_id = context.map_or_else(aseman_domain::Uuid::now_v7, |context| {
+            let stable = context
+                .idempotency_key
+                .as_deref()
+                .unwrap_or(&context.request_id);
+            let mut hasher = Sha256::new();
+            hasher.update(b"aseman-federation-request-v1\0");
+            hasher.update(outbound.node_id.as_bytes());
+            hasher.update(subject.to_string().as_bytes());
+            hasher.update([0]);
+            hasher.update(action.as_bytes());
+            hasher.update([0]);
+            hasher.update(target.kind.as_bytes());
+            hasher.update([0]);
+            hasher.update(target.id.as_bytes());
+            hasher.update([0]);
+            hasher.update(stable.as_bytes());
+            let digest = hasher.finalize();
+            let mut bytes = [0_u8; 16];
+            bytes.copy_from_slice(&digest[..16]);
+            // RFC 9562 name-based UUID shape; the digest namespace above defines the
+            // name and no UUID value is treated as authority.
+            bytes[6] = (bytes[6] & 0x0f) | 0x50;
+            bytes[8] = (bytes[8] & 0x3f) | 0x80;
+            aseman_domain::Uuid::from_bytes(bytes)
+        });
+        let reply = SendFederatedRequest {
+            directory: outbound.directory.as_ref(),
+            transport: outbound.transport.as_ref(),
+            policy: outbound.policy.as_ref(),
+            clock: &self.clock,
+            node_id: outbound.node_id,
+        }
+        .send(
+            request_id,
+            subject,
+            workload.home_node,
+            target,
+            action,
+            body,
+            facts,
+        )?;
+        match reply {
+            FederationReply::Executed(answer) | FederationReply::Replayed(answer) => {
+                Ok(Some(answer.into_bytes()))
+            }
+            FederationReply::Refused(reason) => Err(PortError::Failed(format!(
+                "federation destination refused the action: {reason}"
+            ))),
+        }
+    }
+
     /// After a finance action returns `{ "journalId": ... }`, offer the journal record
     /// for ordering through the composed consensus provider (RL-011). Best-effort: the
     /// journal is already durable; consensus ordering failing must not fail the action.
@@ -254,6 +349,9 @@ impl ActionExecutor for PublicActionExecutor {
     }
 
     fn execute(&self, subject: Subject, action: &str, body: &[u8]) -> Result<Vec<u8>, PortError> {
+        if let Some(answer) = self.federated_answer(subject, action, body, None)? {
+            return Ok(answer);
+        }
         let output = match action {
             "node.diagnostics.read" => {
                 let input: Value = serde_json::from_slice(body)
@@ -1305,6 +1403,19 @@ impl ActionExecutor for PublicActionExecutor {
         };
         serde_json::to_vec(&output).map_err(|_error| PortError::Unavailable("encode failed"))
     }
+
+    fn execute_with_context(
+        &self,
+        subject: Subject,
+        action: &str,
+        body: &[u8],
+        context: &ActionExecutionContext,
+    ) -> Result<Vec<u8>, PortError> {
+        if let Some(answer) = self.federated_answer(subject, action, body, Some(context))? {
+            return Ok(answer);
+        }
+        self.execute(subject, action, body)
+    }
 }
 
 /// Resolve a legacy session token to its subject through the node's session store.
@@ -1360,6 +1471,12 @@ impl FederationExecutor for NodeFederationExecutor {
             .subject
             .parse::<Subject>()
             .map_err(|_| PortError::Denied("invalid federation subject"))?;
+        let (resolved, _) = self.actions.resolve(&subject, &envelope.action, payload)?;
+        if format!("{}:{}", resolved.kind, resolved.id) != envelope.target {
+            return Err(PortError::Denied(
+                "federation payload does not match the authorized target",
+            ));
+        }
         let answer = self.actions.execute(subject, &envelope.action, payload)?;
         String::from_utf8(answer)
             .map_err(|_| PortError::Failed("federated answer is not UTF-8".to_owned()))
@@ -1666,6 +1783,7 @@ pub(crate) fn start_public_http(config: &AsemanConfig, app: Arc<dyn ICore>) -> R
     // ordering service (the same no-op the node used before RL-011).
     let consensus: Option<Arc<dyn aseman_ports::consensus::ConsensusProvider>> =
         app.consensus_provider();
+    let federation = compose_federation_outbound(config, &database_url, policy.clone())?;
     let executor: Arc<dyn ActionExecutor> = Arc::new(PublicActionExecutor {
         app,
         registry,
@@ -1673,6 +1791,7 @@ pub(crate) fn start_public_http(config: &AsemanConfig, app: Arc<dyn ICore>) -> R
         advertised_port,
         origin,
         consensus,
+        federation,
     });
 
     start_federation_http(
@@ -1813,6 +1932,91 @@ pub(crate) fn start_public_http(config: &AsemanConfig, app: Arc<dyn ICore>) -> R
     Ok(())
 }
 
+fn compose_federation_outbound(
+    config: &AsemanConfig,
+    database_url: &str,
+    policy: Arc<dyn PolicyDecisionPort>,
+) -> Result<Option<Arc<NodeFederationOutbound>>> {
+    let Some(outbound) = FederationOutboundConfig::from_process_optional()
+        .map_err(|error| anyhow!("invalid outbound federation configuration: {error}"))?
+    else {
+        return Ok(None);
+    };
+    let node_id = crate::api::workloads::node_subject(&config.node.id).id;
+    let database = database_url
+        .parse::<postgres::Config>()
+        .map_err(|error| anyhow!("invalid federation database URL: {error}"))?;
+    let provider = Arc::new(
+        PostgresFederation::connect_config(database, 8, node_id)
+            .map_err(|error| anyhow!("cannot connect federation provider: {error}"))?,
+    );
+    provider
+        .migrate()
+        .map_err(|error| anyhow!("cannot migrate federation provider: {error}"))?;
+    let own = provider
+        .own_node()
+        .map_err(|error| anyhow!("cannot load this node's federation descriptor: {error}"))?;
+    if own.node_id != node_id || own.revoked_epochs.contains(&own.key_epoch) {
+        return Err(anyhow!(
+            "this node's federation descriptor has the wrong identity or a revoked current epoch"
+        ));
+    }
+
+    let server_roots_pem = std::fs::read(&outbound.server_ca)
+        .with_context(|| format!("cannot read federation server CA {}", outbound.server_ca))?;
+    let mut identity_pem = std::fs::read(&outbound.client_certificate).with_context(|| {
+        format!(
+            "cannot read federation client certificate {}",
+            outbound.client_certificate
+        )
+    })?;
+    identity_pem.push(b'\n');
+    identity_pem.extend_from_slice(
+        aseman_config::read_secret_file(&outbound.client_key_secret, 64 * 1024)?.as_bytes(),
+    );
+    let signing_pem =
+        aseman_config::read_secret_file(&outbound.request_signing_key_secret, 64 * 1024)?;
+    let signing_der =
+        rustls_pemfile::pkcs8_private_keys(&mut std::io::Cursor::new(signing_pem.as_bytes()))
+            .next()
+            .transpose()
+            .map_err(|error| anyhow!("invalid federation request key: {error}"))?
+            .ok_or_else(|| anyhow!("federation request key secret holds no PKCS#8 key"))?;
+    let transport = DescriptorHttpTransport::new(
+        FederationTls {
+            server_roots_pem,
+            identity_pem,
+        },
+        FederationNodeCredential {
+            node_id,
+            key_epoch: own.key_epoch,
+            signing_key_pkcs8: signing_der.secret_pkcs8_der().to_vec(),
+        },
+        FederationClientConfig {
+            deadline: Duration::from_millis(outbound.deadline_millis),
+            attempts: outbound.attempts,
+            initial_backoff: Duration::from_millis(outbound.initial_backoff_millis),
+            maximum_backoff: Duration::from_millis(outbound.maximum_backoff_millis),
+            circuit_failure_threshold: outbound.circuit_failure_threshold,
+            circuit_open_for: Duration::from_secs(outbound.circuit_open_seconds),
+        },
+    )
+    .map_err(|error| anyhow!("cannot compose federation HTTP client: {error}"))?;
+    if !own.keys.contains(&transport.descriptor_public_key()) {
+        return Err(anyhow!(
+            "the federation request signing key is absent from this node's current descriptor"
+        ));
+    }
+    let transport: Arc<dyn Transport> = Arc::new(transport);
+    let directory: Arc<dyn Directory> = provider;
+    Ok(Some(Arc::new(NodeFederationOutbound {
+        directory,
+        transport,
+        policy,
+        node_id,
+    })))
+}
+
 #[allow(clippy::too_many_arguments)]
 fn start_federation_http(
     config: &AsemanConfig,
@@ -1828,6 +2032,12 @@ fn start_federation_http(
         Err(_) => return Ok(()),
     };
     let node_id = crate::api::workloads::node_subject(&config.node.id).id;
+    let expected_audience = federation_audience(node_id);
+    if listener.audience != expected_audience {
+        return Err(anyhow!(
+            "ASEMAN_FEDERATION_HTTP_AUDIENCE must be {expected_audience} for this node"
+        ));
+    }
     let database = database_url
         .parse::<postgres::Config>()
         .map_err(|error| anyhow!("invalid federation database URL: {error}"))?;

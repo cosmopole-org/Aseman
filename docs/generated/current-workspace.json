@@ -40,7 +40,7 @@
       "apps/aseman-client/package-lock.json"
     ],
     "tracked_dist_file_count": 29,
-    "tracked_file_count": 1064,
+    "tracked_file_count": 1070,
     "tracked_files_by_top_level": {
       ".cargo": 1,
       ".gitattributes": 1,
@@ -56,12 +56,12 @@
       "SECURITY.md": 1,
       "apps": 216,
       "clippy.toml": 1,
-      "contracts": 99,
+      "contracts": 101,
       "crates": 129,
       "deploy": 16,
       "dist": 29,
-      "docs": 158,
-      "modules": 316,
+      "docs": 159,
+      "modules": 319,
       "plan": 18,
       "rust-toolchain.toml": 1,
       "rustfmt.toml": 1,
@@ -71,7 +71,7 @@
     },
     "tracked_source_files_by_extension": {
       ".py": 45,
-      ".rs": 563,
+      ".rs": 565,
       ".sh": 2,
       ".ts": 2
     }
@@ -1552,6 +1552,10 @@
             "name": "reqwest",
             "scope": "normal",
             "version": "0.12"
+          },
+          {
+            "name": "ring",
+            "scope": "normal"
           },
           {
             "default-features": false,

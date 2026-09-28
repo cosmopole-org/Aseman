@@ -10,9 +10,9 @@
 use aseman_domain::authority::{ActionClass, AuditRecord};
 use aseman_domain::identity::{AuthenticationError, Proof, Subject};
 use aseman_ports::{
-    ActionExecutor, ClockPort, DecisionAudit, GrantStore, IdentityVerifier, KeyDirectory,
-    PolicyDecisionPort, PortError, PublicActionClaim, PublicActionIdempotency, ReplayGuard,
-    SessionDirectory,
+    ActionExecutionContext, ActionExecutor, ClockPort, DecisionAudit, GrantStore, IdentityVerifier,
+    KeyDirectory, PolicyDecisionPort, PortError, PublicActionClaim, PublicActionIdempotency,
+    ReplayGuard, SessionDirectory,
 };
 use thiserror::Error;
 
@@ -149,9 +149,15 @@ impl ServePublicAction<'_> {
                 .ok_or(PublicActionFailure::Refused("idempotency key required"))?;
             return self.execute_mutation(request, subject, key);
         }
-        let body = self
-            .executor
-            .execute(subject, &request.action, &request.body)?;
+        let body = self.executor.execute_with_context(
+            subject,
+            &request.action,
+            &request.body,
+            &ActionExecutionContext {
+                request_id: request.request_id.clone(),
+                idempotency_key: request.idempotency_key.clone(),
+            },
+        )?;
         Ok(PublicActionResponse { status: 200, body })
     }
 
@@ -201,10 +207,15 @@ impl ServePublicAction<'_> {
             }
             PublicActionClaim::Claimed => {}
         }
-        match self
-            .executor
-            .execute(subject, &request.action, &request.body)
-        {
+        match self.executor.execute_with_context(
+            subject,
+            &request.action,
+            &request.body,
+            &ActionExecutionContext {
+                request_id: request.request_id.clone(),
+                idempotency_key: Some(key.to_owned()),
+            },
+        ) {
             Ok(body) => {
                 self.idempotency
                     .complete(&owner, key, &body)

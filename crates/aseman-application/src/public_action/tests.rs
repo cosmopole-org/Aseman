@@ -10,8 +10,8 @@ use aseman_domain::identity::{
     KeyDescription, KeyEpoch, KeyPurpose, RotationPolicy, SignatureContext, Subject, SubjectKind,
 };
 use aseman_ports::{
-    ActionExecutor, ClockPort, DecisionAudit, GrantStore, IdentityVerifier, KeyDirectory,
-    PolicyDecisionPort, PortError, PortResult, PublicActionIdempotency, ReplayGuard,
+    ActionExecutionContext, ActionExecutor, ClockPort, DecisionAudit, GrantStore, IdentityVerifier,
+    KeyDirectory, PolicyDecisionPort, PortError, PortResult, PublicActionIdempotency, ReplayGuard,
     SessionDirectory,
 };
 
@@ -36,6 +36,7 @@ struct World {
     allow: bool,
     resolved: Mutex<Vec<(Subject, String, Vec<u8>)>>,
     executed: Mutex<Vec<(Subject, String, Vec<u8>)>>,
+    contexts: Mutex<Vec<ActionExecutionContext>>,
     audit: Mutex<Vec<AuditRecord>>,
     idempotency: Mutex<IdempotencyState>,
 }
@@ -242,6 +243,17 @@ impl ActionExecutor for World {
             .push((subject, action.to_owned(), body.to_vec()));
         Ok(br#"{"ok":true}"#.to_vec())
     }
+
+    fn execute_with_context(
+        &self,
+        subject: Subject,
+        action: &str,
+        body: &[u8],
+        context: &ActionExecutionContext,
+    ) -> PortResult<Vec<u8>> {
+        self.contexts.lock().unwrap().push(context.clone());
+        self.execute(subject, action, body)
+    }
 }
 
 fn world() -> World {
@@ -356,6 +368,13 @@ fn a_signed_request_authenticates_authorizes_and_executes_once() {
         .unwrap();
     assert_eq!(response.body, br#"{"ok":true}"#.to_vec());
     assert_eq!(world.executed.lock().unwrap().len(), 1);
+    assert_eq!(
+        world.contexts.lock().unwrap().as_slice(),
+        &[ActionExecutionContext {
+            request_id: "req-1".to_owned(),
+            idempotency_key: None,
+        }]
+    );
     assert_eq!(world.resolved.lock().unwrap().len(), 1);
     let audit = world.audit.lock().unwrap();
     assert_eq!(audit.len(), 1);
@@ -480,6 +499,13 @@ fn a_mutation_runs_once_under_its_key_and_replays_the_outcome() {
     let replayed = service.execute(&retry).unwrap();
     assert_eq!(replayed.body, first_response.body);
     assert_eq!(world.executed.lock().unwrap().len(), 1);
+    assert_eq!(
+        world.contexts.lock().unwrap().as_slice(),
+        &[ActionExecutionContext {
+            request_id: "req-1".to_owned(),
+            idempotency_key: Some(key.to_owned()),
+        }]
+    );
     assert_eq!(world.audit.lock().unwrap().len(), 2);
 }
 

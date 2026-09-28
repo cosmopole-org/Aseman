@@ -12,6 +12,10 @@ unpadded-base64url `payload_base64`. `Aseman-Proof` is an A401 request proof by 
 source node. Its request ID, action, resource, subject node, audience, and body digest
 must bind the envelope and decoded payload exactly.
 
+The A401 audience is deterministic: `node:{destination-node-uuid}/federation/v1`.
+This prevents a private deployment label from becoming undiscoverable routing state;
+the receiving node refuses startup when its configured audience differs.
+
 The destination verifies A401 before A705 replay checks and destination authorization.
 The response states `executed`, `replayed`, or `refused`; it carries the request ID and
 is signed by the destination over the canonical unsigned response fields. An HTTP peer
@@ -27,3 +31,8 @@ repeating an effect. Consecutive unavailable or invalid signed responses open a 
 circuit. Non-retryable destination refusals close/reset the failure run. A response is
 accepted only when its request ID and outcome are valid and its signature verifies
 against the destination descriptor.
+
+The canonical node caller resolves a workload's home-node descriptor, authorizes the
+subject/action/target locally, and sends through this client. The destination repeats
+authorization against its own policy. Non-canonical legacy IDs remain isolated in the
+ADR-0004 compatibility transport and are never guessed into UUID authority.
