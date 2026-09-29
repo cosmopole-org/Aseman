@@ -13,11 +13,13 @@ pub mod creature;
 pub mod entity;
 pub mod finance;
 pub mod gateway;
+pub mod guest_kv;
 pub mod identity;
 pub mod program;
 pub mod storage_adapter;
 pub mod store;
 mod support;
+pub mod token_lock;
 pub mod workload;
 
 #[derive(Clone, Debug, Eq, Error, PartialEq)]

@@ -12,6 +12,7 @@ use std::time::Duration;
 use aseman_contracts::module::{AmodBundle, ModuleKind, ModuleManifest, ModulePermissions};
 use aseman_contracts::module_control_v1::module_control_client::ModuleControlClient;
 use aseman_contracts::module_control_v1::{HealthRequest, LifecycleRequest};
+use aseman_fs::{Access, write_atomic};
 use aseman_module_runtime::{
     ArtifactCache, ArtifactVerifier, ConformanceReport, ConformanceSuite, ModuleError,
     ModuleLaunch, ModuleProcess, ModuleProcessFactory, ModuleResult, ModuleSupervisor,
@@ -90,14 +91,9 @@ impl ModuleAdminService {
     }
 
     fn persist_trust(&self, roots: &BTreeMap<String, TrustDocument>) -> Result<(), AdminError> {
-        let sequence = self.launcher.sequence.fetch_add(1, Ordering::Relaxed);
-        let temporary = self
-            .trust_path
-            .with_extension(format!("tmp-{}-{sequence}", std::process::id()));
         let encoded = serde_json::to_vec_pretty(&roots.values().collect::<Vec<_>>())
             .map_err(|error| AdminError::bad_request(error.to_string()))?;
-        fs::write(&temporary, encoded).map_err(io_error)?;
-        fs::rename(&temporary, &self.trust_path).map_err(io_error)
+        write_atomic(&self.trust_path, &encoded, Access::Shared).map_err(io_error)
     }
 }
 
@@ -329,6 +325,36 @@ fn parse_module_operation(suffix: &str) -> Result<(&str, Option<&str>), AdminErr
     Ok((parts[0], parts.get(1).copied()))
 }
 
+/// Create `directory` (and missing parents) readable by the owner only.
+fn create_private_directory(directory: &Path) -> std::io::Result<()> {
+    let mut builder = fs::DirBuilder::new();
+    builder.recursive(true);
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::DirBuilderExt;
+        builder.mode(0o700);
+    }
+    builder.create(directory)
+}
+
+/// Create `path` with `contents`, already carrying its final `mode`: the file is
+/// never readable by anyone else, not even while it is written.
+fn write_new_file(path: &Path, contents: &[u8], mode: u32) -> std::io::Result<()> {
+    use std::io::Write;
+    let mut options = fs::OpenOptions::new();
+    options.write(true).create_new(true);
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::OpenOptionsExt;
+        options.mode(mode);
+    }
+    #[cfg(not(unix))]
+    let _ = mode;
+    let mut file = options.open(path)?;
+    file.write_all(contents)?;
+    file.sync_all()
+}
+
 fn io_error(error: std::io::Error) -> AdminError {
     AdminError {
         status: 500,
@@ -390,17 +416,11 @@ impl ModuleProcessFactory for LocalModuleLauncher {
         let directory = self
             .root
             .join(format!("process-{}-{sequence}", std::process::id()));
-        fs::create_dir_all(&directory)?;
+        create_private_directory(&directory)?;
         let path = directory.join("module");
-        fs::write(&path, executable)?;
+        write_new_file(&path, &executable, 0o500)?;
         let configuration_path = directory.join("configuration.json");
-        fs::write(&configuration_path, launch.configuration)?;
-        #[cfg(unix)]
-        {
-            use std::os::unix::fs::PermissionsExt;
-            fs::set_permissions(&path, fs::Permissions::from_mode(0o500))?;
-            fs::set_permissions(&configuration_path, fs::Permissions::from_mode(0o400))?;
-        }
+        write_new_file(&configuration_path, launch.configuration.as_bytes(), 0o400)?;
         let listener = TcpListener::bind("127.0.0.1:0")?;
         let endpoint = listener.local_addr()?;
         drop(listener);
@@ -574,57 +594,58 @@ pub(crate) fn serve(
         let _ = stream.write_all(head.as_bytes());
         let _ = stream.write_all(body);
     };
-    let handle = move |stream: TcpStream, routes: aseman_storage::provider::AdminRoutes, token: String| {
-        let Ok(clone) = stream.try_clone() else {
-            return;
-        };
-        let mut reader = BufReader::new(clone);
-        let mut request_line = String::new();
-        if reader.read_line(&mut request_line).is_err() {
-            return;
-        }
-        let mut parts = request_line.split_whitespace();
-        let (Some(method), Some(path)) = (parts.next(), parts.next()) else {
-            return;
-        };
-        let (method, path) = (method.to_owned(), path.to_owned());
-        let mut length = 0_usize;
-        let mut presented = String::new();
-        loop {
-            let mut line = String::new();
-            if reader.read_line(&mut line).is_err() || line.trim().is_empty() {
-                break;
+    let handle =
+        move |stream: TcpStream, routes: aseman_storage::provider::AdminRoutes, token: String| {
+            let Ok(clone) = stream.try_clone() else {
+                return;
+            };
+            let mut reader = BufReader::new(clone);
+            let mut request_line = String::new();
+            if reader.read_line(&mut request_line).is_err() {
+                return;
             }
-            let lower = line.to_ascii_lowercase();
-            let value = line.split_once(':').map_or("", |(_, value)| value).trim();
-            if let Some(rest) = lower.strip_prefix("content-length:") {
-                length = rest.trim().parse().unwrap_or(0);
-            } else if lower.starts_with("x-aseman-cluster-token:") {
-                presented = value.to_owned();
-            } else if lower.starts_with("authorization:")
-                && let Some(bearer) = value
-                    .strip_prefix("Bearer ")
-                    .or_else(|| value.strip_prefix("bearer "))
-            {
-                presented = bearer.to_owned();
+            let mut parts = request_line.split_whitespace();
+            let (Some(method), Some(path)) = (parts.next(), parts.next()) else {
+                return;
+            };
+            let (method, path) = (method.to_owned(), path.to_owned());
+            let mut length = 0_usize;
+            let mut presented = String::new();
+            loop {
+                let mut line = String::new();
+                if reader.read_line(&mut line).is_err() || line.trim().is_empty() {
+                    break;
+                }
+                let lower = line.to_ascii_lowercase();
+                let value = line.split_once(':').map_or("", |(_, value)| value).trim();
+                if let Some(rest) = lower.strip_prefix("content-length:") {
+                    length = rest.trim().parse().unwrap_or(0);
+                } else if lower.starts_with("x-aseman-cluster-token:") {
+                    presented = value.to_owned();
+                } else if lower.starts_with("authorization:")
+                    && let Some(bearer) = value
+                        .strip_prefix("Bearer ")
+                        .or_else(|| value.strip_prefix("bearer "))
+                {
+                    presented = bearer.to_owned();
+                }
             }
-        }
-        if length > MAX_BODY_BYTES {
-            return;
-        }
-        let mut body = vec![0_u8; length];
-        if length > 0 && reader.read_exact(&mut body).is_err() {
-            return;
-        }
-        if presented != token {
-            respond(stream, 401, br#"{"error":"invalid administration token"}"#);
-            return;
-        }
-        match routes(&method, &path, &body) {
-            Some((status, body)) => respond(stream, status, &body),
-            None => respond(stream, 404, br#"{"error":"not found"}"#),
-        }
-    };
+            if length > MAX_BODY_BYTES {
+                return;
+            }
+            let mut body = vec![0_u8; length];
+            if length > 0 && reader.read_exact(&mut body).is_err() {
+                return;
+            }
+            if presented != token {
+                respond(stream, 401, br#"{"error":"invalid administration token"}"#);
+                return;
+            }
+            match routes(&method, &path, &body) {
+                Some((status, body)) => respond(stream, status, &body),
+                None => respond(stream, 404, br#"{"error":"not found"}"#),
+            }
+        };
     std::thread::Builder::new()
         .name("admin-http".into())
         .spawn(move || {

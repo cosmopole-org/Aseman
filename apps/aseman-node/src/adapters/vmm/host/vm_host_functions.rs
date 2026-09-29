@@ -768,28 +768,7 @@ pub(crate) fn host_fn_exec_shell_action(caller: &str, input: &JsonValue) -> Stri
 
 /// Guest document state for the creature the packet identifies (ADR 0028).
 fn host_fn_guest_state(creature: &str, op: &str, input: &JsonValue) -> String {
-    let creature = creature.to_owned();
-    let op = op.to_owned();
-    let input = input.clone();
-    let result = std::sync::Arc::new(std::sync::Mutex::new(Err("vmm not initialised".to_owned())));
-    let slot = result.clone();
-    let _ = with_global_app(move |app| {
-        app.modify_state(
-            op == "getJson" || op == "getByPrefix" || op == "getLink",
-            Box::new(move |trx| {
-                let outcome = crate::adapters::vmm::guest_state::run(trx, &creature, &op, &input);
-                let failed = outcome.is_err();
-                *slot.lock().unwrap() = outcome;
-                if failed {
-                    // Nothing a refused call wrote may commit.
-                    return Err(anyhow::anyhow!("guest state refused"));
-                }
-                Ok(())
-            }),
-        );
-    });
-    let outcome = result.lock().unwrap().clone();
-    match outcome {
+    match crate::adapters::vmm::guest_state::run(creature, op, input) {
         Ok(value) => value.to_string(),
         Err(error) => json!({"ok": false, "error": error}).to_string(),
     }
@@ -835,40 +814,37 @@ pub(crate) fn host_fn_secret_get(caller: &str, input: &JsonValue) -> String {
         }
     };
     let need_grant = owner != caller;
-    let secret_link = format!("Secret::{}::{}", owner, name);
-    let grant_link = format!("SecretGrant::{}::{}::{}", owner, name, caller);
 
     let fetched = with_global_app(|app| {
         let root = app.tools().storage().storage_root().to_string();
         let blob = Arc::new(Mutex::new(String::new()));
-        let grant = Arc::new(Mutex::new(String::new()));
+        let grant = Arc::new(Mutex::new(0_i64));
         let (b, g) = (blob.clone(), grant.clone());
-        let (sl, gl) = (secret_link.clone(), grant_link.clone());
+        let (owner, name, caller) = (owner.clone(), name.to_owned(), caller.to_owned());
         app.modify_state(
             true,
             Box::new(move |trx: &Trx| {
-                *b.lock().unwrap() = trx.get_link(&sl);
+                *b.lock().unwrap() =
+                    crate::api::model::secrets::blob(trx, &owner, &name)?.unwrap_or_default();
                 if need_grant {
-                    *g.lock().unwrap() = trx.get_link(&gl);
+                    *g.lock().unwrap() =
+                        crate::api::model::secrets::grant_expiry(trx, &owner, &name, &caller)?;
                 }
                 Ok(())
             }),
         );
         let blob = blob.lock().unwrap().clone();
-        let grant = grant.lock().unwrap().clone();
+        let grant = *grant.lock().unwrap();
         (root, blob, grant)
     });
-    let (root, blob, grant_raw) = match fetched {
+    let (root, blob, expires_at) = match fetched {
         Some(v) => v,
         None => return json!({"ok": false, "error": "vmm not initialised"}).to_string(),
     };
 
-    if need_grant {
-        let expires_at: i64 = grant_raw.trim().parse().unwrap_or(0);
-        if expires_at <= 0 || chrono::Utc::now().timestamp_millis() >= expires_at {
-            return json!({"ok": false, "error": "access denied: no valid grant for this secret"})
-                .to_string();
-        }
+    if need_grant && (expires_at <= 0 || chrono::Utc::now().timestamp_millis() >= expires_at) {
+        return json!({"ok": false, "error": "access denied: no valid grant for this secret"})
+            .to_string();
     }
     if blob.is_empty() {
         return json!({"ok": false, "error": "secret not found"}).to_string();
@@ -907,7 +883,7 @@ pub(crate) fn host_fn_secret_list_granted(caller: &str) -> String {
             true,
             Box::new(move |trx: &Trx| {
                 *slot_c.lock().unwrap() =
-                    crate::api::actions::creature::list_granted_secrets(trx, &caller_c);
+                    crate::api::actions::creature::list_granted_secrets(trx, &caller_c)?;
                 Ok(())
             }),
         );
@@ -1161,7 +1137,12 @@ fn finance_node_record(
     app.modify_state(
         true,
         Box::new(move |trx: &Trx| {
-            if let Ok(nodes) = trx.get_json("Json::CreatureNamespace::billing", "nodes") {
+            if let Ok(nodes) = aseman_ports::finance_ledger::FinanceLedger::get_doc(
+                &crate::api::model::finance_ports::FinanceLedgerPorts { trx },
+                aseman_ports::finance_ledger::FinanceDoc::BillingNodes,
+                "",
+                "",
+            ) {
                 *slot_c.lock().unwrap() = nodes.get(&owner).and_then(JsonValue::as_object).cloned();
             }
             Ok(())
@@ -1454,7 +1435,12 @@ pub(crate) fn host_fn_start_hold(caller_program_id: &str, input: &JsonValue) -> 
     app.modify_state(
         true,
         Box::new(move |trx: &Trx| {
-            if let Ok(hold) = trx.get_json(&format!("Json::FinanceHold::{hold_id_c}"), "hold") {
+            if let Ok(hold) = aseman_ports::finance_ledger::FinanceLedger::get_doc(
+                &crate::api::model::finance_ports::FinanceLedgerPorts { trx },
+                aseman_ports::finance_ledger::FinanceDoc::Hold,
+                &hold_id_c,
+                "",
+            ) {
                 *hold_slot_c.lock().unwrap() = hold;
             }
             Ok(())
@@ -1542,7 +1528,12 @@ pub(crate) fn host_fn_release_hold(caller_program_id: &str, input: &JsonValue) -
     app.modify_state(
         true,
         Box::new(move |trx: &Trx| {
-            if let Ok(hold) = trx.get_json(&format!("Json::FinanceHold::{hold_id_c}"), "hold") {
+            if let Ok(hold) = aseman_ports::finance_ledger::FinanceLedger::get_doc(
+                &crate::api::model::finance_ports::FinanceLedgerPorts { trx },
+                aseman_ports::finance_ledger::FinanceDoc::Hold,
+                &hold_id_c,
+                "",
+            ) {
                 *hold_slot_c.lock().unwrap() = hold;
             }
             Ok(())
@@ -1631,7 +1622,12 @@ pub(crate) fn host_fn_settle_hold(caller_program_id: &str, input: &JsonValue) ->
     app.modify_state(
         true,
         Box::new(move |trx: &Trx| {
-            if let Ok(hold) = trx.get_json(&format!("Json::FinanceHold::{hold_id_c}"), "hold") {
+            if let Ok(hold) = aseman_ports::finance_ledger::FinanceLedger::get_doc(
+                &crate::api::model::finance_ports::FinanceLedgerPorts { trx },
+                aseman_ports::finance_ledger::FinanceDoc::Hold,
+                &hold_id_c,
+                "",
+            ) {
                 *hold_slot_c.lock().unwrap() = hold;
             }
             Ok(())
@@ -1736,7 +1732,12 @@ pub(crate) fn host_fn_pool_authority_call(
     app.modify_state(
         true,
         Box::new(move |trx: &Trx| {
-            if let Ok(pool) = trx.get_json(&format!("Json::FinancePool::{pool_id_c}"), "pool") {
+            if let Ok(pool) = aseman_ports::finance_ledger::FinanceLedger::get_doc(
+                &crate::api::model::finance_ports::FinanceLedgerPorts { trx },
+                aseman_ports::finance_ledger::FinanceDoc::Pool,
+                &pool_id_c,
+                "",
+            ) {
                 *pool_slot_c.lock().unwrap() = pool;
             }
             Ok(())

@@ -16,7 +16,6 @@ use serde_json::Value;
 use serde_json::Value as JsonValue;
 
 use crate::core::utils::compat::GoError;
-use crate::core::trx::Trx;
 
 /// The client-facing transport a request arrived on.
 ///

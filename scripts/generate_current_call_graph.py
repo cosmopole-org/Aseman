@@ -187,7 +187,89 @@ def action_rows() -> list[dict[str, Any]]:
                     "spawns_background_work": "thread::spawn" in body or "async_once" in body,
                 }
             )
+    rows.extend(
+        delegated_rows(
+            re.compile(r"(?m)^\s*(?:pub(?:\([^)]*\))?\s+)?fn\s+([A-Za-z0-9_]+)\s*(?:<[^>]*>)?\s*\(")
+        )
+    )
     return sorted(rows, key=lambda row: row["path"])
+
+
+def delegated_rows(function_pattern: re.Pattern[str]) -> list[dict[str, Any]]:
+    """Actions registered through a typed helper that owns the guard and delegates the
+    body: `served::<I>(app, "/path", serve_fn)`, `finance_action::<I, A>(app,
+    "/path", use_case)`, and the finance action table's `"/path" => Input, use_case;`
+    rows (ADR 0036 left the bodies in shared use cases)."""
+    rows: list[dict[str, Any]] = []
+    helper_guard = re.compile(
+        r"build_secure_action::<[^>]*>\(\s*\w+\s*,\s*key\s*,\s*(.*?)\s*,\s*move\s*\|",
+        re.S,
+    )
+    call = re.compile(
+        r'\b(served|finance_action)::<\s*([^,>]+)[^>]*>\(\s*[^,]+,\s*"([^"]+)"\s*,\s*([A-Za-z0-9_:]+)',
+        re.S,
+    )
+    table_row = re.compile(r'"(/[^"]+)"\s*=>\s*([A-Za-z0-9_]+)\s*,\s*([a-z0-9_]+)\s*;')
+    for path in sorted((ROOT / "apps/aseman-node/src/api/actions").rglob("*.rs")):
+        value = path.read_text(encoding="utf-8")
+        bodies: dict[str, str] = {}
+        for function in function_pattern.finditer(value):
+            open_brace = value.find("{", function.end())
+            if open_brace >= 0:
+                bodies[function.group(1)], _ = matching_block(value, open_brace)
+        guards = {
+            name: " ".join(found.group(1).split())
+            for name, body in bodies.items()
+            if (found := helper_guard.search(body))
+        }
+        found_calls = [
+            (m.group(1), m.group(2), m.group(3), m.group(4), m.start()) for m in call.finditer(value)
+        ]
+        if "finance_actions!" in value:
+            found_calls += [
+                ("finance_action", m.group(2), m.group(1), m.group(3), m.start())
+                for m in table_row.finditer(value)
+            ]
+        for helper, request_type, action_path, target, at in found_calls:
+            name = target.rsplit("::", 1)[-1]
+            body = bodies.get(name, "")
+            handler = (
+                f"{rel(path)}::{name}"
+                if name in bodies
+                else f"crates/aseman-application/src/finance_actions.rs::{name}"
+            )
+            services = sorted(set(re.findall(r"\.tools\(\)\.([a-zA-Z0-9_]+)\(\)", body)))
+            if "modify_state" in body:
+                services.append("state")
+            vmm_calls = []
+            if "workloads::remote()" in body:
+                services.append("vmm")
+                vmm_calls = sorted(
+                    method for method in vmm_client_methods() if re.search(rf"\.{method}\s*\(", body)
+                )
+            rows.append(
+                {
+                    "path": action_path,
+                    "handler": handler,
+                    "source": f"{rel(path)}:{line_number(value, at)}",
+                    "request_type": request_type.strip(),
+                    "guard_expression": guards.get(helper, "unresolved"),
+                    "transaction_operations": [],
+                    "services": sorted(set(services)),
+                    "models": sorted(
+                        set(
+                            re.findall(
+                                r"\b(Creature|Program|Store|Session|Entity|File|Chain|ChainShard)(?:::|\s*\{)",
+                                body,
+                            )
+                        )
+                    ),
+                    "vmm_operations": vmm_calls,
+                    "routes_via_chain": "send_base_request_on_chain" in body,
+                    "spawns_background_work": "thread::spawn" in body or "async_once" in body,
+                }
+            )
+    return rows
 
 
 def inventory() -> dict[str, Any]:

@@ -26,6 +26,7 @@ use aseman_application::program::{CreateProgram, DeleteProgram, NewProgram, Upda
 use aseman_application::store::{GetStoreAccess, ReadStoreHistory, SetStoreAccess, SignalStore};
 use aseman_application::{Diagnostics, GetServerPeers, GetServerPublicKey};
 use aseman_capsule::audit::CapsuleDecisionAudit;
+use aseman_capsule::auto::AutoCommit;
 use aseman_capsule::capability::CapsuleGrantStore;
 use aseman_capsule::identity::CapsuleKeyDirectory;
 use aseman_config::{
@@ -57,7 +58,6 @@ use aseman_public_http::{
 };
 use aseman_public_service::ComposedPublicActionService;
 use aseman_realtime_durable::PostgresRealtime;
-use aseman_capsule::auto::AutoCommit;
 use ring::signature::Ed25519KeyPair;
 use rustls::pki_types::{CertificateDer, PrivateKeyDer};
 use serde_json::{Value, json};
@@ -68,14 +68,14 @@ use crate::adapters::gateway_subs;
 use crate::api::actions::auth::LegacyAuthPorts;
 use crate::api::actions::creature as creature_actions;
 use crate::api::actions::creature::{
-    list_granted_secrets, resolve_initial_balance, secret_grant_key, secret_grantee_key,
-    secret_key, valid_component,
+    list_granted_secrets, resolve_initial_balance, valid_component,
 };
 use crate::api::actions::gateway::{bridge_signal_packet, resolve_bridge_grant};
 use crate::api::actions::program as program_actions;
 use crate::api::model::creature_ports::{CreaturePorts, creature_view};
 use crate::api::model::finance_ports::FinanceLedgerPorts;
 use crate::api::model::program_ports::{ProgramPorts, program_view};
+use crate::api::model::secrets;
 use crate::api::model::session::Session;
 use crate::api::model::store_ports::{
     MembershipPorts, SignalPorts, StorePorts, legacy_error, log_packet,
@@ -95,8 +95,8 @@ use crate::api::packets::stores::{
 use crate::api::utils::future::async_once;
 use crate::api::utils::secret_crypto;
 use crate::api::workloads::{SystemClock, creature_subject};
-use crate::models::core::ICore;
 use crate::core::trx::Trx;
+use crate::models::core::ICore;
 use base64::Engine;
 use chrono::Utc;
 
@@ -417,7 +417,7 @@ impl ActionExecutor for PublicActionExecutor {
                         id: app.tools().storage().gen_id("global"),
                         user_id: creature.id.clone(),
                     };
-                    session.push(trx);
+                    session.save(trx)?;
                     if input.metadata.is_object() {
                         for kind in [
                             aseman_domain::creature::MetadataKind::Creature,
@@ -522,14 +522,11 @@ impl ActionExecutor for PublicActionExecutor {
             "store.signal" => {
                 let input: StoreSignalInput = serde_json::from_slice(body)
                     .map_err(|_error| PortError::Unavailable("bad store.signal input"))?;
-                let app = self.app.clone();
                 let caller = subject.id.to_string();
                 self.in_trx(false, move |trx| {
                     let membership = MembershipPorts { trx };
                     let stores = StorePorts { trx };
-                    let signal_log = SignalPorts {
-                        storage: app.tools().storage(),
-                    };
+                    let signal_log = SignalPorts { trx };
                     let outcome = SignalStore {
                         stores: &stores,
                         access: &membership,
@@ -561,13 +558,10 @@ impl ActionExecutor for PublicActionExecutor {
             "store.history.read" => {
                 let input: HistoryInput = serde_json::from_slice(body)
                     .map_err(|_error| PortError::Unavailable("bad store.history.read input"))?;
-                let app = self.app.clone();
                 let caller = subject.id.to_string();
                 self.in_trx(true, move |trx| {
                     let membership = MembershipPorts { trx };
-                    let signal_log = SignalPorts {
-                        storage: app.tools().storage(),
-                    };
+                    let signal_log = SignalPorts { trx };
                     let signals = ReadStoreHistory {
                         access: &membership,
                         log: &signal_log,
@@ -716,7 +710,7 @@ impl ActionExecutor for PublicActionExecutor {
                     let root = app.tools().storage().storage_root().to_string();
                     let key = secret_crypto::master_key(&root)?;
                     let blob = secret_crypto::encrypt(input.value.as_bytes(), &key)?;
-                    trx.put_link(&secret_key(&caller, &input.name), &blob);
+                    secrets::put_blob(trx, &caller, &input.name, &blob, &key)?;
                     Ok(json!({ "ok": true, "name": input.name }))
                 })?
             }
@@ -738,16 +732,14 @@ impl ActionExecutor for PublicActionExecutor {
                         input.owner.clone()
                     };
                     if owner != caller {
-                        let raw = trx.get_link(&secret_grant_key(&owner, &input.name, &caller));
-                        let expires_at: i64 = raw.trim().parse().unwrap_or(0);
+                        let expires_at = secrets::grant_expiry(trx, &owner, &input.name, &caller)?;
                         if expires_at <= 0 || Utc::now().timestamp_millis() >= expires_at {
                             return Err(anyhow!("access denied: no valid grant for this secret"));
                         }
                     }
-                    let blob = trx.get_link(&secret_key(&owner, &input.name));
-                    if blob.is_empty() {
+                    let Some(blob) = secrets::blob(trx, &owner, &input.name)? else {
                         return Err(anyhow!("secret not found"));
-                    }
+                    };
                     let root = app.tools().storage().storage_root().to_string();
                     let key = secret_crypto::master_key(&root)?;
                     let plaintext = secret_crypto::decrypt(&blob, &key)?;
@@ -772,18 +764,11 @@ impl ActionExecutor for PublicActionExecutor {
                     if input.ttl_seconds <= 0 {
                         return Err(anyhow!("ttlSeconds must be positive"));
                     }
-                    if trx.get_link(&secret_key(&caller, &input.name)).is_empty() {
+                    if secrets::blob(trx, &caller, &input.name)?.is_none() {
                         return Err(anyhow!("secret not found"));
                     }
                     let expires_at = Utc::now().timestamp_millis() + input.ttl_seconds * 1000;
-                    trx.put_link(
-                        &secret_grant_key(&caller, &input.name, &input.grantee),
-                        &expires_at.to_string(),
-                    );
-                    trx.put_link(
-                        &secret_grantee_key(&input.grantee, &caller, &input.name),
-                        &expires_at.to_string(),
-                    );
+                    secrets::grant(trx, &caller, &input.name, &input.grantee, expires_at)?;
                     Ok(json!({ "ok": true, "grantee": input.grantee, "expiresAt": expires_at }))
                 })?
             }
@@ -798,8 +783,7 @@ impl ActionExecutor for PublicActionExecutor {
                     if !valid_component(&input.name) || !valid_component(&input.grantee) {
                         return Err(anyhow!("name and grantee are required"));
                     }
-                    trx.del_key(&secret_grant_key(&caller, &input.name, &input.grantee));
-                    trx.del_key(&secret_grantee_key(&input.grantee, &caller, &input.name));
+                    secrets::revoke(trx, &caller, &input.name, &input.grantee)?;
                     Ok(json!({ "ok": true }))
                 })?
             }
@@ -811,7 +795,7 @@ impl ActionExecutor for PublicActionExecutor {
                     if caller.is_empty() {
                         return Err(anyhow!("not authenticated"));
                     }
-                    let grants = list_granted_secrets(trx, &caller);
+                    let grants = list_granted_secrets(trx, &caller)?;
                     Ok(json!({ "ok": true, "grants": grants }))
                 })?
             }
@@ -823,12 +807,7 @@ impl ActionExecutor for PublicActionExecutor {
                     if caller.is_empty() {
                         return Err(anyhow!("not authenticated"));
                     }
-                    let prefix = format!("Secret::{caller}::");
-                    let names: Vec<String> = trx
-                        .get_by_prefix(&prefix)
-                        .into_iter()
-                        .filter_map(|key| key.strip_prefix(&prefix).map(str::to_owned))
-                        .collect();
+                    let names = secrets::names(trx, &caller)?;
                     Ok(json!({ "ok": true, "names": names }))
                 })?
             }
@@ -1431,12 +1410,9 @@ impl SessionDirectory for LegacySessionDirectory {
         self.app.modify_state(
             true,
             Box::new(move |trx: &crate::core::trx::Trx| {
-                let session = crate::api::model::session::Session {
-                    id: token_owned.clone(),
-                    ..Default::default()
-                }
-                .pull(trx);
-                *holder.lock().unwrap() = Some(session.user_id);
+                let session = crate::api::model::session::Session::find(trx, &token_owned)?;
+                *holder.lock().unwrap() =
+                    Some(session.map(|session| session.user_id).unwrap_or_default());
                 Ok(())
             }),
         );
@@ -1741,9 +1717,8 @@ fn transport_config(listener: &PublicHttpListenerConfig) -> PublicHttpConfig {
 ///
 /// Invalid TLS material, an unreadable database secret, or a bind failure.
 pub(crate) fn start_public_http(config: &AsemanConfig, app: Arc<dyn ICore>) -> Result<()> {
-    let listener = match PublicHttpListenerConfig::from_process() {
-        Ok(listener) => listener,
-        Err(_) => return Ok(()),
+    let Some(listener) = config.public_http.clone() else {
+        return Ok(());
     };
     // The node's storage backs every capsule port and lives for the node's lifetime
     // (one transaction per port call). The capsule adapters borrow it, so one handle
@@ -1938,9 +1913,7 @@ fn compose_federation_outbound(
     database_url: &str,
     policy: Arc<dyn PolicyDecisionPort>,
 ) -> Result<Option<Arc<NodeFederationOutbound>>> {
-    let Some(outbound) = FederationOutboundConfig::from_process_optional()
-        .map_err(|error| anyhow!("invalid outbound federation configuration: {error}"))?
-    else {
+    let Some(outbound) = config.federation_outbound.clone() else {
         return Ok(None);
     };
     let node_id = crate::api::workloads::node_subject(&config.node.id).id;
@@ -2028,9 +2001,8 @@ fn start_federation_http(
     policy: Arc<dyn PolicyDecisionPort>,
     actions: Arc<dyn ActionExecutor>,
 ) -> Result<()> {
-    let listener = match FederationListenerConfig::from_process() {
-        Ok(listener) => listener,
-        Err(_) => return Ok(()),
+    let Some(listener) = config.federation_listener.clone() else {
+        return Ok(());
     };
     let node_id = crate::api::workloads::node_subject(&config.node.id).id;
     let expected_audience = federation_audience(node_id);

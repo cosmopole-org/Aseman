@@ -12,10 +12,12 @@
 //! Blob layout, base64 (standard) encoded: `nonce[12] || ciphertext || tag[16]`.
 
 use std::fs;
+use std::io::ErrorKind;
 use std::path::Path;
 use std::sync::OnceLock;
 
 use anyhow::{Result, anyhow};
+use aseman_fs::{Access, create_atomic};
 use base64::Engine;
 use chacha20poly1305::aead::Aead;
 use chacha20poly1305::{ChaCha20Poly1305, Key, KeyInit, Nonce};
@@ -33,52 +35,65 @@ pub fn master_key(storage_root: &str) -> Result<[u8; 32]> {
         return Ok(*k);
     }
     let key = load_or_create_master_key(storage_root)?;
-    // If another thread raced us, keep whichever landed first — both read the
-    // same file, so the bytes are identical anyway.
-    let _ = MASTER_KEY.set(key);
-    Ok(*MASTER_KEY.get().unwrap())
+    // A thread that raced this one read or created the same file, so both hold
+    // the same key; the first to land is kept.
+    Ok(*MASTER_KEY.get_or_init(|| key))
 }
 
 fn load_or_create_master_key(storage_root: &str) -> Result<[u8; 32]> {
     let path = Path::new(storage_root).join(MASTER_KEY_FILE);
-    if let Ok(raw) = fs::read_to_string(&path) {
-        let bytes = base64::engine::general_purpose::STANDARD
-            .decode(raw.trim())
-            .map_err(|e| anyhow!("node-secret-key is not valid base64: {e}"))?;
-        if bytes.len() != 32 {
-            return Err(anyhow!(
-                "node-secret-key must be 32 bytes, found {}",
-                bytes.len()
-            ));
-        }
-        let mut k = [0u8; 32];
-        k.copy_from_slice(&bytes);
-        return Ok(k);
+    match read_master_key(&path)? {
+        Some(key) => Ok(key),
+        None => create_master_key(&path),
     }
-    // Generate a fresh key and persist it 0600 so it survives restarts. Written
-    // via a temp file + rename so a crash mid-write cannot leave a truncated key.
-    let mut k = [0u8; 32];
-    getrandom::getrandom(&mut k).map_err(|e| anyhow!("rng failure generating master key: {e}"))?;
+}
+
+/// The key stored at `path`; `None` only when there is no file. Any other read
+/// failure is an error: generating a new key would orphan every secret sealed
+/// under the existing one.
+fn read_master_key(path: &Path) -> Result<Option<[u8; 32]>> {
+    let raw = match fs::read_to_string(path) {
+        Ok(raw) => raw,
+        Err(error) if error.kind() == ErrorKind::NotFound => return Ok(None),
+        Err(error) => return Err(anyhow!("reading node-secret-key: {error}")),
+    };
+    let bytes = base64::engine::general_purpose::STANDARD
+        .decode(raw.trim())
+        .map_err(|e| anyhow!("node-secret-key is not valid base64: {e}"))?;
+    let key: [u8; 32] = bytes
+        .as_slice()
+        .try_into()
+        .map_err(|_| anyhow!("node-secret-key must be 32 bytes, found {}", bytes.len()))?;
+    Ok(Some(key))
+}
+
+/// Generate a key and persist it owner-only. The file is created, never
+/// replaced: when another process creates it first, its key is the node's.
+fn create_master_key(path: &Path) -> Result<[u8; 32]> {
+    let mut key = [0u8; 32];
+    getrandom::getrandom(&mut key)
+        .map_err(|e| anyhow!("rng failure generating master key: {e}"))?;
     if let Some(parent) = path.parent() {
-        let _ = fs::create_dir_all(parent);
+        fs::create_dir_all(parent).map_err(|e| anyhow!("creating {}: {e}", parent.display()))?;
     }
-    let encoded = base64::engine::general_purpose::STANDARD.encode(k);
-    let tmp = path.with_extension("tmp");
-    fs::write(&tmp, &encoded).map_err(|e| anyhow!("writing node-secret-key: {e}"))?;
-    set_owner_only(&tmp);
-    fs::rename(&tmp, &path).map_err(|e| anyhow!("installing node-secret-key: {e}"))?;
-    set_owner_only(&path);
-    Ok(k)
+    let encoded = base64::engine::general_purpose::STANDARD.encode(key);
+    match create_atomic(path, encoded.as_bytes(), Access::Private) {
+        Ok(()) => Ok(key),
+        Err(error) if error.kind() == ErrorKind::AlreadyExists => read_master_key(path)?
+            .ok_or_else(|| anyhow!("node-secret-key vanished while it was being created")),
+        Err(error) => Err(anyhow!("installing node-secret-key: {error}")),
+    }
 }
 
-#[cfg(unix)]
-fn set_owner_only(path: &Path) {
-    use std::os::unix::fs::PermissionsExt;
-    let _ = fs::set_permissions(path, fs::Permissions::from_mode(0o600));
+/// The master key's fingerprint, stamped on every stored secret (ADR 0023): the
+/// legacy migration writes the same one.
+pub fn fingerprint(key: &[u8; 32]) -> [u8; 32] {
+    use sha2::{Digest, Sha256};
+    let mut hasher = Sha256::new();
+    hasher.update(b"ASEMAN-LEGACY-SECRET-KEY-FINGERPRINT-V1\0");
+    hasher.update(key);
+    hasher.finalize().into()
 }
-
-#[cfg(not(unix))]
-fn set_owner_only(_path: &Path) {}
 
 /// Encrypt a plaintext secret under the master key. Returns the base64 blob
 /// `nonce || ciphertext || tag`.
@@ -113,6 +128,60 @@ pub fn decrypt(blob_b64: &str, key: &[u8; 32]) -> Result<Vec<u8>> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn scratch(name: &str) -> std::path::PathBuf {
+        let directory = std::env::temp_dir().join(format!(
+            "aseman-master-key-{name}-{}-{}",
+            std::process::id(),
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .map_or(0, |elapsed| elapsed.as_nanos())
+        ));
+        fs::create_dir_all(&directory).unwrap();
+        directory
+    }
+
+    #[test]
+    fn the_master_key_is_created_once_and_then_reused() {
+        let root = scratch("reuse");
+        let created = load_or_create_master_key(root.to_str().unwrap()).unwrap();
+        let loaded = load_or_create_master_key(root.to_str().unwrap()).unwrap();
+        assert_eq!(created, loaded);
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::PermissionsExt;
+            let mode = fs::metadata(root.join(MASTER_KEY_FILE))
+                .unwrap()
+                .permissions()
+                .mode();
+            assert_eq!(mode & 0o777, 0o600);
+        }
+        fs::remove_dir_all(root).unwrap();
+    }
+
+    #[test]
+    fn an_unreadable_master_key_is_an_error_not_a_new_key() {
+        // A directory where the key belongs cannot be read as a file.
+        let root = scratch("unreadable");
+        fs::create_dir(root.join(MASTER_KEY_FILE)).unwrap();
+        assert!(load_or_create_master_key(root.to_str().unwrap()).is_err());
+        assert!(root.join(MASTER_KEY_FILE).is_dir(), "nothing was replaced");
+        fs::remove_dir_all(root).unwrap();
+    }
+
+    #[test]
+    fn a_creator_that_loses_the_race_adopts_the_stored_key() {
+        let root = scratch("race");
+        let path = root.join(MASTER_KEY_FILE);
+        let winner = [9u8; 32];
+        fs::write(
+            &path,
+            base64::engine::general_purpose::STANDARD.encode(winner),
+        )
+        .unwrap();
+        assert_eq!(create_master_key(&path).unwrap(), winner);
+        fs::remove_dir_all(root).unwrap();
+    }
 
     #[test]
     fn round_trips() {

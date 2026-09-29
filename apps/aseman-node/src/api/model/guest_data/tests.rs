@@ -1,11 +1,12 @@
-//! Live: the routed guest data paths against a real creature database.
+//! The routed guest data paths: on the node's storage, and (live) against a real
+//! creature database.
 
 use super::*;
 use aseman_capsule::creature::CapsuleCreaturePorts;
 use aseman_domain::CreatureDatabaseBinding;
 use aseman_domain::creature::CreatureRecord;
 use aseman_ports::CreatureDirectory;
-use aseman_storage_postgres::guest::{GuestPoolRouter, PostgresGuestProvisioner};
+use aseman_storage_postgres::guest::{GuestPoolRouter, PostgresGuestKv, PostgresGuestProvisioner};
 use postgres::{Client, Config, NoTls};
 use rsa::pkcs8::{EncodePublicKey, LineEnding};
 use std::str::FromStr;
@@ -32,10 +33,17 @@ fn live_guest_data_routes_to_the_creatures_database() {
     admin
         .batch_execute(&format!("CREATE DATABASE {database}"))
         .unwrap();
-    let mut config = Config::from_str(&admin_uri).unwrap();
-    config.dbname(&database);
-    let catalog = PostgresCapsuleRepository::from_client(config.connect(NoTls).unwrap());
-    catalog.migrate().unwrap();
+    let mut settings = aseman_storage::ProviderSettings::embedded(
+        std::env::temp_dir().join(format!("aseman-guest-data-{}", Uuid::now_v7().simple())),
+    )
+    .unwrap();
+    let mut database_url = url::Url::parse(&admin_uri).unwrap();
+    database_url.set_path(&database);
+    settings.database_url = Some(database_url.to_string());
+    let catalog = AutoCommit(
+        aseman_storage::Storage::open(&aseman_storage_providers::registry(), "postgres", &settings)
+            .unwrap(),
+    );
 
     let run = Uuid::now_v7().simple().to_string();
     let creature = format!("gd-{run}@global");
@@ -79,13 +87,45 @@ fn live_guest_data_routes_to_the_creatures_database() {
     .unwrap();
     let mut proxy = Config::from_str(&admin_uri).unwrap();
     proxy.user(PROXY_ROLE).password(PROXY_PASSWORD);
-    let routing = GuestRouting {
-        kv: PostgresGuestKv::new(GuestPoolRouter::from_config(proxy, PROXY_ROLE, 2, 2).unwrap()),
+    let routing = GuestRouting::Databases {
+        kv: Arc::new(PostgresGuestKv::new(
+            GuestPoolRouter::from_config(proxy, PROXY_ROLE, 2, 2).unwrap(),
+        )),
         catalog,
     };
+    exercise(&routing, &creature);
 
+    // A creature without an active binding is refused, never served from elsewhere.
+    assert_eq!(
+        db_op_with(
+            &routing,
+            "nobody@global",
+            LegacyKvNamespace::DbOp,
+            "get",
+            "k",
+            "",
+            ""
+        ),
+        Err("the creature's guest database is not active".to_owned())
+    );
+
+    drop(routing);
+    admin
+        .batch_execute(&format!("DROP DATABASE {database}"))
+        .unwrap();
+}
+
+#[test]
+fn guest_data_is_served_from_the_nodes_storage_without_a_guest_plane() {
+    let routing = GuestRouting::Node(StorageGuestKv::new(crate::core::trx::test_storage()));
+    exercise(&routing, "8@global");
+}
+
+/// The legacy response shapes of every routed operation for `creature`.
+fn exercise(routing: &GuestRouting, creature: &str) {
+    let creature = creature.to_owned();
     // Documents and links (ADR 0028), in the legacy response shapes.
-    let state = |op: &str, input: Value| state_with(&routing, &creature, op, &input).unwrap();
+    let state = |op: &str, input: Value| state_with(routing, &creature, op, &input).unwrap();
     assert_eq!(
         state(
             "putJson",
@@ -106,11 +146,11 @@ fn live_guest_data_routes_to_the_creatures_database() {
         state("getByPrefix", json!({"prefix": ""})),
         json!({"ok": true, "data": []})
     );
-    assert!(state_with(&routing, &creature, "getJson", &json!({})).is_err());
+    assert!(state_with(routing, &creature, "getJson", &json!({})).is_err());
 
     // `dbOp` pairs in both namespaces, and `getLink` over the creature's own pairs.
     let db = |namespace, op: &str, key: &str, value: &str, prefix: &str| {
-        db_op_with(&routing, &creature, namespace, op, key, value, prefix).unwrap()
+        db_op_with(routing, &creature, namespace, op, key, value, prefix).unwrap()
     };
     let dbop = LegacyKvNamespace::DbOp;
     let applet = LegacyKvNamespace::AppletDb;
@@ -133,17 +173,6 @@ fn live_guest_data_routes_to_the_creatures_database() {
         db(dbop, "get", "profile", "", ""),
         json!({"data": ""}).to_string()
     );
-
-    // A creature without an active binding is refused, never served from legacy.
-    assert_eq!(
-        db_op_with(&routing, "nobody@global", dbop, "get", "k", "", ""),
-        Err("the creature's guest database is not active".to_owned())
-    );
-
-    drop(routing);
-    admin
-        .batch_execute(&format!("DROP DATABASE {database}"))
-        .unwrap();
 }
 
 #[test]

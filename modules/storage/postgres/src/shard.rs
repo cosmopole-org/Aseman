@@ -533,7 +533,8 @@ impl UnitOfWork for ShardedUnitOfWork {
         query: &aseman_storage::FindMany,
     ) -> StorageResult<Vec<CapsuleEnvelope>> {
         let capsule_kind = CapsuleKind(kind.to_owned());
-        let failed = |error: CapsuleStoreError| PostgresStorageError::Unavailable(error.to_string());
+        let failed =
+            |error: CapsuleStoreError| PostgresStorageError::Unavailable(error.to_string());
         if is_reference_kind(&capsule_kind)? {
             return self
                 .with_unit(self.factory.home, |unit| {
@@ -561,7 +562,8 @@ impl UnitOfWork for ShardedUnitOfWork {
     }
 
     fn count(&self, kind: &str, filter: Option<&aseman_storage::Where>) -> StorageResult<u64> {
-        let failed = |error: CapsuleStoreError| PostgresStorageError::Unavailable(error.to_string());
+        let failed =
+            |error: CapsuleStoreError| PostgresStorageError::Unavailable(error.to_string());
         if is_reference_kind(&CapsuleKind(kind.to_owned()))? {
             return self
                 .with_unit(self.factory.home, |unit| {

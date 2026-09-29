@@ -6,6 +6,7 @@ use std::sync::{Arc, Mutex};
 
 use anyhow::Result;
 
+use super::FrameLimits;
 use super::block::Block;
 use super::caches::{ParticipantEventsCache, PeerSetCache};
 use super::event::Event;
@@ -20,6 +21,7 @@ use crate::peers::{Peer, PeerSet};
 /// The mutable state behind [`InmemStore`].
 struct InmemStoreInner {
     cache_size: i64,
+    frames: FrameLimits,
     event_cache: Lru<String, Event>,
     round_cache: Lru<i64, RoundInfo>,
     block_cache: Lru<i64, Block>,
@@ -34,33 +36,16 @@ struct InmemStoreInner {
     last_block: i64,
 }
 
-/// Frames are far heavier than the other cached items — each one is a full
-/// consensus snapshot (a `BTreeMap` of roots plus a `Vec<Event>`, every event
-/// carrying its own maps). Caching `cache_size` (10 000 by default) of them
-/// pinned hundreds of MB to GBs of ever-growing snapshots in RAM — the bulk of
-/// the node's daylong memory climb (heaptrack traced it to `set_frame`'s frame
-/// clone). Frames are persisted to the consensus log and re-read on a miss (see
-/// `PersistentStore::get_frame`), so only a small hot set needs to stay resident:
-/// the last 25 consensus rounds' frames by default, env-tunable through
-/// `CASPAR_BABBLE_FRAME_CACHE`.
-const DEFAULT_MAX_FRAME_CACHE: usize = 25;
-
-fn max_frame_cache() -> usize {
-    aseman_config::legacy_adapter_snapshot()
-        .map(|config| config.babble_frame_cache)
-        .filter(|&n| n > 0)
-        .unwrap_or(DEFAULT_MAX_FRAME_CACHE)
-}
-
 impl InmemStoreInner {
-    fn new(cache_size: i64) -> InmemStoreInner {
+    fn new(cache_size: i64, frames: FrameLimits) -> InmemStoreInner {
         let cs = cache_size.max(0) as usize;
         InmemStoreInner {
             cache_size,
+            frames,
             event_cache: Lru::new(cs, None),
             round_cache: Lru::new(cs, None),
             block_cache: Lru::new(cs, None),
-            frame_cache: Lru::new(cs.min(max_frame_cache()), None),
+            frame_cache: Lru::new(cs.min(frames.cached), None),
             consensus_cache: RollingIndex::new("ConsensusCache", cs),
             tot_consensus_events: 0,
             peer_set_cache: PeerSetCache::new(),
@@ -200,7 +185,7 @@ impl InmemStoreInner {
         self.event_cache = Lru::new(cs, None);
         self.round_cache = Lru::new(cs, None);
         self.block_cache = Lru::new(cs, None);
-        self.frame_cache = Lru::new(cs.min(max_frame_cache()), None);
+        self.frame_cache = Lru::new(cs.min(self.frames.cached), None);
         self.participant_events_cache = ParticipantEventsCache::new(cs);
         self.roots = HashMap::new();
         self.last_round = -1;
@@ -232,10 +217,11 @@ pub struct InmemStore {
 }
 
 impl InmemStore {
-    /// Creates a new `InmemStore` where all caches are limited by `cache_size`.
-    pub fn new(cache_size: i64) -> InmemStore {
+    /// Creates a new `InmemStore` where all caches are limited by `cache_size`, and
+    /// the frame cache further by `frames`.
+    pub fn new(cache_size: i64, frames: FrameLimits) -> InmemStore {
         InmemStore {
-            inner: RefCell::new(InmemStoreInner::new(cache_size)),
+            inner: RefCell::new(InmemStoreInner::new(cache_size, frames)),
         }
     }
 }
@@ -453,7 +439,7 @@ mod tests {
         let cache_size = 100i64;
         let test_size = 15i64;
 
-        let store = InmemStore::new(cache_size);
+        let store = InmemStore::new(cache_size, FrameLimits::default());
         let (peer_set, participants) = init_peers(n);
         store.set_peer_set(0, Arc::new(peer_set)).unwrap();
 
@@ -519,7 +505,7 @@ mod tests {
     #[test]
     fn test_inmem_rounds() {
         let n = 3usize;
-        let store = InmemStore::new(100);
+        let store = InmemStore::new(100, FrameLimits::default());
         let (peer_set, participants) = init_peers(n);
         store.set_peer_set(0, Arc::new(peer_set)).unwrap();
 
@@ -561,7 +547,7 @@ mod tests {
     #[test]
     fn test_inmem_blocks() {
         let n = 3usize;
-        let store = InmemStore::new(100);
+        let store = InmemStore::new(100, FrameLimits::default());
         let (peer_set, participants) = init_peers(n);
         store.set_peer_set(0, Arc::new(peer_set)).unwrap();
 

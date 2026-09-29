@@ -10,19 +10,13 @@ fn live_vmm_stores_pass_the_suite() {
         return;
     };
     let database = format!("aseman_vmm_{}", Uuid::now_v7().simple());
-    let mut admin = postgres::Client::connect(&url, NoTls).unwrap();
+    let mut admin = postgres::Client::connect(&url, postgres::NoTls).unwrap();
     admin
         .batch_execute(&format!("CREATE DATABASE {database}"))
         .unwrap();
     let mut config: postgres::Config = url.parse().unwrap();
     config.dbname(&database);
-    let store = {
-        let pool = Pool::builder()
-            .max_size(4)
-            .build(PostgresConnectionManager::new(config, NoTls))
-            .unwrap();
-        PostgresVmmStore { pool }
-    };
+    let store = PostgresVmmStore::connect_config(config, 4).unwrap();
     store.migrate().unwrap();
     // Idempotent.
     store.migrate().unwrap();

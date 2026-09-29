@@ -11,7 +11,7 @@ use crate::sdk::{
     type_methods::{self, CoreType, Dispatch},
 };
 use core::panic;
-use std::{cell::RefCell, collections::HashMap, fmt, i16, rc::Rc};
+use std::{cell::RefCell, collections::HashMap, fmt, rc::Rc};
 
 use std::vec;
 
@@ -303,12 +303,12 @@ impl Operation for AssignVariable {
             // The index is only known after `AssignVarExtractIndex`; callers that
             // read `get_data` earlier (e.g. to inspect the target type while still
             // in `AssignVarExtractName`) get a typed-null placeholder for it.
-            let index = self.index.clone().unwrap_or_else(|| Val {
+            let index = self.index.clone().unwrap_or(Val {
                 typ: 0,
                 data: Payload::Null,
             });
             if self.var_value.is_none() {
-                return vec![
+                vec![
                     Val {
                         typ: 7,
                         data: Payload::from(self.var_name.clone().unwrap()),
@@ -322,9 +322,9 @@ impl Operation for AssignVariable {
                         typ: 0,
                         data: Payload::Null,
                     },
-                ];
+                ]
             } else {
-                return vec![
+                vec![
                     Val {
                         typ: 7,
                         data: Payload::from(self.var_name.clone().unwrap()),
@@ -335,11 +335,11 @@ impl Operation for AssignVariable {
                     },
                     index,
                     self.var_value.clone().unwrap(),
-                ];
+                ]
             }
         } else {
             if self.var_value.is_none() {
-                return vec![
+                vec![
                     Val {
                         typ: 7,
                         data: Payload::from(self.var_name.clone().unwrap()),
@@ -356,9 +356,9 @@ impl Operation for AssignVariable {
                         typ: 0,
                         data: Payload::Null,
                     },
-                ];
+                ]
             } else {
-                return vec![
+                vec![
                     Val {
                         typ: 7,
                         data: Payload::from(self.var_name.clone().unwrap()),
@@ -372,7 +372,7 @@ impl Operation for AssignVariable {
                         data: Payload::Null,
                     },
                     self.var_value.clone().unwrap(),
-                ];
+                ]
             }
         }
     }
@@ -1577,7 +1577,7 @@ impl Operation for TypeTestOp {
 fn value_is_type(value: &Val, type_name: &str) -> bool {
     match type_name {
         "any" => true,
-        "int" => matches!(value.typ, 1 | 2 | 3),
+        "int" => matches!(value.typ, 1..=3),
         "float" => matches!(value.typ, 4 | 5),
         "number" => matches!(value.typ, 1..=5),
         "string" => value.typ == 7,
@@ -1994,20 +1994,20 @@ impl Executor {
                     if self.reserved_host_call.is_some() {
                         let host_call_data = self.reserved_host_call.clone().unwrap();
                         self.reserved_host_call = None;
-                        return host_call_data;
-                    } else if self.pointer == self.ctx.memory.get(0).unwrap().borrow().frozen_end {
+                        host_call_data
+                    } else if self.pointer == self.ctx.memory.first().unwrap().borrow().frozen_end {
                         self.processing = false;
-                        return (0x01, cb_id, result);
+                        (0x01, cb_id, result)
                     } else {
                         self.processing = false;
-                        return (
+                        (
                             0x00,
                             0,
                             Val {
                                 typ: 0,
                                 data: Payload::Null,
                             },
-                        );
+                        )
                     }
                 } else {
                     self.exec_globally = false;
@@ -2045,20 +2045,20 @@ impl Executor {
                         if self.reserved_host_call.is_some() {
                             let host_call_data = self.reserved_host_call.clone().unwrap();
                             self.reserved_host_call = None;
-                            return host_call_data;
+                            host_call_data
                         } else if self.ctx.memory.len() == 1 {
                             self.processing = false;
-                            return (0x01, cb_id, result);
+                            (0x01, cb_id, result)
                         } else {
                             self.processing = false;
-                            return (
+                            (
                                 0x00,
                                 0,
                                 Val {
                                     typ: 0,
                                     data: Payload::Null,
                                 },
-                            );
+                            )
                         }
                     } else {
                         // The host may invoke an *optional* lifecycle handler the
@@ -2070,14 +2070,14 @@ impl Executor {
                         // acquire mutex"), silently freezing a host that simply drove
                         // a handler the app chose not to implement.
                         self.processing = false;
-                        return (
+                        (
                             0x01,
                             cb_id,
                             Val {
                                 typ: 0,
                                 data: Payload::Null,
                             },
-                        );
+                        )
                     }
                 }
             }
@@ -2094,14 +2094,14 @@ impl Executor {
                             println!("{{ key: {}, val: {} }}", key, val.stringify());
                         });
                 });
-                return (
+                (
                     0x00,
                     0,
                     Val {
                         typ: 0,
                         data: Payload::Null,
                     },
-                );
+                )
             }
             0x03 | 0x04 => {
                 // 0x03 resumes after a host call (injecting `payload` as the
@@ -2133,65 +2133,65 @@ impl Executor {
                         if self.reserved_host_call.is_some() {
                             let host_call_data = self.reserved_host_call.clone().unwrap();
                             self.reserved_host_call = None;
-                            return host_call_data;
+                            host_call_data
                         } else if self.pointer
-                            == self.ctx.memory.get(0).unwrap().borrow().frozen_end
+                            == self.ctx.memory.first().unwrap().borrow().frozen_end
                         {
                             self.processing = false;
-                            return (0x01, cb_id, result);
+                            (0x01, cb_id, result)
                         } else {
                             self.processing = false;
-                            return (
+                            (
                                 0x00,
                                 0,
                                 Val {
                                     typ: 0,
                                     data: Payload::Null,
                                 },
-                            );
+                            )
                         }
                     } else {
                         if self.reserved_host_call.is_some() {
                             let host_call_data = self.reserved_host_call.clone().unwrap();
                             self.reserved_host_call = None;
-                            return host_call_data;
+                            host_call_data
                         } else if self.ctx.memory.len() == 1 {
                             self.processing = false;
-                            return (0x01, cb_id, result);
+                            (0x01, cb_id, result)
                         } else {
                             self.processing = false;
-                            return (
+                            (
                                 0x00,
                                 0,
                                 Val {
                                     typ: 0,
                                     data: Payload::Null,
                                 },
-                            );
+                            )
                         }
                     }
                 } else {
                     self.processing = false;
-                    return (
+                    (
                         0x00,
                         0,
                         Val {
                             typ: 0,
                             data: Payload::Null,
                         },
-                    );
+                    )
                 }
             }
             _ => {
                 self.processing = false;
-                return (
+                (
                     0x00,
                     0,
                     Val {
                         typ: 0,
                         data: Payload::Null,
                     },
-                );
+                )
             }
         }
     }
@@ -2224,15 +2224,15 @@ impl Executor {
     }
     fn check_float_range(&self, num: f64) -> Val {
         if num < f32::MAX.into() {
-            return Val {
+            Val {
                 typ: 4,
                 data: Payload::from(num as f32),
-            };
+            }
         } else {
-            return Val {
+            Val {
                 typ: 5,
                 data: Payload::from(num),
-            };
+            }
         }
     }
     /// Build the value that reading a resolved built-in type member yields. This
@@ -2244,12 +2244,11 @@ impl Executor {
             // A getter reads eagerly through stdlib — the member name is the
             // universal builtin name, invoked directly. A getter that errors
             // reads as null, like any other absent member.
-            Dispatch::Getter => {
-                stdlib::invoke(&member.name, &[receiver.clone()]).unwrap_or_else(|_| Val {
+            Dispatch::Getter => stdlib::invoke(&member.name, std::slice::from_ref(receiver))
+                .unwrap_or(Val {
                     typ: 0,
                     data: Payload::Null,
-                })
-            }
+                }),
             // A method becomes a bound native (typ 253) carrying `[recv, name]`;
             // the call machinery appends the args and calls `stdlib::invoke`.
             Dispatch::Method => {
@@ -2285,29 +2284,29 @@ impl Executor {
 
     fn check_int_range(&self, num: i64) -> Val {
         if num < i16::MAX.into() {
-            return Val {
+            Val {
                 typ: 1,
                 data: Payload::from(num as i16),
-            };
+            }
         } else if num < i32::MAX.into() {
-            return Val {
+            Val {
                 typ: 2,
                 data: Payload::from(num as i32),
-            };
+            }
         } else {
-            return Val {
+            Val {
                 typ: 3,
                 data: Payload::from(num),
-            };
+            }
         }
     }
     fn operate_sum(&self, arg1: Val, arg2: Val) -> Val {
         match arg1.typ {
-            1 | 2 | 3 => {
+            1..=3 => {
                 let val1 = match arg1.typ {
                     1 => arg1.as_i16() as i64,
                     2 => arg1.as_i32() as i64,
-                    3 => arg1.as_i64() as i64,
+                    3 => arg1.as_i64(),
                     _ => 0,
                 };
                 match arg2.typ {
@@ -2320,7 +2319,7 @@ impl Executor {
                         self.check_int_range(val1 + val2)
                     }
                     3 => {
-                        let val2 = arg2.as_i64() as i64;
+                        let val2 = arg2.as_i64();
                         self.check_int_range(val1 + val2)
                     }
                     4 => {
@@ -2329,7 +2328,7 @@ impl Executor {
                         self.check_float_range(val1_temp + val2)
                     }
                     5 => {
-                        let val2 = arg2.as_f64() as f64;
+                        let val2 = arg2.as_f64();
                         let val1_temp = val1 as f64;
                         self.check_float_range(val1_temp + val2)
                     }
@@ -2371,7 +2370,7 @@ impl Executor {
             4 | 5 => {
                 let val1 = match arg1.typ {
                     4 => arg1.as_f32() as f64,
-                    5 => arg1.as_f64() as f64,
+                    5 => arg1.as_f64(),
                     _ => 0.0,
                 };
                 match arg2.typ {
@@ -2392,7 +2391,7 @@ impl Executor {
                         self.check_float_range(val1 + val2)
                     }
                     5 => {
-                        let val2 = arg2.as_f64() as f64;
+                        let val2 = arg2.as_f64();
                         self.check_float_range(val1 + val2)
                     }
                     6 => {
@@ -2655,7 +2654,7 @@ impl Executor {
                     typ: 1,
                     data: Payload::from(0i16),
                 },
-                1 | 2 | 3 => self.check_int_range(match arg2.typ {
+                1..=3 => self.check_int_range(match arg2.typ {
                     1 => arg2.as_i16() as i64,
                     2 => arg2.as_i32() as i64,
                     _ => arg2.as_i64(),
@@ -2677,11 +2676,11 @@ impl Executor {
     }
     fn operate_multiply(&self, arg1: Val, arg2: Val) -> Val {
         match arg1.typ {
-            1 | 2 | 3 => {
+            1..=3 => {
                 let val1 = match arg1.typ {
                     1 => arg1.as_i16() as i64,
                     2 => arg1.as_i32() as i64,
-                    3 => arg1.as_i64() as i64,
+                    3 => arg1.as_i64(),
                     _ => 0,
                 };
                 match arg2.typ {
@@ -2694,7 +2693,7 @@ impl Executor {
                         self.check_int_range(val1 * val2)
                     }
                     3 => {
-                        let val2 = arg2.as_i64() as i64;
+                        let val2 = arg2.as_i64();
                         self.check_int_range(val1 * val2)
                     }
                     4 => {
@@ -2703,7 +2702,7 @@ impl Executor {
                         self.check_float_range(val1_temp * val2)
                     }
                     5 => {
-                        let val2 = arg2.as_f64() as f64;
+                        let val2 = arg2.as_f64();
                         let val1_temp = val1 as f64;
                         self.check_float_range(val1_temp * val2)
                     }
@@ -2746,7 +2745,7 @@ impl Executor {
             4 | 5 => {
                 let val1 = match arg1.typ {
                     4 => arg1.as_f32() as f64,
-                    5 => arg1.as_f64() as f64,
+                    5 => arg1.as_f64(),
                     _ => 0.0,
                 };
                 match arg2.typ {
@@ -2767,7 +2766,7 @@ impl Executor {
                         self.check_float_range(val1 * val2)
                     }
                     5 => {
-                        let val2 = arg2.as_f64() as f64;
+                        let val2 = arg2.as_f64();
                         self.check_float_range(val1 * val2)
                     }
                     6 => {
@@ -2830,25 +2829,25 @@ impl Executor {
                     }
                     8 => {
                         if val1 {
-                            return arg2.clone();
+                            arg2.clone()
                         } else {
-                            return Val {
+                            Val {
                                 typ: 8,
                                 data: Payload::from(Rc::new(RefCell::new(Object::new(
                                     -2,
                                     ValGroup::new_empty(),
                                 )))),
-                            };
+                            }
                         }
                     }
                     9 => {
                         if val1 {
-                            return arg2.clone();
+                            arg2.clone()
                         } else {
-                            return Val {
+                            Val {
                                 typ: 9,
                                 data: Payload::from(Rc::new(RefCell::new(Array::new_empty()))),
-                            };
+                            }
                         }
                     }
                     10 => {
@@ -2959,12 +2958,12 @@ impl Executor {
                     }
                     6 => {
                         if arg2.as_bool() {
-                            return arg1.clone();
+                            arg1.clone()
                         } else {
-                            return Val {
+                            Val {
                                 typ: 9,
                                 data: Payload::from(Rc::new(RefCell::new(Array::new_empty()))),
-                            };
+                            }
                         }
                     }
                     7 => {
@@ -2991,11 +2990,11 @@ impl Executor {
     }
     fn operate_subtract(&self, arg1: Val, arg2: Val) -> Val {
         match arg1.typ {
-            1 | 2 | 3 => {
+            1..=3 => {
                 let val1 = match arg1.typ {
                     1 => arg1.as_i16() as i64,
                     2 => arg1.as_i32() as i64,
-                    3 => arg1.as_i64() as i64,
+                    3 => arg1.as_i64(),
                     _ => 0,
                 };
                 match arg2.typ {
@@ -3008,7 +3007,7 @@ impl Executor {
                         self.check_int_range(val1 - val2)
                     }
                     3 => {
-                        let val2 = arg2.as_i64() as i64;
+                        let val2 = arg2.as_i64();
                         self.check_int_range(val1 - val2)
                     }
                     4 => {
@@ -3017,7 +3016,7 @@ impl Executor {
                         self.check_float_range(val1_temp - val2)
                     }
                     5 => {
-                        let val2 = arg2.as_f64() as f64;
+                        let val2 = arg2.as_f64();
                         let val1_temp = val1 as f64;
                         self.check_float_range(val1_temp - val2)
                     }
@@ -3044,7 +3043,7 @@ impl Executor {
             4 | 5 => {
                 let val1 = match arg1.typ {
                     4 => arg1.as_f32() as f64,
-                    5 => arg1.as_f64() as f64,
+                    5 => arg1.as_f64(),
                     _ => 0.0,
                 };
                 match arg2.typ {
@@ -3065,7 +3064,7 @@ impl Executor {
                         self.check_float_range(val1 - val2)
                     }
                     5 => {
-                        let val2 = arg2.as_f64() as f64;
+                        let val2 = arg2.as_f64();
                         self.check_float_range(val1 - val2)
                     }
                     6 => {
@@ -3289,9 +3288,9 @@ impl Executor {
                             .iter()
                             .filter_map(|item| {
                                 if self.is_eq(item.clone(), arg2.clone()) {
-                                    return None;
+                                    None
                                 } else {
-                                    return Some(item.clone());
+                                    Some(item.clone())
                                 }
                             })
                             .collect();
@@ -3312,7 +3311,7 @@ impl Executor {
                                         return None;
                                     }
                                 }
-                                return Some(item.clone());
+                                Some(item.clone())
                             })
                             .collect();
                         Val {
@@ -3335,7 +3334,7 @@ impl Executor {
     }
     fn operate_division(&self, arg1: Val, arg2: Val) -> Val {
         match arg1.typ {
-            1 | 2 | 3 => {
+            1..=3 => {
                 let val1 = match arg1.typ {
                     1 => arg1.as_i16() as f64,
                     2 => arg1.as_i32() as f64,
@@ -3360,7 +3359,7 @@ impl Executor {
                         self.check_float_range(val1 / val2)
                     }
                     5 => {
-                        let val2 = arg2.as_f64() as f64;
+                        let val2 = arg2.as_f64();
                         self.check_float_range(val1 / val2)
                     }
                     6 => {
@@ -3386,7 +3385,7 @@ impl Executor {
             4 | 5 => {
                 let val1 = match arg1.typ {
                     4 => arg1.as_f32() as f64,
-                    5 => arg1.as_f64() as f64,
+                    5 => arg1.as_f64(),
                     _ => 0.0,
                 };
                 match arg2.typ {
@@ -3407,7 +3406,7 @@ impl Executor {
                         self.check_float_range(val1 / val2)
                     }
                     5 => {
-                        let val2 = arg2.as_f64() as f64;
+                        let val2 = arg2.as_f64();
                         self.check_float_range(val1 / val2)
                     }
                     6 => {
@@ -3455,7 +3454,7 @@ impl Executor {
             // Integer dividend: keep an integer remainder for integer divisors,
             // promote to float when the divisor is a float (matching the rest of
             // the arithmetic ops, e.g. `operate_subtract`).
-            1 | 2 | 3 => {
+            1..=3 => {
                 let val1 = match arg1.typ {
                     1 => arg1.as_i16() as i64,
                     2 => arg1.as_i32() as i64,
@@ -3509,7 +3508,7 @@ impl Executor {
             // Integer base raised to a non-negative integer exponent stays an
             // integer (falling back to float on overflow); any float operand or
             // negative exponent yields a float, like the other arithmetic ops.
-            1 | 2 | 3 => {
+            1..=3 => {
                 let val1 = match arg1.typ {
                     1 => arg1.as_i16() as i64,
                     2 => arg1.as_i32() as i64,
@@ -3580,20 +3579,20 @@ impl Executor {
         if v.typ == 0 || v2.typ == 0 {
             return is_null(&v) && is_null(&v2);
         }
-        return match v.typ {
-            1 | 2 | 3 => {
+        match v.typ {
+            1..=3 => {
                 let v_val = match v.typ {
                     1 => v.as_i16() as i64,
                     2 => v.as_i32() as i64,
-                    3 => v.as_i64() as i64,
+                    3 => v.as_i64(),
                     _ => 0,
                 };
                 match v2.typ {
-                    1 | 2 | 3 => {
+                    1..=3 => {
                         let v2_val = match v2.typ {
                             1 => v2.as_i16() as i64,
                             2 => v2.as_i32() as i64,
-                            3 => v2.as_i64() as i64,
+                            3 => v2.as_i64(),
                             _ => 0,
                         };
                         v_val == v2_val
@@ -3602,7 +3601,7 @@ impl Executor {
                         let v_val_temp = v_val as f64;
                         let v2_val = match v2.typ {
                             4 => v2.as_f32() as f64,
-                            5 => v2.as_f64() as f64,
+                            5 => v2.as_f64(),
                             _ => 0.0,
                         };
                         v_val_temp == v2_val
@@ -3613,11 +3612,11 @@ impl Executor {
             4 | 5 => {
                 let v_val = match v.typ {
                     4 => v.as_f32() as f64,
-                    5 => v.as_f64() as f64,
+                    5 => v.as_f64(),
                     _ => 0.0,
                 };
                 match v2.typ {
-                    1 | 2 | 3 => {
+                    1..=3 => {
                         let v2_val = match v2.typ {
                             1 => v2.as_i16() as f64,
                             2 => v2.as_i32() as f64,
@@ -3629,7 +3628,7 @@ impl Executor {
                     4 | 5 => {
                         let v2_val = match v2.typ {
                             4 => v2.as_f32() as f64,
-                            5 => v2.as_f64() as f64,
+                            5 => v2.as_f64(),
                             _ => 0.0,
                         };
                         v_val == v2_val
@@ -3713,9 +3712,9 @@ impl Executor {
                                 v2_val.borrow().data.get(counter).unwrap().clone(),
                             ) {
                                 counter += 1;
-                                return true;
+                                true
                             } else {
-                                return false;
+                                false
                             }
                         });
                     }
@@ -3734,23 +3733,23 @@ impl Executor {
                 }
             }
             _ => false,
-        };
+        }
     }
     fn is_ge(&self, v: Val, v2: Val) -> bool {
-        return match v.typ {
-            1 | 2 | 3 => {
+        match v.typ {
+            1..=3 => {
                 let v_val = match v.typ {
                     1 => v.as_i16() as i64,
                     2 => v.as_i32() as i64,
-                    3 => v.as_i64() as i64,
+                    3 => v.as_i64(),
                     _ => 0,
                 };
                 match v2.typ {
-                    1 | 2 | 3 => {
+                    1..=3 => {
                         let v2_val = match v2.typ {
                             1 => v2.as_i16() as i64,
                             2 => v2.as_i32() as i64,
-                            3 => v2.as_i64() as i64,
+                            3 => v2.as_i64(),
                             _ => 0,
                         };
                         v_val > v2_val
@@ -3759,7 +3758,7 @@ impl Executor {
                         let v_val_temp = v_val as f64;
                         let v2_val = match v2.typ {
                             4 => v2.as_f32() as f64,
-                            5 => v2.as_f64() as f64,
+                            5 => v2.as_f64(),
                             _ => 0.0,
                         };
                         v_val_temp > v2_val
@@ -3772,11 +3771,11 @@ impl Executor {
             4 | 5 => {
                 let v_val = match v.typ {
                     4 => v.as_f32() as f64,
-                    5 => v.as_f64() as f64,
+                    5 => v.as_f64(),
                     _ => 0.0,
                 };
                 match v2.typ {
-                    1 | 2 | 3 => {
+                    1..=3 => {
                         let v2_val = match v2.typ {
                             1 => v2.as_i16() as f64,
                             2 => v2.as_i32() as f64,
@@ -3788,7 +3787,7 @@ impl Executor {
                     4 | 5 => {
                         let v2_val = match v2.typ {
                             4 => v2.as_f32() as f64,
-                            5 => v2.as_f64() as f64,
+                            5 => v2.as_f64(),
                             _ => 0.0,
                         };
                         v_val > v2_val
@@ -3803,7 +3802,7 @@ impl Executor {
                 match v2.typ {
                     6 => {
                         let v2_val = v2.as_bool();
-                        v_val > v2_val
+                        v_val & !v2_val
                     }
                     _ => panic!(
                         "elpian error: boolean and non boolean values are not comparable unless it is just equality check"
@@ -3881,7 +3880,7 @@ impl Executor {
                             }
                             counter += 1;
                         });
-                        return counter1 > counter2;
+                        counter1 > counter2
                     }
                     _ => panic!(
                         "elpian error: array and non array values are not comparable unless it is just equality check"
@@ -3892,23 +3891,23 @@ impl Executor {
                 "elpian error: function types are not comparable unless it is just equality check"
             ),
             _ => panic!("elpian error: unknown types are not comparable"),
-        };
+        }
     }
     fn is_gee(&self, v: Val, v2: Val) -> bool {
-        return match v.typ {
-            1 | 2 | 3 => {
+        match v.typ {
+            1..=3 => {
                 let v_val = match v.typ {
                     1 => v.as_i16() as i64,
                     2 => v.as_i32() as i64,
-                    3 => v.as_i64() as i64,
+                    3 => v.as_i64(),
                     _ => 0,
                 };
                 match v2.typ {
-                    1 | 2 | 3 => {
+                    1..=3 => {
                         let v2_val = match v2.typ {
                             1 => v2.as_i16() as i64,
                             2 => v2.as_i32() as i64,
-                            3 => v2.as_i64() as i64,
+                            3 => v2.as_i64(),
                             _ => 0,
                         };
                         v_val >= v2_val
@@ -3917,7 +3916,7 @@ impl Executor {
                         let v_val_temp = v_val as f64;
                         let v2_val = match v2.typ {
                             4 => v2.as_f32() as f64,
-                            5 => v2.as_f64() as f64,
+                            5 => v2.as_f64(),
                             _ => 0.0,
                         };
                         v_val_temp >= v2_val
@@ -3930,11 +3929,11 @@ impl Executor {
             4 | 5 => {
                 let v_val = match v.typ {
                     4 => v.as_f32() as f64,
-                    5 => v.as_f64() as f64,
+                    5 => v.as_f64(),
                     _ => 0.0,
                 };
                 match v2.typ {
-                    1 | 2 | 3 => {
+                    1..=3 => {
                         let v2_val = match v2.typ {
                             1 => v2.as_i16() as f64,
                             2 => v2.as_i32() as f64,
@@ -3946,7 +3945,7 @@ impl Executor {
                     4 | 5 => {
                         let v2_val = match v2.typ {
                             4 => v2.as_f32() as f64,
-                            5 => v2.as_f64() as f64,
+                            5 => v2.as_f64(),
                             _ => 0.0,
                         };
                         v_val >= v2_val
@@ -4039,7 +4038,7 @@ impl Executor {
                             }
                             counter += 1;
                         });
-                        return counter1 >= counter2;
+                        counter1 >= counter2
                     }
                     _ => panic!(
                         "elpian error: array and non array values are not comparable unless it is just equality check"
@@ -4050,23 +4049,23 @@ impl Executor {
                 "elpian error: function types are not comparable unless it is just equality check"
             ),
             _ => panic!("elpian error: unknown types are not comparable"),
-        };
+        }
     }
     fn is_le(&self, v: Val, v2: Val) -> bool {
-        return match v.typ {
-            1 | 2 | 3 => {
+        match v.typ {
+            1..=3 => {
                 let v_val = match v.typ {
                     1 => v.as_i16() as i64,
                     2 => v.as_i32() as i64,
-                    3 => v.as_i64() as i64,
+                    3 => v.as_i64(),
                     _ => 0,
                 };
                 match v2.typ {
-                    1 | 2 | 3 => {
+                    1..=3 => {
                         let v2_val = match v2.typ {
                             1 => v2.as_i16() as i64,
                             2 => v2.as_i32() as i64,
-                            3 => v2.as_i64() as i64,
+                            3 => v2.as_i64(),
                             _ => 0,
                         };
                         v_val < v2_val
@@ -4075,7 +4074,7 @@ impl Executor {
                         let v_val_temp = v_val as f64;
                         let v2_val = match v2.typ {
                             4 => v2.as_f32() as f64,
-                            5 => v2.as_f64() as f64,
+                            5 => v2.as_f64(),
                             _ => 0.0,
                         };
                         v_val_temp < v2_val
@@ -4088,11 +4087,11 @@ impl Executor {
             4 | 5 => {
                 let v_val = match v.typ {
                     4 => v.as_f32() as f64,
-                    5 => v.as_f64() as f64,
+                    5 => v.as_f64(),
                     _ => 0.0,
                 };
                 match v2.typ {
-                    1 | 2 | 3 => {
+                    1..=3 => {
                         let v2_val = match v2.typ {
                             1 => v2.as_i16() as f64,
                             2 => v2.as_i32() as f64,
@@ -4104,7 +4103,7 @@ impl Executor {
                     4 | 5 => {
                         let v2_val = match v2.typ {
                             4 => v2.as_f32() as f64,
-                            5 => v2.as_f64() as f64,
+                            5 => v2.as_f64(),
                             _ => 0.0,
                         };
                         v_val < v2_val
@@ -4119,7 +4118,7 @@ impl Executor {
                 match v2.typ {
                     6 => {
                         let v2_val = v2.as_bool();
-                        v_val < v2_val
+                        !v_val & v2_val
                     }
                     _ => panic!(
                         "elpian error: boolean and non boolean values are not comparable unless it is just equality check"
@@ -4197,7 +4196,7 @@ impl Executor {
                             }
                             counter += 1;
                         });
-                        return counter1 < counter2;
+                        counter1 < counter2
                     }
                     _ => panic!(
                         "elpian error: array and non array values are not comparable unless it is just equality check"
@@ -4208,23 +4207,23 @@ impl Executor {
                 "elpian error: function types are not comparable unless it is just equality check"
             ),
             _ => panic!("elpian error: unknown types are not comparable"),
-        };
+        }
     }
     fn is_lee(&self, v: Val, v2: Val) -> bool {
-        return match v.typ {
-            1 | 2 | 3 => {
+        match v.typ {
+            1..=3 => {
                 let v_val = match v.typ {
                     1 => v.as_i16() as i64,
                     2 => v.as_i32() as i64,
-                    3 => v.as_i64() as i64,
+                    3 => v.as_i64(),
                     _ => 0,
                 };
                 match v2.typ {
-                    1 | 2 | 3 => {
+                    1..=3 => {
                         let v2_val = match v2.typ {
                             1 => v2.as_i16() as i64,
                             2 => v2.as_i32() as i64,
-                            3 => v2.as_i64() as i64,
+                            3 => v2.as_i64(),
                             _ => 0,
                         };
                         v_val <= v2_val
@@ -4233,7 +4232,7 @@ impl Executor {
                         let v_val_temp = v_val as f64;
                         let v2_val = match v2.typ {
                             4 => v2.as_f32() as f64,
-                            5 => v2.as_f64() as f64,
+                            5 => v2.as_f64(),
                             _ => 0.0,
                         };
                         v_val_temp <= v2_val
@@ -4246,11 +4245,11 @@ impl Executor {
             4 | 5 => {
                 let v_val = match v.typ {
                     4 => v.as_f32() as f64,
-                    5 => v.as_f64() as f64,
+                    5 => v.as_f64(),
                     _ => 0.0,
                 };
                 match v2.typ {
-                    1 | 2 | 3 => {
+                    1..=3 => {
                         let v2_val = match v2.typ {
                             1 => v2.as_i16() as f64,
                             2 => v2.as_i32() as f64,
@@ -4262,7 +4261,7 @@ impl Executor {
                     4 | 5 => {
                         let v2_val = match v2.typ {
                             4 => v2.as_f32() as f64,
-                            5 => v2.as_f64() as f64,
+                            5 => v2.as_f64(),
                             _ => 0.0,
                         };
                         v_val <= v2_val
@@ -4355,7 +4354,7 @@ impl Executor {
                             }
                             counter += 1;
                         });
-                        return counter1 <= counter2;
+                        counter1 <= counter2
                     }
                     _ => panic!(
                         "elpian error: array and non array values are not comparable unless it is just equality check"
@@ -4366,7 +4365,7 @@ impl Executor {
                 "elpian error: function types are not comparable unless it is just equality check"
             ),
             _ => panic!("elpian error: unknown types are not comparable"),
-        };
+        }
     }
     fn define(&mut self, id_name: String, val: Val) {
         if let Err(e) = self.governor.charge_memory(val.approx_size()) {
@@ -4411,7 +4410,7 @@ impl Executor {
         while self
             .try_stack
             .last()
-            .map_or(false, |f| f.scope_depth >= self.ctx.memory.len())
+            .is_some_and(|f| f.scope_depth >= self.ctx.memory.len())
         {
             self.try_stack.pop();
         }
@@ -4587,17 +4586,15 @@ impl Executor {
         }
         let mut main_reg: Option<Val> = None;
         let mut is_reg_state_final = false;
-        if continue_exec {
-            if self.pending_func_result_value.typ != 254 {
-                let returned_val = self.pending_func_result_value.clone();
-                self.pending_func_result_value = Val {
-                    typ: 254,
-                    data: Payload::Null,
-                };
-                if !self.registers.is_empty() {
-                    main_reg = Some(returned_val);
-                    is_reg_state_final = false;
-                }
+        if continue_exec && self.pending_func_result_value.typ != 254 {
+            let returned_val = self.pending_func_result_value.clone();
+            self.pending_func_result_value = Val {
+                typ: 254,
+                data: Payload::Null,
+            };
+            if !self.registers.is_empty() {
+                main_reg = Some(returned_val);
+                is_reg_state_final = false;
             }
         }
         loop {
@@ -5625,13 +5622,12 @@ impl Executor {
                                 } else {
                                     // A plain Map (no `__class` tag) exposes Map
                                     // members; class instances do not.
-                                    let is_plain_map = indexed
+                                    let is_plain_map = !indexed
                                         .as_object()
                                         .borrow()
                                         .data
                                         .data
-                                        .get("__class")
-                                        .is_none();
+                                        .contains_key("__class");
                                     let map_member = if is_plain_map {
                                         type_methods::resolve(CoreType::Map, &key)
                                     } else {
@@ -5665,8 +5661,7 @@ impl Executor {
                             if indexed.typ == 9 {
                                 let arr = indexed.as_array();
                                 if index.typ == 1 {
-                                    if let Some(o) =
-                                        arr.borrow().data.get(index.as_i16() as usize).clone()
+                                    if let Some(o) = arr.borrow().data.get(index.as_i16() as usize)
                                     {
                                         main_reg = Some(o.clone());
                                     } else {
@@ -5676,8 +5671,7 @@ impl Executor {
                                         });
                                     }
                                 } else if index.typ == 2 {
-                                    if let Some(o) =
-                                        arr.borrow().data.get(index.as_i32() as usize).clone()
+                                    if let Some(o) = arr.borrow().data.get(index.as_i32() as usize)
                                     {
                                         main_reg = Some(o.clone());
                                     } else {
@@ -5687,8 +5681,7 @@ impl Executor {
                                         });
                                     }
                                 } else {
-                                    if let Some(o) =
-                                        arr.borrow().data.get(index.as_i64() as usize).clone()
+                                    if let Some(o) = arr.borrow().data.get(index.as_i64() as usize)
                                     {
                                         main_reg = Some(o.clone());
                                     } else {
@@ -5826,7 +5819,7 @@ impl Executor {
                                 1 => {
                                     main_reg = Some(Val {
                                         typ: 1,
-                                        data: Payload::from(data.as_i16() as i16),
+                                        data: Payload::from(data.as_i16()),
                                     });
                                 }
                                 2 => {
@@ -5887,7 +5880,7 @@ impl Executor {
                                 2 => {
                                     main_reg = Some(Val {
                                         typ: 2,
-                                        data: Payload::from(data.as_i32() as i32),
+                                        data: Payload::from(data.as_i32()),
                                     });
                                 }
                                 3 => {
@@ -5911,9 +5904,7 @@ impl Executor {
                                 6 => {
                                     main_reg = Some(Val {
                                         typ: 2,
-                                        data: Payload::from(
-                                            if data.as_bool() { 1 } else { 0 } as i32
-                                        ),
+                                        data: Payload::from(if data.as_bool() { 1 } else { 0 }),
                                     });
                                 }
                                 7 => {
@@ -5948,7 +5939,7 @@ impl Executor {
                                 3 => {
                                     main_reg = Some(Val {
                                         typ: 3,
-                                        data: Payload::from(data.as_i64() as i64),
+                                        data: Payload::from(data.as_i64()),
                                     });
                                 }
                                 4 => {
@@ -6009,7 +6000,7 @@ impl Executor {
                                 4 => {
                                     main_reg = Some(Val {
                                         typ: 4,
-                                        data: Payload::from(data.as_f32() as f32),
+                                        data: Payload::from(data.as_f32()),
                                     });
                                 }
                                 5 => {
@@ -6072,7 +6063,7 @@ impl Executor {
                                 5 => {
                                     main_reg = Some(Val {
                                         typ: 5,
-                                        data: Payload::from(data.as_f64() as f64),
+                                        data: Payload::from(data.as_f64()),
                                     });
                                 }
                                 6 => {

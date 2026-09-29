@@ -42,7 +42,9 @@ pub fn storage_provider(storage: &Storage) {
 
 fn crud(storage: &Storage) {
     let trx = storage.begin(Mode::ReadWrite).unwrap();
-    let ada = trx.create("core.user", user("ada", Some("ada@x.io"), 1)).unwrap();
+    let ada = trx
+        .create("core.user", user("ada", Some("ada@x.io"), 1))
+        .unwrap();
     assert_eq!(ada.revision, 1);
     assert_eq!(
         trx.find_unique("core.user", &Unique::Id(ada.id)).unwrap(),
@@ -77,14 +79,21 @@ fn crud(storage: &Storage) {
     assert_eq!(updated.text("username"), Some("ada"));
     assert!(updated.get("email").is_null());
     // A required field cannot be cleared; an unknown field is refused.
-    assert!(trx
-        .update(
+    assert!(
+        trx.update(
             "core.user",
             &Unique::Id(ada.id),
             Data::from([("status".to_owned(), Value::Null)])
         )
-        .is_err());
-    assert!(trx.create("core.user", Data::from([("nope".to_owned(), Value::Int(1))])).is_err());
+        .is_err()
+    );
+    assert!(
+        trx.create(
+            "core.user",
+            Data::from([("nope".to_owned(), Value::Int(1))])
+        )
+        .is_err()
+    );
     // Upsert creates, then updates.
     let bob = trx
         .upsert(
@@ -105,9 +114,20 @@ fn crud(storage: &Storage) {
         .unwrap();
     assert_eq!((bob.revision, bob.text("status")), (2, Some("busy")));
     // Delete, then the name is free again.
-    assert!(trx.delete("core.user", &Unique::Id(bob.id)).unwrap().is_some());
-    assert_eq!(trx.find_unique("core.user", &Unique::Id(bob.id)).unwrap(), None);
-    assert!(trx.delete("core.user", &Unique::Id(bob.id)).unwrap().is_none());
+    assert!(
+        trx.delete("core.user", &Unique::Id(bob.id))
+            .unwrap()
+            .is_some()
+    );
+    assert_eq!(
+        trx.find_unique("core.user", &Unique::Id(bob.id)).unwrap(),
+        None
+    );
+    assert!(
+        trx.delete("core.user", &Unique::Id(bob.id))
+            .unwrap()
+            .is_none()
+    );
     trx.create("core.user", user("bob", None, 4)).unwrap();
     trx.commit().unwrap();
 
@@ -144,7 +164,12 @@ fn queries(storage: &Storage) {
         ["Alice", "Eve", "bob", "carol", "dave"]
     );
     assert_eq!(
-        find(FindMany::default().order_by(Order::asc("username")).skip(1).take(2)),
+        find(
+            FindMany::default()
+                .order_by(Order::asc("username"))
+                .skip(1)
+                .take(2)
+        ),
         ["Eve", "bob"]
     );
     assert_eq!(
@@ -164,29 +189,43 @@ fn queries(storage: &Storage) {
         ["Alice", "dave", "carol", "bob", "Eve"]
     );
     // Filters.
-    let sorted = |filter: Where| {
-        find(FindMany::filter(filter).order_by(Order::asc("username")))
-    };
+    let sorted = |filter: Where| find(FindMany::filter(filter).order_by(Order::asc("username")));
     assert_eq!(
-        sorted(Where::field("username", Cond::Contains("a".into(), Case::Sensitive))),
+        sorted(Where::field(
+            "username",
+            Cond::Contains("a".into(), Case::Sensitive)
+        )),
         ["carol", "dave"]
     );
     assert_eq!(
-        sorted(Where::field("username", Cond::Contains("a".into(), Case::Insensitive))),
+        sorted(Where::field(
+            "username",
+            Cond::Contains("a".into(), Case::Insensitive)
+        )),
         ["Alice", "carol", "dave"]
     );
     assert_eq!(
-        sorted(Where::field("username", Cond::StartsWith("e".into(), Case::Insensitive))),
+        sorted(Where::field(
+            "username",
+            Cond::StartsWith("e".into(), Case::Insensitive)
+        )),
         ["Eve"]
     );
     assert_eq!(
-        sorted(Where::field("username", Cond::EndsWith("ol".into(), Case::Sensitive))),
+        sorted(Where::field(
+            "username",
+            Cond::EndsWith("ol".into(), Case::Sensitive)
+        )),
         ["carol"]
     );
     assert_eq!(
         sorted(Where::field(
             "username",
-            Cond::In(vec![Value::from("bob"), Value::from("Eve"), Value::from("zed")])
+            Cond::In(vec![
+                Value::from("bob"),
+                Value::from("Eve"),
+                Value::from("zed")
+            ])
         )),
         ["Eve", "bob"]
     );
@@ -197,7 +236,10 @@ fn queries(storage: &Storage) {
         )),
         ["Alice", "carol", "dave"]
     );
-    assert_eq!(sorted(Where::field("email", Cond::IsNull(true))), ["Alice", "dave"]);
+    assert_eq!(
+        sorted(Where::field("email", Cond::IsNull(true))),
+        ["Alice", "dave"]
+    );
     // SQL semantics: `not` and a negated comparison skip nulls.
     assert_eq!(
         sorted(Where::field("email", Cond::Not(Value::from("Eve@mail.io")))),
@@ -222,13 +264,17 @@ fn queries(storage: &Storage) {
         ["bob", "carol"]
     );
     assert_eq!(
-        trx.count("core.user", Some(&Where::field("email", Cond::IsNull(false))))
-            .unwrap(),
+        trx.count(
+            "core.user",
+            Some(&Where::field("email", Cond::IsNull(false)))
+        )
+        .unwrap(),
         3
     );
-    assert!(trx
-        .find_many("core.user", &FindMany::filter(Where::eq("nope", 1)))
-        .is_err());
+    assert!(
+        trx.find_many("core.user", &FindMany::filter(Where::eq("nope", 1)))
+            .is_err()
+    );
     trx.rollback().unwrap();
 
     // update_many and delete_many.
@@ -243,7 +289,8 @@ fn queries(storage: &Storage) {
         2
     );
     assert_eq!(
-        trx.count("core.user", Some(&Where::eq("status", "unverified"))).unwrap(),
+        trx.count("core.user", Some(&Where::eq("status", "unverified")))
+            .unwrap(),
         2
     );
     assert_eq!(
@@ -262,7 +309,9 @@ fn transactions(storage: &Storage) {
     trx.create("core.user", user("ghost", None, 30)).unwrap();
     trx.rollback().unwrap();
     let dropped = storage.begin(Mode::ReadWrite).unwrap();
-    dropped.create("core.user", user("ghost", None, 30)).unwrap();
+    dropped
+        .create("core.user", user("ghost", None, 30))
+        .unwrap();
     drop(dropped);
     let check = storage.begin(Mode::ReadOnly).unwrap();
     assert_eq!(check.count("core.user", None).unwrap(), 0);
@@ -281,12 +330,20 @@ fn transactions(storage: &Storage) {
     second.rollback().unwrap();
     let writer = storage.begin(Mode::ReadWrite).unwrap();
     writer
-        .update("core.user", &Unique::Id(row.id), Data::from([("status".to_owned(), Value::from("a"))]))
+        .update(
+            "core.user",
+            &Unique::Id(row.id),
+            Data::from([("status".to_owned(), Value::from("a"))]),
+        )
         .unwrap();
     writer.commit().unwrap();
     let writer = storage.begin(Mode::ReadWrite).unwrap();
     let latest = writer
-        .update("core.user", &Unique::Id(row.id), Data::from([("status".to_owned(), Value::from("b"))]))
+        .update(
+            "core.user",
+            &Unique::Id(row.id),
+            Data::from([("status".to_owned(), Value::from("b"))]),
+        )
         .unwrap()
         .unwrap();
     assert_eq!(latest.revision, 3);
@@ -348,7 +405,10 @@ fn relations_and_documents(storage: &Storage) {
     assert_eq!(stores[0].id_of("creature"), Some(creature.id));
     assert_eq!(stores[0].get("is_public"), &Value::Bool(true));
     let metadata = trx
-        .find_unique("core.store_metadata", &Unique::fields([("store", store.id)]))
+        .find_unique(
+            "core.store_metadata",
+            &Unique::fields([("store", store.id)]),
+        )
         .unwrap()
         .unwrap();
     assert_eq!(
@@ -364,7 +424,12 @@ fn relations_and_documents(storage: &Storage) {
         1
     );
     trx.rollback().unwrap();
-    for model in ["core.store_metadata", "core.store", "core.creature", "core.user"] {
+    for model in [
+        "core.store_metadata",
+        "core.store",
+        "core.creature",
+        "core.user",
+    ] {
         wipe(storage, model);
     }
 }

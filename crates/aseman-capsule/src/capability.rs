@@ -3,7 +3,7 @@
 //! revision.
 
 use crate::store::{body, next_revision, port_error};
-use crate::support::{Capsules, MAX_CAS_ATTEMPTS, equal, failed, new_capsule, text};
+use crate::support::{Capsules, MAX_CAS_ATTEMPTS, equal, new_capsule, text};
 use crate::{CapsuleStore, CapsuleStoreError};
 use aseman_contracts::capsule::{
     CapsuleEnvelope, CapsuleKind, CapsuleQuery, CapsuleValue, MAX_QUERY_LIMIT, OwnerScope,
@@ -26,7 +26,7 @@ fn micros(millis: i64) -> PortResult<CapsuleValue> {
     millis
         .checked_mul(1_000)
         .map(CapsuleValue::Integer)
-        .ok_or_else(|| failed("grant time overflows microseconds"))
+        .ok_or_else(|| PortError::failed("grant time overflows microseconds"))
 }
 
 /// An action set as a document: `{"names": [...]}` (documents hold objects).
@@ -100,8 +100,12 @@ fn fields(grant: &Grant) -> PortResult<BTreeMap<String, CapsuleValue>> {
 fn uuid_field(fields: &BTreeMap<String, CapsuleValue>, name: &str) -> PortResult<Option<Uuid>> {
     match fields.get(name) {
         None | Some(CapsuleValue::Null) => Ok(None),
-        Some(CapsuleValue::Bytes(bytes)) => Uuid::from_slice(bytes).map(Some).map_err(failed),
-        Some(_) => Err(failed(format!("grant {name} is not an identifier"))),
+        Some(CapsuleValue::Bytes(bytes)) => {
+            Uuid::from_slice(bytes).map(Some).map_err(PortError::failed)
+        }
+        Some(_) => Err(PortError::failed(format!(
+            "grant {name} is not an identifier"
+        ))),
     }
 }
 
@@ -110,26 +114,26 @@ fn subject(fields: &BTreeMap<String, CapsuleValue>, prefix: &str) -> PortResult<
     let kind = SubjectKind::ALL
         .into_iter()
         .find(|candidate| candidate.as_str() == kind)
-        .ok_or_else(|| failed(format!("unknown subject kind {kind}")))?;
+        .ok_or_else(|| PortError::failed(format!("unknown subject kind {kind}")))?;
     let id = uuid_field(fields, &format!("{prefix}_id"))?
-        .ok_or_else(|| failed(format!("grant has no {prefix}")))?;
+        .ok_or_else(|| PortError::failed(format!("grant has no {prefix}")))?;
     Ok(Subject { kind, id })
 }
 
 fn name_set(fields: &BTreeMap<String, CapsuleValue>, name: &str) -> PortResult<BTreeSet<String>> {
     let document = match fields.get(name) {
         Some(CapsuleValue::Object(document)) => document,
-        _ => return Err(failed(format!("grant has no {name}"))),
+        _ => return Err(PortError::failed(format!("grant has no {name}"))),
     };
     match document.get("names") {
         Some(CapsuleValue::Array(values)) => values
             .iter()
             .map(|value| match value {
                 CapsuleValue::Text(text) => Ok(text.clone()),
-                _ => Err(failed(format!("grant {name} holds a non-name"))),
+                _ => Err(PortError::failed(format!("grant {name} holds a non-name"))),
             })
             .collect(),
-        _ => Err(failed(format!("grant has no {name}"))),
+        _ => Err(PortError::failed(format!("grant has no {name}"))),
     }
 }
 
@@ -137,7 +141,7 @@ fn millis(fields: &BTreeMap<String, CapsuleValue>, name: &str) -> PortResult<Opt
     match fields.get(name) {
         None | Some(CapsuleValue::Null) => Ok(None),
         Some(CapsuleValue::Integer(micros)) => Ok(Some(micros / 1_000)),
-        Some(_) => Err(failed(format!("grant {name} is not a time"))),
+        Some(_) => Err(PortError::failed(format!("grant {name} is not a time"))),
     }
 }
 
@@ -159,12 +163,14 @@ fn record(capsule: &CapsuleEnvelope) -> PortResult<Grant> {
         resource,
         delegable_actions: name_set(fields, "delegable_actions")?,
         max_depth: match fields.get("max_depth") {
-            Some(CapsuleValue::Integer(depth)) => u32::try_from(*depth).map_err(failed)?,
-            _ => return Err(failed("grant has no depth")),
+            Some(CapsuleValue::Integer(depth)) => {
+                u32::try_from(*depth).map_err(PortError::failed)?
+            }
+            _ => return Err(PortError::failed("grant has no depth")),
         },
         parent: uuid_field(fields, "parent_id")?,
         not_before_millis: millis(fields, "not_before_micros")?
-            .ok_or_else(|| failed("grant has no start"))?,
+            .ok_or_else(|| PortError::failed("grant has no start"))?,
         expires_at_millis: millis(fields, "expires_at_micros")?,
         revoked_at_millis: millis(fields, "revoked_at_micros")?,
         policy_version: text(fields, "policy_version"),

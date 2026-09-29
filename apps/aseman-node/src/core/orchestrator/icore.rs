@@ -1,6 +1,5 @@
-//! The `ICore` trait implementation for the `Core` compatibility orchestrator, the
-//! ADR-0026 transaction/state-modification helpers, and the `checked_trx` /
-//! `weak_self` internals they share with the weak view.
+//! The `ICore` trait implementation for the `Core` compatibility orchestrator and
+//! its transaction/state-modification helpers (ADR 0036).
 //!
 //! Translation of `core/module/core/core.go`.
 
@@ -8,18 +7,17 @@ use std::collections::HashMap;
 use std::sync::Arc;
 
 use anyhow::Result;
-use rsa::RsaPrivateKey;
 use serde_json::Value;
 
 use crate::api::model::core_storage::{StateFailure, run_action};
-use crate::core::orchestrator::types::{Core, CoreWeakHandles, WeakCoreView};
-use crate::core::{Info as BaseInfo, State as ActorState};
+use crate::core::State as ActorState;
+use crate::core::orchestrator::types::Core;
+use crate::core::trx::Trx;
 use crate::models::action::IActor;
 use crate::models::action::TrxClosure;
 use crate::models::core::{ICore, StateClosure};
 use crate::models::globe::IGlobe;
 use crate::models::info::IInfo;
-use crate::core::trx::Trx;
 use crate::models::ports::{IStorage, ITools};
 use crate::models::state::IState;
 
@@ -164,31 +162,6 @@ impl Core {
         let tools = self.tools.lock().unwrap().clone()?;
         begin_trx(&tools.storage(), readonly)
     }
-
-    /// Build a fresh `Arc<dyn ICore>` pointing at the same underlying
-    /// `Core` state. Used by paths that need to hand an `Arc<dyn ICore>`
-    /// to drivers / closures.
-    pub(crate) fn weak_self(&self) -> Arc<dyn ICore> {
-        // We can't recover the real `Arc<Core>` from `&self` without an
-        // upgrade target, so construct a forwarding wrapper that holds
-        // references to every interior field. For our use sites the
-        // wrapper is short-lived (one transaction), so the extra Arc
-        // allocations are not a hot path.
-        Arc::new(WeakCoreView {
-            inner: CoreWeakHandles {
-                tools: self.tools.lock().unwrap().clone(),
-                actor: self.actor.clone(),
-                owner_id: self.owner_id.clone(),
-                id: self.id.clone(),
-                ip: self.ip.clone(),
-                owner_priv_key: self.owner_priv_key.clone(),
-                priv_key: self.priv_key.lock().unwrap().clone(),
-                finance: self.finance.clone(),
-                globe: self.globe.lock().unwrap().clone(),
-                gods: self.gods.lock().unwrap().clone(),
-            },
-        })
-    }
 }
 
 /// A transaction on the storage provider (ADR 0036), or `None` when it cannot
@@ -221,8 +194,3 @@ pub(crate) fn run_state_closure(
     let state: Arc<dyn IState> = Arc::new(ActorState::new(Some(info), Some(trx.clone()), src));
     run_action(trx, || fn_(state))
 }
-
-// Kept for signature parity / import calm.
-const _: fn() -> Option<RsaPrivateKey> = || None;
-const _: fn() -> Option<BaseInfo> = || None;
-const _: fn() -> Option<Value> = || None;

@@ -20,9 +20,9 @@ use rsa::signature::Verifier;
 use rsa::{RsaPrivateKey, RsaPublicKey};
 
 use crate::api::utils::crypto as cryp;
+use crate::core::trx::Trx;
 use crate::models::core::ICore;
 use crate::models::ports::ISecurity;
-use crate::core::trx::Trx;
 
 const KEYS_FOLDER: &str = "keys";
 
@@ -195,20 +195,10 @@ impl ISecurity for Security {
             }
         }
 
-        // Successful: the god flag is a node-local runtime record.
-        let god_slot = Arc::new(Mutex::new(false));
-        let god_clone = god_slot.clone();
-        let user_id_owned = user_id.to_string();
-        self.app.modify_state(
-            true,
-            Box::new(move |trx: &Trx| {
-                *god_clone.lock().unwrap() =
-                    trx.get_string(&format!("god::{}", user_id_owned)) == "true";
-                Ok(())
-            }),
-        );
+        // The legacy hand-written `god::` superuser flag is gone (ADR 0020, ADR 0036):
+        // elevated authority comes from capability grants.
         let typ = creature.creature_type;
-        let is_god = *god_slot.lock().unwrap();
+        let is_god = false;
         (true, typ, is_god)
     }
 
@@ -238,23 +228,18 @@ impl ISecurity for Security {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::adapters::rocksdb::trx::TrxWrapper;
-    use crate::adapters::rocksdb::trx::tests::{StubCore, StubStorage};
-    use crate::models::ports::IStorage;
+    use crate::core::testing::StubCore;
     use rsa::pkcs8::{EncodePublicKey, LineEnding};
     use rsa::pss::BlindedSigningKey;
     use rsa::signature::{RandomizedSigner, SignatureEncoding};
 
     #[test]
     fn signatures_verify_against_the_creature_directory_key() {
-        let storage: Arc<dyn IStorage> = StubStorage::new();
-        let app: Arc<dyn ICore> = Arc::new(StubCore {
-            storage: storage.clone(),
-        });
+        let core = StubCore::new();
         let key = RsaPrivateKey::new(&mut OsRng, 1024).unwrap();
-        let trx = TrxWrapper::over_storage(app.clone(), storage.clone(), false);
+        let trx = core.storage.begin(false).unwrap();
         aseman_ports::CreatureDirectory::create(
-            &crate::api::model::creature_ports::CreaturePorts { trx: &*trx },
+            &crate::api::model::creature_ports::CreaturePorts { trx: &trx },
             &aseman_domain::creature::CreatureRecord {
                 id: "5@global".to_owned(),
                 creature_type: "human".to_owned(),
@@ -271,6 +256,7 @@ mod tests {
         .unwrap();
         trx.commit().unwrap();
 
+        let app: Arc<dyn ICore> = core;
         let security = Security::new(app, "/nonexistent-aseman-root");
         let packet = b"{\"path\":\"/stores/signal\"}";
         let signature = B64.encode(

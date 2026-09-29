@@ -4,7 +4,7 @@
 //! offset by `o`. Returns when the `cancel` receiver disconnects, matching
 //! Go's `ctx.Done()` semantics.
 
-use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 use crossbeam_channel::{Receiver, select, tick};
 
@@ -54,13 +54,6 @@ where
             recv(cancel) -> _ => return,
         }
     }
-}
-
-/// Tiny wrapper that lets a caller report wall-clock time using `Instant`
-/// instead of `SystemTime`, matching the Go test helper.
-#[allow(dead_code)]
-fn _start_instant() -> Instant {
-    Instant::now()
 }
 
 #[cfg(test)]

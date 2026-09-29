@@ -8,7 +8,6 @@ use aseman_ports::ClockPort;
 use serde_json::{Value, json};
 
 use crate::api::packets::simple::HelloInput;
-use crate::api::utils::future::async_once;
 use crate::core::actor::Guard;
 use crate::models::action::ISecureAction;
 use crate::models::core::ICore;
@@ -56,30 +55,29 @@ pub fn time(app: Arc<dyn ICore>) -> Arc<dyn ISecureAction> {
     )
 }
 
-pub fn ping(app: Arc<dyn ICore>) -> Arc<dyn ISecureAction> {
+/// `/api/ping`, reporting `advertised_port`: the node's configured main port.
+pub fn ping(app: Arc<dyn ICore>, advertised_port: String) -> Arc<dyn ISecureAction> {
     build_secure_action::<HelloInput, _>(
         app,
         "/api/ping",
         Guard::default(),
         move |_state: Arc<dyn IState>, _: HelloInput| -> Result<Value> {
-            // Detach a background no-op task so the future helper is wired
-            // and exercised (mirrors how the Go shell pinged future.Async).
-            let _h = async_once(|| {});
-            let port = aseman_config::legacy_adapter_snapshot()
-                .map(|config| config.main_port.as_str())
-                .unwrap_or("");
             let diagnostics = Diagnostics {
                 clock: &SYSTEM_CLOCK,
-                advertised_port: port,
+                advertised_port: &advertised_port,
             };
             Ok(json!(diagnostics.ping()))
         },
     )
 }
 
-pub fn install(app: Arc<dyn ICore>) {
+pub fn install(app: Arc<dyn ICore>, advertised_port: String) {
     let actor = app.actor();
-    for a in [hello(app.clone()), time(app.clone()), ping(app.clone())] {
+    for a in [
+        hello(app.clone()),
+        time(app.clone()),
+        ping(app.clone(), advertised_port),
+    ] {
         actor.inject_secure_action(a);
     }
 }

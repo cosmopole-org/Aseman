@@ -7,11 +7,9 @@
 use std::sync::Arc;
 
 use anyhow::Result;
-use aseman_config::AsemanConfig;
-use rsa::RsaPrivateKey;
 
 use crate::adapters::network::Network as NetworkDriver;
-use crate::adapters::network::chain::Blockchain;
+use crate::adapters::network::chain::{Blockchain, ChainSettings};
 use crate::adapters::network::federation::FedNet;
 use crate::adapters::security::Security;
 use crate::adapters::signaler::Signaler;
@@ -25,7 +23,7 @@ use crate::models::ports::{
     INetwork, IRateLimiter, ISecurity, ISignaler, IStorage, ITools, IWorkloads,
 };
 use aseman_network_legacy::tls_config_from_files;
-use aseman_ports::consensus::ConsensusProvider as _ConsensusProvider;
+use aseman_ports::consensus::ConsensusProvider as _;
 
 impl Core {
     /// Runtime start phase invoked after load/module initialization.
@@ -38,14 +36,8 @@ impl Core {
         gods: Vec<String>,
         storage_root: &str,
         base_db_path: &str,
-        applet_db_path: &str,
-        store_logs_db: &str,
-        searcher_db: &str,
     ) -> Result<()> {
         *self.gods.lock().unwrap() = gods;
-        let _ = applet_db_path; // currently fed straight into Vmm
-        let _ = store_logs_db;
-        let _ = searcher_db;
 
         // Stage 1 of federation must run before the rest so we can pass
         // the same `Arc<FedNet>` into the storage / network drivers.
@@ -71,8 +63,12 @@ impl Core {
                 &self.id, &self.ip,
             ),
         );
-        for (key, value) in aseman_config::consensus_env_properties() {
-            if let Err(error) = provider.set(&key, &value) {
+        let properties = self
+            .config
+            .as_ref()
+            .map_or(&[][..], |config| config.consensus_properties.as_slice());
+        for (key, value) in properties {
+            if let Err(error) = provider.set(key, value) {
                 eprintln!("consensus property {key} not applied: {error}");
             }
         }
@@ -84,21 +80,26 @@ impl Core {
 
         // The provider is owned by the chain module (installed as the main-chain
         // application handler); the core orchestrator reaches it via the chain.
+        let chain_settings = self
+            .config
+            .as_deref()
+            .map(ChainSettings::from_config)
+            .unwrap_or_default();
         let chain: Arc<dyn crate::models::ports::IChain> = Blockchain::with_consensus(
             self.clone(),
             storage_root,
+            chain_settings,
             Some(provider),
             storage.consensus_logs(),
         );
+        // Configured TLS that cannot be loaded is a startup failure: the legacy
+        // transports never fall back to plaintext.
         let tls_cfg = match self.config.as_ref().map(|config| &config.core) {
             Some(config) => match (&config.tls_certificate_path, &config.tls_private_key_path) {
-                (Some(cert), Some(key)) => match tls_config_from_files(cert, key) {
-                    Ok(cfg) => Some(cfg),
-                    Err(e) => {
-                        eprintln!("TLS config load failed: {}; running without TLS", e);
-                        None
-                    }
-                },
+                (Some(cert), Some(key)) => Some(
+                    tls_config_from_files(cert, key)
+                        .map_err(|error| anyhow::anyhow!("cannot load the node's TLS: {error}"))?,
+                ),
                 _ => None,
             },
             None => None,
@@ -221,8 +222,3 @@ impl Core {
         Ok(())
     }
 }
-
-// Kept for import calm on the composition-root type contracts.
-const _: fn() -> Option<Arc<AsemanConfig>> = || None;
-const _: fn() -> Option<RsaPrivateKey> = || None;
-

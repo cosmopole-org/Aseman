@@ -6,14 +6,13 @@
 
 use std::sync::{Arc, Mutex};
 
-use anyhow::Result;
 use dashmap::DashMap;
 use serde_json::Value;
 
+use crate::core::trx::Trx;
 use crate::models::core::ICore;
 use crate::models::ports::IFederation;
 use crate::models::ports::{GlobalListener, Group, ISignaler, JoinListener, Listener};
-use crate::core::trx::Trx;
 
 /// Concrete [`ISignaler`] implementation. Owns per-listener / per-group
 /// `DashMap`s and a coarse-grained `Mutex` matching `Signaler.lock` from Go.
@@ -407,19 +406,14 @@ impl ISignaler for Signaler {
     }
 }
 
-// Suppress an unused-import warning.
-const _: fn() -> Result<()> = || Ok(());
-
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::models::ports::{ISignaler, Listener, SignalFn};
 
-    // --- Minimal stubs so a `Signaler` can be constructed in isolation. The
-    // group-registry paths under test (`join_group` / `leave_group` /
-    // `leave_all_groups` / `signal_group`'s get-only lookup) never call back
-    // into `ICore` or `IFederation`, so every method is `unimplemented!()`.
-    struct StubCore;
+    // The group-registry paths under test (`join_group` / `leave_group` /
+    // `leave_all_groups` / `signal_group`'s get-only lookup) never call back into
+    // `IFederation`, so the stub federation ignores every request.
     struct StubFed;
 
     impl crate::models::ports::IFederation for StubFed {
@@ -440,97 +434,8 @@ mod tests {
         }
     }
 
-    #[allow(unused_variables)]
-    impl crate::models::core::ICore for StubCore {
-        fn owner_id(&self) -> String {
-            unimplemented!()
-        }
-        fn id(&self) -> String {
-            "global".to_string()
-        }
-        fn gods(&self) -> Vec<String> {
-            unimplemented!()
-        }
-        fn add_god(&self, username: &str) {
-            unimplemented!()
-        }
-        fn tools(&self) -> Arc<dyn crate::models::ports::ITools> {
-            unimplemented!()
-        }
-        fn free_nodes(&self) -> std::collections::HashMap<String, bool> {
-            unimplemented!()
-        }
-        fn add_free_node(&self, node_id: &str) {
-            unimplemented!()
-        }
-        fn actor(&self) -> Arc<dyn crate::models::action::IActor> {
-            unimplemented!()
-        }
-        fn load(&self, args: Vec<String>, config: std::collections::HashMap<String, Value>) {
-            unimplemented!()
-        }
-        fn close(&self) {
-            unimplemented!()
-        }
-        fn plant_chain_trigger(
-            &self,
-            count: i64,
-            user_id: &str,
-            tag: &str,
-            machine_id: &str,
-            store_id: &str,
-            input: &str,
-        ) {
-            unimplemented!()
-        }
-        fn ip_addr(&self) -> String {
-            unimplemented!()
-        }
-        // An empty state: the closure needs a transaction this stub has no
-        // store behind, so a member read simply yields nothing.
-        fn modify_state(&self, readonly: bool, fn_: crate::models::action::TrxClosure) {}
-        fn modify_state_securly_with_source(
-            &self,
-            readonly: bool,
-            info: Arc<dyn crate::models::info::IInfo>,
-            src: &str,
-            fn_: crate::models::core::StateClosure,
-        ) {
-            unimplemented!()
-        }
-        fn modify_state_securly(
-            &self,
-            readonly: bool,
-            info: Arc<dyn crate::models::info::IInfo>,
-            fn_: crate::models::core::StateClosure,
-        ) {
-            unimplemented!()
-        }
-        fn sign_packet(&self, data: &[u8]) -> String {
-            unimplemented!()
-        }
-        fn sign_packet_as_owner(&self, data: &[u8]) -> String {
-            unimplemented!()
-        }
-        fn execution_cost_per_second(&self) -> i64 {
-            unimplemented!()
-        }
-        fn vm_ram_cost_per_mb_per_minute(&self) -> i64 {
-            unimplemented!()
-        }
-        fn vm_cpu_core_cost_per_minute(&self) -> i64 {
-            unimplemented!()
-        }
-        fn vm_disk_cost_per_gb_per_minute(&self) -> i64 {
-            unimplemented!()
-        }
-        fn globe(&self) -> Arc<dyn crate::models::globe::IGlobe> {
-            unimplemented!()
-        }
-    }
-
     fn new_signaler() -> Arc<Signaler> {
-        Signaler::new(Arc::new(StubCore), Arc::new(StubFed))
+        Signaler::new(crate::core::testing::StubCore::new(), Arc::new(StubFed))
     }
 
     fn noop_listener(id: &str) -> Arc<Listener> {

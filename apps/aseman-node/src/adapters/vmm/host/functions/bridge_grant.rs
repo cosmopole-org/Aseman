@@ -24,7 +24,8 @@
 use crate::adapters::gateway_subs;
 use crate::adapters::vmm::globals::with_global_app;
 use crate::adapters::vmm::prelude::*;
-use crate::api::actions::gateway::{bridge_grant_key, bridge_topic_owner_key, hash_bridge_token};
+use crate::api::actions::gateway::hash_bridge_token;
+use crate::api::model::bridges;
 use crate::core::trx::Trx;
 
 /// Whether two programs belong to the same owner.
@@ -138,8 +139,7 @@ pub(crate) fn host_fn_register_bridge_token(caller_program_id: &str, input: &Jso
                 // Claim each topic for this creature, refusing one another
                 // creature already owns.
                 for topic in &topics_for_trx {
-                    let key = bridge_topic_owner_key(topic);
-                    let owner = trx.get_link(&key);
+                    let owner = bridges::topic_owner(trx, topic)?.unwrap_or_default();
                     if !owner.is_empty()
                         && owner != caller_for_trx
                         && !same_owner_user(&owner, &caller_for_trx)
@@ -149,10 +149,9 @@ pub(crate) fn host_fn_register_bridge_token(caller_program_id: &str, input: &Jso
                     }
                 }
                 for topic in &topics_for_trx {
-                    trx.put_link(&bridge_topic_owner_key(topic), &caller_for_trx);
+                    bridges::claim_topic(trx, topic, &caller_for_trx)?;
                 }
-                trx.put_json(&bridge_grant_key(&hash), "grant", &grant, false)?;
-                Ok(())
+                bridges::put_grant(trx, &hash, &grant)
             }),
         );
     })
@@ -192,15 +191,14 @@ pub(crate) fn host_fn_revoke_bridge_token(caller_program_id: &str, input: &JsonV
         return json!({"ok": false, "error": "token or tokenHash is required"}).to_string();
     }
 
-    let key = bridge_grant_key(&hash);
     let owner = std::sync::Arc::new(std::sync::Mutex::new(String::new()));
     let owner_c = owner.clone();
-    let key_read = key.clone();
+    let hash_read = hash.clone();
     with_global_app(|app| {
         app.modify_state(
             true,
             Box::new(move |trx: &Trx| {
-                if let Ok(grant) = trx.get_json(&key_read, "grant")
+                if let Some(grant) = bridges::grant(trx, &hash_read)?
                     && let Some(id) = grant.get("creatureId").and_then(|v| v.as_str())
                 {
                     *owner_c.lock().unwrap() = id.to_string();
@@ -222,10 +220,7 @@ pub(crate) fn host_fn_revoke_bridge_token(caller_program_id: &str, input: &JsonV
     with_global_app(|app| {
         app.modify_state(
             false,
-            Box::new(move |trx: &Trx| {
-                trx.del_json(&key, "grant");
-                Ok(())
-            }),
+            Box::new(move |trx: &Trx| bridges::delete_grant(trx, &hash)),
         );
     });
     json!({"ok": true, "revoked": true}).to_string()
@@ -244,14 +239,15 @@ pub(crate) fn host_fn_publish_update(caller_program_id: &str, input: &JsonValue)
         return json!({"ok": false, "error": "topic is required"}).to_string();
     }
 
-    let owner_key = bridge_topic_owner_key(&topic);
+    let topic_read = topic.clone();
     let owner = std::sync::Arc::new(std::sync::Mutex::new(String::new()));
     let owner_c = owner.clone();
     with_global_app(|app| {
         app.modify_state(
             true,
             Box::new(move |trx: &Trx| {
-                *owner_c.lock().unwrap() = trx.get_link(&owner_key);
+                *owner_c.lock().unwrap() =
+                    bridges::topic_owner(trx, &topic_read)?.unwrap_or_default();
                 Ok(())
             }),
         );

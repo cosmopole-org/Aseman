@@ -2,9 +2,9 @@
 
 use std::sync::{Arc, Mutex};
 
+use crate::core::trx::Trx;
 use crate::models::info::IInfo;
 use crate::models::state::IState;
-use crate::core::trx::Trx;
 
 /// Concrete state carrier handed to action closures.
 ///

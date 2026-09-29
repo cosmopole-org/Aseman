@@ -3,7 +3,7 @@
 //! (subject, purpose). Keys are never deleted; retirement and revocation are revisions.
 
 use crate::store::{body, next_revision, port_error};
-use crate::support::{MAX_CAS_ATTEMPTS, equal, failed, new_capsule, text};
+use crate::support::{MAX_CAS_ATTEMPTS, equal, new_capsule, text};
 use crate::{CapsuleStore, CapsuleStoreError};
 use aseman_contracts::capsule::{
     CapsuleEnvelope, CapsuleKind, CapsuleQuery, CapsuleValue, MAX_QUERY_LIMIT, OwnerScope,
@@ -31,7 +31,7 @@ fn micros(millis: i64) -> PortResult<CapsuleValue> {
     millis
         .checked_mul(1_000)
         .map(CapsuleValue::Integer)
-        .ok_or_else(|| failed("key time overflows microseconds"))
+        .ok_or_else(|| PortError::failed("key time overflows microseconds"))
 }
 
 fn optional_micros(millis: Option<i64>) -> PortResult<Option<CapsuleValue>> {
@@ -84,7 +84,9 @@ fn millis(fields: &BTreeMap<String, CapsuleValue>, name: &str) -> PortResult<Opt
     match fields.get(name) {
         None | Some(CapsuleValue::Null) => Ok(None),
         Some(CapsuleValue::Integer(micros)) => Ok(Some(micros / 1_000)),
-        Some(_) => Err(failed(format!("identity key {name} is not a time"))),
+        Some(_) => Err(PortError::failed(format!(
+            "identity key {name} is not a time"
+        ))),
     }
 }
 
@@ -94,23 +96,25 @@ fn record(capsule: &CapsuleEnvelope) -> PortResult<IdentityKey> {
     let kind = SubjectKind::ALL
         .into_iter()
         .find(|candidate| candidate.as_str() == kind)
-        .ok_or_else(|| failed(format!("unknown subject kind {kind}")))?;
+        .ok_or_else(|| PortError::failed(format!("unknown subject kind {kind}")))?;
     let id = match fields.get("subject_id") {
-        Some(CapsuleValue::Bytes(bytes)) => uuid::Uuid::from_slice(bytes).map_err(failed)?,
-        _ => return Err(failed("identity key has no subject")),
+        Some(CapsuleValue::Bytes(bytes)) => {
+            uuid::Uuid::from_slice(bytes).map_err(PortError::failed)?
+        }
+        _ => return Err(PortError::failed("identity key has no subject")),
     };
     let purpose = text(fields, "purpose");
     let purpose = PURPOSES
         .into_iter()
         .find(|candidate| candidate.as_str() == purpose)
-        .ok_or_else(|| failed(format!("unknown key purpose {purpose}")))?;
+        .ok_or_else(|| PortError::failed(format!("unknown key purpose {purpose}")))?;
     let epoch = match fields.get("epoch") {
-        Some(CapsuleValue::Integer(epoch)) => u32::try_from(*epoch).map_err(failed)?,
-        _ => return Err(failed("identity key has no epoch")),
+        Some(CapsuleValue::Integer(epoch)) => u32::try_from(*epoch).map_err(PortError::failed)?,
+        _ => return Err(PortError::failed("identity key has no epoch")),
     };
     let public_key = match fields.get("public_key") {
         Some(CapsuleValue::Bytes(bytes)) => bytes.clone(),
-        _ => return Err(failed("identity key has no public key")),
+        _ => return Err(PortError::failed("identity key has no public key")),
     };
     Ok(IdentityKey {
         key_id: text(fields, "key_id"),
@@ -120,7 +124,7 @@ fn record(capsule: &CapsuleEnvelope) -> PortResult<IdentityKey> {
             purpose,
             epoch,
             not_before_millis: millis(fields, "not_before_micros")?
-                .ok_or_else(|| failed("identity key has no validity start"))?,
+                .ok_or_else(|| PortError::failed("identity key has no validity start"))?,
             expires_at_millis: millis(fields, "expires_at_micros")?,
             retired_at_millis: millis(fields, "retired_at_micros")?,
             revoked_at_millis: millis(fields, "revoked_at_micros")?,

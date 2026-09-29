@@ -6,8 +6,8 @@
 
 use crate::store::{body, next_revision, port_error};
 use crate::support::{
-    Capsules, DocumentFamily, MAX_CAS_ATTEMPTS, equal, failed, legacy_identity, new_capsule,
-    relationship, text, tombstone,
+    Capsules, DocumentFamily, MAX_CAS_ATTEMPTS, equal, legacy_identity, new_capsule, relationship,
+    text, tombstone,
 };
 use crate::{CapsuleStore, CapsuleStoreError};
 use aseman_contracts::capsule::{
@@ -79,7 +79,7 @@ impl CapsuleProgramPorts<'_> {
     fn machine_scope(&self, record: &ProgramRecord) -> PortResult<[u8; 16]> {
         let machine = machine_capsule_id(&record.machine_id);
         if self.capsules().live(CREATURE, machine)?.is_none() {
-            return Err(failed(format!(
+            return Err(PortError::failed(format!(
                 "program machine {} does not exist",
                 record.machine_id
             )));
@@ -155,7 +155,7 @@ impl ProgramDirectory for CapsuleProgramPorts<'_> {
                     ..next_revision(&tombstoned, fields(program))?
                 }
                 .seal()
-                .map_err(failed)?,
+                .map_err(PortError::failed)?,
                 Some(tombstoned.revision),
             )],
             None => vec![
@@ -189,7 +189,7 @@ impl ProgramDirectory for CapsuleProgramPorts<'_> {
                 ..next_revision(&current, fields(program))?
             }
             .seal()
-            .map_err(failed)?;
+            .map_err(PortError::failed)?;
             match self.repository.put(&next, Some(current.revision)) {
                 Err(CapsuleStoreError::Conflict) => continue,
                 other => return other.map_err(port_error),
@@ -259,10 +259,10 @@ impl ProgramAlarms for CapsuleProgramPorts<'_> {
             .relationships
             .iter()
             .find(|relationship| relationship.name == "store")
-            .ok_or_else(|| failed("program alarm has no store"))?;
+            .ok_or_else(|| PortError::failed("program alarm has no store"))?;
         let fire_at_micros = match fields.get("fire_at_micros") {
             Some(CapsuleValue::Integer(micros)) => *micros,
-            _ => return Err(failed("program alarm has no fire time")),
+            _ => return Err(PortError::failed("program alarm has no fire time")),
         };
         Ok(Some(ProgramAlarm {
             store_id: self.capsules().legacy_id_of(STORE, store.target_id.0)?,
@@ -280,7 +280,7 @@ impl ProgramAlarms for CapsuleProgramPorts<'_> {
         let fire_at_micros = alarm
             .fire_at_millis
             .checked_mul(1_000)
-            .ok_or_else(|| failed("alarm time overflows microseconds"))?;
+            .ok_or_else(|| PortError::failed("alarm time overflows microseconds"))?;
         let relationships = vec![
             relationship("program", PROGRAM, program_id(legacy_id)),
             relationship(
@@ -309,7 +309,7 @@ impl ProgramAlarms for CapsuleProgramPorts<'_> {
                         ..next_revision(&current, fields.clone())?
                     }
                     .seal()
-                    .map_err(failed)?;
+                    .map_err(PortError::failed)?;
                     self.repository.put(&next, Some(current.revision))
                 }
                 None => self.repository.put(
@@ -365,7 +365,7 @@ impl CapsuleProgramPorts<'_> {
         }
         match self.program(machine_id)? {
             Some(program) => Ok(machine_capsule_id(&program.machine_id)),
-            None => Err(failed(format!(
+            None => Err(PortError::failed(format!(
                 "machine {machine_id} names no creature or program"
             ))),
         }
@@ -383,9 +383,9 @@ impl VmResourceStores for CapsuleProgramPorts<'_> {
         let fields = body(&capsule).ok_or(PortError::NotFound)?;
         let metadata = match fields.get("document").map(capsule_value_to_json) {
             Some(Ok(document @ serde_json::Value::Object(_))) => {
-                serde_json::to_string(&document).map_err(failed)?
+                serde_json::to_string(&document).map_err(PortError::failed)?
             }
-            _ => return Err(failed("resource store has no metadata document")),
+            _ => return Err(PortError::failed("resource store has no metadata document")),
         };
         Ok(Some(VmResourceStore {
             id: store_id.to_owned(),
@@ -441,7 +441,7 @@ impl VmResourceStores for CapsuleProgramPorts<'_> {
         metadata: &str,
     ) -> PortResult<()> {
         let Ok(serde_json::Value::Object(incoming)) = serde_json::from_str(metadata) else {
-            return Err(failed("metadata must be a JSON object"));
+            return Err(PortError::failed("metadata must be a JSON object"));
         };
         let id = resource_store_id(store_id);
         let key = format!("Json::VmResourceStore::{store_id}");
@@ -453,7 +453,7 @@ impl VmResourceStores for CapsuleProgramPorts<'_> {
                 live.and_then(body)
                     .map(|fields| text(fields, "machine_ref"))
                     .filter(|machine| !machine.is_empty())
-                    .ok_or_else(|| failed("a resource store needs a machine"))?
+                    .ok_or_else(|| PortError::failed("a resource store needs a machine"))?
             } else {
                 machine_id.to_owned()
             };
@@ -466,7 +466,8 @@ impl VmResourceStores for CapsuleProgramPorts<'_> {
                 _ => serde_json::Map::new(),
             };
             merge_legacy_objects(&mut document, &incoming);
-            let mut fields = legacy_document_fields(&key, "metadata", &document).map_err(failed)?;
+            let mut fields =
+                legacy_document_fields(&key, "metadata", &document).map_err(PortError::failed)?;
             fields.insert("name".to_owned(), CapsuleValue::Text(name.to_owned()));
             fields.insert(
                 "machine_ref".to_owned(),
@@ -482,7 +483,7 @@ impl VmResourceStores for CapsuleProgramPorts<'_> {
                         ..next_revision(&current, fields)?
                     }
                     .seal()
-                    .map_err(failed)?;
+                    .map_err(PortError::failed)?;
                     self.repository.put(&next, Some(current.revision))
                 }
                 None => self.repository.put_all(&[

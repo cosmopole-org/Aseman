@@ -9,7 +9,6 @@ use std::sync::{Arc, Mutex};
 use std::thread;
 use std::time::Duration;
 
-use anyhow::Result;
 use serde_json::Value;
 
 use crate::api::packets::creatures::ConsumeLockInput;
@@ -17,11 +16,10 @@ use crate::api::utils::crypto::secure_unique_string;
 use crate::api::workloads;
 use crate::core::globe::ChainPacketOp;
 use crate::core::orchestrator::types::Core;
+use crate::core::trx::Trx;
 use crate::core::utils::compat::GoError;
-use crate::models::action::TrxClosure;
 use crate::models::chain::{ChainBaseRequest, ChainMessage, ChainPayPacket};
 use crate::models::core::ICore;
-use crate::core::trx::Trx;
 
 impl Core {
     pub(crate) fn chain_message_targets_local(&self, packet: &ChainMessage) -> bool {
@@ -319,7 +317,3 @@ impl Core {
         self.tools().network().chain().submit_chain_op(chain_id, op);
     }
 }
-
-// Keep `TrxClosure` import referenced for signature parity with `modify_state`.
-const _: fn() -> Option<TrxClosure> = || None;
-const _: fn() -> Result<()> = || Ok(());

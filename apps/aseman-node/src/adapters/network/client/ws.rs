@@ -46,17 +46,17 @@ type UserSocketMap = Arc<DashMap<String, Arc<DashMap<String, Arc<Socket>>>>>;
 
 use dashmap::DashMap;
 use serde_json::Value;
+use tungstenite::accept as ws_accept;
 use tungstenite::protocol::Message;
-use tungstenite::{WebSocket, accept as ws_accept};
 
 use crate::adapters::gateway_subs;
 use crate::adapters::network::client::session::{self, SessionSocket, SessionTransport};
 use crate::api::utils::crypto::secure_unique_string;
+use crate::core::trx::Trx;
 use crate::models::core::ICore;
 use crate::models::ports::IWs;
 use crate::models::ports::Listener;
 use crate::models::ports::Protocol;
-use crate::core::trx::Trx;
 use aseman_network_legacy::TlsConfig;
 use aseman_network_legacy::{
     TlsStream, accept, bind_tls, encode_client_response_body, encode_client_update_body,
@@ -561,8 +561,3 @@ impl Ws {
         }
     }
 }
-
-// Suppress unused warning in some build configs where `WebSocket` is only
-// used inside `handle_connection`.
-#[allow(dead_code)]
-type _PhantomWebSocket<S> = WebSocket<S>;

@@ -24,6 +24,7 @@ use serde_json::{Map, Value, json};
 use uuid::Uuid;
 
 use crate::api::model::entity_ports::EntityPorts;
+use crate::api::model::vm_runtime;
 use crate::api::model::{Creature, Program};
 use crate::api::packets::plugin::PlugInput;
 use crate::api::packets::program::{
@@ -33,11 +34,10 @@ use crate::api::packets::program::{
 };
 use crate::api::utils::future::async_once;
 use crate::core::actor::Guard;
+use crate::core::trx::Trx;
 use crate::models::action::ISecureAction;
 use crate::models::core::ICore;
 use crate::models::state::IState;
-use crate::api::model::vm_runtime;
-use crate::core::trx::Trx;
 use aseman_domain::program::{ArtifactRole, EntityRecord};
 use aseman_ports::{BlobStore, EntityDirectory};
 
@@ -74,7 +74,12 @@ where
 {
     let app_for_handler = app.clone();
     build_secure_action::<I, _>(app, key, user_guard(), move |state, input: I| {
-        serve(&app_for_handler, &state.trx(), &state.info().user_id(), input)
+        serve(
+            &app_for_handler,
+            &state.trx(),
+            &state.info().user_id(),
+            input,
+        )
     })
 }
 
@@ -109,13 +114,11 @@ pub(crate) fn resolve_program_owner_machine(trx: &Trx, program: &Program) -> Cre
     reason = "RL-004: characterized legacy action surface (A008) kept until its deletion gate"
 )]
 pub(crate) fn read_program_entity(
-    app: &Arc<dyn ICore>,
     trx: &Trx,
     program_id: &str,
     entity_id: &str,
 ) -> Result<Option<aseman_domain::program::EntityRecord>> {
-    let blobs = crate::adapters::blob_store::node_blobs(&*app.tools().storage());
-    let entities = EntityPorts { trx, blobs: &blobs };
+    let entities = EntityPorts { trx };
     aseman_ports::EntityDirectory::entity(&entities, program_id, entity_id)
         .map_err(|error| anyhow!("{error}"))
 }
@@ -302,7 +305,9 @@ pub(crate) fn charge_running_standalone_vms_if_needed(app: &Arc<dyn ICore>, lock
             let mut acc = targets_for_closure.lock().unwrap();
             for instance in instances {
                 let vm_id = instance.key.clone();
-                let Some(billing) = instance.billing.and_then(|billing| billing.as_object().cloned())
+                let Some(billing) = instance
+                    .billing
+                    .and_then(|billing| billing.as_object().cloned())
                 else {
                     continue;
                 };
@@ -502,18 +507,11 @@ fn terminate_standalone_vm(app: &Arc<dyn ICore>, machine_id: &str, entity_id: &s
 }
 
 /// A program's entity, read through the entity port.
-fn read_entity(
-    app: &Arc<dyn ICore>,
-    trx: &Trx,
-    program_id: &str,
-    entity_id: &str,
-) -> Result<Option<EntityRecord>> {
-    let blobs = crate::adapters::blob_store::node_blobs(&*app.tools().storage());
-    EntityPorts { trx, blobs: &blobs }
+fn read_entity(trx: &Trx, program_id: &str, entity_id: &str) -> Result<Option<EntityRecord>> {
+    EntityPorts { trx }
         .entity(program_id, entity_id)
         .map_err(|error| anyhow!("{error}"))
 }
-
 
 fn create_program(app: Arc<dyn ICore>) -> Arc<dyn ISecureAction> {
     let app_for_handler = app.clone();
@@ -523,8 +521,8 @@ fn create_program(app: Arc<dyn ICore>) -> Arc<dyn ISecureAction> {
         user_guard(),
         move |state: Arc<dyn IState>, input: CreateMachineInput| -> Result<Value> {
             let trx = state.trx();
-            let creatures = crate::api::model::creature_ports::CreaturePorts { trx: &*trx };
-            let programs = crate::api::model::program_ports::ProgramPorts { trx: &*trx };
+            let creatures = crate::api::model::creature_ports::CreaturePorts { trx: &trx };
+            let programs = crate::api::model::program_ports::ProgramPorts { trx: &trx };
             let created = aseman_application::program::CreateProgram {
                 creatures: &creatures,
                 programs: &programs,
@@ -559,11 +557,11 @@ fn delete_program(app: Arc<dyn ICore>) -> Arc<dyn ISecureAction> {
         user_guard(),
         move |state: Arc<dyn IState>, input: DeleteProgramInput| -> Result<Value> {
             let trx = state.trx();
-            let programs = crate::api::model::program_ports::ProgramPorts { trx: &*trx };
+            let programs = crate::api::model::program_ports::ProgramPorts { trx: &trx };
             // LD-17: the program and its relation are really removed; LD-18: only the
             // owner of the program's machine may delete it.
             aseman_application::program::DeleteProgram {
-                creatures: &crate::api::model::creature_ports::CreaturePorts { trx: &*trx },
+                creatures: &crate::api::model::creature_ports::CreaturePorts { trx: &trx },
                 programs: &programs,
             }
             .execute(&state.info().user_id(), &input.program_id)
@@ -582,10 +580,10 @@ fn update_program(app: Arc<dyn ICore>) -> Arc<dyn ISecureAction> {
         user_guard(),
         move |state: Arc<dyn IState>, input: UpdateProgramInput| -> Result<Value> {
             let trx = state.trx();
-            let programs = crate::api::model::program_ports::ProgramPorts { trx: &*trx };
+            let programs = crate::api::model::program_ports::ProgramPorts { trx: &trx };
             // LD-18: only the owner of the program's machine may change it.
             let program = aseman_application::program::UpdateProgramPath {
-                creatures: &crate::api::model::creature_ports::CreaturePorts { trx: &*trx },
+                creatures: &crate::api::model::creature_ports::CreaturePorts { trx: &trx },
                 programs: &programs,
             }
             .execute(&state.info().user_id(), &input.program_id, &input.path)
@@ -651,7 +649,11 @@ fn close_vm_terminal(app: Arc<dyn ICore>) -> Arc<dyn ISecureAction> {
 }
 
 fn read_machine_builds(app: Arc<dyn ICore>) -> Arc<dyn ISecureAction> {
-    served::<MachineBuildsInput>(app, "/machines/readMachineBuilds", serve_read_machine_builds)
+    served::<MachineBuildsInput>(
+        app,
+        "/machines/readMachineBuilds",
+        serve_read_machine_builds,
+    )
 }
 
 /// Record (or clear) an entity's custom VM gateway route, reconciling any route
@@ -730,7 +732,7 @@ fn list_machines(app: Arc<dyn ICore>) -> Arc<dyn ISecureAction> {
         move |state: Arc<dyn IState>, input: ListInput| -> Result<Value> {
             let trx = state.trx();
             // "Machines" are just creatures of type "machine".
-            let creatures = crate::api::model::creature_ports::CreaturePorts { trx: &*trx };
+            let creatures = crate::api::model::creature_ports::CreaturePorts { trx: &trx };
             let machines = aseman_application::creature::GetCreature {
                 directory: &creatures,
                 balances: &creatures,
@@ -784,7 +786,11 @@ fn list_programs(app: Arc<dyn ICore>) -> Arc<dyn ISecureAction> {
 }
 
 fn list_program_machines(app: Arc<dyn ICore>) -> Arc<dyn ISecureAction> {
-    served::<ListAppMachsInput>(app, "/machines/listProgramMachines", serve_list_program_machines)
+    served::<ListAppMachsInput>(
+        app,
+        "/machines/listProgramMachines",
+        serve_list_program_machines,
+    )
 }
 
 /// Mirror of Go's `Install`: walk the existing programs, hand each one to the
@@ -949,7 +955,6 @@ pub(crate) fn serve_deploy_entity(
         let evidence = blobs.put_entity_file(&program.id, &input.entity_id, "proxy.data", &data)?;
         crate::adapters::vmm::proxy::record_proxy_entity(
             trx,
-            &blobs,
             &program.id,
             &input.entity_id,
             &evidence,
@@ -1028,7 +1033,7 @@ pub(crate) fn serve_deploy_entity(
     )?;
     app.tools().workloads().assign(&program.id);
     aseman_application::program::RecordEntityDeployment {
-        entities: &EntityPorts { trx, blobs: &blobs },
+        entities: &EntityPorts { trx },
     }
     .execute(&aseman_application::program::EntityDeployment {
         entity: EntityRecord {
@@ -1068,7 +1073,7 @@ pub(crate) fn serve_download_entity(
         return Err(anyhow!("programId and entityId are required"));
     }
     let blobs = crate::adapters::blob_store::node_blobs(&*app.tools().storage());
-    let entities = EntityPorts { trx, blobs: &blobs };
+    let entities = EntityPorts { trx };
     let artifact = entities
         .artifact(&program_id, &input.entity_id, ArtifactRole::Downloadable)
         .map_err(|error| anyhow!("{error}"))?
@@ -1112,7 +1117,7 @@ pub(crate) fn serve_run_program_entity(
     }
     let program = (crate::api::model::program_ports::ProgramPorts { trx })
         .program_or_empty(&program_id.clone());
-    let entity = read_entity(app, trx, &program.id, &input.entity_id)?
+    let entity = read_entity(trx, &program.id, &input.entity_id)?
         .ok_or_else(|| anyhow!("entity does not exist"))?;
     let entity_type = normalize_entity_type(&entity.entity_type);
     let owner_machine = resolve_program_owner_machine(trx, &program);
@@ -1213,7 +1218,7 @@ pub(crate) fn serve_stop_program_entity(
     }
     let program = (crate::api::model::program_ports::ProgramPorts { trx })
         .program_or_empty(&program_id.clone());
-    read_entity(_app, trx, &program.id, &input.entity_id)?
+    read_entity(trx, &program.id, &input.entity_id)?
         .ok_or_else(|| anyhow!("entity does not exist"))?;
     let owner_machine = resolve_program_owner_machine(trx, &program);
     if owner_machine.owner_id != user_id {
@@ -1258,7 +1263,7 @@ pub(crate) fn serve_delete_program_entity(
     }
     let program = (crate::api::model::program_ports::ProgramPorts { trx })
         .program_or_empty(&program_id.clone());
-    read_entity(_app, trx, &program.id, &input.entity_id)?
+    read_entity(trx, &program.id, &input.entity_id)?
         .ok_or_else(|| anyhow!("entity does not exist"))?;
     let owner_machine = resolve_program_owner_machine(trx, &program);
     if owner_machine.owner_id != user_id {
@@ -1325,7 +1330,7 @@ pub(crate) fn serve_list_entity_vms(
     if owner_machine.owner_id != user_id {
         return Err(anyhow!("you are not owner of this program"));
     }
-    let entity = read_entity(app, trx, &program.id, &input.entity_id)?
+    let entity = read_entity(trx, &program.id, &input.entity_id)?
         .ok_or_else(|| anyhow!("entity does not exist"))?;
     let entity_type = normalize_entity_type(&entity.entity_type);
     let remote = crate::api::workloads::remote()
@@ -1527,10 +1532,6 @@ pub(crate) fn serve_list_programs(
 }
 
 /// `/machines/listProgramMachines` (`program.list`) body.
-#[expect(
-    dead_code,
-    reason = "RL-004: characterized legacy action surface (A008) kept until its deletion gate"
-)]
 pub(crate) fn serve_list_program_machines(
     _app: &Arc<dyn ICore>,
     trx: &Trx,

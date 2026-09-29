@@ -12,6 +12,8 @@ use std::time::Duration;
 
 use anyhow::{Context, Result, anyhow, bail};
 
+use aseman_fs::{Access, write_atomic};
+
 use super::args;
 
 /// The profile an installed release ships, relative to the binary
@@ -169,15 +171,9 @@ impl Compact {
         if !replaced {
             lines.push(format!("{key}={value}"));
         }
-        let temporary = self.env_file.with_extension("env.tmp");
-        fs::write(&temporary, lines.join("\n") + "\n")?;
-        #[cfg(unix)]
-        {
-            use std::os::unix::fs::PermissionsExt;
-            fs::set_permissions(&temporary, fs::Permissions::from_mode(0o600))?;
-        }
-        fs::rename(&temporary, &self.env_file)?;
-        Ok(())
+        let contents = lines.join("\n") + "\n";
+        write_atomic(&self.env_file, contents.as_bytes(), Access::Private)
+            .with_context(|| format!("write {}", self.env_file.display()))
     }
 
     /// The host-local port the node publishes health on.

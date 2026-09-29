@@ -96,67 +96,72 @@
       {
         "command": "bootstrap",
         "handler": "bootstrap::run_bootstrap(rest)",
-        "source": "apps/asemanctl/src/cli/mod.rs:40"
+        "source": "apps/asemanctl/src/cli/mod.rs:41"
       },
       {
         "command": "status",
         "handler": "compact::run_status(rest)",
-        "source": "apps/asemanctl/src/cli/mod.rs:41"
+        "source": "apps/asemanctl/src/cli/mod.rs:42"
       },
       {
         "command": "start",
         "handler": "compact::run_start(rest)",
-        "source": "apps/asemanctl/src/cli/mod.rs:42"
+        "source": "apps/asemanctl/src/cli/mod.rs:43"
       },
       {
         "command": "stop",
         "handler": "compact::run_stop(rest)",
-        "source": "apps/asemanctl/src/cli/mod.rs:43"
+        "source": "apps/asemanctl/src/cli/mod.rs:44"
       },
       {
         "command": "module",
         "handler": "modules::run_modules(rest)",
-        "source": "apps/asemanctl/src/cli/mod.rs:44"
+        "source": "apps/asemanctl/src/cli/mod.rs:45"
       },
       {
         "command": "modules",
         "handler": "modules::run_modules(rest)",
-        "source": "apps/asemanctl/src/cli/mod.rs:44"
+        "source": "apps/asemanctl/src/cli/mod.rs:45"
       },
       {
         "command": "vms",
         "handler": "vms::run_vms(rest)",
-        "source": "apps/asemanctl/src/cli/mod.rs:45"
+        "source": "apps/asemanctl/src/cli/mod.rs:46"
       },
       {
         "command": "cluster",
         "handler": "cluster::run_cluster(rest)",
-        "source": "apps/asemanctl/src/cli/mod.rs:46"
+        "source": "apps/asemanctl/src/cli/mod.rs:47"
+      },
+      {
+        "command": "storage",
+        "handler": "storage::run_storage(rest)",
+        "source": "apps/asemanctl/src/cli/mod.rs:48"
       },
       {
         "command": "doctor",
         "handler": "ops::run_doctor(rest)",
-        "source": "apps/asemanctl/src/cli/mod.rs:47"
+        "source": "apps/asemanctl/src/cli/mod.rs:49"
       },
       {
         "command": "backup",
         "handler": "ops::run_backup(rest)",
-        "source": "apps/asemanctl/src/cli/mod.rs:48"
+        "source": "apps/asemanctl/src/cli/mod.rs:50"
       },
       {
         "command": "restore",
         "handler": "ops::run_restore(rest)",
-        "source": "apps/asemanctl/src/cli/mod.rs:49"
+        "source": "apps/asemanctl/src/cli/mod.rs:51"
       },
       {
         "command": "upgrade",
         "handler": "ops::run_upgrade(rest)",
-        "source": "apps/asemanctl/src/cli/mod.rs:50"
+        "source": "apps/asemanctl/src/cli/mod.rs:52"
       },
       {
         "command": "support-bundle",
         "handler": "ops::run_support_bundle(rest)",
-        "source": "apps/asemanctl/src/cli/mod.rs:51"
+        "source": "apps/asemanctl/src/cli/mod.rs:53"
       }
     ],
     "vms": [
@@ -279,7 +284,7 @@
   ],
   "root_scripts": [],
   "summary": {
-    "casparctl_top_level_commands": 13,
+    "casparctl_top_level_commands": 14,
     "client_cli_commands": 22,
     "root_scripts": 0
   }

@@ -273,7 +273,7 @@ impl JsMac {
                 return true;
             }
             ticks = ticks.wrapping_add(1);
-            if ticks % INTERRUPT_CLOCK_EVERY != 0 {
+            if !ticks.is_multiple_of(INTERRUPT_CLOCK_EVERY) {
                 return false;
             }
             if Instant::now() >= deadline {

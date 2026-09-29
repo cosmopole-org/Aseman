@@ -157,45 +157,110 @@ fn check_architecture(root: &Path) -> Result<()> {
             }
         }
     }
+    // ADR 0036: the node reaches storage providers only through the storage module,
+    // which loads the configured plugin from the provider bundle by name. Its code
+    // never names a provider crate (a live test may, to provision fixtures).
+    const PROVIDER_CRATES: [&str; 2] = ["aseman-storage-rocksdb", "aseman-storage-postgres"];
+    for package in packages {
+        let Some(name) = package["name"].as_str() else {
+            continue;
+        };
+        if !matches!(name, "aseman-node" | "asemanctl") {
+            continue;
+        }
+        for dependency in package["dependencies"]
+            .as_array()
+            .context("package dependencies")?
+        {
+            let dependency_name = dependency["name"].as_str().context("dependency name")?;
+            if dependency["kind"].is_null() && PROVIDER_CRATES.contains(&dependency_name) {
+                bail!(
+                    "forbidden dependency: {name} -> {dependency_name} \
+                     (load providers through aseman-storage-providers, ADR 0036)"
+                );
+            }
+        }
+    }
     println!("architecture dependency rules passed");
     Ok(())
 }
 
+/// The packages the fast gate formats, tests, and lints: one list, so the three
+/// checks cannot drift apart.
+const FAST_PACKAGES: &[&str] = &[
+    "aseman-node",
+    "aseman-meter",
+    "asemanctl",
+    "aseman-domain",
+    "aseman-ports",
+    "aseman-application",
+    "aseman-contracts",
+    "aseman-guest-sdk",
+    "aseman-config",
+    "aseman-observability",
+    "aseman-module-runtime",
+    "aseman-sample-provider",
+    "aseman-module-conformance",
+    "aseman-storage-conformance",
+    "aseman-storage-postgres",
+    "aseman-storage-rocksdb",
+    "aseman-storage",
+    "aseman-storage-providers",
+    "aseman-migration-e2e",
+    "aseman-capsule",
+    "aseman-identity-native",
+    "aseman-policy-native",
+    "aseman-finance-ledger",
+    "aseman-realtime-durable",
+    "aseman-federation-http",
+    "aseman-gateway-rpc",
+    "aseman-consensus-hashgraph",
+    "aseman-policy-conformance",
+    "aseman-public-http",
+    "aseman-network-legacy",
+    "aseman-public-service",
+    "aseman-vmm-http",
+    "aseman-vmm-backend-grpc",
+    "aseman-vmm-backend-conformance",
+    "aseman-guest-http",
+    "aseman-vmm",
+    // The Nomad backend's live test skips without a cluster (ADR 0002).
+    "aseman-vmm-backend-nomad",
+    // The agent's live test skips without a firecracker binary.
+    "aseman-vmm-agent",
+    "xtask",
+];
+
+/// The runtime plugins the native VMM backend links (RL-014); `full` lints them
+/// with the backend.
+const RUNTIME_PACKAGES: &[&str] = &[
+    "aseman-vmm-backend-native",
+    "caspar-vm-sdk",
+    "caspar-vm-plugins",
+    "caspar-vm-docker",
+    "caspar-vm-elpian",
+    "elpian-vm",
+    "caspar-vm-elpify",
+    "elpify-lang",
+    "caspar-vm-fire",
+    "caspar-vm-javascript",
+    "caspar-vm-modal",
+    "caspar-vm-wasm",
+];
+
+/// `cargo <command> -p <package>... <extra>...`.
+fn cargo_packages(root: &Path, command: &str, packages: &[&str], extra: &[&str]) -> Result<()> {
+    let mut args = vec![command];
+    for package in packages {
+        args.extend(["-p", package]);
+    }
+    args.extend_from_slice(extra);
+    run(root, "cargo", &args)
+}
+
 fn fast(root: &Path) -> Result<()> {
     check_architecture(root)?;
-    for package in [
-        "aseman-node",
-        "aseman-meter",
-        "asemanctl",
-        "aseman-domain",
-        "aseman-ports",
-        "aseman-application",
-        "aseman-contracts",
-        "aseman-config",
-        "aseman-observability",
-        "aseman-module-runtime",
-        "aseman-sample-provider",
-        "aseman-module-conformance",
-        "aseman-storage-conformance",
-        "aseman-storage-postgres",
-        "aseman-storage-rocksdb",
-        "aseman-migration-e2e",
-        "aseman-capsule",
-        "aseman-identity-native",
-        "aseman-policy-native",
-        "aseman-finance-ledger",
-        "aseman-realtime-durable",
-        "aseman-federation-http",
-        "aseman-gateway-rpc",
-        "aseman-consensus-hashgraph",
-        "aseman-policy-conformance",
-        "aseman-public-http",
-        "aseman-network-legacy",
-        "aseman-public-service",
-        "aseman-vmm-backend-nomad",
-        "aseman-vmm-agent",
-        "xtask",
-    ] {
+    for package in FAST_PACKAGES {
         run(root, "cargo", &["fmt", "-p", package, "--", "--check"])?;
     }
     for script in [
@@ -211,6 +276,8 @@ fn fast(root: &Path) -> Result<()> {
         "generate_phase2_contracts.py",
         "generate_phase3_contracts.py",
         "generate_postgres_core.py",
+        // ADR 0036: the typed storage client is generated from the model catalog.
+        "generate_storage_client.py",
         "generate_postgres_storage_classes.py",
         "generate_legacy_transform_manifest.py",
         "generate_security_registry.py",
@@ -269,165 +336,12 @@ fn fast(root: &Path) -> Result<()> {
             "test_*.py",
         ],
     )?;
-    run(
+    cargo_packages(root, "test", FAST_PACKAGES, &[])?;
+    cargo_packages(
         root,
-        "cargo",
-        &[
-            "test",
-            "-p",
-            "aseman-node",
-            "-p",
-            "aseman-meter",
-            "-p",
-            "asemanctl",
-            "-p",
-            "aseman-domain",
-            "-p",
-            "aseman-ports",
-            "-p",
-            "aseman-application",
-            "-p",
-            "aseman-contracts",
-            "-p",
-            "aseman-guest-sdk",
-            "-p",
-            "aseman-config",
-            "-p",
-            "aseman-observability",
-            "-p",
-            "aseman-module-runtime",
-            "-p",
-            "aseman-sample-provider",
-            "-p",
-            "aseman-module-conformance",
-            "-p",
-            "aseman-storage-conformance",
-            "-p",
-            "aseman-storage-postgres",
-            "-p",
-            "aseman-storage-rocksdb",
-            "-p",
-            "aseman-migration-e2e",
-            "-p",
-            "aseman-capsule",
-            "-p",
-            "aseman-identity-native",
-            "-p",
-            "aseman-policy-native",
-            "-p",
-            "aseman-finance-ledger",
-            "-p",
-            "aseman-realtime-durable",
-            "-p",
-            "aseman-federation-http",
-            "-p",
-            "aseman-gateway-rpc",
-            "-p",
-            "aseman-consensus-hashgraph",
-            "-p",
-            "aseman-policy-conformance",
-            "-p",
-            "aseman-public-http",
-            "-p",
-            "aseman-network-legacy",
-            "-p",
-            "aseman-public-service",
-            "-p",
-            "aseman-vmm-http",
-            "-p",
-            "aseman-vmm-backend-grpc",
-            "-p",
-            "aseman-vmm-backend-conformance",
-            "-p",
-            "aseman-guest-http",
-            "-p",
-            "aseman-vmm",
-            // The Nomad backend's live test skips without a cluster (ADR 0002).
-            "-p",
-            "aseman-vmm-backend-nomad",
-            // The agent's live test skips without a firecracker binary.
-            "-p",
-            "aseman-vmm-agent",
-        ],
-    )?;
-    run(
-        root,
-        "cargo",
-        &[
-            "clippy",
-            "-p",
-            "aseman-meter",
-            "-p",
-            "asemanctl",
-            "-p",
-            "aseman-domain",
-            "-p",
-            "aseman-ports",
-            "-p",
-            "aseman-application",
-            "-p",
-            "aseman-contracts",
-            "-p",
-            "aseman-guest-sdk",
-            "-p",
-            "aseman-config",
-            "-p",
-            "aseman-observability",
-            "-p",
-            "aseman-module-runtime",
-            "-p",
-            "aseman-sample-provider",
-            "-p",
-            "aseman-module-conformance",
-            "-p",
-            "aseman-storage-conformance",
-            "-p",
-            "aseman-storage-postgres",
-            "-p",
-            "aseman-storage-rocksdb",
-            "-p",
-            "aseman-migration-e2e",
-            "-p",
-            "aseman-capsule",
-            "-p",
-            "aseman-identity-native",
-            "-p",
-            "aseman-policy-native",
-            "-p",
-            "aseman-finance-ledger",
-            "-p",
-            "aseman-realtime-durable",
-            "-p",
-            "aseman-federation-http",
-            "-p",
-            "aseman-gateway-rpc",
-            "-p",
-            "aseman-policy-conformance",
-            "-p",
-            "aseman-public-http",
-            "-p",
-            "aseman-network-legacy",
-            "-p",
-            "aseman-public-service",
-            "-p",
-            "aseman-vmm-http",
-            "-p",
-            "aseman-vmm-backend-grpc",
-            "-p",
-            "aseman-vmm-backend-conformance",
-            "-p",
-            "aseman-guest-http",
-            "-p",
-            "aseman-vmm",
-            "-p",
-            "aseman-vmm-backend-nomad",
-            "-p",
-            "aseman-vmm-agent",
-            "--all-targets",
-            "--",
-            "-D",
-            "warnings",
-        ],
+        "clippy",
+        FAST_PACKAGES,
+        &["--all-targets", "--", "-D", "warnings"],
     )
 }
 
@@ -435,20 +349,15 @@ fn full(root: &Path) -> Result<()> {
     run(root, "cargo", &["check", "-p", "aseman-node", "--bins"])?;
     run(root, "cargo", &["test", "-p", "aseman-node", "--lib"])?;
     // The native backend links every runtime plugin, as the node does.
-    run(root, "cargo", &["test", "-p", "aseman-vmm-backend-native"])?;
-    run(
+    for package in RUNTIME_PACKAGES {
+        run(root, "cargo", &["fmt", "-p", package, "--", "--check"])?;
+    }
+    cargo_packages(root, "test", RUNTIME_PACKAGES, &[])?;
+    cargo_packages(
         root,
-        "cargo",
-        &[
-            "clippy",
-            "-p",
-            "aseman-vmm-backend-native",
-            "--all-targets",
-            "--no-deps",
-            "--",
-            "-D",
-            "warnings",
-        ],
+        "clippy",
+        RUNTIME_PACKAGES,
+        &["--all-targets", "--no-deps", "--", "-D", "warnings"],
     )?;
     Ok(())
 }

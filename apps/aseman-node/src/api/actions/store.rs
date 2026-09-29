@@ -43,9 +43,7 @@ use crate::models::state::IState;
 use super::util::build_secure_action;
 
 #[cfg(test)]
-use crate::api::model::access::{StorePermissions, access_link_key};
-#[cfg(test)]
-use crate::core::trx::Trx;
+use crate::api::model::access::StorePermissions;
 #[cfg(test)]
 use aseman_application::store::DEFAULT_HISTORY_COUNT;
 
@@ -101,11 +99,9 @@ fn signal(app: Arc<dyn ICore>) -> Arc<dyn ISecureAction> {
         move |state: Arc<dyn IState>, input: SignalInput| -> Result<Value> {
             let sender_id = state.info().user_id();
             let trx = state.trx();
-            let store_ports = StorePorts { trx: &*trx };
-            let membership = MembershipPorts { trx: &*trx };
-            let signal_log = SignalPorts {
-                storage: app_for_handler.tools().storage(),
-            };
+            let store_ports = StorePorts { trx: &trx };
+            let membership = MembershipPorts { trx: &trx };
+            let signal_log = SignalPorts { trx: &trx };
             let outcome = SignalStore {
                 stores: &store_ports,
                 access: &membership,
@@ -121,7 +117,7 @@ fn signal(app: Arc<dyn ICore>) -> Arc<dyn ISecureAction> {
             )
             .map_err(legacy_error)?;
 
-            let mut sender = (crate::api::model::creature_ports::CreaturePorts { trx: &*trx })
+            let mut sender = (crate::api::model::creature_ports::CreaturePorts { trx: &trx })
                 .creature_or_empty(&sender_id.clone());
             // Balance is never leaked over the signalling channel.
             sender.balance = 0;
@@ -169,17 +165,14 @@ fn signal(app: Arc<dyn ICore>) -> Arc<dyn ISecureAction> {
 /// `/stores/history` — replay a store's persisted signals, newest first,
 /// filtered by tag.
 fn history(app: Arc<dyn ICore>) -> Arc<dyn ISecureAction> {
-    let app_for_handler = app.clone();
     build_secure_action::<HistoryInput, _>(
         app,
         "/stores/history",
         store_guard(),
         move |state: Arc<dyn IState>, input: HistoryInput| -> Result<Value> {
             let trx = state.trx();
-            let membership = MembershipPorts { trx: &*trx };
-            let signal_log = SignalPorts {
-                storage: app_for_handler.tools().storage(),
-            };
+            let membership = MembershipPorts { trx: &trx };
+            let signal_log = SignalPorts { trx: &trx };
             let signals = ReadStoreHistory {
                 access: &membership,
                 log: &signal_log,
@@ -216,7 +209,7 @@ fn set_access(app: Arc<dyn ICore>) -> Arc<dyn ISecureAction> {
         store_guard(),
         move |state: Arc<dyn IState>, input: SetAccessInput| -> Result<Value> {
             let trx = state.trx();
-            let membership = MembershipPorts { trx: &*trx };
+            let membership = MembershipPorts { trx: &trx };
             let perms = SetStoreAccess {
                 access: &membership,
             }
@@ -245,7 +238,7 @@ fn get_access(app: Arc<dyn ICore>) -> Arc<dyn ISecureAction> {
         store_guard(),
         move |state: Arc<dyn IState>, input: GetAccessInput| -> Result<Value> {
             let trx = state.trx();
-            let membership = MembershipPorts { trx: &*trx };
+            let membership = MembershipPorts { trx: &trx };
             let (member, perms) = GetStoreAccess {
                 access: &membership,
             }
@@ -330,111 +323,32 @@ mod tests {
         assert_eq!(count, DEFAULT_HISTORY_COUNT);
     }
 
-    /// Characterization of the rewired path: the store use cases running through
-    /// The routed store ports on a real legacy transaction keep the legacy key encodings.
-    mod legacy_ports {
+    /// The store use cases through the store ports on a storage transaction.
+    mod ports {
         use super::super::*;
-        use crate::adapters::rocksdb::trx::TrxWrapper;
-        use crate::adapters::rocksdb::trx::tests::StubCore;
-        use crate::models::packet::{LogPacket, LogQuery};
-        use crate::models::ports::{IStorage, KvDb};
-        use std::sync::Mutex;
+        use aseman_domain::store::StoreRecord;
+        use aseman_ports::{StoreAccess, StoreDirectory};
 
-        struct RecordingStorage {
-            kv: KvDb,
-            signals: Mutex<Vec<LogPacket>>,
-        }
-
-        impl IStorage for RecordingStorage {
-            fn storage_root(&self) -> String {
-                String::new()
-            }
-            fn state(&self) -> crate::models::ports::StateBackend {
-                crate::models::ports::StateBackend::RocksDb(self.kv.clone())
-            }
-            fn gen_id(&self, _: &Trx, _: &str) -> String {
-                String::new()
-            }
-            fn log_time_sieries(
-                &self,
-                store_id: &str,
-                user_id: &str,
-                data: &str,
-                tags: &[String],
-                time_val: i64,
-            ) -> Result<LogPacket> {
-                let mut signals = self.signals.lock().unwrap();
-                let packet = LogPacket {
-                    id: format!("sig-{}", signals.len()),
-                    user_id: user_id.to_string(),
-                    data: data.to_string(),
-                    store_id: store_id.to_string(),
-                    tags: tags.to_vec(),
-                    time: time_val,
-                    edited: false,
-                };
-                signals.push(packet.clone());
-                Ok(packet)
-            }
-            fn update_log(&self, _: &str, _: &str, _: &str, _: &str, _: i64) -> LogPacket {
-                LogPacket::default()
-            }
-            fn read_store_logs(&self, store_id: &str, query: &LogQuery) -> Result<Vec<LogPacket>> {
-                let mut rows = self
-                    .signals
-                    .lock()
-                    .unwrap()
-                    .iter()
-                    .filter(|packet| packet.store_id == store_id)
-                    .filter(|packet| query.tags_all.iter().all(|tag| packet.tags.contains(tag)))
-                    .cloned()
-                    .collect::<Vec<_>>();
-                rows.reverse();
-                Ok(rows)
-            }
-            fn pick_store_logs(&self, _: &str, _: Vec<String>) -> Vec<LogPacket> {
-                Vec::new()
+        fn store(id: &str) -> StoreRecord {
+            StoreRecord {
+                id: id.into(),
+                persistent_history: true,
+                member_count: 1,
+                ..Default::default()
             }
         }
 
         #[test]
-        fn store_use_cases_keep_legacy_encodings_through_the_adapter() {
-            let dir = std::env::temp_dir().join(format!(
-                "aseman-store-ports-{}-{}",
-                std::process::id(),
-                std::time::SystemTime::now()
-                    .duration_since(std::time::UNIX_EPOCH)
-                    .unwrap()
-                    .as_nanos()
-            ));
-            let storage: Arc<RecordingStorage> = Arc::new(RecordingStorage {
-                kv: Arc::new(aseman_storage_rocksdb::RocksDbKvStore::open_default(&dir).unwrap()),
-                signals: Mutex::new(Vec::new()),
-            });
-            let dyn_storage: Arc<dyn IStorage> = storage.clone();
-            let trx = TrxWrapper::over_storage(
-                Arc::new(StubCore {
-                    storage: dyn_storage.clone(),
-                }),
-                dyn_storage.clone(),
-                false,
-            );
-            Store {
-                id: "s1".into(),
-                pers_hist: true,
-                member_count: 1,
-                ..Default::default()
-            }
-            .push(&*trx);
-            trx.put_link(
-                &access_link_key("s1", "alice"),
-                &StorePermissions::owner().encode(),
-            );
-            let store_ports = StorePorts { trx: &*trx };
-            let membership = MembershipPorts { trx: &*trx };
-            let signal_log = SignalPorts {
-                storage: dyn_storage,
-            };
+        fn store_use_cases_run_through_the_ports() {
+            let trx = crate::core::trx::test_trx();
+            crate::api::model::conformance::seed_humans(&trx, &["1@t", "2@t", "3@t"]);
+            let store_ports = StorePorts { trx: &trx };
+            let membership = MembershipPorts { trx: &trx };
+            let signal_log = SignalPorts { trx: &trx };
+            store_ports.create_store(&store("s1"), "1@t").unwrap();
+            membership
+                .join("s1", "1@t", StorePermissions::owner())
+                .unwrap();
 
             let outcome = SignalStore {
                 stores: &store_ports,
@@ -442,45 +356,45 @@ mod tests {
                 log: &signal_log,
                 clock: &SystemClock,
             }
-            .execute("alice", "s1", "hello", &["kind=message".to_string()], false)
+            .execute("1@t", "s1", "hello", &["kind=message".to_string()], false)
             .unwrap();
             assert!(outcome.persisted);
-            assert_eq!(outcome.signal.unwrap().id, "sig-0");
-            let counted = Store {
-                id: "s1".into(),
-                ..Default::default()
-            }
-            .pull(&*trx);
-            assert_eq!(counted.signal_count, 1);
+            let signal = outcome.signal.unwrap();
+            assert!(!signal.id.is_empty());
+            assert_eq!(store_ports.store_or_empty("s1").signal_count, 1);
 
             let history = ReadStoreHistory {
                 access: &membership,
                 log: &signal_log,
             }
-            .execute("alice", "s1", LogQuery::default())
+            .execute("1@t", "s1", LogQuery::default())
             .unwrap();
-            assert_eq!(history.len(), 1);
+            assert_eq!(
+                history
+                    .iter()
+                    .map(|packet| packet.id.clone())
+                    .collect::<Vec<_>>(),
+                [signal.id]
+            );
 
-            // Legacy `onaccess` link encoding is preserved exactly.
             SetStoreAccess {
                 access: &membership,
             }
             .execute(
-                "alice",
+                "1@t",
                 "s1",
-                "bob",
+                "2@t",
                 &["signal".to_string(), "read".to_string()],
             )
             .unwrap();
-            assert_eq!(trx.get_link(&access_link_key("s1", "bob")), "read,signal");
             let (member, perms) = GetStoreAccess {
                 access: &membership,
             }
-            .execute("bob", "s1", "")
+            .execute("2@t", "s1", "")
             .unwrap();
             assert_eq!(
                 (member.as_str(), perms),
-                ("bob", StorePermissions::member())
+                ("2@t", StorePermissions::member())
             );
             let denied = SignalStore {
                 stores: &store_ports,
@@ -488,82 +402,41 @@ mod tests {
                 log: &signal_log,
                 clock: &SystemClock,
             }
-            .execute("mallory", "s1", "x", &[], false)
+            .execute("3@t", "s1", "x", &[], false)
             .unwrap_err();
             assert_eq!(
                 legacy_error(denied).to_string(),
                 "not allowed to signal in this store"
             );
-            drop(trx);
-            let _ = std::fs::remove_dir_all(&dir);
         }
 
-        /// LD-12: the legacy creature-deletion walk, `Store::list(.., -1, -1)`, is
-        /// always empty, so a deleted creature kept every membership. The port
-        /// helpers remove them and delete stores left with no member.
+        /// LD-12: a deleted creature leaves every store, and stores left with no
+        /// member are deleted.
         #[test]
-        fn removing_a_member_everywhere_fixes_the_empty_legacy_walk() {
-            let dir = std::env::temp_dir().join(format!(
-                "aseman-store-members-{}-{}",
-                std::process::id(),
-                std::time::SystemTime::now()
-                    .duration_since(std::time::UNIX_EPOCH)
-                    .unwrap()
-                    .as_nanos()
-            ));
-            let storage: Arc<dyn IStorage> = Arc::new(RecordingStorage {
-                kv: Arc::new(aseman_storage_rocksdb::RocksDbKvStore::open_default(&dir).unwrap()),
-                signals: Mutex::new(Vec::new()),
-            });
-            let trx = TrxWrapper::over_storage(
-                Arc::new(StubCore {
-                    storage: storage.clone(),
-                }),
-                storage,
-                false,
-            );
+        fn removing_a_member_everywhere_drops_memberships_and_empty_stores() {
+            let trx = crate::core::trx::test_trx();
+            crate::api::model::conformance::seed_humans(&trx, &["1@t", "2@t", "4@t"]);
+            let stores = StorePorts { trx: &trx };
+            let ports = MembershipPorts { trx: &trx };
             for id in ["s1", "s2"] {
-                Store {
-                    id: id.into(),
-                    ..Default::default()
-                }
-                .push(&*trx);
+                stores.create_store(&store(id), "4@t").unwrap();
             }
-            let ports = crate::api::model::store_ports::MembershipPorts { trx: &*trx };
             let member = StorePermissions::member();
-            aseman_ports::StoreAccess::join(&ports, "s1", "alice", member).unwrap();
-            aseman_ports::StoreAccess::join(&ports, "s1", "bob", member).unwrap();
-            aseman_ports::StoreAccess::join(&ports, "s2", "alice", member).unwrap();
-            // A membership whose store object is gone.
-            aseman_ports::StoreAccess::join(&ports, "gone", "alice", member).unwrap();
+            ports.join("s1", "1@t", member).unwrap();
+            ports.join("s1", "2@t", member).unwrap();
+            ports.join("s2", "1@t", member).unwrap();
+            // A membership needs its store: the relation is enforced.
+            assert!(ports.join("gone", "1@t", member).is_err());
 
-            let legacy_walk = Store::list(
-                &*trx,
-                "hasaccess::alice::",
-                false,
-                &std::collections::HashMap::new(),
-                &std::collections::HashMap::new(),
-                -1,
-                -1,
-            )
-            .unwrap();
-            assert!(legacy_walk.is_empty());
-            let ids = |stores: Vec<Store>| stores.into_iter().map(|s| s.id).collect::<Vec<_>>();
-            assert_eq!(ids(ports.member_stores("alice", 50).unwrap()), ["s1", "s2"]);
-            // The window is taken over membership links, then dangling ones drop.
-            assert!(ports.member_stores("alice", 1).unwrap().is_empty());
+            let ids = |found: Vec<Store>| found.into_iter().map(|s| s.id).collect::<Vec<_>>();
+            assert_eq!(ids(ports.member_stores("1@t", 50).unwrap()), ["s1", "s2"]);
+            assert_eq!(ids(ports.member_stores("1@t", 1).unwrap()), ["s1"]);
 
-            assert_eq!(ports.remove_member_everywhere("alice").unwrap(), ["s2"]);
-            assert!(
-                aseman_ports::StoreAccess::stores_of(&ports, "alice")
-                    .unwrap()
-                    .is_empty()
-            );
-            assert!(aseman_ports::StoreAccess::is_member(&ports, "s1", "bob").unwrap());
-            assert!(!trx.get_obj(Store::type_(), "s1").is_empty());
-            assert!(trx.get_obj(Store::type_(), "s2").is_empty());
-            drop(trx);
-            let _ = std::fs::remove_dir_all(&dir);
+            assert_eq!(ports.remove_member_everywhere("1@t").unwrap(), ["s2"]);
+            assert!(ports.stores_of("1@t").unwrap().is_empty());
+            assert!(ports.is_member("s1", "2@t").unwrap());
+            assert!(stores.store("s1").unwrap().is_some());
+            assert!(stores.store("s2").unwrap().is_none());
         }
     }
 }

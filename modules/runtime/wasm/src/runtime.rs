@@ -513,7 +513,7 @@ impl WasmMac {
 
         let mut config = Config::create().map_err(|e| format!("wasm config: {}", e))?;
         let bytes = self.ram_limit_mb.saturating_mul(1024).saturating_mul(1024);
-        let pages = ((bytes + 65535) / 65536).max(1);
+        let pages = bytes.div_ceil(65536).max(1);
         config.set_max_memory_pages((pages.min(u32::MAX as u64)) as u32);
         let mut store = Store::create().map_err(|e| format!("wasm store: {}", e))?;
         let wasi_mod =
@@ -652,7 +652,7 @@ impl WasmMac {
                 .executor
                 .call_func(&mut malloc_fn, [WasmValue::from_i32(val_l)])
                 .map_err(|e| format!("malloc call: {}", e))?;
-            res2.get(0)
+            res2.first()
                 .map(|v| v.to_i32())
                 .ok_or_else(|| "malloc returned no value".to_string())?
         };

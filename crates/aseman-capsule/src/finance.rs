@@ -13,7 +13,8 @@ use aseman_ports::{PortError, PortResult};
 use aseman_storage::client::core::{
     billing_catalog, billing_quote, finance_account, finance_hold, finance_journal,
     finance_journal_participant, finance_live_debit, finance_payout, finance_pool,
-    finance_pool_reservation, finance_project_budget, marker, namespace_document, user_email,
+    finance_pool_reservation, finance_project_budget, legacy_identity, marker, namespace_document,
+    user,
 };
 use aseman_storage::{FindMany, Models, StorageError, Trx, Where};
 use serde_json::{Map, Value, json};
@@ -21,10 +22,6 @@ use std::collections::BTreeSet;
 
 /// Rows one listing step reads.
 const PAGE: u64 = 1_000;
-
-fn failed(error: impl ToString) -> PortError {
-    PortError::Failed(error.to_string())
-}
 
 fn storage(error: StorageError) -> PortError {
     match error {
@@ -43,25 +40,37 @@ fn text(document: &Map<String, Value>, field: &str) -> Option<String> {
 }
 
 fn millis(document: &Map<String, Value>) -> i64 {
-    document.get("createdAt").and_then(Value::as_i64).unwrap_or(0)
+    document
+        .get("createdAt")
+        .and_then(Value::as_i64)
+        .unwrap_or(0)
 }
 
 fn object(value: &Value) -> PortResult<Map<String, Value>> {
     match value {
         Value::Object(map) => Ok(map.clone()),
-        _ => Err(failed("a finance document must be a JSON object")),
+        _ => Err(PortError::failed(
+            "a finance document must be a JSON object",
+        )),
     }
 }
 
 /// Where a shared (path-addressed) document lives: its namespace key and path.
-fn shared(family: FinanceDoc, id: &str, path: &str) -> Option<(String, String)> {
+fn shared(family: FinanceDoc, id: &str) -> Option<(String, String)> {
     match family {
         FinanceDoc::BillingCurrent => Some(("billing".to_owned(), "current".to_owned())),
         FinanceDoc::BillingNodes => Some(("billing".to_owned(), "nodes".to_owned())),
         FinanceDoc::Market => Some(("market".to_owned(), id.to_owned())),
-        FinanceDoc::Creature => Some((format!("creature:{id}"), path.to_owned())),
         _ => None,
     }
+}
+
+/// The lock a `Json::Creature` path names: `lockedTokens.{lock}` (a `core.token_lock`).
+fn lock_of(path: &str) -> PortResult<&str> {
+    path.strip_prefix(crate::token_lock::LOCKED_TOKENS)
+        .and_then(|rest| rest.strip_prefix('.'))
+        .filter(|lock| !lock.is_empty() && !lock.contains('.'))
+        .ok_or_else(|| PortError::failed("a creature finance document is a token lock"))
 }
 
 fn account_field(kind: WalletCounter) -> &'static str {
@@ -310,7 +319,9 @@ impl StorageFinanceLedger<'_> {
             FinanceDoc::BillingCurrent
             | FinanceDoc::BillingNodes
             | FinanceDoc::Market
-            | FinanceDoc::Creature => return Err(failed("a shared document has a path")),
+            | FinanceDoc::Creature => {
+                return Err(PortError::failed("a shared document has a path"));
+            }
         }
         .map_err(storage)
     }
@@ -339,6 +350,16 @@ impl StorageFinanceLedger<'_> {
             )
             .map(drop)
             .map_err(storage)
+    }
+
+    /// The `core.user` of the human creature `user_id`, if it has one.
+    fn user_of(&self, user_id: &str) -> PortResult<Option<aseman_storage::Id>> {
+        Ok(self
+            .trx
+            .legacy_identity()
+            .find_unique(legacy_identity::by_family_and_legacy_id("User", user_id))
+            .map_err(storage)?
+            .map(|identity| identity.target_id))
     }
 
     fn account(&self, user: &str) -> PortResult<Option<finance_account::FinanceAccount>> {
@@ -407,7 +428,10 @@ impl StorageFinanceLedger<'_> {
                 )
                 .map_err(storage)?;
             let done = (page.len() as u64) < PAGE;
-            keys.extend(page.into_iter().filter_map(|row| row.text("key").map(str::to_owned)));
+            keys.extend(
+                page.into_iter()
+                    .filter_map(|row| row.text("key").map(str::to_owned)),
+            );
             if done {
                 return Ok(keys);
             }
@@ -417,7 +441,12 @@ impl StorageFinanceLedger<'_> {
 
 impl FinanceLedger for StorageFinanceLedger<'_> {
     fn get_doc(&self, family: FinanceDoc, id: &str, path: &str) -> PortResult<Map<String, Value>> {
-        if let Some((key, path)) = shared(family, id, path) {
+        if family == FinanceDoc::Creature {
+            return crate::token_lock::lock(self.trx, id, lock_of(path)?)
+                .map_err(storage)?
+                .ok_or(PortError::NotFound);
+        }
+        if let Some((key, path)) = shared(family, id) {
             return match self.namespace(&key)?.get(&path) {
                 Some(Value::Object(object)) => Ok(object.clone()),
                 _ => Err(PortError::NotFound),
@@ -438,7 +467,11 @@ impl FinanceLedger for StorageFinanceLedger<'_> {
         merge: bool,
     ) -> PortResult<()> {
         let incoming = object(value)?;
-        if let Some((key, path)) = shared(family, id, path) {
+        if family == FinanceDoc::Creature {
+            return crate::token_lock::put_lock(self.trx, id, lock_of(path)?, &incoming, merge)
+                .map_err(storage);
+        }
+        if let Some((key, path)) = shared(family, id) {
             let mut namespace = self.namespace(&key)?;
             let next = match (merge, namespace.get(&path)) {
                 (true, Some(Value::Object(existing))) => {
@@ -483,7 +516,7 @@ impl FinanceLedger for StorageFinanceLedger<'_> {
             .and_then(|account| account_value(&account, kind))
             .unwrap_or(0);
         if value < 0 {
-            return Err(failed("invalid finance counter"));
+            return Err(PortError::failed("invalid finance counter"));
         }
         Ok(value)
     }
@@ -492,7 +525,11 @@ impl FinanceLedger for StorageFinanceLedger<'_> {
         if amount < 0 {
             return Err(PortError::Denied("finance counter underflow"));
         }
-        self.put_account_field(user, account_field(kind), aseman_storage::Value::Int(amount))
+        self.put_account_field(
+            user,
+            account_field(kind),
+            aseman_storage::Value::Int(amount),
+        )
     }
 
     fn add_counter(&self, kind: WalletCounter, user: &str, amount: i64) -> PortResult<i64> {
@@ -504,7 +541,7 @@ impl FinanceLedger for StorageFinanceLedger<'_> {
         let next = self
             .counter(kind, user)?
             .checked_add(amount)
-            .ok_or_else(|| failed("finance counter overflow"))?;
+            .ok_or_else(|| PortError::failed("finance counter overflow"))?;
         self.set_counter(kind, user, next)?;
         Ok(next)
     }
@@ -599,46 +636,50 @@ impl FinanceLedger for StorageFinanceLedger<'_> {
     }
 
     fn email_to_id(&self, email: &str) -> PortResult<String> {
+        let Some(found) = self
+            .trx
+            .user()
+            .find_unique(user::by_email(email))
+            .map_err(storage)?
+        else {
+            return Ok(String::new());
+        };
         Ok(self
             .trx
-            .user_email()
-            .find_unique(user_email::by_key(email))
+            .legacy_identity()
+            .find_unique(legacy_identity::by_target_kind_and_target_id(
+                user::NAME,
+                found.id,
+            ))
             .map_err(storage)?
-            .map(|record| record.user_ref)
+            .map(|identity| identity.legacy_id)
             .unwrap_or_default())
     }
 
     fn put_email_to_id(&self, email: &str, user_id: &str) -> PortResult<()> {
-        // One address per user: a user's previous address is released first.
+        // The address is the user's own `core.user` field: one address per user, and
+        // a unique index keeps an address with one user.
+        let target = self.user_of(user_id)?.ok_or(PortError::NotFound)?;
         self.trx
-            .user_email()
-            .delete_many(Some(
-                user_email::user_ref()
-                    .eq(user_id)
-                    .and(user_email::key().not(email)),
-            ))
-            .map_err(storage)?;
-        self.trx
-            .user_email()
-            .upsert(
-                user_email::by_key(email),
-                user_email::Create {
-                    key: email.to_owned(),
-                    user_ref: user_id.to_owned(),
-                },
-                user_email::update().user_ref(user_id),
+            .user()
+            .update(
+                user::by_id(target),
+                user::update().email(Some(email.to_owned())),
             )
             .map(drop)
             .map_err(storage)
     }
 
     fn id_to_email(&self, user_id: &str) -> PortResult<String> {
+        let Some(target) = self.user_of(user_id)? else {
+            return Ok(String::new());
+        };
         Ok(self
             .trx
-            .user_email()
-            .find_unique(user_email::by_user_ref(user_id))
+            .user()
+            .find_unique(user::by_id(target))
             .map_err(storage)?
-            .map(|record| record.key)
+            .and_then(|found| found.email)
             .unwrap_or_default())
     }
 
@@ -716,12 +757,24 @@ mod tests {
                 .unwrap();
         }
         ledger
-            .put_doc(FinanceDoc::Hold, "h1", "hold", &json!({"state": "held"}), true)
+            .put_doc(
+                FinanceDoc::Hold,
+                "h1",
+                "hold",
+                &json!({"state": "held"}),
+                true,
+            )
             .unwrap();
         let h1 = ledger.get_doc(FinanceDoc::Hold, "h1", "hold").unwrap();
-        assert_eq!((h1["amount"].clone(), h1["state"].clone()), (json!(5), json!("held")));
+        assert_eq!(
+            (h1["amount"].clone(), h1["state"].clone()),
+            (json!(5), json!("held"))
+        );
         assert_eq!(ledger.hold_ids_by_payer("u1", 2).unwrap(), ["h2", "h3"]);
-        assert_eq!(ledger.doc_ids(FinanceDoc::Hold).unwrap(), ["h1", "h2", "h3"]);
+        assert_eq!(
+            ledger.doc_ids(FinanceDoc::Hold).unwrap(),
+            ["h1", "h2", "h3"]
+        );
         assert!(matches!(
             ledger.get_doc(FinanceDoc::Pool, "missing", "pool"),
             Err(PortError::NotFound)
@@ -733,7 +786,10 @@ mod tests {
         ledger.add_counter(WalletCounter::Held, "u2", 1).unwrap();
         assert_eq!(
             ledger.counter_links(WalletCounter::Held).unwrap(),
-            [("u1".to_owned(), "7".to_owned()), ("u2".to_owned(), "1".to_owned())]
+            [
+                ("u1".to_owned(), "7".to_owned()),
+                ("u2".to_owned(), "1".to_owned())
+            ]
         );
         assert_eq!(ledger.counter_links(WalletCounter::Debt).unwrap().len(), 1);
 
@@ -756,17 +812,49 @@ mod tests {
         );
 
         let journal = ledger
-            .write_journal("hold", "h1", "u1", json!({}), &["u1".into(), "u2".into(), "u1".into()], 5)
+            .write_journal(
+                "hold",
+                "h1",
+                "u1",
+                json!({}),
+                &["u1".into(), "u2".into(), "u1".into()],
+                5,
+            )
             .unwrap();
-        assert_eq!(ledger.journal_ids_by_user("u2", 10).unwrap(), [journal.clone()]);
         assert_eq!(
-            ledger.get_doc(FinanceDoc::Journal, &journal, "entry").unwrap()["kind"],
+            ledger.journal_ids_by_user("u2", 10).unwrap(),
+            std::slice::from_ref(&journal)
+        );
+        assert_eq!(
+            ledger
+                .get_doc(FinanceDoc::Journal, &journal, "entry")
+                .unwrap()["kind"],
             json!("hold")
         );
 
+        // Emails are the human user's own `core.user` address.
+        assert!(ledger.put_email_to_id("a@x.io", "nobody").is_err());
+        let seeded = trx
+            .user()
+            .create(user::Create {
+                username: "u1-name".to_owned(),
+                email: None,
+                public_key: vec![1],
+                status: "active".to_owned(),
+            })
+            .unwrap();
+        trx.legacy_identity()
+            .create(legacy_identity::Create {
+                family: "User".to_owned(),
+                legacy_id: "u1".to_owned(),
+                target_kind: user::NAME.to_owned(),
+                target_id: seeded.id,
+            })
+            .unwrap();
         ledger.put_email_to_id("a@x.io", "u1").unwrap();
         ledger.put_email_to_id("b@x.io", "u1").unwrap();
         assert_eq!(ledger.email_to_id("a@x.io").unwrap(), "");
+        assert_eq!(ledger.email_to_id("b@x.io").unwrap(), "u1");
         assert_eq!(ledger.id_to_email("u1").unwrap(), "b@x.io");
         ledger.put_pool_of_user("u1", "p9").unwrap();
         assert_eq!(ledger.pool_of_user("u1").unwrap(), "p9");

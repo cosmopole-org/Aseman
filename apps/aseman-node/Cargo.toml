@@ -18,6 +18,7 @@ aseman-application = { path = "../../crates/aseman-application" }
 aseman-config = { path = "../../crates/aseman-config" }
 aseman-contracts = { path = "../../crates/aseman-contracts" }
 aseman-domain = { path = "../../crates/aseman-domain" }
+aseman-fs = { path = "../../crates/aseman-fs" }
 aseman-module-runtime = { path = "../../crates/aseman-module-runtime" }
 aseman-network-legacy = { path = "../../modules/network/legacy" }
 aseman-observability = { path = "../../crates/aseman-observability" }
@@ -26,8 +27,6 @@ aseman-capsule = { path = "../../crates/aseman-capsule" }
 aseman-consensus-hashgraph = { path = "../../modules/consensus/hashgraph" }
 aseman-storage = { path = "../../crates/aseman-storage" }
 aseman-storage-providers = { path = "../../crates/aseman-storage-providers" }
-aseman-storage-rocksdb = { path = "../../modules/storage/rocksdb" }
-aseman-storage-postgres = { path = "../../modules/storage/postgres" }
 aseman-policy-native = { path = "../../modules/security/capabilities" }
 aseman-public-http = { path = "../../modules/network/http" }
 aseman-gateway-rpc = { path = "../../modules/network/gateway" }
@@ -75,4 +74,6 @@ tokio = { version = "1", features = ["rt", "rt-multi-thread", "macros", "time", 
 tonic.workspace = true
 
 [dev-dependencies]
+# The live guest-plane test provisions a creature database directly.
+aseman-storage-postgres = { path = "../../modules/storage/postgres" }
 aseman-ports = { path = "../../crates/aseman-ports", features = ["conformance"] }

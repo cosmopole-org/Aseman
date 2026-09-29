@@ -10,10 +10,10 @@ use serde_json::{Map, Value, json};
 use crate::api::model::entity_ports::EntityPorts;
 use crate::api::model::{Creature, Program, Store, StorePermissions};
 use crate::core::actor::Info as BaseInfo;
+use crate::core::trx::Trx;
 use crate::models::core::StateClosure;
 use crate::models::info::IInfo;
 use crate::models::state::IState;
-use crate::core::trx::Trx;
 use aseman_domain::program::{EntityRecord, ResourceEntityRef};
 use aseman_ports::BlobStore;
 
@@ -168,12 +168,6 @@ impl NodeWorkloads {
                 self.app.modify_state(
                     false,
                     Box::new(move |t: &Trx| {
-                        let email = t.get_link(&format!("UserIdToEmail::{}", id_owned));
-                        if !email.is_empty() {
-                            t.del_key(&format!("link::UserEmailToId::{}", email));
-                        }
-                        t.del_key(&format!("link::UserIdToEmail::{}", id_owned));
-                        t.del_key(&format!("link::UserPrivateKey::{}", id_owned));
                         // Memberships go through the store port; the legacy
                         // `Store::list(.., -1, -1)` walk here was always empty (LD-12).
                         let ports = crate::api::model::store_ports::MembershipPorts { trx: t };
@@ -647,7 +641,6 @@ impl NodeWorkloads {
                     // runtime of its own); the entity write refuses a missing one.
                     proxy::record_proxy_entity(
                         t,
-                        &blobs,
                         &program_id_owned,
                         &entity_id_owned,
                         &evidence,
@@ -747,10 +740,7 @@ impl NodeWorkloads {
                         .map_err(|error| anyhow::anyhow!("{error}"))?;
                 }
                 aseman_application::program::RecordEntityDeployment {
-                    entities: &EntityPorts {
-                        trx: t,
-                        blobs: &blobs,
-                    },
+                    entities: &EntityPorts { trx: t },
                 }
                 .execute(&aseman_application::program::EntityDeployment {
                     entity: EntityRecord {
@@ -983,10 +973,7 @@ impl NodeWorkloads {
             false,
             Box::new(move |t: &Trx| {
                 aseman_application::program::PutResourceEntity {
-                    entities: &EntityPorts {
-                        trx: t,
-                        blobs: &blobs,
-                    },
+                    entities: &EntityPorts { trx: t },
                     blobs: &blobs,
                 }
                 .execute(&reference, &payload.to_string(), data.as_bytes())
@@ -1036,10 +1023,7 @@ impl NodeWorkloads {
             false,
             Box::new(move |t: &Trx| {
                 aseman_application::program::DeleteResourceEntity {
-                    entities: &EntityPorts {
-                        trx: t,
-                        blobs: &blobs,
-                    },
+                    entities: &EntityPorts { trx: t },
                     blobs: &blobs,
                 }
                 .execute(&reference)
@@ -1423,11 +1407,29 @@ impl NodeWorkloads {
                         return (serde_json::to_string(&out).unwrap_or_default(), req_id);
                     }
                 };
-                let packets = match self
-                    .app
-                    .tools()
-                    .storage()
-                    .read_store_logs(&store_id, &query)
+                let history = Arc::new(Mutex::new(Err(anyhow::anyhow!("state unavailable"))));
+                let slot = history.clone();
+                let (history_store, history_query) = (store_id.clone(), query.clone());
+                self.app.modify_state(
+                    true,
+                    Box::new(move |trx: &Trx| {
+                        let signals = aseman_ports::SignalLog::history(
+                            &crate::api::model::store_ports::SignalPorts { trx },
+                            &history_store,
+                            &history_query,
+                        )
+                        .map(|signals| {
+                            signals
+                                .into_iter()
+                                .map(crate::api::model::store_ports::log_packet)
+                                .collect::<Vec<_>>()
+                        })
+                        .map_err(|error| anyhow::anyhow!("{error}"));
+                        *slot.lock().unwrap() = signals;
+                        Ok(())
+                    }),
+                );
+                let packets = match std::mem::replace(&mut *history.lock().unwrap(), Ok(Vec::new()))
                 {
                     Ok(p) => p,
                     Err(e) => {
@@ -1803,17 +1805,9 @@ impl NodeWorkloads {
         self.app.modify_state(
             true,
             Box::new(move |t: &Trx| {
-                let consumed_key = format!(
-                    "Temp::User::{}::consumedTokens::{}",
-                    token_owner_owned, token_id_owned
-                );
-                if t.get_string(&consumed_key) == "true" {
-                    return Ok(());
-                }
-                if let Ok(m) = t.get_json(
-                    &format!("Json::Creature::{}", token_owner_owned),
-                    &format!("lockedTokens.{}", token_id_owned),
-                ) && let Some(amount) = m.get("amount").and_then(Value::as_f64)
+                if let Some(m) =
+                    crate::api::model::token_locks::lock(t, &token_owner_owned, &token_id_owned)?
+                    && let Some(amount) = m.get("amount").and_then(Value::as_f64)
                 {
                     *gas_clone.lock().unwrap() = amount as i64;
                 }
@@ -2083,21 +2077,9 @@ impl NodeWorkloads {
         ("{}".into(), req_id)
     }
 
-    /// Shared `gen_id(source)` helper using a read-only state transaction.
+    /// Mint an id for `source` (its own short transaction).
     pub(super) fn gen_id(&self, source: &str) -> String {
-        let slot = Arc::new(Mutex::new(String::new()));
-        let slot_clone = slot.clone();
-        let storage = self.app.tools().storage().clone();
-        let source_owned = source.to_string();
-        self.app.modify_state(
-            true,
-            Box::new(move |t: &Trx| {
-                *slot_clone.lock().unwrap() = storage.gen_id(&source_owned);
-                Ok(())
-            }),
-        );
-
-        slot.lock().unwrap().clone()
+        self.app.tools().storage().gen_id(source)
     }
 }
 

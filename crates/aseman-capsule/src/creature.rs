@@ -10,8 +10,7 @@
 
 use crate::store::{body, next_revision, port_error};
 use crate::support::{
-    Capsules, MAX_CAS_ATTEMPTS, equal, failed, legacy_identity, new_capsule, relationship, text,
-    tombstone,
+    Capsules, MAX_CAS_ATTEMPTS, equal, legacy_identity, new_capsule, relationship, text, tombstone,
 };
 use crate::{CapsuleStore, CapsuleStoreError};
 use aseman_contracts::capsule::{
@@ -92,7 +91,7 @@ impl CapsuleCreaturePorts<'_> {
             .relationships
             .iter()
             .find(|relationship| relationship.name == "owner")
-            .ok_or_else(|| failed(format!("creature {legacy_id} has no owner")))?;
+            .ok_or_else(|| PortError::failed(format!("creature {legacy_id} has no owner")))?;
         self.legacy_id_of(USER, owner.target_id.0)
     }
 
@@ -100,9 +99,13 @@ impl CapsuleCreaturePorts<'_> {
         let fields = body(capsule).ok_or(PortError::NotFound)?;
         let public_key = match fields.get("public_key") {
             Some(CapsuleValue::Bytes(encoded)) => {
-                decode_legacy_rsa_public_key(encoded).map_err(failed)?
+                decode_legacy_rsa_public_key(encoded).map_err(PortError::failed)?
             }
-            _ => return Err(failed(format!("creature {legacy_id} has no public key"))),
+            _ => {
+                return Err(PortError::failed(format!(
+                    "creature {legacy_id} has no public key"
+                )));
+            }
         };
         Ok(CreatureRecord {
             id: legacy_id.to_owned(),
@@ -116,7 +119,8 @@ impl CapsuleCreaturePorts<'_> {
     }
 
     fn creature_fields(record: &CreatureRecord) -> PortResult<BTreeMap<String, CapsuleValue>> {
-        let public_key = encode_legacy_rsa_public_key(&record.public_key).map_err(failed)?;
+        let public_key =
+            encode_legacy_rsa_public_key(&record.public_key).map_err(PortError::failed)?;
         Ok(BTreeMap::from([
             (
                 "username".to_owned(),
@@ -147,7 +151,7 @@ impl CapsuleCreaturePorts<'_> {
         }
         let owner = user_id(&record.owner_id);
         if self.live(USER, owner)?.is_none() {
-            return Err(failed(format!(
+            return Err(PortError::failed(format!(
                 "creature owner {} is not a human user",
                 record.owner_id
             )));
@@ -167,7 +171,7 @@ impl CapsuleCreaturePorts<'_> {
             (
                 "public_key".to_owned(),
                 CapsuleValue::Bytes(
-                    encode_legacy_rsa_public_key(&record.public_key).map_err(failed)?,
+                    encode_legacy_rsa_public_key(&record.public_key).map_err(PortError::failed)?,
                 ),
             ),
             ("status".to_owned(), CapsuleValue::Text("active".to_owned())),
@@ -241,7 +245,7 @@ impl CreatureDirectory for CapsuleCreaturePorts<'_> {
             let legacy_id = legacy
                 .get(&capsule.id.0)
                 .cloned()
-                .ok_or_else(|| failed("creature has no legacy identity"))?;
+                .ok_or_else(|| PortError::failed("creature has no legacy identity"))?;
             rows.push((legacy_id, capsule));
         }
         // Legacy lists objects in identity byte order.
@@ -294,7 +298,7 @@ impl CreatureDirectory for CapsuleCreaturePorts<'_> {
                     ..next_revision(&tombstoned, Self::creature_fields(record)?)?
                 }
                 .seal()
-                .map_err(failed)?,
+                .map_err(PortError::failed)?,
                 Some(tombstoned.revision),
             )),
             None => {
@@ -359,7 +363,7 @@ impl CreatureDirectory for CapsuleCreaturePorts<'_> {
                 ..next_revision(&current, Self::creature_fields(record)?)?
             }
             .seal()
-            .map_err(failed)?;
+            .map_err(PortError::failed)?;
             writes.push((next, Some(current.revision)));
             match self.repository.put_all(&writes) {
                 Err(CapsuleStoreError::Conflict) => {
@@ -453,7 +457,9 @@ impl CreatureBalances for CapsuleCreaturePorts<'_> {
             .ok_or(PortError::NotFound)?;
         match body(&wallet).and_then(|fields| fields.get("balance_minor")) {
             Some(CapsuleValue::Integer(balance)) => Ok(*balance),
-            _ => Err(failed(format!("wallet of {legacy_id} has no balance"))),
+            _ => Err(PortError::failed(format!(
+                "wallet of {legacy_id} has no balance"
+            ))),
         }
     }
 
@@ -503,17 +509,17 @@ impl CreatureMetadata for CapsuleCreaturePorts<'_> {
             .and_then(|fields| fields.get("document"))
             .map(capsule_value_to_json)
             .transpose()
-            .map_err(failed)?
+            .map_err(PortError::failed)?
         {
             Some(serde_json::Value::Object(document)) => document,
             _ => {
-                return Err(failed(format!(
+                return Err(PortError::failed(format!(
                     "{kind_name} of {legacy_id} has no document"
                 )));
             }
         };
         legacy_document_object_at(METADATA_ROOT, &document, path)
-            .map(|object| serde_json::to_string(object).map_err(failed))
+            .map(|object| serde_json::to_string(object).map_err(PortError::failed))
             .transpose()
     }
 
@@ -524,7 +530,7 @@ impl CreatureMetadata for CapsuleCreaturePorts<'_> {
         document: &str,
     ) -> PortResult<()> {
         let Ok(serde_json::Value::Object(document)) = serde_json::from_str(document) else {
-            return Err(failed("metadata must be a JSON object"));
+            return Err(PortError::failed("metadata must be a JSON object"));
         };
         let (kind_name, family, key_prefix) = metadata_kind(kind);
         let fields = legacy_document_fields(
@@ -532,7 +538,7 @@ impl CreatureMetadata for CapsuleCreaturePorts<'_> {
             METADATA_ROOT,
             &document,
         )
-        .map_err(failed)?;
+        .map_err(PortError::failed)?;
         let id = deterministic_legacy_capsule_id(family, legacy_id.as_bytes());
         for _ in 0..MAX_CAS_ATTEMPTS {
             let written = match self.get(kind_name, id)? {
@@ -591,10 +597,10 @@ impl CapsuleCreaturePorts<'_> {
             .and_then(|fields| fields.get("document"))
             .map(capsule_value_to_json)
             .transpose()
-            .map_err(failed)?
+            .map_err(PortError::failed)?
         {
             Some(serde_json::Value::Object(spec)) => Ok(spec),
-            _ => Err(failed("creature type has no spec document")),
+            _ => Err(PortError::failed("creature type has no spec document")),
         }
     }
 }
@@ -609,7 +615,9 @@ impl CreatureTypes for CapsuleCreaturePorts<'_> {
         if spec.is_empty() {
             return Ok(None);
         }
-        serde_json::to_string(&spec).map(Some).map_err(failed)
+        serde_json::to_string(&spec)
+            .map(Some)
+            .map_err(PortError::failed)
     }
 
     fn creature_types(&self) -> PortResult<Vec<(String, String)>> {
@@ -622,7 +630,10 @@ impl CreatureTypes for CapsuleCreaturePorts<'_> {
             let name = body(&capsule)
                 .map(|fields| text(fields, "type_name"))
                 .unwrap_or_default();
-            types.push((name, serde_json::to_string(&spec).map_err(failed)?));
+            types.push((
+                name,
+                serde_json::to_string(&spec).map_err(PortError::failed)?,
+            ));
         }
         // Legacy lists the registry in flag-key byte order.
         types.sort_by(|left, right| left.0.as_bytes().cmp(right.0.as_bytes()));
@@ -631,11 +642,13 @@ impl CreatureTypes for CapsuleCreaturePorts<'_> {
 
     fn put_creature_type(&self, name: &str, spec: &str) -> PortResult<()> {
         let Ok(serde_json::Value::Object(spec)) = serde_json::from_str(spec) else {
-            return Err(failed("a creature type spec must be a JSON object"));
+            return Err(PortError::failed(
+                "a creature type spec must be a JSON object",
+            ));
         };
         let mut fields =
             legacy_document_fields(&format!("Json::CreatureType::{name}"), "spec", &spec)
-                .map_err(failed)?;
+                .map_err(PortError::failed)?;
         fields.insert("type_name".to_owned(), CapsuleValue::Text(name.to_owned()));
         let id = deterministic_legacy_capsule_id("CreatureType", name.as_bytes());
         for _ in 0..MAX_CAS_ATTEMPTS {

@@ -170,7 +170,11 @@ impl Stored {
         .collect()
     }
 
-    pub(crate) fn envelope(&self, kind: &str, id: &CapsuleId) -> CapsuleStoreResult<Option<CapsuleEnvelope>> {
+    pub(crate) fn envelope(
+        &self,
+        kind: &str,
+        id: &CapsuleId,
+    ) -> CapsuleStoreResult<Option<CapsuleEnvelope>> {
         if let Some(bytes) = self.keys.get(&packed_key(kind, id)) {
             return CapsuleEnvelope::from_canonical_bytes(bytes)
                 .map(Some)

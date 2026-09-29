@@ -1,17 +1,12 @@
 //! The gateway routes of one state action (ADR 0036), through the capsule
 //! repository over the action's transaction.
 
-use aseman_contracts::legacy_gateway::{
-    decode_target, encode_target, route_alias_link_key, route_link_key, route_rev_link_key,
-};
 use aseman_domain::gateway::GatewayRoute;
 use aseman_ports::{GatewayRoutes, PortResult};
 
 use crate::core::trx::Trx;
 
-
-
-/// The gateway routes of one state action, routed per ADR 0026.
+/// The gateway routes of one state action.
 pub(crate) struct GatewayPorts<'a> {
     pub(crate) trx: &'a Trx,
 }
@@ -19,7 +14,9 @@ pub(crate) struct GatewayPorts<'a> {
 /// Run `$call` on the adapter for the current provider, bound as `$ports`.
 macro_rules! route {
     ($self:ident, |$ports:ident| $call:expr) => {{
-        let $ports = aseman_capsule::gateway::CapsuleGatewayRoutes { repository: $self.trx };
+        let $ports = aseman_capsule::gateway::CapsuleGatewayRoutes {
+            repository: $self.trx,
+        };
         $call
     }};
 }
@@ -46,18 +43,5 @@ impl GatewayRoutes for GatewayPorts<'_> {
     }
     fn put_alias(&self, local_part: &str, creature_id: &str) -> PortResult<()> {
         route!(self, |ports| ports.put_alias(local_part, creature_id))
-    }
-}
-
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn gateway_routes_pass_the_conformance_suite() {
-        let trx = crate::core::trx::test_trx();
-        let routes = GatewayPorts { trx: &trx };
-        aseman_ports::conformance::gateway_routes(&routes, "1@global", "alice", "10@global");
     }
 }

@@ -9,22 +9,20 @@
 //! The chain dispatch goroutine, the election ticker, and the chain-packet
 //! callbacks all stay as background threads spawned by `Load`.
 //!
-//! - [`types`] — the `Core`/`Tools`/`WeakCoreView` type definitions.
+//! - [`types`] — the `Core`/`Tools` type definitions.
 //! - [`finance`] — the core-owned finance state (free nodes + cost model).
 //! - [`constructor`] — construction (`new` / `new_configured`).
 //! - [`crypto`] — RSA private-key parsing and PSS-SHA256 signing.
 //! - [`chain`] — chain packet handling and chain-op submission.
 //! - [`icore`] — the `ICore` trait impl + ADR-0026 state helpers.
 //! - [`load`] — `run` and the strongly-typed `load_inner`.
-//! - [`weak`] — the `ICore` impl for the weak forwarding view.
 
 mod chain;
 mod constructor;
 mod crypto;
 mod finance;
-mod icore;
+pub(crate) mod icore;
 mod load;
 mod types;
-mod weak;
 
 pub use types::Core;

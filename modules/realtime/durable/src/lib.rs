@@ -8,29 +8,13 @@ use aseman_domain::Uuid;
 use aseman_domain::realtime::{Checkpoint, Event, RetentionClass};
 use aseman_ports::realtime::{CheckpointStore, Claim, EventLog, Outbox, Publication};
 use aseman_ports::{PortError, PortResult};
-use postgres::NoTls;
-use r2d2::{Pool, PooledConnection};
-use r2d2_postgres::PostgresConnectionManager;
+use aseman_postgres::{Connection, Pool, connection, port_error, port_pool};
 
 /// Idempotent schema migration owned by the durable realtime provider.
 pub const REALTIME_MIGRATION: &str = include_str!("../migrations/0001_realtime.sql");
 
-type Connection = PooledConnection<PostgresConnectionManager<NoTls>>;
-
 /// How many times an event may fail to publish before an operator must look at it.
 const MAX_ATTEMPTS: i32 = 8;
-
-fn failed(error: impl std::fmt::Display) -> PortError {
-    PortError::Failed(error.to_string())
-}
-
-fn db(error: postgres::Error) -> PortError {
-    match error.code() {
-        Some(code) if *code == postgres::error::SqlState::UNIQUE_VIOLATION => PortError::Conflict,
-        _ if error.is_closed() => PortError::Unavailable("postgres"),
-        _ => failed(error),
-    }
-}
 
 fn retention_name(class: RetentionClass) -> &'static str {
     match class {
@@ -50,12 +34,12 @@ fn retention_class(name: &str) -> RetentionClass {
 
 /// The realtime provider.
 pub struct PostgresRealtime {
-    pool: Pool<PostgresConnectionManager<NoTls>>,
+    pool: Pool,
 }
 
 impl PostgresRealtime {
     #[must_use]
-    pub fn new(pool: Pool<PostgresConnectionManager<NoTls>>) -> Self {
+    pub fn new(pool: Pool) -> Self {
         Self { pool }
     }
 
@@ -68,11 +52,7 @@ impl PostgresRealtime {
         let config = url
             .parse::<postgres::Config>()
             .map_err(|_| PortError::Unavailable("invalid realtime database URL"))?;
-        let pool = Pool::builder()
-            .max_size(max_size.max(1))
-            .build(PostgresConnectionManager::new(config, NoTls))
-            .map_err(|_| PortError::Unavailable("realtime database"))?;
-        Ok(Self { pool })
+        Self::connect_config(config, max_size)
     }
 
     /// Connect with an already-parsed configuration.
@@ -81,10 +61,7 @@ impl PostgresRealtime {
     ///
     /// `Unavailable` when the pool cannot be built.
     pub fn connect_config(config: postgres::Config, max_size: u32) -> PortResult<Self> {
-        let pool = Pool::builder()
-            .max_size(max_size.max(1))
-            .build(PostgresConnectionManager::new(config, NoTls))
-            .map_err(|_| PortError::Unavailable("realtime database"))?;
+        let pool = port_pool(config, max_size, "realtime database")?;
         Ok(Self { pool })
     }
 
@@ -96,13 +73,11 @@ impl PostgresRealtime {
     pub fn migrate(&self) -> PortResult<()> {
         self.connection()?
             .batch_execute(REALTIME_MIGRATION)
-            .map_err(db)
+            .map_err(port_error)
     }
 
     fn connection(&self) -> PortResult<Connection> {
-        self.pool
-            .get()
-            .map_err(|_| PortError::Unavailable("postgres"))
+        connection(&self.pool)
     }
 
     fn row_to_publication(row: &postgres::Row) -> PortResult<Publication> {
@@ -114,7 +89,7 @@ impl PostgresRealtime {
                 creature_id: row.get("creature_id"),
                 kind: row.get("kind"),
                 producer: row.get("producer"),
-                sequence: u64::try_from(sequence).map_err(failed)?,
+                sequence: u64::try_from(sequence).map_err(PortError::failed)?,
                 at_millis: row.get("at_millis"),
                 payload_digest: row.get("payload_digest"),
                 retention: retention_class(row.get("retention")),
@@ -130,7 +105,7 @@ impl EventLog for PostgresRealtime {
     fn append(&self, publication: &Publication) -> PortResult<()> {
         let event = &publication.event;
         let mut connection = self.connection()?;
-        let mut transaction = connection.transaction().map_err(db)?;
+        let mut transaction = connection.transaction().map_err(port_error)?;
         // The unique key on (stream, sequence) refuses a repeat; this check refuses a
         // gap. Both matter: a gap makes a consumer wait forever.
         let last: Option<i64> = transaction
@@ -138,10 +113,10 @@ impl EventLog for PostgresRealtime {
                 "SELECT MAX(sequence) AS last FROM aseman_core.realtime_event WHERE stream = $1",
                 &[&event.stream],
             )
-            .map_err(db)?
+            .map_err(port_error)?
             .get("last");
         let expected = last.map_or(1, |last| last + 1);
-        if i64::try_from(event.sequence).map_err(failed)? != expected {
+        if i64::try_from(event.sequence).map_err(PortError::failed)? != expected {
             return Err(PortError::Conflict);
         }
         transaction
@@ -153,7 +128,7 @@ impl EventLog for PostgresRealtime {
                 &[
                     &event.id,
                     &event.stream,
-                    &i64::try_from(event.sequence).map_err(failed)?,
+                    &i64::try_from(event.sequence).map_err(PortError::failed)?,
                     &event.creature_id,
                     &event.kind,
                     &event.producer,
@@ -165,7 +140,7 @@ impl EventLog for PostgresRealtime {
                     &publication.payload,
                 ],
             )
-            .map_err(db)?;
+            .map_err(port_error)?;
         // The outbox row is written in the same transaction: an event that exists is
         // always one that will be published.
         transaction
@@ -173,8 +148,8 @@ impl EventLog for PostgresRealtime {
                 "INSERT INTO aseman_core.realtime_outbox (event_id) VALUES ($1)",
                 &[&event.id],
             )
-            .map_err(db)?;
-        transaction.commit().map_err(db)?;
+            .map_err(port_error)?;
+        transaction.commit().map_err(port_error)?;
         Ok(())
     }
 
@@ -186,11 +161,11 @@ impl EventLog for PostgresRealtime {
                  WHERE stream = $1 AND sequence > $2 ORDER BY sequence LIMIT $3",
                 &[
                     &stream,
-                    &i64::try_from(after).map_err(failed)?,
-                    &i64::try_from(limit.max(1)).map_err(failed)?,
+                    &i64::try_from(after).map_err(PortError::failed)?,
+                    &i64::try_from(limit.max(1)).map_err(PortError::failed)?,
                 ],
             )
-            .map_err(db)?;
+            .map_err(port_error)?;
         rows.iter().map(Self::row_to_publication).collect()
     }
 
@@ -202,7 +177,7 @@ impl EventLog for PostgresRealtime {
                  FROM aseman_core.realtime_event WHERE stream = $1",
                 &[&stream],
             )
-            .map_err(db)?;
+            .map_err(port_error)?;
         let last: Option<i64> = row.get("last");
         let oldest: Option<i64> = row.get("oldest");
         Ok((
@@ -224,7 +199,7 @@ impl EventLog for PostgresRealtime {
                     &(now_millis - 7 * 24 * 60 * 60 * 1000),
                 ],
             )
-            .map_err(db)?;
+            .map_err(port_error)?;
         Ok(removed)
     }
 }
@@ -238,13 +213,13 @@ impl CheckpointStore for PostgresRealtime {
                  WHERE consumer = $1 AND stream = $2",
                 &[&consumer, &stream],
             )
-            .map_err(db)?
+            .map_err(port_error)?
             .map(|row| {
                 let sequence: i64 = row.get("sequence");
                 Ok(Checkpoint {
                     consumer: consumer.to_owned(),
                     stream: stream.to_owned(),
-                    sequence: u64::try_from(sequence).map_err(failed)?,
+                    sequence: u64::try_from(sequence).map_err(PortError::failed)?,
                     at_millis: row.get("at_millis"),
                 })
             })
@@ -253,7 +228,7 @@ impl CheckpointStore for PostgresRealtime {
 
     fn record(&self, checkpoint: &Checkpoint) -> PortResult<()> {
         let mut connection = self.connection()?;
-        let sequence = i64::try_from(checkpoint.sequence).map_err(failed)?;
+        let sequence = i64::try_from(checkpoint.sequence).map_err(PortError::failed)?;
         // The `WHERE` is the guard: a checkpoint that would move backwards updates no
         // row, and the consumer is told rather than silently replaying.
         let updated = connection
@@ -270,7 +245,7 @@ impl CheckpointStore for PostgresRealtime {
                     &checkpoint.at_millis,
                 ],
             )
-            .map_err(db)?;
+            .map_err(port_error)?;
         if updated == 0 {
             return Err(PortError::Conflict);
         }
@@ -300,13 +275,13 @@ impl Outbox for PostgresRealtime {
                  RETURNING outbox.event_id",
                 &[
                     &worker,
-                    &i64::try_from(limit.max(1)).map_err(failed)?,
+                    &i64::try_from(limit.max(1)).map_err(PortError::failed)?,
                     &until_millis,
                     &MAX_ATTEMPTS,
                     &until_millis,
                 ],
             )
-            .map_err(db)?;
+            .map_err(port_error)?;
         let ids: Vec<Uuid> = rows.iter().map(|row| row.get("event_id")).collect();
         if ids.is_empty() {
             return Ok(Claim {
@@ -319,7 +294,7 @@ impl Outbox for PostgresRealtime {
                 "SELECT * FROM aseman_core.realtime_event WHERE id = ANY($1) ORDER BY sequence",
                 &[&ids],
             )
-            .map_err(db)?;
+            .map_err(port_error)?;
         Ok(Claim {
             events: events
                 .iter()
@@ -343,7 +318,7 @@ impl Outbox for PostgresRealtime {
                  WHERE event_id = ANY($1) AND claimed_by = $2 AND NOT published",
                 &[&ids, &worker],
             )
-            .map_err(db)?;
+            .map_err(port_error)?;
         if updated as usize != ids.len() {
             return Err(PortError::Conflict);
         }
@@ -362,7 +337,7 @@ impl Outbox for PostgresRealtime {
                  WHERE event_id = ANY($1) AND claimed_by = $2",
                 &[&ids, &worker],
             )
-            .map_err(db)?;
+            .map_err(port_error)?;
         Ok(())
     }
 
@@ -374,9 +349,12 @@ impl Outbox for PostgresRealtime {
                  JOIN aseman_core.realtime_outbox AS outbox ON outbox.event_id = event.id \
                  WHERE NOT outbox.published AND outbox.attempts >= $1 \
                  ORDER BY event.at_millis LIMIT $2",
-                &[&MAX_ATTEMPTS, &i64::try_from(limit.max(1)).map_err(failed)?],
+                &[
+                    &MAX_ATTEMPTS,
+                    &i64::try_from(limit.max(1)).map_err(PortError::failed)?,
+                ],
             )
-            .map_err(db)?;
+            .map_err(port_error)?;
         rows.iter().map(Self::row_to_publication).collect()
     }
 }

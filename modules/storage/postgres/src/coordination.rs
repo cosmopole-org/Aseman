@@ -8,36 +8,20 @@
 use aseman_domain::coordination::{Acquisition, FencingToken, Lease, LeaseName, plan_acquisition};
 use aseman_ports::coordination::{CoordinationPort, FencedDestination};
 use aseman_ports::{PortError, PortResult};
-use postgres::NoTls;
-use r2d2::{Pool, PooledConnection};
-use r2d2_postgres::PostgresConnectionManager;
-
-type Connection = PooledConnection<PostgresConnectionManager<NoTls>>;
+use aseman_postgres::{Connection, Pool, connection, port_error, port_pool};
 
 /// Database time in milliseconds. Postgres gives microseconds since the epoch from
 /// `clock_timestamp()`, which — unlike `now()` — advances inside a transaction.
 const NOW_MILLIS: &str = "(EXTRACT(EPOCH FROM clock_timestamp()) * 1000)::bigint";
 
-fn failed(error: impl std::fmt::Display) -> PortError {
-    PortError::Failed(error.to_string())
-}
-
-fn db(error: postgres::Error) -> PortError {
-    if error.is_closed() {
-        PortError::Unavailable("postgres")
-    } else {
-        failed(error)
-    }
-}
-
 /// The coordination port on PostgreSQL.
 pub struct PostgresCoordination {
-    pool: Pool<PostgresConnectionManager<NoTls>>,
+    pool: Pool,
 }
 
 impl PostgresCoordination {
     #[must_use]
-    pub fn new(pool: Pool<PostgresConnectionManager<NoTls>>) -> Self {
+    pub fn new(pool: Pool) -> Self {
         Self { pool }
     }
 
@@ -60,10 +44,7 @@ impl PostgresCoordination {
     /// `Unavailable` when the configuration cannot be used or the pool cannot be
     /// built.
     pub fn connect_config(config: postgres::Config, max_size: u32) -> PortResult<Self> {
-        let pool = Pool::builder()
-            .max_size(max_size.max(1))
-            .build(PostgresConnectionManager::new(config, NoTls))
-            .map_err(|_| PortError::Unavailable("coordination database"))?;
+        let pool = port_pool(config, max_size, "coordination database")?;
         Ok(Self { pool })
     }
 
@@ -76,20 +57,18 @@ impl PostgresCoordination {
     pub fn migrate(&self) -> PortResult<()> {
         self.connection()?
             .batch_execute(crate::COORDINATION_MIGRATION)
-            .map_err(db)
+            .map_err(port_error)
     }
 
     fn connection(&self) -> PortResult<Connection> {
-        self.pool
-            .get()
-            .map_err(|_| PortError::Unavailable("postgres"))
+        connection(&self.pool)
     }
 
     /// The provider's time, inside the caller's transaction.
     fn now(transaction: &mut postgres::Transaction<'_>) -> PortResult<i64> {
         Ok(transaction
             .query_one(&format!("SELECT {NOW_MILLIS} AS now"), &[])
-            .map_err(db)?
+            .map_err(port_error)?
             .get("now"))
     }
 
@@ -99,8 +78,8 @@ impl PostgresCoordination {
         Ok(Lease {
             name: name.clone(),
             instance: row.get("instance"),
-            token: FencingToken::from_stored(u64::try_from(token).map_err(failed)?)
-                .map_err(failed)?,
+            token: FencingToken::from_stored(u64::try_from(token).map_err(PortError::failed)?)
+                .map_err(PortError::failed)?,
             acquired_at_millis: row.get("acquired_at_millis"),
             expires_at_millis: row.get("expires_at_millis"),
         })
@@ -115,7 +94,7 @@ impl CoordinationPort for PostgresCoordination {
         ttl_millis: i64,
     ) -> PortResult<Acquisition> {
         let mut connection = self.connection()?;
-        let mut transaction = connection.transaction().map_err(db)?;
+        let mut transaction = connection.transaction().map_err(port_error)?;
         let now = Self::now(&mut transaction)?;
 
         // `SELECT ... FOR UPDATE` locks nothing when the row does not exist, so two
@@ -125,7 +104,7 @@ impl CoordinationPort for PostgresCoordination {
         // lock. The values are the ones the domain decided for a free lease, so the
         // rule lives in one place.
         let Acquisition::Granted(fresh) =
-            plan_acquisition(name, None, instance, now, ttl_millis).map_err(failed)?
+            plan_acquisition(name, None, instance, now, ttl_millis).map_err(PortError::failed)?
         else {
             unreachable!("a free lease is always granted");
         };
@@ -137,14 +116,14 @@ impl CoordinationPort for PostgresCoordination {
                 &[
                     &name.as_str(),
                     &fresh.instance,
-                    &i64::try_from(fresh.token.get()).map_err(failed)?,
+                    &i64::try_from(fresh.token.get()).map_err(PortError::failed)?,
                     &fresh.acquired_at_millis,
                     &fresh.expires_at_millis,
                 ],
             )
-            .map_err(db)?;
+            .map_err(port_error)?;
         if inserted == 1 {
-            transaction.commit().map_err(db)?;
+            transaction.commit().map_err(port_error)?;
             return Ok(Acquisition::Granted(fresh));
         }
 
@@ -156,15 +135,15 @@ impl CoordinationPort for PostgresCoordination {
                  FROM aseman_core.coordination_lease WHERE name = $1 FOR UPDATE",
                 &[&name.as_str()],
             )
-            .map_err(db)
+            .map_err(port_error)
             .and_then(|row| Self::row_to_lease(name, &row))?;
         // Time is read again: waiting for the lock can take as long as the lease.
         let now = Self::now(&mut transaction)?;
-        let planned =
-            plan_acquisition(name, Some(&current), instance, now, ttl_millis).map_err(failed)?;
+        let planned = plan_acquisition(name, Some(&current), instance, now, ttl_millis)
+            .map_err(PortError::failed)?;
         let Acquisition::Granted(lease) = &planned else {
             // Nothing is written: the holder keeps its row and its expiry.
-            transaction.commit().map_err(db)?;
+            transaction.commit().map_err(port_error)?;
             return Ok(planned);
         };
         transaction
@@ -176,13 +155,13 @@ impl CoordinationPort for PostgresCoordination {
                 &[
                     &name.as_str(),
                     &lease.instance,
-                    &i64::try_from(lease.token.get()).map_err(failed)?,
+                    &i64::try_from(lease.token.get()).map_err(PortError::failed)?,
                     &lease.acquired_at_millis,
                     &lease.expires_at_millis,
                 ],
             )
-            .map_err(db)?;
-        transaction.commit().map_err(db)?;
+            .map_err(port_error)?;
+        transaction.commit().map_err(port_error)?;
         Ok(planned)
     }
 
@@ -191,7 +170,7 @@ impl CoordinationPort for PostgresCoordination {
             return Err(PortError::Denied("a lease time to live is positive"));
         }
         let mut connection = self.connection()?;
-        let token = i64::try_from(lease.token.get()).map_err(failed)?;
+        let token = i64::try_from(lease.token.get()).map_err(PortError::failed)?;
         // The owner, the token, and an unexpired row are all required: a holder that
         // has been taken over gets `None` and must stop, not retry.
         let row = connection
@@ -205,14 +184,14 @@ impl CoordinationPort for PostgresCoordination {
                 ),
                 &[&ttl_millis, &lease.name.as_str(), &lease.instance, &token],
             )
-            .map_err(db)?;
+            .map_err(port_error)?;
         row.map(|row| Self::row_to_lease(&lease.name, &row))
             .transpose()
     }
 
     fn release(&self, lease: &Lease) -> PortResult<()> {
         let mut connection = self.connection()?;
-        let token = i64::try_from(lease.token.get()).map_err(failed)?;
+        let token = i64::try_from(lease.token.get()).map_err(PortError::failed)?;
         // A release expires the lease; it never deletes the row. The row carries the
         // token counter, and tokens must keep rising for the life of the name — a
         // deleted row would hand the next holder token 1 again and unfence every
@@ -229,7 +208,7 @@ impl CoordinationPort for PostgresCoordination {
                 ),
                 &[&lease.name.as_str(), &lease.instance, &token],
             )
-            .map_err(db)?;
+            .map_err(port_error)?;
         Ok(())
     }
 
@@ -241,7 +220,7 @@ impl CoordinationPort for PostgresCoordination {
                  FROM aseman_core.coordination_lease WHERE name = $1",
                 &[&name.as_str()],
             )
-            .map_err(db)?
+            .map_err(port_error)?
             .map(|row| Self::row_to_lease(name, &row))
             .transpose()
     }
@@ -250,7 +229,7 @@ impl CoordinationPort for PostgresCoordination {
         let mut connection = self.connection()?;
         Ok(connection
             .query_one(&format!("SELECT {NOW_MILLIS} AS now"), &[])
-            .map_err(db)?
+            .map_err(port_error)?
             .get("now"))
     }
 }
@@ -263,17 +242,18 @@ impl FencedDestination for PostgresCoordination {
                 "SELECT token FROM aseman_core.coordination_fence WHERE name = $1",
                 &[&name.as_str()],
             )
-            .map_err(db)?
+            .map_err(port_error)?
             .map(|row| {
                 let token: i64 = row.get("token");
-                FencingToken::from_stored(u64::try_from(token).map_err(failed)?).map_err(failed)
+                FencingToken::from_stored(u64::try_from(token).map_err(PortError::failed)?)
+                    .map_err(PortError::failed)
             })
             .transpose()
     }
 
     fn accept(&self, name: &LeaseName, token: FencingToken) -> PortResult<()> {
         let mut connection = self.connection()?;
-        let token = i64::try_from(token.get()).map_err(failed)?;
+        let token = i64::try_from(token.get()).map_err(PortError::failed)?;
         // The `WHERE` clause is the guard: an insert that would move the fence
         // backwards updates no row, and the caller is told its effect is refused.
         let updated = connection
@@ -283,7 +263,7 @@ impl FencedDestination for PostgresCoordination {
                  WHERE aseman_core.coordination_fence.token <= EXCLUDED.token",
                 &[&name.as_str(), &token],
             )
-            .map_err(db)?;
+            .map_err(port_error)?;
         if updated == 0 {
             return Err(PortError::Conflict);
         }

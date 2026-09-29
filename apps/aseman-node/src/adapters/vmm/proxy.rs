@@ -37,15 +37,16 @@ use std::sync::{Arc, Mutex};
 use serde_json::{Map, Value, json};
 use uuid::Uuid;
 
-use crate::adapters::blob_store::StorageRootBlobStore;
 use crate::api::model::Creature;
 use crate::api::model::entity_ports::EntityPorts;
 use crate::api::packets::stores::Send as StoresSend;
+use crate::core::trx::{Trx, failed};
 use crate::models::core::ICore;
-use crate::core::trx::Trx;
 use aseman_domain::blob::BlobEvidence;
 use aseman_domain::program::{ArtifactRole, EntityRecord};
 use aseman_ports::{BlobStore, EntityDirectory};
+use aseman_storage::client::core::proxy_correlation;
+use aseman_storage::{FindMany, Models};
 
 /// The pseudo-runtime key a proxy entity is deployed under. It is not a VM
 /// runtime: nothing ever runs for a proxy entity.
@@ -66,31 +67,52 @@ pub const DEFAULT_CORRELATION_TTL_MS: i64 = 20 * 60 * 1000;
 /// expire before the target has any chance to answer.
 const MIN_CORRELATION_TTL_MS: i64 = 1_000;
 
-fn correlation_key(correlation_id: &str) -> String {
-    format!("Json::ProxyCorrelation::{}", correlation_id)
-}
-
-/// Expiry index: one link per live correlation
-/// (`ProxyCorrExpiry::{correlationId}` → expiry timestamp ms) so the reaper
-/// can enumerate records without scanning the JSON keyspace.
-fn correlation_expiry_link(correlation_id: &str) -> String {
-    format!("ProxyCorrExpiry::{}", correlation_id)
-}
-
-const CORRELATION_EXPIRY_PREFIX: &str = "ProxyCorrExpiry::";
-
 fn now_ms() -> i64 {
     chrono::Utc::now().timestamp_millis()
 }
 
-/// Delete a correlation record and its expiry-index link inside an open
-/// transaction.
-fn delete_correlation(trx: &Trx, correlation_id: &str) {
-    trx.del_json(&correlation_key(correlation_id), "record");
-    trx.del_key(&format!(
-        "link::{}",
-        correlation_expiry_link(correlation_id)
-    ));
+/// The correlation record `correlation_id`, or an empty map.
+fn correlation(trx: &Trx, correlation_id: &str) -> anyhow::Result<Map<String, Value>> {
+    Ok(trx
+        .proxy_correlation()
+        .find_unique(proxy_correlation::by_key(correlation_id))
+        .map_err(failed)?
+        .and_then(|row| match row.record {
+            Value::Object(record) => Some(record),
+            _ => None,
+        })
+        .unwrap_or_default())
+}
+
+/// Record (or refresh) a correlation expiring at `expires_at`.
+fn put_correlation(
+    trx: &Trx,
+    correlation_id: &str,
+    record: &Value,
+    expires_at: i64,
+) -> anyhow::Result<()> {
+    trx.proxy_correlation()
+        .upsert(
+            proxy_correlation::by_key(correlation_id),
+            proxy_correlation::Create {
+                key: correlation_id.to_owned(),
+                expires_at_millis: expires_at,
+                record: record.clone(),
+            },
+            proxy_correlation::update()
+                .expires_at_millis(expires_at)
+                .record(record.clone()),
+        )
+        .map(drop)
+        .map_err(failed)
+}
+
+/// Delete a correlation record inside an open transaction.
+fn delete_correlation(trx: &Trx, correlation_id: &str) -> anyhow::Result<()> {
+    trx.proxy_correlation()
+        .delete(proxy_correlation::by_key(correlation_id))
+        .map(drop)
+        .map_err(failed)
 }
 
 /// Normalized proxy-entity configuration.
@@ -284,14 +306,13 @@ fn deep_merge(dst: &mut Value, src: &Value) {
 /// configuration.
 pub fn record_proxy_entity(
     trx: &Trx,
-    blobs: &StorageRootBlobStore,
     program_id: &str,
     entity_id: &str,
     data: &BlobEvidence,
     config: &ProxyConfig,
 ) -> anyhow::Result<()> {
     aseman_application::program::RecordEntityDeployment {
-        entities: &EntityPorts { trx, blobs },
+        entities: &EntityPorts { trx },
     }
     .execute(&aseman_application::program::EntityDeployment {
         entity: EntityRecord {
@@ -407,9 +428,9 @@ pub fn try_route_proxy_response(
     if correlation_id.is_empty() {
         return false;
     }
-    let corr_key_owned = correlation_key(&correlation_id);
+    let corr_owned = correlation_id.clone();
     let record = read_state(app, Map::new(), move |trx| {
-        trx.get_json(&corr_key_owned, "record").unwrap_or_default()
+        correlation(trx, &corr_owned).unwrap_or_default()
     });
     if record.is_empty() {
         return false;
@@ -439,10 +460,7 @@ pub fn try_route_proxy_response(
         let corr_owned = correlation_id.clone();
         app.modify_state(
             false,
-            Box::new(move |trx: &Trx| {
-                delete_correlation(trx, &corr_owned);
-                Ok(())
-            }),
+            Box::new(move |trx: &Trx| delete_correlation(trx, &corr_owned)),
         );
         proxy_log(format!(
             "proxy correlation {} expired; dropping late response for {}",
@@ -482,17 +500,12 @@ pub fn try_route_proxy_response(
         app.modify_state(
             false,
             Box::new(move |trx: &Trx| {
-                let _ = trx.put_json(
-                    &correlation_key(&corr_owned),
-                    "record",
+                put_correlation(
+                    trx,
+                    &corr_owned,
                     &Value::Object(refreshed.clone()),
-                    true,
-                );
-                trx.put_link(
-                    &correlation_expiry_link(&corr_owned),
-                    &new_expires_at.to_string(),
-                );
-                Ok(())
+                    new_expires_at,
+                )
             }),
         );
     } else {
@@ -500,10 +513,7 @@ pub fn try_route_proxy_response(
         let corr_owned = correlation_id.clone();
         app.modify_state(
             false,
-            Box::new(move |trx: &Trx| {
-                delete_correlation(trx, &corr_owned);
-                Ok(())
-            }),
+            Box::new(move |trx: &Trx| delete_correlation(trx, &corr_owned)),
         );
     }
     app.tools().signaler().signal_user(
@@ -530,9 +540,8 @@ pub fn try_forward_through_proxy(
     }
     let machine_owned = machine_id.to_string();
     let entity_owned = entity_id.to_string();
-    let blobs = crate::adapters::blob_store::node_blobs(&*app.tools().storage());
     let (is_proxy, data_key, config_raw) = read_state(app, (false, None, Map::new()), move |trx| {
-        let entities = EntityPorts { trx, blobs: &blobs };
+        let entities = EntityPorts { trx };
         let proxy = entities
             .entity(&machine_owned, &entity_owned)
             .ok()
@@ -628,15 +637,10 @@ pub fn try_forward_through_proxy(
         // same lifetime the entity was configured with.
         "ttlMs": config.effective_correlation_ttl_ms(),
     });
-    let corr_key = correlation_key(&correlation_id);
-    let expiry_link = correlation_expiry_link(&correlation_id);
+    let corr_owned = correlation_id.clone();
     app.modify_state(
         false,
-        Box::new(move |trx: &Trx| {
-            let _ = trx.put_json(&corr_key, "record", &record, true);
-            trx.put_link(&expiry_link, &expires_at.to_string());
-            Ok(())
-        }),
+        Box::new(move |trx: &Trx| put_correlation(trx, &corr_owned, &record, expires_at)),
     );
     // Say where this goes. A proxy relay is otherwise completely invisible: the
     // requester sees only silence if the configured target no longer exists (a
@@ -670,31 +674,17 @@ pub fn try_forward_through_proxy(
     true
 }
 
-/// Drop every correlation record whose lifetime has elapsed. Records are
-/// found through the `ProxyCorrExpiry::{id}` link index; a link whose value
-/// cannot be parsed is treated as expired so a half-written entry can never
-/// survive forever.
+/// Drop every correlation record whose lifetime has elapsed (found through the
+/// model's expiry index).
 pub fn sweep_expired_correlations(app: &Arc<dyn ICore>) {
     let now = now_ms();
     let expired = read_state(app, Vec::<String>::new(), move |trx| {
-        let links = trx
-            .get_links_list(CORRELATION_EXPIRY_PREFIX, -1, -1, &[])
-            .unwrap_or_default();
-        let mut out = Vec::new();
-        for link in links {
-            let corr_id = link
-                .strip_prefix(CORRELATION_EXPIRY_PREFIX)
-                .unwrap_or(&link)
-                .to_string();
-            if corr_id.is_empty() {
-                continue;
-            }
-            let expires_at = trx.get_link(&link).trim().parse::<i64>().unwrap_or(0);
-            if expires_at <= now {
-                out.push(corr_id);
-            }
-        }
-        out
+        trx.proxy_correlation()
+            .find_many(FindMany::filter(
+                proxy_correlation::expires_at_millis().lte(now),
+            ))
+            .map(|rows| rows.into_iter().map(|row| row.key).collect())
+            .unwrap_or_default()
     });
     if expired.is_empty() {
         return;
@@ -704,7 +694,7 @@ pub fn sweep_expired_correlations(app: &Arc<dyn ICore>) {
         false,
         Box::new(move |trx: &Trx| {
             for corr_id in &expired {
-                delete_correlation(trx, corr_id);
+                delete_correlation(trx, corr_id)?;
             }
             Ok(())
         }),

@@ -6,6 +6,7 @@
 //! workload. Program artifacts are fetched from the node with the workload's
 //! credential and verified against their digest before use.
 
+use aseman_fs::{Access, write_atomic};
 use std::path::PathBuf;
 use std::sync::Arc;
 use std::time::Instant;
@@ -192,9 +193,7 @@ impl NativeBackend {
             return Err(failed("the artifact does not match its digest"));
         }
         std::fs::create_dir_all(&directory).map_err(failed)?;
-        let temporary = directory.join(format!(".{}.tmp", deploy.entity_file_name));
-        std::fs::write(&temporary, &bytes).map_err(failed)?;
-        std::fs::rename(&temporary, &path).map_err(failed)?;
+        write_atomic(&path, &bytes, Access::Shared).map_err(failed)?;
         Ok(path)
     }
 

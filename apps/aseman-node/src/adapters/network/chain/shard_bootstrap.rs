@@ -4,6 +4,7 @@
 //! operation here makes failures typed and testable and removes a runtime
 //! dependency on Bash and curl.
 
+use aseman_fs::{Access, write_atomic};
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::thread;
@@ -137,8 +138,12 @@ fn fetch_remote_peers(config: &Bootstrap<'_>, destination: &Path) -> Result<()> 
             last_error.unwrap_or_else(|| "unknown error".to_owned())
         )
     })?;
-    fs::write(destination.join("peers.genesis.json"), &genesis)
-        .context("write fetched peer genesis")?;
+    write_atomic(
+        &destination.join("peers.genesis.json"),
+        &genesis,
+        Access::Shared,
+    )
+    .context("write fetched peer genesis")?;
 
     let peers_url = format!("{base_url}/peers");
     let peers = headers(client.get(&peers_url))
@@ -149,7 +154,8 @@ fn fetch_remote_peers(config: &Bootstrap<'_>, destination: &Path) -> Result<()> 
         .filter(|bytes| !bytes.is_empty())
         .map(|bytes| bytes.to_vec())
         .unwrap_or(genesis);
-    fs::write(destination.join("peers.json"), peers).context("write current peer set")?;
+    write_atomic(&destination.join("peers.json"), &peers, Access::Shared)
+        .context("write current peer set")?;
     Ok(())
 }
 

@@ -6,6 +6,7 @@ use std::time::Duration;
 
 use k256::ecdsa::SigningKey;
 
+use crate::hashgraph::FrameLimits;
 use crate::logrus::{Entry, Level, Logger};
 use crate::proxy::AppProxy;
 use aseman_ports::consensus_log::ConsensusLogStorage;
@@ -79,6 +80,8 @@ pub struct Config {
     pub store: bool,
     pub database_dir: String,
     pub cache_size: i64,
+    /// How many frames the store keeps in memory and on disk.
+    pub frame_limits: FrameLimits,
     pub bootstrap: bool,
     pub maintenance_mode: bool,
     pub suspend_limit: i64,
@@ -97,6 +100,9 @@ pub struct Config {
     pub log_storage: Option<Arc<dyn ConsensusLogStorage>>,
     /// The private key of the validator.
     pub key: Option<SigningKey>,
+    /// Where a generated validator key pair is also written, for the embedder's
+    /// shard bootstrap to copy onto later shards.
+    pub key_mirror_dir: Option<String>,
 }
 
 impl Config {
@@ -113,6 +119,7 @@ impl Config {
             tcp_timeout: default_tcp_timeout(),
             join_timeout: default_join_timeout(),
             cache_size: DEFAULT_CACHE_SIZE,
+            frame_limits: FrameLimits::default(),
             sync_limit: DEFAULT_SYNC_LIMIT,
             max_pool: DEFAULT_MAX_POOL,
             store: DEFAULT_STORE,
@@ -133,6 +140,7 @@ impl Config {
             proxy: None,
             log_storage: None,
             key: None,
+            key_mirror_dir: None,
         }
     }
 
@@ -190,33 +198,9 @@ pub fn default_database_dir() -> String {
         .into_owned()
 }
 
-/// The default directory for top-level Babble config, based on the OS.
+/// The default top-level Babble directory: none. A library does not guess a home
+/// directory; the embedder sets the data directory (`Config::set_data_dir`).
 pub fn default_data_dir() -> String {
-    let home = home_dir();
-    if !home.is_empty() {
-        let p = match std::env::consts::OS {
-            "macos" => PathBuf::from(&home).join(".Babble"),
-            "windows" => PathBuf::from(&home)
-                .join("AppData")
-                .join("Roaming")
-                .join("Babble"),
-            _ => PathBuf::from(&home).join(".babble"),
-        };
-        return p.to_string_lossy().into_owned();
-    }
-    String::new()
-}
-
-/// The user's home directory.
-pub fn home_dir() -> String {
-    if let Some(config) = aseman_config::legacy_adapter_snapshot() {
-        if let Some(home) = &config.home_dir {
-            return home.clone();
-        }
-        if let Some(profile) = &config.user_profile_dir {
-            return profile.clone();
-        }
-    }
     String::new()
 }
 

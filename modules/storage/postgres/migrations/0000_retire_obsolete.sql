@@ -23,3 +23,10 @@ BEGIN
     EXECUTE 'DROP TABLE aseman_core.capability_grants CASCADE';
   END IF;
 END $$;
+
+-- ADR 0036: replay nonces, identity challenges, and public idempotency claims are
+-- models of the storage module (`nonce_records`, `auth_challenges`,
+-- `public_idempotency_claims`). Their old tables held only short-lived entries.
+DROP TABLE IF EXISTS aseman_core."replay_nonces";
+DROP TABLE IF EXISTS aseman_core."identity_challenges";
+DROP TABLE IF EXISTS aseman_core.public_idempotency;

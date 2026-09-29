@@ -104,8 +104,6 @@ impl Opcode {
 #[derive(Clone, Debug)]
 pub(crate) struct GatewayMessage {
     pub(crate) opcode: Opcode,
-    #[allow(dead_code)]
-    pub(crate) message_id: u64,
     pub(crate) correlation_id: u64,
     pub(crate) payload: Vec<u8>,
 }
@@ -254,7 +252,6 @@ impl MessageAssembler {
         if frame.total == 1 {
             return Ok(Some(GatewayMessage {
                 opcode: frame.opcode,
-                message_id: frame.message_id,
                 correlation_id: frame.correlation_id,
                 payload: frame.chunk,
             }));
@@ -303,7 +300,6 @@ impl MessageAssembler {
         }
         Ok(Some(GatewayMessage {
             opcode: done.opcode,
-            message_id: frame.message_id,
             correlation_id: done.correlation_id,
             payload,
         }))

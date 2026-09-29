@@ -1,43 +1,64 @@
-//! Creature-owned secrets (ADR 0036): `core.secret_value` holds an owner's
-//! encrypted secret, `core.secret_access` a time-boxed grant to another creature.
-//! Access control stays with the callers; this module only stores.
+//! Creature-owned secrets (ADR 0023, ADR 0036): `core.creature_secret` holds an
+//! owner's authenticated ciphertext, `core.secret_grant` a time-boxed grant to another
+//! creature — the same records the legacy migration writes. Access control stays
+//! with the callers; this module only stores.
 
-use anyhow::Result;
-use aseman_storage::client::core::{secret_access, secret_value};
-use aseman_storage::{FindMany, Models};
+use anyhow::{Result, anyhow};
+use aseman_storage::client::core::{creature, creature_secret, legacy_identity, secret_grant};
+use aseman_storage::{FindMany, Id, Models};
+use base64::Engine as _;
 
+use crate::api::utils::secret_crypto;
 use crate::core::trx::{Trx, failed};
 
-fn value_key(owner: &str, name: &str) -> String {
-    format!("{owner}::{name}")
+/// The algorithm of the node's secret blobs (`secret_crypto`).
+pub(crate) const SECRET_ALGORITHM: &str = "chacha20poly1305-legacy-v1";
+
+fn creature_id(creature: &str) -> Id {
+    Id::for_key("Creature", creature)
 }
 
-fn grant_key(owner: &str, name: &str, grantee: &str) -> String {
-    format!("{owner}::{name}::{grantee}")
+fn secret(trx: &Trx, owner: &str, name: &str) -> Result<Option<creature_secret::CreatureSecret>> {
+    trx.creature_secret()
+        .find_unique(creature_secret::by_creature_and_name(
+            creature_id(owner),
+            name,
+        ))
+        .map_err(failed)
 }
 
-/// The encrypted secret `name` of `owner`, if stored.
+/// The encrypted secret `name` of `owner` (base64 `nonce || ciphertext || tag`).
 pub(crate) fn blob(trx: &Trx, owner: &str, name: &str) -> Result<Option<String>> {
-    Ok(trx
-        .secret_value()
-        .find_unique(secret_value::by_key(value_key(owner, name)))
-        .map_err(failed)?
-        .map(|row| row.blob))
+    Ok(secret(trx, owner, name)?
+        .map(|secret| base64::engine::general_purpose::STANDARD.encode(secret.ciphertext)))
 }
 
-/// Store (or replace) an encrypted secret.
-pub(crate) fn put_blob(trx: &Trx, owner: &str, name: &str, blob: &str) -> Result<()> {
-    let key = value_key(owner, name);
-    trx.secret_value()
+/// Store (or replace) `owner`'s secret `name`, encrypted under `master_key`.
+pub(crate) fn put_blob(
+    trx: &Trx,
+    owner: &str,
+    name: &str,
+    blob: &str,
+    master_key: &[u8; 32],
+) -> Result<()> {
+    let ciphertext = base64::engine::general_purpose::STANDARD
+        .decode(blob)
+        .map_err(|_| anyhow!("secret blob is not base64"))?;
+    let fingerprint = secret_crypto::fingerprint(master_key).to_vec();
+    trx.creature_secret()
         .upsert(
-            secret_value::by_key(key.clone()),
-            secret_value::Create {
-                key,
-                owner_ref: owner.to_owned(),
+            creature_secret::by_creature_and_name(creature_id(owner), name),
+            creature_secret::Create {
                 name: name.to_owned(),
-                blob: blob.to_owned(),
+                algorithm: SECRET_ALGORITHM.to_owned(),
+                ciphertext: ciphertext.clone(),
+                key_fingerprint: fingerprint.clone(),
+                creature: Some(creature_id(owner)),
             },
-            secret_value::update().blob(blob),
+            creature_secret::update()
+                .algorithm(SECRET_ALGORITHM)
+                .ciphertext(ciphertext)
+                .key_fingerprint(fingerprint),
         )
         .map(drop)
         .map_err(failed)
@@ -46,27 +67,31 @@ pub(crate) fn put_blob(trx: &Trx, owner: &str, name: &str, blob: &str) -> Result
 /// The names of `owner`'s secrets, in name order.
 pub(crate) fn names(trx: &Trx, owner: &str) -> Result<Vec<String>> {
     Ok(trx
-        .secret_value()
+        .creature_secret()
         .find_many(
-            FindMany::filter(secret_value::owner_ref().eq(owner))
-                .order_by(secret_value::name().asc()),
+            FindMany::filter(creature_secret::creature().eq(creature_id(owner)))
+                .order_by(creature_secret::name().asc()),
         )
         .map_err(failed)?
         .into_iter()
-        .map(|row| row.name)
+        .map(|secret| secret.name)
         .collect())
 }
 
-/// When `grantee`'s access to `owner`'s secret `name` expires (0: no grant).
+/// When `grantee`'s access to `owner`'s secret `name` expires, in Unix milliseconds
+/// (0: no grant).
 pub(crate) fn grant_expiry(trx: &Trx, owner: &str, name: &str, grantee: &str) -> Result<i64> {
+    let Some(secret) = secret(trx, owner, name)? else {
+        return Ok(0);
+    };
     Ok(trx
-        .secret_access()
-        .find_unique(secret_access::by_key(grant_key(owner, name, grantee)))
+        .secret_grant()
+        .find_unique(secret_grant::by_secret_and_grantee_ref(secret.id, grantee))
         .map_err(failed)?
-        .map_or(0, |row| row.expires_at_millis))
+        .map_or(0, |grant| grant.expires_at_micros / 1_000))
 }
 
-/// Grant `grantee` access until `expires_at_millis`.
+/// Grant `grantee` access until `expires_at_millis`. The secret must exist.
 pub(crate) fn grant(
     trx: &Trx,
     owner: &str,
@@ -74,47 +99,92 @@ pub(crate) fn grant(
     grantee: &str,
     expires_at_millis: i64,
 ) -> Result<()> {
-    let key = grant_key(owner, name, grantee);
-    trx.secret_access()
-        .upsert(
-            secret_access::by_key(key.clone()),
-            secret_access::Create {
-                key,
-                owner_ref: owner.to_owned(),
-                name: name.to_owned(),
-                grantee_ref: grantee.to_owned(),
-                expires_at_millis,
-            },
-            secret_access::update().expires_at_millis(expires_at_millis),
-        )
-        .map(drop)
-        .map_err(failed)
-}
-
-pub(crate) fn revoke(trx: &Trx, owner: &str, name: &str, grantee: &str) -> Result<()> {
-    trx.secret_access()
-        .delete(secret_access::by_key(grant_key(owner, name, grantee)))
-        .map(drop)
-        .map_err(failed)
-}
-
-/// The unexpired grants `grantee` holds: `(owner, name, expires_at_millis)`.
-pub(crate) fn grants_of(trx: &Trx, grantee: &str, now_millis: i64) -> Result<Vec<(String, String, i64)>> {
-    Ok(trx
-        .secret_access()
-        .find_many(
-            FindMany::filter(
-                secret_access::grantee_ref()
-                    .eq(grantee)
-                    .and(secret_access::expires_at_millis().gt(now_millis)),
-            )
-            .order_by(secret_access::owner_ref().asc())
-            .order_by(secret_access::name().asc()),
-        )
+    let secret = secret(trx, owner, name)?.ok_or_else(|| anyhow!("secret not found"))?;
+    let expires_at_micros = expires_at_millis.saturating_mul(1_000);
+    // A grantee that is a creature is related; any other grantee is only named.
+    let grantee_id = creature_id(grantee);
+    let related = trx
+        .creature()
+        .find_unique(creature::by_id(grantee_id))
         .map_err(failed)?
-        .into_iter()
-        .map(|row| (row.owner_ref, row.name, row.expires_at_millis))
-        .collect())
+        .map(|_| grantee_id);
+    trx.secret_grant()
+        .upsert(
+            secret_grant::by_secret_and_grantee_ref(secret.id, grantee),
+            secret_grant::Create {
+                grantee_ref: grantee.to_owned(),
+                expires_at_micros,
+                secret: Some(secret.id),
+                grantee: related,
+            },
+            secret_grant::update().expires_at_micros(expires_at_micros),
+        )
+        .map(drop)
+        .map_err(failed)
+}
+
+/// Revoke `grantee`'s access to `owner`'s secret `name`.
+pub(crate) fn revoke(trx: &Trx, owner: &str, name: &str, grantee: &str) -> Result<()> {
+    let Some(secret) = secret(trx, owner, name)? else {
+        return Ok(());
+    };
+    trx.secret_grant()
+        .delete(secret_grant::by_secret_and_grantee_ref(secret.id, grantee))
+        .map(drop)
+        .map_err(failed)
+}
+
+/// The unexpired grants `grantee` holds: `(owner, name, expires_at_millis)`, in
+/// owner and name order.
+pub(crate) fn grants_of(
+    trx: &Trx,
+    grantee: &str,
+    now_millis: i64,
+) -> Result<Vec<(String, String, i64)>> {
+    let mut grants = Vec::new();
+    for grant in trx
+        .secret_grant()
+        .find_many(FindMany::filter(
+            secret_grant::grantee_ref()
+                .eq(grantee)
+                .and(secret_grant::expires_at_micros().gt(now_millis.saturating_mul(1_000))),
+        ))
+        .map_err(failed)?
+    {
+        let Some(secret) = grant
+            .secret
+            .map(|id| {
+                trx.creature_secret()
+                    .find_unique(creature_secret::by_id(id))
+            })
+            .transpose()
+            .map_err(failed)?
+            .flatten()
+        else {
+            continue;
+        };
+        let Some(owner) =
+            secret
+                .creature
+                .map(|id| {
+                    trx.legacy_identity().find_unique(
+                        legacy_identity::by_target_kind_and_target_id(creature::NAME, id),
+                    )
+                })
+                .transpose()
+                .map_err(failed)?
+                .flatten()
+        else {
+            continue;
+        };
+        grants.push((
+            owner.legacy_id,
+            secret.name,
+            grant.expires_at_micros / 1_000,
+        ));
+    }
+    grants.sort();
+    Ok(grants)
 }
 
 #[cfg(test)]
@@ -124,15 +194,23 @@ mod tests {
     #[test]
     fn secrets_and_grants_round_trip() {
         let trx = crate::core::trx::test_trx();
-        put_blob(&trx, "o", "b", "x").unwrap();
-        put_blob(&trx, "o", "a", "y").unwrap();
-        assert_eq!(names(&trx, "o").unwrap(), ["a", "b"]);
-        assert_eq!(blob(&trx, "o", "a").unwrap().as_deref(), Some("y"));
-        grant(&trx, "o", "a", "g", 100).unwrap();
-        grant(&trx, "o", "b", "g", 10).unwrap();
-        assert_eq!(grant_expiry(&trx, "o", "a", "g").unwrap(), 100);
-        assert_eq!(grants_of(&trx, "g", 50).unwrap(), [("o".into(), "a".into(), 100)]);
-        revoke(&trx, "o", "a", "g").unwrap();
-        assert_eq!(grant_expiry(&trx, "o", "a", "g").unwrap(), 0);
+        crate::api::model::conformance::seed_humans(&trx, &["1@t", "2@t"]);
+        let key = [7; 32];
+        let sealed = |value: &str| secret_crypto::encrypt(value.as_bytes(), &key).unwrap();
+        let (x, y) = (sealed("x"), sealed("y"));
+        put_blob(&trx, "1@t", "b", &x, &key).unwrap();
+        put_blob(&trx, "1@t", "a", &y, &key).unwrap();
+        assert_eq!(names(&trx, "1@t").unwrap(), ["a", "b"]);
+        assert_eq!(blob(&trx, "1@t", "a").unwrap(), Some(y));
+        assert!(grant(&trx, "1@t", "missing", "2@t", 1).is_err());
+        grant(&trx, "1@t", "a", "2@t", 100).unwrap();
+        grant(&trx, "1@t", "b", "2@t", 10).unwrap();
+        assert_eq!(grant_expiry(&trx, "1@t", "a", "2@t").unwrap(), 100);
+        assert_eq!(
+            grants_of(&trx, "2@t", 50).unwrap(),
+            [("1@t".into(), "a".into(), 100)]
+        );
+        revoke(&trx, "1@t", "a", "2@t").unwrap();
+        assert_eq!(grant_expiry(&trx, "1@t", "a", "2@t").unwrap(), 0);
     }
 }

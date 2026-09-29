@@ -49,6 +49,14 @@ pub(crate) trait AuthorityLookups {
     fn resource_store_machine(&self, store_id: &str) -> String;
     /// Whether the creature is a human user.
     fn is_human(&self, id: &str) -> bool;
+    /// The caller's capability grant chains for `action` (A403).
+    fn grant_chains(
+        &self,
+        _subject: &Subject,
+        _action: &str,
+    ) -> Vec<Vec<aseman_domain::capability::Grant>> {
+        Vec::new()
+    }
 }
 
 /// Who is calling.
@@ -255,21 +263,6 @@ fn target_id(resource: &str, input: &JsonValue) -> String {
     }
 }
 
-/// The caller's grant chains for `action` (A403). Grants are PostgreSQL state, so
-/// they exist only when the action runs in a PostgreSQL unit of work (ADR 0026); the
-/// legacy provider has none.
-fn grant_chains(
-    subject: Option<&Subject>,
-    action: &str,
-) -> Vec<Vec<aseman_domain::capability::Grant>> {
-    let (Some(subject), Some(unit)) = (subject, crate::api::model::core_storage::current_unit())
-    else {
-        return Vec::new();
-    };
-    let store = aseman_capsule::capability::CapsuleGrantStore { repository: &*unit };
-    aseman_application::capability::load_chains(&store, subject, action).unwrap_or_default()
-}
-
 /// Decide `surface` for `caller`.
 ///
 /// # Errors
@@ -299,7 +292,11 @@ pub(crate) fn decide_surface(
             action: action_id.clone(),
             resource: resource.clone(),
             facts: resolve_facts(lookups, action_id, &action.resource, caller, input),
-            grants: grant_chains(caller.subject.as_ref(), action_id),
+            grants: caller
+                .subject
+                .as_ref()
+                .map(|subject| lookups.grant_chains(subject, action_id))
+                .unwrap_or_default(),
             at_millis: now_millis,
         })
         .map_err(|error| error.to_string())?;
@@ -489,10 +486,22 @@ impl AuthorityLookups for TrxLookups<'_> {
     }
 
     fn vm_program(&self, vm_id: &str) -> String {
-        self.trx
-            .get_link(&crate::adapters::vmm::host::functions::vm_ownership::owner_link_key(vm_id))
-            .trim()
-            .to_owned()
+        crate::api::model::vm_runtime::instance(self.trx, vm_id)
+            .ok()
+            .flatten()
+            .and_then(|instance| instance.owner_program)
+            .unwrap_or_default()
+    }
+
+    fn grant_chains(
+        &self,
+        subject: &Subject,
+        action: &str,
+    ) -> Vec<Vec<aseman_domain::capability::Grant>> {
+        let store = aseman_capsule::capability::CapsuleGrantStore {
+            repository: self.trx,
+        };
+        aseman_application::capability::load_chains(&store, subject, action).unwrap_or_default()
     }
 
     fn store_permissions(&self, store_id: &str, member: &str) -> (bool, bool, bool) {

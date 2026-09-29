@@ -86,16 +86,6 @@ pub(crate) fn instances_of(
         .map_err(failed)
 }
 
-/// Every program-entity instance, by VM id.
-pub(crate) fn all_instances(trx: &Trx) -> Result<Vec<VmInstance>> {
-    trx.vm_instance()
-        .find_many(
-            FindMany::filter(vm_instance::program_ref().is_set())
-                .order_by(vm_instance::key().asc()),
-        )
-        .map_err(failed)
-}
-
 /// Running instances that carry billing.
 pub(crate) fn billed_running(trx: &Trx) -> Result<Vec<VmInstance>> {
     trx.vm_instance()
@@ -167,7 +157,9 @@ fn distribution_key(program_id: &str, entity_id: Option<&str>) -> String {
 pub(crate) fn distribution(trx: &Trx, program_id: &str, entity_id: Option<&str>) -> Result<String> {
     Ok(trx
         .vm_distribution()
-        .find_unique(vm_distribution::by_key(distribution_key(program_id, entity_id)))
+        .find_unique(vm_distribution::by_key(distribution_key(
+            program_id, entity_id,
+        )))
         .map_err(failed)?
         .map(|row| row.label)
         .unwrap_or_default())
@@ -251,8 +243,10 @@ mod tests {
         }
         record_owner(&trx, "vm-x", "p2").unwrap();
         let ids = |rows: Vec<VmInstance>| rows.into_iter().map(|row| row.key).collect::<Vec<_>>();
-        assert_eq!(ids(instances_of(&trx, "p1", Some("e1")).unwrap()), ["vm-a", "vm-b"]);
-        assert_eq!(ids(all_instances(&trx).unwrap()).len(), 3);
+        assert_eq!(
+            ids(instances_of(&trx, "p1", Some("e1")).unwrap()),
+            ["vm-a", "vm-b"]
+        );
         assert_eq!(ids(billed_running(&trx).unwrap()), ["vm-a"]);
         mark_stopped(&trx, "vm-a").unwrap();
         assert!(billed_running(&trx).unwrap().is_empty());
@@ -270,7 +264,14 @@ mod tests {
         )
         .unwrap();
         mark_stopped(&trx, "vm-x").unwrap();
-        assert_eq!(instance(&trx, "vm-x").unwrap().unwrap().owner_program.as_deref(), Some("p2"));
+        assert_eq!(
+            instance(&trx, "vm-x")
+                .unwrap()
+                .unwrap()
+                .owner_program
+                .as_deref(),
+            Some("p2")
+        );
         forget(&trx, "vm-b").unwrap();
         assert!(instance(&trx, "vm-b").unwrap().is_none());
         set_distribution(&trx, "p1", Some("e1"), "cluster").unwrap();

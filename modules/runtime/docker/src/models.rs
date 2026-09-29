@@ -6,16 +6,11 @@ use serde_json::Value as JsonValue;
 pub struct DockerIdentity {
     pub entity_id: String,
     pub container_name: String,
-    /// Part of the packet schema; not consulted by the controller today.
-    #[allow(dead_code)]
-    pub standalone: bool,
     pub vm_id: String,
 }
 
 impl DockerIdentity {
     pub fn from_packet(packet: &JsonValue) -> Self {
-        let standalone = packet["standalone"].as_bool().unwrap_or(false)
-            || packet["isStandalone"].as_bool().unwrap_or(false);
         let entity_id = packet["entityId"]
             .as_str()
             .or_else(|| packet["imageName"].as_str())
@@ -29,7 +24,6 @@ impl DockerIdentity {
         DockerIdentity {
             entity_id,
             container_name,
-            standalone,
             vm_id,
         }
     }

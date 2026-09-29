@@ -16,7 +16,9 @@
 pub mod actor;
 pub mod globe;
 pub mod orchestrator;
+#[cfg(test)]
+pub(crate) mod testing;
 pub mod trx;
 pub mod utils;
 
-pub use actor::{Info, State};
+pub use actor::State;

@@ -30,6 +30,15 @@ pub struct AsemanConfig {
     pub vmm: Option<VmmClientConfig>,
     pub database_url_secret: Option<String>,
     pub core_storage: CoreStorageConfig,
+    /// The A701 public HTTP listener; `None` when it is not configured.
+    pub public_http: Option<PublicHttpListenerConfig>,
+    /// The A705 federation listener; `None` when it is not configured.
+    pub federation_listener: Option<FederationListenerConfig>,
+    /// Outbound federation; `None` when it is not configured.
+    pub federation_outbound: Option<FederationOutboundConfig>,
+    /// Consensus provider properties (`ASEMAN_CONSENSUS_*`) as the provider's
+    /// dotted keys, forwarded through `ConsensusProvider::set`.
+    pub consensus_properties: Vec<(String, String)>,
 }
 
 /// Which provider is authoritative for the core port families (ADR 0026), and the
@@ -41,8 +50,8 @@ pub struct CoreStorageConfig {
     /// The trusted guest proxy (A306/A405), required on PostgreSQL: guest data is
     /// served from each creature's own database once the node runs there.
     pub guest_proxy: Option<GuestProxyConfig>,
-    /// Where the legacy store-signal and build-log families live
-    /// (`ASEMAN_SIGNAL_LOG_PROVIDER`).
+    /// Where the legacy signal history is (`ASEMAN_SIGNAL_LOG_PROVIDER`), read once by
+    /// `storage migrate` (ADR 0036); the node keeps signals as models.
     pub signal_log: SignalLogProvider,
     /// The PostgreSQL provider's cluster mode: a shard-map file
     /// (`ASEMAN_POSTGRES_SHARDS_SECRET`, ADR 0033). Absent, one database serves.
@@ -75,7 +84,8 @@ impl CapsuleLayout {
     }
 }
 
-/// The server holding the legacy signal (`storage`) and build-log tables.
+/// The server holding the legacy signal history (QuestDB's `storage` table or
+/// PostgreSQL's `aseman_legacy_log.signals`) that `storage migrate` converts.
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
 pub enum SignalLogProvider {
     /// QuestDB on `ASEMAN_LEGACY_QUESTDB_PORT`: the RocksDB provider's default.
@@ -185,22 +195,63 @@ pub struct RateLimitConfig {
     pub idle_evict_seconds: f64,
 }
 
+/// The RocksDB memory budget (`ASEMAN_ROCKSDB_*`), shared by every RocksDB
+/// database a process opens.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct RocksDbTuning {
+    /// Open table readers; negative keeps RocksDB's unbounded default.
+    pub max_open_files: i32,
+    /// The process-wide block cache.
+    pub block_cache_mb: usize,
+    /// Each store's write buffer.
+    pub write_buffer_mb: usize,
+}
+
+impl Default for RocksDbTuning {
+    fn default() -> Self {
+        Self {
+            max_open_files: 512,
+            block_cache_mb: 128,
+            write_buffer_mb: 32,
+        }
+    }
+}
+
+impl RocksDbTuning {
+    fn from_canonical(values: &BTreeMap<String, String>) -> Result<Self, ConfigError> {
+        let defaults = Self::default();
+        Ok(Self {
+            max_open_files: parse_or(
+                values,
+                "ASEMAN_ROCKSDB_MAX_OPEN_FILES",
+                defaults.max_open_files,
+            )?,
+            block_cache_mb: parse_or(
+                values,
+                "ASEMAN_ROCKSDB_BLOCK_CACHE_MB",
+                defaults.block_cache_mb,
+            )?,
+            write_buffer_mb: parse_or(
+                values,
+                "ASEMAN_ROCKSDB_WRITE_BUFFER_MB",
+                defaults.write_buffer_mb,
+            )?,
+        })
+    }
+}
+
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct LegacyAdapterConfig {
     pub main_port: String,
     pub public_storage_max_bytes: usize,
     pub questdb_port: u16,
-    pub rocksdb_max_open_files: i32,
-    pub rocksdb_block_cache_mb: usize,
-    pub rocksdb_write_buffer_mb: usize,
+    pub rocksdb: RocksDbTuning,
     pub babble_data_dir: Option<String>,
     pub babble_frame_cache: usize,
     pub babble_frame_retention: i64,
     pub is_head: bool,
     pub blockchain_api_port: u16,
     pub ip_address: String,
-    pub home_dir: Option<String>,
-    pub user_profile_dir: Option<String>,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -340,13 +391,9 @@ impl Default for RuntimeConfig {
 }
 
 pub fn runtime_config() -> RuntimeConfig {
-    ACTIVE_CONFIG
-        .get()
-        .map(|config| config.runtime.clone())
-        .unwrap_or_else(|| RuntimeConfig::from_process().unwrap_or_default())
+    RuntimeConfig::from_process().unwrap_or_default()
 }
 
-static ACTIVE_CONFIG: OnceLock<AsemanConfig> = OnceLock::new();
 static ACTIVE_CLI_CONFIG: OnceLock<CliConfig> = OnceLock::new();
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -464,41 +511,25 @@ pub fn cli_config() -> Option<&'static CliConfig> {
     ACTIVE_CLI_CONFIG.get()
 }
 
-/// Install the validated process snapshot for legacy leaf adapters that cannot yet
-/// accept constructor injection. New code should receive the narrow typed sub-config.
-pub fn install_legacy_adapter_snapshot(config: &AsemanConfig) -> Result<(), ConfigError> {
-    ACTIVE_CONFIG
-        .set(config.clone())
-        .map_err(|_| ConfigError::AlreadyInstalled)
-}
-
-pub fn legacy_adapter_snapshot() -> Option<&'static LegacyAdapterConfig> {
-    ACTIVE_CONFIG.get().map(|config| &config.legacy_adapters)
-}
-
-/// Root-node endpoint for legacy consensus bootstrap. This narrow accessor is
-/// retained only while the embedded Hashgraph adapter remains in the node.
-pub fn consensus_root_node() -> Option<&'static str> {
-    ACTIVE_CONFIG
-        .get()
-        .and_then(|config| config.core.root_node.as_deref())
-}
-
-/// Provider-specific consensus properties read from `ASEMAN_CONSENSUS_*`
-/// environment variables.
+/// Provider-specific consensus properties from the `ASEMAN_CONSENSUS_*` keys.
 ///
 /// The core never couples to any one consensus provider's feature set. It reads
-/// environment variables as generic `key = value` pairs and forwards them through
+/// the keys as generic `key = value` pairs and forwards them through
 /// `ConsensusProvider::set`; each provider interprets the keys it understands and
 /// refuses the rest. The mapping below is an explicit allowlist: every variable is
 /// renamed to the lower-case dotted key this backend documents, so a provider with
 /// a different vocabulary simply refuses keys it does not know and the composition
 /// still works. A Hashgraph backend understands `staking.*` and `election.*` keys.
-#[must_use]
-pub fn consensus_env_properties() -> Vec<(String, String)> {
+/// Whether any of `keys` holds a non-empty value.
+fn any_set(values: &BTreeMap<String, String>, keys: &[&str]) -> bool {
+    keys.iter()
+        .any(|key| values.get(*key).is_some_and(|value| !value.is_empty()))
+}
+
+fn consensus_properties(values: &BTreeMap<String, String>) -> Vec<(String, String)> {
     const PREFIX: &str = "ASEMAN_CONSENSUS_";
     let mut properties = Vec::new();
-    for (env_key, value) in std::env::vars() {
+    for (env_key, value) in values {
         let Some(rest) = env_key.strip_prefix(PREFIX) else {
             continue;
         };
@@ -511,7 +542,7 @@ pub fn consensus_env_properties() -> Vec<(String, String)> {
             "ELECTION_REVEAL_SECONDS" => "election.reveal_seconds",
             _ => continue,
         };
-        properties.push((key.to_string(), value));
+        properties.push((key.to_string(), value.clone()));
     }
     properties
 }
@@ -733,9 +764,7 @@ impl AsemanConfig {
                     10 * 1024 * 1024,
                 )?,
                 questdb_port: parse_or(&values, "ASEMAN_LEGACY_QUESTDB_PORT", 8812)?,
-                rocksdb_max_open_files: parse_or(&values, "ASEMAN_ROCKSDB_MAX_OPEN_FILES", 512)?,
-                rocksdb_block_cache_mb: parse_or(&values, "ASEMAN_ROCKSDB_BLOCK_CACHE_MB", 128)?,
-                rocksdb_write_buffer_mb: parse_or(&values, "ASEMAN_ROCKSDB_WRITE_BUFFER_MB", 32)?,
+                rocksdb: RocksDbTuning::from_canonical(&values)?,
                 babble_data_dir: nonempty(&values, "ASEMAN_LEGACY_BABBLE_DATA_DIR"),
                 babble_frame_cache: parse_or(&values, "ASEMAN_BABBLE_FRAME_CACHE", 25)?,
                 babble_frame_retention: parse_or(&values, "ASEMAN_BABBLE_FRAME_RETENTION", 25)?,
@@ -745,13 +774,15 @@ impl AsemanConfig {
                     .unwrap_or(false),
                 blockchain_api_port: parse_or(&values, "ASEMAN_LEGACY_CONSENSUS_PORT", 1337)?,
                 ip_address: optional(&values, "ASEMAN_LEGACY_IPADDR"),
-                home_dir: nonempty(&values, "ASEMAN_LEGACY_HOME"),
-                user_profile_dir: nonempty(&values, "ASEMAN_LEGACY_USERPROFILE"),
             },
             runtime: RuntimeConfig::from_canonical(&values)?,
             vmm,
             database_url_secret: values.get("ASEMAN_DATABASE_URL_SECRET").cloned(),
             core_storage,
+            public_http: PublicHttpListenerConfig::from_map_optional(&values)?,
+            federation_listener: FederationListenerConfig::from_map_optional(&values)?,
+            federation_outbound: FederationOutboundConfig::from_map_optional(&values)?,
+            consensus_properties: consensus_properties(&values),
         })
     }
 }
@@ -992,30 +1023,24 @@ pub struct FederationOutboundConfig {
 }
 
 impl FederationOutboundConfig {
-    pub fn from_process_optional() -> Result<Option<Self>, ConfigError> {
-        Self::from_map_optional(&std::env::vars().collect())
-    }
-
+    /// Outbound federation when any of its required keys is set, else `None`.
+    ///
+    /// # Errors
+    ///
+    /// Configured outbound federation with missing or invalid keys.
     pub fn from_map_optional(
         values: &BTreeMap<String, String>,
     ) -> Result<Option<Self>, ConfigError> {
-        let configured = [
-            "ASEMAN_FEDERATION_HTTP_SERVER_CA",
-            "ASEMAN_FEDERATION_HTTP_CLIENT_CERTIFICATE",
-            "ASEMAN_FEDERATION_HTTP_CLIENT_KEY_SECRET",
-            "ASEMAN_FEDERATION_REQUEST_SIGNING_KEY_SECRET",
-        ]
-        .iter()
-        .any(|key| values.get(*key).is_some_and(|value| !value.is_empty()));
-        if configured {
-            Self::from_map(values).map(Some)
-        } else {
-            Ok(None)
-        }
-    }
-
-    pub fn from_process() -> Result<Self, ConfigError> {
-        Self::from_map(&std::env::vars().collect())
+        let configured = any_set(
+            values,
+            &[
+                "ASEMAN_FEDERATION_HTTP_SERVER_CA",
+                "ASEMAN_FEDERATION_HTTP_CLIENT_CERTIFICATE",
+                "ASEMAN_FEDERATION_HTTP_CLIENT_KEY_SECRET",
+                "ASEMAN_FEDERATION_REQUEST_SIGNING_KEY_SECRET",
+            ],
+        );
+        configured.then(|| Self::from_map(values)).transpose()
     }
 
     pub fn from_map(values: &BTreeMap<String, String>) -> Result<Self, ConfigError> {
@@ -1064,8 +1089,25 @@ impl FederationOutboundConfig {
 }
 
 impl FederationListenerConfig {
-    pub fn from_process() -> Result<Self, ConfigError> {
-        Self::from_map(&std::env::vars().collect())
+    /// The listener when any of its required keys is set, else `None`.
+    ///
+    /// # Errors
+    ///
+    /// A configured listener with missing or invalid keys.
+    pub fn from_map_optional(
+        values: &BTreeMap<String, String>,
+    ) -> Result<Option<Self>, ConfigError> {
+        let configured = any_set(
+            values,
+            &[
+                "ASEMAN_FEDERATION_HTTP_TLS_CERTIFICATE",
+                "ASEMAN_FEDERATION_HTTP_TLS_KEY_SECRET",
+                "ASEMAN_FEDERATION_HTTP_CLIENT_CA",
+                "ASEMAN_FEDERATION_RESPONSE_SIGNING_KEY_SECRET",
+                "ASEMAN_FEDERATION_HTTP_AUDIENCE",
+            ],
+        );
+        configured.then(|| Self::from_map(values)).transpose()
     }
 
     pub fn from_map(values: &BTreeMap<String, String>) -> Result<Self, ConfigError> {
@@ -1145,13 +1187,23 @@ impl MeterConfig {
 }
 
 impl PublicHttpListenerConfig {
-    /// Read the listener configuration from the process environment.
+    /// The listener when any of its required keys is set, else `None`.
     ///
     /// # Errors
     ///
-    /// Missing or invalid keys.
-    pub fn from_process() -> Result<Self, ConfigError> {
-        Self::from_map(&std::env::vars().collect())
+    /// A configured listener with missing or invalid keys.
+    pub fn from_map_optional(
+        values: &BTreeMap<String, String>,
+    ) -> Result<Option<Self>, ConfigError> {
+        let configured = any_set(
+            values,
+            &[
+                "ASEMAN_PUBLIC_HTTP_TLS_CERTIFICATE",
+                "ASEMAN_PUBLIC_HTTP_TLS_KEY_SECRET",
+                "ASEMAN_PUBLIC_HTTP_AUDIENCE",
+            ],
+        );
+        configured.then(|| Self::from_map(values)).transpose()
     }
 
     /// # Errors

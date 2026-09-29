@@ -5,10 +5,7 @@
 //! (`trx.store().find_many(…)`, [`Models`]); it never names a provider, a driver,
 //! or a key layout.
 
-pub use aseman_storage::client;
-pub use aseman_storage::{
-    Case, Cond, Data, FindMany, Id, Models, Order, Row, StorageError, Trx, Unique, Value, Where,
-};
+pub use aseman_storage::Trx;
 
 /// A storage error as the `anyhow` error node actions return.
 pub fn failed(error: aseman_storage::StorageError) -> anyhow::Error {
@@ -16,8 +13,7 @@ pub fn failed(error: aseman_storage::StorageError) -> anyhow::Error {
 }
 
 /// The currency and scale of creature balances (the finance epoch of ADR 0017).
-pub const BALANCE_CURRENCY: &str = "ASE";
-pub const BALANCE_SCALE: u8 = 0;
+pub use aseman_domain::creature::{BALANCE_CURRENCY, BALANCE_SCALE};
 
 /// An in-memory storage for tests: the reference provider over the model catalog.
 #[cfg(test)]

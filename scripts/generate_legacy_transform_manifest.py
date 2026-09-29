@@ -248,6 +248,10 @@ SOURCE_REVIEWS = {
 SOURCE_FAMILY_REVIEWS = {
     ("apps/aseman-node/src/adapters/postgres/trx.rs", "{key}"):
         ("covered_by_reviewed_family", "ADR 0031 PostgreSQL relation/document classification"),
+    # ADR 0036: natural keys of storage-module models (`core.vm_distribution`,
+    # `core.vm_terminal`), not legacy key/value keys.
+    ("apps/aseman-node/src/api/model/vm_runtime.rs", "{program_id}"):
+        ("model_natural_key", "ADR 0036 model natural key, not a legacy key"),
 }
 for _source in (
     "apps/aseman-node/src/adapters/vmm/hostcall_logs.rs", "apps/aseman-node/src/api/actions/program.rs",

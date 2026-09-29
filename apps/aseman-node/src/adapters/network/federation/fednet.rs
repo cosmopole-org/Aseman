@@ -6,7 +6,6 @@
 //! server so inbound packets get dispatched to the right action / signaler
 //! path.
 
-use std::collections::HashMap;
 use std::net::ToSocketAddrs;
 use std::sync::{Arc, Mutex};
 use std::thread;
@@ -18,12 +17,12 @@ use serde_json::Value;
 use crate::api::model::StorePermissions;
 use crate::api::packets::{invites, stores};
 use crate::api::utils::crypto::secure_unique_string;
+use crate::core::trx::Trx;
 use crate::models::core::ICore;
 use crate::models::packet::{OriginPacket, build_error_json};
 use crate::models::ports::ISignaler;
 use crate::models::ports::IStorage;
 use crate::models::ports::{FedRequestCallback, IFederation};
-use crate::core::trx::Trx;
 use aseman_network_legacy::TlsConfig;
 
 use super::netserver::{FedApi, Socket, Tcp};
@@ -132,23 +131,11 @@ impl FedNet {
         }
     }
 
-    fn resolve_hostname_for_ip(&self, ip: &str) -> String {
-        let peers = self.app.tools().network().chain().peers();
-        if !peers.iter().any(|p| p == ip) {
-            return String::new();
-        }
-        let host = Arc::new(Mutex::new(String::new()));
-        let host_clone = host.clone();
-        let key = format!("NodeIpToHost::{}", ip);
-        self.app.modify_state(
-            true,
-            Box::new(move |trx: &Trx| {
-                *host_clone.lock().unwrap() = trx.get_link(&key);
-                Ok(())
-            }),
-        );
-
-        host.lock().unwrap().clone()
+    /// The host name of a peer address. Nothing records one since ADR 0036 (the
+    /// legacy `NodeIpToHost` links were hand-written, and migration refuses them), so
+    /// an inbound peer is known by its address alone.
+    fn resolve_hostname_for_ip(&self, _ip: &str) -> String {
+        String::new()
     }
 
     fn handle_response(&self, pack: OriginPacket) {
@@ -310,19 +297,8 @@ impl FedNet {
                     self.apply_membership(&tc.store_id, &tc.user.id, None);
                 }
             }
-            "stores/updateMember" => {
-                if let Ok(tc) = serde_json::from_slice::<stores::UpdateMember>(data) {
-                    let key_ = format!("member_{}_{}", tc.store_id, tc.user.id);
-                    let payload = serde_json::to_value(&tc.metadata).unwrap_or(Value::Null);
-                    self.app.modify_state(
-                        false,
-                        Box::new(move |trx: &Trx| {
-                            trx.put_json(&key_, "meta", &payload, false)?;
-                            Ok(())
-                        }),
-                    );
-                }
-            }
+            // Member metadata was written but never read; it is not state (ADR 0036).
+            "stores/updateMember" => {}
             _ => {}
         }
     }
@@ -511,11 +487,4 @@ impl IFederation for FedNet {
         };
         socket.write_request(&callback_id, user_id, path, &payload, signature);
     }
-}
-
-// Pull in a small helper so the unused-import lints stay quiet when only
-// some methods are used.
-#[allow(dead_code)]
-fn _force_keep_imports() -> HashMap<String, String> {
-    HashMap::new()
 }

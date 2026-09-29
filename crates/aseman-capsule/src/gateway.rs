@@ -7,7 +7,7 @@
 
 use crate::store::{body, next_revision, port_error};
 use crate::support::{
-    Capsules, MAX_CAS_ATTEMPTS, equal, failed, new_capsule, relationship, text, tombstone,
+    Capsules, MAX_CAS_ATTEMPTS, equal, new_capsule, relationship, text, tombstone,
 };
 use crate::{CapsuleStore, CapsuleStoreError};
 use aseman_contracts::capsule::{
@@ -17,7 +17,7 @@ use aseman_contracts::capsule::{
 use aseman_contracts::legacy_gateway::username_local_part;
 use aseman_contracts::legacy_realtime::deterministic_legacy_capsule_id;
 use aseman_domain::gateway::GatewayRoute;
-use aseman_ports::{GatewayRoutes, PortResult};
+use aseman_ports::{GatewayRoutes, PortError, PortResult};
 use std::collections::{BTreeMap, BTreeSet};
 
 const ROUTE: &str = "core.gateway_route";
@@ -73,7 +73,7 @@ impl CapsuleGatewayRoutes<'_> {
             .relationships
             .iter()
             .find(|relationship| relationship.name == name)
-            .ok_or_else(|| failed(format!("gateway route has no {name}")))?;
+            .ok_or_else(|| PortError::failed(format!("gateway route has no {name}")))?;
         self.capsules().legacy_id_of(kind, target.target_id.0)
     }
 }
@@ -83,7 +83,8 @@ impl GatewayRoutes for CapsuleGatewayRoutes<'_> {
         let Some(capsule) = self.capsules().live(ROUTE, route_id(creature_id, path))? else {
             return Ok(None);
         };
-        let fields = body(&capsule).ok_or_else(|| failed("gateway route has no body"))?;
+        let fields =
+            body(&capsule).ok_or_else(|| PortError::failed("gateway route has no body"))?;
         Ok(Some(GatewayRoute {
             creature_id: creature_id.to_owned(),
             path: path.to_owned(),
@@ -121,7 +122,7 @@ impl GatewayRoutes for CapsuleGatewayRoutes<'_> {
         };
         let path = body(latest)
             .map(|fields| text(fields, "path"))
-            .ok_or_else(|| failed("gateway route has no body"))?;
+            .ok_or_else(|| PortError::failed("gateway route has no body"))?;
         Ok(Some((self.related(latest, "creature", CREATURE)?, path)))
     }
 
@@ -151,7 +152,7 @@ impl GatewayRoutes for CapsuleGatewayRoutes<'_> {
                         ..next_revision(&current, fields.clone())?
                     }
                     .seal()
-                    .map_err(failed)?;
+                    .map_err(PortError::failed)?;
                     self.repository.put(&next, Some(current.revision))
                 }
                 None => self.repository.put(

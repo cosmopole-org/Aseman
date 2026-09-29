@@ -5,5 +5,4 @@
 //! `signal_tags` semantics are domain-owned and re-exported inline.
 
 pub use aseman_contracts::legacy_wire::packet::*;
-pub use aseman_domain::signal_tags::LogQuery;
 pub use aseman_domain::signal_tags::*;

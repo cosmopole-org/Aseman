@@ -14,8 +14,8 @@
 
 use crate::store::{body, next_revision, port_error};
 use crate::support::{
-    Capsules, DocumentFamily, MAX_CAS_ATTEMPTS, failed, legacy_identity, new_capsule, relationship,
-    text, tombstone,
+    Capsules, DocumentFamily, MAX_CAS_ATTEMPTS, legacy_identity, new_capsule, relationship, text,
+    tombstone,
 };
 use crate::{CapsuleStore, CapsuleStoreError};
 use aseman_contracts::capsule::{CapsuleEnvelope, CapsuleValue, StorageClass};
@@ -70,7 +70,8 @@ fn artifact_fields(evidence: &BlobEvidence) -> PortResult<BTreeMap<String, Capsu
         (
             "size_bytes".to_owned(),
             CapsuleValue::Integer(
-                i64::try_from(evidence.size_bytes).map_err(|_| failed("file is too large"))?,
+                i64::try_from(evidence.size_bytes)
+                    .map_err(|_| PortError::failed("file is too large"))?,
             ),
         ),
         (
@@ -199,7 +200,7 @@ impl EntityDirectory for CapsuleEntityPorts<'_> {
             store_key: match fields.get("artifact_present") {
                 Some(CapsuleValue::Bool(true)) => Some(text(fields, "store_key")),
                 Some(CapsuleValue::Bool(false)) => None,
-                _ => return Err(failed("entity artifact has no presence")),
+                _ => return Err(PortError::failed("entity artifact has no presence")),
             },
         }))
     }
@@ -252,7 +253,7 @@ impl EntityDirectory for CapsuleEntityPorts<'_> {
                 .iter()
                 .find(|relationship| relationship.name == "program")
                 .and_then(|relationship| programs.get(&relationship.target_id.0))
-                .ok_or_else(|| failed(format!("entity {key} names no program")))?;
+                .ok_or_else(|| PortError::failed(format!("entity {key} names no program")))?;
             deployed.push(program.clone());
         }
         deployed.sort_by(|left, right| left.as_bytes().cmp(right.as_bytes()));
@@ -290,7 +291,7 @@ fn valid(entity: &ResourceEntityRef) -> PortResult<()> {
     if entity.is_valid() {
         Ok(())
     } else {
-        Err(failed(format!(
+        Err(PortError::failed(format!(
             "invalid resource entity {}",
             entity.legacy_id()
         )))
@@ -309,9 +310,9 @@ impl VmResourceEntities for CapsuleEntityPorts<'_> {
         let fields = body(&capsule).ok_or(PortError::NotFound)?;
         let payload = match fields.get("document").map(capsule_value_to_json) {
             Some(Ok(document @ serde_json::Value::Object(_))) => {
-                serde_json::to_string(&document).map_err(failed)?
+                serde_json::to_string(&document).map_err(PortError::failed)?
             }
-            _ => return Err(failed("resource entity has no payload document")),
+            _ => return Err(PortError::failed("resource entity has no payload document")),
         };
         Ok(Some(VmResourceEntity {
             reference: entity.clone(),
@@ -319,7 +320,7 @@ impl VmResourceEntities for CapsuleEntityPorts<'_> {
             data_key: match fields.get("artifact_present") {
                 Some(CapsuleValue::Bool(true)) => Some(text(fields, "store_key")),
                 Some(CapsuleValue::Bool(false)) => None,
-                _ => return Err(failed("resource entity has no data presence")),
+                _ => return Err(PortError::failed("resource entity has no data presence")),
             },
         }))
     }
@@ -332,7 +333,7 @@ impl VmResourceEntities for CapsuleEntityPorts<'_> {
     ) -> PortResult<()> {
         valid(entity)?;
         let Ok(serde_json::Value::Object(incoming)) = serde_json::from_str(payload) else {
-            return Err(failed("payload must be a JSON object"));
+            return Err(PortError::failed("payload must be a JSON object"));
         };
         let store_capsule =
             deterministic_legacy_capsule_id("VmResourceStore", entity.store_id.as_bytes());
@@ -354,7 +355,8 @@ impl VmResourceEntities for CapsuleEntityPorts<'_> {
                 _ => serde_json::Map::new(),
             };
             merge_legacy_objects(&mut document, &incoming);
-            let mut fields = legacy_document_fields(&key, "payload", &document).map_err(failed)?;
+            let mut fields =
+                legacy_document_fields(&key, "payload", &document).map_err(PortError::failed)?;
             fields.extend([
                 (
                     "entity_type".to_owned(),

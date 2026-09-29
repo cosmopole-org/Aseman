@@ -53,8 +53,10 @@ class PhaseOneBoundaryTests(unittest.TestCase):
         self.assertLess(len(parent.splitlines()), 2_000)
         self.assertIn("mod finance;", parent)
         self.assertIn("finance::handlers", parent)
-        self.assertNotIn("fn payment_adjustment", parent)
-        self.assertIn("fn payment_adjustment", finance)
+        # The finance family registers its actions (ADR 0036: as adapters over the
+        # finance use cases); the parent registers none of them.
+        self.assertNotIn('"/creatures/paymentAdjustment"', parent)
+        self.assertIn('"/creatures/paymentAdjustment"', finance)
         self.assertIn("pub(super) fn handlers", finance)
 
 

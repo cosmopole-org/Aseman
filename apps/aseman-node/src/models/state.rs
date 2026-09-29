@@ -2,8 +2,8 @@
 
 use std::sync::Arc;
 
-use crate::models::info::IInfo;
 use crate::core::trx::Trx;
+use crate::models::info::IInfo;
 
 /// The mutable state handle threaded through every secured action.
 ///

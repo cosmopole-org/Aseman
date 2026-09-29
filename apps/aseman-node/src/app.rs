@@ -20,25 +20,15 @@ use crate::models::action::ExtendedField;
 use crate::models::core::ICore;
 use crate::observability;
 
-/// Connections one node keeps for PostgreSQL units of work (one per concurrent
-/// action, plus nesting).
-const CORE_STORAGE_CONNECTIONS: u32 = 16;
-
 /// The composed node: a typed configuration plus everything wired from it.
 pub struct NodeApp {
     config: Arc<AsemanConfig>,
 }
 
 impl NodeApp {
-    /// Parse the process configuration (with the legacy `.env` precedence) and install
-    /// the snapshot legacy leaf adapters still read.
+    /// Parse the process configuration, with the legacy `.env` precedence.
     pub fn from_process() -> Result<Self> {
-        // Compatibility only: legacy adapters still consume process variables. The parser
-        // is owned by aseman-config; this process mutation expires as those adapters accept
-        // typed configuration directly.
-        let _ = install_dotenv_compat(".env");
         let config = Arc::new(AsemanConfig::from_process_with_dotenv(".env")?);
-        aseman_config::install_legacy_adapter_snapshot(&config)?;
         Ok(Self { config })
     }
 
@@ -80,9 +70,6 @@ impl NodeApp {
             vec!["keyhan".to_string()],
             &config.storage.root_path,
             &config.storage.base_db_path,
-            &config.storage.applet_db_path,
-            &config.storage.store_logs_db,
-            &config.storage.search_index_path,
         ) {
             eprintln!("app.load failed: {}", e);
             return Err(anyhow::anyhow!("app.load failed: {e}"));
@@ -158,7 +145,11 @@ impl NodeApp {
         model_extender.insert("store".to_string(), store_extender);
 
         let app_for_plug: Arc<dyn crate::models::core::ICore> = app.clone();
-        plug_all(app_for_plug, &model_extender);
+        plug_all(
+            app_for_plug,
+            &model_extender,
+            &config.legacy_adapters.main_port,
+        );
 
         // ── Startup VMM listener restore ──────────────────────────────────────────
         // The signaler listeners that vmm.assign() registers are in-memory only.
@@ -168,12 +159,10 @@ impl NodeApp {
         {
             let programs_slot = Arc::new(Mutex::new(Vec::<String>::new()));
             let programs_clone = programs_slot.clone();
-            let blobs = crate::adapters::blob_store::node_blobs(&*app.tools().storage());
             app.modify_state(
                 true,
                 Box::new(move |trx: &crate::core::trx::Trx| {
-                    let entities =
-                        crate::api::model::entity_ports::EntityPorts { trx, blobs: &blobs };
+                    let entities = crate::api::model::entity_ports::EntityPorts { trx };
                     *programs_clone.lock().unwrap() =
                         aseman_ports::EntityDirectory::deployed_programs(&entities)
                             .map_err(|error| anyhow::anyhow!("{error}"))?;
@@ -251,28 +240,33 @@ impl NodeApp {
 }
 
 /// Compose the services that run on the node's storage once it is open (ADR 0036):
-/// decision audit, guest data from each creature's own database (the PostgreSQL guest
-/// data plane, ADR 0021), and the VMM workload catalog.
+/// decision audit, guest data (from each creature's own database through the
+/// PostgreSQL guest data plane, ADR 0021, or else from the node's storage), and the
+/// VMM workload catalog.
 fn install_core_storage(config: &AsemanConfig) -> Result<()> {
     let storage = crate::adapters::storage::installed()
         .ok_or_else(|| anyhow::anyhow!("the node's storage is not open"))?;
     crate::api::audit::install(storage.clone())?;
-    if let Some(proxy) = &config.core_storage.guest_proxy {
-        let url = aseman_config::read_secret_file(&proxy.url_secret, 4096)?;
-        let shard_map = match &config.core_storage.postgres_shards_secret {
-            Some(secret) => Some(aseman_config::read_secret_file(secret, 64 * 1024)?),
-            None => None,
-        };
-        let kv = aseman_storage_providers::guest_kv(&aseman_storage_providers::GuestProxy {
-            url: &url,
-            role: &proxy.role,
-            max_pools: proxy.max_pools,
-            max_pool_size: proxy.max_pool_size,
-            shard_map: shard_map.as_deref(),
-        })
-        .map_err(|error| anyhow::anyhow!("{error}"))?;
-        crate::api::model::guest_data::install(kv, storage.clone())?;
-    }
+    let guest_plane = match &config.core_storage.guest_proxy {
+        Some(proxy) => {
+            let url = aseman_config::read_secret_file(&proxy.url_secret, 4096)?;
+            let shard_map = match &config.core_storage.postgres_shards_secret {
+                Some(secret) => Some(aseman_config::read_secret_file(secret, 64 * 1024)?),
+                None => None,
+            };
+            let kv = aseman_storage_providers::guest_kv(&aseman_storage_providers::GuestProxy {
+                url: &url,
+                role: &proxy.role,
+                max_pools: proxy.max_pools,
+                max_pool_size: proxy.max_pool_size,
+                shard_map: shard_map.as_deref(),
+            })
+            .map_err(|error| anyhow::anyhow!("{error}"))?;
+            Some(kv)
+        }
+        None => None,
+    };
+    crate::api::model::guest_data::install(guest_plane, storage.clone())?;
     // Program entities run on the configured VMM; their host calls come back through
     // the guest API (P5-03, P5-04).
     if let Some(vmm) = &config.vmm {
@@ -363,18 +357,6 @@ fn spawn_malloc_trimmer(_config: &AllocatorConfig) {}
 fn parse_owner_key(secret: &str) -> Option<rsa::RsaPrivateKey> {
     use rsa::pkcs8::DecodePrivateKey;
     rsa::RsaPrivateKey::from_pkcs8_pem(&std::fs::read_to_string(secret).ok()?).ok()
-}
-
-fn install_dotenv_compat(path: &str) -> Result<(), aseman_config::ConfigError> {
-    let content = std::fs::read_to_string(path)
-        .map_err(|error| aseman_config::ConfigError::DotenvIo(error.to_string()))?;
-    for (key, value) in aseman_config::parse_dotenv(&content)? {
-        // SAFETY: this runs at the composition root before any thread is spawned.
-        unsafe {
-            std::env::set_var(key, value);
-        }
-    }
-    Ok(())
 }
 
 fn install_signal_handler<F: FnOnce() + Send + 'static>(callback: F) {

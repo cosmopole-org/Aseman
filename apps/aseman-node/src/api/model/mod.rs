@@ -2,11 +2,11 @@
 //! module (ADR 0036).
 
 pub mod access;
+pub mod bridges;
 pub mod chain;
 pub mod core_storage;
 pub mod creature;
 pub mod creature_ports;
-pub mod entity;
 pub mod entity_ports;
 pub mod finance_ports;
 pub mod gateway_ports;
@@ -23,7 +23,9 @@ pub mod vm_runtime;
 pub use access::StorePermissions;
 pub use chain::{Chain, ChainShard};
 pub use creature::Creature;
-pub use entity::Entity;
 pub use machine_program::Program;
 pub use session::Session;
 pub use store::Store;
+
+#[cfg(test)]
+pub(crate) mod conformance;

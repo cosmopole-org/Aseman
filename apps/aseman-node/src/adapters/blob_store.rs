@@ -1,6 +1,7 @@
 //! The Phase 3 blob provider (ADR 0027): file bytes under the node's storage root,
 //! exactly where legacy keeps them, behind the [`BlobStore`] port.
 
+use aseman_fs::{Access, create_atomic, write_atomic};
 use std::fs;
 use std::io::ErrorKind;
 use std::path::PathBuf;
@@ -57,10 +58,6 @@ impl StorageRootBlobStore {
     }
 }
 
-fn failed(error: impl ToString) -> PortError {
-    PortError::Failed(error.to_string())
-}
-
 impl BlobStore for StorageRootBlobStore {
     fn put_blob(
         &self,
@@ -70,13 +67,18 @@ impl BlobStore for StorageRootBlobStore {
         overwrite: bool,
     ) -> PortResult<BlobEvidence> {
         let path = self.path(key)?;
-        if !overwrite && path.exists() {
-            return Err(PortError::Conflict);
-        }
         if let Some(parent) = path.parent() {
-            fs::create_dir_all(parent).map_err(failed)?;
+            fs::create_dir_all(parent).map_err(PortError::failed)?;
         }
-        fs::write(&path, bytes).map_err(failed)?;
+        let written = if overwrite {
+            write_atomic(&path, bytes, Access::Shared)
+        } else {
+            create_atomic(&path, bytes, Access::Shared)
+        };
+        written.map_err(|error| match error.kind() {
+            std::io::ErrorKind::AlreadyExists => PortError::Conflict,
+            _ => PortError::failed(error),
+        })?;
         Ok(BlobEvidence {
             store_key: key.to_owned(),
             content_digest: Sha256::digest(bytes).into(),
@@ -93,7 +95,7 @@ impl BlobStore for StorageRootBlobStore {
         match fs::read(self.path(key)?) {
             Ok(bytes) => Ok(Some(bytes)),
             Err(error) if error.kind() == ErrorKind::NotFound => Ok(None),
-            Err(error) => Err(failed(error)),
+            Err(error) => Err(PortError::failed(error)),
         }
     }
 
@@ -105,7 +107,7 @@ impl BlobStore for StorageRootBlobStore {
         match fs::remove_file(self.path(key)?) {
             Ok(()) => Ok(()),
             Err(error) if error.kind() == ErrorKind::NotFound => Ok(()),
-            Err(error) => Err(failed(error)),
+            Err(error) => Err(PortError::failed(error)),
         }
     }
 

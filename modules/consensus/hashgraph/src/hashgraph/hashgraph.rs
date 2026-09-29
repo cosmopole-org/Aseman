@@ -173,7 +173,7 @@ impl Hashgraph {
     }
 
     /// True if `y` is a self-ancestor of `x`.
-    #[allow(dead_code)] // exercised by the engine's own tests
+    #[cfg(test)]
     fn self_ancestor(&mut self, x: &str, y: &str) -> Result<bool> {
         let k = Key::new(x, y);
         if let Some(c) = self.self_ancestor_cache.get(&k) {
@@ -334,7 +334,7 @@ impl Hashgraph {
     }
 
     /// `round(x) - round(y)`.
-    #[allow(dead_code)] // exercised by the engine's own tests
+    #[cfg(test)]
     fn round_diff(&mut self, x: &str, y: &str) -> Result<i64> {
         let x_round = self
             .round(x)
@@ -1429,18 +1429,12 @@ mod tests {
     struct TestNode {
         pub_bytes: Vec<u8>,
         key: SigningKey,
-        #[allow(dead_code)]
-        events: Vec<Event>,
     }
 
     impl TestNode {
         fn new(key: SigningKey) -> TestNode {
             let pub_bytes = keys::from_public_key(key.verifying_key());
-            TestNode {
-                pub_bytes,
-                key,
-                events: Vec::new(),
-            }
+            TestNode { pub_bytes, key }
         }
 
         fn sign_and_add_event(
@@ -1452,7 +1446,6 @@ mod tests {
         ) {
             event.sign(&self.key).unwrap();
             index.insert(name.to_string(), event.hex());
-            self.events.push(event.clone());
             ordered_events.push(event);
         }
     }
@@ -1544,7 +1537,10 @@ mod tests {
                 &temp_badger_dir(),
             ))
         } else {
-            Box::new(InmemStore::new(CACHE_SIZE))
+            Box::new(InmemStore::new(
+                CACHE_SIZE,
+                crate::hashgraph::FrameLimits::default(),
+            ))
         };
 
         let mut hashgraph = Hashgraph::new(
@@ -2583,7 +2579,10 @@ mod tests {
         let mut unmarshalled = Frame::default();
         unmarshalled.unmarshal(&marshalled).unwrap();
 
-        let store: Box<dyn Store> = Box::new(InmemStore::new(CACHE_SIZE));
+        let store: Box<dyn Store> = Box::new(InmemStore::new(
+            CACHE_SIZE,
+            crate::hashgraph::FrameLimits::default(),
+        ));
         let mut h2 = Hashgraph::new(
             store,
             Box::new(dummy_internal_commit_callback),

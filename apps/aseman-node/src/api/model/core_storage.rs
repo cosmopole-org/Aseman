@@ -27,7 +27,10 @@ impl StateFailure {
 
 /// Run `action` in `trx`, then commit it, or roll it back when the action refuses.
 /// A read-only transaction is closed without writing.
-pub(crate) fn run_action(trx: &Trx, action: impl FnOnce() -> Result<()>) -> Result<(), StateFailure> {
+pub(crate) fn run_action(
+    trx: &Trx,
+    action: impl FnOnce() -> Result<()>,
+) -> Result<(), StateFailure> {
     match action() {
         Ok(()) if trx.read_only() => {
             let _ = trx.rollback();
@@ -80,8 +83,20 @@ mod tests {
             Err(StateFailure::Action(_))
         ));
         let reader = storage.begin(Mode::ReadOnly).unwrap();
-        assert!(reader.marker().find_unique(marker::by_key("kept")).unwrap().is_some());
-        assert!(reader.marker().find_unique(marker::by_key("dropped")).unwrap().is_none());
+        assert!(
+            reader
+                .marker()
+                .find_unique(marker::by_key("kept"))
+                .unwrap()
+                .is_some()
+        );
+        assert!(
+            reader
+                .marker()
+                .find_unique(marker::by_key("dropped"))
+                .unwrap()
+                .is_none()
+        );
         assert!(run_action(&reader, || Ok(())).is_ok());
     }
 }

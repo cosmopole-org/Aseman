@@ -1,10 +1,7 @@
 //! Request, response, and federation-broadcast payloads for the `stores`
 //! action namespace.
 
-use std::collections::HashMap;
-
 use serde::{Deserialize, Serialize};
-use serde_json::Value;
 
 use crate::api::model::{Creature, Store};
 use crate::models::input::IInput;
@@ -225,16 +222,6 @@ pub struct AddMember {
     pub store_id: String,
     #[serde(default)]
     pub user: Creature,
-}
-
-#[derive(Debug, Clone, Default, Serialize, Deserialize)]
-pub struct UpdateMember {
-    #[serde(rename = "storeId", default)]
-    pub store_id: String,
-    #[serde(default)]
-    pub user: Creature,
-    #[serde(default)]
-    pub metadata: HashMap<String, Value>,
 }
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]

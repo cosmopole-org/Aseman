@@ -64,7 +64,7 @@ pub(crate) fn host_fn_delete_vm(caller_program_id: &str, input: &JsonValue) -> S
         .map(|v| v["ok"].as_bool().unwrap_or(false))
         .unwrap_or(false);
     if destroyed {
-        clear_vm_records(&vm_id, &caller);
+        clear_vm_records(&vm_id);
     }
     raw
 }

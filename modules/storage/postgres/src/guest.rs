@@ -6,9 +6,8 @@ use aseman_contracts::guest::{
     GuestSchemaMutation, GuestTableDefinition, MAX_GUEST_COLUMNS, MAX_GUEST_INDEXES,
     MAX_GUEST_TABLES,
 };
+use aseman_postgres::{Manager, Pool, pool_builder};
 use postgres::{Client, Config, NoTls, Transaction};
-use r2d2::Pool;
-use r2d2_postgres::PostgresConnectionManager;
 use sha2::{Digest as _, Sha256};
 use std::collections::BTreeMap;
 use std::str::FromStr;
@@ -352,14 +351,12 @@ struct PoolKey {
     generation: u64,
 }
 
-type GuestPool = Pool<PostgresConnectionManager<NoTls>>;
-
 pub struct GuestPoolRouter {
     proxy: Config,
     proxy_role: String,
     max_pools: usize,
     max_pool_size: u32,
-    pools: Mutex<BTreeMap<PoolKey, GuestPool>>,
+    pools: Mutex<BTreeMap<PoolKey, Pool>>,
     /// Proxy connections to each shard's server, in cluster mode (ADR 0033).
     shard_proxies: BTreeMap<String, Config>,
 }
@@ -587,7 +584,7 @@ impl GuestPoolRouter {
         }
     }
 
-    fn pool(&self, binding: &ProvisionedGuestDatabase) -> GuestPostgresResult<GuestPool> {
+    fn pool(&self, binding: &ProvisionedGuestDatabase) -> GuestPostgresResult<Pool> {
         let key = pool_key(binding);
         let mut pools = self
             .pools
@@ -606,11 +603,9 @@ impl GuestPoolRouter {
             })?,
         };
         config.dbname(&binding.binding.database_name);
-        let manager = PostgresConnectionManager::new(config, NoTls);
-        let pool = Pool::builder()
-            .max_size(self.max_pool_size)
+        let pool = pool_builder(self.max_pool_size)
             .connection_timeout(Duration::from_secs(3))
-            .build(manager)
+            .build(Manager::new(config, NoTls))
             .map_err(|error| GuestPostgresError::Database(error.to_string()))?;
         pools.insert(key, pool.clone());
         Ok(pool)

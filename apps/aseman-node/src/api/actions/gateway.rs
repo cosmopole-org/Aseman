@@ -32,23 +32,12 @@ use crate::api::packets::gateway::{
 };
 use crate::api::utils::future::async_once;
 use crate::core::actor::Guard;
+use crate::core::trx::Trx;
 use crate::models::action::ISecureAction;
 use crate::models::core::ICore;
 use crate::models::state::IState;
-use crate::core::trx::Trx;
 
 use super::util::build_secure_action;
-
-/// State key holding one bridge grant, keyed by the token's hash.
-pub fn bridge_grant_key(token_hash: &str) -> String {
-    format!("Json::BridgeGrant::{}", token_hash)
-}
-
-/// State link recording which creature owns a topic. A topic has exactly one
-/// owner: without that, any creature could publish into another's bridge.
-pub fn bridge_topic_owner_key(topic: &str) -> String {
-    format!("BridgeTopicOwner::{}", topic)
-}
 
 /// Hash a bearer token the way grants are keyed.
 pub fn hash_bridge_token(token: &str) -> String {
@@ -124,7 +113,7 @@ pub fn resolve_bridge_grant(trx: &Trx, token: &str) -> Option<BridgeGrant> {
         return None;
     }
     let hash = hash_bridge_token(token);
-    let grant = Value::Object(trx.get_json(&bridge_grant_key(&hash), "grant").ok()?);
+    let grant = crate::api::model::bridges::grant(trx, &hash).ok()??;
     let creature_id = grant["creatureId"]
         .as_str()
         .unwrap_or("")
@@ -185,7 +174,7 @@ fn subscribe(app: Arc<dyn ICore>) -> Arc<dyn ISecureAction> {
         Guard::default(),
         move |state: Arc<dyn IState>, input: GatewaySubscribeInput| -> Result<Value> {
             let trx = state.trx();
-            let Some(grant) = resolve_bridge_grant(&*trx, &input.token) else {
+            let Some(grant) = resolve_bridge_grant(&trx, &input.token) else {
                 return Err(anyhow!("invalid or expired bridge token"));
             };
 
@@ -231,7 +220,7 @@ fn unsubscribe(app: Arc<dyn ICore>) -> Arc<dyn ISecureAction> {
         Guard::default(),
         move |state: Arc<dyn IState>, input: GatewayUnsubscribeInput| -> Result<Value> {
             let trx = state.trx();
-            if resolve_bridge_grant(&*trx, &input.token).is_none() {
+            if resolve_bridge_grant(&trx, &input.token).is_none() {
                 return Err(anyhow!("invalid or expired bridge token"));
             }
             Ok(json!({"ok": true, "gatewayUnsubscribe": true}))
@@ -256,7 +245,7 @@ fn signal(app: Arc<dyn ICore>) -> Arc<dyn ISecureAction> {
         Guard::default(),
         move |state: Arc<dyn IState>, input: GatewaySignalInput| -> Result<Value> {
             let trx = state.trx();
-            let Some(grant) = resolve_bridge_grant(&*trx, &input.token) else {
+            let Some(grant) = resolve_bridge_grant(&trx, &input.token) else {
                 return Err(anyhow!("invalid or expired bridge token"));
             };
             let topic = input.topic.trim().to_string();

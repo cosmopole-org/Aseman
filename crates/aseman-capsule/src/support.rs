@@ -26,10 +26,6 @@ pub(crate) fn text(body: &BTreeMap<String, CapsuleValue>, field: &str) -> String
     }
 }
 
-pub(crate) fn failed(error: impl ToString) -> PortError {
-    PortError::Failed(error.to_string())
-}
-
 /// A new revision-1 capsule, sealed.
 pub(crate) fn new_capsule(
     id: [u8; 16],
@@ -60,7 +56,7 @@ pub(crate) fn new_capsule(
         body: Some(CapsuleValue::Object(fields)),
     }
     .seal()
-    .map_err(failed)
+    .map_err(PortError::failed)
 }
 
 /// The tombstone revision of `current`.
@@ -74,7 +70,7 @@ pub(crate) fn tombstone(current: &CapsuleEnvelope) -> PortResult<CapsuleEnvelope
         ..current.clone()
     }
     .seal()
-    .map_err(failed)
+    .map_err(PortError::failed)
 }
 
 pub(crate) fn relationship(name: &str, target_kind: &str, target: [u8; 16]) -> CapsuleRelationship {
@@ -241,7 +237,9 @@ impl Capsules<'_> {
             .map(|fields| text(fields, "legacy_id"))
         {
             Some(legacy_id) if !legacy_id.is_empty() => Ok(legacy_id),
-            _ => Err(failed(format!("{target_kind} has no legacy identity"))),
+            _ => Err(PortError::failed(format!(
+                "{target_kind} has no legacy identity"
+            ))),
         }
     }
 }
@@ -267,10 +265,10 @@ fn stored_document(
         .and_then(|fields| fields.get("document"))
         .map(aseman_contracts::legacy_documents::capsule_value_to_json)
         .transpose()
-        .map_err(failed)?
+        .map_err(PortError::failed)?
     {
         Some(serde_json::Value::Object(document)) => Ok(document),
-        _ => Err(failed("document capsule has no document")),
+        _ => Err(PortError::failed("document capsule has no document")),
     }
 }
 
@@ -288,7 +286,7 @@ impl Capsules<'_> {
         };
         let document = stored_document(&capsule)?;
         aseman_contracts::legacy_documents::legacy_document_object_at(family.root, &document, path)
-            .map(|object| serde_json::to_string(object).map_err(failed))
+            .map(|object| serde_json::to_string(object).map_err(PortError::failed))
             .transpose()
     }
 
@@ -300,7 +298,10 @@ impl Capsules<'_> {
         document: &str,
     ) -> PortResult<()> {
         let Ok(serde_json::Value::Object(incoming)) = serde_json::from_str(document) else {
-            return Err(failed(format!("{} must be a JSON object", family.root)));
+            return Err(PortError::failed(format!(
+                "{} must be a JSON object",
+                family.root
+            )));
         };
         let id = deterministic_legacy_capsule_id(family.family, legacy_id.as_bytes());
         let key = format!("{}{legacy_id}", family.key_prefix);
@@ -322,7 +323,7 @@ impl Capsules<'_> {
                         family.root,
                         &merged,
                     )
-                    .map_err(failed)?;
+                    .map_err(PortError::failed)?;
                     let next = crate::store::next_revision(&current, fields)?;
                     self.0.put(&next, Some(current.revision))
                 }
@@ -336,7 +337,7 @@ impl Capsules<'_> {
                         family.root,
                         &incoming,
                     )
-                    .map_err(failed)?;
+                    .map_err(PortError::failed)?;
                     self.0.put(
                         &new_capsule(
                             id,

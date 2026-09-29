@@ -732,19 +732,28 @@ fn is_within_vms_root(dir: &Path) -> bool {
 
 /// Create a sparse, ext4-formatted backing disk if it does not already exist.
 fn ensure_persistent_disk(path: &Path, disk_gb: u64) -> Result<(), String> {
-    if path.exists() {
-        return Ok(());
-    }
     let bytes = disk_gb
         .max(1)
         .saturating_mul(1024)
         .saturating_mul(1024)
         .saturating_mul(1024);
-    let file = std::fs::OpenOptions::new()
-        .create(true)
+    // `create_new` makes "does it exist" and "create it" one atomic step: an
+    // existing disk holds guest data and must never be resized or reformatted.
+    let file = match std::fs::OpenOptions::new()
+        .create_new(true)
         .write(true)
         .open(path)
-        .map_err(|e| format!("failed to create disk image {}: {}", path.display(), e))?;
+    {
+        Ok(file) => file,
+        Err(e) if e.kind() == std::io::ErrorKind::AlreadyExists => return Ok(()),
+        Err(e) => {
+            return Err(format!(
+                "failed to create disk image {}: {}",
+                path.display(),
+                e
+            ));
+        }
+    };
     file.set_len(bytes)
         .map_err(|e| format!("failed to size disk image {}: {}", path.display(), e))?;
     drop(file);

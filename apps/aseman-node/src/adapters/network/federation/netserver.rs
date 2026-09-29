@@ -36,7 +36,6 @@ use std::sync::{Arc, Mutex};
 use std::thread;
 use std::time::Duration;
 
-use anyhow::Result;
 use dashmap::DashMap;
 
 use crate::api::utils::crypto::secure_unique_string;
@@ -468,9 +467,4 @@ fn fed_read_into(stream: &mut TlsStream, buf: &mut [u8]) -> FedReadOutcome {
         Err(e) if e.kind() == ErrorKind::Interrupted => FedReadOutcome::Idle,
         Err(_) => FedReadOutcome::Error,
     }
-}
-
-#[allow(dead_code)]
-fn _force_use() -> Result<()> {
-    Ok(())
 }

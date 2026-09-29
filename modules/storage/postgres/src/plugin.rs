@@ -231,7 +231,36 @@ impl StorageProvider for PostgresProvider {
                 return Ok(Some("legacy key/value (aseman_compat)".to_owned()));
             }
         }
-        Ok(None)
+        // Consensus logs named by an engine's absolute directory (before ADR 0036).
+        let absolute: bool = client
+            .query_one(
+                "SELECT EXISTS (SELECT 1 FROM aseman_consensus.log_entries \
+                 WHERE starts_with(log, '/') AND strpos(log, '--UTC--') = 0)",
+                &[],
+            )
+            .map_err(StorageError::unavailable)?
+            .get(0);
+        Ok(absolute.then(|| "legacy consensus log names (absolute paths)".to_owned()))
+    }
+
+    fn retire_legacy_layout(&self) -> StorageResult<()> {
+        let mut client = Self::client(&self.shards[self.home])?;
+        let present: bool = client
+            .query_one("SELECT to_regnamespace('aseman_compat') IS NOT NULL", &[])
+            .map_err(StorageError::unavailable)?
+            .get(0);
+        if present {
+            let retired = format!(
+                "aseman_compat_retired_{}",
+                std::time::SystemTime::now()
+                    .duration_since(std::time::UNIX_EPOCH)
+                    .map_or(0, |elapsed| elapsed.as_secs())
+            );
+            client
+                .batch_execute(&format!("ALTER SCHEMA aseman_compat RENAME TO {retired}"))
+                .map_err(StorageError::unavailable)?;
+        }
+        Ok(())
     }
 }
 

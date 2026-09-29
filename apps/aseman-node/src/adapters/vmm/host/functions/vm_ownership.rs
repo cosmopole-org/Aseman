@@ -7,22 +7,19 @@
 //! packet field a guest supplies), so a creature cannot claim a VM it did not
 //! start.
 //!
-//! Two shapes of ownership exist, and a delete accepts either:
+//! Two shapes of ownership exist on a `core.vm_instance`, and a delete accepts
+//! either:
 //!
-//!   * `VmOwnerProgram::<vmId>` — written by the `runVm` host op with the
-//!     node-resolved calling program. This is the creature-owns-its-VM case
-//!     the delete host op enforces.
-//!   * `VmInstance::<programId>::<entityId>::<vmId>` — written by
-//!     `/programs/runEntity` for a deployed program entity. A VM launched
-//!     that way is owned by its program, so that program (and the shell
-//!     action's own owner check) may delete it.
+//!   * `owner_program` — written by the `runVm` host op with the node-resolved
+//!     calling program. This is the creature-owns-its-VM case the delete host
+//!     op enforces.
+//!   * `program_ref` — written by `/programs/runEntity` for a deployed program
+//!     entity. A VM launched that way is owned by its program, so that program
+//!     (and the shell action's own owner check) may delete it.
 
 use crate::adapters::vmm::globals::with_global_app;
+use crate::api::model::vm_runtime;
 use crate::core::trx::Trx;
-
-pub(crate) fn owner_link_key(vm_id: &str) -> String {
-    format!("VmOwnerProgram::{}", vm_id)
-}
 
 /// Record `program_id` as the owner of `vm_id`. No-op for an empty id, so a
 /// runtime that never returned a vm id cannot write a wildcard entry.
@@ -32,15 +29,11 @@ pub(crate) fn record_vm_owner(vm_id: &str, program_id: &str) {
     if vm_id.is_empty() || program_id.is_empty() {
         return;
     }
-    let key = owner_link_key(vm_id);
-    let value = program_id.to_string();
+    let (vm_id, program_id) = (vm_id.to_owned(), program_id.to_owned());
     with_global_app(|app| {
         app.modify_state(
             false,
-            Box::new(move |trx: &Trx| {
-                trx.put_link(&key, &value);
-                Ok(())
-            }),
+            Box::new(move |trx: &Trx| vm_runtime::record_owner(trx, &vm_id, &program_id)),
         );
     });
 }
@@ -53,14 +46,16 @@ pub(crate) fn vm_owner_program(vm_id: &str) -> String {
     if vm_id.is_empty() {
         return String::new();
     }
-    let key = owner_link_key(vm_id);
+    let vm_id = vm_id.to_owned();
     let slot = std::sync::Arc::new(std::sync::Mutex::new(String::new()));
     let slot_c = slot.clone();
     with_global_app(|app| {
         app.modify_state(
             true,
             Box::new(move |trx: &Trx| {
-                *slot_c.lock().unwrap() = trx.get_link(&key);
+                *slot_c.lock().unwrap() = vm_runtime::instance(trx, &vm_id)?
+                    .and_then(|instance| instance.owner_program)
+                    .unwrap_or_default();
                 Ok(())
             }),
         );
@@ -114,25 +109,23 @@ pub(crate) fn program_owner_user(program_id: &str) -> String {
 }
 
 /// Whether `program_id` launched `vm_id` as a program *entity*
-/// (`/programs/runEntity`), which records `VmInstance::<program>::<entity>::<vm>`
-/// rather than an owner link.
+/// (`/programs/runEntity`), which records the instance's program rather than an
+/// owner program.
 pub(crate) fn owns_vm_instance(program_id: &str, vm_id: &str) -> bool {
     let program_id = program_id.trim();
     let vm_id = vm_id.trim();
     if program_id.is_empty() || vm_id.is_empty() {
         return false;
     }
-    let prefix = format!("VmInstance::{}::", program_id);
-    let suffix = format!("::{}", vm_id);
+    let (program_id, vm_id) = (program_id.to_owned(), vm_id.to_owned());
     let found = std::sync::Arc::new(std::sync::Mutex::new(false));
     let found_c = found.clone();
     with_global_app(|app| {
         app.modify_state(
             true,
             Box::new(move |trx: &Trx| {
-                if let Ok(links) = trx.get_links_list(&prefix, -1, -1, &[]) {
-                    *found_c.lock().unwrap() = links.iter().any(|l| l.ends_with(&suffix));
-                }
+                *found_c.lock().unwrap() = vm_runtime::instance(trx, &vm_id)?
+                    .is_some_and(|instance| instance.program_ref.as_deref() == Some(&*program_id));
                 Ok(())
             }),
         );
@@ -196,43 +189,18 @@ pub(crate) fn apply_vm_target(
     Ok(())
 }
 
-/// Drop every state link a deleted VM leaves behind. Called after the runtime
-/// has actually destroyed the instance, so a failed delete does not orphan a
-/// still-running VM by forgetting who owns it.
-pub(crate) fn clear_vm_records(vm_id: &str, program_id: &str) {
+/// Forget a deleted VM's instance record. Called after the runtime has actually
+/// destroyed the instance, so a failed delete does not orphan a still-running VM
+/// by forgetting who owns it.
+pub(crate) fn clear_vm_records(vm_id: &str) {
     let vm_id = vm_id.trim().to_string();
     if vm_id.is_empty() {
         return;
     }
-    let owner_key = owner_link_key(&vm_id);
-    let instance_prefix = if program_id.trim().is_empty() {
-        String::new()
-    } else {
-        format!("VmInstance::{}::", program_id.trim())
-    };
-    let vm_id_for_trx = vm_id.clone();
     with_global_app(|app| {
         app.modify_state(
             false,
-            Box::new(move |trx: &Trx| {
-                trx.del_key(&format!("link::{}", owner_key));
-                trx.del_key(&format!("link::VmStatus::{}", vm_id_for_trx));
-                trx.del_key(&format!("link::VmStartedAt::{}", vm_id_for_trx));
-                trx.del_key(&format!("link::VmBilling::{}", vm_id_for_trx));
-                trx.del_key(&format!("link::vmDistributed::{}", vm_id_for_trx));
-                trx.del_json(&format!("Json::VmBilling::{}", vm_id_for_trx), "payment");
-                if !instance_prefix.is_empty() {
-                    let suffix = format!("::{}", vm_id_for_trx);
-                    if let Ok(links) = trx.get_links_list(&instance_prefix, -1, -1, &[]) {
-                        for link in links {
-                            if link.ends_with(&suffix) {
-                                trx.del_key(&format!("link::{}", link));
-                            }
-                        }
-                    }
-                }
-                Ok(())
-            }),
+            Box::new(move |trx: &Trx| vm_runtime::forget(trx, &vm_id)),
         );
     });
 }

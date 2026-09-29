@@ -8,7 +8,7 @@ use crate::error::{StorageError, StorageResult};
 use crate::query::{FindMany, Where};
 use crate::schema::{Model, Schema};
 use crate::value::Id;
-use aseman_config::{CapsuleLayout, ClusterBootstrapConfig};
+use aseman_config::{CapsuleLayout, ClusterBootstrapConfig, RocksDbTuning};
 use aseman_contracts::capsule::CapsuleEnvelope;
 use aseman_ports::consensus_log::ConsensusLogStorage;
 use std::collections::BTreeMap;
@@ -68,6 +68,11 @@ pub trait StorageProvider: Send + Sync {
     fn legacy_layout(&self) -> StorageResult<Option<String>> {
         Ok(None)
     }
+    /// Set the legacy layout aside once `asemanctl storage migrate` converted it: it is
+    /// kept, renamed, for inspection, and [`Self::legacy_layout`] no longer reports it.
+    fn retire_legacy_layout(&self) -> StorageResult<()> {
+        Ok(())
+    }
     /// Whether the provider serves the settings' administration routes itself.
     fn serves_admin_routes(&self) -> bool {
         false
@@ -77,8 +82,7 @@ pub trait StorageProvider: Send + Sync {
 /// Administration routes (`method`, `path`, `body`) -> `(status, body)`, answered
 /// by the node; a provider with its own authenticated listener (the RocksDB
 /// cluster) may serve them there.
-pub type AdminRoutes =
-    Arc<dyn Fn(&str, &str, &[u8]) -> Option<(u16, Vec<u8>)> + Send + Sync>;
+pub type AdminRoutes = Arc<dyn Fn(&str, &str, &[u8]) -> Option<(u16, Vec<u8>)> + Send + Sync>;
 
 /// What a plugin needs to open its provider.
 #[derive(Clone)]
@@ -94,6 +98,8 @@ pub struct ProviderSettings {
     pub binding_generation: u64,
     /// The RocksDB provider's replication settings.
     pub cluster: ClusterBootstrapConfig,
+    /// The RocksDB provider's memory budget.
+    pub rocksdb: RocksDbTuning,
     pub max_connections: u32,
     /// A store from before ADR 0036 that must be converted before this provider
     /// serves (the RocksDB provider's legacy key/value directory).
@@ -119,6 +125,7 @@ impl ProviderSettings {
             layout: CapsuleLayout::default(),
             binding_generation: 0,
             cluster: ClusterBootstrapConfig::default(),
+            rocksdb: RocksDbTuning::default(),
             max_connections: 8,
             legacy_store: None,
             admin_routes: None,

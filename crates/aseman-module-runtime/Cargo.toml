@@ -9,6 +9,7 @@ repository.workspace = true
 
 [dependencies]
 aseman-contracts = { path = "../aseman-contracts" }
+aseman-fs = { path = "../aseman-fs" }
 base64.workspace = true
 hex.workspace = true
 ring.workspace = true

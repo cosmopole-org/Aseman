@@ -139,7 +139,7 @@ fn scratch_vm_id(tag: &str) -> String {
     format!(
         "caspar-live-{}-{}",
         tag,
-        uuid::Uuid::new_v4().simple().to_string()[..10].to_string()
+        &uuid::Uuid::new_v4().simple().to_string()[..10]
     )
 }
 
@@ -342,14 +342,13 @@ fn a_project_machine_starts_execs_and_is_destroyed() {
     // After a delete there is no sandbox to find, and `execInSpaceVm` relies on
     // that answering without an exit code so it knows to start one.
     let after = plugin.status_vm(&delete_packet(machine_id, &vm_id));
-    match after {
-        Ok(v) => assert_ne!(
+    if let Ok(v) = after {
+        assert_ne!(
             v["running"],
             json!(true),
             "sandbox still running after delete: {}",
             v
-        ),
-        Err(_) => {}
+        )
     }
 }
 

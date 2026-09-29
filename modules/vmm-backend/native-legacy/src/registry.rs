@@ -1,6 +1,7 @@
 //! The workloads this backend runs, their logs and counters, and the plugin-local
 //! state the runtime plugins keep (container names, module paths, provider handles).
 
+use aseman_fs::{Access, write_atomic};
 use std::collections::{BTreeMap, HashMap, VecDeque};
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex, MutexGuard, PoisonError};
@@ -223,8 +224,7 @@ impl PluginState {
             .collect()
     }
 
-    /// Apply puts (`Some`) and deletes (`None`) and persist atomically (write, then
-    /// rename).
+    /// Apply puts (`Some`) and deletes (`None`) and persist atomically.
     ///
     /// # Errors
     ///
@@ -242,8 +242,6 @@ impl PluginState {
             }
         }
         let bytes = serde_json::to_vec(&*values).map_err(|error| error.to_string())?;
-        let temporary = self.path.with_extension("tmp");
-        std::fs::write(&temporary, bytes).map_err(|error| error.to_string())?;
-        std::fs::rename(&temporary, &self.path).map_err(|error| error.to_string())
+        write_atomic(&self.path, &bytes, Access::Shared).map_err(|error| error.to_string())
     }
 }

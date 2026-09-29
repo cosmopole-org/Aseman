@@ -20,8 +20,6 @@ pub use types::{
 
 use std::sync::Arc;
 
-use crate::models::chain::ChainCallback;
-
 /// `Globe` is the chain-RPC transport coordinator.
 pub struct Globe {
     node_id: String,
@@ -57,6 +55,3 @@ impl Globe {
         })
     }
 }
-
-// Keep `ChainCallback` import referenced (used in callback stash typing).
-const _: fn() -> Option<ChainCallback> = || None;

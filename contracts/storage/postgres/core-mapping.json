@@ -1745,33 +1745,6 @@
       "document_fields": [],
       "field_columns": {
         "key": "key",
-        "user_ref": "user_ref"
-      },
-      "fields": {
-        "key": "text",
-        "user_ref": "text"
-      },
-      "kind": "core.user_email",
-      "range_indexes": [],
-      "relationships": {},
-      "required_fields": [
-        "key",
-        "user_ref"
-      ],
-      "table": "user_emails",
-      "unique_indexes": [
-        [
-          "key"
-        ],
-        [
-          "user_ref"
-        ]
-      ]
-    },
-    {
-      "document_fields": [],
-      "field_columns": {
-        "key": "key",
         "key_ref": "key_ref",
         "retain_until_millis": "retain_until_millis"
       },
@@ -1865,56 +1838,6 @@
         "completed"
       ],
       "table": "public_idempotency_claims",
-      "unique_indexes": [
-        [
-          "key"
-        ]
-      ]
-    },
-    {
-      "document_fields": [],
-      "field_columns": {
-        "key": "key",
-        "status": "status",
-        "store_id": "store_id"
-      },
-      "fields": {
-        "key": "text",
-        "status": "text",
-        "store_id": "text"
-      },
-      "kind": "core.chain",
-      "range_indexes": [],
-      "relationships": {},
-      "required_fields": [
-        "key"
-      ],
-      "table": "chains",
-      "unique_indexes": [
-        [
-          "key"
-        ]
-      ]
-    },
-    {
-      "document_fields": [],
-      "field_columns": {
-        "key": "key",
-        "shard_name": "shard_name",
-        "work_chain_id": "work_chain_id"
-      },
-      "fields": {
-        "key": "text",
-        "shard_name": "text",
-        "work_chain_id": "text"
-      },
-      "kind": "core.chain_shard",
-      "range_indexes": [],
-      "relationships": {},
-      "required_fields": [
-        "key"
-      ],
-      "table": "chain_shards",
       "unique_indexes": [
         [
           "key"
@@ -2081,34 +2004,30 @@
       ]
     },
     {
-      "document_fields": [],
+      "document_fields": [
+        "record"
+      ],
       "field_columns": {
-        "blob": "blob",
-        "key": "key",
-        "name": "name",
-        "owner_ref": "owner_ref"
+        "expires_at_millis": "expires_at_millis",
+        "key": "key"
       },
       "fields": {
-        "blob": "text",
-        "key": "text",
-        "name": "text",
-        "owner_ref": "text"
+        "expires_at_millis": "integer",
+        "key": "text"
       },
-      "kind": "core.secret_value",
+      "kind": "core.proxy_correlation",
       "range_indexes": [
         [
-          "owner_ref",
-          "name"
+          "expires_at_millis"
         ]
       ],
       "relationships": {},
       "required_fields": [
         "key",
-        "owner_ref",
-        "name",
-        "blob"
+        "expires_at_millis",
+        "record"
       ],
-      "table": "secret_values",
+      "table": "proxy_correlations",
       "unique_indexes": [
         [
           "key"
@@ -2118,39 +2037,112 @@
     {
       "document_fields": [],
       "field_columns": {
-        "expires_at_millis": "expires_at_millis",
-        "grantee_ref": "grantee_ref",
         "key": "key",
         "name": "name",
-        "owner_ref": "owner_ref"
+        "namespace": "namespace",
+        "owner_ref": "owner_ref",
+        "value": "value"
       },
       "fields": {
-        "expires_at_millis": "integer",
-        "grantee_ref": "text",
         "key": "text",
         "name": "text",
-        "owner_ref": "text"
+        "namespace": "text",
+        "owner_ref": "text",
+        "value": "text"
       },
-      "kind": "core.secret_access",
+      "kind": "core.guest_pair",
       "range_indexes": [
         [
-          "grantee_ref",
-          "owner_ref",
-          "name"
+          "owner_ref"
         ]
       ],
       "relationships": {},
       "required_fields": [
         "key",
         "owner_ref",
+        "namespace",
         "name",
-        "grantee_ref",
-        "expires_at_millis"
+        "value"
       ],
-      "table": "secret_accesses",
+      "table": "guest_pairs",
       "unique_indexes": [
         [
           "key"
+        ]
+      ]
+    },
+    {
+      "document_fields": [],
+      "field_columns": {
+        "key": "key",
+        "status": "status",
+        "store_id": "store_id"
+      },
+      "fields": {
+        "key": "text",
+        "status": "text",
+        "store_id": "text"
+      },
+      "kind": "core.chain",
+      "range_indexes": [],
+      "relationships": {
+        "store": {
+          "on_delete": "restrict",
+          "required": false,
+          "target_kind": "core.store",
+          "target_table": "stores"
+        }
+      },
+      "required_fields": [
+        "key",
+        "store_id",
+        "status"
+      ],
+      "table": "chains",
+      "unique_indexes": [
+        [
+          "key"
+        ],
+        [
+          "store_id"
+        ]
+      ]
+    },
+    {
+      "document_fields": [],
+      "field_columns": {
+        "key": "key",
+        "shard_name": "shard_name",
+        "work_chain_id": "work_chain_id"
+      },
+      "fields": {
+        "key": "text",
+        "shard_name": "text",
+        "work_chain_id": "text"
+      },
+      "kind": "core.chain_shard",
+      "range_indexes": [],
+      "relationships": {
+        "chain": {
+          "on_delete": "cascade",
+          "required": false,
+          "target_kind": "core.chain",
+          "target_table": "chains"
+        }
+      },
+      "required_fields": [
+        "key",
+        "work_chain_id",
+        "shard_name"
+      ],
+      "table": "chain_shards",
+      "unique_indexes": [
+        [
+          "key"
+        ],
+        [
+          "work_chain_id",
+          "shard_name"
         ]
       ]
     }

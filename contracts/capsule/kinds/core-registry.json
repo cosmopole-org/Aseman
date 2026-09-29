@@ -551,16 +551,6 @@
       ]
     },
     {
-      "kind": "core.user_email",
-      "table": "user_emails",
-      "storage_class": "core",
-      "consistency": "serializable",
-      "owner_scope": "global",
-      "required_capabilities": [
-        "indexes.unique"
-      ]
-    },
-    {
       "kind": "core.replay_nonce",
       "table": "nonce_records",
       "storage_class": "core",
@@ -583,26 +573,6 @@
     {
       "kind": "core.public_idempotency",
       "table": "public_idempotency_claims",
-      "storage_class": "core",
-      "consistency": "serializable",
-      "owner_scope": "global",
-      "required_capabilities": [
-        "indexes.unique"
-      ]
-    },
-    {
-      "kind": "core.chain",
-      "table": "chains",
-      "storage_class": "core",
-      "consistency": "serializable",
-      "owner_scope": "global",
-      "required_capabilities": [
-        "indexes.unique"
-      ]
-    },
-    {
-      "kind": "core.chain_shard",
-      "table": "chain_shards",
       "storage_class": "core",
       "consistency": "serializable",
       "owner_scope": "global",
@@ -661,8 +631,8 @@
       ]
     },
     {
-      "kind": "core.secret_value",
-      "table": "secret_values",
+      "kind": "core.proxy_correlation",
+      "table": "proxy_correlations",
       "storage_class": "core",
       "consistency": "serializable",
       "owner_scope": "global",
@@ -671,12 +641,34 @@
       ]
     },
     {
-      "kind": "core.secret_access",
-      "table": "secret_accesses",
+      "kind": "core.guest_pair",
+      "table": "guest_pairs",
       "storage_class": "core",
       "consistency": "serializable",
       "owner_scope": "global",
       "required_capabilities": [
+        "indexes.unique"
+      ]
+    },
+    {
+      "kind": "core.chain",
+      "table": "chains",
+      "storage_class": "core",
+      "consistency": "serializable",
+      "owner_scope": "creature",
+      "required_capabilities": [
+        "relationships.foreign_keys",
+        "indexes.unique"
+      ]
+    },
+    {
+      "kind": "core.chain_shard",
+      "table": "chain_shards",
+      "storage_class": "core",
+      "consistency": "serializable",
+      "owner_scope": "creature",
+      "required_capabilities": [
+        "relationships.foreign_keys",
         "indexes.unique"
       ]
     }

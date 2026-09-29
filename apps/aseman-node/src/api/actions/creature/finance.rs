@@ -39,11 +39,7 @@ pub(super) fn finance_withdrawable_amount(trx: &Trx, user_id: &str) -> Result<i6
         .map_err(port_error)
 }
 
-pub(super) fn set_finance_withdrawable_amount(
-    trx: &Trx,
-    user_id: &str,
-    amount: i64,
-) -> Result<()> {
+pub(super) fn set_finance_withdrawable_amount(trx: &Trx, user_id: &str, amount: i64) -> Result<()> {
     FinanceLedgerPorts { trx }
         .set_counter(WalletCounter::Withdrawable, user_id, amount)
         .map_err(|_| anyhow!("withdrawable balance underflow"))
@@ -65,7 +61,11 @@ pub(super) fn write_finance_journal(
 
 /// A finance action at `key`: its legacy input converted to the use case's input,
 /// the use case run for the calling creature.
-fn finance_action<I, A>(app: Arc<dyn ICore>, key: &str, use_case: UseCase<A>) -> Arc<dyn ISecureAction>
+fn finance_action<I, A>(
+    app: Arc<dyn ICore>,
+    key: &str,
+    use_case: UseCase<A>,
+) -> Arc<dyn ISecureAction>
 where
     I: crate::models::input::IInput
         + DeserializeOwned

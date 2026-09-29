@@ -123,7 +123,7 @@ pub fn host_call(
             }
             // Also flush the low-level raw dbOp buffer.
             rt.trx.commit_as_offchain();
-            rt.trx = Box::new(crate::models::Trx::new());
+            *rt.trx = crate::models::Trx::new();
             json!({"ok": true}).to_string()
         }
         "lockResource" => {

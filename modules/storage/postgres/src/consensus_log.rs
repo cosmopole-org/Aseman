@@ -8,13 +8,9 @@
 use crate::CONSENSUS_LOG_MIGRATION;
 use aseman_ports::consensus_log::{ConsensusLog, ConsensusLogStorage, ConsensusLogWrite};
 use aseman_ports::{PortError, PortResult};
-use postgres::NoTls;
-use r2d2::Pool;
-use r2d2_postgres::PostgresConnectionManager;
+use aseman_postgres::{Pool, pool};
 use std::sync::Arc;
 use std::time::{SystemTime, UNIX_EPOCH};
-
-type Manager = PostgresConnectionManager<NoTls>;
 
 fn failed(error: impl std::fmt::Display) -> PortError {
     PortError::Failed(format!("consensus log storage: {error}"))
@@ -22,17 +18,13 @@ fn failed(error: impl std::fmt::Display) -> PortError {
 
 /// Consensus logs in one PostgreSQL database.
 pub struct PostgresConsensusLogStorage {
-    pool: Pool<Manager>,
+    pool: Pool,
 }
 
 impl PostgresConsensusLogStorage {
     /// Connect and create the log table when absent.
     pub fn connect(url: &str, max_connections: u32) -> PortResult<Self> {
-        let manager = PostgresConnectionManager::new(url.parse().map_err(failed)?, NoTls);
-        let pool = Pool::builder()
-            .max_size(max_connections.max(1))
-            .build(manager)
-            .map_err(failed)?;
+        let pool = pool(url.parse().map_err(failed)?, max_connections).map_err(failed)?;
         pool.get()
             .map_err(failed)?
             .batch_execute(CONSENSUS_LOG_MIGRATION)
@@ -62,10 +54,26 @@ impl ConsensusLogStorage for PostgresConsensusLogStorage {
             name: name.to_owned(),
         }))
     }
+
+    fn names(&self) -> PortResult<Vec<String>> {
+        Ok(self
+            .pool
+            .get()
+            .map_err(failed)?
+            .query(
+                "SELECT log FROM (SELECT DISTINCT log FROM aseman_consensus.log_entries \
+                 WHERE strpos(log, '--UTC--') = 0) AS logs ORDER BY log COLLATE \"C\"",
+                &[],
+            )
+            .map_err(failed)?
+            .iter()
+            .map(|row| row.get(0))
+            .collect())
+    }
 }
 
 struct PostgresConsensusLog {
-    pool: Pool<Manager>,
+    pool: Pool,
     name: String,
 }
 

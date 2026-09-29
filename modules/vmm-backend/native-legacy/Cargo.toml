@@ -15,6 +15,7 @@ path = "src/main.rs"
 aseman-config = { path = "../../../crates/aseman-config" }
 aseman-contracts = { path = "../../../crates/aseman-contracts" }
 aseman-domain = { path = "../../../crates/aseman-domain" }
+aseman-fs = { path = "../../../crates/aseman-fs" }
 aseman-guest-http = { path = "../../guest-http" }
 aseman-ports = { path = "../../../crates/aseman-ports" }
 aseman-vmm-backend-grpc = { path = "../../vmm-backend-grpc" }

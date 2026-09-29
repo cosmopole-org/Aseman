@@ -1,36 +1,51 @@
 //! Guest data routing (ADR 0021, ADR 0028, A405, ADR 0026).
 //!
-//! Guest data is served from each creature's own guest database: the creature's
-//! active binding (`core.guest_database_binding`, read from the node's storage),
-//! through the guest data plane (`GuestKv`). A creature without an active binding is
-//! refused rather than served from anywhere else, which would split its data.
+//! With a guest data plane configured, guest data is served from each creature's own
+//! guest database: the creature's active binding (`core.guest_database_binding`, read
+//! from the node's storage), through the plane (`GuestKv`). A creature without an
+//! active binding is refused rather than served from anywhere else, which would split
+//! its data. Without one, the node's storage serves every creature's guest data
+//! (`StorageGuestKv`, ADR 0036), on whichever provider the node loaded.
 
 use std::sync::OnceLock;
 
+use aseman_capsule::auto::AutoCommit;
+use aseman_capsule::guest_kv::StorageGuestKv;
 use aseman_capsule::workload::CapsuleWorkloads;
 use aseman_contracts::legacy_realtime::deterministic_legacy_capsule_id;
 use aseman_domain::guest::{GuestKvOperation, GuestKvOutcome, LegacyKvNamespace, MAX_GUEST_LIST};
 use aseman_domain::{BindingStatus, CreatureId, Uuid};
-use aseman_capsule::auto::AutoCommit;
 use aseman_ports::{CreatureDatabaseBindings, GuestKv};
-use std::sync::Arc;
 use serde_json::{Value, json};
+use std::sync::Arc;
 
-struct GuestRouting {
-    kv: Arc<dyn GuestKv>,
-    catalog: AutoCommit,
+enum GuestRouting {
+    /// Each creature's own guest database.
+    Databases {
+        kv: Arc<dyn GuestKv>,
+        catalog: AutoCommit,
+    },
+    /// The node's storage.
+    Node(StorageGuestKv),
 }
 
 static ROUTING: OnceLock<GuestRouting> = OnceLock::new();
 
-/// Serve guest data from creature databases (called once, when a guest data plane is
-/// configured).
-pub(crate) fn install(kv: Arc<dyn GuestKv>, storage: aseman_storage::Storage) -> anyhow::Result<()> {
-    ROUTING
-        .set(GuestRouting {
+/// Serve guest data from creature databases through `kv` or, without a guest data
+/// plane, from the node's storage (called once).
+pub(crate) fn install(
+    kv: Option<Arc<dyn GuestKv>>,
+    storage: aseman_storage::Storage,
+) -> anyhow::Result<()> {
+    let routing = match kv {
+        Some(kv) => GuestRouting::Databases {
             kv,
             catalog: AutoCommit(storage),
-        })
+        },
+        None => GuestRouting::Node(StorageGuestKv::new(storage)),
+    };
+    ROUTING
+        .set(routing)
         .map_err(|_| anyhow::anyhow!("guest data routing is already installed"))
 }
 
@@ -46,16 +61,22 @@ fn execute(
         "Creature",
         creature.as_bytes(),
     )));
+    let (kv, catalog) = match routing {
+        GuestRouting::Node(kv) => {
+            return kv
+                .execute_for(creature_id, operation)
+                .map_err(|error| error.to_string());
+        }
+        GuestRouting::Databases { kv, catalog } => (kv, catalog),
+    };
     let binding = CapsuleWorkloads {
-        repository: &routing.catalog,
+        repository: catalog,
     }
     .binding_for(creature_id)
     .map_err(|error| error.to_string())?
     .filter(|binding| binding.status == BindingStatus::Active)
     .ok_or_else(|| "the creature's guest database is not active".to_owned())?;
-    routing
-        .kv
-        .execute(&binding, operation)
+    kv.execute(&binding, operation)
         .map_err(|error| error.to_string())
 }
 

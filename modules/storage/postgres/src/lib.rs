@@ -24,11 +24,9 @@ pub mod consensus_log;
 pub mod coordination;
 pub mod guest;
 mod layout;
+pub mod migration;
 mod model_query;
 pub mod plugin;
-pub mod migration;
-pub mod public_action;
-mod replay;
 pub mod shard;
 pub mod unit_of_work;
 pub mod vmm;
@@ -43,14 +41,9 @@ pub const STORAGE_CLASS_MIGRATION: &str = include_str!("../migrations/0002_stora
 pub const MIGRATION_FENCE_MIGRATION: &str = include_str!("../migrations/0003_migration_fence.sql");
 pub const PROGRAM_MACHINE_MIGRATION: &str =
     include_str!("../migrations/0004_program_machine_not_unique.sql");
-pub const IDENTITY_KEYS_MIGRATION: &str = include_str!("../migrations/0005_identity_keys.sql");
 pub const COORDINATION_MIGRATION: &str = include_str!("../migrations/0006_coordination.sql");
-pub const PUBLIC_IDEMPOTENCY_MIGRATION: &str =
-    include_str!("../migrations/0010_public_idempotency.sql");
 pub const STORAGE_LAYOUT_MIGRATION: &str = include_str!("../migrations/0012_storage_layout.sql");
 pub const CONSENSUS_LOG_MIGRATION: &str = include_str!("../migrations/0013_consensus_log.sql");
-pub const COMPATIBILITY_STATE_MIGRATION: &str =
-    include_str!("../migrations/0011_compatibility_state.sql");
 pub(crate) const SCHEMA: &str = "aseman_core";
 /// The most capsules one [`PostgresCapsuleRepository::put_all`] transaction holds.
 pub const MAX_TRANSACTION_CAPSULES: usize = 64;
@@ -454,10 +447,7 @@ impl PostgresCapsuleRepository {
             client.batch_execute(STORAGE_CLASS_MIGRATION)?;
             client.batch_execute(MIGRATION_FENCE_MIGRATION)?;
             client.batch_execute(PROGRAM_MACHINE_MIGRATION)?;
-            client.batch_execute(IDENTITY_KEYS_MIGRATION)?;
             client.batch_execute(COORDINATION_MIGRATION)?;
-            client.batch_execute(PUBLIC_IDEMPOTENCY_MIGRATION)?;
-            client.batch_execute(COMPATIBILITY_STATE_MIGRATION)?;
             client.batch_execute(STORAGE_LAYOUT_MIGRATION)?;
             client.batch_execute(CONSENSUS_LOG_MIGRATION)
         })?;
@@ -965,23 +955,23 @@ fn insert_or_replay(
         ..
     } = write;
     let placeholders = (1..=columns.len())
-                .map(|index| format!("${index}"))
-                .collect::<Vec<_>>()
-                .join(", ");
-            let statement = format!(
-                "INSERT INTO {} ({}) VALUES ({placeholders}) \
+        .map(|index| format!("${index}"))
+        .collect::<Vec<_>>()
+        .join(", ");
+    let statement = format!(
+        "INSERT INTO {} ({}) VALUES ({placeholders}) \
                  ON CONFLICT (id) DO NOTHING RETURNING revision",
-                qualified(mapping),
-                columns
-                    .iter()
-                    .map(|column| sql_identifier(column))
-                    .collect::<Vec<_>>()
-                    .join(", ")
-            );
-            client
-                .query_opt(&statement, &sql_parameters(values))
-                .map_err(map_postgres_error)
-                .map(|row| row.is_some())
+        qualified(mapping),
+        columns
+            .iter()
+            .map(|column| sql_identifier(column))
+            .collect::<Vec<_>>()
+            .join(", ")
+    );
+    client
+        .query_opt(&statement, &sql_parameters(values))
+        .map_err(map_postgres_error)
+        .map(|row| row.is_some())
 }
 
 /// An identical replay of the stored capsule succeeds; anything else is a conflict.
@@ -991,9 +981,7 @@ fn replay_or_conflict(
     capsule_id: Uuid,
 ) -> StorageResult<()> {
     let PreparedWrite {
-        mapping,
-        canonical,
-        ..
+        mapping, canonical, ..
     } = write;
     let statement = format!(
         "SELECT {} FROM {} WHERE id = $1",
@@ -1441,60 +1429,6 @@ mod tests {
         // ADR 0034: the flattened layout gives the document field its JSONB column.
         assert!(STORAGE_CLASS_MIGRATION.contains("\"document\" JSONB"));
         assert!(!STORAGE_CLASS_MIGRATION.contains("guest_capsules"));
-    }
-
-    #[test]
-    fn compatibility_schema_separates_storage_semantics() {
-        for table in [
-            "object_columns",
-            "secondary_indexes",
-            "relations",
-            "documents",
-            "opaque_values",
-        ] {
-            assert!(
-                COMPATIBILITY_STATE_MIGRATION
-                    .contains(&format!("CREATE TABLE IF NOT EXISTS aseman_compat.{table}")),
-                "missing {table}"
-            );
-        }
-        assert!(COMPATIBILITY_STATE_MIGRATION.contains("relation_type, scope, member"));
-        assert!(COMPATIBILITY_STATE_MIGRATION.contains("USING gin (document jsonb_path_ops)"));
-        assert!(
-            COMPATIBILITY_STATE_MIGRATION.contains("CHECK (\n        legacy_key NOT LIKE 'obj::%'")
-        );
-        assert!(
-            !COMPATIBILITY_STATE_MIGRATION.contains("CREATE TABLE IF NOT EXISTS aseman_compat.kv")
-        );
-    }
-
-    #[test]
-    fn query_translation_is_parameterized_and_rejects_unknown_fields() {
-        let mapping = table_mapping(&CapsuleKind("core.user".to_owned())).unwrap();
-        let predicate = QueryPredicate::Compare {
-            field: "username".to_owned(),
-            operator: ComparisonOperator::Equal,
-            value: CapsuleValue::Text("' OR TRUE --".to_owned()),
-        };
-        let mut values = Vec::new();
-        assert_eq!(
-            predicate_sql(&predicate, mapping, &mut values, 1).unwrap(),
-            "\"username\" = $1"
-        );
-        let mut unknown = values;
-        assert!(
-            predicate_sql(
-                &QueryPredicate::Compare {
-                    field: "not_a_column".to_owned(),
-                    operator: ComparisonOperator::Equal,
-                    value: CapsuleValue::Text("x".to_owned()),
-                },
-                mapping,
-                &mut unknown,
-                1,
-            )
-            .is_err()
-        );
     }
 
     fn document_capsule(document: CapsuleValue) -> CapsuleEnvelope {

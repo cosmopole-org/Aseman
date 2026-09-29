@@ -25,61 +25,38 @@
 //!   * The write buffer is given a definite size/count so memtable memory is
 //!     bounded too.
 //!
-//! Everything is env-tunable so an operator can widen or shrink the budget
-//! without a rebuild:
-//!   * `CASPAR_ROCKSDB_MAX_OPEN_FILES` (default 512; negative restores the
-//!     unlimited default)
-//!   * `CASPAR_ROCKSDB_BLOCK_CACHE_MB`  (default 128, shared across all stores)
-//!   * `CASPAR_ROCKSDB_WRITE_BUFFER_MB` (default 32, per store)
+//! The budget is the operator's [`RocksDbTuning`] (`ASEMAN_ROCKSDB_*`), which the
+//! provider receives when it is opened.
 
 use std::sync::OnceLock;
 
+use aseman_config::RocksDbTuning;
 use rocksdb::{BlockBasedOptions, Cache, Options};
 
-fn config() -> aseman_config::LegacyAdapterConfig {
-    aseman_config::legacy_adapter_snapshot().cloned().unwrap_or(
-        aseman_config::LegacyAdapterConfig {
-            main_port: String::new(),
-            public_storage_max_bytes: 10 * 1024 * 1024,
-            questdb_port: 8812,
-            rocksdb_max_open_files: 512,
-            rocksdb_block_cache_mb: 128,
-            rocksdb_write_buffer_mb: 32,
-            babble_data_dir: None,
-            babble_frame_cache: 25,
-            babble_frame_retention: 25,
-            is_head: false,
-            blockchain_api_port: 1337,
-            ip_address: String::new(),
-            home_dir: None,
-            user_profile_dir: None,
-        },
-    )
-}
-
 /// One LRU block cache shared by every RocksDB instance in the process, so the
-/// index/filter/data blocks of all stores draw from a single bounded budget.
-fn shared_block_cache() -> &'static Cache {
+/// index/filter/data blocks of all stores draw from a single bounded budget. The
+/// first store opened sizes it; a process opens its stores with one tuning.
+fn shared_block_cache(tuning: &RocksDbTuning) -> &'static Cache {
     static CELL: OnceLock<Cache> = OnceLock::new();
     CELL.get_or_init(|| {
-        let mb = config().rocksdb_block_cache_mb.max(8);
+        let mb = tuning.block_cache_mb.max(8);
         Cache::new_lru_cache(mb * 1024 * 1024)
     })
 }
 
 /// Build a fresh `Options` with the bounded-memory settings applied. The caller
 /// adds anything store-specific (e.g. `create_if_missing`).
-pub fn tuned_options() -> Options {
+pub fn tuned_options(tuning: &RocksDbTuning) -> Options {
     let mut opts = Options::default();
 
     // Cap the open-table-reader set. -1 (or any negative value) keeps RocksDB's
     // unbounded default for operators who explicitly want it.
-    opts.set_max_open_files(config().rocksdb_max_open_files);
+    opts.set_max_open_files(tuning.max_open_files);
 
     // Route index & filter blocks through the shared, bounded LRU cache and
     // make them evictable instead of pinned per open file.
     let mut bbt = BlockBasedOptions::default();
-    bbt.set_block_cache(shared_block_cache());
+    bbt.set_block_cache(shared_block_cache(tuning));
     bbt.set_cache_index_and_filter_blocks(true);
     // Keep the L0 metadata pinned so hot reads stay fast, but everything else is
     // capped by the cache above.
@@ -88,7 +65,7 @@ pub fn tuned_options() -> Options {
 
     // Bound memtable memory too (definite size × count instead of the growing
     // default), so the write side has a fixed ceiling as well.
-    let wbuf_mb = config().rocksdb_write_buffer_mb.max(4);
+    let wbuf_mb = tuning.write_buffer_mb.max(4);
     opts.set_write_buffer_size(wbuf_mb * 1024 * 1024);
     opts.set_max_write_buffer_number(2);
 

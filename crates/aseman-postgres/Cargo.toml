@@ -1,0 +1,17 @@
+[package]
+name = "aseman-postgres"
+description = "PostgreSQL plumbing shared by the adapters that own a PostgreSQL schema: the pool, connection checkout, and driver-error mapping."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+aseman-ports = { path = "../aseman-ports" }
+postgres.workspace = true
+r2d2.workspace = true
+r2d2_postgres.workspace = true
+
+[lints]
+workspace = true

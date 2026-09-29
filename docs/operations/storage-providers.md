@@ -1,15 +1,17 @@
 ---
 status: CURRENT
 owner: architecture/storage
-source_of_truth: docs/decisions/0033-distributed-storage-providers.md and docs/decisions/0034-capsule-layouts.md, docs/decisions/0035-consensus-log-port.md
-verification: cargo test -p aseman-storage-postgres --test live_sharded --test live_document_capsules; cargo test -p aseman-storage-rocksdb --lib cluster:: capsule_store
+source_of_truth: docs/decisions/0033-distributed-storage-providers.md, docs/decisions/0034-capsule-layouts.md, docs/decisions/0035-consensus-log-port.md, and docs/decisions/0036-unified-storage-module.md
+verification: cargo test -p aseman-storage-postgres --test live_sharded --test live_document_capsules --test live_models; cargo test -p aseman-storage-rocksdb --lib cluster:: capsule_store; cargo test -p aseman-storage-providers
 ---
 
 # Storage providers
 
 A node runs on exactly one storage provider, chosen with
-`ASEMAN_CORE_STORAGE_PROVIDER`. Each provider distributes itself; nothing above the
-storage seam knows whether it runs on one host or a cluster (ADR 0033).
+`ASEMAN_CORE_STORAGE_PROVIDER`: the node's storage module loads that provider plugin
+by name, and every database operation of the node goes through it as model queries
+(ADR 0036). Each provider distributes itself; nothing above the storage seam knows
+whether it runs on one host or a cluster (ADR 0033).
 
 | Provider | Single host | Cluster mode |
 |---|---|---|
@@ -20,8 +22,30 @@ storage seam knows whether it runs on one host or a cluster (ADR 0033).
 
 The Hashgraph engine persists its log through the consensus-log port (ADR 0035), so
 consensus data lives in the selected provider: one embedded RocksDB database per shard
-log under the data directory, or rows of `aseman_consensus.log_entries` in the home
-PostgreSQL database. The engine does not know which.
+log under `{storage_root}/consensus`, or rows of `aseman_consensus.log_entries` in the
+home PostgreSQL database. A log is named `chains/{work_chain}/{shard}` on both (ADR
+0036), so it keeps its name when the node moves between providers. The engine does
+not know which provider serves it.
+
+## Migrating storage
+
+Stop the node, then run `asemanctl storage migrate` (ADR 0036). Add `--dry-run` to see
+the plan first.
+
+- **A store from before ADR 0036** (the RocksDB key/value base, PostgreSQL's
+  `aseman_compat` schema, or consensus logs under their old absolute directories):
+  the node refuses to start on it and names the command. `asemanctl storage migrate`
+  converts it into models in place and sets the old layout aside, renamed, for
+  inspection. The legacy signal history is read from QuestDB or PostgreSQL as
+  `ASEMAN_SIGNAL_LOG_PROVIDER` says (override with `--signal-log
+  questdb|postgres|none`); legacy `File` objects need `--file-artifact ID=PATH`.
+- **Switching providers:** `asemanctl storage migrate --to postgres` (or `--to
+  rocksdb`) copies every model and consensus log into the empty target and verifies
+  them; a legacy source is converted on the way. `--database-url-secret` and
+  `--shards-secret` name the target's secrets when they differ from the configured
+  ones (container paths in the compact deployment). The source is left unchanged as
+  the rollback; set `ASEMAN_CORE_STORAGE_PROVIDER` to the target and start the node.
+- A target that already holds records or consensus logs is refused.
 
 ## Capsule layout
 
@@ -41,7 +65,8 @@ retypes columns as the mapping changes; it never drops one.
 ## PostgreSQL
 
 Single host: set `ASEMAN_DATABASE_URL_SECRET` (and the guest proxy settings). The node
-migrates the schema on start.
+migrates the schema on start. Without a guest proxy, the node's own storage serves
+guest data on either provider (`core.guest_pair`).
 
 Cluster mode: `ASEMAN_POSTGRES_SHARDS_SECRET` names a JSON shard map, and
 `ASEMAN_DATABASE_URL_SECRET` names its home shard's primary:
@@ -83,8 +108,9 @@ Cluster mode: `ASEMAN_POSTGRES_SHARDS_SECRET` names a JSON shard map, and
 
 ## RocksDB
 
-Single host: set `ASEMAN_CORE_STORAGE_PROVIDER=rocksdb`; state lives under the storage
-root. The optional signal log uses QuestDB (`ASEMAN_SIGNAL_LOG_PROVIDER=questdb`).
+Single host: set `ASEMAN_CORE_STORAGE_PROVIDER=rocksdb`; the model store lives under
+`{storage_root}/data` and the consensus logs under `{storage_root}/consensus`. Signals
+are models too; QuestDB is only read once, by the migration of an older store.
 
 Cluster mode: every replica keeps a full copy; each write batch is a Raft log entry
 committed on a quorum and applied in log order everywhere, and a write returns once
@@ -102,5 +128,5 @@ administrative routes without one.
 
 ## Moving between providers
 
-Move by export/import (A309), never by running two providers. The importers for
-Caspar-era RocksDB/QuestDB data remain available for existing installations.
+Move with `asemanctl storage migrate --to …` (see *Migrating storage*), never by
+running two providers.

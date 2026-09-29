@@ -7,9 +7,9 @@ use std::process::{Command, Output};
 
 use anyhow::{Context, Result, anyhow, bail};
 use aseman_domain::bootstrap::{Progress, Stage, StageOutcome, preflight_passed};
+use aseman_fs::{Access, write_atomic};
 use base64::Engine;
 use ring::rand::{SecureRandom, SystemRandom};
-use serde::Serialize;
 use sha2::{Digest, Sha256};
 
 #[cfg(unix)]
@@ -813,18 +813,12 @@ fn read_progress(path: &Path) -> Result<Progress> {
 }
 
 fn write_progress(path: &Path, progress: &Progress) -> Result<()> {
-    write_json_atomic(path, progress)
-}
-
-fn write_json_atomic(path: &Path, value: &impl Serialize) -> Result<()> {
     let parent = path
         .parent()
         .ok_or_else(|| anyhow!("state path has no parent"))?;
     fs::create_dir_all(parent)?;
-    let temporary = parent.join(format!(".bootstrap-{}.tmp", uuid::Uuid::now_v7()));
-    write_secret_bytes(&temporary, &serde_json::to_vec_pretty(value)?)?;
-    fs::rename(temporary, path)?;
-    Ok(())
+    write_atomic(path, &serde_json::to_vec_pretty(progress)?, Access::Private)
+        .with_context(|| format!("write {}", path.display()))
 }
 
 fn write_secret(path: &Path, value: &str) -> Result<()> {

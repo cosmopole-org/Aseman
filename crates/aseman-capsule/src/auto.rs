@@ -6,8 +6,7 @@ use crate::{CapsuleStore, CapsuleStoreError, CapsuleStoreResult};
 use aseman_contracts::capsule::{CapsuleEnvelope, CapsuleId, CapsuleKind, CapsuleQuery};
 use aseman_domain::identity::{Challenge, Subject};
 use aseman_ports::{
-    ChallengeStore, PortError, PortResult, PublicActionClaim, PublicActionIdempotency,
-    ReplayGuard,
+    ChallengeStore, PortError, PortResult, PublicActionClaim, PublicActionIdempotency, ReplayGuard,
 };
 use aseman_storage::client::core::{identity_challenge, public_idempotency, replay_nonce};
 use aseman_storage::{Mode, Models, Storage, StorageError, Trx};
@@ -27,7 +26,9 @@ fn hex(bytes: &[u8]) -> String {
 fn now_millis() -> i64 {
     std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
-        .map_or(0, |elapsed| i64::try_from(elapsed.as_millis()).unwrap_or(i64::MAX))
+        .map_or(0, |elapsed| {
+            i64::try_from(elapsed.as_millis()).unwrap_or(i64::MAX)
+        })
 }
 
 /// The storage module, one transaction per call.
@@ -54,9 +55,9 @@ impl AutoCommit {
     /// Remove expired nonces and challenges; how many were removed.
     pub fn purge_expired_nonces(&self, now_millis: i64) -> PortResult<u64> {
         self.run(Mode::ReadWrite, |trx| {
-            let nonces = trx.replay_nonce().delete_many(Some(
-                replay_nonce::retain_until_millis().lte(now_millis),
-            ))?;
+            let nonces = trx
+                .replay_nonce()
+                .delete_many(Some(replay_nonce::retain_until_millis().lte(now_millis)))?;
             let challenges = trx.identity_challenge().delete_many(Some(
                 identity_challenge::expires_at_millis().lte(now_millis),
             ))?;
@@ -291,28 +292,53 @@ mod tests {
         let auto = auto();
         assert!(auto.record_nonce("k", b"n1", 100, 10).unwrap());
         assert!(!auto.record_nonce("k", b"n1", 100, 50).unwrap());
-        assert!(auto.record_nonce("k", b"n1", 300, 150).unwrap(), "expired nonce reusable");
+        assert!(
+            auto.record_nonce("k", b"n1", 300, 150).unwrap(),
+            "expired nonce reusable"
+        );
         assert_eq!(auto.purge_expired_nonces(1_000).unwrap(), 1);
 
         let subject: Subject = "user:00000000-0000-0000-0000-000000000001".parse().unwrap();
         let challenge = auto.issue(&subject, "aud", i64::MAX).unwrap();
-        assert!(!auto.consume(&challenge.nonce, &subject, "other", 0).unwrap());
+        assert!(
+            !auto
+                .consume(&challenge.nonce, &subject, "other", 0)
+                .unwrap()
+        );
         assert!(auto.consume(&challenge.nonce, &subject, "aud", 0).unwrap());
         assert!(!auto.consume(&challenge.nonce, &subject, "aud", 0).unwrap());
 
         let digest = [7; 32];
-        assert_eq!(auto.claim("s", "k", digest).unwrap(), PublicActionClaim::Claimed);
-        assert_eq!(auto.claim("s", "k", digest).unwrap(), PublicActionClaim::InProgress);
-        assert_eq!(auto.claim("s", "k", [8; 32]).unwrap(), PublicActionClaim::Mismatch);
+        assert_eq!(
+            auto.claim("s", "k", digest).unwrap(),
+            PublicActionClaim::Claimed
+        );
+        assert_eq!(
+            auto.claim("s", "k", digest).unwrap(),
+            PublicActionClaim::InProgress
+        );
+        assert_eq!(
+            auto.claim("s", "k", [8; 32]).unwrap(),
+            PublicActionClaim::Mismatch
+        );
         auto.complete("s", "k", b"done").unwrap();
         assert_eq!(
             auto.claim("s", "k", digest).unwrap(),
             PublicActionClaim::Completed(b"done".to_vec())
         );
         auto.release("s", "k").unwrap();
-        assert!(matches!(auto.claim("s", "k", digest).unwrap(), PublicActionClaim::Completed(_)));
-        assert_eq!(auto.claim("s", "k2", digest).unwrap(), PublicActionClaim::Claimed);
+        assert!(matches!(
+            auto.claim("s", "k", digest).unwrap(),
+            PublicActionClaim::Completed(_)
+        ));
+        assert_eq!(
+            auto.claim("s", "k2", digest).unwrap(),
+            PublicActionClaim::Claimed
+        );
         auto.release("s", "k2").unwrap();
-        assert_eq!(auto.claim("s", "k2", digest).unwrap(), PublicActionClaim::Claimed);
+        assert_eq!(
+            auto.claim("s", "k2", digest).unwrap(),
+            PublicActionClaim::Claimed
+        );
     }
 }

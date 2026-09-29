@@ -252,10 +252,18 @@ impl Schema {
 impl Model {
     fn validate(&self) -> StorageResult<()> {
         let invalid = |what: &str| StorageError::invalid(format!("{}: {what}", self.name));
-        if self.fields.keys().any(|field| self.relations.contains_key(field)) {
+        if self
+            .fields
+            .keys()
+            .any(|field| self.relations.contains_key(field))
+        {
             return Err(invalid("a name is both a field and a relation"));
         }
-        if self.required.iter().any(|field| !self.fields.contains_key(field)) {
+        if self
+            .required
+            .iter()
+            .any(|field| !self.fields.contains_key(field))
+        {
             return Err(invalid("a required field is undeclared"));
         }
         for index in self.unique.iter().chain(&self.range_indexes) {

@@ -18,12 +18,11 @@ fn store_error(error: StorageError) -> CapsuleStoreError {
 }
 
 fn value(model: &Model, field: &str, value: &CapsuleValue) -> Value {
-    if model.relations.contains_key(field) || field == "id" {
-        if let CapsuleValue::Bytes(bytes) = value
-            && let Ok(id) = <[u8; 16]>::try_from(bytes.as_slice())
-        {
-            return Value::Id(Id(id));
-        }
+    if (model.relations.contains_key(field) || field == "id")
+        && let CapsuleValue::Bytes(bytes) = value
+        && let Ok(id) = <[u8; 16]>::try_from(bytes.as_slice())
+    {
+        return Value::Id(Id(id));
     }
     match model.fields.get(field) {
         Some(field_type) => codec::record_value(*field_type, value),
@@ -51,12 +50,18 @@ fn filter(model: &Model, predicate: &QueryPredicate) -> Where {
                 },
             )
         }
-        QueryPredicate::And { predicates } => {
-            Where::And(predicates.iter().map(|child| filter(model, child)).collect())
-        }
-        QueryPredicate::Or { predicates } => {
-            Where::Or(predicates.iter().map(|child| filter(model, child)).collect())
-        }
+        QueryPredicate::And { predicates } => Where::And(
+            predicates
+                .iter()
+                .map(|child| filter(model, child))
+                .collect(),
+        ),
+        QueryPredicate::Or { predicates } => Where::Or(
+            predicates
+                .iter()
+                .map(|child| filter(model, child))
+                .collect(),
+        ),
         QueryPredicate::Not { predicate } => Where::Not(Box::new(filter(model, predicate))),
         QueryPredicate::RelationshipExists { relationship } => {
             Where::Field(relationship.clone(), Cond::IsNull(false))
@@ -102,7 +107,10 @@ impl CapsuleStore for Trx {
             .map_err(store_error)?
             .clone();
         let find = FindMany {
-            filter: query.predicate.as_ref().map(|predicate| filter(&model, predicate)),
+            filter: query
+                .predicate
+                .as_ref()
+                .map(|predicate| filter(&model, predicate)),
             order_by: query
                 .sort
                 .iter()

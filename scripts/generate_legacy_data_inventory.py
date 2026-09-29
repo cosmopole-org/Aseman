@@ -23,6 +23,7 @@ ROOT = Path(__file__).resolve().parents[1]
 JSON_PATH = ROOT / "docs/generated/current-storage-access.json"
 MARKDOWN_PATH = ROOT / "docs/migration/legacy-data-map.md"
 GENERATOR = "scripts/generate_legacy_data_inventory.py"
+LEGACY_LAYOUT = ROOT / "contracts/migration/legacy-layout.json"
 COMMIT = retained_revision(ROOT, JSON_PATH)
 
 TRX_METHODS = (
@@ -186,77 +187,18 @@ def logical_accesses() -> tuple[list[dict[str, str]], list[dict[str, str]]]:
     )
 
 
+def legacy_layout() -> dict[str, Any]:
+    # ADR 0036: the node no longer writes the legacy layout, so its object families
+    # and QuestDB tables are frozen as the last legacy writer left them.
+    return json.loads(LEGACY_LAYOUT.read_text(encoding="utf-8"))
+
+
 def core_objects() -> list[dict[str, Any]]:
-    rows: list[dict[str, Any]] = []
-    model_dir = ROOT / "apps/aseman-node/src/api/model"
-    for path in sorted(model_dir.glob("*.rs")):
-        value = production_source(path)
-        for found in re.finditer(
-            r"impl\s+([A-Za-z0-9_]+)\s*\{(?P<body>.*?)(?=\n}\n)", value, re.S
-        ):
-            rust_type = found.group(1)
-            body = found.group("body")
-            type_found = re.search(r'pub fn type_\(\).*?\{\s*"([^\"]+)"', body, re.S)
-            if not type_found or "put_obj" not in body:
-                continue
-            columns = sorted(set(re.findall(r'cols\.insert\(\s*"([^\"]+)"', body)))
-            rows.append(
-                {
-                    "object_type": type_found.group(1),
-                    "rust_type": rust_type,
-                    "physical_pattern": f"obj::{type_found.group(1)}::{{id}}::{{column}}",
-                    "columns": columns,
-                    "source": loc(path, value, found.start()),
-                }
-            )
-    return sorted(rows, key=lambda row: row["object_type"])
+    return legacy_layout()["core_objects"]
 
 
 def questdb_tables() -> list[dict[str, Any]]:
-    # The legacy QuestDB client moved into the legacy storage provider (P3-06); the
-    # physical tables it creates are unchanged.
-    path = ROOT / "modules/storage/rocksdb/src/questdb.rs"
-    value = production_source(path)
-    creates: dict[str, dict[str, Any]] = {}
-    for found in re.finditer(
-        r"create table(?: if not exists)?\s+([a-zA-Z0-9_]+)\s*\(([^;]+)\)", value, re.I
-    ):
-        name = found.group(1).lower()
-        columns = []
-        for definition in found.group(2).split(","):
-            parts = definition.strip().split()
-            if len(parts) >= 2:
-                columns.append({"name": parts[0], "type": parts[1].lower()})
-        creates[name] = {
-            "name": name,
-            "columns": columns,
-            "source": loc(path, value, found.start()),
-            "operations": [],
-        }
-    sql_pattern = re.compile(r'"((?:INSERT INTO|update|SELECT .*? FROM)\s+[^\"]+)"', re.I)
-    # The client serves both dialects, so the table is a `{}` filled by an accessor
-    # named after the QuestDB table it characterizes.
-    accessors = {"self.signals_table()": "storage", "self.build_logs_table()": "buildlogs"}
-    for found in sql_pattern.finditer(value):
-        sql = found.group(1)
-        table_match = re.search(r"(?:INTO|update|FROM)\s+([a-zA-Z0-9_]+|\{\})", sql, re.I)
-        if not table_match:
-            continue
-        name = table_match.group(1).lower()
-        if name == "{}":
-            arguments = value[found.end() : found.end() + 240]
-            resolved = [table for call, table in accessors.items() if call in arguments]
-            if len(resolved) != 1:
-                continue
-            name = resolved[0]
-        if name in creates:
-            creates[name]["operations"].append(
-                {
-                    "kind": sql.split(None, 1)[0].upper(),
-                    "source": loc(path, value, found.start()),
-                }
-            )
-    return [creates[name] for name in sorted(creates)]
+    return legacy_layout()["questdb_tables"]
 
 
 def hashgraph_families() -> list[dict[str, str]]:

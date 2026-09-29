@@ -59,18 +59,18 @@ fn write_err(e: impl std::error::Error + 'static) -> StorageError<NodeId> {
 }
 
 /// Open (or create) the cluster RocksDB with its column families.
-pub fn open_db(dir: &Path) -> anyhow::Result<Arc<DB>> {
+pub fn open_db(dir: &Path, tuning: &aseman_config::RocksDbTuning) -> anyhow::Result<Arc<DB>> {
     std::fs::create_dir_all(dir)?;
     // Bounded-memory options + shared block cache (see
     // `crate::tuning`) so the raft log/state DB can't grow
     // resident memory without bound either.
-    let mut opts = crate::tuning::tuned_options();
+    let mut opts = crate::tuning::tuned_options(tuning);
     opts.create_missing_column_families(true);
     opts.create_if_missing(true);
     let cfs = vec![
-        ColumnFamilyDescriptor::new("meta", crate::tuning::tuned_options()),
-        ColumnFamilyDescriptor::new("logs", crate::tuning::tuned_options()),
-        ColumnFamilyDescriptor::new("sm", crate::tuning::tuned_options()),
+        ColumnFamilyDescriptor::new("meta", crate::tuning::tuned_options(tuning)),
+        ColumnFamilyDescriptor::new("logs", crate::tuning::tuned_options(tuning)),
+        ColumnFamilyDescriptor::new("sm", crate::tuning::tuned_options(tuning)),
     ];
     Ok(Arc::new(DB::open_cf_descriptors(&opts, dir, cfs)?))
 }

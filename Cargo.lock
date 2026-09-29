@@ -246,14 +246,13 @@ dependencies = [
  "aseman-domain",
  "aseman-policy-native",
  "aseman-ports",
+ "aseman-postgres",
  "axum",
  "base64 0.22.1",
  "hex",
  "hyper 1.11.1",
  "hyper-util",
  "postgres",
- "r2d2",
- "r2d2_postgres",
  "reqwest 0.12.28",
  "ring",
  "rustls 0.23.45",
@@ -275,11 +274,17 @@ dependencies = [
  "aseman-config",
  "aseman-domain",
  "aseman-ports",
+ "aseman-postgres",
  "postgres",
- "r2d2",
- "r2d2_postgres",
  "serde_json",
  "uuid",
+]
+
+[[package]]
+name = "aseman-fs"
+version = "0.1.0"
+dependencies = [
+ "tempfile",
 ]
 
 [[package]]
@@ -387,6 +392,7 @@ name = "aseman-module-runtime"
 version = "0.1.0"
 dependencies = [
  "aseman-contracts",
+ "aseman-fs",
  "base64 0.22.1",
  "hex",
  "ring",
@@ -420,6 +426,7 @@ dependencies = [
  "aseman-contracts",
  "aseman-domain",
  "aseman-federation-http",
+ "aseman-fs",
  "aseman-gateway-rpc",
  "aseman-guest-http",
  "aseman-identity-native",
@@ -434,7 +441,6 @@ dependencies = [
  "aseman-storage",
  "aseman-storage-postgres",
  "aseman-storage-providers",
- "aseman-storage-rocksdb",
  "aseman-vmm-http",
  "base64 0.22.1",
  "chacha20poly1305",
@@ -509,6 +515,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "aseman-postgres"
+version = "0.1.0"
+dependencies = [
+ "aseman-ports",
+ "postgres",
+ "r2d2",
+ "r2d2_postgres",
+]
+
+[[package]]
 name = "aseman-public-http"
 version = "0.1.0"
 dependencies = [
@@ -549,9 +565,8 @@ dependencies = [
  "aseman-config",
  "aseman-domain",
  "aseman-ports",
+ "aseman-postgres",
  "postgres",
- "r2d2",
- "r2d2_postgres",
  "uuid",
 ]
 
@@ -604,6 +619,7 @@ dependencies = [
  "aseman-domain",
  "aseman-policy-native",
  "aseman-ports",
+ "aseman-postgres",
  "aseman-storage",
  "aseman-storage-conformance",
  "postgres",
@@ -617,6 +633,7 @@ dependencies = [
  "thiserror 2.0.20",
  "tokio",
  "tonic",
+ "url",
  "uuid",
 ]
 
@@ -624,10 +641,19 @@ dependencies = [
 name = "aseman-storage-providers"
 version = "0.1.0"
 dependencies = [
+ "aseman-capsule",
+ "aseman-config",
+ "aseman-contracts",
+ "aseman-domain",
  "aseman-ports",
  "aseman-storage",
  "aseman-storage-postgres",
  "aseman-storage-rocksdb",
+ "hex",
+ "postgres",
+ "rsa",
+ "serde_json",
+ "sha2 0.10.9",
 ]
 
 [[package]]
@@ -647,8 +673,6 @@ dependencies = [
  "chrono",
  "openraft",
  "postgres",
- "r2d2",
- "r2d2_postgres",
  "reqwest 0.12.28",
  "rocksdb",
  "rsa",
@@ -734,6 +758,7 @@ dependencies = [
  "aseman-config",
  "aseman-contracts",
  "aseman-domain",
+ "aseman-fs",
  "aseman-guest-http",
  "aseman-ports",
  "aseman-storage-postgres",
@@ -806,6 +831,8 @@ dependencies = [
  "anyhow",
  "aseman-config",
  "aseman-domain",
+ "aseman-fs",
+ "aseman-storage-providers",
  "base64 0.22.1",
  "chrono",
  "clap",

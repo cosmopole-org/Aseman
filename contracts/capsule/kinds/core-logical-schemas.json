@@ -1329,28 +1329,6 @@
       "key_family": "NamespaceDocument"
     },
     {
-      "kind": "core.user_email",
-      "fields": {
-        "key": "text",
-        "user_ref": "text"
-      },
-      "required": [
-        "key",
-        "user_ref"
-      ],
-      "unique_indexes": [
-        [
-          "key"
-        ],
-        [
-          "user_ref"
-        ]
-      ],
-      "relationships": {},
-      "retention": "operational",
-      "key_family": "UserEmail"
-    },
-    {
       "kind": "core.replay_nonce",
       "fields": {
         "key": "text",
@@ -1431,44 +1409,6 @@
       "relationships": {},
       "retention": "operational",
       "key_family": "PublicIdempotency"
-    },
-    {
-      "kind": "core.chain",
-      "fields": {
-        "key": "text",
-        "store_id": "text",
-        "status": "text"
-      },
-      "required": [
-        "key"
-      ],
-      "unique_indexes": [
-        [
-          "key"
-        ]
-      ],
-      "relationships": {},
-      "retention": "operational",
-      "key_family": "Chain"
-    },
-    {
-      "kind": "core.chain_shard",
-      "fields": {
-        "key": "text",
-        "work_chain_id": "text",
-        "shard_name": "text"
-      },
-      "required": [
-        "key"
-      ],
-      "unique_indexes": [
-        [
-          "key"
-        ]
-      ],
-      "relationships": {},
-      "retention": "operational",
-      "key_family": "ChainShard"
     },
     {
       "kind": "core.session_token",
@@ -1598,18 +1538,16 @@
       ]
     },
     {
-      "kind": "core.secret_value",
+      "kind": "core.proxy_correlation",
       "fields": {
         "key": "text",
-        "owner_ref": "text",
-        "name": "text",
-        "blob": "text"
+        "expires_at_millis": "integer",
+        "record": "document"
       },
       "required": [
         "key",
-        "owner_ref",
-        "name",
-        "blob"
+        "expires_at_millis",
+        "record"
       ],
       "unique_indexes": [
         [
@@ -1618,29 +1556,28 @@
       ],
       "relationships": {},
       "retention": "operational",
-      "key_family": "SecretValue",
+      "key_family": "ProxyCorrelation",
       "range_indexes": [
         [
-          "owner_ref",
-          "name"
+          "expires_at_millis"
         ]
       ]
     },
     {
-      "kind": "core.secret_access",
+      "kind": "core.guest_pair",
       "fields": {
         "key": "text",
         "owner_ref": "text",
+        "namespace": "text",
         "name": "text",
-        "grantee_ref": "text",
-        "expires_at_millis": "integer"
+        "value": "text"
       },
       "required": [
         "key",
         "owner_ref",
+        "namespace",
         "name",
-        "grantee_ref",
-        "expires_at_millis"
+        "value"
       ],
       "unique_indexes": [
         [
@@ -1649,14 +1586,65 @@
       ],
       "relationships": {},
       "retention": "operational",
-      "key_family": "SecretAccess",
+      "key_family": "GuestPair",
       "range_indexes": [
         [
-          "grantee_ref",
-          "owner_ref",
-          "name"
+          "owner_ref"
         ]
       ]
+    },
+    {
+      "kind": "core.chain",
+      "fields": {
+        "key": "text",
+        "store_id": "text",
+        "status": "text"
+      },
+      "required": [
+        "key",
+        "store_id",
+        "status"
+      ],
+      "unique_indexes": [
+        [
+          "key"
+        ],
+        [
+          "store_id"
+        ]
+      ],
+      "relationships": {
+        "store": "core.store"
+      },
+      "retention": "authority",
+      "key_family": "Chain"
+    },
+    {
+      "kind": "core.chain_shard",
+      "fields": {
+        "key": "text",
+        "work_chain_id": "text",
+        "shard_name": "text"
+      },
+      "required": [
+        "key",
+        "work_chain_id",
+        "shard_name"
+      ],
+      "unique_indexes": [
+        [
+          "key"
+        ],
+        [
+          "work_chain_id",
+          "shard_name"
+        ]
+      ],
+      "relationships": {
+        "chain": "core.chain"
+      },
+      "retention": "authority",
+      "key_family": "ChainShard"
     }
   ]
 }

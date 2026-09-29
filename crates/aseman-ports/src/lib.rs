@@ -60,6 +60,14 @@ pub enum PortError {
     Failed(String),
 }
 
+impl PortError {
+    /// An adapter failure carrying `error`'s message.
+    #[must_use]
+    pub fn failed(error: impl std::fmt::Display) -> Self {
+        Self::Failed(error.to_string())
+    }
+}
+
 pub trait WorkloadRepository: Send + Sync {
     /// Record a new workload; `Conflict` when its ID or its name within the program
     /// exists.

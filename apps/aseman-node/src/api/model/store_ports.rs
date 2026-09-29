@@ -11,10 +11,23 @@ use aseman_ports::{
     ClockPort, PortError, PortResult, SignalLog, StoreAccess, StoreDirectory, StoreMetadata,
 };
 
+use crate::api::model::Store;
 use crate::api::model::access::StorePermissions;
 use crate::core::trx::Trx;
-use crate::api::model::Store;
 use crate::models::packet::{LogPacket, LogQuery};
+
+/// A store record as the legacy `Store` wire view.
+pub(crate) fn store_view(record: StoreRecord) -> Store {
+    Store {
+        id: record.id,
+        tag: record.tag,
+        parent_id: record.parent_id,
+        pers_hist: record.persistent_history,
+        is_public: record.is_public,
+        member_count: i32::try_from(record.member_count).unwrap_or(i32::MAX),
+        signal_count: record.signal_count,
+    }
+}
 
 pub(crate) fn log_packet(signal: StoreSignal) -> LogPacket {
     LogPacket {
@@ -227,22 +240,5 @@ pub(crate) fn legacy_error(error: ApplicationError) -> anyhow::Error {
             anyhow!(message)
         }
         other => anyhow!(other.to_string()),
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn stores_pass_the_store_and_access_conformance_suites() {
-        let trx = crate::core::trx::test_trx();
-        let stores = StorePorts { trx: &trx };
-        aseman_ports::conformance::store_directory(&stores, &stores, "1@global");
-        aseman_ports::conformance::store_access(
-            &MembershipPorts { trx: &trx },
-            "s-1@conformance",
-            ["1@global", "2@global"],
-        );
     }
 }

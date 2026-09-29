@@ -11,7 +11,7 @@ use std::sync::Arc;
 
 use crate::api::utils::crypto::secure_unique_string;
 use crate::core::globe::Globe;
-use crate::core::globe::types::{ChainPacketOp, SubmitChainPacketFn};
+use crate::core::globe::types::ChainPacketOp;
 use crate::models::chain::{
     ChainBaseRequest, ChainCallback, ChainMessage, ChainPayPacket, ChainResponse, Effects,
     MessageCallback,
@@ -139,10 +139,3 @@ impl IGlobe for Globe {
         (self.submit_chain_packet_fn)("main", ChainPacketOp::Response(resp));
     }
 }
-
-/// Kept for clippy calm on the `SubmitChainPacketFn` import in this module.
-pub(crate) fn _anyval_submit_hint(_: SubmitChainPacketFn) {}
-const _: fn() -> Option<chrono::DateTime<chrono::Utc>> = || {
-    use chrono::TimeZone;
-    chrono::Utc.timestamp_opt(0, 0).single()
-};

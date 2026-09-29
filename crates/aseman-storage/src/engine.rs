@@ -26,7 +26,11 @@ impl Storage {
     }
 
     /// Open the plugin `name` from `registry`.
-    pub fn open(registry: &Registry, name: &str, settings: &ProviderSettings) -> StorageResult<Self> {
+    pub fn open(
+        registry: &Registry,
+        name: &str,
+        settings: &ProviderSettings,
+    ) -> StorageResult<Self> {
         let provider = registry.open(name, settings)?;
         if let Some(layout) = provider.legacy_layout()? {
             return Err(StorageError::Unsupported(format!(
@@ -68,7 +72,9 @@ pub struct Trx {
 fn now_micros() -> i64 {
     std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
-        .map_or(0, |elapsed| i64::try_from(elapsed.as_micros()).unwrap_or(i64::MAX))
+        .map_or(0, |elapsed| {
+            i64::try_from(elapsed.as_micros()).unwrap_or(i64::MAX)
+        })
 }
 
 impl Trx {
@@ -133,7 +139,11 @@ impl Trx {
     }
 
     /// The record `by` names.
-    pub fn find_unique(&self, model: &str, by: &crate::query::Unique) -> StorageResult<Option<Row>> {
+    pub fn find_unique(
+        &self,
+        model: &str,
+        by: &crate::query::Unique,
+    ) -> StorageResult<Option<Row>> {
         let model = self.model(model)?;
         if let Some(id) = Self::direct_id(model, by)? {
             return self.live(model, id);
@@ -159,8 +169,7 @@ impl Trx {
                 .map(|(name, value)| Where::eq(name, value.clone()))
                 .collect(),
         );
-        Ok(self
-            .inner
+        self.inner
             .find(
                 model,
                 &FindMany {
@@ -171,7 +180,7 @@ impl Trx {
             )?
             .first()
             .map(|capsule| codec::decode(model, capsule))
-            .transpose()?)
+            .transpose()
     }
 
     pub fn find_many(&self, model: &str, query: &FindMany) -> StorageResult<Vec<Row>> {
@@ -223,15 +232,21 @@ impl Trx {
             None => Id::generate(),
         };
         let previous = self.inner.get(model, id)?;
-        if previous.as_ref().is_some_and(|previous| !previous.tombstone) {
+        if previous
+            .as_ref()
+            .is_some_and(|previous| !previous.tombstone)
+        {
             return Err(StorageError::conflict(format!(
                 "{}: record {id} exists",
                 model.name
             )));
         }
         let capsule = codec::encode(model, id, previous.as_ref(), now_micros(), &data)?;
-        self.inner
-            .put(model, &capsule, previous.as_ref().map(|previous| previous.revision))?;
+        self.inner.put(
+            model,
+            &capsule,
+            previous.as_ref().map(|previous| previous.revision),
+        )?;
         codec::decode(model, &capsule)
     }
 
@@ -253,7 +268,10 @@ impl Trx {
         let model = self.model(model)?;
         self.writable(model)?;
         if model.append_only {
-            return Err(StorageError::invalid(format!("{} is append-only", model.name)));
+            return Err(StorageError::invalid(format!(
+                "{} is append-only",
+                model.name
+            )));
         }
         codec::validate(model, &data, false)?;
         if let (Some(Value::Text(new)), Some(Value::Text(old))) =
@@ -324,7 +342,10 @@ impl Trx {
         let model = self.model(model)?;
         self.writable(model)?;
         if model.append_only {
-            return Err(StorageError::invalid(format!("{} is append-only", model.name)));
+            return Err(StorageError::invalid(format!(
+                "{} is append-only",
+                model.name
+            )));
         }
         let previous = self
             .inner
@@ -357,7 +378,12 @@ impl Trx {
         }
     }
 
-    pub fn update_many(&self, model: &str, filter: Option<&Where>, data: Data) -> StorageResult<u64> {
+    pub fn update_many(
+        &self,
+        model: &str,
+        filter: Option<&Where>,
+        data: Data,
+    ) -> StorageResult<u64> {
         let rows = self.all(model, filter)?;
         let count = rows.len() as u64;
         for row in rows {

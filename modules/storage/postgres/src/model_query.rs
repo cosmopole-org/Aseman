@@ -97,16 +97,28 @@ fn compile(
     match filter {
         Where::And(filters) | Where::Or(filters) => {
             if filters.is_empty() {
-                return Ok(if matches!(filter, Where::And(_)) { "TRUE" } else { "FALSE" }.to_owned());
+                return Ok(if matches!(filter, Where::And(_)) {
+                    "TRUE"
+                } else {
+                    "FALSE"
+                }
+                .to_owned());
             }
-            let join = if matches!(filter, Where::And(_)) { " AND " } else { " OR " };
+            let join = if matches!(filter, Where::And(_)) {
+                " AND "
+            } else {
+                " OR "
+            };
             let parts = filters
                 .iter()
                 .map(|filter| compile(mapping, filter, params, depth + 1))
                 .collect::<StorageResult<Vec<_>>>()?;
             Ok(format!("({})", parts.join(join)))
         }
-        Where::Not(filter) => Ok(format!("NOT ({})", compile(mapping, filter, params, depth + 1)?)),
+        Where::Not(filter) => Ok(format!(
+            "NOT ({})",
+            compile(mapping, filter, params, depth + 1)?
+        )),
         Where::Field(field, cond) => {
             let (column, field_type, text) = column(mapping, field)?;
             let collated = if text {
@@ -142,7 +154,10 @@ fn compile(
                 Cond::Gte(value) => format!("{collated} >= {}", bind(value, params)?),
                 Cond::In(values) | Cond::NotIn(values) => {
                     let negated = matches!(cond, Cond::NotIn(_));
-                    let listed = values.iter().filter(|value| !value.is_null()).collect::<Vec<_>>();
+                    let listed = values
+                        .iter()
+                        .filter(|value| !value.is_null())
+                        .collect::<Vec<_>>();
                     if listed.is_empty() {
                         // `x IN ()` is false and `x NOT IN ()` true, except for NULL.
                         return Ok(if negated {
@@ -161,11 +176,15 @@ fn compile(
                         placeholders.join(", ")
                     )
                 }
-                Cond::Contains(text, case) => text_match(like_pattern(text, true, true), *case, params)?,
+                Cond::Contains(text, case) => {
+                    text_match(like_pattern(text, true, true), *case, params)?
+                }
                 Cond::StartsWith(text, case) => {
                     text_match(like_pattern(text, false, true), *case, params)?
                 }
-                Cond::EndsWith(text, case) => text_match(like_pattern(text, true, false), *case, params)?,
+                Cond::EndsWith(text, case) => {
+                    text_match(like_pattern(text, true, false), *case, params)?
+                }
             })
         }
     }
@@ -214,9 +233,13 @@ pub(crate) fn find_keyed_on(
     }
     order.push("id ASC".to_owned());
     keys.push("id::text".to_owned());
-    params.push(SqlParam::I64(Some(i64::try_from(limit).unwrap_or(i64::MAX))));
+    params.push(SqlParam::I64(Some(
+        i64::try_from(limit).unwrap_or(i64::MAX),
+    )));
     let limit_parameter = params.len();
-    params.push(SqlParam::I64(Some(i64::try_from(offset).unwrap_or(i64::MAX))));
+    params.push(SqlParam::I64(Some(
+        i64::try_from(offset).unwrap_or(i64::MAX),
+    )));
     let offset_parameter = params.len();
     let statement = format!(
         "SELECT {}, {} FROM {} WHERE {filter} ORDER BY {} LIMIT ${limit_parameter} OFFSET ${offset_parameter}",
@@ -236,7 +259,9 @@ pub(crate) fn find_keyed_on(
     rows.iter()
         .map(|row| {
             let envelope = layout::envelope_from_row(mapping, row)?;
-            let keys = (width..row.len()).map(|index| SortValue::read(row, index)).collect();
+            let keys = (width..row.len())
+                .map(|index| SortValue::read(row, index))
+                .collect();
             Ok((keys, envelope))
         })
         .collect()
@@ -303,7 +328,10 @@ pub(crate) fn merge(
     });
     rows.into_iter()
         .skip(usize::try_from(query.skip).unwrap_or(usize::MAX))
-        .take(usize::try_from(query.take.unwrap_or(DEFAULT_TAKE).min(DEFAULT_TAKE)).unwrap_or(usize::MAX))
+        .take(
+            usize::try_from(query.take.unwrap_or(DEFAULT_TAKE).min(DEFAULT_TAKE))
+                .unwrap_or(usize::MAX),
+        )
         .map(|(_, capsule)| capsule)
         .collect()
 }
@@ -325,9 +353,15 @@ mod tests {
         let sql = filter_sql(
             mapping,
             Some(&Where::Or(vec![
-                Where::field("username", Cond::Contains("a'; DROP".into(), Case::Insensitive)),
+                Where::field(
+                    "username",
+                    Cond::Contains("a'; DROP".into(), Case::Insensitive),
+                ),
                 Where::field("email", Cond::In(vec![Value::from("x"), Value::Null])),
-                Where::Not(Box::new(Where::field("status", Cond::Gte(Value::from("b"))))),
+                Where::Not(Box::new(Where::field(
+                    "status",
+                    Cond::Gte(Value::from("b")),
+                ))),
             ])),
             &mut params,
         )

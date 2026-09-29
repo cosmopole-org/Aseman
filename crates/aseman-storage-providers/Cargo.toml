@@ -8,10 +8,21 @@ license.workspace = true
 repository.workspace = true
 
 [dependencies]
+aseman-capsule = { path = "../aseman-capsule" }
+aseman-config = { path = "../aseman-config" }
+aseman-contracts = { path = "../aseman-contracts" }
+aseman-domain = { path = "../aseman-domain" }
 aseman-ports = { path = "../aseman-ports" }
 aseman-storage = { path = "../aseman-storage" }
 aseman-storage-postgres = { path = "../../modules/storage/postgres" }
 aseman-storage-rocksdb = { path = "../../modules/storage/rocksdb" }
+hex.workspace = true
+serde_json.workspace = true
+sha2.workspace = true
+
+[dev-dependencies]
+postgres.workspace = true
+rsa.workspace = true
 
 [lints]
 workspace = true

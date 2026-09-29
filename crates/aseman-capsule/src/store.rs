@@ -3,7 +3,7 @@
 //! exactly like migrated history. Works with any provider behind [`CapsuleStore`].
 
 use crate::support::{
-    Capsules, DocumentFamily, MAX_CAS_ATTEMPTS, failed, legacy_identity, new_capsule, tombstone,
+    Capsules, DocumentFamily, MAX_CAS_ATTEMPTS, legacy_identity, new_capsule, tombstone,
 };
 use crate::{CapsuleStore, CapsuleStoreError};
 use aseman_contracts::capsule::OwnerScope;
@@ -243,7 +243,9 @@ impl StoreDirectory for CapsuleStorePorts<'_> {
             .get("core.creature", "Creature", creator_id)?
             .is_none_or(|capsule| capsule.tombstone)
         {
-            return Err(failed(format!("store creator {creator_id} does not exist")));
+            return Err(PortError::failed(format!(
+                "store creator {creator_id} does not exist"
+            )));
         }
         let writes = match existing {
             // Registering a deleted store again revives it, as legacy allows.
@@ -254,7 +256,7 @@ impl StoreDirectory for CapsuleStorePorts<'_> {
                     ..next_revision(&tombstoned, store_fields(record))?
                 }
                 .seal()
-                .map_err(failed)?,
+                .map_err(PortError::failed)?,
                 Some(tombstoned.revision),
             )],
             None => vec![
@@ -286,13 +288,13 @@ impl StoreDirectory for CapsuleStorePorts<'_> {
                 .iter()
                 .find(|relationship| relationship.name == "creature")
                 .map(|relationship| relationship.target_id.clone())
-                .ok_or_else(|| failed("store has no creator"))?;
+                .ok_or_else(|| PortError::failed("store has no creator"))?;
             let next = CapsuleEnvelope {
                 relationships: store_relationships(record, creator),
                 ..next_revision(&current, store_fields(record))?
             }
             .seal()
-            .map_err(failed)?;
+            .map_err(PortError::failed)?;
             match self.repository.put(&next, Some(current.revision)) {
                 Err(CapsuleStoreError::Conflict) => continue,
                 other => return other.map_err(port_error),

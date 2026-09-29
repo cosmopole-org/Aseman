@@ -83,6 +83,16 @@ pub fn consensus_log(storage: &dyn ConsensusLogStorage, name: &str) {
     );
     drop(reopened);
 
+    // Both logs are listed by name; nothing set aside is.
+    let names = storage.names().unwrap();
+    let other_name = format!("{name}-other");
+    assert!(names.contains(&name.to_owned()) && names.contains(&other_name));
+    assert!(names.iter().all(|listed| !listed.contains("--UTC--")));
+    assert!(
+        names.windows(2).all(|pair| pair[0] < pair[1]),
+        "names are sorted"
+    );
+
     // A fresh open starts empty.
     let fresh = storage.open(name, true).unwrap();
     assert_eq!(fresh.get(b"block_000000001").unwrap(), None);
@@ -114,6 +124,18 @@ impl ConsensusLogStorage for MemoryConsensusLogStorage {
         }
         let space = logs.entry(name.to_owned()).or_default().clone();
         Ok(Arc::new(MemoryLog(space)))
+    }
+
+    fn names(&self) -> PortResult<Vec<String>> {
+        let mut names = self
+            .logs
+            .lock()
+            .map_err(|_| PortError::Unavailable("memory log lock"))?
+            .keys()
+            .cloned()
+            .collect::<Vec<_>>();
+        names.sort();
+        Ok(names)
     }
 }
 

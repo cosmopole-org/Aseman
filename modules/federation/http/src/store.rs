@@ -8,34 +8,18 @@ use aseman_domain::Uuid;
 use aseman_domain::federation::{Envelope, NodeDescriptor, WorkloadDescriptor};
 use aseman_ports::federation::{Directory, EnvelopeGuard};
 use aseman_ports::{PortError, PortResult};
-use postgres::NoTls;
-use r2d2::{Pool, PooledConnection};
-use r2d2_postgres::PostgresConnectionManager;
-
-type Connection = PooledConnection<PostgresConnectionManager<NoTls>>;
-
-fn failed(error: impl std::fmt::Display) -> PortError {
-    PortError::Failed(error.to_string())
-}
-
-fn db(error: postgres::Error) -> PortError {
-    match error.code() {
-        Some(code) if *code == postgres::error::SqlState::UNIQUE_VIOLATION => PortError::Conflict,
-        _ if error.is_closed() => PortError::Unavailable("postgres"),
-        _ => failed(error),
-    }
-}
+use aseman_postgres::{Connection, Pool, connection, port_error, port_pool};
 
 /// This node's federation records.
 pub struct PostgresFederation {
-    pool: Pool<PostgresConnectionManager<NoTls>>,
+    pool: Pool,
     /// The node this process is. `own_node` reads its descriptor from the directory.
     node_id: Uuid,
 }
 
 impl PostgresFederation {
     #[must_use]
-    pub fn new(pool: Pool<PostgresConnectionManager<NoTls>>, node_id: Uuid) -> Self {
+    pub fn new(pool: Pool, node_id: Uuid) -> Self {
         Self { pool, node_id }
     }
 
@@ -49,10 +33,7 @@ impl PostgresFederation {
         max_size: u32,
         node_id: Uuid,
     ) -> PortResult<Self> {
-        let pool = Pool::builder()
-            .max_size(max_size.max(1))
-            .build(PostgresConnectionManager::new(config, NoTls))
-            .map_err(|_| PortError::Unavailable("federation database"))?;
+        let pool = port_pool(config, max_size, "federation database")?;
         Ok(Self { pool, node_id })
     }
 
@@ -64,13 +45,11 @@ impl PostgresFederation {
     pub fn migrate(&self) -> PortResult<()> {
         self.connection()?
             .batch_execute(crate::FEDERATION_MIGRATION)
-            .map_err(db)
+            .map_err(port_error)
     }
 
     fn connection(&self) -> PortResult<Connection> {
-        self.pool
-            .get()
-            .map_err(|_| PortError::Unavailable("postgres"))
+        connection(&self.pool)
     }
 }
 
@@ -90,7 +69,7 @@ impl Directory for PostgresFederation {
                  WHERE node_id = $1",
                 &[&node_id],
             )
-            .map_err(db)?;
+            .map_err(port_error)?;
         let Some(row) = row else { return Ok(None) };
         let expires: i64 = row.get("expires_at_millis");
         // An expired descriptor is not served: the home node is authoritative and this
@@ -99,7 +78,9 @@ impl Directory for PostgresFederation {
             return Ok(None);
         }
         let text: String = row.get("descriptor");
-        serde_json::from_str(&text).map(Some).map_err(failed)
+        serde_json::from_str(&text)
+            .map(Some)
+            .map_err(PortError::failed)
     }
 
     fn record_node(&self, descriptor: &NodeDescriptor) -> PortResult<()> {
@@ -110,8 +91,8 @@ impl Directory for PostgresFederation {
             ));
         }
         let mut connection = self.connection()?;
-        let sequence = i64::try_from(descriptor.sequence).map_err(failed)?;
-        let text = serde_json::to_string(descriptor).map_err(failed)?;
+        let sequence = i64::try_from(descriptor.sequence).map_err(PortError::failed)?;
+        let text = serde_json::to_string(descriptor).map_err(PortError::failed)?;
         // The `WHERE` is the guard: a descriptor whose sequence does not move forward
         // updates no row, and the caller is told rather than silently rolled back.
         let updated = connection
@@ -129,7 +110,7 @@ impl Directory for PostgresFederation {
                     &text,
                 ],
             )
-            .map_err(db)?;
+            .map_err(port_error)?;
         if updated == 0 {
             return Err(PortError::Conflict);
         }
@@ -148,20 +129,22 @@ impl Directory for PostgresFederation {
                  WHERE workload_id = $1",
                 &[&workload_id],
             )
-            .map_err(db)?;
+            .map_err(port_error)?;
         let Some(row) = row else { return Ok(None) };
         let expires: i64 = row.get("expires_at_millis");
         if now_millis >= expires {
             return Ok(None);
         }
         let text: String = row.get("descriptor");
-        serde_json::from_str(&text).map(Some).map_err(failed)
+        serde_json::from_str(&text)
+            .map(Some)
+            .map_err(PortError::failed)
     }
 
     fn record_workload(&self, descriptor: &WorkloadDescriptor) -> PortResult<()> {
         let mut connection = self.connection()?;
-        let revision = i64::try_from(descriptor.revision).map_err(failed)?;
-        let text = serde_json::to_string(descriptor).map_err(failed)?;
+        let revision = i64::try_from(descriptor.revision).map_err(PortError::failed)?;
+        let text = serde_json::to_string(descriptor).map_err(PortError::failed)?;
         let updated = connection
             .execute(
                 "INSERT INTO aseman_core.federation_workload \
@@ -178,7 +161,7 @@ impl Directory for PostgresFederation {
                     &text,
                 ],
             )
-            .map_err(db)?;
+            .map_err(port_error)?;
         if updated == 0 {
             return Err(PortError::Conflict);
         }
@@ -201,7 +184,7 @@ impl EnvelopeGuard for PostgresFederation {
                     &envelope.expires_at_millis,
                 ],
             )
-            .map_err(db)?;
+            .map_err(port_error)?;
         Ok(inserted == 1)
     }
 
@@ -212,7 +195,7 @@ impl EnvelopeGuard for PostgresFederation {
                 "DELETE FROM aseman_core.federation_nonce WHERE source_node = $1 AND nonce = $2",
                 &[&envelope.source_node, &envelope.nonce],
             )
-            .map_err(db)?;
+            .map_err(port_error)?;
         Ok(())
     }
 
@@ -223,7 +206,7 @@ impl EnvelopeGuard for PostgresFederation {
                 "SELECT answer FROM aseman_core.federation_answer WHERE request_id = $1",
                 &[&request_id],
             )
-            .map_err(db)?
+            .map_err(port_error)?
             .map(|row| row.get("answer")))
     }
 
@@ -243,7 +226,7 @@ impl EnvelopeGuard for PostgresFederation {
                  VALUES ($1, $2, $3) ON CONFLICT (request_id) DO NOTHING",
                 &[&request_id, &answer, &expires_at_millis],
             )
-            .map_err(db)?;
+            .map_err(port_error)?;
         Ok(())
     }
 
@@ -254,13 +237,13 @@ impl EnvelopeGuard for PostgresFederation {
                 "DELETE FROM aseman_core.federation_nonce WHERE expires_at_millis < $1",
                 &[&now_millis],
             )
-            .map_err(db)?;
+            .map_err(port_error)?;
         let answers = connection
             .execute(
                 "DELETE FROM aseman_core.federation_answer WHERE expires_at_millis < $1",
                 &[&now_millis],
             )
-            .map_err(db)?;
+            .map_err(port_error)?;
         Ok(nonces + answers)
     }
 }

@@ -424,7 +424,7 @@ pub fn invoke(name: &str, args: &[Val]) -> Result<Val, String> {
         // stays a float (so `(-3.0).abs()` is the double `3.0`, not the int `3`).
         "abs" => {
             arity(name, args, 1)?;
-            if matches!(args[0].typ, 1 | 2 | 3) {
+            if matches!(args[0].typ, 1..=3) {
                 Ok(vi64(as_int(&args[0])?.abs()))
             } else {
                 Ok(vf64(as_num(&args[0])?.abs()))
@@ -528,7 +528,7 @@ pub fn invoke(name: &str, args: &[Val]) -> Result<Val, String> {
         // `int(a / b)`, …). Division by zero is an error (a trap in the guest).
         "intDiv" => {
             arity(name, args, 2)?;
-            if matches!(args[0].typ, 1 | 2 | 3) && matches!(args[1].typ, 1 | 2 | 3) {
+            if matches!(args[0].typ, 1..=3) && matches!(args[1].typ, 1..=3) {
                 let a = as_int(&args[0])?;
                 let b = as_int(&args[1])?;
                 if b == 0 {
@@ -589,7 +589,7 @@ pub fn invoke(name: &str, args: &[Val]) -> Result<Val, String> {
         // member of numbers.
         "remainder" => {
             arity(name, args, 2)?;
-            if matches!(args[0].typ, 1 | 2 | 3) && matches!(args[1].typ, 1 | 2 | 3) {
+            if matches!(args[0].typ, 1..=3) && matches!(args[1].typ, 1..=3) {
                 let b = as_int(&args[1])?;
                 if b == 0 {
                     return Err("remainder by zero".to_string());
@@ -781,7 +781,7 @@ pub fn invoke(name: &str, args: &[Val]) -> Result<Val, String> {
         // always keep a decimal point (`3.0`), matching Dart's `num.toString()`.
         "toString" => {
             arity(name, args, 1)?;
-            if matches!(args[0].typ, 1 | 2 | 3) {
+            if matches!(args[0].typ, 1..=3) {
                 Ok(vstr(as_int(&args[0])?.to_string()))
             } else if matches!(args[0].typ, 4 | 5) {
                 let d = as_num(&args[0])?;
@@ -1439,9 +1439,7 @@ pub fn invoke(name: &str, args: &[Val]) -> Result<Val, String> {
                     .data
                     .sort_by(|x, y| as_num(x).unwrap().partial_cmp(&as_num(y).unwrap()).unwrap());
             } else {
-                a.borrow_mut()
-                    .data
-                    .sort_by(|x, y| str_of(x).cmp(&str_of(y)));
+                a.borrow_mut().data.sort_by_key(str_of);
             }
             Ok(args[0].clone())
         }
@@ -1726,7 +1724,7 @@ pub(crate) fn pad(name: &str, args: &[Val], start: bool) -> Result<Val, String> 
     if len >= width {
         return Ok(vstr(s));
     }
-    let fill: String = std::iter::repeat(pad_char).take(width - len).collect();
+    let fill: String = std::iter::repeat_n(pad_char, width - len).collect();
     Ok(vstr(if start {
         format!("{fill}{s}")
     } else {
@@ -1775,7 +1773,7 @@ pub(crate) fn expect_bytes(name: &str, v: &Val) -> Result<Vec<u8>, String> {
 const B64: &[u8; 64] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 
 pub(crate) fn base64_encode(data: &[u8]) -> String {
-    let mut out = String::with_capacity((data.len() + 2) / 3 * 4);
+    let mut out = String::with_capacity(data.len().div_ceil(3) * 4);
     for chunk in data.chunks(3) {
         let b = [
             chunk[0],
@@ -2074,7 +2072,7 @@ pub(crate) fn is_instance_of(inst: &Val, class: &Val) -> bool {
         .data
         .data
         .get("__class_name")
-        .map(|n| str_of(n))
+        .map(str_of)
         .unwrap_or_default();
     let mut cur = inst.as_object().borrow().data.data.get("__class").cloned();
     while let Some(c) = cur {
@@ -2087,7 +2085,7 @@ pub(crate) fn is_instance_of(inst: &Val, class: &Val) -> bool {
             .data
             .data
             .get("__class_name")
-            .map(|n| str_of(n));
+            .map(str_of);
         if cname.as_deref() == Some(target.as_str()) {
             return true;
         }
@@ -2202,13 +2200,22 @@ mod tests {
     #[test]
     fn foundation_collections() {
         let arr = varr(vec![vi64(3), vi64(1), vi64(2)]);
-        assert_eq!(invoke("len", &[arr.clone()]).unwrap().as_i64(), 3);
+        assert_eq!(
+            invoke("len", std::slice::from_ref(&arr)).unwrap().as_i64(),
+            3
+        );
         invoke("push", &[arr.clone(), vi64(9)]).unwrap();
-        assert_eq!(invoke("len", &[arr.clone()]).unwrap().as_i64(), 4);
+        assert_eq!(
+            invoke("len", std::slice::from_ref(&arr)).unwrap().as_i64(),
+            4
+        );
         // push is variadic, like JS `Array.prototype.push(...items)` — the
         // transpiler emits `push(xs, a, b, c)` for `xs.push(a, b, c)`.
         invoke("push", &[arr.clone(), vi64(5), vi64(6), vi64(7)]).unwrap();
-        assert_eq!(invoke("len", &[arr.clone()]).unwrap().as_i64(), 7);
+        assert_eq!(
+            invoke("len", std::slice::from_ref(&arr)).unwrap().as_i64(),
+            7
+        );
         let sorted = invoke("sort", &[varr(vec![vi64(3), vi64(1), vi64(2)])]).unwrap();
         assert_eq!(sorted.as_array().borrow().data[0].as_i64(), 1);
         let joined = invoke(
@@ -2277,7 +2284,7 @@ mod tests {
         )
         .unwrap();
 
-        let rex = invoke("new", &[dog.clone()]).unwrap();
+        let rex = invoke("new", std::slice::from_ref(&dog)).unwrap();
         assert_eq!(
             invoke("field", &[rex.clone(), vstr("name".into())])
                 .unwrap()
@@ -2309,7 +2316,7 @@ mod tests {
             m
         });
         let c = invoke("class", &[vstr("Box".into()), defaults, vnull()]).unwrap();
-        let a = invoke("new", &[c.clone()]).unwrap();
+        let a = invoke("new", std::slice::from_ref(&c)).unwrap();
         let b = invoke("new", &[c]).unwrap();
         let a_tags = invoke("field", &[a, vstr("tags".into())]).unwrap();
         invoke("push", &[a_tags, vi64(1)]).unwrap();
@@ -2337,7 +2344,7 @@ mod tests {
 
         // `reversed` copies (non-mutating), unlike the in-place `reverse`.
         let src = varr(vec![vi64(1), vi64(2), vi64(3)]);
-        let rev = invoke("reversed", &[src.clone()]).unwrap();
+        let rev = invoke("reversed", std::slice::from_ref(&src)).unwrap();
         assert_eq!(rev.as_array().borrow().data[0].as_i64(), 3);
         assert_eq!(
             src.as_array().borrow().data[0].as_i64(),
@@ -2348,14 +2355,17 @@ mod tests {
         // `extend` appends in place and returns null; `removeAt`/`insert`/`clear`.
         let xs = varr(vec![vi64(1)]);
         invoke("pushAll", &[xs.clone(), varr(vec![vi64(2), vi64(3)])]).unwrap();
-        assert_eq!(invoke("len", &[xs.clone()]).unwrap().as_i64(), 3);
+        assert_eq!(
+            invoke("len", std::slice::from_ref(&xs)).unwrap().as_i64(),
+            3
+        );
         invoke("insert", &[xs.clone(), vi64(0), vi64(9)]).unwrap();
         assert_eq!(xs.as_array().borrow().data[0].as_i64(), 9);
         assert_eq!(
             invoke("removeAt", &[xs.clone(), vi64(0)]).unwrap().as_i64(),
             9
         );
-        invoke("clear", &[xs.clone()]).unwrap();
+        invoke("clear", std::slice::from_ref(&xs)).unwrap();
         assert_eq!(invoke("len", &[xs]).unwrap().as_i64(), 0);
 
         // `abs` preserves the numeric kind (a double stays a double).
@@ -2368,10 +2378,10 @@ mod tests {
         assert_eq!(invoke("toString", &[vf64(3.0)]).unwrap().as_string(), "3.0");
         assert_eq!(invoke("toString", &[vi64(3)]).unwrap().as_string(), "3");
         assert_eq!(
-            invoke("toStringAsFixed", &[vf64(3.14159), vi64(2)])
+            invoke("toStringAsFixed", &[vf64(1.23456), vi64(2)])
                 .unwrap()
                 .as_string(),
-            "3.14"
+            "1.23"
         );
 
         // map members: `remove` returns the removed value; `putIfAbsent`.
@@ -2386,12 +2396,9 @@ mod tests {
                 .as_i64(),
             9
         );
-        assert_eq!(
-            invoke("has", &[map.clone(), vstr("k".into())])
-                .unwrap()
-                .as_bool(),
-            false
-        );
+        assert!(!invoke("has", &[map.clone(), vstr("k".into())])
+            .unwrap()
+            .as_bool());
         assert_eq!(
             invoke("putIfAbsent", &[map, vstr("k".into()), vi64(5)])
                 .unwrap()
@@ -2451,7 +2458,12 @@ mod tests {
     #[test]
     fn closure_cells_hold_mutable_state() {
         let c = invoke("cell", &[vi64(0)]).unwrap();
-        assert_eq!(invoke("cellGet", &[c.clone()]).unwrap().as_i64(), 0);
+        assert_eq!(
+            invoke("cellGet", std::slice::from_ref(&c))
+                .unwrap()
+                .as_i64(),
+            0
+        );
         invoke("cellSet", &[c.clone(), vi64(42)]).unwrap();
         assert_eq!(invoke("cellGet", &[c]).unwrap().as_i64(), 42);
     }

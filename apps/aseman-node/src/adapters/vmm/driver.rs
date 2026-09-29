@@ -13,10 +13,10 @@ use serde_json::{Value, json};
 use crate::adapters::vmm::globals::ResourceLockRegistry;
 use crate::api::model::{Creature, Store};
 use crate::api::packets::stores;
+use crate::core::trx::Trx;
 use crate::models::core::ICore;
 use crate::models::ports::IWorkloads;
 use crate::models::ports::Listener;
-use crate::core::trx::Trx;
 
 pub struct NodeWorkloads {
     pub(super) app: Arc<dyn ICore>,
@@ -57,10 +57,7 @@ pub(crate) fn entity_runtime(app: &Arc<dyn ICore>, program: &str, entity: &str) 
             let mut runtime = record.runtime.trim().to_lowercase();
             if !entity.is_empty()
                 && let Ok(Some(found)) = aseman_ports::EntityDirectory::entity(
-                    &crate::api::model::entity_ports::EntityPorts {
-                        trx,
-                        blobs: &crate::adapters::blob_store::StorageRootBlobStore::new(""),
-                    },
+                    &crate::api::model::entity_ports::EntityPorts { trx },
                     &program,
                     &entity,
                 )

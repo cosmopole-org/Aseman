@@ -2,28 +2,13 @@
 //! alarms, and VM resource stores through the capsule repositories over the action's
 //! transaction.
 
-use aseman_domain::creature::legacy_page;
-use aseman_domain::program::{DEFAULT_ALARM_ENTITY, ProgramAlarm, ProgramRecord, VmResourceStore};
+use aseman_domain::program::{ProgramAlarm, ProgramRecord, VmResourceStore};
 use aseman_ports::{
     PortError, PortResult, ProgramAlarms, ProgramDirectory, ProgramMetadata, VmResourceStores,
 };
 
 use crate::api::model::Program;
 use crate::core::trx::Trx;
-
-/// The legacy `Program` object columns, as `Program::push` writes them.
-const PROGRAM_COLUMNS: [&str; 6] = ["|", "id", "machineId", "runtime", "path", "comment"];
-
-
-fn record(program: Program) -> ProgramRecord {
-    ProgramRecord {
-        id: program.id,
-        machine_id: program.machine_id,
-        runtime: program.runtime,
-        path: program.path,
-        comment: program.comment,
-    }
-}
 
 /// The legacy wire shape of a program.
 pub(crate) fn program_view(record: ProgramRecord) -> Program {
@@ -35,7 +20,6 @@ pub(crate) fn program_view(record: ProgramRecord) -> Program {
         comment: record.comment,
     }
 }
-
 
 impl ProgramPorts<'_> {
     /// A program as legacy `Program::pull` returned it: a missing program reads as an
@@ -49,11 +33,6 @@ impl ProgramPorts<'_> {
             },
         }
     }
-}
-
-
-fn program_metadata_key(program_id: &str) -> String {
-    format!("ProgMeta::{program_id}")
 }
 
 impl ProgramPorts<'_> {
@@ -83,19 +62,7 @@ impl ProgramPorts<'_> {
     }
 }
 
-
-
-pub(crate) fn resource_store_key(store_id: &str) -> String {
-    format!("Json::VmResourceStore::{store_id}")
-}
-
-fn failed(error: impl ToString) -> PortError {
-    PortError::Failed(error.to_string())
-}
-
-
-/// The program ports of one state action, routed per ADR 0026 to the action's
-/// PostgreSQL unit of work when the node runs on PostgreSQL, else to legacy.
+/// The program ports of one state action.
 pub(crate) struct ProgramPorts<'a> {
     pub(crate) trx: &'a Trx,
 }
@@ -103,7 +70,9 @@ pub(crate) struct ProgramPorts<'a> {
 /// Run `$call` on the adapter for the current provider, bound as `$ports`.
 macro_rules! route {
     ($self:ident, |$ports:ident| $call:expr) => {{
-        let $ports = aseman_capsule::program::CapsuleProgramPorts { repository: $self.trx };
+        let $ports = aseman_capsule::program::CapsuleProgramPorts {
+            repository: $self.trx,
+        };
         $call
     }};
 }
@@ -173,21 +142,5 @@ impl VmResourceStores for ProgramPorts<'_> {
     }
     fn delete_resource_store(&self, store_id: &str) -> PortResult<()> {
         route!(self, |ports| ports.delete_resource_store(store_id))
-    }
-}
-
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn programs_pass_the_program_conformance_suites() {
-        let trx = crate::core::trx::test_trx();
-        let programs = ProgramPorts { trx: &trx };
-        aseman_ports::conformance::program_directory(&programs, ["1@global", "2@global"]);
-        aseman_ports::conformance::program_metadata(&programs, "12@conformance");
-        aseman_ports::conformance::program_alarms(&programs, "12@conformance", "store-1");
-        aseman_ports::conformance::vm_resource_stores(&programs, ["1@global", "2@global"]);
     }
 }

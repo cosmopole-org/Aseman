@@ -19,6 +19,7 @@ mod cluster;
 mod compact;
 mod modules;
 mod ops;
+mod storage;
 mod vms;
 
 pub fn main() {
@@ -45,6 +46,7 @@ pub fn main() {
         "module" | "modules" => modules::run_modules(rest),
         "vms" => vms::run_vms(rest),
         "cluster" => cluster::run_cluster(rest),
+        "storage" => storage::run_storage(rest),
         "doctor" => ops::run_doctor(rest),
         "backup" => ops::run_backup(rest),
         "restore" => ops::run_restore(rest),
@@ -163,7 +165,8 @@ fn print_usage() {
          Extensions:\n  \
          module          Manage signed provider modules\n  \
          vms             Manage the native backend's runtime plugins\n  \
-         cluster         Operate the RocksDB storage module's OpenRaft cluster\n\n\
+         cluster         Operate the RocksDB storage module's OpenRaft cluster\n  \
+         storage         Migrate the node's storage (legacy layouts, provider switch)\n\n\
          Run \"asemanctl <command> --help\" for command-specific flags."
     );
 }

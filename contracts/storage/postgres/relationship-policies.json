@@ -198,6 +198,18 @@
       "name": "grantee",
       "required": false,
       "on_delete": "cascade"
+    },
+    {
+      "kind": "core.chain",
+      "name": "store",
+      "required": false,
+      "on_delete": "restrict"
+    },
+    {
+      "kind": "core.chain_shard",
+      "name": "chain",
+      "required": false,
+      "on_delete": "cascade"
     }
   ]
 }

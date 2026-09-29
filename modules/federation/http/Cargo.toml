@@ -12,14 +12,13 @@ aseman-application = { path = "../../../crates/aseman-application" }
 aseman-contracts = { path = "../../../crates/aseman-contracts" }
 aseman-domain = { path = "../../../crates/aseman-domain" }
 aseman-ports = { path = "../../../crates/aseman-ports" }
+aseman-postgres = { path = "../../../crates/aseman-postgres" }
 axum = { version = "0.7.9", default-features = false, features = ["http1", "tokio"] }
 base64.workspace = true
 hex.workspace = true
 hyper = { version = "1", features = ["http1", "server"] }
 hyper-util = { version = "0.1", features = ["server", "http1", "tokio", "service"] }
 postgres = { workspace = true, features = ["with-uuid-1"] }
-r2d2.workspace = true
-r2d2_postgres.workspace = true
 reqwest = { version = "0.12", default-features = false, features = ["blocking", "json", "rustls-tls"] }
 ring.workspace = true
 rustls = { version = "0.23", default-features = false, features = ["std", "ring", "tls12"] }

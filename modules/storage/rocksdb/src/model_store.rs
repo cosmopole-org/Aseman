@@ -26,8 +26,68 @@ pub const NAME: &str = "rocksdb";
 pub const DEFAULT_TAKE: u64 = aseman_contracts::capsule::MAX_QUERY_LIMIT as u64;
 /// The model store's directory under the storage root.
 pub const DATA_DIRECTORY: &str = "data";
-/// Written by `asemanctl storage migrate` once a legacy store was converted.
-pub const MIGRATED_MARKER: &str = "aseman/storage/migrated-from-legacy";
+/// The consensus logs' directory under the storage root.
+pub const CONSENSUS_DIRECTORY: &str = "consensus";
+/// Where Hashgraph kept each chain's log before ADR 0036:
+/// `{storage_root}/chains/{work_chain}/{shard}/rocksdb_db`.
+pub const LEGACY_CHAINS_DIRECTORY: &str = "chains";
+pub const LEGACY_LOG_DIRECTORY: &str = "rocksdb_db";
+
+/// A consensus log from before ADR 0036: its new relative name and its directory.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct LegacyConsensusLog {
+    pub name: String,
+    pub path: PathBuf,
+}
+
+/// The consensus logs Hashgraph kept under `storage_root` before ADR 0036, each with
+/// the name it takes now (`chains/{work_chain}/{shard}`).
+pub fn legacy_consensus_logs(storage_root: &Path) -> std::io::Result<Vec<LegacyConsensusLog>> {
+    let mut logs = Vec::new();
+    let chains = storage_root.join(LEGACY_CHAINS_DIRECTORY);
+    let Ok(work_chains) = std::fs::read_dir(&chains) else {
+        return Ok(logs);
+    };
+    for work_chain in work_chains {
+        let work_chain = work_chain?.path();
+        let Ok(shards) = std::fs::read_dir(&work_chain) else {
+            continue;
+        };
+        for shard in shards {
+            let shard = shard?.path();
+            let path = shard.join(LEGACY_LOG_DIRECTORY);
+            if !path.join("CURRENT").is_file() {
+                continue;
+            }
+            if let (Some(work_chain), Some(shard)) = (work_chain.file_name(), shard.file_name()) {
+                logs.push(LegacyConsensusLog {
+                    name: format!(
+                        "{LEGACY_CHAINS_DIRECTORY}/{}/{}",
+                        work_chain.to_string_lossy(),
+                        shard.to_string_lossy()
+                    ),
+                    path,
+                });
+            }
+        }
+    }
+    logs.sort_by(|left, right| left.name.cmp(&right.name));
+    Ok(logs)
+}
+
+/// `path` renamed aside to `{path}--retired--{timestamp}` (kept for inspection).
+pub fn retire_directory(path: &Path) -> std::io::Result<PathBuf> {
+    let mut name = path.as_os_str().to_owned();
+    name.push(format!(
+        "--retired--{}",
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map_or(0, |elapsed| elapsed.as_secs())
+    ));
+    let retired = PathBuf::from(name);
+    std::fs::rename(path, &retired)?;
+    Ok(retired)
+}
 
 fn error(error: CapsuleStoreError) -> StorageError {
     match error {
@@ -168,7 +228,7 @@ impl Committed {
                         nulls.push(row);
                     }
                 }
-                nulls.sort_by(|left, right| left.id.cmp(&right.id));
+                nulls.sort_by_key(|left| left.id);
                 rows.extend(nulls);
                 return Ok(rows);
             }
@@ -191,16 +251,23 @@ pub struct RocksDbProvider {
     store: Arc<RocksDbCapsuleStore>,
     logs: Arc<RocksDbConsensusLogStorage>,
     legacy_store: Option<PathBuf>,
+    /// Where legacy consensus logs may remain (absent for a store opened by a tool).
+    storage_root: Option<PathBuf>,
     serves_admin_routes: bool,
 }
 
 impl RocksDbProvider {
     /// A provider over an already-open key/value store (tests, tools).
-    pub fn over(kv: Arc<dyn LegacyKvStore>, replicated: bool, logs_root: &Path) -> StorageResult<Self> {
+    pub fn over(
+        kv: Arc<dyn LegacyKvStore>,
+        replicated: bool,
+        logs_root: &Path,
+    ) -> StorageResult<Self> {
         Ok(Self {
             store: Arc::new(RocksDbCapsuleStore::open(kv, replicated).map_err(error)?),
             logs: Arc::new(RocksDbConsensusLogStorage::new(logs_root)),
             legacy_store: None,
+            storage_root: None,
             serves_admin_routes: false,
         })
     }
@@ -226,9 +293,11 @@ impl ProviderPlugin for RocksDbPlugin {
         store.migrate_layout(settings.layout).map_err(error)?;
         Ok(Arc::new(RocksDbProvider {
             store: Arc::new(store),
-            // Consensus-log names are the engines' absolute data directories.
-            logs: Arc::new(RocksDbConsensusLogStorage::new(PathBuf::new())),
+            logs: Arc::new(RocksDbConsensusLogStorage::new(
+                settings.storage_root.join(CONSENSUS_DIRECTORY),
+            )),
             legacy_store: settings.legacy_store.clone(),
+            storage_root: Some(settings.storage_root.clone()),
             serves_admin_routes,
         }))
     }
@@ -280,7 +349,9 @@ impl StorageProvider for RocksDbProvider {
         if self.store.try_import(capsules).map_err(error)? {
             Ok(())
         } else {
-            Err(StorageError::conflict("the store changed during the import"))
+            Err(StorageError::conflict(
+                "the store changed during the import",
+            ))
         }
     }
 
@@ -289,24 +360,39 @@ impl StorageProvider for RocksDbProvider {
     }
 
     fn legacy_layout(&self) -> StorageResult<Option<String>> {
-        let Some(path) = &self.legacy_store else {
-            return Ok(None);
-        };
-        if !path.join("CURRENT").is_file()
-            || self
-                .store
-                .kv
-                .get(MIGRATED_MARKER.as_bytes())
+        if let Some(path) = &self.legacy_store
+            && path.join("CURRENT").is_file()
+            && RocksDbKvStore::open_default(path)
+                .and_then(|legacy| legacy.has_prefix(b""))
                 .map_err(StorageError::unavailable)?
-                .is_some()
         {
-            return Ok(None);
+            return Ok(Some(format!("legacy key/value ({})", path.display())));
         }
-        let legacy = RocksDbKvStore::open_default(path).map_err(StorageError::unavailable)?;
-        Ok(legacy
-            .has_prefix(b"")
-            .map_err(StorageError::unavailable)?
-            .then(|| format!("legacy key/value ({})", path.display())))
+        if let Some(root) = &self.storage_root
+            && let Some(log) = legacy_consensus_logs(root)
+                .map_err(StorageError::unavailable)?
+                .first()
+        {
+            return Ok(Some(format!(
+                "legacy consensus log ({})",
+                log.path.display()
+            )));
+        }
+        Ok(None)
+    }
+
+    fn retire_legacy_layout(&self) -> StorageResult<()> {
+        if let Some(path) = &self.legacy_store
+            && path.exists()
+        {
+            retire_directory(path).map_err(StorageError::unavailable)?;
+        }
+        if let Some(root) = &self.storage_root {
+            for log in legacy_consensus_logs(root).map_err(StorageError::unavailable)? {
+                retire_directory(&log.path).map_err(StorageError::unavailable)?;
+            }
+        }
+        Ok(())
     }
 }
 
@@ -462,9 +548,14 @@ impl CapsuleTransaction for RocksDbTransaction {
         capsule
             .verify()
             .map_err(|failure| StorageError::invalid(failure.to_string()))?;
-        let current = self.get(model, Id(capsule.id.0))?.map(|stored| stored.revision);
+        let current = self
+            .get(model, Id(capsule.id.0))?
+            .map(|stored| stored.revision);
         if current != expected_revision {
-            return Err(StorageError::conflict(format!("{}: stale revision", model.name)));
+            return Err(StorageError::conflict(format!(
+                "{}: stale revision",
+                model.name
+            )));
         }
         self.check_unique(model, capsule)?;
         self.writes.lock().map_err(poisoned)?.push((
@@ -486,7 +577,9 @@ impl CapsuleTransaction for RocksDbTransaction {
         if self.committed.store.try_put_all(&writes).map_err(error)? {
             Ok(())
         } else {
-            Err(StorageError::conflict("another transaction changed these records"))
+            Err(StorageError::conflict(
+                "another transaction changed these records",
+            ))
         }
     }
 

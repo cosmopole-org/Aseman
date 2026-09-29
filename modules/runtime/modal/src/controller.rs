@@ -719,7 +719,7 @@ impl ModalVmPlugin {
                     // Only the owner of the current marker may publish the
                     // outcome. A later provision can supersede a stale one.
                     if state_get(&marker_key) == marker {
-                        state_del(&[marker_key.clone()]);
+                        state_del(std::slice::from_ref(&marker_key));
                         if let Err(error) = result {
                             state_put(&provisioning_error_key(&vm_id), &error);
                             log_vm(
@@ -1326,7 +1326,7 @@ impl ModalVmPlugin {
             Err(status) if status.code() == tonic::Code::Unimplemented => {
                 self.volume_list_v1(conn, volume_id, path)?
             }
-            Err(status) => return Err(rpc_error("VolumeListFiles2", status)),
+            Err(status) => return Err(rpc_error("VolumeListFiles2", *status)),
             Ok(entries) => entries,
         };
         let entries: Vec<JsonValue> = entries
@@ -1360,7 +1360,7 @@ impl ModalVmPlugin {
         conn: &mut ModalConn,
         volume_id: &str,
         path: &str,
-    ) -> Result<Vec<proto::FileEntry>, tonic::Status> {
+    ) -> Result<Vec<proto::FileEntry>, Box<tonic::Status>> {
         let request = proto::VolumeListFiles2Request {
             volume_id: volume_id.to_string(),
             path: path.to_string(),
@@ -1368,11 +1368,12 @@ impl ModalVmPlugin {
             max_entries: Some(500),
         };
         let mut stream = block_on(conn.stub.volume_list_files2(request))
-            .map_err(tonic::Status::unknown)??
+            .map_err(tonic::Status::unknown)?
+            .map_err(Box::new)?
             .into_inner();
         let mut entries = Vec::new();
         while let Some(batch) = block_on(stream.next()).map_err(tonic::Status::unknown)? {
-            entries.extend(batch?.entries);
+            entries.extend(batch.map_err(Box::new)?.entries);
         }
         Ok(entries)
     }

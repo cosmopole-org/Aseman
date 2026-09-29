@@ -57,8 +57,8 @@
         "aseman-public-http",
         "aseman-public-service",
         "aseman-realtime-durable",
-        "aseman-storage-postgres",
-        "aseman-storage-rocksdb",
+        "aseman-storage",
+        "aseman-storage-providers",
         "aseman-vmm-http",
         "base64",
         "chacha20poly1305",
@@ -95,7 +95,8 @@
         "tungstenite",
         "url",
         "uuid",
-        "aseman-ports"
+        "aseman-ports",
+        "aseman-storage-postgres"
       ],
       "current_owner": "apps/aseman-node/Cargo.toml",
       "disposition": "move-or-wrap-per-parent-ledger",
@@ -159,6 +160,7 @@
         "anyhow",
         "aseman-config",
         "aseman-domain",
+        "aseman-storage-providers",
         "base64",
         "chrono",
         "clap",
@@ -214,6 +216,7 @@
         "aseman-contracts",
         "aseman-domain",
         "aseman-ports",
+        "aseman-storage",
         "serde_json",
         "thiserror",
         "uuid"
@@ -330,6 +333,47 @@
       "disposition": "move-or-wrap-per-parent-ledger",
       "expiry": "owning phase replacement/deletion gate",
       "id": "rust-package:aseman-ports",
+      "replacement_evidence": "A001 plus architecture dependency checks",
+      "target_owner": "root Aseman workspace or isolated legacy provider"
+    },
+    {
+      "callers": [
+        "aseman-config",
+        "aseman-contracts",
+        "aseman-ports",
+        "serde",
+        "serde_json",
+        "thiserror",
+        "uuid",
+        "aseman-ports"
+      ],
+      "current_owner": "crates/aseman-storage/Cargo.toml",
+      "disposition": "move-or-wrap-per-parent-ledger",
+      "expiry": "owning phase replacement/deletion gate",
+      "id": "rust-package:aseman-storage",
+      "replacement_evidence": "A001 plus architecture dependency checks",
+      "target_owner": "root Aseman workspace or isolated legacy provider"
+    },
+    {
+      "callers": [
+        "aseman-capsule",
+        "aseman-config",
+        "aseman-contracts",
+        "aseman-domain",
+        "aseman-ports",
+        "aseman-storage",
+        "aseman-storage-postgres",
+        "aseman-storage-rocksdb",
+        "hex",
+        "serde_json",
+        "sha2",
+        "postgres",
+        "rsa"
+      ],
+      "current_owner": "crates/aseman-storage-providers/Cargo.toml",
+      "disposition": "move-or-wrap-per-parent-ledger",
+      "expiry": "owning phase replacement/deletion gate",
+      "id": "rust-package:aseman-storage-providers",
       "replacement_evidence": "A001 plus architecture dependency checks",
       "target_owner": "root Aseman workspace or isolated legacy provider"
     },
@@ -744,6 +788,7 @@
         "aseman-contracts",
         "aseman-domain",
         "aseman-ports",
+        "aseman-storage",
         "postgres",
         "r2d2",
         "r2d2_postgres",
@@ -758,8 +803,10 @@
         "aseman-application",
         "aseman-policy-native",
         "aseman-ports",
+        "aseman-storage",
         "aseman-storage-conformance",
-        "rsa"
+        "rsa",
+        "url"
       ],
       "current_owner": "modules/storage/postgres/Cargo.toml",
       "disposition": "move-or-wrap-per-parent-ledger",
@@ -776,13 +823,12 @@
         "aseman-contracts",
         "aseman-domain",
         "aseman-ports",
+        "aseman-storage",
         "base64",
         "chacha20poly1305",
         "chrono",
         "openraft",
         "postgres",
-        "r2d2",
-        "r2d2_postgres",
         "reqwest",
         "rocksdb",
         "rsa",
@@ -793,6 +839,7 @@
         "tokio",
         "uuid",
         "aseman-ports",
+        "aseman-storage",
         "aseman-storage-conformance"
       ],
       "current_owner": "modules/storage/rocksdb/Cargo.toml",
@@ -1067,7 +1114,7 @@
     {
       "callers": [
         "contracts/config/legacy-aliases.json:54",
-        "crates/aseman-config/src/lib.rs:405"
+        "crates/aseman-config/src/lib.rs:406"
       ],
       "current_owner": "runtime-or-storage",
       "disposition": "move",
@@ -1079,7 +1126,7 @@
     {
       "callers": [
         "contracts/config/legacy-aliases.json:71",
-        "crates/aseman-config/src/lib.rs:407"
+        "crates/aseman-config/src/lib.rs:408"
       ],
       "current_owner": "runtime-or-storage",
       "disposition": "move",
@@ -1091,7 +1138,7 @@
     {
       "callers": [
         "contracts/config/legacy-aliases.json:88",
-        "crates/aseman-config/src/lib.rs:402"
+        "crates/aseman-config/src/lib.rs:403"
       ],
       "current_owner": "network",
       "disposition": "move",
@@ -1103,7 +1150,7 @@
     {
       "callers": [
         "contracts/config/legacy-aliases.json:105",
-        "crates/aseman-config/src/lib.rs:396"
+        "crates/aseman-config/src/lib.rs:397"
       ],
       "current_owner": "network",
       "disposition": "move",
@@ -1115,7 +1162,7 @@
     {
       "callers": [
         "contracts/config/legacy-aliases.json:122",
-        "crates/aseman-config/src/lib.rs:399"
+        "crates/aseman-config/src/lib.rs:400"
       ],
       "current_owner": "network",
       "disposition": "move",
@@ -1127,7 +1174,7 @@
     {
       "callers": [
         "contracts/config/legacy-aliases.json:139",
-        "crates/aseman-config/src/lib.rs:393"
+        "crates/aseman-config/src/lib.rs:394"
       ],
       "current_owner": "network",
       "disposition": "move",
@@ -1750,8 +1797,8 @@
     {
       "callers": [
         "contracts/config/legacy-aliases.json:895",
-        "crates/aseman-config/src/lib.rs:452",
-        "crates/aseman-config/src/lib.rs:521"
+        "crates/aseman-config/src/lib.rs:453",
+        "crates/aseman-config/src/lib.rs:522"
       ],
       "current_owner": "process-environment",
       "disposition": "move",
@@ -2016,7 +2063,7 @@
     {
       "callers": [
         "contracts/config/legacy-aliases.json:1215",
-        "crates/aseman-config/src/lib.rs:432"
+        "crates/aseman-config/src/lib.rs:433"
       ],
       "current_owner": "process-environment",
       "disposition": "move",
@@ -2303,7 +2350,7 @@
     {
       "callers": [
         "contracts/config/legacy-aliases.json:1557",
-        "crates/aseman-config/src/lib.rs:525"
+        "crates/aseman-config/src/lib.rs:526"
       ],
       "current_owner": "process-environment",
       "disposition": "move",
@@ -2392,7 +2439,7 @@
     {
       "callers": [
         "contracts/config/legacy-aliases.json:1665",
-        "crates/aseman-config/src/lib.rs:449"
+        "crates/aseman-config/src/lib.rs:450"
       ],
       "current_owner": "runtime-or-storage",
       "disposition": "move",
@@ -5155,6 +5202,17 @@
     },
     {
       "callers": [
+        "casparctl top_level storage"
+      ],
+      "current_owner": "casparctl",
+      "disposition": "deprecate-alias",
+      "expiry": "ADR-0004 window after replacement acceptance",
+      "id": "cli_and_scripts:casparctl top_level storage",
+      "replacement_evidence": "tests/characterization/surface-golden.json",
+      "target_owner": "asemanctl"
+    },
+    {
+      "callers": [
         "casparctl top_level doctor"
       ],
       "current_owner": "casparctl",
@@ -5509,882 +5567,6 @@
   "storage": [
     {
       "callers": [
-        "apps/aseman-node/src/adapters/vmm/host/functions/vm_ownership.rs:126",
-        "apps/aseman-node/src/adapters/vmm/host/functions/vm_ownership.rs:225",
-        "apps/aseman-node/src/api/actions/program.rs:2245",
-        "apps/aseman-node/src/api/actions/program.rs:907"
-      ],
-      "current_owner": "legacy RocksDB/transaction key space",
-      "disposition": "rewrite",
-      "expiry": "Phase 3 cutover plus rollback window",
-      "id": "storage-key:::{}",
-      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
-      "target_owner": "reviewed A308 legacy-to-capsule transform"
-    },
-    {
-      "callers": [
-        "apps/aseman-node/src/api/actions/gateway.rs:50"
-      ],
-      "current_owner": "legacy RocksDB/transaction key space",
-      "disposition": "rewrite",
-      "expiry": "Phase 3 cutover plus rollback window",
-      "id": "storage-key:BridgeTopicOwner::{}",
-      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
-      "target_owner": "realtime/outbox capsule mapping"
-    },
-    {
-      "callers": [
-        "apps/aseman-node/src/api/model/creature_ports.rs:261"
-      ],
-      "current_owner": "legacy RocksDB/transaction key space",
-      "disposition": "rewrite",
-      "expiry": "Phase 3 cutover plus rollback window",
-      "id": "storage-key:CreatMeta::{creature_id}",
-      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
-      "target_owner": "typed core capsule/table mapping"
-    },
-    {
-      "callers": [
-        "apps/aseman-node/src/api/model/creature.rs:142"
-      ],
-      "current_owner": "legacy RocksDB/transaction key space",
-      "disposition": "rewrite",
-      "expiry": "Phase 3 cutover plus rollback window",
-      "id": "storage-key:CreatMeta::{}",
-      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
-      "target_owner": "typed core capsule/table mapping"
-    },
-    {
-      "callers": [
-        "apps/aseman-node/src/api/actions/creature/finance.rs:144",
-        "apps/aseman-node/src/api/actions/creature/finance.rs:161"
-      ],
-      "current_owner": "legacy RocksDB/transaction key space",
-      "disposition": "rewrite",
-      "expiry": "Phase 3 cutover plus rollback window",
-      "id": "storage-key:FinanceDebt::{user_id}",
-      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
-      "target_owner": "finance capsule/table mapping"
-    },
-    {
-      "callers": [
-        "apps/aseman-node/src/api/actions/creature/finance.rs:1545",
-        "apps/aseman-node/src/api/actions/creature/finance.rs:1927",
-        "apps/aseman-node/src/api/actions/creature/finance.rs:2807",
-        "apps/aseman-node/src/api/actions/creature/finance.rs:3156"
-      ],
-      "current_owner": "legacy RocksDB/transaction key space",
-      "disposition": "rewrite",
-      "expiry": "Phase 3 cutover plus rollback window",
-      "id": "storage-key:FinanceEarned::{user_id}",
-      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
-      "target_owner": "finance capsule/table mapping"
-    },
-    {
-      "callers": [
-        "apps/aseman-node/src/api/actions/creature/finance.rs:122",
-        "apps/aseman-node/src/api/actions/creature/finance.rs:139"
-      ],
-      "current_owner": "legacy RocksDB/transaction key space",
-      "disposition": "rewrite",
-      "expiry": "Phase 3 cutover plus rollback window",
-      "id": "storage-key:FinanceHeld::{payer_id}",
-      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
-      "target_owner": "finance capsule/table mapping"
-    },
-    {
-      "callers": [
-        "apps/aseman-node/src/api/actions/creature/finance.rs:1305"
-      ],
-      "current_owner": "legacy RocksDB/transaction key space",
-      "disposition": "rewrite",
-      "expiry": "Phase 3 cutover plus rollback window",
-      "id": "storage-key:FinanceHoldByPayer::{payer_id}::{now:020}::{hold_id}",
-      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
-      "target_owner": "finance capsule/table mapping"
-    },
-    {
-      "callers": [
-        "apps/aseman-node/src/api/actions/creature/finance.rs:1891"
-      ],
-      "current_owner": "legacy RocksDB/transaction key space",
-      "disposition": "rewrite",
-      "expiry": "Phase 3 cutover plus rollback window",
-      "id": "storage-key:FinanceHoldByPayer::{user_id}::",
-      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
-      "target_owner": "finance capsule/table mapping"
-    },
-    {
-      "callers": [
-        "apps/aseman-node/src/api/model/finance_ports.rs:288"
-      ],
-      "current_owner": "legacy RocksDB/transaction key space",
-      "disposition": "rewrite",
-      "expiry": "Phase 3 cutover plus rollback window",
-      "id": "storage-key:FinanceHoldByPayer::{user}::",
-      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
-      "target_owner": "finance capsule/table mapping"
-    },
-    {
-      "callers": [
-        "apps/aseman-node/src/api/actions/creature/finance.rs:1182"
-      ],
-      "current_owner": "legacy RocksDB/transaction key space",
-      "disposition": "rewrite",
-      "expiry": "Phase 3 cutover plus rollback window",
-      "id": "storage-key:FinanceHoldRequest::{payer_id}::{}",
-      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
-      "target_owner": "finance capsule/table mapping"
-    },
-    {
-      "callers": [
-        "apps/aseman-node/src/api/model/finance_ports.rs:130"
-      ],
-      "current_owner": "legacy RocksDB/transaction key space",
-      "disposition": "rewrite",
-      "expiry": "Phase 3 cutover plus rollback window",
-      "id": "storage-key:FinanceHoldRequest::{payer}::{key}",
-      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
-      "target_owner": "finance capsule/table mapping"
-    },
-    {
-      "callers": [
-        "apps/aseman-node/src/api/actions/creature/finance.rs:353",
-        "apps/aseman-node/src/api/model/finance_ports.rs:371"
-      ],
-      "current_owner": "legacy RocksDB/transaction key space",
-      "disposition": "rewrite",
-      "expiry": "Phase 3 cutover plus rollback window",
-      "id": "storage-key:FinanceJournalByUser::{participant}::{now:020}::{journal_id}",
-      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
-      "target_owner": "finance capsule/table mapping"
-    },
-    {
-      "callers": [
-        "apps/aseman-node/src/api/actions/creature/finance.rs:1877"
-      ],
-      "current_owner": "legacy RocksDB/transaction key space",
-      "disposition": "rewrite",
-      "expiry": "Phase 3 cutover plus rollback window",
-      "id": "storage-key:FinanceJournalByUser::{user_id}::",
-      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
-      "target_owner": "finance capsule/table mapping"
-    },
-    {
-      "callers": [
-        "apps/aseman-node/src/api/model/finance_ports.rs:296"
-      ],
-      "current_owner": "legacy RocksDB/transaction key space",
-      "disposition": "rewrite",
-      "expiry": "Phase 3 cutover plus rollback window",
-      "id": "storage-key:FinanceJournalByUser::{user}::",
-      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
-      "target_owner": "finance capsule/table mapping"
-    },
-    {
-      "callers": [
-        "apps/aseman-node/src/api/actions/creature/finance.rs:1856"
-      ],
-      "current_owner": "legacy RocksDB/transaction key space",
-      "disposition": "rewrite",
-      "expiry": "Phase 3 cutover plus rollback window",
-      "id": "storage-key:FinancePayoutByUser::{user_id}::",
-      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
-      "target_owner": "finance capsule/table mapping"
-    },
-    {
-      "callers": [
-        "apps/aseman-node/src/api/actions/creature/finance.rs:2058"
-      ],
-      "current_owner": "legacy RocksDB/transaction key space",
-      "disposition": "rewrite",
-      "expiry": "Phase 3 cutover plus rollback window",
-      "id": "storage-key:FinancePayoutByUser::{user_id}::{now:020}::{payout_id}",
-      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
-      "target_owner": "finance capsule/table mapping"
-    },
-    {
-      "callers": [
-        "apps/aseman-node/src/api/model/finance_ports.rs:304"
-      ],
-      "current_owner": "legacy RocksDB/transaction key space",
-      "disposition": "rewrite",
-      "expiry": "Phase 3 cutover plus rollback window",
-      "id": "storage-key:FinancePayoutByUser::{user}::",
-      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
-      "target_owner": "finance capsule/table mapping"
-    },
-    {
-      "callers": [
-        "apps/aseman-node/src/api/actions/creature/finance.rs:185",
-        "apps/aseman-node/src/api/actions/creature/finance.rs:193"
-      ],
-      "current_owner": "legacy RocksDB/transaction key space",
-      "disposition": "rewrite",
-      "expiry": "Phase 3 cutover plus rollback window",
-      "id": "storage-key:FinancePayoutHeld::{user_id}",
-      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
-      "target_owner": "finance capsule/table mapping"
-    },
-    {
-      "callers": [
-        "apps/aseman-node/src/api/actions/creature/finance.rs:1994"
-      ],
-      "current_owner": "legacy RocksDB/transaction key space",
-      "disposition": "rewrite",
-      "expiry": "Phase 3 cutover plus rollback window",
-      "id": "storage-key:FinancePayoutRequest::{user_id}::{}",
-      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
-      "target_owner": "finance capsule/table mapping"
-    },
-    {
-      "callers": [
-        "apps/aseman-node/src/api/model/finance_ports.rs:142"
-      ],
-      "current_owner": "legacy RocksDB/transaction key space",
-      "disposition": "rewrite",
-      "expiry": "Phase 3 cutover plus rollback window",
-      "id": "storage-key:FinancePayoutRequest::{user}::{request_id}",
-      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
-      "target_owner": "finance capsule/table mapping"
-    },
-    {
-      "callers": [
-        "apps/aseman-node/src/api/model/finance_ports.rs:145"
-      ],
-      "current_owner": "legacy RocksDB/transaction key space",
-      "disposition": "rewrite",
-      "expiry": "Phase 3 cutover plus rollback window",
-      "id": "storage-key:FinancePayoutResolution::{resolution_id}",
-      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
-      "target_owner": "finance capsule/table mapping"
-    },
-    {
-      "callers": [
-        "apps/aseman-node/src/api/actions/creature/finance.rs:2104"
-      ],
-      "current_owner": "legacy RocksDB/transaction key space",
-      "disposition": "rewrite",
-      "expiry": "Phase 3 cutover plus rollback window",
-      "id": "storage-key:FinancePayoutResolution::{}",
-      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
-      "target_owner": "finance capsule/table mapping"
-    },
-    {
-      "callers": [
-        "apps/aseman-node/src/api/actions/creature/finance.rs:2359"
-      ],
-      "current_owner": "legacy RocksDB/transaction key space",
-      "disposition": "rewrite",
-      "expiry": "Phase 3 cutover plus rollback window",
-      "id": "storage-key:FinancePoolByUser::{payer_id}",
-      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
-      "target_owner": "finance capsule/table mapping"
-    },
-    {
-      "callers": [
-        "apps/aseman-node/src/api/actions/creature/finance.rs:1908"
-      ],
-      "current_owner": "legacy RocksDB/transaction key space",
-      "disposition": "rewrite",
-      "expiry": "Phase 3 cutover plus rollback window",
-      "id": "storage-key:FinancePoolByUser::{user_id}",
-      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
-      "target_owner": "finance capsule/table mapping"
-    },
-    {
-      "callers": [
-        "apps/aseman-node/src/api/model/finance_ports.rs:310",
-        "apps/aseman-node/src/api/model/finance_ports.rs:315"
-      ],
-      "current_owner": "legacy RocksDB/transaction key space",
-      "disposition": "rewrite",
-      "expiry": "Phase 3 cutover plus rollback window",
-      "id": "storage-key:FinancePoolByUser::{user}",
-      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
-      "target_owner": "finance capsule/table mapping"
-    },
-    {
-      "callers": [
-        "apps/aseman-node/src/api/model/finance_ports.rs:151"
-      ],
-      "current_owner": "legacy RocksDB/transaction key space",
-      "disposition": "rewrite",
-      "expiry": "Phase 3 cutover plus rollback window",
-      "id": "storage-key:FinancePoolClose::{pool_id}",
-      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
-      "target_owner": "finance capsule/table mapping"
-    },
-    {
-      "callers": [
-        "apps/aseman-node/src/api/actions/creature/finance.rs:2510"
-      ],
-      "current_owner": "legacy RocksDB/transaction key space",
-      "disposition": "rewrite",
-      "expiry": "Phase 3 cutover plus rollback window",
-      "id": "storage-key:FinancePoolClose::{}",
-      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
-      "target_owner": "finance capsule/table mapping"
-    },
-    {
-      "callers": [
-        "apps/aseman-node/src/api/actions/creature/finance.rs:3046"
-      ],
-      "current_owner": "legacy RocksDB/transaction key space",
-      "disposition": "rewrite",
-      "expiry": "Phase 3 cutover plus rollback window",
-      "id": "storage-key:FinancePoolDebit::{authority_id}::{}",
-      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
-      "target_owner": "finance capsule/table mapping"
-    },
-    {
-      "callers": [
-        "apps/aseman-node/src/api/model/finance_ports.rs:162"
-      ],
-      "current_owner": "legacy RocksDB/transaction key space",
-      "disposition": "rewrite",
-      "expiry": "Phase 3 cutover plus rollback window",
-      "id": "storage-key:FinancePoolDebit::{authority}::{debit_id}",
-      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
-      "target_owner": "finance capsule/table mapping"
-    },
-    {
-      "callers": [
-        "apps/aseman-node/src/api/actions/creature/finance.rs:2294"
-      ],
-      "current_owner": "legacy RocksDB/transaction key space",
-      "disposition": "rewrite",
-      "expiry": "Phase 3 cutover plus rollback window",
-      "id": "storage-key:FinancePoolOpen::{payer_id}::{}",
-      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
-      "target_owner": "finance capsule/table mapping"
-    },
-    {
-      "callers": [
-        "apps/aseman-node/src/api/model/finance_ports.rs:147"
-      ],
-      "current_owner": "legacy RocksDB/transaction key space",
-      "disposition": "rewrite",
-      "expiry": "Phase 3 cutover plus rollback window",
-      "id": "storage-key:FinancePoolOpen::{payer}::{key}",
-      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
-      "target_owner": "finance capsule/table mapping"
-    },
-    {
-      "callers": [
-        "apps/aseman-node/src/api/actions/creature/finance.rs:2390"
-      ],
-      "current_owner": "legacy RocksDB/transaction key space",
-      "disposition": "rewrite",
-      "expiry": "Phase 3 cutover plus rollback window",
-      "id": "storage-key:FinancePoolRefresh::{payer_id}::{}",
-      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
-      "target_owner": "finance capsule/table mapping"
-    },
-    {
-      "callers": [
-        "apps/aseman-node/src/api/model/finance_ports.rs:149"
-      ],
-      "current_owner": "legacy RocksDB/transaction key space",
-      "disposition": "rewrite",
-      "expiry": "Phase 3 cutover plus rollback window",
-      "id": "storage-key:FinancePoolRefresh::{payer}::{refresh_id}",
-      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
-      "target_owner": "finance capsule/table mapping"
-    },
-    {
-      "callers": [
-        "apps/aseman-node/src/api/actions/creature/finance.rs:2705"
-      ],
-      "current_owner": "legacy RocksDB/transaction key space",
-      "disposition": "rewrite",
-      "expiry": "Phase 3 cutover plus rollback window",
-      "id": "storage-key:FinancePoolSettlement::{authority_id}::{}",
-      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
-      "target_owner": "finance capsule/table mapping"
-    },
-    {
-      "callers": [
-        "apps/aseman-node/src/api/model/finance_ports.rs:156"
-      ],
-      "current_owner": "legacy RocksDB/transaction key space",
-      "disposition": "rewrite",
-      "expiry": "Phase 3 cutover plus rollback window",
-      "id": "storage-key:FinancePoolSettlement::{authority}::{settlement_id}",
-      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
-      "target_owner": "finance capsule/table mapping"
-    },
-    {
-      "callers": [
-        "apps/aseman-node/src/api/actions/creature/finance.rs:1689"
-      ],
-      "current_owner": "legacy RocksDB/transaction key space",
-      "disposition": "rewrite",
-      "expiry": "Phase 3 cutover plus rollback window",
-      "id": "storage-key:FinanceRelease::{caller_id}::{}",
-      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
-      "target_owner": "finance capsule/table mapping"
-    },
-    {
-      "callers": [
-        "apps/aseman-node/src/api/model/finance_ports.rs:139"
-      ],
-      "current_owner": "legacy RocksDB/transaction key space",
-      "disposition": "rewrite",
-      "expiry": "Phase 3 cutover plus rollback window",
-      "id": "storage-key:FinanceRelease::{caller}::{release_id}",
-      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
-      "target_owner": "finance capsule/table mapping"
-    },
-    {
-      "callers": [
-        "apps/aseman-node/src/api/actions/creature/finance.rs:1352"
-      ],
-      "current_owner": "legacy RocksDB/transaction key space",
-      "disposition": "rewrite",
-      "expiry": "Phase 3 cutover plus rollback window",
-      "id": "storage-key:FinanceRun::{authority_id}::{}",
-      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
-      "target_owner": "finance capsule/table mapping"
-    },
-    {
-      "callers": [
-        "apps/aseman-node/src/api/model/finance_ports.rs:131"
-      ],
-      "current_owner": "legacy RocksDB/transaction key space",
-      "disposition": "rewrite",
-      "expiry": "Phase 3 cutover plus rollback window",
-      "id": "storage-key:FinanceRun::{authority}::{run_id}",
-      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
-      "target_owner": "finance capsule/table mapping"
-    },
-    {
-      "callers": [
-        "apps/aseman-node/src/api/actions/creature/finance.rs:1434"
-      ],
-      "current_owner": "legacy RocksDB/transaction key space",
-      "disposition": "rewrite",
-      "expiry": "Phase 3 cutover plus rollback window",
-      "id": "storage-key:FinanceSettlement::{authority_id}::{}",
-      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
-      "target_owner": "finance capsule/table mapping"
-    },
-    {
-      "callers": [
-        "apps/aseman-node/src/api/model/finance_ports.rs:136"
-      ],
-      "current_owner": "legacy RocksDB/transaction key space",
-      "disposition": "rewrite",
-      "expiry": "Phase 3 cutover plus rollback window",
-      "id": "storage-key:FinanceSettlement::{authority}::{settlement_id}",
-      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
-      "target_owner": "finance capsule/table mapping"
-    },
-    {
-      "callers": [
-        "apps/aseman-node/src/api/actions/creature/finance.rs:1928"
-      ],
-      "current_owner": "legacy RocksDB/transaction key space",
-      "disposition": "rewrite",
-      "expiry": "Phase 3 cutover plus rollback window",
-      "id": "storage-key:FinanceSpent::{user_id}",
-      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
-      "target_owner": "finance capsule/table mapping"
-    },
-    {
-      "callers": [
-        "apps/aseman-node/src/api/actions/creature/finance.rs:1538",
-        "apps/aseman-node/src/api/actions/creature/finance.rs:2846",
-        "apps/aseman-node/src/api/actions/creature/finance.rs:3191"
-      ],
-      "current_owner": "legacy RocksDB/transaction key space",
-      "disposition": "rewrite",
-      "expiry": "Phase 3 cutover plus rollback window",
-      "id": "storage-key:FinanceSpent::{}",
-      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
-      "target_owner": "finance capsule/table mapping"
-    },
-    {
-      "callers": [
-        "apps/aseman-node/src/api/actions/creature/finance.rs:166",
-        "apps/aseman-node/src/api/actions/creature/finance.rs:178"
-      ],
-      "current_owner": "legacy RocksDB/transaction key space",
-      "disposition": "rewrite",
-      "expiry": "Phase 3 cutover plus rollback window",
-      "id": "storage-key:FinanceWithdrawable::{user_id}",
-      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
-      "target_owner": "finance capsule/table mapping"
-    },
-    {
-      "callers": [
-        "apps/aseman-node/src/api/model/finance_ports.rs:43"
-      ],
-      "current_owner": "legacy RocksDB/transaction key space",
-      "disposition": "rewrite",
-      "expiry": "Phase 3 cutover plus rollback window",
-      "id": "storage-key:Json::BillingCatalog::{id}",
-      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
-      "target_owner": "finance capsule/table mapping"
-    },
-    {
-      "callers": [
-        "apps/aseman-node/src/api/actions/creature/finance.rs:925"
-      ],
-      "current_owner": "legacy RocksDB/transaction key space",
-      "disposition": "rewrite",
-      "expiry": "Phase 3 cutover plus rollback window",
-      "id": "storage-key:Json::BillingCatalog::{pricing_version}",
-      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
-      "target_owner": "finance capsule/table mapping"
-    },
-    {
-      "callers": [
-        "apps/aseman-node/src/api/actions/creature/finance.rs:484"
-      ],
-      "current_owner": "legacy RocksDB/transaction key space",
-      "disposition": "rewrite",
-      "expiry": "Phase 3 cutover plus rollback window",
-      "id": "storage-key:Json::BillingCatalog::{version}",
-      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
-      "target_owner": "finance capsule/table mapping"
-    },
-    {
-      "callers": [
-        "apps/aseman-node/src/api/model/finance_ports.rs:44"
-      ],
-      "current_owner": "legacy RocksDB/transaction key space",
-      "disposition": "rewrite",
-      "expiry": "Phase 3 cutover plus rollback window",
-      "id": "storage-key:Json::BillingQuote::{id}",
-      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
-      "target_owner": "finance capsule/table mapping"
-    },
-    {
-      "callers": [
-        "apps/aseman-node/src/api/actions/creature/finance.rs:1061"
-      ],
-      "current_owner": "legacy RocksDB/transaction key space",
-      "disposition": "rewrite",
-      "expiry": "Phase 3 cutover plus rollback window",
-      "id": "storage-key:Json::BillingQuote::{quote_id}",
-      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
-      "target_owner": "finance capsule/table mapping"
-    },
-    {
-      "callers": [
-        "apps/aseman-node/src/api/actions/creature/finance.rs:1134",
-        "apps/aseman-node/src/api/actions/creature/finance.rs:2632",
-        "apps/aseman-node/src/api/actions/creature/finance.rs:2744",
-        "apps/aseman-node/src/api/actions/creature/finance.rs:3076"
-      ],
-      "current_owner": "legacy RocksDB/transaction key space",
-      "disposition": "rewrite",
-      "expiry": "Phase 3 cutover plus rollback window",
-      "id": "storage-key:Json::BillingQuote::{}",
-      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
-      "target_owner": "finance capsule/table mapping"
-    },
-    {
-      "callers": [
-        "apps/aseman-node/src/api/actions/gateway.rs:44"
-      ],
-      "current_owner": "legacy RocksDB/transaction key space",
-      "disposition": "rewrite",
-      "expiry": "Phase 3 cutover plus rollback window",
-      "id": "storage-key:Json::BridgeGrant::{}",
-      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
-      "target_owner": "identity/policy/secret capsule mapping"
-    },
-    {
-      "callers": [
-        "apps/aseman-node/src/api/model/finance_ports.rs:58"
-      ],
-      "current_owner": "legacy RocksDB/transaction key space",
-      "disposition": "rewrite",
-      "expiry": "Phase 3 cutover plus rollback window",
-      "id": "storage-key:Json::Creature::{id}",
-      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
-      "target_owner": "typed core capsule/table mapping"
-    },
-    {
-      "callers": [
-        "apps/aseman-node/src/adapters/vmm/hostcall_entities.rs:1814",
-        "apps/aseman-node/src/api/actions/creature.rs:1019",
-        "apps/aseman-node/src/api/actions/creature.rs:1054",
-        "apps/aseman-node/src/api/actions/creature.rs:1156",
-        "apps/aseman-node/src/api/actions/creature.rs:1177",
-        "apps/aseman-node/src/api/actions/creature.rs:1631",
-        "apps/aseman-node/src/api/actions/creature.rs:1658",
-        "apps/aseman-node/src/api/actions/creature.rs:1759",
-        "apps/aseman-node/src/api/actions/creature.rs:1780",
-        "apps/aseman-node/src/api/actions/program.rs:196"
-      ],
-      "current_owner": "legacy RocksDB/transaction key space",
-      "disposition": "rewrite",
-      "expiry": "Phase 3 cutover plus rollback window",
-      "id": "storage-key:Json::Creature::{}",
-      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
-      "target_owner": "typed core capsule/table mapping"
-    },
-    {
-      "callers": [
-        "apps/aseman-node/src/api/model/creature_ports.rs:342"
-      ],
-      "current_owner": "legacy RocksDB/transaction key space",
-      "disposition": "rewrite",
-      "expiry": "Phase 3 cutover plus rollback window",
-      "id": "storage-key:Json::CreatureType::{name}",
-      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
-      "target_owner": "typed core capsule/table mapping"
-    },
-    {
-      "callers": [
-        "apps/aseman-node/src/adapters/vmm/host/vm_host_functions.rs:1457",
-        "apps/aseman-node/src/adapters/vmm/host/vm_host_functions.rs:1545",
-        "apps/aseman-node/src/adapters/vmm/host/vm_host_functions.rs:1634"
-      ],
-      "current_owner": "legacy RocksDB/transaction key space",
-      "disposition": "rewrite",
-      "expiry": "Phase 3 cutover plus rollback window",
-      "id": "storage-key:Json::FinanceHold::{hold_id_c}",
-      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
-      "target_owner": "finance capsule/table mapping"
-    },
-    {
-      "callers": [
-        "apps/aseman-node/src/api/actions/creature/finance.rs:73"
-      ],
-      "current_owner": "legacy RocksDB/transaction key space",
-      "disposition": "rewrite",
-      "expiry": "Phase 3 cutover plus rollback window",
-      "id": "storage-key:Json::FinanceHold::{hold_id}",
-      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
-      "target_owner": "finance capsule/table mapping"
-    },
-    {
-      "callers": [
-        "apps/aseman-node/src/api/model/finance_ports.rs:30"
-      ],
-      "current_owner": "legacy RocksDB/transaction key space",
-      "disposition": "rewrite",
-      "expiry": "Phase 3 cutover plus rollback window",
-      "id": "storage-key:Json::FinanceHold::{id}",
-      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
-      "target_owner": "finance capsule/table mapping"
-    },
-    {
-      "callers": [
-        "apps/aseman-node/src/api/model/finance_ports.rs:41"
-      ],
-      "current_owner": "legacy RocksDB/transaction key space",
-      "disposition": "rewrite",
-      "expiry": "Phase 3 cutover plus rollback window",
-      "id": "storage-key:Json::FinanceJournal::{id}",
-      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
-      "target_owner": "finance capsule/table mapping"
-    },
-    {
-      "callers": [
-        "apps/aseman-node/src/api/actions/creature/finance.rs:1885",
-        "apps/aseman-node/src/api/actions/creature/finance.rs:341",
-        "apps/aseman-node/src/api/model/finance_ports.rs:359"
-      ],
-      "current_owner": "legacy RocksDB/transaction key space",
-      "disposition": "rewrite",
-      "expiry": "Phase 3 cutover plus rollback window",
-      "id": "storage-key:Json::FinanceJournal::{journal_id}",
-      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
-      "target_owner": "finance capsule/table mapping"
-    },
-    {
-      "callers": [
-        "apps/aseman-node/src/api/model/finance_ports.rs:36"
-      ],
-      "current_owner": "legacy RocksDB/transaction key space",
-      "disposition": "rewrite",
-      "expiry": "Phase 3 cutover plus rollback window",
-      "id": "storage-key:Json::FinanceLiveDebit::{id}",
-      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
-      "target_owner": "finance capsule/table mapping"
-    },
-    {
-      "callers": [
-        "apps/aseman-node/src/api/actions/creature/finance.rs:118"
-      ],
-      "current_owner": "legacy RocksDB/transaction key space",
-      "disposition": "rewrite",
-      "expiry": "Phase 3 cutover plus rollback window",
-      "id": "storage-key:Json::FinanceLiveDebit::{run_id}",
-      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
-      "target_owner": "finance capsule/table mapping"
-    },
-    {
-      "callers": [
-        "apps/aseman-node/src/api/model/finance_ports.rs:42"
-      ],
-      "current_owner": "legacy RocksDB/transaction key space",
-      "disposition": "rewrite",
-      "expiry": "Phase 3 cutover plus rollback window",
-      "id": "storage-key:Json::FinancePayout::{id}",
-      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
-      "target_owner": "finance capsule/table mapping"
-    },
-    {
-      "callers": [
-        "apps/aseman-node/src/api/actions/creature/finance.rs:1846"
-      ],
-      "current_owner": "legacy RocksDB/transaction key space",
-      "disposition": "rewrite",
-      "expiry": "Phase 3 cutover plus rollback window",
-      "id": "storage-key:Json::FinancePayout::{payout_id}",
-      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
-      "target_owner": "finance capsule/table mapping"
-    },
-    {
-      "callers": [
-        "apps/aseman-node/src/api/model/finance_ports.rs:31"
-      ],
-      "current_owner": "legacy RocksDB/transaction key space",
-      "disposition": "rewrite",
-      "expiry": "Phase 3 cutover plus rollback window",
-      "id": "storage-key:Json::FinancePool::{id}",
-      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
-      "target_owner": "finance capsule/table mapping"
-    },
-    {
-      "callers": [
-        "apps/aseman-node/src/adapters/vmm/host/vm_host_functions.rs:1739"
-      ],
-      "current_owner": "legacy RocksDB/transaction key space",
-      "disposition": "rewrite",
-      "expiry": "Phase 3 cutover plus rollback window",
-      "id": "storage-key:Json::FinancePool::{pool_id_c}",
-      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
-      "target_owner": "finance capsule/table mapping"
-    },
-    {
-      "callers": [
-        "apps/aseman-node/src/api/actions/creature/finance.rs:91"
-      ],
-      "current_owner": "legacy RocksDB/transaction key space",
-      "disposition": "rewrite",
-      "expiry": "Phase 3 cutover plus rollback window",
-      "id": "storage-key:Json::FinancePool::{pool_id}",
-      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
-      "target_owner": "finance capsule/table mapping"
-    },
-    {
-      "callers": [
-        "apps/aseman-node/src/api/model/finance_ports.rs:33"
-      ],
-      "current_owner": "legacy RocksDB/transaction key space",
-      "disposition": "rewrite",
-      "expiry": "Phase 3 cutover plus rollback window",
-      "id": "storage-key:Json::FinancePoolReservation::{id}",
-      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
-      "target_owner": "finance capsule/table mapping"
-    },
-    {
-      "callers": [
-        "apps/aseman-node/src/api/actions/creature/finance.rs:109"
-      ],
-      "current_owner": "legacy RocksDB/transaction key space",
-      "disposition": "rewrite",
-      "expiry": "Phase 3 cutover plus rollback window",
-      "id": "storage-key:Json::FinancePoolReservation::{run_id}",
-      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
-      "target_owner": "finance capsule/table mapping"
-    },
-    {
-      "callers": [
-        "apps/aseman-node/src/api/model/finance_ports.rs:38"
-      ],
-      "current_owner": "legacy RocksDB/transaction key space",
-      "disposition": "rewrite",
-      "expiry": "Phase 3 cutover plus rollback window",
-      "id": "storage-key:Json::FinanceProjectBudget::{id}",
-      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
-      "target_owner": "finance capsule/table mapping"
-    },
-    {
-      "callers": [
-        "apps/aseman-node/src/api/actions/creature/finance.rs:225"
-      ],
-      "current_owner": "legacy RocksDB/transaction key space",
-      "disposition": "rewrite",
-      "expiry": "Phase 3 cutover plus rollback window",
-      "id": "storage-key:Json::FinanceProjectBudget::{project_id}",
-      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
-      "target_owner": "finance capsule/table mapping"
-    },
-    {
-      "callers": [
-        "apps/aseman-node/src/adapters/vmm/proxy.rs:70"
-      ],
-      "current_owner": "legacy RocksDB/transaction key space",
-      "disposition": "rewrite",
-      "expiry": "Phase 3 cutover plus rollback window",
-      "id": "storage-key:Json::ProxyCorrelation::{}",
-      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
-      "target_owner": "reviewed A308 legacy-to-capsule transform"
-    },
-    {
-      "callers": [
-        "apps/aseman-node/src/adapters/vmm/host/functions/vm_ownership.rs:223",
-        "apps/aseman-node/src/api/actions/program.rs:1959",
-        "apps/aseman-node/src/api/actions/program.rs:2033",
-        "apps/aseman-node/src/api/actions/program.rs:2116",
-        "apps/aseman-node/src/api/actions/program.rs:295",
-        "apps/aseman-node/src/api/actions/program.rs:415",
-        "apps/aseman-node/src/api/actions/program.rs:470",
-        "apps/aseman-node/src/api/actions/program.rs:476",
-        "apps/aseman-node/src/api/actions/program.rs:690",
-        "apps/aseman-node/src/api/actions/program.rs:768",
-        "apps/aseman-node/src/api/actions/program.rs:876"
-      ],
-      "current_owner": "legacy RocksDB/transaction key space",
-      "disposition": "rewrite",
-      "expiry": "Phase 3 cutover plus rollback window",
-      "id": "storage-key:Json::VmBilling::{}",
-      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
-      "target_owner": "finance capsule/table mapping"
-    },
-    {
-      "callers": [
-        "apps/aseman-node/src/api/model/program_ports.rs:276"
-      ],
-      "current_owner": "legacy RocksDB/transaction key space",
-      "disposition": "rewrite",
-      "expiry": "Phase 3 cutover plus rollback window",
-      "id": "storage-key:Json::VmResourceStore::{store_id}",
-      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
-      "target_owner": "workload/program capsules and VMM observations"
-    },
-    {
-      "callers": [
-        "apps/aseman-node/src/api/model/finance_ports.rs:165"
-      ],
-      "current_owner": "legacy RocksDB/transaction key space",
-      "disposition": "rewrite",
-      "expiry": "Phase 3 cutover plus rollback window",
-      "id": "storage-key:MintApplied::{key}",
-      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
-      "target_owner": "finance capsule/table mapping"
-    },
-    {
-      "callers": [
-        "apps/aseman-node/src/api/actions/creature.rs:566"
-      ],
-      "current_owner": "legacy RocksDB/transaction key space",
-      "disposition": "rewrite",
-      "expiry": "Phase 3 cutover plus rollback window",
-      "id": "storage-key:MintApplied::{}",
-      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
-      "target_owner": "finance capsule/table mapping"
-    },
-    {
-      "callers": [
         "modules/runtime/modal/src/models.rs:63",
         "modules/runtime/modal/src/models.rs:72"
       ],
@@ -6452,210 +5634,6 @@
     },
     {
       "callers": [
-        "apps/aseman-node/src/adapters/network/federation/fednet.rs:142"
-      ],
-      "current_owner": "legacy RocksDB/transaction key space",
-      "disposition": "rewrite",
-      "expiry": "Phase 3 cutover plus rollback window",
-      "id": "storage-key:NodeIpToHost::{}",
-      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
-      "target_owner": "reviewed A308 legacy-to-capsule transform"
-    },
-    {
-      "callers": [
-        "apps/aseman-node/src/api/model/finance_ports.rs:164"
-      ],
-      "current_owner": "legacy RocksDB/transaction key space",
-      "disposition": "rewrite",
-      "expiry": "Phase 3 cutover plus rollback window",
-      "id": "storage-key:PaymentAdjustment::{key}",
-      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
-      "target_owner": "reviewed A308 legacy-to-capsule transform"
-    },
-    {
-      "callers": [
-        "apps/aseman-node/src/api/actions/creature/finance.rs:3979"
-      ],
-      "current_owner": "legacy RocksDB/transaction key space",
-      "disposition": "rewrite",
-      "expiry": "Phase 3 cutover plus rollback window",
-      "id": "storage-key:PaymentAdjustment::{}",
-      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
-      "target_owner": "reviewed A308 legacy-to-capsule transform"
-    },
-    {
-      "callers": [
-        "apps/aseman-node/src/api/model/program_ports.rs:158"
-      ],
-      "current_owner": "legacy RocksDB/transaction key space",
-      "disposition": "rewrite",
-      "expiry": "Phase 3 cutover plus rollback window",
-      "id": "storage-key:ProgMeta::{program_id}",
-      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
-      "target_owner": "workload/program capsules and VMM observations"
-    },
-    {
-      "callers": [
-        "apps/aseman-node/src/adapters/vmm/proxy.rs:77"
-      ],
-      "current_owner": "legacy RocksDB/transaction key space",
-      "disposition": "rewrite",
-      "expiry": "Phase 3 cutover plus rollback window",
-      "id": "storage-key:ProxyCorrExpiry::{}",
-      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
-      "target_owner": "reviewed A308 legacy-to-capsule transform"
-    },
-    {
-      "callers": [
-        "apps/aseman-node/src/api/public_http.rs:826"
-      ],
-      "current_owner": "legacy RocksDB/transaction key space",
-      "disposition": "rewrite",
-      "expiry": "Phase 3 cutover plus rollback window",
-      "id": "storage-key:Secret::{caller}::",
-      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
-      "target_owner": "identity/policy/secret capsule mapping"
-    },
-    {
-      "callers": [
-        "apps/aseman-node/src/adapters/vmm/host/vm_host_functions.rs:838"
-      ],
-      "current_owner": "legacy RocksDB/transaction key space",
-      "disposition": "rewrite",
-      "expiry": "Phase 3 cutover plus rollback window",
-      "id": "storage-key:Secret::{}::{}",
-      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
-      "target_owner": "identity/policy/secret capsule mapping"
-    },
-    {
-      "callers": [
-        "apps/aseman-node/src/adapters/vmm/host/vm_host_functions.rs:839"
-      ],
-      "current_owner": "legacy RocksDB/transaction key space",
-      "disposition": "rewrite",
-      "expiry": "Phase 3 cutover plus rollback window",
-      "id": "storage-key:SecretGrant::{}::{}::{}",
-      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
-      "target_owner": "identity/policy/secret capsule mapping"
-    },
-    {
-      "callers": [
-        "apps/aseman-node/src/api/model/store_ports.rs:196"
-      ],
-      "current_owner": "legacy RocksDB/transaction key space",
-      "disposition": "rewrite",
-      "expiry": "Phase 3 cutover plus rollback window",
-      "id": "storage-key:StoreMeta::{store_id}",
-      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
-      "target_owner": "typed core capsule/table mapping"
-    },
-    {
-      "callers": [
-        "apps/aseman-node/src/api/model/store.rs:77"
-      ],
-      "current_owner": "legacy RocksDB/transaction key space",
-      "disposition": "rewrite",
-      "expiry": "Phase 3 cutover plus rollback window",
-      "id": "storage-key:StoreMeta::{}",
-      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
-      "target_owner": "typed core capsule/table mapping"
-    },
-    {
-      "callers": [
-        "apps/aseman-node/src/adapters/vmm/hostcall_entities.rs:1806"
-      ],
-      "current_owner": "legacy RocksDB/transaction key space",
-      "disposition": "rewrite",
-      "expiry": "Phase 3 cutover plus rollback window",
-      "id": "storage-key:Temp::User::{}::consumedTokens::{}",
-      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
-      "target_owner": "typed core capsule/table mapping"
-    },
-    {
-      "callers": [
-        "apps/aseman-node/src/api/model/finance_ports.rs:320",
-        "apps/aseman-node/src/api/model/finance_ports.rs:325"
-      ],
-      "current_owner": "legacy RocksDB/transaction key space",
-      "disposition": "rewrite",
-      "expiry": "Phase 3 cutover plus rollback window",
-      "id": "storage-key:UserEmailToId::{email}",
-      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
-      "target_owner": "typed core capsule/table mapping"
-    },
-    {
-      "callers": [
-        "apps/aseman-node/src/api/actions/creature.rs:581"
-      ],
-      "current_owner": "legacy RocksDB/transaction key space",
-      "disposition": "rewrite",
-      "expiry": "Phase 3 cutover plus rollback window",
-      "id": "storage-key:UserEmailToId::{}",
-      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
-      "target_owner": "typed core capsule/table mapping"
-    },
-    {
-      "callers": [
-        "apps/aseman-node/src/api/model/finance_ports.rs:330",
-        "apps/aseman-node/src/api/model/finance_ports.rs:335"
-      ],
-      "current_owner": "legacy RocksDB/transaction key space",
-      "disposition": "rewrite",
-      "expiry": "Phase 3 cutover plus rollback window",
-      "id": "storage-key:UserIdToEmail::{user_id}",
-      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
-      "target_owner": "typed core capsule/table mapping"
-    },
-    {
-      "callers": [
-        "apps/aseman-node/src/adapters/vmm/hostcall_entities.rs:171",
-        "apps/aseman-node/src/api/actions/creature.rs:1217",
-        "apps/aseman-node/src/api/actions/creature.rs:659"
-      ],
-      "current_owner": "legacy RocksDB/transaction key space",
-      "disposition": "rewrite",
-      "expiry": "Phase 3 cutover plus rollback window",
-      "id": "storage-key:UserIdToEmail::{}",
-      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
-      "target_owner": "typed core capsule/table mapping"
-    },
-    {
-      "callers": [
-        "apps/aseman-node/src/api/model/creature_ports.rs:262"
-      ],
-      "current_owner": "legacy RocksDB/transaction key space",
-      "disposition": "rewrite",
-      "expiry": "Phase 3 cutover plus rollback window",
-      "id": "storage-key:UserMeta::{creature_id}",
-      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
-      "target_owner": "typed core capsule/table mapping"
-    },
-    {
-      "callers": [
-        "apps/aseman-node/src/api/actions/program.rs:1957",
-        "apps/aseman-node/src/api/actions/program.rs:688"
-      ],
-      "current_owner": "legacy RocksDB/transaction key space",
-      "disposition": "rewrite",
-      "expiry": "Phase 3 cutover plus rollback window",
-      "id": "storage-key:VmBilling::{}",
-      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
-      "target_owner": "finance capsule/table mapping"
-    },
-    {
-      "callers": [
-        "apps/aseman-node/src/api/actions/program.rs:1157",
-        "apps/aseman-node/src/api/actions/program.rs:2365"
-      ],
-      "current_owner": "legacy RocksDB/transaction key space",
-      "disposition": "rewrite",
-      "expiry": "Phase 3 cutover plus rollback window",
-      "id": "storage-key:VmBuilds::{}::",
-      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
-      "target_owner": "workload/program capsules and VMM observations"
-    },
-    {
-      "callers": [
         "modules/runtime/docker/src/controller.rs:1019",
         "modules/runtime/docker/src/controller.rs:998"
       ],
@@ -6668,743 +5646,7 @@
     },
     {
       "callers": [
-        "apps/aseman-node/src/adapters/vmm/host/functions/vm_ownership.rs:125",
-        "apps/aseman-node/src/adapters/vmm/host/functions/vm_ownership.rs:211"
-      ],
-      "current_owner": "legacy RocksDB/transaction key space",
-      "disposition": "rewrite",
-      "expiry": "Phase 3 cutover plus rollback window",
-      "id": "storage-key:VmInstance::{}::",
-      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
-      "target_owner": "workload/program capsules and VMM observations"
-    },
-    {
-      "callers": [
-        "apps/aseman-node/src/api/actions/program.rs:1004",
-        "apps/aseman-node/src/api/actions/program.rs:2166"
-      ],
-      "current_owner": "legacy RocksDB/transaction key space",
-      "disposition": "rewrite",
-      "expiry": "Phase 3 cutover plus rollback window",
-      "id": "storage-key:VmInstance::{}::{}::",
-      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
-      "target_owner": "workload/program capsules and VMM observations"
-    },
-    {
-      "callers": [
-        "apps/aseman-node/src/api/actions/program.rs:1976",
-        "apps/aseman-node/src/api/actions/program.rs:2089",
-        "apps/aseman-node/src/api/actions/program.rs:707",
-        "apps/aseman-node/src/api/actions/program.rs:844"
-      ],
-      "current_owner": "legacy RocksDB/transaction key space",
-      "disposition": "rewrite",
-      "expiry": "Phase 3 cutover plus rollback window",
-      "id": "storage-key:VmInstance::{}::{}::{}",
-      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
-      "target_owner": "workload/program capsules and VMM observations"
-    },
-    {
-      "callers": [
-        "apps/aseman-node/src/adapters/vmm/host/functions/vm_ownership.rs:24"
-      ],
-      "current_owner": "legacy RocksDB/transaction key space",
-      "disposition": "rewrite",
-      "expiry": "Phase 3 cutover plus rollback window",
-      "id": "storage-key:VmOwnerProgram::{}",
-      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
-      "target_owner": "workload/program capsules and VMM observations"
-    },
-    {
-      "callers": [
-        "apps/aseman-node/src/api/actions/program.rs:1015",
-        "apps/aseman-node/src/api/actions/program.rs:1920",
-        "apps/aseman-node/src/api/actions/program.rs:2176",
-        "apps/aseman-node/src/api/actions/program.rs:649"
-      ],
-      "current_owner": "legacy RocksDB/transaction key space",
-      "disposition": "rewrite",
-      "expiry": "Phase 3 cutover plus rollback window",
-      "id": "storage-key:VmStartedAt::{}",
-      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
-      "target_owner": "workload/program capsules and VMM observations"
-    },
-    {
-      "callers": [
-        "apps/aseman-node/src/api/actions/program.rs:1013",
-        "apps/aseman-node/src/api/actions/program.rs:1918",
-        "apps/aseman-node/src/api/actions/program.rs:2174",
-        "apps/aseman-node/src/api/actions/program.rs:292",
-        "apps/aseman-node/src/api/actions/program.rs:647"
-      ],
-      "current_owner": "legacy RocksDB/transaction key space",
-      "disposition": "rewrite",
-      "expiry": "Phase 3 cutover plus rollback window",
-      "id": "storage-key:VmStatus::{}",
-      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
-      "target_owner": "workload/program capsules and VMM observations"
-    },
-    {
-      "callers": [
-        "apps/aseman-node/src/api/actions/program.rs:1105",
-        "apps/aseman-node/src/api/actions/program.rs:2320"
-      ],
-      "current_owner": "legacy RocksDB/transaction key space",
-      "disposition": "rewrite",
-      "expiry": "Phase 3 cutover plus rollback window",
-      "id": "storage-key:VmTerminal::{}::{}::{}",
-      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
-      "target_owner": "workload/program capsules and VMM observations"
-    },
-    {
-      "callers": [
-        "apps/aseman-node/src/core/orchestrator/icore.rs:94"
-      ],
-      "current_owner": "legacy RocksDB/transaction key space",
-      "disposition": "rewrite",
-      "expiry": "Phase 3 cutover plus rollback window",
-      "id": "storage-key:chainCallback::{}_{}",
-      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
-      "target_owner": "realtime/outbox capsule mapping"
-    },
-    {
-      "callers": [
-        "apps/aseman-node/src/api/model/store_ports.rs:152"
-      ],
-      "current_owner": "legacy RocksDB/transaction key space",
-      "disposition": "rewrite",
-      "expiry": "Phase 3 cutover plus rollback window",
-      "id": "storage-key:creatorof::{creator_id}::{}",
-      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
-      "target_owner": "typed core capsule/table mapping"
-    },
-    {
-      "callers": [
-        "apps/aseman-node/src/adapters/security.rs:206"
-      ],
-      "current_owner": "legacy RocksDB/transaction key space",
-      "disposition": "rewrite",
-      "expiry": "Phase 3 cutover plus rollback window",
-      "id": "storage-key:god::{}",
-      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
-      "target_owner": "identity/policy/secret capsule mapping"
-    },
-    {
-      "callers": [
-        "apps/aseman-node/src/api/model/store_ports.rs:279"
-      ],
-      "current_owner": "legacy RocksDB/transaction key space",
-      "disposition": "rewrite",
-      "expiry": "Phase 3 cutover plus rollback window",
-      "id": "storage-key:hasaccess::{member_id}::",
-      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
-      "target_owner": "identity/policy/secret capsule mapping"
-    },
-    {
-      "callers": [
-        "apps/aseman-node/src/api/model/store_ports.rs:255",
-        "apps/aseman-node/src/api/model/store_ports.rs:301"
-      ],
-      "current_owner": "legacy RocksDB/transaction key space",
-      "disposition": "rewrite",
-      "expiry": "Phase 3 cutover plus rollback window",
-      "id": "storage-key:hasaccess::{member_id}::{store_id}",
-      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
-      "target_owner": "identity/policy/secret capsule mapping"
-    },
-    {
-      "callers": [
-        "apps/aseman-node/src/adapters/postgres/trx.rs:526"
-      ],
-      "current_owner": "legacy RocksDB/transaction key space",
-      "disposition": "rewrite",
-      "expiry": "Phase 3 cutover plus rollback window",
-      "id": "storage-key:index::{typ}::{from}::{to}::{value}",
-      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
-      "target_owner": "reviewed A308 legacy-to-capsule transform"
-    },
-    {
-      "callers": [
-        "apps/aseman-node/src/adapters/rocksdb/trx.rs:459"
-      ],
-      "current_owner": "legacy RocksDB/transaction key space",
-      "disposition": "rewrite",
-      "expiry": "Phase 3 cutover plus rollback window",
-      "id": "storage-key:index::{}::{}::{}::",
-      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
-      "target_owner": "reviewed A308 legacy-to-capsule transform"
-    },
-    {
-      "callers": [
-        "apps/aseman-node/src/adapters/rocksdb/trx.rs:261",
-        "apps/aseman-node/src/adapters/rocksdb/trx.rs:276",
-        "apps/aseman-node/src/adapters/rocksdb/trx.rs:288",
-        "apps/aseman-node/src/adapters/rocksdb/trx.rs:302"
-      ],
-      "current_owner": "legacy RocksDB/transaction key space",
-      "disposition": "rewrite",
-      "expiry": "Phase 3 cutover plus rollback window",
-      "id": "storage-key:index::{}::{}::{}::{}",
-      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
-      "target_owner": "reviewed A308 legacy-to-capsule transform"
-    },
-    {
-      "callers": [
-        "apps/aseman-node/src/adapters/postgres/trx.rs:148",
-        "apps/aseman-node/src/adapters/postgres/trx.rs:494"
-      ],
-      "current_owner": "legacy RocksDB/transaction key space",
-      "disposition": "rewrite",
-      "expiry": "Phase 3 cutover plus rollback window",
-      "id": "storage-key:json::{key}::{path}",
-      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
-      "target_owner": "reviewed A308 legacy-to-capsule transform"
-    },
-    {
-      "callers": [
-        "apps/aseman-node/src/adapters/rocksdb/trx.rs:420",
-        "apps/aseman-node/src/adapters/rocksdb/trx.rs:639",
-        "apps/aseman-node/src/adapters/rocksdb/trx.rs:661"
-      ],
-      "current_owner": "legacy RocksDB/transaction key space",
-      "disposition": "rewrite",
-      "expiry": "Phase 3 cutover plus rollback window",
-      "id": "storage-key:json::{}::{}",
-      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
-      "target_owner": "reviewed A308 legacy-to-capsule transform"
-    },
-    {
-      "callers": [
-        "apps/aseman-node/src/adapters/rocksdb/trx.rs:662"
-      ],
-      "current_owner": "legacy RocksDB/transaction key space",
-      "disposition": "rewrite",
-      "expiry": "Phase 3 cutover plus rollback window",
-      "id": "storage-key:json::{}::{}.",
-      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
-      "target_owner": "reviewed A308 legacy-to-capsule transform"
-    },
-    {
-      "callers": [
-        "apps/aseman-node/src/adapters/rocksdb/trx.rs:652"
-      ],
-      "current_owner": "legacy RocksDB/transaction key space",
-      "disposition": "rewrite",
-      "expiry": "Phase 3 cutover plus rollback window",
-      "id": "storage-key:json::{}::{}.{}",
-      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
-      "target_owner": "reviewed A308 legacy-to-capsule transform"
-    },
-    {
-      "callers": [
-        "apps/aseman-node/src/adapters/vmm/hostcall_entities.rs:173",
-        "apps/aseman-node/src/api/actions/creature.rs:1220"
-      ],
-      "current_owner": "legacy RocksDB/transaction key space",
-      "disposition": "rewrite",
-      "expiry": "Phase 3 cutover plus rollback window",
-      "id": "storage-key:link::UserEmailToId::{}",
-      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
-      "target_owner": "typed core capsule/table mapping"
-    },
-    {
-      "callers": [
-        "apps/aseman-node/src/adapters/vmm/hostcall_entities.rs:175",
-        "apps/aseman-node/src/api/actions/creature.rs:1218"
-      ],
-      "current_owner": "legacy RocksDB/transaction key space",
-      "disposition": "rewrite",
-      "expiry": "Phase 3 cutover plus rollback window",
-      "id": "storage-key:link::UserIdToEmail::{}",
-      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
-      "target_owner": "typed core capsule/table mapping"
-    },
-    {
-      "callers": [
-        "apps/aseman-node/src/adapters/vmm/hostcall_entities.rs:176",
-        "apps/aseman-node/src/api/actions/creature.rs:1222"
-      ],
-      "current_owner": "legacy RocksDB/transaction key space",
-      "disposition": "rewrite",
-      "expiry": "Phase 3 cutover plus rollback window",
-      "id": "storage-key:link::UserPrivateKey::{}",
-      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
-      "target_owner": "typed core capsule/table mapping"
-    },
-    {
-      "callers": [
-        "apps/aseman-node/src/adapters/vmm/host/functions/vm_ownership.rs:221",
-        "apps/aseman-node/src/api/actions/program.rs:2032",
-        "apps/aseman-node/src/api/actions/program.rs:2115",
-        "apps/aseman-node/src/api/actions/program.rs:413",
-        "apps/aseman-node/src/api/actions/program.rs:767",
-        "apps/aseman-node/src/api/actions/program.rs:875"
-      ],
-      "current_owner": "legacy RocksDB/transaction key space",
-      "disposition": "rewrite",
-      "expiry": "Phase 3 cutover plus rollback window",
-      "id": "storage-key:link::VmBilling::{}",
-      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
-      "target_owner": "finance capsule/table mapping"
-    },
-    {
-      "callers": [
-        "apps/aseman-node/src/api/actions/program.rs:2119",
-        "apps/aseman-node/src/api/actions/program.rs:879"
-      ],
-      "current_owner": "legacy RocksDB/transaction key space",
-      "disposition": "rewrite",
-      "expiry": "Phase 3 cutover plus rollback window",
-      "id": "storage-key:link::VmContainerName::{}::{}::{}",
-      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
-      "target_owner": "workload/program capsules and VMM observations"
-    },
-    {
-      "callers": [
-        "apps/aseman-node/src/api/actions/program.rs:2028",
-        "apps/aseman-node/src/api/actions/program.rs:409",
-        "apps/aseman-node/src/api/actions/program.rs:763"
-      ],
-      "current_owner": "legacy RocksDB/transaction key space",
-      "disposition": "rewrite",
-      "expiry": "Phase 3 cutover plus rollback window",
-      "id": "storage-key:link::VmInstance::{}::{}::{}",
-      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
-      "target_owner": "workload/program capsules and VMM observations"
-    },
-    {
-      "callers": [
-        "apps/aseman-node/src/api/actions/program.rs:2118",
-        "apps/aseman-node/src/api/actions/program.rs:878"
-      ],
-      "current_owner": "legacy RocksDB/transaction key space",
-      "disposition": "rewrite",
-      "expiry": "Phase 3 cutover plus rollback window",
-      "id": "storage-key:link::VmOwnerProgram::{}",
-      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
-      "target_owner": "workload/program capsules and VMM observations"
-    },
-    {
-      "callers": [
-        "apps/aseman-node/src/adapters/vmm/host/functions/vm_ownership.rs:220",
-        "apps/aseman-node/src/api/actions/program.rs:2027",
-        "apps/aseman-node/src/api/actions/program.rs:2113",
-        "apps/aseman-node/src/api/actions/program.rs:762",
-        "apps/aseman-node/src/api/actions/program.rs:873"
-      ],
-      "current_owner": "legacy RocksDB/transaction key space",
-      "disposition": "rewrite",
-      "expiry": "Phase 3 cutover plus rollback window",
-      "id": "storage-key:link::VmStartedAt::{}",
-      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
-      "target_owner": "workload/program capsules and VMM observations"
-    },
-    {
-      "callers": [
-        "apps/aseman-node/src/adapters/vmm/host/functions/vm_ownership.rs:219",
-        "apps/aseman-node/src/api/actions/program.rs:2026",
-        "apps/aseman-node/src/api/actions/program.rs:2112",
-        "apps/aseman-node/src/api/actions/program.rs:408",
-        "apps/aseman-node/src/api/actions/program.rs:761",
-        "apps/aseman-node/src/api/actions/program.rs:872"
-      ],
-      "current_owner": "legacy RocksDB/transaction key space",
-      "disposition": "rewrite",
-      "expiry": "Phase 3 cutover plus rollback window",
-      "id": "storage-key:link::VmStatus::{}",
-      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
-      "target_owner": "workload/program capsules and VMM observations"
-    },
-    {
-      "callers": [
-        "apps/aseman-node/src/api/actions/program.rs:1140",
-        "apps/aseman-node/src/api/actions/program.rs:2351"
-      ],
-      "current_owner": "legacy RocksDB/transaction key space",
-      "disposition": "rewrite",
-      "expiry": "Phase 3 cutover plus rollback window",
-      "id": "storage-key:link::VmTerminal::{}::{}::{}",
-      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
-      "target_owner": "workload/program capsules and VMM observations"
-    },
-    {
-      "callers": [
-        "apps/aseman-node/src/api/model/store_ports.rs:190"
-      ],
-      "current_owner": "legacy RocksDB/transaction key space",
-      "disposition": "rewrite",
-      "expiry": "Phase 3 cutover plus rollback window",
-      "id": "storage-key:link::creatorof::{creator_id}::{store_id}",
-      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
-      "target_owner": "typed core capsule/table mapping"
-    },
-    {
-      "callers": [
-        "apps/aseman-node/src/api/model/store_ports.rs:182"
-      ],
-      "current_owner": "legacy RocksDB/transaction key space",
-      "disposition": "rewrite",
-      "expiry": "Phase 3 cutover plus rollback window",
-      "id": "storage-key:link::creatorof::{creator}::{store_id}",
-      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
-      "target_owner": "typed core capsule/table mapping"
-    },
-    {
-      "callers": [
-        "apps/aseman-node/src/api/model/store_ports.rs:309"
-      ],
-      "current_owner": "legacy RocksDB/transaction key space",
-      "disposition": "rewrite",
-      "expiry": "Phase 3 cutover plus rollback window",
-      "id": "storage-key:link::hasaccess::{member_id}::{store_id}",
-      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
-      "target_owner": "identity/policy/secret capsule mapping"
-    },
-    {
-      "callers": [
-        "apps/aseman-node/src/api/model/program_ports.rs:55"
-      ],
-      "current_owner": "legacy RocksDB/transaction key space",
-      "disposition": "rewrite",
-      "expiry": "Phase 3 cutover plus rollback window",
-      "id": "storage-key:link::machinePrograms::{machine_id}::{program_id}",
-      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
-      "target_owner": "workload/program capsules and VMM observations"
-    },
-    {
-      "callers": [
-        "apps/aseman-node/src/api/model/store_ports.rs:307"
-      ],
-      "current_owner": "legacy RocksDB/transaction key space",
-      "disposition": "rewrite",
-      "expiry": "Phase 3 cutover plus rollback window",
-      "id": "storage-key:link::onaccess::{store_id}::{member_id}",
-      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
-      "target_owner": "identity/policy/secret capsule mapping"
-    },
-    {
-      "callers": [
-        "apps/aseman-node/src/api/model/creature_ports.rs:85"
-      ],
-      "current_owner": "legacy RocksDB/transaction key space",
-      "disposition": "rewrite",
-      "expiry": "Phase 3 cutover plus rollback window",
-      "id": "storage-key:link::ownerof::{owner}::{creature}",
-      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
-      "target_owner": "typed core capsule/table mapping"
-    },
-    {
-      "callers": [
-        "apps/aseman-node/src/api/model/program_ports.rs:266"
-      ],
-      "current_owner": "legacy RocksDB/transaction key space",
-      "disposition": "rewrite",
-      "expiry": "Phase 3 cutover plus rollback window",
-      "id": "storage-key:link::vmAlarmData::{program_id}",
-      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
-      "target_owner": "workload/program capsules and VMM observations"
-    },
-    {
-      "callers": [
-        "apps/aseman-node/src/api/model/program_ports.rs:268"
-      ],
-      "current_owner": "legacy RocksDB/transaction key space",
-      "disposition": "rewrite",
-      "expiry": "Phase 3 cutover plus rollback window",
-      "id": "storage-key:link::vmAlarmEntity::{program_id}",
-      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
-      "target_owner": "workload/program capsules and VMM observations"
-    },
-    {
-      "callers": [
-        "apps/aseman-node/src/api/model/program_ports.rs:264"
-      ],
-      "current_owner": "legacy RocksDB/transaction key space",
-      "disposition": "rewrite",
-      "expiry": "Phase 3 cutover plus rollback window",
-      "id": "storage-key:link::vmAlarmStoreId::{program_id}",
-      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
-      "target_owner": "workload/program capsules and VMM observations"
-    },
-    {
-      "callers": [
-        "apps/aseman-node/src/api/model/program_ports.rs:270"
-      ],
-      "current_owner": "legacy RocksDB/transaction key space",
-      "disposition": "rewrite",
-      "expiry": "Phase 3 cutover plus rollback window",
-      "id": "storage-key:link::vmAlarmTime::{program_id}",
-      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
-      "target_owner": "workload/program capsules and VMM observations"
-    },
-    {
-      "callers": [
-        "apps/aseman-node/src/adapters/vmm/host/functions/vm_ownership.rs:222",
-        "apps/aseman-node/src/api/actions/program.rs:2117",
-        "apps/aseman-node/src/api/actions/program.rs:877"
-      ],
-      "current_owner": "legacy RocksDB/transaction key space",
-      "disposition": "rewrite",
-      "expiry": "Phase 3 cutover plus rollback window",
-      "id": "storage-key:link::vmDistributed::{}",
-      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
-      "target_owner": "workload/program capsules and VMM observations"
-    },
-    {
-      "callers": [
-        "apps/aseman-node/src/api/model/program_ports.rs:360",
-        "apps/aseman-node/src/api/model/program_ports.rs:378"
-      ],
-      "current_owner": "legacy RocksDB/transaction key space",
-      "disposition": "rewrite",
-      "expiry": "Phase 3 cutover plus rollback window",
-      "id": "storage-key:link::vmOwnedStore::{}::{store_id}",
-      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
-      "target_owner": "workload/program capsules and VMM observations"
-    },
-    {
-      "callers": [
-        "apps/aseman-node/src/api/actions/program.rs:2038",
-        "apps/aseman-node/src/api/actions/program.rs:2127",
-        "apps/aseman-node/src/api/actions/program.rs:773",
-        "apps/aseman-node/src/api/actions/program.rs:887"
-      ],
-      "current_owner": "legacy RocksDB/transaction key space",
-      "disposition": "rewrite",
-      "expiry": "Phase 3 cutover plus rollback window",
-      "id": "storage-key:link::vmStandaloneContainerName::{}::{}",
-      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
-      "target_owner": "workload/program capsules and VMM observations"
-    },
-    {
-      "callers": [
-        "apps/aseman-node/src/api/actions/program.rs:2034",
-        "apps/aseman-node/src/api/actions/program.rs:2123",
-        "apps/aseman-node/src/api/actions/program.rs:769",
-        "apps/aseman-node/src/api/actions/program.rs:883"
-      ],
-      "current_owner": "legacy RocksDB/transaction key space",
-      "disposition": "rewrite",
-      "expiry": "Phase 3 cutover plus rollback window",
-      "id": "storage-key:link::vmStandaloneImageName::{}::{}",
-      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
-      "target_owner": "workload/program capsules and VMM observations"
-    },
-    {
-      "callers": [
-        "apps/aseman-node/src/adapters/postgres/trx.rs:434",
-        "apps/aseman-node/src/adapters/postgres/trx.rs:443"
-      ],
-      "current_owner": "legacy RocksDB/transaction key space",
-      "disposition": "rewrite",
-      "expiry": "Phase 3 cutover plus rollback window",
-      "id": "storage-key:link::{key}",
-      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
-      "target_owner": "reviewed A308 legacy-to-capsule transform"
-    },
-    {
-      "callers": [
-        "apps/aseman-node/src/adapters/postgres/trx.rs:336",
-        "apps/aseman-node/src/adapters/postgres/trx.rs:382"
-      ],
-      "current_owner": "legacy RocksDB/transaction key space",
-      "disposition": "rewrite",
-      "expiry": "Phase 3 cutover plus rollback window",
-      "id": "storage-key:link::{prefix}",
-      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
-      "target_owner": "reviewed A308 legacy-to-capsule transform"
-    },
-    {
-      "callers": [
-        "apps/aseman-node/src/adapters/rocksdb/trx.rs:310",
-        "apps/aseman-node/src/adapters/rocksdb/trx.rs:315",
-        "apps/aseman-node/src/adapters/rocksdb/trx.rs:436",
-        "apps/aseman-node/src/adapters/rocksdb/trx.rs:501",
-        "apps/aseman-node/src/adapters/vmm/host/functions/vm_ownership.rs:218",
-        "apps/aseman-node/src/adapters/vmm/host/functions/vm_ownership.rs:229",
-        "apps/aseman-node/src/adapters/vmm/proxy.rs:90"
-      ],
-      "current_owner": "legacy RocksDB/transaction key space",
-      "disposition": "rewrite",
-      "expiry": "Phase 3 cutover plus rollback window",
-      "id": "storage-key:link::{}",
-      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
-      "target_owner": "reviewed A308 legacy-to-capsule transform"
-    },
-    {
-      "callers": [
-        "apps/aseman-node/src/api/model/program_ports.rs:107"
-      ],
-      "current_owner": "legacy RocksDB/transaction key space",
-      "disposition": "rewrite",
-      "expiry": "Phase 3 cutover plus rollback window",
-      "id": "storage-key:machinePrograms::{machine_id}::",
-      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
-      "target_owner": "workload/program capsules and VMM observations"
-    },
-    {
-      "callers": [
-        "apps/aseman-node/src/api/model/program_ports.rs:48"
-      ],
-      "current_owner": "legacy RocksDB/transaction key space",
-      "disposition": "rewrite",
-      "expiry": "Phase 3 cutover plus rollback window",
-      "id": "storage-key:machinePrograms::{machine_id}::{program_id}",
-      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
-      "target_owner": "workload/program capsules and VMM observations"
-    },
-    {
-      "callers": [
-        "apps/aseman-node/src/api/model/program_ports.rs:150"
-      ],
-      "current_owner": "legacy RocksDB/transaction key space",
-      "disposition": "rewrite",
-      "expiry": "Phase 3 cutover plus rollback window",
-      "id": "storage-key:obj::Program::{program_id}::{column}",
-      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
-      "target_owner": "workload/program capsules and VMM observations"
-    },
-    {
-      "callers": [
-        "apps/aseman-node/src/api/model/store_ports.rs:167"
-      ],
-      "current_owner": "legacy RocksDB/transaction key space",
-      "disposition": "rewrite",
-      "expiry": "Phase 3 cutover plus rollback window",
-      "id": "storage-key:obj::Store::{store_id}::{column}",
-      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
-      "target_owner": "typed core capsule/table mapping"
-    },
-    {
-      "callers": [
-        "apps/aseman-node/src/adapters/postgres/trx.rs:474"
-      ],
-      "current_owner": "legacy RocksDB/transaction key space",
-      "disposition": "rewrite",
-      "expiry": "Phase 3 cutover plus rollback window",
-      "id": "storage-key:obj::{typ}::{key}::{column}",
-      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
-      "target_owner": "reviewed A308 legacy-to-capsule transform"
-    },
-    {
-      "callers": [
-        "apps/aseman-node/src/adapters/postgres/trx.rs:268"
-      ],
-      "current_owner": "legacy RocksDB/transaction key space",
-      "disposition": "rewrite",
-      "expiry": "Phase 3 cutover plus rollback window",
-      "id": "storage-key:obj::{typ}::{key}::|",
-      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
-      "target_owner": "reviewed A308 legacy-to-capsule transform"
-    },
-    {
-      "callers": [
-        "apps/aseman-node/src/adapters/postgres/trx.rs:324"
-      ],
-      "current_owner": "legacy RocksDB/transaction key space",
-      "disposition": "rewrite",
-      "expiry": "Phase 3 cutover plus rollback window",
-      "id": "storage-key:obj::{typ}::{object_id}::{column}",
-      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
-      "target_owner": "reviewed A308 legacy-to-capsule transform"
-    },
-    {
-      "callers": [
-        "apps/aseman-node/src/adapters/rocksdb/trx.rs:564"
-      ],
-      "current_owner": "legacy RocksDB/transaction key space",
-      "disposition": "rewrite",
-      "expiry": "Phase 3 cutover plus rollback window",
-      "id": "storage-key:obj::{}::",
-      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
-      "target_owner": "reviewed A308 legacy-to-capsule transform"
-    },
-    {
-      "callers": [
-        "apps/aseman-node/src/api/model/creature_ports.rs:395"
-      ],
-      "current_owner": "legacy RocksDB/transaction key space",
-      "disposition": "rewrite",
-      "expiry": "Phase 3 cutover plus rollback window",
-      "id": "storage-key:obj::{}::{creature_id}::balance",
-      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
-      "target_owner": "typed core capsule/table mapping"
-    },
-    {
-      "callers": [
-        "apps/aseman-node/src/adapters/rocksdb/trx.rs:356"
-      ],
-      "current_owner": "legacy RocksDB/transaction key space",
-      "disposition": "rewrite",
-      "expiry": "Phase 3 cutover plus rollback window",
-      "id": "storage-key:obj::{}::{}::",
-      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
-      "target_owner": "reviewed A308 legacy-to-capsule transform"
-    },
-    {
-      "callers": [
-        "apps/aseman-node/src/adapters/rocksdb/trx.rs:238",
-        "apps/aseman-node/src/adapters/rocksdb/trx.rs:370",
-        "apps/aseman-node/src/api/model/chain.rs:36",
-        "apps/aseman-node/src/api/model/creature.rs:137",
-        "apps/aseman-node/src/api/model/store.rs:75"
-      ],
-      "current_owner": "legacy RocksDB/transaction key space",
-      "disposition": "rewrite",
-      "expiry": "Phase 3 cutover plus rollback window",
-      "id": "storage-key:obj::{}::{}::{}",
-      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
-      "target_owner": "reviewed A308 legacy-to-capsule transform"
-    },
-    {
-      "callers": [
-        "apps/aseman-node/src/adapters/rocksdb/trx.rs:250"
-      ],
-      "current_owner": "legacy RocksDB/transaction key space",
-      "disposition": "rewrite",
-      "expiry": "Phase 3 cutover plus rollback window",
-      "id": "storage-key:obj::{}::{}::|",
-      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
-      "target_owner": "reviewed A308 legacy-to-capsule transform"
-    },
-    {
-      "callers": [
-        "apps/aseman-node/src/api/model/store_ports.rs:260"
-      ],
-      "current_owner": "legacy RocksDB/transaction key space",
-      "disposition": "rewrite",
-      "expiry": "Phase 3 cutover plus rollback window",
-      "id": "storage-key:onaccess::{store_id}::",
-      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
-      "target_owner": "identity/policy/secret capsule mapping"
-    },
-    {
-      "callers": [
-        "apps/aseman-node/src/api/model/access.rs:18",
-        "apps/aseman-node/src/api/model/store_ports.rs:248",
-        "apps/aseman-node/src/api/model/store_ports.rs:299"
-      ],
-      "current_owner": "legacy RocksDB/transaction key space",
-      "disposition": "rewrite",
-      "expiry": "Phase 3 cutover plus rollback window",
-      "id": "storage-key:onaccess::{store_id}::{member_id}",
-      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
-      "target_owner": "identity/policy/secret capsule mapping"
-    },
-    {
-      "callers": [
-        "apps/aseman-node/src/api/model/creature_ports.rs:80"
-      ],
-      "current_owner": "legacy RocksDB/transaction key space",
-      "disposition": "rewrite",
-      "expiry": "Phase 3 cutover plus rollback window",
-      "id": "storage-key:ownerof::{owner}::{creature}",
-      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
-      "target_owner": "typed core capsule/table mapping"
-    },
-    {
-      "callers": [
-        "apps/aseman-node/src/adapters/vmm/proxy.rs:561"
+        "apps/aseman-node/src/adapters/vmm/proxy.rs:570"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -7415,7 +5657,7 @@
     },
     {
       "callers": [
-        "apps/aseman-node/src/adapters/vmm/proxy.rs:647"
+        "apps/aseman-node/src/adapters/vmm/proxy.rs:651"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
@@ -7438,91 +5680,6 @@
     },
     {
       "callers": [
-        "apps/aseman-node/src/api/model/program_ports.rs:239",
-        "apps/aseman-node/src/api/model/program_ports.rs:252"
-      ],
-      "current_owner": "legacy RocksDB/transaction key space",
-      "disposition": "rewrite",
-      "expiry": "Phase 3 cutover plus rollback window",
-      "id": "storage-key:vmAlarmData::{program_id}",
-      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
-      "target_owner": "workload/program capsules and VMM observations"
-    },
-    {
-      "callers": [
-        "apps/aseman-node/src/api/model/program_ports.rs:230",
-        "apps/aseman-node/src/api/model/program_ports.rs:254"
-      ],
-      "current_owner": "legacy RocksDB/transaction key space",
-      "disposition": "rewrite",
-      "expiry": "Phase 3 cutover plus rollback window",
-      "id": "storage-key:vmAlarmEntity::{program_id}",
-      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
-      "target_owner": "workload/program capsules and VMM observations"
-    },
-    {
-      "callers": [
-        "apps/aseman-node/src/api/model/program_ports.rs:226",
-        "apps/aseman-node/src/api/model/program_ports.rs:250"
-      ],
-      "current_owner": "legacy RocksDB/transaction key space",
-      "disposition": "rewrite",
-      "expiry": "Phase 3 cutover plus rollback window",
-      "id": "storage-key:vmAlarmStoreId::{program_id}",
-      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
-      "target_owner": "workload/program capsules and VMM observations"
-    },
-    {
-      "callers": [
-        "apps/aseman-node/src/api/model/program_ports.rs:236",
-        "apps/aseman-node/src/api/model/program_ports.rs:256"
-      ],
-      "current_owner": "legacy RocksDB/transaction key space",
-      "disposition": "rewrite",
-      "expiry": "Phase 3 cutover plus rollback window",
-      "id": "storage-key:vmAlarmTime::{program_id}",
-      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
-      "target_owner": "workload/program capsules and VMM observations"
-    },
-    {
-      "callers": [
-        "apps/aseman-node/src/api/actions/program.rs:1941"
-      ],
-      "current_owner": "legacy RocksDB/transaction key space",
-      "disposition": "rewrite",
-      "expiry": "Phase 3 cutover plus rollback window",
-      "id": "storage-key:vmDistributed::{}",
-      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
-      "target_owner": "workload/program capsules and VMM observations"
-    },
-    {
-      "callers": [
-        "apps/aseman-node/src/api/actions/program.rs:1387",
-        "apps/aseman-node/src/api/actions/program.rs:1836",
-        "apps/aseman-node/src/api/actions/program.rs:1935"
-      ],
-      "current_owner": "legacy RocksDB/transaction key space",
-      "disposition": "rewrite",
-      "expiry": "Phase 3 cutover plus rollback window",
-      "id": "storage-key:vmDistribution::{}",
-      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
-      "target_owner": "workload/program capsules and VMM observations"
-    },
-    {
-      "callers": [
-        "apps/aseman-node/src/api/actions/program.rs:1391",
-        "apps/aseman-node/src/api/actions/program.rs:1840",
-        "apps/aseman-node/src/api/actions/program.rs:1936"
-      ],
-      "current_owner": "legacy RocksDB/transaction key space",
-      "disposition": "rewrite",
-      "expiry": "Phase 3 cutover plus rollback window",
-      "id": "storage-key:vmDistribution::{}::{}",
-      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
-      "target_owner": "workload/program capsules and VMM observations"
-    },
-    {
-      "callers": [
         "modules/runtime/javascript/src/controller.rs:298",
         "modules/runtime/wasm/src/controller.rs:272"
       ],
@@ -7535,91 +5692,25 @@
     },
     {
       "callers": [
-        "apps/aseman-node/src/api/model/program_ports.rs:306"
+        "apps/aseman-node/src/api/model/vm_runtime.rs:151"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
       "expiry": "Phase 3 cutover plus rollback window",
-      "id": "storage-key:vmOwnedStore::{machine}::",
+      "id": "storage-key:{program_id}::{entity_id}",
       "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
       "target_owner": "workload/program capsules and VMM observations"
     },
     {
       "callers": [
-        "apps/aseman-node/src/api/model/program_ports.rs:366"
+        "apps/aseman-node/src/api/model/vm_runtime.rs:189"
       ],
       "current_owner": "legacy RocksDB/transaction key space",
       "disposition": "rewrite",
       "expiry": "Phase 3 cutover plus rollback window",
-      "id": "storage-key:vmOwnedStore::{machine}::{store_id}",
+      "id": "storage-key:{program_id}::{vm_id}::{user_id}",
       "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
       "target_owner": "workload/program capsules and VMM observations"
-    },
-    {
-      "callers": [
-        "apps/aseman-node/src/api/actions/creature.rs:697"
-      ],
-      "current_owner": "legacy RocksDB/transaction key space",
-      "disposition": "rewrite",
-      "expiry": "Phase 3 cutover plus rollback window",
-      "id": "storage-key:{SECRET_GRANTEE_PREFIX}{grantee}::",
-      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
-      "target_owner": "identity/policy/secret capsule mapping"
-    },
-    {
-      "callers": [
-        "apps/aseman-node/src/api/actions/creature.rs:686"
-      ],
-      "current_owner": "legacy RocksDB/transaction key space",
-      "disposition": "rewrite",
-      "expiry": "Phase 3 cutover plus rollback window",
-      "id": "storage-key:{SECRET_GRANTEE_PREFIX}{grantee}::{owner}::{name}",
-      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
-      "target_owner": "identity/policy/secret capsule mapping"
-    },
-    {
-      "callers": [
-        "apps/aseman-node/src/api/actions/creature.rs:682"
-      ],
-      "current_owner": "legacy RocksDB/transaction key space",
-      "disposition": "rewrite",
-      "expiry": "Phase 3 cutover plus rollback window",
-      "id": "storage-key:{SECRET_GRANT_PREFIX}{owner}::{name}::{grantee}",
-      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
-      "target_owner": "identity/policy/secret capsule mapping"
-    },
-    {
-      "callers": [
-        "apps/aseman-node/src/api/actions/creature.rs:876"
-      ],
-      "current_owner": "legacy RocksDB/transaction key space",
-      "disposition": "rewrite",
-      "expiry": "Phase 3 cutover plus rollback window",
-      "id": "storage-key:{SECRET_PREFIX}{owner}::",
-      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
-      "target_owner": "identity/policy/secret capsule mapping"
-    },
-    {
-      "callers": [
-        "apps/aseman-node/src/api/actions/creature.rs:679"
-      ],
-      "current_owner": "legacy RocksDB/transaction key space",
-      "disposition": "rewrite",
-      "expiry": "Phase 3 cutover plus rollback window",
-      "id": "storage-key:{SECRET_PREFIX}{owner}::{name}",
-      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
-      "target_owner": "identity/policy/secret capsule mapping"
-    },
-    {
-      "callers": [
-        "apps/aseman-node/src/api/model/finance_ports.rs:114"
-      ],
-      "current_owner": "legacy RocksDB/transaction key space",
-      "disposition": "rewrite",
-      "expiry": "Phase 3 cutover plus rollback window",
-      "id": "storage-key:{prefix}::{user}",
-      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
-      "target_owner": "typed core capsule/table mapping"
     },
     {
       "callers": [
@@ -7635,33 +5726,10 @@
     },
     {
       "callers": [
-        "apps/aseman-node/src/core/orchestrator/icore.rs:111"
-      ],
-      "current_owner": "legacy RocksDB/transaction key space",
-      "disposition": "rewrite",
-      "expiry": "Phase 3 cutover plus rollback window",
-      "id": "storage-key:{}::targetCount",
-      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
-      "target_owner": "reviewed A308 legacy-to-capsule transform"
-    },
-    {
-      "callers": [
-        "apps/aseman-node/src/core/orchestrator/icore.rs:115"
-      ],
-      "current_owner": "legacy RocksDB/transaction key space",
-      "disposition": "rewrite",
-      "expiry": "Phase 3 cutover plus rollback window",
-      "id": "storage-key:{}::tempCount",
-      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
-      "target_owner": "reviewed A308 legacy-to-capsule transform"
-    },
-    {
-      "callers": [
         "apps/aseman-node/src/adapters/network/federation/netserver.rs:140",
         "apps/aseman-node/src/adapters/vmm/host/vm_host_functions.rs:115",
         "apps/aseman-node/src/adapters/vmm/host/vm_host_functions.rs:129",
         "apps/aseman-node/src/adapters/vmm/host/vm_host_functions.rs:131",
-        "apps/aseman-node/src/api/model/entity.rs:27",
         "modules/runtime/elpify/src/queue.rs:156",
         "modules/runtime/javascript/src/host_calls.rs:116",
         "modules/runtime/javascript/src/host_calls.rs:121",
@@ -7706,39 +5774,6 @@
       "id": "storage-key:{}::{}::{}::{}",
       "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
       "target_owner": "reviewed A308 legacy-to-capsule transform"
-    },
-    {
-      "callers": [
-        "apps/aseman-node/src/core/orchestrator/icore.rs:106"
-      ],
-      "current_owner": "legacy RocksDB/transaction key space",
-      "disposition": "rewrite",
-      "expiry": "Phase 3 cutover plus rollback window",
-      "id": "storage-key:{}|{}::attachment",
-      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
-      "target_owner": "reviewed A308 legacy-to-capsule transform"
-    },
-    {
-      "callers": [
-        "apps/aseman-node/src/core/orchestrator/icore.rs:98"
-      ],
-      "current_owner": "legacy RocksDB/transaction key space",
-      "disposition": "rewrite",
-      "expiry": "Phase 3 cutover plus rollback window",
-      "id": "storage-key:{}|{}::machineId",
-      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
-      "target_owner": "workload/program capsules and VMM observations"
-    },
-    {
-      "callers": [
-        "apps/aseman-node/src/core/orchestrator/icore.rs:102"
-      ],
-      "current_owner": "legacy RocksDB/transaction key space",
-      "disposition": "rewrite",
-      "expiry": "Phase 3 cutover plus rollback window",
-      "id": "storage-key:{}|{}::storeId",
-      "replacement_evidence": "A004/A301-A310 transform, semantic compare, rollback",
-      "target_owner": "typed core capsule/table mapping"
     },
     {
       "callers": [
@@ -7947,10 +5982,10 @@
     }
   ],
   "summary": {
-    "artifacts": 52,
+    "artifacts": 54,
     "configuration": 123,
-    "protocol_and_compatibility": 282,
-    "storage": 208,
-    "total": 665
+    "protocol_and_compatibility": 283,
+    "storage": 35,
+    "total": 495
   }
 }

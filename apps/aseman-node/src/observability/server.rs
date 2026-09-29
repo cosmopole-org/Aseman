@@ -1,10 +1,8 @@
 //! Translation of `telemetry/server.go`.
 
 use std::collections::HashMap;
-use std::fs;
 use std::io::{BufRead, BufReader, Read, Write};
 use std::net::TcpListener;
-use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 use std::thread;
 use std::time::{Duration, SystemTime};
@@ -153,7 +151,10 @@ impl TelemetryServer {
     fn cached_or_collect(&self) -> Result<Snapshot> {
         let _guard = self.lock.lock().unwrap();
         // Cache check.
-        let mut cached = self.cached.lock().unwrap_or_else(|error| error.into_inner());
+        let mut cached = self
+            .cached
+            .lock()
+            .unwrap_or_else(|error| error.into_inner());
         if let Some(snapshot) = cached.as_ref()
             && let Ok(ts) = chrono::DateTime::parse_from_rfc3339(&snapshot.timestamp)
             && Utc::now().signed_duration_since(ts).num_milliseconds() < 2000

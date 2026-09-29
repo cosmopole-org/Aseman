@@ -49,6 +49,32 @@ pub fn vmm_handoff(arguments: &[String]) -> i32 {
     }
 }
 
+/// `aseman-node storage migrate ...`: the ADR 0036 storage migration (run while the
+/// node is stopped). Returns the exit status.
+pub fn storage(arguments: &[String]) -> i32 {
+    if arguments.first().map(String::as_str) != Some("migrate") {
+        eprintln!("{}", aseman_storage_providers::migrate::USAGE);
+        return 2;
+    }
+    let config = match AsemanConfig::from_process_with_dotenv(".env") {
+        Ok(config) => config,
+        Err(error) => {
+            eprintln!("invalid Aseman configuration: {error}");
+            return 2;
+        }
+    };
+    match aseman_storage_providers::migrate::command(&config, &arguments[1..]) {
+        Ok(report) => {
+            print!("{report}");
+            0
+        }
+        Err(error) => {
+            eprintln!("storage migrate: {error}");
+            1
+        }
+    }
+}
+
 /// Bring the node up: parse the typed configuration and start the composition in
 /// [`app::NodeApp`]. Entry point used by `main.rs` and the `caspar-node` alias.
 pub fn run() {

@@ -11,6 +11,10 @@ pub const HUMAN_CREATURE_TYPE: &str = "human";
 
 /// The owner legacy records on every human: humans own themselves.
 pub const HUMAN_OWNER: &str = "free";
+/// The currency of creature balances (legacy integer tokens).
+pub const BALANCE_CURRENCY: &str = "ASE";
+/// Creature balances are whole tokens.
+pub const BALANCE_SCALE: u8 = 0;
 
 /// One creature's identity, exactly as legacy exposes it.
 #[derive(Clone, Debug, Default, Eq, PartialEq, Serialize, Deserialize)]

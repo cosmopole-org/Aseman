@@ -9,35 +9,19 @@ use aseman_domain::Uuid;
 use aseman_domain::finance::{JournalRecord, Minor, PriceList, UsageInterval, UsageSample};
 use aseman_ports::finance::{Ledger, PricingStore, UsageStore};
 use aseman_ports::{PortError, PortResult};
-use postgres::NoTls;
-use r2d2::{Pool, PooledConnection};
-use r2d2_postgres::PostgresConnectionManager;
+use aseman_postgres::{Connection, Pool, connection, port_error, port_pool};
 
 /// Idempotent schema migration owned by the ledger provider.
 pub const FINANCE_MIGRATION: &str = include_str!("../migrations/0001_finance.sql");
 
-type Connection = PooledConnection<PostgresConnectionManager<NoTls>>;
-
-fn failed(error: impl std::fmt::Display) -> PortError {
-    PortError::Failed(error.to_string())
-}
-
-fn db(error: postgres::Error) -> PortError {
-    match error.code() {
-        Some(code) if *code == postgres::error::SqlState::UNIQUE_VIOLATION => PortError::Conflict,
-        _ if error.is_closed() => PortError::Unavailable("postgres"),
-        _ => failed(error),
-    }
-}
-
 /// Metering and ledger storage.
 pub struct PostgresFinance {
-    pool: Pool<PostgresConnectionManager<NoTls>>,
+    pool: Pool,
 }
 
 impl PostgresFinance {
     #[must_use]
-    pub fn new(pool: Pool<PostgresConnectionManager<NoTls>>) -> Self {
+    pub fn new(pool: Pool) -> Self {
         Self { pool }
     }
 
@@ -47,10 +31,7 @@ impl PostgresFinance {
     ///
     /// `Unavailable` when the pool cannot be built.
     pub fn connect_config(config: postgres::Config, max_size: u32) -> PortResult<Self> {
-        let pool = Pool::builder()
-            .max_size(max_size.max(1))
-            .build(PostgresConnectionManager::new(config, NoTls))
-            .map_err(|_| PortError::Unavailable("finance database"))?;
+        let pool = port_pool(config, max_size, "finance database")?;
         Ok(Self { pool })
     }
 
@@ -62,20 +43,18 @@ impl PostgresFinance {
     pub fn migrate(&self) -> PortResult<()> {
         self.connection()?
             .batch_execute(FINANCE_MIGRATION)
-            .map_err(db)
+            .map_err(port_error)
     }
 
     fn connection(&self) -> PortResult<Connection> {
-        self.pool
-            .get()
-            .map_err(|_| PortError::Unavailable("postgres"))
+        connection(&self.pool)
     }
 }
 
 impl UsageStore for PostgresFinance {
     fn record_sample(&self, sample: &UsageSample) -> PortResult<()> {
         let mut connection = self.connection()?;
-        let text = serde_json::to_string(sample).map_err(failed)?;
+        let text = serde_json::to_string(sample).map_err(PortError::failed)?;
         // A repeated collection is refused here, so it can never become a second
         // interval and therefore never a second charge.
         let inserted = connection
@@ -91,7 +70,7 @@ impl UsageStore for PostgresFinance {
                     &text,
                 ],
             )
-            .map_err(db)?;
+            .map_err(port_error)?;
         if inserted == 0 {
             return Err(PortError::Conflict);
         }
@@ -107,17 +86,17 @@ impl UsageStore for PostgresFinance {
                  ORDER BY collected_at_millis DESC LIMIT 1",
                 &[&workload, &at_millis],
             )
-            .map_err(db)?
+            .map_err(port_error)?
             .map(|row| {
                 let text: String = row.get("sample");
-                serde_json::from_str(&text).map_err(failed)
+                serde_json::from_str(&text).map_err(PortError::failed)
             })
             .transpose()
     }
 
     fn record_interval(&self, interval: &UsageInterval) -> PortResult<()> {
         let mut connection = self.connection()?;
-        let text = serde_json::to_string(interval).map_err(failed)?;
+        let text = serde_json::to_string(interval).map_err(PortError::failed)?;
         let inserted = connection
             .execute(
                 "INSERT INTO aseman_core.usage_interval \
@@ -131,7 +110,7 @@ impl UsageStore for PostgresFinance {
                     &text,
                 ],
             )
-            .map_err(db)?;
+            .map_err(port_error)?;
         if inserted == 0 {
             return Err(PortError::Conflict);
         }
@@ -149,13 +128,13 @@ impl UsageStore for PostgresFinance {
                    WHERE journal.idempotency_key = usage.settlement_key \
                  ) \
                  ORDER BY usage.interval_start_millis, usage.settlement_key LIMIT $1",
-                &[&i64::try_from(limit.max(1)).map_err(failed)?],
+                &[&i64::try_from(limit.max(1)).map_err(PortError::failed)?],
             )
-            .map_err(db)?;
+            .map_err(port_error)?;
         rows.iter()
             .map(|row| {
                 let text: String = row.get("interval");
-                serde_json::from_str(&text).map_err(failed)
+                serde_json::from_str(&text).map_err(PortError::failed)
             })
             .collect()
     }
@@ -169,11 +148,11 @@ impl PricingStore for PostgresFinance {
                 "SELECT list FROM aseman_core.price_list ORDER BY effective_from_millis, version",
                 &[],
             )
-            .map_err(db)?;
+            .map_err(port_error)?;
         rows.iter()
             .map(|row| {
                 let text: String = row.get("list");
-                serde_json::from_str(&text).map_err(failed)
+                serde_json::from_str(&text).map_err(PortError::failed)
             })
             .collect()
     }
@@ -186,10 +165,10 @@ impl PricingStore for PostgresFinance {
             | aseman_domain::finance::FinanceError::UnbillableDimension(_) => {
                 PortError::Denied("the price list is not chargeable")
             }
-            other => failed(other),
+            other => PortError::failed(other),
         })?;
         let mut connection = self.connection()?;
-        let text = serde_json::to_string(list).map_err(failed)?;
+        let text = serde_json::to_string(list).map_err(PortError::failed)?;
         // A published price is never edited: charges refer to it by version.
         let inserted = connection
             .execute(
@@ -197,7 +176,7 @@ impl PricingStore for PostgresFinance {
                  VALUES ($1, $2, $3) ON CONFLICT DO NOTHING",
                 &[&list.version, &list.effective_from_millis, &text],
             )
-            .map_err(db)?;
+            .map_err(port_error)?;
         if inserted == 0 {
             return Err(PortError::Conflict);
         }
@@ -211,8 +190,8 @@ impl Ledger for PostgresFinance {
             return Err(PortError::Denied("a journal record must balance"));
         }
         let mut connection = self.connection()?;
-        let mut transaction = connection.transaction().map_err(db)?;
-        let text = serde_json::to_string(record).map_err(failed)?;
+        let mut transaction = connection.transaction().map_err(port_error)?;
+        let text = serde_json::to_string(record).map_err(PortError::failed)?;
         // Committing the same key twice is success. This is the whole mechanism: a
         // retry after a crash lands here and changes nothing.
         let inserted = transaction
@@ -227,9 +206,9 @@ impl Ledger for PostgresFinance {
                     &text,
                 ],
             )
-            .map_err(db)?;
+            .map_err(port_error)?;
         if inserted == 0 {
-            transaction.commit().map_err(db)?;
+            transaction.commit().map_err(port_error)?;
             return Ok(());
         }
         // Entries go in the same transaction as the record: a balance is never the
@@ -241,14 +220,14 @@ impl Ledger for PostgresFinance {
                        (idempotency_key, ordinal, account, amount) VALUES ($1, $2, $3, $4)",
                     &[
                         &record.idempotency_key,
-                        &i32::try_from(ordinal).map_err(failed)?,
+                        &i32::try_from(ordinal).map_err(PortError::failed)?,
                         &entry.account,
                         &entry.amount.0,
                     ],
                 )
-                .map_err(db)?;
+                .map_err(port_error)?;
         }
-        transaction.commit().map_err(db)?;
+        transaction.commit().map_err(port_error)?;
         Ok(())
     }
 
@@ -259,10 +238,10 @@ impl Ledger for PostgresFinance {
                 "SELECT record FROM aseman_core.journal_record WHERE idempotency_key = $1",
                 &[&idempotency_key],
             )
-            .map_err(db)?
+            .map_err(port_error)?
             .map(|row| {
                 let text: String = row.get("record");
-                serde_json::from_str(&text).map_err(failed)
+                serde_json::from_str(&text).map_err(PortError::failed)
             })
             .transpose()
     }
@@ -275,7 +254,7 @@ impl Ledger for PostgresFinance {
                  WHERE account = $1",
                 &[&account],
             )
-            .map_err(db)?
+            .map_err(port_error)?
             .get("total");
         Ok(Minor(total.unwrap_or(0)))
     }
@@ -289,13 +268,16 @@ impl Ledger for PostgresFinance {
                    ON usage.settlement_key = journal.idempotency_key \
                  WHERE usage.workload_id = $1 \
                  ORDER BY journal.at_millis, journal.idempotency_key LIMIT $2",
-                &[&workload, &i64::try_from(limit.max(1)).map_err(failed)?],
+                &[
+                    &workload,
+                    &i64::try_from(limit.max(1)).map_err(PortError::failed)?,
+                ],
             )
-            .map_err(db)?;
+            .map_err(port_error)?;
         rows.iter()
             .map(|row| {
                 let text: String = row.get("record");
-                serde_json::from_str(&text).map_err(failed)
+                serde_json::from_str(&text).map_err(PortError::failed)
             })
             .collect()
     }

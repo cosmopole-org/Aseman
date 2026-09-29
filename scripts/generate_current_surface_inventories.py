@@ -106,20 +106,29 @@ def meta(artifact: str, source: str, command: str) -> dict[str, str]:
 
 def shell_actions() -> list[dict[str, str]]:
     rows: list[dict[str, str]] = []
-    pattern = re.compile(
-        r"build_secure_action::<\s*([^,>]+)\s*,\s*_\s*>\(\s*[^,]+,\s*\"([^\"]+)\"",
-        re.S,
-    )
+    # A secured action is registered directly, through a typed helper that delegates
+    # to a use case (`served::<I>`, `finance_action::<I, A>`), or as a row of the
+    # finance action table (`"/path" => Input, use_case;`).
+    patterns = [
+        re.compile(
+            r"(?:build_secure_action|served|finance_action)::<\s*([^,>]+)\s*(?:,[^>]*)?>"
+            r"\(\s*[^,]+,\s*\"([^\"]+)\"",
+            re.S,
+        ),
+        re.compile(r'"(/[^"]+)"\s*=>\s*([A-Za-z0-9_]+)\s*,\s*[a-z0-9_]+\s*;'),
+    ]
     # Action families may be split into owned submodules as the migration
     # progresses. Keep the public-route inventory independent of file layout.
     for path in sorted((ROOT / "apps/aseman-node/src/api/actions").rglob("*.rs")):
         value = path.read_text(encoding="utf-8")
-        for found in pattern.finditer(value):
+        found_all = [(found, 1, 2) for found in patterns[0].finditer(value)]
+        found_all += [(found, 2, 1) for found in patterns[1].finditer(value)]
+        for found, request, route in found_all:
             rows.append(
                 {
                     "surface": "signed-shell-action",
-                    "path": found.group(2),
-                    "request_type": found.group(1).strip(),
+                    "path": found.group(route),
+                    "request_type": found.group(request).strip(),
                     "transport": "TCP/WebSocket/federation adapters",
                     "source": location(rel(path), value, found.start()),
                 }

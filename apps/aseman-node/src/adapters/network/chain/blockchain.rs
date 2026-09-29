@@ -6,10 +6,10 @@
 //! The driver bridges between Caspar (transactions submitted by the shell
 //! and inbound block streams from Babble) and the Babble nodes.
 
+use aseman_fs::{Access, write_atomic};
 use std::collections::HashMap;
 use std::fs;
 use std::path::Path;
-use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 use std::thread;
 
@@ -20,12 +20,12 @@ use uuid::Uuid;
 
 use crate::api::model::{Chain, ChainShard};
 use crate::core::globe::ChainPacketOp;
+use crate::core::trx::Trx;
 use crate::models::core::ICore;
 use crate::models::ports::{IChain, PipelineFn};
-use crate::core::trx::Trx;
 use aseman_consensus_hashgraph::babble::{Babble, load_key_for_config};
 use aseman_consensus_hashgraph::config::Config;
-use aseman_consensus_hashgraph::hashgraph::{Block, InternalTransactionReceipt};
+use aseman_consensus_hashgraph::hashgraph::{Block, FrameLimits, InternalTransactionReceipt};
 use aseman_consensus_hashgraph::net::Transport;
 use aseman_consensus_hashgraph::node::state::State as NodeState;
 use aseman_consensus_hashgraph::peers::{Peer, PeerSet};
@@ -86,6 +86,70 @@ struct ShardChain {
     peer_hosts: Arc<Mutex<Vec<String>>>,
 }
 
+/// The consensus log of one shard chain: `chains/{work_chain}/{shard}`.
+pub(crate) fn consensus_log_name(work_chain: &str, shard: &str) -> String {
+    format!("chains/{work_chain}/{shard}")
+}
+
+/// Where shard bootstrap keeps key and peer files when none is configured.
+const DEFAULT_BABBLE_DATA_DIR: &str = "/root/.babble";
+
+/// The settings every shard engine of this node runs with.
+#[derive(Clone, Debug)]
+pub struct ChainSettings {
+    /// This node heads the main chain (bootstraps it rather than joining).
+    pub is_head: bool,
+    /// Where the validator key pair and peer files are kept for shard bootstrap;
+    /// a generated key is mirrored there only when it is configured.
+    pub babble_data_dir: Option<String>,
+    /// The node a joining shard fetches its peer set from.
+    pub root_node: Option<String>,
+    /// The consensus API port, and the address it is advertised on.
+    pub api_port: u16,
+    pub ip_address: String,
+    pub frame_limits: FrameLimits,
+}
+
+impl Default for ChainSettings {
+    fn default() -> Self {
+        Self {
+            is_head: false,
+            babble_data_dir: None,
+            root_node: None,
+            api_port: 1337,
+            ip_address: String::new(),
+            frame_limits: FrameLimits::default(),
+        }
+    }
+}
+
+impl ChainSettings {
+    #[must_use]
+    pub fn from_config(config: &aseman_config::AsemanConfig) -> Self {
+        let legacy = &config.legacy_adapters;
+        let defaults = Self::default();
+        Self {
+            is_head: legacy.is_head,
+            babble_data_dir: legacy.babble_data_dir.clone(),
+            root_node: config.core.root_node.clone(),
+            api_port: legacy.blockchain_api_port,
+            ip_address: legacy.ip_address.clone(),
+            frame_limits: FrameLimits {
+                cached: positive_or(legacy.babble_frame_cache, defaults.frame_limits.cached),
+                retained_rounds: positive_or(
+                    legacy.babble_frame_retention,
+                    defaults.frame_limits.retained_rounds,
+                ),
+            },
+        }
+    }
+}
+
+/// `value` when positive, else `default`.
+fn positive_or<T: Default + PartialOrd>(value: T, default: T) -> T {
+    if value > T::default() { value } else { default }
+}
+
 /// Top-level blockchain driver.
 pub struct Blockchain {
     app: Arc<dyn ICore>,
@@ -94,6 +158,7 @@ pub struct Blockchain {
     pipeline: Mutex<Option<Arc<PipelineFn>>>,
     trans: Mutex<Option<Arc<dyn Transport>>>,
     storage_root: String,
+    settings: ChainSettings,
     /// Outbound submission queue: chain packets are framed and pushed onto a
     /// shard engine by the internal drain thread (RL-011, chain-module-owned).
     chain_tx: crossbeam_channel::Sender<ChainSubmission>,
@@ -123,7 +188,7 @@ impl Blockchain {
         reason = "RL-011: legacy chain surface kept until the live epoch switch"
     )]
     pub fn new(app: Arc<dyn ICore>, storage_root: &str) -> Arc<Blockchain> {
-        Self::build(app, storage_root, None, None)
+        Self::build(app, storage_root, ChainSettings::default(), None, None)
     }
 
     /// `NewChain` with the RL-011 consensus provider installed as the main
@@ -131,15 +196,17 @@ impl Blockchain {
     pub fn with_consensus(
         app: Arc<dyn ICore>,
         storage_root: &str,
+        settings: ChainSettings,
         consensus: Option<Arc<aseman_consensus_hashgraph::provider::HashgraphConsensusProvider>>,
         log_storage: Arc<dyn aseman_ports::consensus_log::ConsensusLogStorage>,
     ) -> Arc<Blockchain> {
-        Self::build(app, storage_root, consensus, Some(log_storage))
+        Self::build(app, storage_root, settings, consensus, Some(log_storage))
     }
 
     fn build(
         app: Arc<dyn ICore>,
         storage_root: &str,
+        settings: ChainSettings,
         consensus: Option<Arc<aseman_consensus_hashgraph::provider::HashgraphConsensusProvider>>,
         log_storage: Option<Arc<dyn aseman_ports::consensus_log::ConsensusLogStorage>>,
     ) -> Arc<Blockchain> {
@@ -151,6 +218,7 @@ impl Blockchain {
             pipeline: Mutex::new(None),
             trans: Mutex::new(None),
             storage_root,
+            settings,
             chain_tx,
             consensus,
             log_storage,
@@ -266,8 +334,7 @@ impl Blockchain {
                         id: chain_id_owned.clone(),
                         store_id: store_id_owned.clone(),
                     }
-                    .push(trx);
-                    Ok(())
+                    .save(trx)
                 }),
             );
         }
@@ -333,34 +400,35 @@ impl Blockchain {
                             })
                             .collect();
                         let peerset = PeerSet::new(peers_list.into_iter().cloned().collect());
-                        let json = peerset.marshal().unwrap_or_default();
-                        let _ = fs::write(format!("{}/peers.json", data_dir), json);
+                        let path = Path::new(&data_dir).join("peers.json");
+                        let written = peerset.marshal().and_then(|json| {
+                            write_atomic(&path, &json, Access::Shared).map_err(Into::into)
+                        });
+                        if let Err(error) = written {
+                            eprintln!("cannot write the peer set {}: {error}", path.display());
+                        }
                     }
                 }
             }
             PeerMode::NewShard
-        } else if aseman_config::legacy_adapter_snapshot()
-            .map(|config| config.is_head)
-            .unwrap_or(false)
-        {
+        } else if self.settings.is_head {
             PeerMode::Head
         } else {
             PeerMode::Follower
         };
 
-        let adapter_config = aseman_config::legacy_adapter_snapshot();
-        let babble_data_dir = adapter_config
-            .as_ref()
-            .and_then(|config| config.babble_data_dir.as_deref())
-            .unwrap_or("/root/.babble");
-        let root_node = aseman_config::consensus_root_node();
+        let babble_data_dir = self
+            .settings
+            .babble_data_dir
+            .as_deref()
+            .unwrap_or(DEFAULT_BABBLE_DATA_DIR);
         if let Err(error) = shard_bootstrap::bootstrap(&Bootstrap {
             storage_root: Path::new(&self.storage_root),
             babble_data_dir: Path::new(babble_data_dir),
             workchain_id: &wchain.id,
             shardchain_id: chain_id,
             peer_mode,
-            root_node,
+            root_node: self.settings.root_node.as_deref(),
         }) {
             eprintln!(
                 "FATAL: consensus shard bootstrap failed for {}/{}: {}",
@@ -369,14 +437,16 @@ impl Blockchain {
             std::process::exit(1);
         }
 
-        let (blockchain_port, ip_address) = aseman_config::legacy_adapter_snapshot()
-            .map(|config| (config.blockchain_api_port, config.ip_address.as_str()))
-            .unwrap_or((1337, ""));
-        let mut config = Config::new_default_config(&format!("{}:{}", ip_address, blockchain_port));
-        config.bind_addr = format!("0.0.0.0:{}", blockchain_port);
-        // set_data_dir() also relocates database_dir (the consensus log's name) off
-        // the default (/root/.babble) so multiple nodes on one host keep separate logs.
+        let settings = &self.settings;
+        let mut config =
+            Config::new_default_config(&format!("{}:{}", settings.ip_address, settings.api_port));
+        config.bind_addr = format!("0.0.0.0:{}", settings.api_port);
         config.set_data_dir(&data_dir);
+        config.frame_limits = settings.frame_limits;
+        config.key_mirror_dir = settings.babble_data_dir.clone();
+        // The consensus log's name is relative, so it stays the same on any storage
+        // provider and under any storage root (ADR 0036).
+        config.database_dir = consensus_log_name(&wchain.id, chain_id);
         config.proxy = Some(proxy.clone());
         config.log_storage = self.log_storage.clone();
         // Load the validator key so Babble can sign events.
@@ -435,8 +505,7 @@ impl Blockchain {
                         id: chain_id_owned.clone(),
                         work_chain_id: work_chain_id_owned.clone(),
                     }
-                    .push(trx);
-                    Ok(())
+                    .save(trx)
                 }),
             );
         }
@@ -457,10 +526,10 @@ impl Blockchain {
         self.app.modify_state(
             true,
             Box::new(move |trx: &Trx| {
-                if let Ok(c) = Chain::all(trx, -1, -1, &HashMap::new()) {
+                if let Ok(c) = Chain::all(trx) {
                     *chains_clone.lock().unwrap() = c;
                 }
-                if let Ok(s) = ChainShard::all(trx, -1, -1, &HashMap::new()) {
+                if let Ok(s) = ChainShard::all(trx) {
                     *shards_clone.lock().unwrap() = s;
                 }
                 Ok(())
@@ -735,6 +804,7 @@ fn self_clone(b: &Blockchain) -> Arc<Blockchain> {
         pipeline: Mutex::new(None),
         trans: Mutex::new(b.trans.lock().unwrap().clone()),
         storage_root: b.storage_root.clone(),
+        settings: b.settings.clone(),
         chain_tx: b.chain_tx.clone(),
         consensus: b.consensus.clone(),
         log_storage: b.log_storage.clone(),
@@ -807,9 +877,4 @@ impl ProxyHandler for HgHandler {
 pub struct CliConfig {
     pub proxy_addr: String,
     pub client_addr: String,
-}
-
-// Convenience helper for `PathBuf::join` in callers that import the module.
-fn _path_helper(a: &str, b: &str) -> PathBuf {
-    PathBuf::from(a).join(b)
 }

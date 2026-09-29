@@ -12,10 +12,8 @@ use aseman_ports::vmm::{
     VmmEventLog, VmmOperationStore, VmmWorkloadStore, WorkloadFilter,
 };
 use aseman_ports::{PortError, PortResult};
-use postgres::NoTls;
+use aseman_postgres::{Connection, Pool, connection, port_error, port_pool};
 use postgres::types::ToSql;
-use r2d2::{Pool, PooledConnection};
-use r2d2_postgres::PostgresConnectionManager;
 use serde::Serialize;
 use serde::de::DeserializeOwned;
 use uuid::Uuid;
@@ -23,37 +21,23 @@ use uuid::Uuid;
 pub const VMM_MIGRATION: &str = include_str!("../migrations/vmm/0001_vmm.sql");
 pub const VMM_EVENT_TIME_MIGRATION: &str = include_str!("../migrations/vmm/0002_event_time.sql");
 
-type Connection = PooledConnection<PostgresConnectionManager<NoTls>>;
-
 /// The VMM service's stores on PostgreSQL.
 pub struct PostgresVmmStore {
-    pool: Pool<PostgresConnectionManager<NoTls>>,
-}
-
-fn failed(error: impl std::fmt::Display) -> PortError {
-    PortError::Failed(error.to_string())
-}
-
-fn db(error: postgres::Error) -> PortError {
-    match error.code() {
-        Some(code) if *code == postgres::error::SqlState::UNIQUE_VIOLATION => PortError::Conflict,
-        _ if error.is_closed() => PortError::Unavailable("postgres"),
-        _ => failed(error),
-    }
+    pool: Pool,
 }
 
 fn encode<T: Serialize>(value: &T) -> PortResult<serde_json::Value> {
-    serde_json::to_value(value).map_err(failed)
+    serde_json::to_value(value).map_err(PortError::failed)
 }
 
 fn decode<T: DeserializeOwned>(value: serde_json::Value) -> PortResult<T> {
-    serde_json::from_value(value).map_err(failed)
+    serde_json::from_value(value).map_err(PortError::failed)
 }
 
 fn state_text<T: Serialize>(state: &T) -> PortResult<String> {
     match encode(state)? {
         serde_json::Value::String(text) => Ok(text),
-        other => Err(failed(format!("not a state: {other}"))),
+        other => Err(PortError::failed(format!("not a state: {other}"))),
     }
 }
 
@@ -97,17 +81,12 @@ impl PostgresVmmStore {
     ///
     /// `Unavailable` when the pool cannot be built.
     pub fn connect_config(config: postgres::Config, max_size: u32) -> PortResult<Self> {
-        let pool = Pool::builder()
-            .max_size(max_size.max(1))
-            .build(PostgresConnectionManager::new(config, NoTls))
-            .map_err(|_| PortError::Unavailable("VMM database"))?;
+        let pool = port_pool(config, max_size, "VMM database")?;
         Ok(Self { pool })
     }
 
     fn connection(&self) -> PortResult<Connection> {
-        self.pool
-            .get()
-            .map_err(|_| PortError::Unavailable("VMM database"))
+        connection(&self.pool)
     }
 
     /// Create or upgrade the schema.
@@ -117,10 +96,12 @@ impl PostgresVmmStore {
     /// Database failures.
     pub fn migrate(&self) -> PortResult<()> {
         let mut connection = self.connection()?;
-        connection.batch_execute(VMM_MIGRATION).map_err(db)?;
+        connection
+            .batch_execute(VMM_MIGRATION)
+            .map_err(port_error)?;
         connection
             .batch_execute(VMM_EVENT_TIME_MIGRATION)
-            .map_err(db)
+            .map_err(port_error)
     }
 
     fn workload_rows(
@@ -130,7 +111,7 @@ impl PostgresVmmStore {
     ) -> PortResult<Vec<WorkloadRecord>> {
         self.connection()?
             .query(sql, params)
-            .map_err(db)?
+            .map_err(port_error)?
             .into_iter()
             .map(|row| decode(row.get(0)))
             .collect()
@@ -143,7 +124,7 @@ impl PostgresVmmStore {
     ) -> PortResult<Vec<OperationRecord>> {
         self.connection()?
             .query(sql, params)
-            .map_err(db)?
+            .map_err(port_error)?
             .into_iter()
             .map(|row| decode(row.get(0)))
             .collect()
@@ -159,7 +140,7 @@ fn observed_text(record: &WorkloadRecord) -> PortResult<Option<String>> {
 }
 
 fn version(record: &WorkloadRecord) -> PortResult<i64> {
-    i64::try_from(record.resource_version).map_err(failed)
+    i64::try_from(record.resource_version).map_err(PortError::failed)
 }
 
 impl VmmWorkloadStore for PostgresVmmStore {
@@ -227,12 +208,12 @@ impl VmmWorkloadStore for PostgresVmmStore {
                     &encode(record)?,
                 ],
             )
-            .map_err(db)?;
+            .map_err(port_error)?;
         Ok(())
     }
 
     fn replace_workload(&self, record: &WorkloadRecord, expected: u64) -> PortResult<()> {
-        let expected = i64::try_from(expected).map_err(failed)?;
+        let expected = i64::try_from(expected).map_err(PortError::failed)?;
         let mut connection = self.connection()?;
         let updated = connection
             .execute(
@@ -249,7 +230,7 @@ impl VmmWorkloadStore for PostgresVmmStore {
                     &expected,
                 ],
             )
-            .map_err(db)?;
+            .map_err(port_error)?;
         if updated == 1 {
             return Ok(());
         }
@@ -258,7 +239,7 @@ impl VmmWorkloadStore for PostgresVmmStore {
                 "SELECT 1 FROM aseman_vmm.workload WHERE id = $1",
                 &[record.id.as_uuid()],
             )
-            .map_err(db)?
+            .map_err(port_error)?
             .is_some();
         Err(if exists {
             PortError::Conflict
@@ -316,7 +297,7 @@ impl VmmOperationStore for PostgresVmmStore {
                     &encode(record)?,
                 ],
             )
-            .map_err(db)?;
+            .map_err(port_error)?;
         Ok(())
     }
 
@@ -338,7 +319,7 @@ impl VmmOperationStore for PostgresVmmStore {
                     &state_text(&expected)?,
                 ],
             )
-            .map_err(db)?;
+            .map_err(port_error)?;
         if updated == 1 {
             return Ok(());
         }
@@ -347,7 +328,7 @@ impl VmmOperationStore for PostgresVmmStore {
                 "SELECT 1 FROM aseman_vmm.operation WHERE id = $1",
                 &[record.id.as_uuid()],
             )
-            .map_err(db)?
+            .map_err(port_error)?
             .is_some();
         Err(if exists {
             PortError::Conflict
@@ -389,7 +370,7 @@ impl IdempotencyStore for PostgresVmmStore {
                  RETURNING 1",
                 &[&owner, &key, &digest.as_slice(), &now_millis, &claim_ttl_millis],
             )
-            .map_err(db)?
+            .map_err(port_error)?
             .is_some();
         if claimed {
             return Ok(IdempotencyClaim::Claimed);
@@ -401,7 +382,7 @@ impl IdempotencyStore for PostgresVmmStore {
                  FROM aseman_vmm.idempotency WHERE owner = $1 AND key = $2",
                 &[&owner, &key],
             )
-            .map_err(db)?;
+            .map_err(port_error)?;
         let stored: Vec<u8> = row.get(0);
         if stored != digest {
             return Ok(IdempotencyClaim::Mismatch);
@@ -410,7 +391,7 @@ impl IdempotencyStore for PostgresVmmStore {
         Ok(match status {
             None => IdempotencyClaim::InProgress,
             Some(status) => IdempotencyClaim::Completed(ReplayableResponse {
-                status: u16::try_from(status).map_err(failed)?,
+                status: u16::try_from(status).map_err(PortError::failed)?,
                 body: row.get::<_, Option<Vec<u8>>>(2).unwrap_or_default(),
                 content_type: row.get::<_, Option<String>>(3).unwrap_or_default(),
                 location: row.get(4),
@@ -434,7 +415,7 @@ impl IdempotencyStore for PostgresVmmStore {
                     &response.location,
                 ],
             )
-            .map_err(db)?;
+            .map_err(port_error)?;
         if updated == 1 {
             Ok(())
         } else {
@@ -449,7 +430,7 @@ impl IdempotencyStore for PostgresVmmStore {
                  WHERE owner = $1 AND key = $2 AND response_status IS NULL",
                 &[&owner, &key],
             )
-            .map_err(db)?;
+            .map_err(port_error)?;
         Ok(())
     }
 
@@ -459,24 +440,24 @@ impl IdempotencyStore for PostgresVmmStore {
                 "DELETE FROM aseman_vmm.idempotency WHERE claimed_at_millis < $1",
                 &[&cutoff_millis],
             )
-            .map_err(db)
+            .map_err(port_error)
     }
 }
 
 impl VmmEventLog for PostgresVmmStore {
     fn append(&self, event: &WorkloadEventRecord) -> PortResult<u64> {
         let mut connection = self.connection()?;
-        let mut transaction = connection.transaction().map_err(db)?;
+        let mut transaction = connection.transaction().map_err(port_error)?;
         let sequence: i64 = transaction
             .query_one(
                 "UPDATE aseman_vmm.event_log SET last_sequence = last_sequence + 1 \
                  RETURNING last_sequence",
                 &[],
             )
-            .map_err(db)?
+            .map_err(port_error)?
             .get(0);
         let mut event = event.clone();
-        event.sequence = u64::try_from(sequence).map_err(failed)?;
+        event.sequence = u64::try_from(sequence).map_err(PortError::failed)?;
         transaction
             .execute(
                 "INSERT INTO aseman_vmm.event (sequence, owner, workload_id, record, at_millis) \
@@ -489,8 +470,8 @@ impl VmmEventLog for PostgresVmmStore {
                     &event.at_millis,
                 ],
             )
-            .map_err(db)?;
-        transaction.commit().map_err(db)?;
+            .map_err(port_error)?;
+        transaction.commit().map_err(port_error)?;
         Ok(event.sequence)
     }
 
@@ -501,11 +482,11 @@ impl VmmEventLog for PostgresVmmStore {
         workload: Option<WorkloadId>,
         limit: usize,
     ) -> PortResult<EventBatch> {
-        let after = i64::try_from(after).map_err(failed)?;
+        let after = i64::try_from(after).map_err(PortError::failed)?;
         let mut connection = self.connection()?;
         let truncated: i64 = connection
             .query_one("SELECT truncated_through FROM aseman_vmm.event_log", &[])
-            .map_err(db)?
+            .map_err(port_error)?
             .get(0);
         if after < truncated {
             return Ok(EventBatch {
@@ -525,7 +506,7 @@ impl VmmEventLog for PostgresVmmStore {
                     &(limit_i64(limit) - 1),
                 ],
             )
-            .map_err(db)?
+            .map_err(port_error)?
             .into_iter()
             .map(|row| decode(row.get(0)))
             .collect::<PortResult<Vec<_>>>()?;
@@ -537,17 +518,17 @@ impl VmmEventLog for PostgresVmmStore {
 
     fn truncate_before(&self, cutoff_millis: i64) -> PortResult<u64> {
         let mut connection = self.connection()?;
-        let mut transaction = connection.transaction().map_err(db)?;
+        let mut transaction = connection.transaction().map_err(port_error)?;
         // Serialize with appends, so a sequence committed later is never dropped.
         transaction
             .execute("SELECT 1 FROM aseman_vmm.event_log FOR UPDATE", &[])
-            .map_err(db)?;
+            .map_err(port_error)?;
         let dropped = transaction
             .query(
                 "DELETE FROM aseman_vmm.event WHERE at_millis < $1 RETURNING sequence",
                 &[&cutoff_millis],
             )
-            .map_err(db)?;
+            .map_err(port_error)?;
         if let Some(highest) = dropped.iter().map(|row| row.get::<_, i64>(0)).max() {
             transaction
                 .execute(
@@ -555,9 +536,9 @@ impl VmmEventLog for PostgresVmmStore {
                      SET truncated_through = GREATEST(truncated_through, $1)",
                     &[&highest],
                 )
-                .map_err(db)?;
+                .map_err(port_error)?;
         }
-        transaction.commit().map_err(db)?;
+        transaction.commit().map_err(port_error)?;
         Ok(dropped.len() as u64)
     }
 }

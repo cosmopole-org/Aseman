@@ -25,6 +25,7 @@ use aseman_application::guest_call::{
     GuestRequest, ProvisionWorkload, ServeGuestCall, WorkloadKey,
 };
 use aseman_application::identity::{IdentityFailure, VerifierPolicy};
+use aseman_capsule::auto::AutoCommit;
 use aseman_capsule::capability::CapsuleGrantStore;
 use aseman_capsule::entity::CapsuleEntityPorts;
 use aseman_capsule::identity::CapsuleKeyDirectory;
@@ -49,7 +50,6 @@ use aseman_ports::guest::{GuestCaller, GuestHostCalls};
 use aseman_ports::{
     BlobStore, ClockPort, EntityDirectory, PortError, PortResult, WorkloadRepository,
 };
-use aseman_capsule::auto::AutoCommit;
 use aseman_vmm_http::client::{ClientTls, HttpVmmClient};
 use serde_json::{Value, json};
 use sha2::{Digest, Sha256};
@@ -1051,9 +1051,9 @@ fn catalog_program_machine(catalog: &AutoCommit, program: &str) -> Result<String
 /// match the store), runs every adopted instance as a workload of the configured VMM,
 /// and only then removes the decided observed records from the legacy store.
 pub(crate) fn handoff(config: &aseman_config::AsemanConfig, arguments: &[String]) -> Result<()> {
-    let legacy = aseman_storage_providers::legacy::RocksDbKvStore::open_tuned(std::path::Path::new(
-        &config.storage.base_db_path,
-    ))
+    let legacy = aseman_storage_providers::legacy::RocksDbKvStore::open_tuned(
+        std::path::Path::new(&config.storage.base_db_path),
+    )
     .map_err(|error| anyhow!("{error}"))?;
     match arguments {
         [command, out] if command == "plan" => {

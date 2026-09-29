@@ -3,4 +3,4 @@
 pub mod blockchain;
 mod shard_bootstrap;
 
-pub use blockchain::Blockchain;
+pub use blockchain::{Blockchain, ChainSettings};

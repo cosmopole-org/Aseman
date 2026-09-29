@@ -38,8 +38,6 @@ pub fn installed() -> Option<aseman_storage::Storage> {
     INSTALLED.get().cloned()
 }
 
-/// PostgreSQL connections the node's transactions may hold.
-const STATE_CONNECTIONS: u32 = 16;
 /// Where module administration listens when the provider does not serve it.
 const DEFAULT_ADMIN_LISTEN: &str = "0.0.0.0:7440";
 
@@ -54,41 +52,30 @@ pub fn open_from_config(
     base_db_path: &str,
     serve_admin: bool,
 ) -> Result<aseman_storage::Storage> {
-    use aseman_config::CoreStorageProvider;
     let routes = if serve_admin {
         crate::adapters::module_admin::route_handler(storage_root)
     } else {
         None
     };
-    let mut settings = aseman_storage::ProviderSettings::embedded(storage_root)
-        .map_err(|error| anyhow!("{error}"))?;
-    settings.max_connections = STATE_CONNECTIONS;
-    settings.admin_routes = routes.clone();
-    // A RocksDB store from before ADR 0036 must be converted first.
-    settings.legacy_store = Some(std::path::PathBuf::from(base_db_path));
-    let name = match config {
-        Some(config) => {
-            settings.layout = config.core_storage.layout;
-            settings.binding_generation = config.core_storage.binding_generation;
-            settings.cluster = config.cluster.clone();
-            if let Some(secret) = &config.database_url_secret {
-                settings.database_url = Some(aseman_config::read_secret_file(secret, 4096)?);
-            }
-            if let Some(secret) = &config.core_storage.postgres_shards_secret {
-                settings.shard_map = Some(aseman_config::read_secret_file(secret, 64 * 1024)?);
-            }
-            match config.core_storage.provider {
-                CoreStorageProvider::Postgres => "postgres",
-                CoreStorageProvider::RocksDb => "rocksdb",
-            }
+    let (name, mut settings) = match config {
+        Some(config) => (
+            aseman_storage_providers::provider_name(config.core_storage.provider),
+            aseman_storage_providers::settings(
+                config,
+                &aseman_storage_providers::SecretOverrides::default(),
+            )
+            .map_err(|error| anyhow!("{error}"))?,
+        ),
+        None => {
+            let mut settings = aseman_storage::ProviderSettings::embedded(storage_root)
+                .map_err(|error| anyhow!("{error}"))?;
+            // A RocksDB store from before ADR 0036 must be converted first.
+            settings.legacy_store = Some(std::path::PathBuf::from(base_db_path));
+            ("rocksdb", settings)
         }
-        None => "rocksdb",
     };
-    let storage = open(
-        &aseman_storage_providers::registry(),
-        name,
-        &settings,
-    )?;
+    settings.admin_routes = routes.clone();
+    let storage = open(&aseman_storage_providers::registry(), name, &settings)?;
     if !storage.provider().serves_admin_routes()
         && let Some(routes) = routes
     {
@@ -160,7 +147,11 @@ impl IStorage for Storage {
 
     fn begin(&self, readonly: bool) -> Result<Trx> {
         self.storage
-            .begin(if readonly { Mode::ReadOnly } else { Mode::ReadWrite })
+            .begin(if readonly {
+                Mode::ReadOnly
+            } else {
+                Mode::ReadWrite
+            })
             .map_err(|error| anyhow!("storage: cannot begin a transaction: {error}"))
     }
 
@@ -171,7 +162,11 @@ impl IStorage for Storage {
     fn gen_id(&self, origin: &str) -> String {
         // Ids are `N@origin`: one counter for the global origin and one for every
         // local origin, as the node always minted them.
-        let name = if origin == "global" { "global" } else { "local" };
+        let name = if origin == "global" {
+            "global"
+        } else {
+            "local"
+        };
         match self.mint(name) {
             Ok(value) => format!("{value}@{origin}"),
             Err(error) => {

@@ -40,7 +40,7 @@
       "apps/aseman-client/package-lock.json"
     ],
     "tracked_dist_file_count": 0,
-    "tracked_file_count": 1055,
+    "tracked_file_count": 1108,
     "tracked_files_by_top_level": {
       ".cargo": 1,
       ".gitattributes": 1,
@@ -54,23 +54,23 @@
       "Cargo.toml": 1,
       "README.md": 1,
       "SECURITY.md": 1,
-      "apps": 206,
+      "apps": 203,
       "clippy.toml": 1,
       "contracts": 102,
-      "crates": 129,
+      "crates": 150,
       "deploy": 12,
-      "docs": 172,
-      "modules": 331,
+      "docs": 175,
+      "modules": 361,
       "plan": 18,
       "rust-toolchain.toml": 1,
       "rustfmt.toml": 1,
-      "scripts": 38,
+      "scripts": 40,
       "tests": 29,
       "xtask": 3
     },
     "tracked_source_files_by_extension": {
-      ".py": 46,
-      ".rs": 567,
+      ".py": 48,
+      ".rs": 590,
       ".sh": 2,
       ".ts": 2
     }
@@ -270,13 +270,13 @@
             "scope": "normal"
           },
           {
-            "name": "aseman-storage-postgres",
-            "path": "modules/storage/postgres",
+            "name": "aseman-storage",
+            "path": "crates/aseman-storage",
             "scope": "normal"
           },
           {
-            "name": "aseman-storage-rocksdb",
-            "path": "modules/storage/rocksdb",
+            "name": "aseman-storage-providers",
+            "path": "crates/aseman-storage-providers",
             "scope": "normal"
           },
           {
@@ -505,6 +505,11 @@
             ],
             "name": "aseman-ports",
             "path": "crates/aseman-ports",
+            "scope": "dev"
+          },
+          {
+            "name": "aseman-storage-postgres",
+            "path": "modules/storage/postgres",
             "scope": "dev"
           }
         ],
@@ -794,6 +799,11 @@
             "scope": "normal"
           },
           {
+            "name": "aseman-storage-providers",
+            "path": "crates/aseman-storage-providers",
+            "scope": "normal"
+          },
+          {
             "name": "base64",
             "scope": "normal"
           },
@@ -983,6 +993,11 @@
             "scope": "normal"
           },
           {
+            "name": "aseman-storage",
+            "path": "crates/aseman-storage",
+            "scope": "normal"
+          },
+          {
             "name": "serde_json",
             "scope": "normal"
           },
@@ -991,6 +1006,9 @@
             "scope": "normal"
           },
           {
+            "features": [
+              "v4"
+            ],
             "name": "uuid",
             "scope": "normal"
           }
@@ -1314,6 +1332,151 @@
           {
             "kind": "lib",
             "name": "aseman-ports",
+            "path": "src/lib.rs"
+          }
+        ],
+        "version": {
+          "workspace": true
+        }
+      },
+      {
+        "dependencies": [
+          {
+            "name": "aseman-config",
+            "path": "crates/aseman-config",
+            "scope": "normal"
+          },
+          {
+            "name": "aseman-contracts",
+            "path": "crates/aseman-contracts",
+            "scope": "normal"
+          },
+          {
+            "name": "aseman-ports",
+            "path": "crates/aseman-ports",
+            "scope": "normal"
+          },
+          {
+            "name": "serde",
+            "scope": "normal"
+          },
+          {
+            "name": "serde_json",
+            "scope": "normal"
+          },
+          {
+            "name": "thiserror",
+            "scope": "normal"
+          },
+          {
+            "name": "uuid",
+            "scope": "normal"
+          },
+          {
+            "features": [
+              "conformance"
+            ],
+            "name": "aseman-ports",
+            "path": "crates/aseman-ports",
+            "scope": "dev"
+          }
+        ],
+        "description": "The storage API (ADR 0036): models, the Prisma-style transaction engine, and the provider plugin contract.",
+        "edition": {
+          "workspace": true
+        },
+        "features": {
+          "conformance": [
+            "aseman-ports/conformance"
+          ]
+        },
+        "manifest": "crates/aseman-storage/Cargo.toml",
+        "name": "aseman-storage",
+        "targets": [
+          {
+            "kind": "lib",
+            "name": "aseman-storage",
+            "path": "src/lib.rs"
+          }
+        ],
+        "version": {
+          "workspace": true
+        }
+      },
+      {
+        "dependencies": [
+          {
+            "name": "aseman-capsule",
+            "path": "crates/aseman-capsule",
+            "scope": "normal"
+          },
+          {
+            "name": "aseman-config",
+            "path": "crates/aseman-config",
+            "scope": "normal"
+          },
+          {
+            "name": "aseman-contracts",
+            "path": "crates/aseman-contracts",
+            "scope": "normal"
+          },
+          {
+            "name": "aseman-domain",
+            "path": "crates/aseman-domain",
+            "scope": "normal"
+          },
+          {
+            "name": "aseman-ports",
+            "path": "crates/aseman-ports",
+            "scope": "normal"
+          },
+          {
+            "name": "aseman-storage",
+            "path": "crates/aseman-storage",
+            "scope": "normal"
+          },
+          {
+            "name": "aseman-storage-postgres",
+            "path": "modules/storage/postgres",
+            "scope": "normal"
+          },
+          {
+            "name": "aseman-storage-rocksdb",
+            "path": "modules/storage/rocksdb",
+            "scope": "normal"
+          },
+          {
+            "name": "hex",
+            "scope": "normal"
+          },
+          {
+            "name": "serde_json",
+            "scope": "normal"
+          },
+          {
+            "name": "sha2",
+            "scope": "normal"
+          },
+          {
+            "name": "postgres",
+            "scope": "dev"
+          },
+          {
+            "name": "rsa",
+            "scope": "dev"
+          }
+        ],
+        "description": "The storage provider plugins a node can load (ADR 0036); only composition roots depend on it.",
+        "edition": {
+          "workspace": true
+        },
+        "features": {},
+        "manifest": "crates/aseman-storage-providers/Cargo.toml",
+        "name": "aseman-storage-providers",
+        "targets": [
+          {
+            "kind": "lib",
+            "name": "aseman-storage-providers",
             "path": "src/lib.rs"
           }
         ],
@@ -2861,6 +3024,11 @@
             "scope": "normal"
           },
           {
+            "name": "aseman-storage",
+            "path": "crates/aseman-storage",
+            "scope": "normal"
+          },
+          {
             "features": [
               "with-serde_json-1",
               "with-uuid-1"
@@ -2927,12 +3095,24 @@
             "scope": "dev"
           },
           {
+            "features": [
+              "conformance"
+            ],
+            "name": "aseman-storage",
+            "path": "crates/aseman-storage",
+            "scope": "dev"
+          },
+          {
             "name": "aseman-storage-conformance",
             "path": "tests/contracts/storage",
             "scope": "dev"
           },
           {
             "name": "rsa",
+            "scope": "dev"
+          },
+          {
+            "name": "url",
             "scope": "dev"
           }
         ],
@@ -2991,6 +3171,11 @@
             "scope": "normal"
           },
           {
+            "name": "aseman-storage",
+            "path": "crates/aseman-storage",
+            "scope": "normal"
+          },
+          {
             "name": "base64",
             "scope": "normal"
           },
@@ -3020,14 +3205,6 @@
           },
           {
             "name": "postgres",
-            "scope": "normal"
-          },
-          {
-            "name": "r2d2",
-            "scope": "normal"
-          },
-          {
-            "name": "r2d2_postgres",
             "scope": "normal"
           },
           {
@@ -3092,6 +3269,14 @@
             ],
             "name": "aseman-ports",
             "path": "crates/aseman-ports",
+            "scope": "dev"
+          },
+          {
+            "features": [
+              "conformance"
+            ],
+            "name": "aseman-storage",
+            "path": "crates/aseman-storage",
             "scope": "dev"
           },
           {

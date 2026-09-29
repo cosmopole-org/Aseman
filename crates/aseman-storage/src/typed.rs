@@ -20,7 +20,9 @@ pub trait Model: Sized {
 /// Read a required field of a row.
 pub fn required<T: FromValue>(row: &Row, model: &str, field: &str) -> StorageResult<T> {
     T::from_value(row.get(field)).ok_or_else(|| {
-        StorageError::invalid(format!("{model}: stored record lacks required field {field}"))
+        StorageError::invalid(format!(
+            "{model}: stored record lacks required field {field}"
+        ))
     })
 }
 
@@ -125,14 +127,20 @@ impl<T: Into<Value>> Field<T> {
     #[must_use]
     pub fn is_in<I: IntoIterator<Item = V>, V: Into<T>>(&self, values: I) -> Where {
         self.cond(Cond::In(
-            values.into_iter().map(|value| value.into().into()).collect(),
+            values
+                .into_iter()
+                .map(|value| value.into().into())
+                .collect(),
         ))
     }
 
     #[must_use]
     pub fn not_in<I: IntoIterator<Item = V>, V: Into<T>>(&self, values: I) -> Where {
         self.cond(Cond::NotIn(
-            values.into_iter().map(|value| value.into().into()).collect(),
+            values
+                .into_iter()
+                .map(|value| value.into().into())
+                .collect(),
         ))
     }
 
@@ -249,7 +257,10 @@ impl<'a, M: Model> ModelClient<'a, M> {
     }
 
     pub fn find_unique(&self, by: Unique) -> StorageResult<Option<M>> {
-        self.trx.find_unique(M::NAME, &by)?.map(M::from_row).transpose()
+        self.trx
+            .find_unique(M::NAME, &by)?
+            .map(M::from_row)
+            .transpose()
     }
 
     /// The record `by` names, or `NotFound`.
@@ -259,7 +270,10 @@ impl<'a, M: Model> ModelClient<'a, M> {
     }
 
     pub fn find_first(&self, query: FindMany) -> StorageResult<Option<M>> {
-        self.trx.find_first(M::NAME, &query)?.map(M::from_row).transpose()
+        self.trx
+            .find_first(M::NAME, &query)?
+            .map(M::from_row)
+            .transpose()
     }
 
     pub fn find_many(&self, query: FindMany) -> StorageResult<Vec<M>> {
@@ -296,19 +310,21 @@ impl<'a, M: Model> ModelClient<'a, M> {
         create: M::Create,
         update: impl Into<Update>,
     ) -> StorageResult<M> {
-        M::from_row(self.trx.upsert(
-            M::NAME,
-            &by,
-            create.into(),
-            Data::from(update.into()),
-        )?)
+        M::from_row(
+            self.trx
+                .upsert(M::NAME, &by, create.into(), Data::from(update.into()))?,
+        )
     }
 
     pub fn delete(&self, by: Unique) -> StorageResult<Option<M>> {
         self.trx.delete(M::NAME, &by)?.map(M::from_row).transpose()
     }
 
-    pub fn update_many(&self, filter: Option<Where>, update: impl Into<Update>) -> StorageResult<u64> {
+    pub fn update_many(
+        &self,
+        filter: Option<Where>,
+        update: impl Into<Update>,
+    ) -> StorageResult<u64> {
         self.trx
             .update_many(M::NAME, filter.as_ref(), Data::from(update.into()))
     }

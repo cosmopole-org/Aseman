@@ -16,14 +16,7 @@ closed; a blocked or heuristic row is never copied as an opaque authoritative ca
 
 | Disposition | Rows |
 |---|---:|
-| `aggregate_with_document_family` | 3 |
-| `aggregate_with_object_family` | 16 |
-| `covered_by_reviewed_family` | 5 |
-| `derived_index_or_relationship` | 51 |
-| `fixture_backed_transform` | 74 |
-| `intentional_removal` | 17 |
-| `reviewed_no_persisted_record` | 5 |
-| `vmm_observed_runtime` | 47 |
+| `reviewed_no_persisted_record` | 3 |
 
 ## Blocked rows by owning phase
 

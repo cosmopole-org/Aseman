@@ -12,20 +12,16 @@ use crate::models::core::ICore;
 
 use super::actions;
 
-fn clone_model_extender(
-    model_extender: &HashMap<String, HashMap<String, ExtendedField>>,
-) -> HashMap<String, HashMap<String, ExtendedField>> {
-    model_extender.clone()
-}
-
-/// Mirrors `PlugAll(core, modelExtender)`.
+/// Mirrors `PlugAll(core, modelExtender)`; `advertised_port` is what `/api/ping`
+/// reports.
 pub fn plug_all(
     app: Arc<dyn ICore>,
     model_extender: &HashMap<String, HashMap<String, ExtendedField>>,
+    advertised_port: &str,
 ) {
     actions::auth::install(app.clone());
-    actions::creature::install(app.clone(), clone_model_extender(model_extender));
-    actions::dummy::install(app.clone());
+    actions::creature::install(app.clone(), model_extender.clone());
+    actions::dummy::install(app.clone(), advertised_port.to_owned());
     actions::gateway::install(app.clone());
     actions::program::install(app.clone());
     actions::store::install(app.clone());

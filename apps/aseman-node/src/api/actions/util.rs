@@ -54,7 +54,7 @@ where
         let raw = serde_json::to_value(&typed).unwrap_or(Value::Null);
         let trx = state.trx();
         crate::api::authority::authorize_shell_action(
-            &crate::api::authority::TrxLookups { trx: &*trx },
+            &crate::api::authority::TrxLookups { trx: &trx },
             &path,
             &state.info().user_id(),
             &raw,

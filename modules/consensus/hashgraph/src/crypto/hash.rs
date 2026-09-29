@@ -3,7 +3,6 @@
 use sha2::{Digest, Sha256};
 
 /// Returns the SHA256 hash of the data.
-#[allow(non_snake_case)]
 pub fn sha256(data: &[u8]) -> Vec<u8> {
     let mut hasher = Sha256::new();
     hasher.update(data);

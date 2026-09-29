@@ -7,8 +7,6 @@
 use std::collections::HashMap;
 use std::sync::Arc;
 
-use anyhow::Result;
-
 use crate::adapters::network::client::{Tcp as TcpDriver, Ws as WsDriver};
 use crate::models::core::ICore;
 use crate::models::ports::IChain;
@@ -87,9 +85,4 @@ impl INetwork for Network {
             self.chain.listen(*p, self.tls_config.clone());
         }
     }
-}
-
-#[allow(dead_code)]
-fn _force_use() -> Result<()> {
-    Ok(())
 }

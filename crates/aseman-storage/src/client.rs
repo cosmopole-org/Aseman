@@ -2,7 +2,6 @@
 // contracts/capsule/kinds; do not edit by hand.
 //! The typed storage client (ADR 0036): one module per model, and [`Models`],
 //! which gives a transaction one accessor per model.
-#![allow(clippy::too_many_lines, clippy::module_name_repetitions)]
 
 use crate::engine::Trx;
 use crate::typed::ModelClient;
@@ -10,7 +9,6 @@ use crate::typed::ModelClient;
 pub mod audit {
     /// `audit.event`.
     pub mod event {
-        #![allow(clippy::all, unused_imports)]
         use crate::error::StorageResult;
         use crate::query::Unique;
         use crate::typed::{self, Field, Update};
@@ -64,9 +62,15 @@ pub mod audit {
                 data.insert("action".to_owned(), Value::from(create.action));
                 data.insert("target".to_owned(), Value::from(create.target));
                 data.insert("decision".to_owned(), Value::from(create.decision));
-                data.insert("policy_version".to_owned(), Value::from(create.policy_version));
+                data.insert(
+                    "policy_version".to_owned(),
+                    Value::from(create.policy_version),
+                );
                 data.insert("trace_id".to_owned(), Value::from(create.trace_id));
-                data.insert("occurred_at_micros".to_owned(), Value::from(create.occurred_at_micros));
+                data.insert(
+                    "occurred_at_micros".to_owned(),
+                    Value::from(create.occurred_at_micros),
+                );
                 if let Some(value) = create.details {
                     data.insert("details".to_owned(), Value::from(value));
                 }
@@ -237,8 +241,14 @@ pub mod audit {
         }
 
         #[must_use]
-        pub fn by_stream_id_and_sequence(stream_id: impl Into<String>, sequence: impl Into<i64>) -> Unique {
-            Unique::fields([("stream_id", Value::from(stream_id.into())), ("sequence", Value::from(sequence.into()))])
+        pub fn by_stream_id_and_sequence(
+            stream_id: impl Into<String>,
+            sequence: impl Into<i64>,
+        ) -> Unique {
+            Unique::fields([
+                ("stream_id", Value::from(stream_id.into())),
+                ("sequence", Value::from(sequence.into())),
+            ])
         }
     }
 }
@@ -246,7 +256,6 @@ pub mod audit {
 pub mod core {
     /// `core.access_level`.
     pub mod access_level {
-        #![allow(clippy::all, unused_imports)]
         use crate::error::StorageResult;
         use crate::query::Unique;
         use crate::typed::{self, Field, Update};
@@ -365,13 +374,15 @@ pub mod core {
 
         #[must_use]
         pub fn by_store_and_level(store: impl Into<Id>, level: impl Into<String>) -> Unique {
-            Unique::fields([("store", Value::from(store.into())), ("level", Value::from(level.into()))])
+            Unique::fields([
+                ("store", Value::from(store.into())),
+                ("level", Value::from(level.into())),
+            ])
         }
     }
 
     /// `core.billing_catalog`.
     pub mod billing_catalog {
-        #![allow(clippy::all, unused_imports)]
         use crate::error::StorageResult;
         use crate::query::Unique;
         use crate::typed::{self, Field, Update};
@@ -479,7 +490,6 @@ pub mod core {
 
     /// `core.billing_quote`.
     pub mod billing_quote {
-        #![allow(clippy::all, unused_imports)]
         use crate::error::StorageResult;
         use crate::query::Unique;
         use crate::typed::{self, Field, Update};
@@ -587,7 +597,6 @@ pub mod core {
 
     /// `core.bridge_grant`.
     pub mod bridge_grant {
-        #![allow(clippy::all, unused_imports)]
         use crate::error::StorageResult;
         use crate::query::Unique;
         use crate::typed::{self, Field, Update};
@@ -628,12 +637,24 @@ pub mod core {
             fn from(create: Create) -> Data {
                 let mut data = Data::new();
                 data.insert("token_digest".to_owned(), Value::from(create.token_digest));
-                data.insert("minted_by_ref".to_owned(), Value::from(create.minted_by_ref));
-                data.insert("expires_at_micros".to_owned(), Value::from(create.expires_at_micros));
+                data.insert(
+                    "minted_by_ref".to_owned(),
+                    Value::from(create.minted_by_ref),
+                );
+                data.insert(
+                    "expires_at_micros".to_owned(),
+                    Value::from(create.expires_at_micros),
+                );
                 data.insert("document".to_owned(), Value::from(create.document));
-                data.insert("document_path".to_owned(), Value::from(create.document_path));
+                data.insert(
+                    "document_path".to_owned(),
+                    Value::from(create.document_path),
+                );
                 data.insert("entry_count".to_owned(), Value::from(create.entry_count));
-                data.insert("content_digest".to_owned(), Value::from(create.content_digest));
+                data.insert(
+                    "content_digest".to_owned(),
+                    Value::from(create.content_digest),
+                );
                 data
             }
         }
@@ -759,7 +780,6 @@ pub mod core {
 
     /// `core.bridge_topic`.
     pub mod bridge_topic {
-        #![allow(clippy::all, unused_imports)]
         use crate::error::StorageResult;
         use crate::query::Unique;
         use crate::typed::{self, Field, Update};
@@ -866,7 +886,6 @@ pub mod core {
 
     /// `core.capability_grant`.
     pub mod capability_grant {
-        #![allow(clippy::all, unused_imports)]
         use crate::error::StorageResult;
         use crate::query::Unique;
         use crate::typed::{self, Field, Update};
@@ -925,23 +944,35 @@ pub mod core {
                 data.insert("issuer_kind".to_owned(), Value::from(create.issuer_kind));
                 data.insert("issuer_id".to_owned(), Value::from(create.issuer_id));
                 data.insert("actions".to_owned(), Value::from(create.actions));
-                data.insert("resource_kind".to_owned(), Value::from(create.resource_kind));
+                data.insert(
+                    "resource_kind".to_owned(),
+                    Value::from(create.resource_kind),
+                );
                 if let Some(value) = create.resource_id {
                     data.insert("resource_id".to_owned(), Value::from(value));
                 }
-                data.insert("delegable_actions".to_owned(), Value::from(create.delegable_actions));
+                data.insert(
+                    "delegable_actions".to_owned(),
+                    Value::from(create.delegable_actions),
+                );
                 data.insert("max_depth".to_owned(), Value::from(create.max_depth));
                 if let Some(value) = create.parent_id {
                     data.insert("parent_id".to_owned(), Value::from(value));
                 }
-                data.insert("not_before_micros".to_owned(), Value::from(create.not_before_micros));
+                data.insert(
+                    "not_before_micros".to_owned(),
+                    Value::from(create.not_before_micros),
+                );
                 if let Some(value) = create.expires_at_micros {
                     data.insert("expires_at_micros".to_owned(), Value::from(value));
                 }
                 if let Some(value) = create.revoked_at_micros {
                     data.insert("revoked_at_micros".to_owned(), Value::from(value));
                 }
-                data.insert("policy_version".to_owned(), Value::from(create.policy_version));
+                data.insert(
+                    "policy_version".to_owned(),
+                    Value::from(create.policy_version),
+                );
                 data
             }
         }
@@ -1144,7 +1175,6 @@ pub mod core {
 
     /// `core.chain`.
     pub mod chain {
-        #![allow(clippy::all, unused_imports)]
         use crate::error::StorageResult;
         use crate::query::Unique;
         use crate::typed::{self, Field, Update};
@@ -1161,27 +1191,28 @@ pub mod core {
             pub record_created_micros: i64,
             pub record_updated_micros: i64,
             pub key: String,
-            pub store_id: Option<String>,
-            pub status: Option<String>,
+            pub store_id: String,
+            pub status: String,
+            pub store: Option<Id>,
         }
 
         /// The values `create` takes.
         #[derive(Clone, Debug, Default, PartialEq)]
         pub struct Create {
             pub key: String,
-            pub store_id: Option<String>,
-            pub status: Option<String>,
+            pub store_id: String,
+            pub status: String,
+            pub store: Option<Id>,
         }
 
         impl From<Create> for Data {
             fn from(create: Create) -> Data {
                 let mut data = Data::new();
                 data.insert("key".to_owned(), Value::from(create.key));
-                if let Some(value) = create.store_id {
-                    data.insert("store_id".to_owned(), Value::from(value));
-                }
-                if let Some(value) = create.status {
-                    data.insert("status".to_owned(), Value::from(value));
+                data.insert("store_id".to_owned(), Value::from(create.store_id));
+                data.insert("status".to_owned(), Value::from(create.status));
+                if let Some(value) = create.store {
+                    data.insert("store".to_owned(), Value::from(value));
                 }
                 data
             }
@@ -1194,8 +1225,9 @@ pub mod core {
             fn from_row(row: Row) -> StorageResult<Self> {
                 Ok(Self {
                     key: typed::required(&row, NAME, "key")?,
-                    store_id: typed::optional(&row, "store_id"),
-                    status: typed::optional(&row, "status"),
+                    store_id: typed::required(&row, NAME, "store_id")?,
+                    status: typed::required(&row, NAME, "status")?,
+                    store: typed::optional(&row, "store"),
                     id: row.id,
                     revision: row.revision,
                     record_created_micros: row.created_at_micros,
@@ -1225,6 +1257,11 @@ pub mod core {
             Field::new("status")
         }
 
+        #[must_use]
+        pub const fn store() -> Field<Id> {
+            Field::new("store")
+        }
+
         /// An update: set fields, or clear optional ones with `None`.
         #[derive(Clone, Debug, Default, PartialEq)]
         pub struct Updater(Update);
@@ -1240,17 +1277,18 @@ pub mod core {
                 Self(self.0.set("key", value.into()))
             }
             #[must_use]
-            pub fn store_id(self, value: Option<String>) -> Self {
-                match value {
-                    Some(value) => Self(self.0.set("store_id", value)),
-                    None => Self(self.0.clear("store_id")),
-                }
+            pub fn store_id(self, value: impl Into<String>) -> Self {
+                Self(self.0.set("store_id", value.into()))
             }
             #[must_use]
-            pub fn status(self, value: Option<String>) -> Self {
+            pub fn status(self, value: impl Into<String>) -> Self {
+                Self(self.0.set("status", value.into()))
+            }
+            #[must_use]
+            pub fn store(self, value: Option<Id>) -> Self {
                 match value {
-                    Some(value) => Self(self.0.set("status", value)),
-                    None => Self(self.0.clear("status")),
+                    Some(value) => Self(self.0.set("store", value)),
+                    None => Self(self.0.clear("store")),
                 }
             }
         }
@@ -1271,11 +1309,15 @@ pub mod core {
         pub fn by_key(key: impl Into<String>) -> Unique {
             Unique::Key(key.into())
         }
+
+        #[must_use]
+        pub fn by_store_id(store_id: impl Into<String>) -> Unique {
+            Unique::fields([("store_id", Value::from(store_id.into()))])
+        }
     }
 
     /// `core.chain_shard`.
     pub mod chain_shard {
-        #![allow(clippy::all, unused_imports)]
         use crate::error::StorageResult;
         use crate::query::Unique;
         use crate::typed::{self, Field, Update};
@@ -1292,27 +1334,31 @@ pub mod core {
             pub record_created_micros: i64,
             pub record_updated_micros: i64,
             pub key: String,
-            pub work_chain_id: Option<String>,
-            pub shard_name: Option<String>,
+            pub work_chain_id: String,
+            pub shard_name: String,
+            pub chain: Option<Id>,
         }
 
         /// The values `create` takes.
         #[derive(Clone, Debug, Default, PartialEq)]
         pub struct Create {
             pub key: String,
-            pub work_chain_id: Option<String>,
-            pub shard_name: Option<String>,
+            pub work_chain_id: String,
+            pub shard_name: String,
+            pub chain: Option<Id>,
         }
 
         impl From<Create> for Data {
             fn from(create: Create) -> Data {
                 let mut data = Data::new();
                 data.insert("key".to_owned(), Value::from(create.key));
-                if let Some(value) = create.work_chain_id {
-                    data.insert("work_chain_id".to_owned(), Value::from(value));
-                }
-                if let Some(value) = create.shard_name {
-                    data.insert("shard_name".to_owned(), Value::from(value));
+                data.insert(
+                    "work_chain_id".to_owned(),
+                    Value::from(create.work_chain_id),
+                );
+                data.insert("shard_name".to_owned(), Value::from(create.shard_name));
+                if let Some(value) = create.chain {
+                    data.insert("chain".to_owned(), Value::from(value));
                 }
                 data
             }
@@ -1325,8 +1371,9 @@ pub mod core {
             fn from_row(row: Row) -> StorageResult<Self> {
                 Ok(Self {
                     key: typed::required(&row, NAME, "key")?,
-                    work_chain_id: typed::optional(&row, "work_chain_id"),
-                    shard_name: typed::optional(&row, "shard_name"),
+                    work_chain_id: typed::required(&row, NAME, "work_chain_id")?,
+                    shard_name: typed::required(&row, NAME, "shard_name")?,
+                    chain: typed::optional(&row, "chain"),
                     id: row.id,
                     revision: row.revision,
                     record_created_micros: row.created_at_micros,
@@ -1356,6 +1403,11 @@ pub mod core {
             Field::new("shard_name")
         }
 
+        #[must_use]
+        pub const fn chain() -> Field<Id> {
+            Field::new("chain")
+        }
+
         /// An update: set fields, or clear optional ones with `None`.
         #[derive(Clone, Debug, Default, PartialEq)]
         pub struct Updater(Update);
@@ -1371,17 +1423,18 @@ pub mod core {
                 Self(self.0.set("key", value.into()))
             }
             #[must_use]
-            pub fn work_chain_id(self, value: Option<String>) -> Self {
-                match value {
-                    Some(value) => Self(self.0.set("work_chain_id", value)),
-                    None => Self(self.0.clear("work_chain_id")),
-                }
+            pub fn work_chain_id(self, value: impl Into<String>) -> Self {
+                Self(self.0.set("work_chain_id", value.into()))
             }
             #[must_use]
-            pub fn shard_name(self, value: Option<String>) -> Self {
+            pub fn shard_name(self, value: impl Into<String>) -> Self {
+                Self(self.0.set("shard_name", value.into()))
+            }
+            #[must_use]
+            pub fn chain(self, value: Option<Id>) -> Self {
                 match value {
-                    Some(value) => Self(self.0.set("shard_name", value)),
-                    None => Self(self.0.clear("shard_name")),
+                    Some(value) => Self(self.0.set("chain", value)),
+                    None => Self(self.0.clear("chain")),
                 }
             }
         }
@@ -1402,11 +1455,21 @@ pub mod core {
         pub fn by_key(key: impl Into<String>) -> Unique {
             Unique::Key(key.into())
         }
+
+        #[must_use]
+        pub fn by_work_chain_id_and_shard_name(
+            work_chain_id: impl Into<String>,
+            shard_name: impl Into<String>,
+        ) -> Unique {
+            Unique::fields([
+                ("work_chain_id", Value::from(work_chain_id.into())),
+                ("shard_name", Value::from(shard_name.into())),
+            ])
+        }
     }
 
     /// `core.counter`.
     pub mod counter {
-        #![allow(clippy::all, unused_imports)]
         use crate::error::StorageResult;
         use crate::query::Unique;
         use crate::typed::{self, Field, Update};
@@ -1514,7 +1577,6 @@ pub mod core {
 
     /// `core.creature`.
     pub mod creature {
-        #![allow(clippy::all, unused_imports)]
         use crate::error::StorageResult;
         use crate::query::Unique;
         use crate::typed::{self, Field, Update};
@@ -1555,7 +1617,10 @@ pub mod core {
             fn from(create: Create) -> Data {
                 let mut data = Data::new();
                 data.insert("username".to_owned(), Value::from(create.username));
-                data.insert("creature_type".to_owned(), Value::from(create.creature_type));
+                data.insert(
+                    "creature_type".to_owned(),
+                    Value::from(create.creature_type),
+                );
                 data.insert("public_key".to_owned(), Value::from(create.public_key));
                 data.insert("status".to_owned(), Value::from(create.status));
                 if let Some(value) = create.chain_id {
@@ -1706,7 +1771,6 @@ pub mod core {
 
     /// `core.creature_metadata`.
     pub mod creature_metadata {
-        #![allow(clippy::all, unused_imports)]
         use crate::error::StorageResult;
         use crate::query::Unique;
         use crate::typed::{self, Field, Update};
@@ -1743,9 +1807,15 @@ pub mod core {
             fn from(create: Create) -> Data {
                 let mut data = Data::new();
                 data.insert("document".to_owned(), Value::from(create.document));
-                data.insert("document_path".to_owned(), Value::from(create.document_path));
+                data.insert(
+                    "document_path".to_owned(),
+                    Value::from(create.document_path),
+                );
                 data.insert("entry_count".to_owned(), Value::from(create.entry_count));
-                data.insert("content_digest".to_owned(), Value::from(create.content_digest));
+                data.insert(
+                    "content_digest".to_owned(),
+                    Value::from(create.content_digest),
+                );
                 if let Some(value) = create.creature {
                     data.insert("creature".to_owned(), Value::from(value));
                 }
@@ -1857,7 +1927,6 @@ pub mod core {
 
     /// `core.creature_secret`.
     pub mod creature_secret {
-        #![allow(clippy::all, unused_imports)]
         use crate::error::StorageResult;
         use crate::query::Unique;
         use crate::typed::{self, Field, Update};
@@ -1896,7 +1965,10 @@ pub mod core {
                 data.insert("name".to_owned(), Value::from(create.name));
                 data.insert("algorithm".to_owned(), Value::from(create.algorithm));
                 data.insert("ciphertext".to_owned(), Value::from(create.ciphertext));
-                data.insert("key_fingerprint".to_owned(), Value::from(create.key_fingerprint));
+                data.insert(
+                    "key_fingerprint".to_owned(),
+                    Value::from(create.key_fingerprint),
+                );
                 if let Some(value) = create.creature {
                     data.insert("creature".to_owned(), Value::from(value));
                 }
@@ -2002,13 +2074,15 @@ pub mod core {
 
         #[must_use]
         pub fn by_creature_and_name(creature: impl Into<Id>, name: impl Into<String>) -> Unique {
-            Unique::fields([("creature", Value::from(creature.into())), ("name", Value::from(name.into()))])
+            Unique::fields([
+                ("creature", Value::from(creature.into())),
+                ("name", Value::from(name.into())),
+            ])
         }
     }
 
     /// `core.creature_type`.
     pub mod creature_type {
-        #![allow(clippy::all, unused_imports)]
         use crate::error::StorageResult;
         use crate::query::Unique;
         use crate::typed::{self, Field, Update};
@@ -2046,9 +2120,15 @@ pub mod core {
                 let mut data = Data::new();
                 data.insert("type_name".to_owned(), Value::from(create.type_name));
                 data.insert("document".to_owned(), Value::from(create.document));
-                data.insert("document_path".to_owned(), Value::from(create.document_path));
+                data.insert(
+                    "document_path".to_owned(),
+                    Value::from(create.document_path),
+                );
                 data.insert("entry_count".to_owned(), Value::from(create.entry_count));
-                data.insert("content_digest".to_owned(), Value::from(create.content_digest));
+                data.insert(
+                    "content_digest".to_owned(),
+                    Value::from(create.content_digest),
+                );
                 data
             }
         }
@@ -2154,7 +2234,6 @@ pub mod core {
 
     /// `core.entity`.
     pub mod entity {
-        #![allow(clippy::all, unused_imports)]
         use crate::error::StorageResult;
         use crate::query::Unique;
         use crate::typed::{self, Field, Update};
@@ -2290,14 +2369,19 @@ pub mod core {
         }
 
         #[must_use]
-        pub fn by_program_and_entity_name(program: impl Into<Id>, entity_name: impl Into<String>) -> Unique {
-            Unique::fields([("program", Value::from(program.into())), ("entity_name", Value::from(entity_name.into()))])
+        pub fn by_program_and_entity_name(
+            program: impl Into<Id>,
+            entity_name: impl Into<String>,
+        ) -> Unique {
+            Unique::fields([
+                ("program", Value::from(program.into())),
+                ("entity_name", Value::from(entity_name.into())),
+            ])
         }
     }
 
     /// `core.entity_artifact`.
     pub mod entity_artifact {
-        #![allow(clippy::all, unused_imports)]
         use crate::error::StorageResult;
         use crate::query::Unique;
         use crate::typed::{self, Field, Update};
@@ -2337,8 +2421,14 @@ pub mod core {
         impl From<Create> for Data {
             fn from(create: Create) -> Data {
                 let mut data = Data::new();
-                data.insert("artifact_role".to_owned(), Value::from(create.artifact_role));
-                data.insert("artifact_present".to_owned(), Value::from(create.artifact_present));
+                data.insert(
+                    "artifact_role".to_owned(),
+                    Value::from(create.artifact_role),
+                );
+                data.insert(
+                    "artifact_present".to_owned(),
+                    Value::from(create.artifact_present),
+                );
                 if let Some(value) = create.store_key {
                     data.insert("store_key".to_owned(), Value::from(value));
                 }
@@ -2487,14 +2577,19 @@ pub mod core {
         }
 
         #[must_use]
-        pub fn by_entity_and_artifact_role(entity: impl Into<Id>, artifact_role: impl Into<String>) -> Unique {
-            Unique::fields([("entity", Value::from(entity.into())), ("artifact_role", Value::from(artifact_role.into()))])
+        pub fn by_entity_and_artifact_role(
+            entity: impl Into<Id>,
+            artifact_role: impl Into<String>,
+        ) -> Unique {
+            Unique::fields([
+                ("entity", Value::from(entity.into())),
+                ("artifact_role", Value::from(artifact_role.into())),
+            ])
         }
     }
 
     /// `core.entity_config`.
     pub mod entity_config {
-        #![allow(clippy::all, unused_imports)]
         use crate::error::StorageResult;
         use crate::query::Unique;
         use crate::typed::{self, Field, Update};
@@ -2531,9 +2626,15 @@ pub mod core {
             fn from(create: Create) -> Data {
                 let mut data = Data::new();
                 data.insert("document".to_owned(), Value::from(create.document));
-                data.insert("document_path".to_owned(), Value::from(create.document_path));
+                data.insert(
+                    "document_path".to_owned(),
+                    Value::from(create.document_path),
+                );
                 data.insert("entry_count".to_owned(), Value::from(create.entry_count));
-                data.insert("content_digest".to_owned(), Value::from(create.content_digest));
+                data.insert(
+                    "content_digest".to_owned(),
+                    Value::from(create.content_digest),
+                );
                 if let Some(value) = create.entity {
                     data.insert("entity".to_owned(), Value::from(value));
                 }
@@ -2645,7 +2746,6 @@ pub mod core {
 
     /// `core.federation_peer`.
     pub mod federation_peer {
-        #![allow(clippy::all, unused_imports)]
         use crate::error::StorageResult;
         use crate::query::Unique;
         use crate::typed::{self, Field, Update};
@@ -2682,7 +2782,10 @@ pub mod core {
                 data.insert("origin".to_owned(), Value::from(create.origin));
                 data.insert("endpoint".to_owned(), Value::from(create.endpoint));
                 data.insert("trust_state".to_owned(), Value::from(create.trust_state));
-                data.insert("descriptor_digest".to_owned(), Value::from(create.descriptor_digest));
+                data.insert(
+                    "descriptor_digest".to_owned(),
+                    Value::from(create.descriptor_digest),
+                );
                 data
             }
         }
@@ -2778,7 +2881,6 @@ pub mod core {
 
     /// `core.file`.
     pub mod file {
-        #![allow(clippy::all, unused_imports)]
         use crate::error::StorageResult;
         use crate::query::Unique;
         use crate::typed::{self, Field, Update};
@@ -2817,7 +2919,10 @@ pub mod core {
             fn from(create: Create) -> Data {
                 let mut data = Data::new();
                 data.insert("store_key".to_owned(), Value::from(create.store_key));
-                data.insert("content_digest".to_owned(), Value::from(create.content_digest));
+                data.insert(
+                    "content_digest".to_owned(),
+                    Value::from(create.content_digest),
+                );
                 if let Some(value) = create.media_type {
                     data.insert("media_type".to_owned(), Value::from(value));
                 }
@@ -2952,7 +3057,6 @@ pub mod core {
 
     /// `core.finance_account`.
     pub mod finance_account {
-        #![allow(clippy::all, unused_imports)]
         use crate::error::StorageResult;
         use crate::query::Unique;
         use crate::typed::{self, Field, Update};
@@ -3173,7 +3277,6 @@ pub mod core {
 
     /// `core.finance_hold`.
     pub mod finance_hold {
-        #![allow(clippy::all, unused_imports)]
         use crate::error::StorageResult;
         use crate::query::Unique;
         use crate::typed::{self, Field, Update};
@@ -3209,7 +3312,10 @@ pub mod core {
                 let mut data = Data::new();
                 data.insert("key".to_owned(), Value::from(create.key));
                 data.insert("payer_ref".to_owned(), Value::from(create.payer_ref));
-                data.insert("created_millis".to_owned(), Value::from(create.created_millis));
+                data.insert(
+                    "created_millis".to_owned(),
+                    Value::from(create.created_millis),
+                );
                 data.insert("document".to_owned(), Value::from(create.document));
                 data
             }
@@ -3307,7 +3413,6 @@ pub mod core {
 
     /// `core.finance_journal`.
     pub mod finance_journal {
-        #![allow(clippy::all, unused_imports)]
         use crate::error::StorageResult;
         use crate::query::Unique;
         use crate::typed::{self, Field, Update};
@@ -3353,7 +3458,10 @@ pub mod core {
                 if let Some(value) = create.payer_ref {
                     data.insert("payer_ref".to_owned(), Value::from(value));
                 }
-                data.insert("created_millis".to_owned(), Value::from(create.created_millis));
+                data.insert(
+                    "created_millis".to_owned(),
+                    Value::from(create.created_millis),
+                );
                 data.insert("document".to_owned(), Value::from(create.document));
                 data
             }
@@ -3477,7 +3585,6 @@ pub mod core {
 
     /// `core.finance_journal_participant`.
     pub mod finance_journal_participant {
-        #![allow(clippy::all, unused_imports)]
         use crate::error::StorageResult;
         use crate::query::Unique;
         use crate::typed::{self, Field, Update};
@@ -3510,8 +3617,14 @@ pub mod core {
             fn from(create: Create) -> Data {
                 let mut data = Data::new();
                 data.insert("journal_ref".to_owned(), Value::from(create.journal_ref));
-                data.insert("participant_ref".to_owned(), Value::from(create.participant_ref));
-                data.insert("created_millis".to_owned(), Value::from(create.created_millis));
+                data.insert(
+                    "participant_ref".to_owned(),
+                    Value::from(create.participant_ref),
+                );
+                data.insert(
+                    "created_millis".to_owned(),
+                    Value::from(create.created_millis),
+                );
                 data
             }
         }
@@ -3590,14 +3703,19 @@ pub mod core {
         }
 
         #[must_use]
-        pub fn by_journal_ref_and_participant_ref(journal_ref: impl Into<String>, participant_ref: impl Into<String>) -> Unique {
-            Unique::fields([("journal_ref", Value::from(journal_ref.into())), ("participant_ref", Value::from(participant_ref.into()))])
+        pub fn by_journal_ref_and_participant_ref(
+            journal_ref: impl Into<String>,
+            participant_ref: impl Into<String>,
+        ) -> Unique {
+            Unique::fields([
+                ("journal_ref", Value::from(journal_ref.into())),
+                ("participant_ref", Value::from(participant_ref.into())),
+            ])
         }
     }
 
     /// `core.finance_live_debit`.
     pub mod finance_live_debit {
-        #![allow(clippy::all, unused_imports)]
         use crate::error::StorageResult;
         use crate::query::Unique;
         use crate::typed::{self, Field, Update};
@@ -3705,7 +3823,6 @@ pub mod core {
 
     /// `core.finance_payout`.
     pub mod finance_payout {
-        #![allow(clippy::all, unused_imports)]
         use crate::error::StorageResult;
         use crate::query::Unique;
         use crate::typed::{self, Field, Update};
@@ -3741,7 +3858,10 @@ pub mod core {
                 let mut data = Data::new();
                 data.insert("key".to_owned(), Value::from(create.key));
                 data.insert("user_ref".to_owned(), Value::from(create.user_ref));
-                data.insert("created_millis".to_owned(), Value::from(create.created_millis));
+                data.insert(
+                    "created_millis".to_owned(),
+                    Value::from(create.created_millis),
+                );
                 data.insert("document".to_owned(), Value::from(create.document));
                 data
             }
@@ -3839,7 +3959,6 @@ pub mod core {
 
     /// `core.finance_pool`.
     pub mod finance_pool {
-        #![allow(clippy::all, unused_imports)]
         use crate::error::StorageResult;
         use crate::query::Unique;
         use crate::typed::{self, Field, Update};
@@ -3965,7 +4084,6 @@ pub mod core {
 
     /// `core.finance_pool_reservation`.
     pub mod finance_pool_reservation {
-        #![allow(clippy::all, unused_imports)]
         use crate::error::StorageResult;
         use crate::query::Unique;
         use crate::typed::{self, Field, Update};
@@ -4091,7 +4209,6 @@ pub mod core {
 
     /// `core.finance_project_budget`.
     pub mod finance_project_budget {
-        #![allow(clippy::all, unused_imports)]
         use crate::error::StorageResult;
         use crate::query::Unique;
         use crate::typed::{self, Field, Update};
@@ -4199,7 +4316,6 @@ pub mod core {
 
     /// `core.gateway_route`.
     pub mod gateway_route {
-        #![allow(clippy::all, unused_imports)]
         use crate::error::StorageResult;
         use crate::query::Unique;
         use crate::typed::{self, Field, Update};
@@ -4349,13 +4465,15 @@ pub mod core {
 
         #[must_use]
         pub fn by_creature_and_path(creature: impl Into<Id>, path: impl Into<String>) -> Unique {
-            Unique::fields([("creature", Value::from(creature.into())), ("path", Value::from(path.into()))])
+            Unique::fields([
+                ("creature", Value::from(creature.into())),
+                ("path", Value::from(path.into())),
+            ])
         }
     }
 
     /// `core.guest_database_binding`.
     pub mod guest_database_binding {
-        #![allow(clippy::all, unused_imports)]
         use crate::error::StorageResult;
         use crate::query::Unique;
         use crate::typed::{self, Field, Update};
@@ -4396,10 +4514,16 @@ pub mod core {
             fn from(create: Create) -> Data {
                 let mut data = Data::new();
                 data.insert("provider_id".to_owned(), Value::from(create.provider_id));
-                data.insert("database_name".to_owned(), Value::from(create.database_name));
+                data.insert(
+                    "database_name".to_owned(),
+                    Value::from(create.database_name),
+                );
                 data.insert("role_name".to_owned(), Value::from(create.role_name));
                 data.insert("generation".to_owned(), Value::from(create.generation));
-                data.insert("schema_catalog_revision".to_owned(), Value::from(create.schema_catalog_revision));
+                data.insert(
+                    "schema_catalog_revision".to_owned(),
+                    Value::from(create.schema_catalog_revision),
+                );
                 data.insert("status".to_owned(), Value::from(create.status));
                 if let Some(value) = create.creature {
                     data.insert("creature".to_owned(), Value::from(value));
@@ -4418,7 +4542,11 @@ pub mod core {
                     database_name: typed::required(&row, NAME, "database_name")?,
                     role_name: typed::required(&row, NAME, "role_name")?,
                     generation: typed::required(&row, NAME, "generation")?,
-                    schema_catalog_revision: typed::required(&row, NAME, "schema_catalog_revision")?,
+                    schema_catalog_revision: typed::required(
+                        &row,
+                        NAME,
+                        "schema_catalog_revision",
+                    )?,
                     status: typed::required(&row, NAME, "status")?,
                     creature: typed::optional(&row, "creature"),
                     id: row.id,
@@ -4530,19 +4658,176 @@ pub mod core {
         }
 
         #[must_use]
-        pub fn by_provider_id_and_database_name(provider_id: impl Into<String>, database_name: impl Into<String>) -> Unique {
-            Unique::fields([("provider_id", Value::from(provider_id.into())), ("database_name", Value::from(database_name.into()))])
+        pub fn by_provider_id_and_database_name(
+            provider_id: impl Into<String>,
+            database_name: impl Into<String>,
+        ) -> Unique {
+            Unique::fields([
+                ("provider_id", Value::from(provider_id.into())),
+                ("database_name", Value::from(database_name.into())),
+            ])
         }
 
         #[must_use]
-        pub fn by_provider_id_and_role_name(provider_id: impl Into<String>, role_name: impl Into<String>) -> Unique {
-            Unique::fields([("provider_id", Value::from(provider_id.into())), ("role_name", Value::from(role_name.into()))])
+        pub fn by_provider_id_and_role_name(
+            provider_id: impl Into<String>,
+            role_name: impl Into<String>,
+        ) -> Unique {
+            Unique::fields([
+                ("provider_id", Value::from(provider_id.into())),
+                ("role_name", Value::from(role_name.into())),
+            ])
+        }
+    }
+
+    /// `core.guest_pair`.
+    pub mod guest_pair {
+        use crate::error::StorageResult;
+        use crate::query::Unique;
+        use crate::typed::{self, Field, Update};
+        use crate::value::{Data, Id, Row, Value};
+
+        pub const NAME: &str = "core.guest_pair";
+
+        /// A `core.guest_pair` record.
+        #[derive(Clone, Debug, PartialEq)]
+        pub struct GuestPair {
+            pub id: Id,
+            pub revision: u64,
+            /// When the record was created and last written (not model fields).
+            pub record_created_micros: i64,
+            pub record_updated_micros: i64,
+            pub key: String,
+            pub owner_ref: String,
+            pub namespace: String,
+            pub name: String,
+            pub value: String,
+        }
+
+        /// The values `create` takes.
+        #[derive(Clone, Debug, Default, PartialEq)]
+        pub struct Create {
+            pub key: String,
+            pub owner_ref: String,
+            pub namespace: String,
+            pub name: String,
+            pub value: String,
+        }
+
+        impl From<Create> for Data {
+            fn from(create: Create) -> Data {
+                let mut data = Data::new();
+                data.insert("key".to_owned(), Value::from(create.key));
+                data.insert("owner_ref".to_owned(), Value::from(create.owner_ref));
+                data.insert("namespace".to_owned(), Value::from(create.namespace));
+                data.insert("name".to_owned(), Value::from(create.name));
+                data.insert("value".to_owned(), Value::from(create.value));
+                data
+            }
+        }
+
+        impl typed::Model for GuestPair {
+            const NAME: &'static str = NAME;
+            type Create = Create;
+
+            fn from_row(row: Row) -> StorageResult<Self> {
+                Ok(Self {
+                    key: typed::required(&row, NAME, "key")?,
+                    owner_ref: typed::required(&row, NAME, "owner_ref")?,
+                    namespace: typed::required(&row, NAME, "namespace")?,
+                    name: typed::required(&row, NAME, "name")?,
+                    value: typed::required(&row, NAME, "value")?,
+                    id: row.id,
+                    revision: row.revision,
+                    record_created_micros: row.created_at_micros,
+                    record_updated_micros: row.updated_at_micros,
+                })
+            }
+        }
+
+        /// The record id.
+        #[must_use]
+        pub const fn id() -> Field<Id> {
+            Field::new("id")
+        }
+
+        #[must_use]
+        pub const fn key() -> Field<String> {
+            Field::new("key")
+        }
+
+        #[must_use]
+        pub const fn owner_ref() -> Field<String> {
+            Field::new("owner_ref")
+        }
+
+        #[must_use]
+        pub const fn namespace() -> Field<String> {
+            Field::new("namespace")
+        }
+
+        #[must_use]
+        pub const fn name() -> Field<String> {
+            Field::new("name")
+        }
+
+        #[must_use]
+        pub const fn value() -> Field<String> {
+            Field::new("value")
+        }
+
+        /// An update: set fields, or clear optional ones with `None`.
+        #[derive(Clone, Debug, Default, PartialEq)]
+        pub struct Updater(Update);
+
+        #[must_use]
+        pub fn update() -> Updater {
+            Updater::default()
+        }
+
+        impl Updater {
+            #[must_use]
+            pub fn key(self, value: impl Into<String>) -> Self {
+                Self(self.0.set("key", value.into()))
+            }
+            #[must_use]
+            pub fn owner_ref(self, value: impl Into<String>) -> Self {
+                Self(self.0.set("owner_ref", value.into()))
+            }
+            #[must_use]
+            pub fn namespace(self, value: impl Into<String>) -> Self {
+                Self(self.0.set("namespace", value.into()))
+            }
+            #[must_use]
+            pub fn name(self, value: impl Into<String>) -> Self {
+                Self(self.0.set("name", value.into()))
+            }
+            #[must_use]
+            pub fn value(self, value: impl Into<String>) -> Self {
+                Self(self.0.set("value", value.into()))
+            }
+        }
+
+        impl From<Updater> for Update {
+            fn from(updater: Updater) -> Update {
+                updater.0
+            }
+        }
+
+        #[must_use]
+        pub fn by_id(id: Id) -> Unique {
+            Unique::Id(id)
+        }
+
+        /// The record with this natural key.
+        #[must_use]
+        pub fn by_key(key: impl Into<String>) -> Unique {
+            Unique::Key(key.into())
         }
     }
 
     /// `core.guest_schema_definition`.
     pub mod guest_schema_definition {
-        #![allow(clippy::all, unused_imports)]
         use crate::error::StorageResult;
         use crate::query::Unique;
         use crate::typed::{self, Field, Update};
@@ -4581,7 +4866,10 @@ pub mod core {
             fn from(create: Create) -> Data {
                 let mut data = Data::new();
                 data.insert("schema_name".to_owned(), Value::from(create.schema_name));
-                data.insert("schema_version".to_owned(), Value::from(create.schema_version));
+                data.insert(
+                    "schema_version".to_owned(),
+                    Value::from(create.schema_version),
+                );
                 data.insert("definition".to_owned(), Value::from(create.definition));
                 data.insert("status".to_owned(), Value::from(create.status));
                 if let Some(value) = create.creature {
@@ -4704,14 +4992,21 @@ pub mod core {
         }
 
         #[must_use]
-        pub fn by_creature_and_schema_name_and_schema_version(creature: impl Into<Id>, schema_name: impl Into<String>, schema_version: impl Into<i64>) -> Unique {
-            Unique::fields([("creature", Value::from(creature.into())), ("schema_name", Value::from(schema_name.into())), ("schema_version", Value::from(schema_version.into()))])
+        pub fn by_creature_and_schema_name_and_schema_version(
+            creature: impl Into<Id>,
+            schema_name: impl Into<String>,
+            schema_version: impl Into<i64>,
+        ) -> Unique {
+            Unique::fields([
+                ("creature", Value::from(creature.into())),
+                ("schema_name", Value::from(schema_name.into())),
+                ("schema_version", Value::from(schema_version.into())),
+            ])
         }
     }
 
     /// `core.identity_challenge`.
     pub mod identity_challenge {
-        #![allow(clippy::all, unused_imports)]
         use crate::error::StorageResult;
         use crate::query::Unique;
         use crate::typed::{self, Field, Update};
@@ -4748,7 +5043,10 @@ pub mod core {
                 data.insert("key".to_owned(), Value::from(create.key));
                 data.insert("subject".to_owned(), Value::from(create.subject));
                 data.insert("audience".to_owned(), Value::from(create.audience));
-                data.insert("expires_at_millis".to_owned(), Value::from(create.expires_at_millis));
+                data.insert(
+                    "expires_at_millis".to_owned(),
+                    Value::from(create.expires_at_millis),
+                );
                 data
             }
         }
@@ -4845,7 +5143,6 @@ pub mod core {
 
     /// `core.identity_key`.
     pub mod identity_key {
-        #![allow(clippy::all, unused_imports)]
         use crate::error::StorageResult;
         use crate::query::Unique;
         use crate::typed::{self, Field, Update};
@@ -4899,7 +5196,10 @@ pub mod core {
                 data.insert("epoch".to_owned(), Value::from(create.epoch));
                 data.insert("key_id".to_owned(), Value::from(create.key_id));
                 data.insert("public_key".to_owned(), Value::from(create.public_key));
-                data.insert("not_before_micros".to_owned(), Value::from(create.not_before_micros));
+                data.insert(
+                    "not_before_micros".to_owned(),
+                    Value::from(create.not_before_micros),
+                );
                 if let Some(value) = create.expires_at_micros {
                     data.insert("expires_at_micros".to_owned(), Value::from(value));
                 }
@@ -5082,14 +5382,23 @@ pub mod core {
         }
 
         #[must_use]
-        pub fn by_subject_kind_and_subject_id_and_purpose_and_epoch(subject_kind: impl Into<String>, subject_id: impl Into<Id>, purpose: impl Into<String>, epoch: impl Into<i64>) -> Unique {
-            Unique::fields([("subject_kind", Value::from(subject_kind.into())), ("subject_id", Value::from(subject_id.into())), ("purpose", Value::from(purpose.into())), ("epoch", Value::from(epoch.into()))])
+        pub fn by_subject_kind_and_subject_id_and_purpose_and_epoch(
+            subject_kind: impl Into<String>,
+            subject_id: impl Into<Id>,
+            purpose: impl Into<String>,
+            epoch: impl Into<i64>,
+        ) -> Unique {
+            Unique::fields([
+                ("subject_kind", Value::from(subject_kind.into())),
+                ("subject_id", Value::from(subject_id.into())),
+                ("purpose", Value::from(purpose.into())),
+                ("epoch", Value::from(epoch.into())),
+            ])
         }
     }
 
     /// `core.legacy_identity`.
     pub mod legacy_identity {
-        #![allow(clippy::all, unused_imports)]
         use crate::error::StorageResult;
         use crate::query::Unique;
         use crate::typed::{self, Field, Update};
@@ -5215,19 +5524,30 @@ pub mod core {
         }
 
         #[must_use]
-        pub fn by_family_and_legacy_id(family: impl Into<String>, legacy_id: impl Into<String>) -> Unique {
-            Unique::fields([("family", Value::from(family.into())), ("legacy_id", Value::from(legacy_id.into()))])
+        pub fn by_family_and_legacy_id(
+            family: impl Into<String>,
+            legacy_id: impl Into<String>,
+        ) -> Unique {
+            Unique::fields([
+                ("family", Value::from(family.into())),
+                ("legacy_id", Value::from(legacy_id.into())),
+            ])
         }
 
         #[must_use]
-        pub fn by_target_kind_and_target_id(target_kind: impl Into<String>, target_id: impl Into<Id>) -> Unique {
-            Unique::fields([("target_kind", Value::from(target_kind.into())), ("target_id", Value::from(target_id.into()))])
+        pub fn by_target_kind_and_target_id(
+            target_kind: impl Into<String>,
+            target_id: impl Into<Id>,
+        ) -> Unique {
+            Unique::fields([
+                ("target_kind", Value::from(target_kind.into())),
+                ("target_id", Value::from(target_id.into())),
+            ])
         }
     }
 
     /// `core.marker`.
     pub mod marker {
-        #![allow(clippy::all, unused_imports)]
         use crate::error::StorageResult;
         use crate::query::Unique;
         use crate::typed::{self, Field, Update};
@@ -5335,7 +5655,6 @@ pub mod core {
 
     /// `core.module_installation`.
     pub mod module_installation {
-        #![allow(clippy::all, unused_imports)]
         use crate::error::StorageResult;
         use crate::query::Unique;
         use crate::typed::{self, Field, Update};
@@ -5376,9 +5695,15 @@ pub mod core {
                 data.insert("module_name".to_owned(), Value::from(create.module_name));
                 data.insert("module_kind".to_owned(), Value::from(create.module_kind));
                 data.insert("version".to_owned(), Value::from(create.version));
-                data.insert("artifact_digest".to_owned(), Value::from(create.artifact_digest));
+                data.insert(
+                    "artifact_digest".to_owned(),
+                    Value::from(create.artifact_digest),
+                );
                 data.insert("state".to_owned(), Value::from(create.state));
-                data.insert("routing_generation".to_owned(), Value::from(create.routing_generation));
+                data.insert(
+                    "routing_generation".to_owned(),
+                    Value::from(create.routing_generation),
+                );
                 data
             }
         }
@@ -5487,14 +5812,19 @@ pub mod core {
         }
 
         #[must_use]
-        pub fn by_module_name_and_version(module_name: impl Into<String>, version: impl Into<String>) -> Unique {
-            Unique::fields([("module_name", Value::from(module_name.into())), ("version", Value::from(version.into()))])
+        pub fn by_module_name_and_version(
+            module_name: impl Into<String>,
+            version: impl Into<String>,
+        ) -> Unique {
+            Unique::fields([
+                ("module_name", Value::from(module_name.into())),
+                ("version", Value::from(version.into())),
+            ])
         }
     }
 
     /// `core.namespace_document`.
     pub mod namespace_document {
-        #![allow(clippy::all, unused_imports)]
         use crate::error::StorageResult;
         use crate::query::Unique;
         use crate::typed::{self, Field, Update};
@@ -5602,7 +5932,6 @@ pub mod core {
 
     /// `core.node`.
     pub mod node {
-        #![allow(clippy::all, unused_imports)]
         use crate::error::StorageResult;
         use crate::query::Unique;
         use crate::typed::{self, Field, Update};
@@ -5641,7 +5970,10 @@ pub mod core {
                     data.insert("region".to_owned(), Value::from(value));
                 }
                 data.insert("status".to_owned(), Value::from(create.status));
-                data.insert("descriptor_digest".to_owned(), Value::from(create.descriptor_digest));
+                data.insert(
+                    "descriptor_digest".to_owned(),
+                    Value::from(create.descriptor_digest),
+                );
                 data
             }
         }
@@ -5740,7 +6072,6 @@ pub mod core {
 
     /// `core.program`.
     pub mod program {
-        #![allow(clippy::all, unused_imports)]
         use crate::error::StorageResult;
         use crate::query::Unique;
         use crate::typed::{self, Field, Update};
@@ -5891,7 +6222,6 @@ pub mod core {
 
     /// `core.program_alarm`.
     pub mod program_alarm {
-        #![allow(clippy::all, unused_imports)]
         use crate::error::StorageResult;
         use crate::query::Unique;
         use crate::typed::{self, Field, Update};
@@ -5927,7 +6257,10 @@ pub mod core {
         impl From<Create> for Data {
             fn from(create: Create) -> Data {
                 let mut data = Data::new();
-                data.insert("fire_at_micros".to_owned(), Value::from(create.fire_at_micros));
+                data.insert(
+                    "fire_at_micros".to_owned(),
+                    Value::from(create.fire_at_micros),
+                );
                 data.insert("entity_name".to_owned(), Value::from(create.entity_name));
                 data.insert("data".to_owned(), Value::from(create.data));
                 if let Some(value) = create.program {
@@ -6047,7 +6380,6 @@ pub mod core {
 
     /// `core.program_metadata`.
     pub mod program_metadata {
-        #![allow(clippy::all, unused_imports)]
         use crate::error::StorageResult;
         use crate::query::Unique;
         use crate::typed::{self, Field, Update};
@@ -6084,9 +6416,15 @@ pub mod core {
             fn from(create: Create) -> Data {
                 let mut data = Data::new();
                 data.insert("document".to_owned(), Value::from(create.document));
-                data.insert("document_path".to_owned(), Value::from(create.document_path));
+                data.insert(
+                    "document_path".to_owned(),
+                    Value::from(create.document_path),
+                );
                 data.insert("entry_count".to_owned(), Value::from(create.entry_count));
-                data.insert("content_digest".to_owned(), Value::from(create.content_digest));
+                data.insert(
+                    "content_digest".to_owned(),
+                    Value::from(create.content_digest),
+                );
                 if let Some(value) = create.program {
                     data.insert("program".to_owned(), Value::from(value));
                 }
@@ -6196,9 +6534,131 @@ pub mod core {
         }
     }
 
+    /// `core.proxy_correlation`.
+    pub mod proxy_correlation {
+        use crate::error::StorageResult;
+        use crate::query::Unique;
+        use crate::typed::{self, Field, Update};
+        use crate::value::{Data, Id, Row, Value};
+
+        pub const NAME: &str = "core.proxy_correlation";
+
+        /// A `core.proxy_correlation` record.
+        #[derive(Clone, Debug, PartialEq)]
+        pub struct ProxyCorrelation {
+            pub id: Id,
+            pub revision: u64,
+            /// When the record was created and last written (not model fields).
+            pub record_created_micros: i64,
+            pub record_updated_micros: i64,
+            pub key: String,
+            pub expires_at_millis: i64,
+            pub record: serde_json::Value,
+        }
+
+        /// The values `create` takes.
+        #[derive(Clone, Debug, Default, PartialEq)]
+        pub struct Create {
+            pub key: String,
+            pub expires_at_millis: i64,
+            pub record: serde_json::Value,
+        }
+
+        impl From<Create> for Data {
+            fn from(create: Create) -> Data {
+                let mut data = Data::new();
+                data.insert("key".to_owned(), Value::from(create.key));
+                data.insert(
+                    "expires_at_millis".to_owned(),
+                    Value::from(create.expires_at_millis),
+                );
+                data.insert("record".to_owned(), Value::from(create.record));
+                data
+            }
+        }
+
+        impl typed::Model for ProxyCorrelation {
+            const NAME: &'static str = NAME;
+            type Create = Create;
+
+            fn from_row(row: Row) -> StorageResult<Self> {
+                Ok(Self {
+                    key: typed::required(&row, NAME, "key")?,
+                    expires_at_millis: typed::required(&row, NAME, "expires_at_millis")?,
+                    record: typed::required(&row, NAME, "record")?,
+                    id: row.id,
+                    revision: row.revision,
+                    record_created_micros: row.created_at_micros,
+                    record_updated_micros: row.updated_at_micros,
+                })
+            }
+        }
+
+        /// The record id.
+        #[must_use]
+        pub const fn id() -> Field<Id> {
+            Field::new("id")
+        }
+
+        #[must_use]
+        pub const fn key() -> Field<String> {
+            Field::new("key")
+        }
+
+        #[must_use]
+        pub const fn expires_at_millis() -> Field<i64> {
+            Field::new("expires_at_millis")
+        }
+
+        #[must_use]
+        pub const fn record() -> Field<serde_json::Value> {
+            Field::new("record")
+        }
+
+        /// An update: set fields, or clear optional ones with `None`.
+        #[derive(Clone, Debug, Default, PartialEq)]
+        pub struct Updater(Update);
+
+        #[must_use]
+        pub fn update() -> Updater {
+            Updater::default()
+        }
+
+        impl Updater {
+            #[must_use]
+            pub fn key(self, value: impl Into<String>) -> Self {
+                Self(self.0.set("key", value.into()))
+            }
+            #[must_use]
+            pub fn expires_at_millis(self, value: impl Into<i64>) -> Self {
+                Self(self.0.set("expires_at_millis", value.into()))
+            }
+            #[must_use]
+            pub fn record(self, value: impl Into<serde_json::Value>) -> Self {
+                Self(self.0.set("record", value.into()))
+            }
+        }
+
+        impl From<Updater> for Update {
+            fn from(updater: Updater) -> Update {
+                updater.0
+            }
+        }
+
+        #[must_use]
+        pub fn by_id(id: Id) -> Unique {
+            Unique::Id(id)
+        }
+
+        /// The record with this natural key.
+        #[must_use]
+        pub fn by_key(key: impl Into<String>) -> Unique {
+            Unique::Key(key.into())
+        }
+    }
+
     /// `core.public_idempotency`.
     pub mod public_idempotency {
-        #![allow(clippy::all, unused_imports)]
         use crate::error::StorageResult;
         use crate::query::Unique;
         use crate::typed::{self, Field, Update};
@@ -6242,7 +6702,10 @@ pub mod core {
                 data.insert("subject".to_owned(), Value::from(create.subject));
                 data.insert("request_key".to_owned(), Value::from(create.request_key));
                 data.insert("digest".to_owned(), Value::from(create.digest));
-                data.insert("claimed_at_millis".to_owned(), Value::from(create.claimed_at_millis));
+                data.insert(
+                    "claimed_at_millis".to_owned(),
+                    Value::from(create.claimed_at_millis),
+                );
                 if let Some(value) = create.response {
                     data.insert("response".to_owned(), Value::from(value));
                 }
@@ -6376,7 +6839,6 @@ pub mod core {
 
     /// `core.replay_nonce`.
     pub mod replay_nonce {
-        #![allow(clippy::all, unused_imports)]
         use crate::error::StorageResult;
         use crate::query::Unique;
         use crate::typed::{self, Field, Update};
@@ -6410,7 +6872,10 @@ pub mod core {
                 let mut data = Data::new();
                 data.insert("key".to_owned(), Value::from(create.key));
                 data.insert("key_ref".to_owned(), Value::from(create.key_ref));
-                data.insert("retain_until_millis".to_owned(), Value::from(create.retain_until_millis));
+                data.insert(
+                    "retain_until_millis".to_owned(),
+                    Value::from(create.retain_until_millis),
+                );
                 data
             }
         }
@@ -6495,156 +6960,8 @@ pub mod core {
         }
     }
 
-    /// `core.secret_access`.
-    pub mod secret_access {
-        #![allow(clippy::all, unused_imports)]
-        use crate::error::StorageResult;
-        use crate::query::Unique;
-        use crate::typed::{self, Field, Update};
-        use crate::value::{Data, Id, Row, Value};
-
-        pub const NAME: &str = "core.secret_access";
-
-        /// A `core.secret_access` record.
-        #[derive(Clone, Debug, PartialEq)]
-        pub struct SecretAccess {
-            pub id: Id,
-            pub revision: u64,
-            /// When the record was created and last written (not model fields).
-            pub record_created_micros: i64,
-            pub record_updated_micros: i64,
-            pub key: String,
-            pub owner_ref: String,
-            pub name: String,
-            pub grantee_ref: String,
-            pub expires_at_millis: i64,
-        }
-
-        /// The values `create` takes.
-        #[derive(Clone, Debug, Default, PartialEq)]
-        pub struct Create {
-            pub key: String,
-            pub owner_ref: String,
-            pub name: String,
-            pub grantee_ref: String,
-            pub expires_at_millis: i64,
-        }
-
-        impl From<Create> for Data {
-            fn from(create: Create) -> Data {
-                let mut data = Data::new();
-                data.insert("key".to_owned(), Value::from(create.key));
-                data.insert("owner_ref".to_owned(), Value::from(create.owner_ref));
-                data.insert("name".to_owned(), Value::from(create.name));
-                data.insert("grantee_ref".to_owned(), Value::from(create.grantee_ref));
-                data.insert("expires_at_millis".to_owned(), Value::from(create.expires_at_millis));
-                data
-            }
-        }
-
-        impl typed::Model for SecretAccess {
-            const NAME: &'static str = NAME;
-            type Create = Create;
-
-            fn from_row(row: Row) -> StorageResult<Self> {
-                Ok(Self {
-                    key: typed::required(&row, NAME, "key")?,
-                    owner_ref: typed::required(&row, NAME, "owner_ref")?,
-                    name: typed::required(&row, NAME, "name")?,
-                    grantee_ref: typed::required(&row, NAME, "grantee_ref")?,
-                    expires_at_millis: typed::required(&row, NAME, "expires_at_millis")?,
-                    id: row.id,
-                    revision: row.revision,
-                    record_created_micros: row.created_at_micros,
-                    record_updated_micros: row.updated_at_micros,
-                })
-            }
-        }
-
-        /// The record id.
-        #[must_use]
-        pub const fn id() -> Field<Id> {
-            Field::new("id")
-        }
-
-        #[must_use]
-        pub const fn key() -> Field<String> {
-            Field::new("key")
-        }
-
-        #[must_use]
-        pub const fn owner_ref() -> Field<String> {
-            Field::new("owner_ref")
-        }
-
-        #[must_use]
-        pub const fn name() -> Field<String> {
-            Field::new("name")
-        }
-
-        #[must_use]
-        pub const fn grantee_ref() -> Field<String> {
-            Field::new("grantee_ref")
-        }
-
-        #[must_use]
-        pub const fn expires_at_millis() -> Field<i64> {
-            Field::new("expires_at_millis")
-        }
-
-        /// An update: set fields, or clear optional ones with `None`.
-        #[derive(Clone, Debug, Default, PartialEq)]
-        pub struct Updater(Update);
-
-        #[must_use]
-        pub fn update() -> Updater {
-            Updater::default()
-        }
-
-        impl Updater {
-            #[must_use]
-            pub fn key(self, value: impl Into<String>) -> Self {
-                Self(self.0.set("key", value.into()))
-            }
-            #[must_use]
-            pub fn owner_ref(self, value: impl Into<String>) -> Self {
-                Self(self.0.set("owner_ref", value.into()))
-            }
-            #[must_use]
-            pub fn name(self, value: impl Into<String>) -> Self {
-                Self(self.0.set("name", value.into()))
-            }
-            #[must_use]
-            pub fn grantee_ref(self, value: impl Into<String>) -> Self {
-                Self(self.0.set("grantee_ref", value.into()))
-            }
-            #[must_use]
-            pub fn expires_at_millis(self, value: impl Into<i64>) -> Self {
-                Self(self.0.set("expires_at_millis", value.into()))
-            }
-        }
-
-        impl From<Updater> for Update {
-            fn from(updater: Updater) -> Update {
-                updater.0
-            }
-        }
-
-        #[must_use]
-        pub fn by_id(id: Id) -> Unique {
-            Unique::Id(id)
-        }
-
-        /// The record with this natural key.
-        #[must_use]
-        pub fn by_key(key: impl Into<String>) -> Unique {
-            Unique::Key(key.into())
-        }
-    }
-
     /// `core.secret_grant`.
     pub mod secret_grant {
-        #![allow(clippy::all, unused_imports)]
         use crate::error::StorageResult;
         use crate::query::Unique;
         use crate::typed::{self, Field, Update};
@@ -6679,7 +6996,10 @@ pub mod core {
             fn from(create: Create) -> Data {
                 let mut data = Data::new();
                 data.insert("grantee_ref".to_owned(), Value::from(create.grantee_ref));
-                data.insert("expires_at_micros".to_owned(), Value::from(create.expires_at_micros));
+                data.insert(
+                    "expires_at_micros".to_owned(),
+                    Value::from(create.expires_at_micros),
+                );
                 if let Some(value) = create.secret {
                     data.insert("secret".to_owned(), Value::from(value));
                 }
@@ -6780,148 +7100,19 @@ pub mod core {
         }
 
         #[must_use]
-        pub fn by_secret_and_grantee_ref(secret: impl Into<Id>, grantee_ref: impl Into<String>) -> Unique {
-            Unique::fields([("secret", Value::from(secret.into())), ("grantee_ref", Value::from(grantee_ref.into()))])
-        }
-    }
-
-    /// `core.secret_value`.
-    pub mod secret_value {
-        #![allow(clippy::all, unused_imports)]
-        use crate::error::StorageResult;
-        use crate::query::Unique;
-        use crate::typed::{self, Field, Update};
-        use crate::value::{Data, Id, Row, Value};
-
-        pub const NAME: &str = "core.secret_value";
-
-        /// A `core.secret_value` record.
-        #[derive(Clone, Debug, PartialEq)]
-        pub struct SecretValue {
-            pub id: Id,
-            pub revision: u64,
-            /// When the record was created and last written (not model fields).
-            pub record_created_micros: i64,
-            pub record_updated_micros: i64,
-            pub key: String,
-            pub owner_ref: String,
-            pub name: String,
-            pub blob: String,
-        }
-
-        /// The values `create` takes.
-        #[derive(Clone, Debug, Default, PartialEq)]
-        pub struct Create {
-            pub key: String,
-            pub owner_ref: String,
-            pub name: String,
-            pub blob: String,
-        }
-
-        impl From<Create> for Data {
-            fn from(create: Create) -> Data {
-                let mut data = Data::new();
-                data.insert("key".to_owned(), Value::from(create.key));
-                data.insert("owner_ref".to_owned(), Value::from(create.owner_ref));
-                data.insert("name".to_owned(), Value::from(create.name));
-                data.insert("blob".to_owned(), Value::from(create.blob));
-                data
-            }
-        }
-
-        impl typed::Model for SecretValue {
-            const NAME: &'static str = NAME;
-            type Create = Create;
-
-            fn from_row(row: Row) -> StorageResult<Self> {
-                Ok(Self {
-                    key: typed::required(&row, NAME, "key")?,
-                    owner_ref: typed::required(&row, NAME, "owner_ref")?,
-                    name: typed::required(&row, NAME, "name")?,
-                    blob: typed::required(&row, NAME, "blob")?,
-                    id: row.id,
-                    revision: row.revision,
-                    record_created_micros: row.created_at_micros,
-                    record_updated_micros: row.updated_at_micros,
-                })
-            }
-        }
-
-        /// The record id.
-        #[must_use]
-        pub const fn id() -> Field<Id> {
-            Field::new("id")
-        }
-
-        #[must_use]
-        pub const fn key() -> Field<String> {
-            Field::new("key")
-        }
-
-        #[must_use]
-        pub const fn owner_ref() -> Field<String> {
-            Field::new("owner_ref")
-        }
-
-        #[must_use]
-        pub const fn name() -> Field<String> {
-            Field::new("name")
-        }
-
-        #[must_use]
-        pub const fn blob() -> Field<String> {
-            Field::new("blob")
-        }
-
-        /// An update: set fields, or clear optional ones with `None`.
-        #[derive(Clone, Debug, Default, PartialEq)]
-        pub struct Updater(Update);
-
-        #[must_use]
-        pub fn update() -> Updater {
-            Updater::default()
-        }
-
-        impl Updater {
-            #[must_use]
-            pub fn key(self, value: impl Into<String>) -> Self {
-                Self(self.0.set("key", value.into()))
-            }
-            #[must_use]
-            pub fn owner_ref(self, value: impl Into<String>) -> Self {
-                Self(self.0.set("owner_ref", value.into()))
-            }
-            #[must_use]
-            pub fn name(self, value: impl Into<String>) -> Self {
-                Self(self.0.set("name", value.into()))
-            }
-            #[must_use]
-            pub fn blob(self, value: impl Into<String>) -> Self {
-                Self(self.0.set("blob", value.into()))
-            }
-        }
-
-        impl From<Updater> for Update {
-            fn from(updater: Updater) -> Update {
-                updater.0
-            }
-        }
-
-        #[must_use]
-        pub fn by_id(id: Id) -> Unique {
-            Unique::Id(id)
-        }
-
-        /// The record with this natural key.
-        #[must_use]
-        pub fn by_key(key: impl Into<String>) -> Unique {
-            Unique::Key(key.into())
+        pub fn by_secret_and_grantee_ref(
+            secret: impl Into<Id>,
+            grantee_ref: impl Into<String>,
+        ) -> Unique {
+            Unique::fields([
+                ("secret", Value::from(secret.into())),
+                ("grantee_ref", Value::from(grantee_ref.into())),
+            ])
         }
     }
 
     /// `core.session`.
     pub mod session {
-        #![allow(clippy::all, unused_imports)]
         use crate::error::StorageResult;
         use crate::query::Unique;
         use crate::typed::{self, Field, Update};
@@ -6958,8 +7149,14 @@ pub mod core {
             fn from(create: Create) -> Data {
                 let mut data = Data::new();
                 data.insert("token_digest".to_owned(), Value::from(create.token_digest));
-                data.insert("issued_at_micros".to_owned(), Value::from(create.issued_at_micros));
-                data.insert("expires_at_micros".to_owned(), Value::from(create.expires_at_micros));
+                data.insert(
+                    "issued_at_micros".to_owned(),
+                    Value::from(create.issued_at_micros),
+                );
+                data.insert(
+                    "expires_at_micros".to_owned(),
+                    Value::from(create.expires_at_micros),
+                );
                 if let Some(value) = create.revoked_at_micros {
                     data.insert("revoked_at_micros".to_owned(), Value::from(value));
                 }
@@ -7077,7 +7274,6 @@ pub mod core {
 
     /// `core.session_token`.
     pub mod session_token {
-        #![allow(clippy::all, unused_imports)]
         use crate::error::StorageResult;
         use crate::query::Unique;
         use crate::typed::{self, Field, Update};
@@ -7185,7 +7381,6 @@ pub mod core {
 
     /// `core.store`.
     pub mod store {
-        #![allow(clippy::all, unused_imports)]
         use crate::error::StorageResult;
         use crate::query::Unique;
         use crate::typed::{self, Field, Update};
@@ -7227,7 +7422,10 @@ pub mod core {
                 let mut data = Data::new();
                 data.insert("is_public".to_owned(), Value::from(create.is_public));
                 data.insert("member_count".to_owned(), Value::from(create.member_count));
-                data.insert("persistent_history".to_owned(), Value::from(create.persistent_history));
+                data.insert(
+                    "persistent_history".to_owned(),
+                    Value::from(create.persistent_history),
+                );
                 data.insert("signal_count".to_owned(), Value::from(create.signal_count));
                 if let Some(value) = create.tag {
                     data.insert("tag".to_owned(), Value::from(value));
@@ -7314,6 +7512,10 @@ pub mod core {
         }
 
         impl Updater {
+            #[expect(
+                clippy::wrong_self_convention,
+                reason = "a setter named after its schema field"
+            )]
             #[must_use]
             pub fn is_public(self, value: impl Into<bool>) -> Self {
                 Self(self.0.set("is_public", value.into()))
@@ -7367,7 +7569,6 @@ pub mod core {
 
     /// `core.store_membership`.
     pub mod store_membership {
-        #![allow(clippy::all, unused_imports)]
         use crate::error::StorageResult;
         use crate::query::Unique;
         use crate::typed::{self, Field, Update};
@@ -7410,7 +7611,10 @@ pub mod core {
                 data.insert("member_kind".to_owned(), Value::from(create.member_kind));
                 data.insert("member_ref".to_owned(), Value::from(create.member_ref));
                 data.insert("permissions".to_owned(), Value::from(create.permissions));
-                data.insert("joined_at_micros".to_owned(), Value::from(create.joined_at_micros));
+                data.insert(
+                    "joined_at_micros".to_owned(),
+                    Value::from(create.joined_at_micros),
+                );
                 if let Some(value) = create.store {
                     data.insert("store".to_owned(), Value::from(value));
                 }
@@ -7547,14 +7751,21 @@ pub mod core {
         }
 
         #[must_use]
-        pub fn by_store_and_member_kind_and_member_ref(store: impl Into<Id>, member_kind: impl Into<String>, member_ref: impl Into<String>) -> Unique {
-            Unique::fields([("store", Value::from(store.into())), ("member_kind", Value::from(member_kind.into())), ("member_ref", Value::from(member_ref.into()))])
+        pub fn by_store_and_member_kind_and_member_ref(
+            store: impl Into<Id>,
+            member_kind: impl Into<String>,
+            member_ref: impl Into<String>,
+        ) -> Unique {
+            Unique::fields([
+                ("store", Value::from(store.into())),
+                ("member_kind", Value::from(member_kind.into())),
+                ("member_ref", Value::from(member_ref.into())),
+            ])
         }
     }
 
     /// `core.store_metadata`.
     pub mod store_metadata {
-        #![allow(clippy::all, unused_imports)]
         use crate::error::StorageResult;
         use crate::query::Unique;
         use crate::typed::{self, Field, Update};
@@ -7591,9 +7802,15 @@ pub mod core {
             fn from(create: Create) -> Data {
                 let mut data = Data::new();
                 data.insert("document".to_owned(), Value::from(create.document));
-                data.insert("document_path".to_owned(), Value::from(create.document_path));
+                data.insert(
+                    "document_path".to_owned(),
+                    Value::from(create.document_path),
+                );
                 data.insert("entry_count".to_owned(), Value::from(create.entry_count));
-                data.insert("content_digest".to_owned(), Value::from(create.content_digest));
+                data.insert(
+                    "content_digest".to_owned(),
+                    Value::from(create.content_digest),
+                );
                 if let Some(value) = create.store {
                     data.insert("store".to_owned(), Value::from(value));
                 }
@@ -7705,7 +7922,6 @@ pub mod core {
 
     /// `core.token_lock`.
     pub mod token_lock {
-        #![allow(clippy::all, unused_imports)]
         use crate::error::StorageResult;
         use crate::query::Unique;
         use crate::typed::{self, Field, Update};
@@ -7839,7 +8055,6 @@ pub mod core {
 
     /// `core.user`.
     pub mod user {
-        #![allow(clippy::all, unused_imports)]
         use crate::error::StorageResult;
         use crate::query::Unique;
         use crate::typed::{self, Field, Update};
@@ -7985,122 +8200,8 @@ pub mod core {
         }
     }
 
-    /// `core.user_email`.
-    pub mod user_email {
-        #![allow(clippy::all, unused_imports)]
-        use crate::error::StorageResult;
-        use crate::query::Unique;
-        use crate::typed::{self, Field, Update};
-        use crate::value::{Data, Id, Row, Value};
-
-        pub const NAME: &str = "core.user_email";
-
-        /// A `core.user_email` record.
-        #[derive(Clone, Debug, PartialEq)]
-        pub struct UserEmail {
-            pub id: Id,
-            pub revision: u64,
-            /// When the record was created and last written (not model fields).
-            pub record_created_micros: i64,
-            pub record_updated_micros: i64,
-            pub key: String,
-            pub user_ref: String,
-        }
-
-        /// The values `create` takes.
-        #[derive(Clone, Debug, Default, PartialEq)]
-        pub struct Create {
-            pub key: String,
-            pub user_ref: String,
-        }
-
-        impl From<Create> for Data {
-            fn from(create: Create) -> Data {
-                let mut data = Data::new();
-                data.insert("key".to_owned(), Value::from(create.key));
-                data.insert("user_ref".to_owned(), Value::from(create.user_ref));
-                data
-            }
-        }
-
-        impl typed::Model for UserEmail {
-            const NAME: &'static str = NAME;
-            type Create = Create;
-
-            fn from_row(row: Row) -> StorageResult<Self> {
-                Ok(Self {
-                    key: typed::required(&row, NAME, "key")?,
-                    user_ref: typed::required(&row, NAME, "user_ref")?,
-                    id: row.id,
-                    revision: row.revision,
-                    record_created_micros: row.created_at_micros,
-                    record_updated_micros: row.updated_at_micros,
-                })
-            }
-        }
-
-        /// The record id.
-        #[must_use]
-        pub const fn id() -> Field<Id> {
-            Field::new("id")
-        }
-
-        #[must_use]
-        pub const fn key() -> Field<String> {
-            Field::new("key")
-        }
-
-        #[must_use]
-        pub const fn user_ref() -> Field<String> {
-            Field::new("user_ref")
-        }
-
-        /// An update: set fields, or clear optional ones with `None`.
-        #[derive(Clone, Debug, Default, PartialEq)]
-        pub struct Updater(Update);
-
-        #[must_use]
-        pub fn update() -> Updater {
-            Updater::default()
-        }
-
-        impl Updater {
-            #[must_use]
-            pub fn key(self, value: impl Into<String>) -> Self {
-                Self(self.0.set("key", value.into()))
-            }
-            #[must_use]
-            pub fn user_ref(self, value: impl Into<String>) -> Self {
-                Self(self.0.set("user_ref", value.into()))
-            }
-        }
-
-        impl From<Updater> for Update {
-            fn from(updater: Updater) -> Update {
-                updater.0
-            }
-        }
-
-        #[must_use]
-        pub fn by_id(id: Id) -> Unique {
-            Unique::Id(id)
-        }
-
-        /// The record with this natural key.
-        #[must_use]
-        pub fn by_key(key: impl Into<String>) -> Unique {
-            Unique::Key(key.into())
-        }
-
-        #[must_use]
-        pub fn by_user_ref(user_ref: impl Into<String>) -> Unique {
-            Unique::fields([("user_ref", Value::from(user_ref.into()))])
-        }
-    }
-
     /// `core.user_metadata`.
     pub mod user_metadata {
-        #![allow(clippy::all, unused_imports)]
         use crate::error::StorageResult;
         use crate::query::Unique;
         use crate::typed::{self, Field, Update};
@@ -8137,9 +8238,15 @@ pub mod core {
             fn from(create: Create) -> Data {
                 let mut data = Data::new();
                 data.insert("document".to_owned(), Value::from(create.document));
-                data.insert("document_path".to_owned(), Value::from(create.document_path));
+                data.insert(
+                    "document_path".to_owned(),
+                    Value::from(create.document_path),
+                );
                 data.insert("entry_count".to_owned(), Value::from(create.entry_count));
-                data.insert("content_digest".to_owned(), Value::from(create.content_digest));
+                data.insert(
+                    "content_digest".to_owned(),
+                    Value::from(create.content_digest),
+                );
                 if let Some(value) = create.creature {
                     data.insert("creature".to_owned(), Value::from(value));
                 }
@@ -8251,7 +8358,6 @@ pub mod core {
 
     /// `core.vm_distribution`.
     pub mod vm_distribution {
-        #![allow(clippy::all, unused_imports)]
         use crate::error::StorageResult;
         use crate::query::Unique;
         use crate::typed::{self, Field, Update};
@@ -8359,7 +8465,6 @@ pub mod core {
 
     /// `core.vm_instance`.
     pub mod vm_instance {
-        #![allow(clippy::all, unused_imports)]
         use crate::error::StorageResult;
         use crate::query::Unique;
         use crate::typed::{self, Field, Update};
@@ -8580,7 +8685,6 @@ pub mod core {
 
     /// `core.vm_resource_entity`.
     pub mod vm_resource_entity {
-        #![allow(clippy::all, unused_imports)]
         use crate::error::StorageResult;
         use crate::query::Unique;
         use crate::typed::{self, Field, Update};
@@ -8633,10 +8737,19 @@ pub mod core {
                 data.insert("entity_type".to_owned(), Value::from(create.entity_type));
                 data.insert("entity_ref".to_owned(), Value::from(create.entity_ref));
                 data.insert("document".to_owned(), Value::from(create.document));
-                data.insert("document_path".to_owned(), Value::from(create.document_path));
+                data.insert(
+                    "document_path".to_owned(),
+                    Value::from(create.document_path),
+                );
                 data.insert("entry_count".to_owned(), Value::from(create.entry_count));
-                data.insert("content_digest".to_owned(), Value::from(create.content_digest));
-                data.insert("artifact_present".to_owned(), Value::from(create.artifact_present));
+                data.insert(
+                    "content_digest".to_owned(),
+                    Value::from(create.content_digest),
+                );
+                data.insert(
+                    "artifact_present".to_owned(),
+                    Value::from(create.artifact_present),
+                );
                 if let Some(value) = create.store_key {
                     data.insert("store_key".to_owned(), Value::from(value));
                 }
@@ -8835,14 +8948,21 @@ pub mod core {
         }
 
         #[must_use]
-        pub fn by_resource_store_and_entity_type_and_entity_ref(resource_store: impl Into<Id>, entity_type: impl Into<String>, entity_ref: impl Into<String>) -> Unique {
-            Unique::fields([("resource_store", Value::from(resource_store.into())), ("entity_type", Value::from(entity_type.into())), ("entity_ref", Value::from(entity_ref.into()))])
+        pub fn by_resource_store_and_entity_type_and_entity_ref(
+            resource_store: impl Into<Id>,
+            entity_type: impl Into<String>,
+            entity_ref: impl Into<String>,
+        ) -> Unique {
+            Unique::fields([
+                ("resource_store", Value::from(resource_store.into())),
+                ("entity_type", Value::from(entity_type.into())),
+                ("entity_ref", Value::from(entity_ref.into())),
+            ])
         }
     }
 
     /// `core.vm_resource_store`.
     pub mod vm_resource_store {
-        #![allow(clippy::all, unused_imports)]
         use crate::error::StorageResult;
         use crate::query::Unique;
         use crate::typed::{self, Field, Update};
@@ -8885,9 +9005,15 @@ pub mod core {
                 data.insert("name".to_owned(), Value::from(create.name));
                 data.insert("machine_ref".to_owned(), Value::from(create.machine_ref));
                 data.insert("document".to_owned(), Value::from(create.document));
-                data.insert("document_path".to_owned(), Value::from(create.document_path));
+                data.insert(
+                    "document_path".to_owned(),
+                    Value::from(create.document_path),
+                );
                 data.insert("entry_count".to_owned(), Value::from(create.entry_count));
-                data.insert("content_digest".to_owned(), Value::from(create.content_digest));
+                data.insert(
+                    "content_digest".to_owned(),
+                    Value::from(create.content_digest),
+                );
                 if let Some(value) = create.creature {
                     data.insert("creature".to_owned(), Value::from(value));
                 }
@@ -9014,7 +9140,6 @@ pub mod core {
 
     /// `core.vm_terminal`.
     pub mod vm_terminal {
-        #![allow(clippy::all, unused_imports)]
         use crate::error::StorageResult;
         use crate::query::Unique;
         use crate::typed::{self, Field, Update};
@@ -9148,7 +9273,6 @@ pub mod core {
 
     /// `core.workload`.
     pub mod workload {
-        #![allow(clippy::all, unused_imports)]
         use crate::error::StorageResult;
         use crate::query::Unique;
         use crate::typed::{self, Field, Update};
@@ -9190,10 +9314,19 @@ pub mod core {
         impl From<Create> for Data {
             fn from(create: Create) -> Data {
                 let mut data = Data::new();
-                data.insert("workload_name".to_owned(), Value::from(create.workload_name));
+                data.insert(
+                    "workload_name".to_owned(),
+                    Value::from(create.workload_name),
+                );
                 data.insert("runtime".to_owned(), Value::from(create.runtime));
-                data.insert("desired_state".to_owned(), Value::from(create.desired_state));
-                data.insert("desired_generation".to_owned(), Value::from(create.desired_generation));
+                data.insert(
+                    "desired_state".to_owned(),
+                    Value::from(create.desired_state),
+                );
+                data.insert(
+                    "desired_generation".to_owned(),
+                    Value::from(create.desired_generation),
+                );
                 if let Some(value) = create.observed_state {
                     data.insert("observed_state".to_owned(), Value::from(value));
                 }
@@ -9346,14 +9479,19 @@ pub mod core {
         }
 
         #[must_use]
-        pub fn by_program_and_workload_name(program: impl Into<Id>, workload_name: impl Into<String>) -> Unique {
-            Unique::fields([("program", Value::from(program.into())), ("workload_name", Value::from(workload_name.into()))])
+        pub fn by_program_and_workload_name(
+            program: impl Into<Id>,
+            workload_name: impl Into<String>,
+        ) -> Unique {
+            Unique::fields([
+                ("program", Value::from(program.into())),
+                ("workload_name", Value::from(workload_name.into())),
+            ])
         }
     }
 
     /// `core.workload_operation`.
     pub mod workload_operation {
-        #![allow(clippy::all, unused_imports)]
         use crate::error::StorageResult;
         use crate::query::Unique;
         use crate::typed::{self, Field, Update};
@@ -9392,9 +9530,15 @@ pub mod core {
             fn from(create: Create) -> Data {
                 let mut data = Data::new();
                 data.insert("operation".to_owned(), Value::from(create.operation));
-                data.insert("idempotency_key".to_owned(), Value::from(create.idempotency_key));
+                data.insert(
+                    "idempotency_key".to_owned(),
+                    Value::from(create.idempotency_key),
+                );
                 data.insert("state".to_owned(), Value::from(create.state));
-                data.insert("requested_at_micros".to_owned(), Value::from(create.requested_at_micros));
+                data.insert(
+                    "requested_at_micros".to_owned(),
+                    Value::from(create.requested_at_micros),
+                );
                 if let Some(value) = create.completed_at_micros {
                     data.insert("completed_at_micros".to_owned(), Value::from(value));
                 }
@@ -9524,7 +9668,6 @@ pub mod core {
 pub mod finance {
     /// `finance.ledger_entry`.
     pub mod ledger_entry {
-        #![allow(clippy::all, unused_imports)]
         use crate::error::StorageResult;
         use crate::query::Unique;
         use crate::typed::{self, Field, Update};
@@ -9568,14 +9711,23 @@ pub mod finance {
         impl From<Create> for Data {
             fn from(create: Create) -> Data {
                 let mut data = Data::new();
-                data.insert("entry_group_id".to_owned(), Value::from(create.entry_group_id));
+                data.insert(
+                    "entry_group_id".to_owned(),
+                    Value::from(create.entry_group_id),
+                );
                 data.insert("sequence".to_owned(), Value::from(create.sequence));
                 data.insert("amount_minor".to_owned(), Value::from(create.amount_minor));
                 data.insert("currency".to_owned(), Value::from(create.currency));
                 data.insert("scale".to_owned(), Value::from(create.scale));
                 data.insert("direction".to_owned(), Value::from(create.direction));
-                data.insert("idempotency_key".to_owned(), Value::from(create.idempotency_key));
-                data.insert("occurred_at_micros".to_owned(), Value::from(create.occurred_at_micros));
+                data.insert(
+                    "idempotency_key".to_owned(),
+                    Value::from(create.idempotency_key),
+                );
+                data.insert(
+                    "occurred_at_micros".to_owned(),
+                    Value::from(create.occurred_at_micros),
+                );
                 if let Some(value) = create.wallet {
                     data.insert("wallet".to_owned(), Value::from(value));
                 }
@@ -9725,14 +9877,19 @@ pub mod finance {
         }
 
         #[must_use]
-        pub fn by_entry_group_id_and_sequence(entry_group_id: impl Into<Id>, sequence: impl Into<i64>) -> Unique {
-            Unique::fields([("entry_group_id", Value::from(entry_group_id.into())), ("sequence", Value::from(sequence.into()))])
+        pub fn by_entry_group_id_and_sequence(
+            entry_group_id: impl Into<Id>,
+            sequence: impl Into<i64>,
+        ) -> Unique {
+            Unique::fields([
+                ("entry_group_id", Value::from(entry_group_id.into())),
+                ("sequence", Value::from(sequence.into())),
+            ])
         }
     }
 
     /// `finance.legacy_record`.
     pub mod legacy_record {
-        #![allow(clippy::all, unused_imports)]
         use crate::error::StorageResult;
         use crate::query::Unique;
         use crate::typed::{self, Field, Update};
@@ -9772,11 +9929,17 @@ pub mod finance {
         impl From<Create> for Data {
             fn from(create: Create) -> Data {
                 let mut data = Data::new();
-                data.insert("record_family".to_owned(), Value::from(create.record_family));
+                data.insert(
+                    "record_family".to_owned(),
+                    Value::from(create.record_family),
+                );
                 data.insert("legacy_key".to_owned(), Value::from(create.legacy_key));
                 data.insert("document".to_owned(), Value::from(create.document));
                 data.insert("entry_count".to_owned(), Value::from(create.entry_count));
-                data.insert("content_digest".to_owned(), Value::from(create.content_digest));
+                data.insert(
+                    "content_digest".to_owned(),
+                    Value::from(create.content_digest),
+                );
                 data.insert("currency".to_owned(), Value::from(create.currency));
                 data.insert("scale".to_owned(), Value::from(create.scale));
                 data
@@ -9897,14 +10060,19 @@ pub mod finance {
         }
 
         #[must_use]
-        pub fn by_record_family_and_legacy_key(record_family: impl Into<String>, legacy_key: impl Into<String>) -> Unique {
-            Unique::fields([("record_family", Value::from(record_family.into())), ("legacy_key", Value::from(legacy_key.into()))])
+        pub fn by_record_family_and_legacy_key(
+            record_family: impl Into<String>,
+            legacy_key: impl Into<String>,
+        ) -> Unique {
+            Unique::fields([
+                ("record_family", Value::from(record_family.into())),
+                ("legacy_key", Value::from(legacy_key.into())),
+            ])
         }
     }
 
     /// `finance.pricing_policy`.
     pub mod pricing_policy {
-        #![allow(clippy::all, unused_imports)]
         use crate::error::StorageResult;
         use crate::query::Unique;
         use crate::typed::{self, Field, Update};
@@ -9944,7 +10112,10 @@ pub mod finance {
                 data.insert("currency".to_owned(), Value::from(create.currency));
                 data.insert("scale".to_owned(), Value::from(create.scale));
                 data.insert("rules".to_owned(), Value::from(create.rules));
-                data.insert("effective_at_micros".to_owned(), Value::from(create.effective_at_micros));
+                data.insert(
+                    "effective_at_micros".to_owned(),
+                    Value::from(create.effective_at_micros),
+                );
                 data
             }
         }
@@ -10050,7 +10221,6 @@ pub mod finance {
 
     /// `finance.usage_record`.
     pub mod usage_record {
-        #![allow(clippy::all, unused_imports)]
         use crate::error::StorageResult;
         use crate::query::Unique;
         use crate::typed::{self, Field, Update};
@@ -10090,9 +10260,18 @@ pub mod finance {
                 let mut data = Data::new();
                 data.insert("metric".to_owned(), Value::from(create.metric));
                 data.insert("quantity".to_owned(), Value::from(create.quantity));
-                data.insert("interval_start_micros".to_owned(), Value::from(create.interval_start_micros));
-                data.insert("interval_end_micros".to_owned(), Value::from(create.interval_end_micros));
-                data.insert("idempotency_key".to_owned(), Value::from(create.idempotency_key));
+                data.insert(
+                    "interval_start_micros".to_owned(),
+                    Value::from(create.interval_start_micros),
+                );
+                data.insert(
+                    "interval_end_micros".to_owned(),
+                    Value::from(create.interval_end_micros),
+                );
+                data.insert(
+                    "idempotency_key".to_owned(),
+                    Value::from(create.idempotency_key),
+                );
                 if let Some(value) = create.workload {
                     data.insert("workload".to_owned(), Value::from(value));
                 }
@@ -10214,7 +10393,6 @@ pub mod finance {
 
     /// `finance.wallet`.
     pub mod wallet {
-        #![allow(clippy::all, unused_imports)]
         use crate::error::StorageResult;
         use crate::query::Unique;
         use crate::typed::{self, Field, Update};
@@ -10251,7 +10429,10 @@ pub mod finance {
             fn from(create: Create) -> Data {
                 let mut data = Data::new();
                 data.insert("currency".to_owned(), Value::from(create.currency));
-                data.insert("balance_minor".to_owned(), Value::from(create.balance_minor));
+                data.insert(
+                    "balance_minor".to_owned(),
+                    Value::from(create.balance_minor),
+                );
                 data.insert("scale".to_owned(), Value::from(create.scale));
                 data.insert("state".to_owned(), Value::from(create.state));
                 if let Some(value) = create.creature {
@@ -10358,8 +10539,14 @@ pub mod finance {
         }
 
         #[must_use]
-        pub fn by_creature_and_currency(creature: impl Into<Id>, currency: impl Into<String>) -> Unique {
-            Unique::fields([("creature", Value::from(creature.into())), ("currency", Value::from(currency.into()))])
+        pub fn by_creature_and_currency(
+            creature: impl Into<Id>,
+            currency: impl Into<String>,
+        ) -> Unique {
+            Unique::fields([
+                ("creature", Value::from(creature.into())),
+                ("currency", Value::from(currency.into())),
+            ])
         }
     }
 }
@@ -10367,7 +10554,6 @@ pub mod finance {
 pub mod outbox {
     /// `outbox.message`.
     pub mod message {
-        #![allow(clippy::all, unused_imports)]
         use crate::error::StorageResult;
         use crate::query::Unique;
         use crate::typed::{self, Field, Update};
@@ -10416,13 +10602,22 @@ pub mod outbox {
             fn from(create: Create) -> Data {
                 let mut data = Data::new();
                 data.insert("topic".to_owned(), Value::from(create.topic));
-                data.insert("aggregate_kind".to_owned(), Value::from(create.aggregate_kind));
+                data.insert(
+                    "aggregate_kind".to_owned(),
+                    Value::from(create.aggregate_kind),
+                );
                 data.insert("aggregate_id".to_owned(), Value::from(create.aggregate_id));
                 data.insert("event_type".to_owned(), Value::from(create.event_type));
                 data.insert("payload".to_owned(), Value::from(create.payload));
-                data.insert("idempotency_key".to_owned(), Value::from(create.idempotency_key));
+                data.insert(
+                    "idempotency_key".to_owned(),
+                    Value::from(create.idempotency_key),
+                );
                 data.insert("state".to_owned(), Value::from(create.state));
-                data.insert("available_at_micros".to_owned(), Value::from(create.available_at_micros));
+                data.insert(
+                    "available_at_micros".to_owned(),
+                    Value::from(create.available_at_micros),
+                );
                 if let Some(value) = create.lease_owner {
                     data.insert("lease_owner".to_owned(), Value::from(value));
                 }
@@ -10603,7 +10798,6 @@ pub mod outbox {
 pub mod realtime {
     /// `realtime.consumer_offset`.
     pub mod consumer_offset {
-        #![allow(clippy::all, unused_imports)]
         use crate::error::StorageResult;
         use crate::query::Unique;
         use crate::typed::{self, Field, Update};
@@ -10641,9 +10835,18 @@ pub mod realtime {
                 let mut data = Data::new();
                 data.insert("consumer_id".to_owned(), Value::from(create.consumer_id));
                 data.insert("stream_id".to_owned(), Value::from(create.stream_id));
-                data.insert("last_sequence".to_owned(), Value::from(create.last_sequence));
-                data.insert("checkpoint_digest".to_owned(), Value::from(create.checkpoint_digest));
-                data.insert("checkpointed_at_micros".to_owned(), Value::from(create.checkpointed_at_micros));
+                data.insert(
+                    "last_sequence".to_owned(),
+                    Value::from(create.last_sequence),
+                );
+                data.insert(
+                    "checkpoint_digest".to_owned(),
+                    Value::from(create.checkpoint_digest),
+                );
+                data.insert(
+                    "checkpointed_at_micros".to_owned(),
+                    Value::from(create.checkpointed_at_micros),
+                );
                 data
             }
         }
@@ -10742,14 +10945,19 @@ pub mod realtime {
         }
 
         #[must_use]
-        pub fn by_consumer_id_and_stream_id(consumer_id: impl Into<String>, stream_id: impl Into<String>) -> Unique {
-            Unique::fields([("consumer_id", Value::from(consumer_id.into())), ("stream_id", Value::from(stream_id.into()))])
+        pub fn by_consumer_id_and_stream_id(
+            consumer_id: impl Into<String>,
+            stream_id: impl Into<String>,
+        ) -> Unique {
+            Unique::fields([
+                ("consumer_id", Value::from(consumer_id.into())),
+                ("stream_id", Value::from(stream_id.into())),
+            ])
         }
     }
 
     /// `realtime.dead_letter`.
     pub mod dead_letter {
-        #![allow(clippy::all, unused_imports)]
         use crate::error::StorageResult;
         use crate::query::Unique;
         use crate::typed::{self, Field, Update};
@@ -10792,8 +11000,14 @@ pub mod realtime {
                 data.insert("consumer_id".to_owned(), Value::from(create.consumer_id));
                 data.insert("attempts".to_owned(), Value::from(create.attempts));
                 data.insert("reason".to_owned(), Value::from(create.reason));
-                data.insert("payload_digest".to_owned(), Value::from(create.payload_digest));
-                data.insert("failed_at_micros".to_owned(), Value::from(create.failed_at_micros));
+                data.insert(
+                    "payload_digest".to_owned(),
+                    Value::from(create.payload_digest),
+                );
+                data.insert(
+                    "failed_at_micros".to_owned(),
+                    Value::from(create.failed_at_micros),
+                );
                 if let Some(value) = create.resolution {
                     data.insert("resolution".to_owned(), Value::from(value));
                 }
@@ -10924,14 +11138,19 @@ pub mod realtime {
         }
 
         #[must_use]
-        pub fn by_event_and_consumer_id(event: impl Into<Id>, consumer_id: impl Into<String>) -> Unique {
-            Unique::fields([("event", Value::from(event.into())), ("consumer_id", Value::from(consumer_id.into()))])
+        pub fn by_event_and_consumer_id(
+            event: impl Into<Id>,
+            consumer_id: impl Into<String>,
+        ) -> Unique {
+            Unique::fields([
+                ("event", Value::from(event.into())),
+                ("consumer_id", Value::from(consumer_id.into())),
+            ])
         }
     }
 
     /// `realtime.event`.
     pub mod event {
-        #![allow(clippy::all, unused_imports)]
         use crate::error::StorageResult;
         use crate::query::Unique;
         use crate::typed::{self, Field, Update};
@@ -10984,19 +11203,31 @@ pub mod realtime {
                 data.insert("stream_id".to_owned(), Value::from(create.stream_id));
                 data.insert("sequence".to_owned(), Value::from(create.sequence));
                 data.insert("event_type".to_owned(), Value::from(create.event_type));
-                data.insert("authorization_scope".to_owned(), Value::from(create.authorization_scope));
+                data.insert(
+                    "authorization_scope".to_owned(),
+                    Value::from(create.authorization_scope),
+                );
                 data.insert("producer".to_owned(), Value::from(create.producer));
                 data.insert("trace_id".to_owned(), Value::from(create.trace_id));
                 if let Some(value) = create.correlation_id {
                     data.insert("correlation_id".to_owned(), Value::from(value));
                 }
                 data.insert("payload".to_owned(), Value::from(create.payload));
-                data.insert("payload_digest".to_owned(), Value::from(create.payload_digest));
-                data.insert("retention_class".to_owned(), Value::from(create.retention_class));
+                data.insert(
+                    "payload_digest".to_owned(),
+                    Value::from(create.payload_digest),
+                );
+                data.insert(
+                    "retention_class".to_owned(),
+                    Value::from(create.retention_class),
+                );
                 if let Some(value) = create.idempotency_key {
                     data.insert("idempotency_key".to_owned(), Value::from(value));
                 }
-                data.insert("occurred_at_micros".to_owned(), Value::from(create.occurred_at_micros));
+                data.insert(
+                    "occurred_at_micros".to_owned(),
+                    Value::from(create.occurred_at_micros),
+                );
                 data
             }
         }
@@ -11171,8 +11402,14 @@ pub mod realtime {
         }
 
         #[must_use]
-        pub fn by_stream_id_and_sequence(stream_id: impl Into<String>, sequence: impl Into<i64>) -> Unique {
-            Unique::fields([("stream_id", Value::from(stream_id.into())), ("sequence", Value::from(sequence.into()))])
+        pub fn by_stream_id_and_sequence(
+            stream_id: impl Into<String>,
+            sequence: impl Into<i64>,
+        ) -> Unique {
+            Unique::fields([
+                ("stream_id", Value::from(stream_id.into())),
+                ("sequence", Value::from(sequence.into())),
+            ])
         }
 
         #[must_use]
@@ -11183,7 +11420,6 @@ pub mod realtime {
 
     /// `realtime.subscription`.
     pub mod subscription {
-        #![allow(clippy::all, unused_imports)]
         use crate::error::StorageResult;
         use crate::query::Unique;
         use crate::typed::{self, Field, Update};
@@ -11219,11 +11455,23 @@ pub mod realtime {
         impl From<Create> for Data {
             fn from(create: Create) -> Data {
                 let mut data = Data::new();
-                data.insert("subscriber_id".to_owned(), Value::from(create.subscriber_id));
-                data.insert("stream_pattern".to_owned(), Value::from(create.stream_pattern));
-                data.insert("authorization_scope".to_owned(), Value::from(create.authorization_scope));
+                data.insert(
+                    "subscriber_id".to_owned(),
+                    Value::from(create.subscriber_id),
+                );
+                data.insert(
+                    "stream_pattern".to_owned(),
+                    Value::from(create.stream_pattern),
+                );
+                data.insert(
+                    "authorization_scope".to_owned(),
+                    Value::from(create.authorization_scope),
+                );
                 data.insert("state".to_owned(), Value::from(create.state));
-                data.insert("created_at_micros".to_owned(), Value::from(create.created_at_micros));
+                data.insert(
+                    "created_at_micros".to_owned(),
+                    Value::from(create.created_at_micros),
+                );
                 data
             }
         }
@@ -11322,8 +11570,14 @@ pub mod realtime {
         }
 
         #[must_use]
-        pub fn by_subscriber_id_and_stream_pattern(subscriber_id: impl Into<String>, stream_pattern: impl Into<String>) -> Unique {
-            Unique::fields([("subscriber_id", Value::from(subscriber_id.into())), ("stream_pattern", Value::from(stream_pattern.into()))])
+        pub fn by_subscriber_id_and_stream_pattern(
+            subscriber_id: impl Into<String>,
+            stream_pattern: impl Into<String>,
+        ) -> Unique {
+            Unique::fields([
+                ("subscriber_id", Value::from(subscriber_id.into())),
+                ("stream_pattern", Value::from(stream_pattern.into())),
+            ])
         }
     }
 }
@@ -11331,7 +11585,6 @@ pub mod realtime {
 pub mod telemetry {
     /// `telemetry.build_log`.
     pub mod build_log {
-        #![allow(clippy::all, unused_imports)]
         use crate::error::StorageResult;
         use crate::query::Unique;
         use crate::typed::{self, Field, Update};
@@ -11377,7 +11630,10 @@ pub mod telemetry {
                 data.insert("workload_id".to_owned(), Value::from(create.workload_id));
                 data.insert("log_type".to_owned(), Value::from(create.log_type));
                 data.insert("message".to_owned(), Value::from(create.message));
-                data.insert("observed_at_micros".to_owned(), Value::from(create.observed_at_micros));
+                data.insert(
+                    "observed_at_micros".to_owned(),
+                    Value::from(create.observed_at_micros),
+                );
                 data
             }
         }
@@ -11498,7 +11754,6 @@ pub mod telemetry {
 
     /// `telemetry.node_health`.
     pub mod node_health {
-        #![allow(clippy::all, unused_imports)]
         use crate::error::StorageResult;
         use crate::query::Unique;
         use crate::typed::{self, Field, Update};
@@ -11539,7 +11794,10 @@ pub mod telemetry {
                 data.insert("status".to_owned(), Value::from(create.status));
                 data.insert("cpu_millis".to_owned(), Value::from(create.cpu_millis));
                 data.insert("memory_bytes".to_owned(), Value::from(create.memory_bytes));
-                data.insert("observed_at_micros".to_owned(), Value::from(create.observed_at_micros));
+                data.insert(
+                    "observed_at_micros".to_owned(),
+                    Value::from(create.observed_at_micros),
+                );
                 if let Some(value) = create.details {
                     data.insert("details".to_owned(), Value::from(value));
                 }
@@ -11662,7 +11920,6 @@ pub mod telemetry {
 
     /// `telemetry.workload_sample`.
     pub mod workload_sample {
-        #![allow(clippy::all, unused_imports)]
         use crate::error::StorageResult;
         use crate::query::Unique;
         use crate::typed::{self, Field, Update};
@@ -11700,7 +11957,10 @@ pub mod telemetry {
                 let mut data = Data::new();
                 data.insert("metric".to_owned(), Value::from(create.metric));
                 data.insert("quantity".to_owned(), Value::from(create.quantity));
-                data.insert("observed_at_micros".to_owned(), Value::from(create.observed_at_micros));
+                data.insert(
+                    "observed_at_micros".to_owned(),
+                    Value::from(create.observed_at_micros),
+                );
                 if let Some(value) = create.labels {
                     data.insert("labels".to_owned(), Value::from(value));
                 }
@@ -11836,30 +12096,41 @@ pub trait Models {
     fn finance_account(&self) -> ModelClient<'_, core::finance_account::FinanceAccount>;
     fn finance_hold(&self) -> ModelClient<'_, core::finance_hold::FinanceHold>;
     fn finance_journal(&self) -> ModelClient<'_, core::finance_journal::FinanceJournal>;
-    fn finance_journal_participant(&self) -> ModelClient<'_, core::finance_journal_participant::FinanceJournalParticipant>;
+    fn finance_journal_participant(
+        &self,
+    ) -> ModelClient<'_, core::finance_journal_participant::FinanceJournalParticipant>;
     fn finance_live_debit(&self) -> ModelClient<'_, core::finance_live_debit::FinanceLiveDebit>;
     fn finance_payout(&self) -> ModelClient<'_, core::finance_payout::FinancePayout>;
     fn finance_pool(&self) -> ModelClient<'_, core::finance_pool::FinancePool>;
-    fn finance_pool_reservation(&self) -> ModelClient<'_, core::finance_pool_reservation::FinancePoolReservation>;
-    fn finance_project_budget(&self) -> ModelClient<'_, core::finance_project_budget::FinanceProjectBudget>;
+    fn finance_pool_reservation(
+        &self,
+    ) -> ModelClient<'_, core::finance_pool_reservation::FinancePoolReservation>;
+    fn finance_project_budget(
+        &self,
+    ) -> ModelClient<'_, core::finance_project_budget::FinanceProjectBudget>;
     fn gateway_route(&self) -> ModelClient<'_, core::gateway_route::GatewayRoute>;
-    fn guest_database_binding(&self) -> ModelClient<'_, core::guest_database_binding::GuestDatabaseBinding>;
-    fn guest_schema_definition(&self) -> ModelClient<'_, core::guest_schema_definition::GuestSchemaDefinition>;
+    fn guest_database_binding(
+        &self,
+    ) -> ModelClient<'_, core::guest_database_binding::GuestDatabaseBinding>;
+    fn guest_pair(&self) -> ModelClient<'_, core::guest_pair::GuestPair>;
+    fn guest_schema_definition(
+        &self,
+    ) -> ModelClient<'_, core::guest_schema_definition::GuestSchemaDefinition>;
     fn identity_challenge(&self) -> ModelClient<'_, core::identity_challenge::IdentityChallenge>;
     fn identity_key(&self) -> ModelClient<'_, core::identity_key::IdentityKey>;
     fn legacy_identity(&self) -> ModelClient<'_, core::legacy_identity::LegacyIdentity>;
     fn marker(&self) -> ModelClient<'_, core::marker::Marker>;
-    fn module_installation(&self) -> ModelClient<'_, core::module_installation::ModuleInstallation>;
+    fn module_installation(&self)
+    -> ModelClient<'_, core::module_installation::ModuleInstallation>;
     fn namespace_document(&self) -> ModelClient<'_, core::namespace_document::NamespaceDocument>;
     fn node(&self) -> ModelClient<'_, core::node::Node>;
     fn program(&self) -> ModelClient<'_, core::program::Program>;
     fn program_alarm(&self) -> ModelClient<'_, core::program_alarm::ProgramAlarm>;
     fn program_metadata(&self) -> ModelClient<'_, core::program_metadata::ProgramMetadata>;
+    fn proxy_correlation(&self) -> ModelClient<'_, core::proxy_correlation::ProxyCorrelation>;
     fn public_idempotency(&self) -> ModelClient<'_, core::public_idempotency::PublicIdempotency>;
     fn replay_nonce(&self) -> ModelClient<'_, core::replay_nonce::ReplayNonce>;
-    fn secret_access(&self) -> ModelClient<'_, core::secret_access::SecretAccess>;
     fn secret_grant(&self) -> ModelClient<'_, core::secret_grant::SecretGrant>;
-    fn secret_value(&self) -> ModelClient<'_, core::secret_value::SecretValue>;
     fn session(&self) -> ModelClient<'_, core::session::Session>;
     fn session_token(&self) -> ModelClient<'_, core::session_token::SessionToken>;
     fn store(&self) -> ModelClient<'_, core::store::Store>;
@@ -11867,7 +12138,6 @@ pub trait Models {
     fn store_metadata(&self) -> ModelClient<'_, core::store_metadata::StoreMetadata>;
     fn token_lock(&self) -> ModelClient<'_, core::token_lock::TokenLock>;
     fn user(&self) -> ModelClient<'_, core::user::User>;
-    fn user_email(&self) -> ModelClient<'_, core::user_email::UserEmail>;
     fn user_metadata(&self) -> ModelClient<'_, core::user_metadata::UserMetadata>;
     fn vm_distribution(&self) -> ModelClient<'_, core::vm_distribution::VmDistribution>;
     fn vm_instance(&self) -> ModelClient<'_, core::vm_instance::VmInstance>;
@@ -11882,13 +12152,17 @@ pub trait Models {
     fn finance_usage_record(&self) -> ModelClient<'_, finance::usage_record::UsageRecord>;
     fn finance_wallet(&self) -> ModelClient<'_, finance::wallet::Wallet>;
     fn outbox_message(&self) -> ModelClient<'_, outbox::message::Message>;
-    fn realtime_consumer_offset(&self) -> ModelClient<'_, realtime::consumer_offset::ConsumerOffset>;
+    fn realtime_consumer_offset(
+        &self,
+    ) -> ModelClient<'_, realtime::consumer_offset::ConsumerOffset>;
     fn realtime_dead_letter(&self) -> ModelClient<'_, realtime::dead_letter::DeadLetter>;
     fn realtime_event(&self) -> ModelClient<'_, realtime::event::Event>;
     fn realtime_subscription(&self) -> ModelClient<'_, realtime::subscription::Subscription>;
     fn telemetry_build_log(&self) -> ModelClient<'_, telemetry::build_log::BuildLog>;
     fn telemetry_node_health(&self) -> ModelClient<'_, telemetry::node_health::NodeHealth>;
-    fn telemetry_workload_sample(&self) -> ModelClient<'_, telemetry::workload_sample::WorkloadSample>;
+    fn telemetry_workload_sample(
+        &self,
+    ) -> ModelClient<'_, telemetry::workload_sample::WorkloadSample>;
 }
 
 impl Models for Trx {
@@ -11958,7 +12232,9 @@ impl Models for Trx {
     fn finance_journal(&self) -> ModelClient<'_, core::finance_journal::FinanceJournal> {
         ModelClient::new(self)
     }
-    fn finance_journal_participant(&self) -> ModelClient<'_, core::finance_journal_participant::FinanceJournalParticipant> {
+    fn finance_journal_participant(
+        &self,
+    ) -> ModelClient<'_, core::finance_journal_participant::FinanceJournalParticipant> {
         ModelClient::new(self)
     }
     fn finance_live_debit(&self) -> ModelClient<'_, core::finance_live_debit::FinanceLiveDebit> {
@@ -11970,19 +12246,30 @@ impl Models for Trx {
     fn finance_pool(&self) -> ModelClient<'_, core::finance_pool::FinancePool> {
         ModelClient::new(self)
     }
-    fn finance_pool_reservation(&self) -> ModelClient<'_, core::finance_pool_reservation::FinancePoolReservation> {
+    fn finance_pool_reservation(
+        &self,
+    ) -> ModelClient<'_, core::finance_pool_reservation::FinancePoolReservation> {
         ModelClient::new(self)
     }
-    fn finance_project_budget(&self) -> ModelClient<'_, core::finance_project_budget::FinanceProjectBudget> {
+    fn finance_project_budget(
+        &self,
+    ) -> ModelClient<'_, core::finance_project_budget::FinanceProjectBudget> {
         ModelClient::new(self)
     }
     fn gateway_route(&self) -> ModelClient<'_, core::gateway_route::GatewayRoute> {
         ModelClient::new(self)
     }
-    fn guest_database_binding(&self) -> ModelClient<'_, core::guest_database_binding::GuestDatabaseBinding> {
+    fn guest_database_binding(
+        &self,
+    ) -> ModelClient<'_, core::guest_database_binding::GuestDatabaseBinding> {
         ModelClient::new(self)
     }
-    fn guest_schema_definition(&self) -> ModelClient<'_, core::guest_schema_definition::GuestSchemaDefinition> {
+    fn guest_pair(&self) -> ModelClient<'_, core::guest_pair::GuestPair> {
+        ModelClient::new(self)
+    }
+    fn guest_schema_definition(
+        &self,
+    ) -> ModelClient<'_, core::guest_schema_definition::GuestSchemaDefinition> {
         ModelClient::new(self)
     }
     fn identity_challenge(&self) -> ModelClient<'_, core::identity_challenge::IdentityChallenge> {
@@ -11997,7 +12284,9 @@ impl Models for Trx {
     fn marker(&self) -> ModelClient<'_, core::marker::Marker> {
         ModelClient::new(self)
     }
-    fn module_installation(&self) -> ModelClient<'_, core::module_installation::ModuleInstallation> {
+    fn module_installation(
+        &self,
+    ) -> ModelClient<'_, core::module_installation::ModuleInstallation> {
         ModelClient::new(self)
     }
     fn namespace_document(&self) -> ModelClient<'_, core::namespace_document::NamespaceDocument> {
@@ -12015,19 +12304,16 @@ impl Models for Trx {
     fn program_metadata(&self) -> ModelClient<'_, core::program_metadata::ProgramMetadata> {
         ModelClient::new(self)
     }
+    fn proxy_correlation(&self) -> ModelClient<'_, core::proxy_correlation::ProxyCorrelation> {
+        ModelClient::new(self)
+    }
     fn public_idempotency(&self) -> ModelClient<'_, core::public_idempotency::PublicIdempotency> {
         ModelClient::new(self)
     }
     fn replay_nonce(&self) -> ModelClient<'_, core::replay_nonce::ReplayNonce> {
         ModelClient::new(self)
     }
-    fn secret_access(&self) -> ModelClient<'_, core::secret_access::SecretAccess> {
-        ModelClient::new(self)
-    }
     fn secret_grant(&self) -> ModelClient<'_, core::secret_grant::SecretGrant> {
-        ModelClient::new(self)
-    }
-    fn secret_value(&self) -> ModelClient<'_, core::secret_value::SecretValue> {
         ModelClient::new(self)
     }
     fn session(&self) -> ModelClient<'_, core::session::Session> {
@@ -12049,9 +12335,6 @@ impl Models for Trx {
         ModelClient::new(self)
     }
     fn user(&self) -> ModelClient<'_, core::user::User> {
-        ModelClient::new(self)
-    }
-    fn user_email(&self) -> ModelClient<'_, core::user_email::UserEmail> {
         ModelClient::new(self)
     }
     fn user_metadata(&self) -> ModelClient<'_, core::user_metadata::UserMetadata> {
@@ -12096,7 +12379,9 @@ impl Models for Trx {
     fn outbox_message(&self) -> ModelClient<'_, outbox::message::Message> {
         ModelClient::new(self)
     }
-    fn realtime_consumer_offset(&self) -> ModelClient<'_, realtime::consumer_offset::ConsumerOffset> {
+    fn realtime_consumer_offset(
+        &self,
+    ) -> ModelClient<'_, realtime::consumer_offset::ConsumerOffset> {
         ModelClient::new(self)
     }
     fn realtime_dead_letter(&self) -> ModelClient<'_, realtime::dead_letter::DeadLetter> {
@@ -12114,7 +12399,9 @@ impl Models for Trx {
     fn telemetry_node_health(&self) -> ModelClient<'_, telemetry::node_health::NodeHealth> {
         ModelClient::new(self)
     }
-    fn telemetry_workload_sample(&self) -> ModelClient<'_, telemetry::workload_sample::WorkloadSample> {
+    fn telemetry_workload_sample(
+        &self,
+    ) -> ModelClient<'_, telemetry::workload_sample::WorkloadSample> {
         ModelClient::new(self)
     }
 }

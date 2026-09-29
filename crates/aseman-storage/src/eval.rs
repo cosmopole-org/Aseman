@@ -62,23 +62,35 @@ fn condition(value: &Value, cond: &Cond) -> Option<bool> {
             if value.is_null() {
                 return None;
             }
-            Some(values.iter().any(|candidate| compare(value, candidate) == Some(Ordering::Equal)))
+            Some(
+                values
+                    .iter()
+                    .any(|candidate| compare(value, candidate) == Some(Ordering::Equal)),
+            )
         }
         Cond::NotIn(values) => {
             if value.is_null() {
                 return None;
             }
-            Some(!values.iter().any(|candidate| compare(value, candidate) == Some(Ordering::Equal)))
+            Some(
+                !values
+                    .iter()
+                    .any(|candidate| compare(value, candidate) == Some(Ordering::Equal)),
+            )
         }
         Cond::Lt(bound) => compare(value, bound).map(|order| order == Ordering::Less),
         Cond::Lte(bound) => compare(value, bound).map(|order| order != Ordering::Greater),
         Cond::Gt(bound) => compare(value, bound).map(|order| order == Ordering::Greater),
         Cond::Gte(bound) => compare(value, bound).map(|order| order != Ordering::Less),
-        Cond::Contains(pattern, case) => text(pattern, *case, |text, pattern| text.contains(pattern)),
+        Cond::Contains(pattern, case) => {
+            text(pattern, *case, |text, pattern| text.contains(pattern))
+        }
         Cond::StartsWith(pattern, case) => {
             text(pattern, *case, |text, pattern| text.starts_with(pattern))
         }
-        Cond::EndsWith(pattern, case) => text(pattern, *case, |text, pattern| text.ends_with(pattern)),
+        Cond::EndsWith(pattern, case) => {
+            text(pattern, *case, |text, pattern| text.ends_with(pattern))
+        }
     }
 }
 
