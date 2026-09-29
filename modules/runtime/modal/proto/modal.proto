@@ -1,7 +1,7 @@
 // GENERATED SLICE — do not hand-edit.
 //
 // Produced by scripts/slice_modal_proto.py from modal-labs/modal-client's
-// modal_proto/api.proto. It carries only the messages and RPCs the Caspar
+// modal_proto/api.proto. It carries only the messages and RPCs the Aseman
 // modal VM plugin calls, with upstream field numbers preserved, so it is wire
 // compatible with Modal's server while keeping the generated Rust small.
 //

@@ -76,20 +76,32 @@ mod typed_client_tests {
         assert_eq!(found.id, ada.id);
         let renamed = trx
             .user()
-            .update(user::by_id(ada.id), user::update().status("away").email(None))
+            .update(
+                user::by_id(ada.id),
+                user::update().status("away").email(None),
+            )
             .unwrap()
             .unwrap();
         assert_eq!((renamed.status.as_str(), renamed.email), ("away", None));
         let listed = trx
             .user()
             .find_many(
-                FindMany::filter(user::username().starts_with("a").and(user::status().eq("away")))
-                    .order_by(user::username().asc())
-                    .take(10),
+                FindMany::filter(
+                    user::username()
+                        .starts_with("a")
+                        .and(user::status().eq("away")),
+                )
+                .order_by(user::username().asc())
+                .take(10),
             )
             .unwrap();
         assert_eq!(listed.len(), 1);
-        assert_eq!(trx.store().count(Some(store::is_public().eq(true))).unwrap(), 0);
+        assert_eq!(
+            trx.store()
+                .count(Some(store::is_public().eq(true)))
+                .unwrap(),
+            0
+        );
         trx.commit().unwrap();
     }
 }

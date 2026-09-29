@@ -1,9 +1,9 @@
 //! The PostgreSQL plugin passes the storage provider conformance suite (ADR 0036),
 //! on one database and on a two-shard cluster.
 
+use aseman_storage::Storage;
 use aseman_storage::provider::{ProviderPlugin, ProviderSettings};
 use aseman_storage::schema::Schema;
-use aseman_storage::Storage;
 use aseman_storage_postgres::plugin::PostgresPlugin;
 use postgres::{Client, NoTls};
 

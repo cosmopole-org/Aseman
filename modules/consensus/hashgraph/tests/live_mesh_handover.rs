@@ -1,4 +1,4 @@
-//! RL-011: a checkpointed finance-consensus handover observed on a live peer mesh.
+//! A checkpointed finance-consensus handover observed on a live peer mesh.
 //!
 //! Four Babble validators gossip over real loopback TCP, each with its own
 //! `HashgraphConsensusProvider` installed as the application proxy. Finance records

@@ -1,16 +1,17 @@
 [package]
-name = "caspar-vm-modal"
+name = "aseman-vm-modal"
 version = "0.1.0"
 edition = "2021"
-description = "Caspar VM plugin: Modal cloud sandbox runtime (key: modal)"
+license = "MIT"
+description = "Aseman VM plugin: Modal cloud sandbox runtime (key: modal)"
 
 [lib]
-name = "caspar_vm_modal"
+name = "aseman_vm_modal"
 path = "src/lib.rs"
 
 [dependencies]
 aseman-config = { path = "../../../crates/aseman-config" }
-caspar-vm-sdk = { path = "../sdk-legacy" }
+aseman-vm-sdk = { path = "../sdk" }
 base64 = "0.22"
 chrono = "0.4"
 futures-util = "0.3"

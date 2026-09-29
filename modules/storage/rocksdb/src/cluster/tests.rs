@@ -7,6 +7,11 @@ use std::net::TcpListener;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 
+use std::sync::OnceLock;
+
+use aseman_admin_http::MutualTls;
+use aseman_admin_http::testing::TestAuthority;
+
 use super::config::ClusterConfig;
 use super::*;
 
@@ -21,9 +26,16 @@ struct Replica {
     addr: String,
 }
 
+/// The one CA every replica of a test cluster, and its administrator, is issued by.
+fn authority() -> &'static TestAuthority {
+    static AUTHORITY: OnceLock<TestAuthority> = OnceLock::new();
+    AUTHORITY.get_or_init(|| TestAuthority::new("aseman-test-cluster"))
+}
+
 fn replica(root: &Path, id: u64, seed: bool) -> Replica {
     let dir = root.join(format!("replica-{id}"));
     std::fs::create_dir_all(&dir).unwrap();
+    let tls = authority().identity(&dir.join("tls"), &format!("replica-{id}"));
     let local = Arc::new(RocksDbKvStore::open_default(&dir.join("kv")).unwrap());
     let addr = free_addr();
     let cfg = ClusterConfig {
@@ -34,9 +46,17 @@ fn replica(root: &Path, id: u64, seed: bool) -> Replica {
         listen_addr: addr.clone(),
         advertise_addr: addr.clone(),
         auth_token: "cluster-test-token".to_owned(),
+        tls,
         ..ClusterConfig::default()
     };
-    let svc = start_service(local.clone(), cfg, dir.join("cluster.json"), None).unwrap();
+    let svc = start_service(
+        local.clone(),
+        cfg,
+        dir.join("cluster.json"),
+        &RocksDbTuning::default(),
+        None,
+    )
+    .unwrap();
     Replica {
         store: ReplicatedKvStore {
             local: local.clone(),
@@ -48,8 +68,13 @@ fn replica(root: &Path, id: u64, seed: bool) -> Replica {
 }
 
 fn admin_post(addr: &str, path: &str, body: serde_json::Value) {
-    let response = reqwest::blocking::Client::new()
-        .post(format!("http://{addr}{path}"))
+    let directory =
+        std::env::temp_dir().join(format!("aseman-cluster-admin-{}", std::process::id()));
+    let admin = MutualTls::load(&authority().identity(&directory, "admin")).unwrap();
+    let response = admin
+        .blocking_http_client(Duration::from_secs(30))
+        .unwrap()
+        .post(format!("https://{addr}{path}"))
         .header("x-aseman-cluster-token", "cluster-test-token")
         .json(&body)
         .timeout(Duration::from_secs(30))

@@ -61,8 +61,8 @@ fn document_fields(
     let entry_count = i64::try_from(document.len()).map_err(|_| {
         LegacyMigrationError::Invalid(format!("legacy document {key} is too large"))
     })?;
-    let document = legacy_json_to_capsule_value(key, &Value::Object(document))?;
-    let content_digest = legacy_document_digest(&document)?;
+    let document = json_to_capsule_value(key, &Value::Object(document))?;
+    let content_digest = document_digest(&document)?;
     Ok(BTreeMap::from([
         ("document".to_owned(), document),
         (
@@ -118,10 +118,7 @@ fn relationship(name: &str, kind: &str, family: &str, legacy_id: &str) -> Capsul
     CapsuleRelationship {
         name: name.to_owned(),
         target_kind: CapsuleKind(kind.to_owned()),
-        target_id: CapsuleId(deterministic_legacy_capsule_id(
-            family,
-            legacy_id.as_bytes(),
-        )),
+        target_id: CapsuleId(derived_capsule_id(family, legacy_id.as_bytes())),
     }
 }
 
@@ -399,5 +396,61 @@ impl LegacySnapshotGraph {
             )?);
         }
         Ok(capsules)
+    }
+}
+
+/// The on-disk artifacts a legacy snapshot references (ADR 0022), which the
+/// migration runner must supply evidence for before the transform.
+#[derive(Clone, Debug, Default, Eq, PartialEq)]
+pub struct LegacyArtifactNeeds {
+    /// Exact legacy paths: entity artifacts and resource-entity files.
+    pub paths: BTreeSet<String>,
+    /// `File` objects by id, with the store each belongs to.
+    pub files: BTreeMap<String, String>,
+}
+
+impl LegacySnapshotGraph {
+    /// Every artifact the transform will ask evidence for.
+    ///
+    /// # Errors
+    ///
+    /// A malformed resource-entity document.
+    pub fn artifact_needs(&self) -> LegacyMigrationResult<LegacyArtifactNeeds> {
+        let mut needs = LegacyArtifactNeeds::default();
+        for (key, value) in &self.links {
+            let Some((family, _)) = key.split_once("::") else {
+                continue;
+            };
+            if family != "vmEntityType"
+                && ARTIFACT_LINKS.contains(&family)
+                && let Ok(path) = String::from_utf8(value.clone())
+                && !path.is_empty()
+            {
+                needs.paths.insert(path);
+            }
+        }
+        for (key, records) in &self.documents {
+            if !key.starts_with(LEGACY_RESOURCE_ENTITY_PREFIX) {
+                continue;
+            }
+            if let Some(path) = document_roots(key, records, &["payload", "meta"])?
+                .get("meta")
+                .and_then(|meta| meta.get("path"))
+                .and_then(Value::as_str)
+                .filter(|path| !path.is_empty())
+            {
+                needs.paths.insert(path.to_owned());
+            }
+        }
+        for ((family, legacy_id), columns) in &self.objects {
+            if family == "File" {
+                let store = columns
+                    .get("storeId")
+                    .map(|value| String::from_utf8_lossy(value).into_owned())
+                    .unwrap_or_default();
+                needs.files.insert(legacy_id.clone(), store);
+            }
+        }
+        Ok(needs)
     }
 }

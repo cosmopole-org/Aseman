@@ -1,6 +1,6 @@
 [package]
 name = "aseman-vmm-backend-nomad"
-description = "The Nomad VMM backend (P6-01): Aseman workloads as Nomad jobs behind A504."
+description = "The Nomad VMM backend: Aseman workloads as Nomad jobs behind A504."
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true

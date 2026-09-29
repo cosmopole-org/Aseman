@@ -8,7 +8,9 @@
 //!
 //! The contract is an ordered byte key/value space per *log*: keys compare as bytes,
 //! a batch applies atomically, and a log is identified by a name the engine chooses
-//! (one per chain). Values are opaque to the provider.
+//! (one per chain): a relative path such as `chains/main/shard-main`, so a log keeps
+//! its name on any provider and under any storage root (ADR 0036). Values are opaque
+//! to the provider.
 
 use crate::PortResult;
 use std::sync::Arc;
@@ -47,4 +49,8 @@ pub trait ConsensusLogStorage: Send + Sync {
     /// contents are first set aside (kept, under a new name, for inspection) and the
     /// log starts empty.
     fn open(&self, name: &str, fresh: bool) -> PortResult<Arc<dyn ConsensusLog>>;
+    /// The names of every log that holds entries (a provider may also list an empty
+    /// log it opened), in name order; logs set aside by a fresh open are not listed.
+    /// Storage migration copies these.
+    fn names(&self) -> PortResult<Vec<String>>;
 }

@@ -24,7 +24,6 @@ pub mod meter;
 pub mod program;
 pub mod public_action;
 pub mod singleton;
-pub mod storage_migration;
 pub mod store;
 pub mod vmm;
 
@@ -62,7 +61,7 @@ pub struct GetServerPeers<'a> {
     pub peers: &'a dyn PeerDirectoryPort,
 }
 
-/// Transport-neutral classification for the legacy session shortcuts. All other paths
+/// Transport-neutral classification for the session shortcuts. All other paths
 /// enter the ordinary authorized action dispatcher.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum SessionRoute {
@@ -131,7 +130,7 @@ impl SetDesiredWorkloadState<'_> {
             DesiredWorkloadState::Deleted => "workload.delete",
         };
         // The workload's own creature owns it; other relations are resolved by the
-        // enforcement layer (P4-05).
+        // enforcement layer.
         let owner = Subject {
             kind: SubjectKind::Creature,
             id: *workload.creature_id.as_uuid(),

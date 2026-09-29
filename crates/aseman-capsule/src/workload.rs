@@ -7,7 +7,7 @@
 //! keyed by the creature, whose generation never moves backwards.
 
 use crate::store::{body, next_revision, port_error};
-use crate::support::{Capsules, MAX_CAS_ATTEMPTS, failed, new_capsule, relationship, text};
+use crate::support::{Capsules, MAX_CAS_ATTEMPTS, new_capsule, relationship, text};
 use crate::{CapsuleStore, CapsuleStoreError};
 use aseman_contracts::capsule::{CapsuleEnvelope, CapsuleValue, OwnerScope, StorageClass};
 use aseman_domain::{
@@ -43,14 +43,14 @@ fn state(name: &str) -> PortResult<DesiredWorkloadState> {
         "running" => DesiredWorkloadState::Running,
         "paused" => DesiredWorkloadState::Paused,
         "deleted" => DesiredWorkloadState::Deleted,
-        other => return Err(failed(format!("unknown workload state {other}"))),
+        other => return Err(PortError::failed(format!("unknown workload state {other}"))),
     })
 }
 
 fn integer(fields: &BTreeMap<String, CapsuleValue>, name: &str) -> PortResult<u64> {
     match fields.get(name) {
-        Some(CapsuleValue::Integer(value)) => u64::try_from(*value).map_err(failed),
-        _ => Err(failed(format!("{name} is missing"))),
+        Some(CapsuleValue::Integer(value)) => u64::try_from(*value).map_err(PortError::failed),
+        _ => Err(PortError::failed(format!("{name} is missing"))),
     }
 }
 
@@ -60,7 +60,7 @@ fn target(capsule: &CapsuleEnvelope, name: &str) -> PortResult<[u8; 16]> {
         .iter()
         .find(|relationship| relationship.name == name)
         .map(|relationship| relationship.target_id.0)
-        .ok_or_else(|| failed(format!("{} has no {name}", capsule.kind.0)))
+        .ok_or_else(|| PortError::failed(format!("{} has no {name}", capsule.kind.0)))
 }
 
 impl WorkloadRepository for CapsuleWorkloads<'_> {
@@ -69,9 +69,11 @@ impl WorkloadRepository for CapsuleWorkloads<'_> {
         let program = *workload.program_id.as_uuid().as_bytes();
         let program_capsule = Capsules(self.repository)
             .live(PROGRAM, program)?
-            .ok_or_else(|| failed("the workload's program does not exist"))?;
+            .ok_or_else(|| PortError::failed("the workload's program does not exist"))?;
         if target(&program_capsule, "creature")? != creature {
-            return Err(failed("the workload's program belongs to another creature"));
+            return Err(PortError::failed(
+                "the workload's program belongs to another creature",
+            ));
         }
         let fields = BTreeMap::from([
             (
@@ -88,7 +90,9 @@ impl WorkloadRepository for CapsuleWorkloads<'_> {
             ),
             (
                 "desired_generation".to_owned(),
-                CapsuleValue::Integer(i64::try_from(workload.generation.get()).map_err(failed)?),
+                CapsuleValue::Integer(
+                    i64::try_from(workload.generation.get()).map_err(PortError::failed)?,
+                ),
             ),
         ]);
         let capsule = new_capsule(
@@ -116,9 +120,11 @@ impl WorkloadRepository for CapsuleWorkloads<'_> {
         // The chain holds only when the program belongs to the workload's creature.
         let program_capsule = capsules
             .live(PROGRAM, program)?
-            .ok_or_else(|| failed("the workload's program does not exist"))?;
+            .ok_or_else(|| PortError::failed("the workload's program does not exist"))?;
         if target(&program_capsule, "creature")? != creature {
-            return Err(failed("the workload's program belongs to another creature"));
+            return Err(PortError::failed(
+                "the workload's program belongs to another creature",
+            ));
         }
         Ok(Some(DesiredWorkload {
             id,
@@ -127,7 +133,7 @@ impl WorkloadRepository for CapsuleWorkloads<'_> {
             name: text(fields, "workload_name"),
             runtime: text(fields, "runtime"),
             generation: Generation::from_stored(integer(fields, "desired_generation")?)
-                .map_err(failed)?,
+                .map_err(PortError::failed)?,
             state: state(&text(fields, "desired_state"))?,
         }))
     }
@@ -147,7 +153,9 @@ impl WorkloadRepository for CapsuleWorkloads<'_> {
             );
             fields.insert(
                 "desired_generation".to_owned(),
-                CapsuleValue::Integer(i64::try_from(workload.generation.get()).map_err(failed)?),
+                CapsuleValue::Integer(
+                    i64::try_from(workload.generation.get()).map_err(PortError::failed)?,
+                ),
             );
             match self
                 .repository
@@ -192,13 +200,13 @@ impl CreatureDatabaseBindings for CapsuleWorkloads<'_> {
             text(fields, "database_name"),
             text(fields, "role_name"),
         )
-        .map_err(failed)?;
+        .map_err(PortError::failed)?;
         binding.generation =
-            Generation::from_stored(integer(fields, "generation")?).map_err(failed)?;
+            Generation::from_stored(integer(fields, "generation")?).map_err(PortError::failed)?;
         binding.status = match text(fields, "status").as_str() {
             "active" => BindingStatus::Active,
             "disabled" => BindingStatus::Disabled,
-            other => return Err(failed(format!("unknown binding status {other}"))),
+            other => return Err(PortError::failed(format!("unknown binding status {other}"))),
         };
         Ok(Some(binding))
     }
@@ -221,7 +229,9 @@ impl CreatureDatabaseBindings for CapsuleWorkloads<'_> {
                 ),
                 (
                     "generation".to_owned(),
-                    CapsuleValue::Integer(i64::try_from(binding.generation.get()).map_err(failed)?),
+                    CapsuleValue::Integer(
+                        i64::try_from(binding.generation.get()).map_err(PortError::failed)?,
+                    ),
                 ),
                 (
                     "schema_catalog_revision".to_owned(),

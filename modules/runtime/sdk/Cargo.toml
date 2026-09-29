@@ -1,0 +1,15 @@
+[package]
+name = "aseman-vm-sdk"
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+description = "Interface SDK for Aseman VM plugins: every VM type implements its traits, so the compiler checks each interaction between a VM controller and the native VMM backend."
+
+[lib]
+name = "aseman_vm_sdk"
+path = "src/lib.rs"
+
+[dependencies]
+base64 = "0.22"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"

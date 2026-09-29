@@ -1,9 +1,9 @@
-//! Runtime profiling HTTP server — Rust-native replacement for the Go
+//! Runtime profiling HTTP server — built on the `pprof` crate, serving what the Go
 //! `net/http/pprof` block that lived in `node.old/node/main.go:30-42`.
 //!
 //! Backed by the [`pprof`](https://crates.io/crates/pprof) crate (CPU
 //! sampling profiler with flamegraph + protobuf output). Designed to be
-//! queried by `casparctl pprof <subcmd>`; nothing else in the node touches
+//! queried by `asemanctl pprof <subcmd>`; nothing else in the node touches
 //! it.
 //!
 //! Endpoints, all served from the typed pprof port (default `9999`, same port as
@@ -136,7 +136,7 @@ fn parse_seconds(query: &str) -> u64 {
 }
 
 fn index_body() -> String {
-    "casparctl pprof endpoints:\n\
+    "asemanctl pprof endpoints:\n\
      /debug/pprof/runtime               — runtime info (json)\n\
      /debug/pprof/heap                  — heap / memory stats (json)\n\
      /debug/pprof/threads               — per-thread states (json)\n\

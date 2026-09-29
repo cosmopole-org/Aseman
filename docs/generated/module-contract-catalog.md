@@ -1,9 +1,9 @@
 ---
 status: GENERATED
 owner: module-platform
-source_of_truth: contracts/module and scripts/generate_phase2_contracts.py
+source_of_truth: contracts/module and scripts/generate_module_contracts.py
 last_verified_commit: 800df24076c7
-verification: python3 scripts/generate_phase2_contracts.py --check
+verification: python3 scripts/generate_module_contracts.py --check
 ---
 
 # Module contract and capability catalog

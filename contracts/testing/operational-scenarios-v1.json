@@ -36,9 +36,9 @@
       "id": "realtime-postgres-capacity",
       "kind": "load",
       "targets": ["realtime"],
-      "command": "cargo test -p aseman-realtime-durable --test load_realtime -- --nocapture",
+      "command": "cargo test -p aseman-storage-providers --test realtime -- --nocapture",
       "required_env": ["ASEMAN_TEST_POSTGRES_URL", "ASEMAN_RUN_LOAD_TESTS"],
-      "evidence": ["modules/realtime/durable/tests/load_realtime.rs", "contracts/realtime/capacity-v1.json"],
+      "evidence": ["crates/aseman-storage-providers/tests/realtime.rs", "contracts/realtime/capacity-v1.json"],
       "thresholds": {"events": 2000, "minimum_publish_events_per_second": 100, "dead_letters": 0, "sequence_errors": 0}
     },
     {
@@ -54,9 +54,9 @@
       "id": "federation-partition-recovery",
       "kind": "chaos",
       "targets": ["federation"],
-      "command": "cargo test -p aseman-federation-http --test live_two_clusters -- --nocapture",
+      "command": "cargo test -p aseman-federation-http --test two_clusters -- --nocapture",
       "required_env": ["ASEMAN_TEST_POSTGRES_URL"],
-      "evidence": ["modules/federation/http/tests/live_two_clusters.rs"],
+      "evidence": ["modules/federation/http/tests/two_clusters.rs"],
       "thresholds": {"duplicate_executions": 0, "routing_loops": 0, "unauthorized_acceptances": 0}
     },
     {
@@ -72,9 +72,9 @@
       "id": "metering-settlement-soak",
       "kind": "soak",
       "targets": ["metering"],
-      "command": "cargo test -p aseman-finance-ledger --test live_metering -- --nocapture",
+      "command": "cargo test -p aseman-storage-providers --test finance -- --nocapture",
       "required_env": ["ASEMAN_TEST_POSTGRES_URL", "ASEMAN_RUN_SOAK_TESTS"],
-      "evidence": ["modules/finance/ledger/tests/live_metering.rs"],
+      "evidence": ["crates/aseman-storage-providers/tests/finance.rs"],
       "thresholds": {"minimum_intervals": 1000, "duplicate_settlements": 0, "unbalanced_journals": 0, "maximum_settlement_lag_seconds": 300}
     },
     {

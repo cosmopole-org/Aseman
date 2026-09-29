@@ -26,7 +26,12 @@ fn hex(bytes: &[u8]) -> String {
     const DIGITS: &[u8; 16] = b"0123456789abcdef";
     bytes
         .iter()
-        .flat_map(|byte| [DIGITS[usize::from(byte >> 4)], DIGITS[usize::from(byte & 15)]])
+        .flat_map(|byte| {
+            [
+                DIGITS[usize::from(byte >> 4)],
+                DIGITS[usize::from(byte & 15)],
+            ]
+        })
         .map(char::from)
         .collect()
 }
@@ -163,11 +168,15 @@ fn scan_for(model: &Model, field: &str, cond: &Cond) -> Option<(u8, Scan)> {
     let field_type = field_type(model, field);
     let base = field_prefix(&model.name, field);
     let point = |value: &Value| encode(field_type, value).map(|value| format!("{base}{value}/"));
-    let unique = model.unique.iter().any(|index| index == &[field.to_owned()]);
+    let unique = model
+        .unique
+        .iter()
+        .any(|index| index == &[field.to_owned()]);
     match cond {
-        Cond::Equals(value) if !value.is_null() => {
-            Some((if unique { 0 } else { 1 }, Scan::Prefixes(vec![point(value)?])))
-        }
+        Cond::Equals(value) if !value.is_null() => Some((
+            if unique { 0 } else { 1 },
+            Scan::Prefixes(vec![point(value)?]),
+        )),
         Cond::In(values) => {
             let points = values
                 .iter()
@@ -281,7 +290,10 @@ mod tests {
             ])),
         );
         assert!(matches!(unique, Plan::Index { ref field, .. } if field == "username"));
-        let ordered = plan(user, &FindMany::default().order_by(Order::asc("email")).take(5));
+        let ordered = plan(
+            user,
+            &FindMany::default().order_by(Order::asc("email")).take(5),
+        );
         assert_eq!(
             ordered,
             Plan::Ordered {

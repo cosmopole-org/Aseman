@@ -1,12 +1,12 @@
-//! The legacy finance ledger port (RL-004 finance strangler slice).
+//! The finance ledger port.
 //!
-//! The legacy finance family is a set of state machines over JSON documents
+//! The finance family is a set of state machines over JSON documents
 //! (`Json::FinanceHold::*`, `Json::FinancePool::*`, `Json::FinancePayout::*`,
 //! `Json::BillingCatalog::*`, `Json::BillingQuote::*`, `Json::CreatureNamespace::*`)
 //! and integer link counters (`FinanceHeld::`, `FinanceDebt::`, `FinanceWithdrawable::`,
 //! `FinancePayoutHeld::`, `FinanceEarned::`, `FinanceSpent::`). The ledger port exposes
-//! those operations without naming the concrete store; the node shell implements it over
-//! the legacy transaction, and a future provider can implement it over PostgreSQL.
+//! those operations without naming the concrete store; the node implements it over its
+//! storage transaction, on any storage provider.
 //!
 //! Document semantics: for the id-scoped families the `id` names the record and the
 //! `path` is the fixed document label (`hold`, `pool`, `payout`, ...). `BillingCurrent`
@@ -35,7 +35,7 @@ pub enum FinanceDoc {
     BillingNodes,
     Market,
     /// The `Json::Creature::{id}` document, whose `lockedTokens.{lock_id}` path the
-    /// legacy token-lock family reads and writes.
+    /// token-lock family reads and writes.
     Creature,
 }
 
@@ -51,7 +51,7 @@ pub enum WalletCounter {
 }
 
 /// An idempotency marker link. Each variant names the idempotency-key family and the
-/// identifiers that make one key unique, exactly as the legacy finance module wrote
+/// identifiers that make one key unique, exactly as the finance records are keyed
 /// them.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum FinanceMarker {
@@ -89,7 +89,7 @@ pub enum FinanceMarker {
     MintApplied { key: String },
 }
 
-/// The legacy finance ledger behind the finance use cases.
+/// The finance ledger behind the finance use cases.
 pub trait FinanceLedger: Send + Sync {
     // ---- JSON documents ----
 
@@ -97,7 +97,7 @@ pub trait FinanceLedger: Send + Sync {
     fn get_doc(&self, family: FinanceDoc, id: &str, path: &str) -> PortResult<Map<String, Value>>;
 
     /// Write a finance document. `merge` deep-merges into the existing document, as
-    /// legacy `put_json(.., merge)` did.
+    /// `put_json(.., merge)` did.
     fn put_doc(
         &self,
         family: FinanceDoc,

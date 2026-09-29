@@ -117,7 +117,7 @@ impl FederationHttpError {
 }
 
 /// Complete inbound federation composition. Every dependency is a canonical port;
-/// this module has no route to legacy node action handlers.
+/// this module has no route to node action handlers.
 pub struct FederationService {
     pub keys: Arc<dyn KeyDirectory>,
     pub replay: Arc<dyn ReplayGuard>,

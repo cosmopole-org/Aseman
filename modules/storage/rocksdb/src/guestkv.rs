@@ -61,7 +61,7 @@ impl LegacySnapshotGraph {
                     family: "GuestLegacyKv",
                     kind: LEGACY_GUEST_KV_KIND,
                     storage_class: StorageClass::GuestData,
-                    owner_scope: OwnerScope::Creature(deterministic_legacy_capsule_id(
+                    owner_scope: OwnerScope::Creature(derived_capsule_id(
                         "Creature",
                         machine.as_bytes(),
                     )),
@@ -115,7 +115,7 @@ impl LegacySnapshotGraph {
                         family: "GuestLegacyKv",
                         kind: LEGACY_GUEST_KV_KIND,
                         storage_class: StorageClass::GuestData,
-                        owner_scope: OwnerScope::Creature(deterministic_legacy_capsule_id(
+                        owner_scope: OwnerScope::Creature(derived_capsule_id(
                             "Creature",
                             creature.as_bytes(),
                         )),

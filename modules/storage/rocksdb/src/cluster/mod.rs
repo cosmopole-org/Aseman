@@ -22,7 +22,8 @@ use std::sync::{Arc, RwLock};
 use std::time::{Duration, Instant};
 
 use anyhow::{Result, anyhow};
-use aseman_config::ClusterBootstrapConfig;
+use aseman_admin_http::MutualTls;
+use aseman_config::{ClusterBootstrapConfig, RocksDbTuning, TlsFiles};
 use openraft::{BasicNode, Raft};
 use serde_json::{Value, json};
 
@@ -37,7 +38,7 @@ use store::{CommandApplier, LogStore, StateMachineStore};
 /// Routes the composing process serves on the cluster listener (for example the node's
 /// module administration): `(method, path, body)` to a response, or `None` to fall
 /// through to the cluster's own routes.
-pub type RouteHandler = Arc<dyn Fn(&str, &str, &[u8]) -> Option<(u16, Vec<u8>)> + Send + Sync>;
+pub use aseman_admin_http::Routes as RouteHandler;
 
 /// How long a replica waits for a committed batch to be applied locally.
 const APPLY_TIMEOUT: Duration = Duration::from_secs(30);
@@ -62,6 +63,10 @@ pub struct ClusterService {
     config_path: PathBuf,
     rtt: RwLock<HashMap<u64, PeerHealth>>,
     routes: Option<RouteHandler>,
+    /// This replica's mutual-TLS identity, and the HTTPS client it calls other
+    /// replicas with.
+    tls: MutualTls,
+    http: reqwest::Client,
 }
 
 impl ClusterService {
@@ -83,6 +88,10 @@ impl ClusterService {
 
     pub(crate) fn routes(&self) -> Option<&RouteHandler> {
         self.routes.as_ref()
+    }
+
+    pub(crate) fn tls(&self) -> &MutualTls {
+        &self.tls
     }
 
     /// Persist a config mutation and return the updated copy.
@@ -131,10 +140,10 @@ impl ClusterService {
             .ok_or_else(|| anyhow!("leader {leader_id} has no known address"))?;
         let token = self.auth_token();
         let body = serde_json::to_vec(cmd)?;
-        let url = format!("http://{leader_addr}/cluster/propose");
+        let url = format!("https://{leader_addr}/cluster/propose");
         self.rt.block_on(async {
-            let client = reqwest::Client::new();
-            let mut builder = client
+            let mut builder = self
+                .http
                 .post(&url)
                 .timeout(Duration::from_secs(30))
                 .header("content-type", "application/json")
@@ -248,10 +257,9 @@ impl ClusterService {
 
     fn probe_peer(&self, addr: &str) -> bool {
         let token = self.auth_token();
-        let url = format!("http://{addr}/cluster/ping");
+        let url = format!("https://{addr}/cluster/ping");
         self.rt.block_on(async {
-            let client = reqwest::Client::new();
-            let mut builder = client.get(&url).timeout(Duration::from_secs(3));
+            let mut builder = self.http.get(&url).timeout(Duration::from_secs(3));
             if !token.is_empty() {
                 builder = builder.header("x-aseman-cluster-token", &token);
             }
@@ -468,18 +476,27 @@ pub fn open(
     storage_root: &Path,
     local: Arc<RocksDbKvStore>,
     source: &ClusterBootstrapConfig,
+    tuning: &RocksDbTuning,
     routes: Option<RouteHandler>,
 ) -> Result<ReplicatedKvStore> {
-    let (cfg, path) = ClusterConfig::bootstrap(&storage_root.to_string_lossy(), source);
+    let (cfg, path) = ClusterConfig::bootstrap(&storage_root.to_string_lossy(), source)?;
     if !cfg.enabled {
         if let Some(routes) = routes
             && !cfg.auth_token.is_empty()
         {
-            server::start_route_listener(routes, cfg.listen_addr.clone(), cfg.auth_token.clone())?;
+            let tls = cluster_tls(&cfg)?;
+            aseman_admin_http::serve_routes(
+                &cfg.listen_addr,
+                &tls,
+                &cfg.auth_token,
+                "admin-https",
+                routes,
+            )
+            .map_err(|error| anyhow!(error))?;
         }
         return Ok(ReplicatedKvStore::local(local));
     }
-    let svc = start_service(local.clone(), cfg, path, routes)?;
+    let svc = start_service(local.clone(), cfg, path, tuning, routes)?;
     eprintln!(
         "[storage] replica {} joined the RocksDB cluster on {}",
         svc.node_id,
@@ -491,18 +508,31 @@ pub fn open(
     })
 }
 
+/// This replica's mutual-TLS identity: a replicated or administered cluster listener
+/// never runs without it.
+fn cluster_tls(cfg: &ClusterConfig) -> Result<MutualTls> {
+    if cfg.tls == TlsFiles::default() {
+        return Err(anyhow!(
+            "the storage cluster listener requires mutual TLS: set ASEMAN_CLUSTER_TLS_CERTIFICATE, \
+             ASEMAN_CLUSTER_TLS_KEY_SECRET, and ASEMAN_CLUSTER_TLS_CA (or `tls` in cluster.json)"
+        ));
+    }
+    MutualTls::load(&cfg.tls).map_err(|error| anyhow!("cluster TLS: {error}"))
+}
+
 /// Boot one replica: Raft, the cluster listener, and the RTT prober.
 pub fn start_service(
     local: Arc<RocksDbKvStore>,
     cfg: ClusterConfig,
     config_path: PathBuf,
+    tuning: &RocksDbTuning,
     routes: Option<RouteHandler>,
 ) -> Result<Arc<ClusterService>> {
     let raft_dir = config_path
         .parent()
         .map(|p| p.join("raft-db"))
         .unwrap_or_else(|| PathBuf::from("raft-db"));
-    let db = store::open_db(&raft_dir)?;
+    let db = store::open_db(&raft_dir, tuning)?;
     let log_store = LogStore::new(db.clone());
     let applier: Arc<dyn CommandApplier> = Arc::new(KvApplier { store: local });
     let sm = StateMachineStore::new(db, applier).map_err(|e| anyhow!("state machine open: {e}"))?;
@@ -511,8 +541,13 @@ pub fn start_service(
             .validate()
             .map_err(|e| anyhow!("raft config: {e}"))?,
     );
+    let tls = cluster_tls(&cfg)?;
+    let http = tls
+        .http_client(Duration::from_secs(30))
+        .map_err(|error| anyhow!(error))?;
     let network = network::HttpNetworkFactory {
         auth_token: cfg.auth_token.clone(),
+        client: http.clone(),
     };
 
     let rt = tokio::runtime::Builder::new_multi_thread()
@@ -551,6 +586,8 @@ pub fn start_service(
         config_path,
         rtt: RwLock::new(HashMap::new()),
         routes,
+        tls,
+        http,
     });
     server::start(svc.clone())?;
     svc.spawn_rtt_prober();

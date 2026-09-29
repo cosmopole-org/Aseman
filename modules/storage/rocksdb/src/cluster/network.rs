@@ -1,4 +1,4 @@
-//! Raft RPC transport between storage replicas: plain HTTP + JSON.
+//! Raft RPC transport between storage replicas: JSON over mutual-TLS HTTPS.
 //!
 //! Each instance runs the cluster HTTP listener (see `server.rs`); this
 //! module is the client side used by openraft's replication machinery. The
@@ -19,9 +19,11 @@ use super::command::TypeConfig;
 
 type NodeId = u64;
 
-/// Builds one HTTP client per replication target.
+/// Builds one Raft client per replication target, all sharing the replica's
+/// mutual-TLS HTTPS client.
 pub struct HttpNetworkFactory {
     pub auth_token: String,
+    pub client: reqwest::Client,
 }
 
 pub struct HttpRaftClient {
@@ -44,7 +46,7 @@ impl HttpRaftClient {
         Resp: DeserializeOwned,
         Err: std::error::Error + DeserializeOwned,
     {
-        let url = format!("http://{}/raft/{}", self.addr, uri);
+        let url = format!("https://{}/raft/{}", self.addr, uri);
         let mut builder = self.client.post(&url).timeout(option.hard_ttl()).json(req);
         if !self.auth_token.is_empty() {
             builder = builder.header("x-aseman-cluster-token", &self.auth_token);
@@ -64,7 +66,7 @@ impl RaftNetworkFactory<TypeConfig> for HttpNetworkFactory {
             target,
             addr: node.addr.clone(),
             auth_token: self.auth_token.clone(),
-            client: reqwest::Client::new(),
+            client: self.client.clone(),
         }
     }
 }

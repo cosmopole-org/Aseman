@@ -2,7 +2,7 @@
   "key": "javascript",
   "name": "JavaScript VM",
   "version": "0.2.0",
-  "description": "Runs JavaScript program entities in-process on QuickJS with the full Caspar host-call ABI; sources can also be transpiled to MASM for provable execution.",
+  "description": "Runs JavaScript program entities in-process on QuickJS with the full Aseman host-call ABI; sources can also be transpiled to MASM for provable execution.",
   "aliases": ["quickjs", "js"],
   "artifactExtensions": [".js"],
   "inProcess": true,

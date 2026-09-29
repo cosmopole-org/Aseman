@@ -155,7 +155,10 @@ pub fn unique_claims(model: &Model, row: &Row) -> Vec<(usize, Vec<Value>)> {
         .iter()
         .enumerate()
         .filter_map(|(index, fields)| {
-            let values = fields.iter().map(|field| row.get(field).clone()).collect::<Vec<_>>();
+            let values = fields
+                .iter()
+                .map(|field| row.get(field).clone())
+                .collect::<Vec<_>>();
             (!values.iter().any(Value::is_null)).then_some((index, values))
         })
         .collect()
@@ -197,7 +200,10 @@ impl CapsuleTransaction for MemoryTransaction {
         let id = Id(capsule.id.0);
         let current = self.view(model)?.get(&id).map(|stored| stored.revision);
         if current != expected_revision {
-            return Err(StorageError::conflict(format!("{}: stale revision", model.name)));
+            return Err(StorageError::conflict(format!(
+                "{}: stale revision",
+                model.name
+            )));
         }
         if !capsule.tombstone {
             let row = codec::decode(model, capsule)?;
@@ -275,13 +281,16 @@ impl CapsuleTransaction for MemoryTransaction {
     }
 }
 
+/// One log's ordered entries.
+type LogEntries = Arc<Mutex<BTreeMap<Vec<u8>, Vec<u8>>>>;
+
 /// In-memory consensus logs.
 #[derive(Default)]
 pub struct MemoryLogs {
-    logs: Mutex<HashMap<String, Arc<Mutex<BTreeMap<Vec<u8>, Vec<u8>>>>>>,
+    logs: Mutex<HashMap<String, LogEntries>>,
 }
 
-struct MemoryLog(Arc<Mutex<BTreeMap<Vec<u8>, Vec<u8>>>>);
+struct MemoryLog(LogEntries);
 
 fn log_poisoned<T>(_: T) -> PortError {
     PortError::Unavailable("memory log lock poisoned")
@@ -296,6 +305,18 @@ impl ConsensusLogStorage for MemoryLogs {
         Ok(Arc::new(MemoryLog(
             logs.entry(name.to_owned()).or_default().clone(),
         )))
+    }
+
+    fn names(&self) -> PortResult<Vec<String>> {
+        let mut names = self
+            .logs
+            .lock()
+            .map_err(log_poisoned)?
+            .keys()
+            .cloned()
+            .collect::<Vec<_>>();
+        names.sort();
+        Ok(names)
     }
 }
 

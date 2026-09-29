@@ -1,5 +1,5 @@
 //! The store use cases run through the capsule adapter with the same rules the legacy
-//! adapter characterizes (RL-004 strangler, target side).
+//! adapter characterizes.
 
 use aseman_application::store::{GetStoreAccess, ReadStoreHistory, SetStoreAccess, SignalStore};
 use aseman_capsule::store::CapsuleStorePorts;
@@ -7,7 +7,7 @@ use aseman_contracts::capsule::{
     CapsuleDigest, CapsuleEnvelope, CapsuleId, CapsuleKind, CapsuleRelationship, CapsuleValue,
     OwnerScope, StorageClass,
 };
-use aseman_contracts::legacy_realtime::{SignalStreamPolicy, deterministic_legacy_capsule_id};
+use aseman_contracts::signals::{SignalStreamPolicy, derived_capsule_id};
 use aseman_domain::signal_tags::LogQuery;
 use aseman_domain::store_permissions::StorePermissions;
 use aseman_ports::{ClockPort, StoreAccess, StoreDirectory};
@@ -26,7 +26,7 @@ fn sealed(
 ) -> CapsuleEnvelope {
     CapsuleEnvelope {
         encoding_version: 1,
-        id: CapsuleId(deterministic_legacy_capsule_id(family, legacy.as_bytes())),
+        id: CapsuleId(derived_capsule_id(family, legacy.as_bytes())),
         kind: CapsuleKind(kind.to_owned()),
         storage_class: StorageClass::Core,
         owner_scope: owner,
@@ -46,10 +46,7 @@ fn sealed(
                 |(name, target_kind, target_family, target)| CapsuleRelationship {
                     name: name.to_owned(),
                     target_kind: CapsuleKind(target_kind.to_owned()),
-                    target_id: CapsuleId(deterministic_legacy_capsule_id(
-                        target_family,
-                        target.as_bytes(),
-                    )),
+                    target_id: CapsuleId(derived_capsule_id(target_family, target.as_bytes())),
                 },
             )
             .collect(),
@@ -90,8 +87,7 @@ fn live_store_use_cases_run_on_capsules_with_legacy_rules() {
     let repository = PostgresCapsuleRepository::from_client(config.connect(NoTls).unwrap());
     repository.migrate().unwrap();
 
-    let creature_scope =
-        OwnerScope::Creature(deterministic_legacy_capsule_id("Creature", b"1@global"));
+    let creature_scope = OwnerScope::Creature(derived_capsule_id("Creature", b"1@global"));
     for capsule in [
         sealed(
             "User",

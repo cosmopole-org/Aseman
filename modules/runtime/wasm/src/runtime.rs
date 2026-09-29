@@ -13,7 +13,7 @@ use wasmedge_sys::{
 };
 use wasmedge_types::ValType;
 
-use caspar_vm_sdk::host::{host, log};
+use aseman_vm_sdk::host::{host, log};
 
 use crate::host_calls::host_call;
 use crate::models::Trx;
@@ -95,9 +95,23 @@ fn aot_compile_gate() -> &'static Mutex<()> {
     CELL.get_or_init(|| Mutex::new(()))
 }
 
-/// AOT is on unless `CASPAR_WASM_AOT` is explicitly a falsey value.
-fn aot_enabled() -> bool {
-    aseman_config::runtime_config().wasm_aot
+/// How the wasm runtime runs modules (`ASEMAN_WASM_AOT`, `ASEMAN_WASM_VM_CACHE`).
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct WasmSettings {
+    /// Load modules through a cached ahead-of-time compiled artifact.
+    pub aot: bool,
+    /// Reuse warm VMs across runs; off builds and tears down a VM per run.
+    pub vm_cache: bool,
+}
+
+impl WasmSettings {
+    #[must_use]
+    pub fn from_config(config: &aseman_config::RuntimeConfig) -> Self {
+        Self {
+            aot: config.wasm_aot,
+            vm_cache: config.wasm_vm_cache,
+        }
+    }
 }
 
 fn file_mtime(path: &str) -> Option<std::time::SystemTime> {
@@ -107,8 +121,8 @@ fn file_mtime(path: &str) -> Option<std::time::SystemTime> {
 /// Resolve the module file to actually load: a fresh cached AOT artifact when one
 /// is available (`(path, true)`), otherwise the original `.wasm` (`(path, false)`,
 /// which the caller still validates).
-fn resolve_module_artifact(mod_path: &str) -> (String, bool) {
-    if !aot_enabled() || aot_unavailable().load(Ordering::Relaxed) {
+fn resolve_module_artifact(mod_path: &str, aot: bool) -> (String, bool) {
+    if !aot || aot_unavailable().load(Ordering::Relaxed) {
         return (mod_path.to_string(), false);
     }
     let src_mtime = match file_mtime(mod_path) {
@@ -224,6 +238,7 @@ pub struct WasmMac {
     pub mod_path: String,
     pub cost: u64,
     pub ram_limit_mb: u64,
+    settings: WasmSettings,
 
     pub(crate) execution_result: String,
     pub(crate) has_output: bool,
@@ -266,13 +281,6 @@ const WASM_PAGE: usize = 65536;
 //   * A warm VM is retired (dropped, not returned) once it has served
 //     `MAX_REUSE` runs or its memory has grown past a cap, bounding any residual
 //     per-instance drift.
-
-/// Env-gated, default on. `CASPAR_WASM_VM_CACHE` = `0`/`false`/`off`/`no`
-/// forces the legacy build-and-teardown-per-run path (used to isolate the
-/// cache in testing / as an escape hatch).
-fn vm_cache_enabled() -> bool {
-    aseman_config::runtime_config().wasm_vm_cache
-}
 
 /// Retire a warm VM after this many runs (bounds any per-instance drift the
 /// memory snapshot can't reach, e.g. WasmEdge-internal bookkeeping).
@@ -373,9 +381,10 @@ impl WasmMac {
         store_id: String,
         mod_path: String,
         ram_limit_mb: u64,
+        settings: WasmSettings,
         cb: Box<dyn (Fn(JsonValue) -> String) + Send + Sync>,
     ) -> Self {
-        let trx_key = caspar_vm_sdk::util::execution_trx_key(&vm_id);
+        let trx_key = aseman_vm_sdk::util::execution_trx_key(&vm_id);
         WasmMac {
             callback: cb,
             machine_id,
@@ -391,6 +400,7 @@ impl WasmMac {
             running_: Arc::new(AtomicBool::new(false)),
             cost: 0,
             ram_limit_mb: ram_limit_mb.max(1),
+            settings,
         }
     }
 
@@ -473,7 +483,7 @@ impl WasmMac {
 
         let cur_mtime = file_mtime(&mod_path);
 
-        if vm_cache_enabled() {
+        if self.settings.vm_cache {
             // Reuse a warm VM whose source is unchanged, else build one.
             let mut stack = match checkout_vm(&mod_path, self.ram_limit_mb, cur_mtime) {
                 Some(s) => s,
@@ -513,7 +523,7 @@ impl WasmMac {
 
         let mut config = Config::create().map_err(|e| format!("wasm config: {}", e))?;
         let bytes = self.ram_limit_mb.saturating_mul(1024).saturating_mul(1024);
-        let pages = ((bytes + 65535) / 65536).max(1);
+        let pages = bytes.div_ceil(65536).max(1);
         config.set_max_memory_pages((pages.min(u32::MAX as u64)) as u32);
         let mut store = Store::create().map_err(|e| format!("wasm store: {}", e))?;
         let wasi_mod =
@@ -555,7 +565,7 @@ impl WasmMac {
 
         // Prefer a cached AOT (native-code) artifact for this module; fall back
         // to the raw `.wasm` when AOT is unavailable.
-        let (load_path, _is_aot) = resolve_module_artifact(mod_path);
+        let (load_path, _is_aot) = resolve_module_artifact(mod_path, self.settings.aot);
         let conf = Config::create().map_err(|e| format!("loader config: {}", e))?;
         let loader = Loader::create(Some(&conf)).map_err(|e| format!("loader: {}", e))?;
         let module = loader
@@ -652,7 +662,7 @@ impl WasmMac {
                 .executor
                 .call_func(&mut malloc_fn, [WasmValue::from_i32(val_l)])
                 .map_err(|e| format!("malloc call: {}", e))?;
-            res2.get(0)
+            res2.first()
                 .map(|v| v.to_i32())
                 .ok_or_else(|| "malloc returned no value".to_string())?
         };
@@ -696,7 +706,12 @@ mod execution_tests {
     //! A segfault or trap here fails the test process.
     use super::*;
 
-    fn run_module_n(path: &str, n: usize) {
+    const CACHED: WasmSettings = WasmSettings {
+        aot: true,
+        vm_cache: true,
+    };
+
+    fn run_module_n(path: &str, n: usize, settings: WasmSettings) {
         assert!(
             std::path::Path::new(path).is_file(),
             "test module {} missing",
@@ -709,6 +724,7 @@ mod execution_tests {
                 String::new(),
                 path.into(),
                 64,
+                settings,
                 Box::new(|_v| String::new()),
             );
             rt.execute_on_update("{}".into())
@@ -720,7 +736,7 @@ mod execution_tests {
     // checkout + memory-reset reuse for the remaining runs.
     #[test]
     fn empty_module_runs_repeatedly() {
-        run_module_n("tests_empty_module.wasm", 25);
+        run_module_n("tests_empty_module.wasm", 25, CACHED);
     }
 
     // A module with a mutable in-memory global; running it many times through
@@ -728,14 +744,16 @@ mod execution_tests {
     // asserted end-to-end against a live node).
     #[test]
     fn stateful_module_runs_repeatedly() {
-        run_module_n("tests_state_module.wasm", 25);
+        run_module_n("tests_state_module.wasm", 25, CACHED);
     }
 
     // The legacy (cache-disabled) path must also still execute the module.
     #[test]
     fn empty_module_runs_with_cache_disabled() {
-        std::env::set_var("CASPAR_WASM_VM_CACHE", "0");
-        run_module_n("tests_empty_module.wasm", 5);
-        std::env::remove_var("CASPAR_WASM_VM_CACHE");
+        let settings = WasmSettings {
+            vm_cache: false,
+            ..CACHED
+        };
+        run_module_n("tests_empty_module.wasm", 5, settings);
     }
 }

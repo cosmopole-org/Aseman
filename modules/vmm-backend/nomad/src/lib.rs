@@ -1,4 +1,4 @@
-//! The Nomad VMM backend (P6-01, A601).
+//! The Nomad VMM backend (A601).
 //!
 //! Aseman's desired workloads become Nomad jobs; Nomad's allocations become Aseman
 //! observations. The node never sees Nomad: it talks A501 to the VMM service, which

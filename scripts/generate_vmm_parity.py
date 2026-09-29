@@ -2,11 +2,11 @@
 """Validate the A505 native parity manifest and render the per-runtime matrix.
 
 `contracts/vmm/native-parity.json` says where every native runtime operation (A006)
-and every node-facing `IVmm` method goes when the embedded VMM is removed. This script
-fails when an operation or method is unmapped, when a mapping names an A501 operation
-that does not exist, or when an entry for a removed legacy method is not `deleted`. It
-derives the capabilities the native backend must declare for each runtime from the
-A006 overrides and each runtime's `vm.config.json`.
+is served by the VMM backend contract (A501). This script fails when an operation is
+unmapped, when a mapping names an A501 operation that does not exist, or when an entry
+names an operation the runtimes no longer have without being `deleted`. It derives the
+capabilities the native backend must declare for each runtime from the A006 overrides
+and each runtime's `vm.config.json`.
 """
 
 from __future__ import annotations
@@ -20,7 +20,6 @@ ROOT = Path(__file__).resolve().parents[1]
 MANIFEST = ROOT / "contracts/vmm/native-parity.json"
 OPENAPI = ROOT / "contracts/vmm/openapi.json"
 MATRIX = ROOT / "docs/generated/current-runtime-matrix.json"
-IVMM = ROOT / "apps/aseman-node/src/models/ports/vmm.rs"
 JSON_OUT = ROOT / "docs/generated/vmm-native-parity.json"
 MD_OUT = ROOT / "docs/generated/vmm-native-parity.md"
 GENERATOR = "scripts/generate_vmm_parity.py"
@@ -29,14 +28,6 @@ CAPABILITIES = [
     "invocation", "long_running", "pause", "snapshot", "exec", "terminal",
     "http_ingress", "files", "build", "chain_transactions", "execution_proofs",
 ]
-
-
-def ivmm_methods() -> list[str]:
-    if not IVMM.exists():
-        return []
-    text = IVMM.read_text(encoding="utf-8")
-    body = text[text.index("pub trait IVmm"):]
-    return re.findall(r"^\s*fn (\w+)\s*\(", body, flags=re.MULTILINE)
 
 
 def operation_ids(openapi: dict) -> set[str]:
@@ -48,15 +39,12 @@ def operation_ids(openapi: dict) -> set[str]:
     }
 
 
-def validate(manifest: dict, matrix: dict, openapi: dict, methods: list[str]) -> list[str]:
+def validate(manifest: dict, matrix: dict, openapi: dict) -> list[str]:
     errors = []
     ids = operation_ids(openapi)
     homes = set(manifest["homes"])
     runtime_ops = set(matrix["trait_operations"])
-    for section, required, live in (
-        ("runtime_operations", runtime_ops, runtime_ops),
-        ("node_methods", set(methods), set(methods)),
-    ):
+    for section, required, live in (("runtime_operations", runtime_ops, runtime_ops),):
         entries = manifest[section]
         for name in sorted(required - set(entries)):
             errors.append(f"{section}.{name}: unmapped")
@@ -76,9 +64,9 @@ def validate(manifest: dict, matrix: dict, openapi: dict, methods: list[str]) ->
             if entry["status"] == "verified" and not entry.get("verification"):
                 errors.append(f"{section}.{name}: verified without a verification")
             if name not in live and entry["status"] != "deleted":
-                errors.append(f"{section}.{name}: gone from the legacy code but not `deleted`")
+                errors.append(f"{section}.{name}: gone from the runtimes but not `deleted`")
             if name in live and entry["status"] == "deleted":
-                errors.append(f"{section}.{name}: `deleted` but still in the legacy code")
+                errors.append(f"{section}.{name}: `deleted` but still in the runtimes")
     rules = manifest["capability_rules"]
     if sorted(rules) != sorted(CAPABILITIES):
         errors.append("capability_rules must cover exactly the RuntimeCapabilities flags")
@@ -117,7 +105,7 @@ def render(manifest: dict, matrix: dict) -> tuple[dict, str]:
     }
     entries = [
         (section, name, entry)
-        for section in ("runtime_operations", "node_methods")
+        for section in ("runtime_operations",)
         for name, entry in sorted(manifest[section].items())
     ]
     counts: dict[str, int] = {}
@@ -161,8 +149,8 @@ def render(manifest: dict, matrix: dict) -> tuple[dict, str]:
             + f" | `{deploy['entity_file_name']}` | {'yes' if deploy['build_on_deploy'] else 'no'} |"
         )
     status_line = ", ".join(f"{count} {status}" for status, count in sorted(counts.items()))
-    lines += ["", "## Where each legacy operation goes", "", f"Status: {status_line}.", ""]
-    for section, title in (("runtime_operations", "Runtime operations (A006)"), ("node_methods", "Node-facing `IVmm` methods")):
+    lines += ["", "## Where each runtime operation is served", "", f"Status: {status_line}.", ""]
+    for section, title in (("runtime_operations", "Runtime operations (A006)"),):
         lines += [f"### {title}", "", "| Operation | Home | Target | Status | Note |", "|---|---|---|---|---|"]
         for name, entry in sorted(manifest[section].items()):
             target = f"`{entry['target']}`" if entry.get("target") else ""
@@ -181,7 +169,7 @@ def main() -> int:
     manifest = json.loads(MANIFEST.read_text(encoding="utf-8"))
     matrix = json.loads(MATRIX.read_text(encoding="utf-8"))
     openapi = json.loads(OPENAPI.read_text(encoding="utf-8"))
-    errors = validate(manifest, matrix, openapi, ivmm_methods())
+    errors = validate(manifest, matrix, openapi)
     if errors:
         for error in errors:
             print(f"error: {error}")

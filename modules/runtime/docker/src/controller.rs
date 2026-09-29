@@ -1,6 +1,6 @@
 //! The docker VM controller — container lifecycle, image builds, exec and
-//! file transfer, exposed to the Caspar VMM through the
-//! `caspar_vm_sdk::VmPlugin` interface.
+//! file transfer, exposed to the Aseman VMM through the
+//! `aseman_vm_sdk::VmPlugin` interface.
 
 use std::collections::HashMap;
 use std::io::Cursor;
@@ -21,58 +21,89 @@ use futures_util::stream::TryStreamExt;
 use serde_json::{json, Map, Value as JsonValue};
 use tar::Builder as TarBuilder;
 
-use caspar_vm_sdk::host::host;
-use caspar_vm_sdk::{parse_vm_resource_limits, VmPlugin, VmPluginMeta};
+use aseman_vm_sdk::host::host;
+use aseman_vm_sdk::sandbox::{default_storage_root, VmSandbox};
+use aseman_vm_sdk::{parse_vm_resource_limits, VmPlugin, VmPluginMeta};
 
 use crate::models::DockerIdentity;
 
-/// Name of the docker bridge network shared with the docker-host gateway.
-/// Must match the network the node's gateway advertises on; overridable for
-/// non-standard deployments.
-fn gateway_network_name() -> String {
-    aseman_config::runtime_config().docker_gateway_network
+/// How the plugin runs containers (`ASEMAN_DOCKER_*`, `ASEMAN_VM_HTTP_*`, the
+/// storage root).
+#[derive(Clone, Debug)]
+pub struct DockerSettings {
+    /// The bridge network shared with the docker-host gateway; it must match the
+    /// network the node's gateway advertises on.
+    pub gateway_network: String,
+    /// Where a container reaches the docker-host gateway.
+    pub gateway_host: String,
+    pub gateway_port: u16,
+    /// The port the HTTP server inside a container listens on. The VMM ingress
+    /// proxies forwarded requests here, and the container is told to bind it.
+    pub vm_http_port: u16,
+    /// The timeout of a forwarded request to the container HTTP server.
+    pub vm_http_timeout: Duration,
+    /// The container sandbox runtime (gVisor `runsc` by default); `None` is
+    /// Docker's default runtime.
+    pub runtime: Option<String>,
+    /// Per-container disk quotas through `storage_opt`, which only some storage
+    /// drivers support.
+    pub disk_quota: bool,
+    /// Per-session persistent directories, bind-mounted as `/data`.
+    pub sandbox: VmSandbox,
 }
 
-/// TCP port the HTTP server inside a container listens on. The VMM ingress
-/// proxies forwarded requests here; the same value is injected into the
-/// container's environment so the application knows where to bind.
-fn vm_http_port() -> u16 {
-    aseman_config::runtime_config().vm_http_port
-}
-
-/// Timeout (seconds) for a forwarded request to the container HTTP server.
-fn vm_http_timeout_secs() -> u64 {
-    Some(aseman_config::runtime_config().vm_http_timeout_seconds)
-        .filter(|s| *s > 0)
-        .unwrap_or(30)
+impl DockerSettings {
+    #[must_use]
+    pub fn from_config(config: &aseman_config::RuntimeConfig) -> Self {
+        let timeout_seconds = Some(config.vm_http_timeout_seconds)
+            .filter(|seconds| *seconds > 0)
+            .unwrap_or(30);
+        Self {
+            gateway_network: config.docker_gateway_network.clone(),
+            gateway_host: config.docker_gateway_host.clone(),
+            gateway_port: config.docker_gateway_port,
+            vm_http_port: config.vm_http_port,
+            vm_http_timeout: Duration::from_secs(timeout_seconds),
+            runtime: config.docker_runtime.clone(),
+            disk_quota: config.docker_disk_quota,
+            sandbox: VmSandbox::under(
+                &config
+                    .storage_root
+                    .as_ref()
+                    .map_or_else(default_storage_root, PathBuf::from),
+            ),
+        }
+    }
 }
 
 pub struct DockerVmPlugin {
     meta: VmPluginMeta,
+    settings: DockerSettings,
 }
 
-struct DockerVmController {
+struct DockerVmController<'a> {
     docker: Docker,
+    settings: &'a DockerSettings,
 }
 
 impl DockerVmPlugin {
-    pub fn new(meta: VmPluginMeta) -> Self {
-        Self { meta }
+    pub fn new(meta: VmPluginMeta, settings: DockerSettings) -> Self {
+        Self { meta, settings }
     }
 
     fn with_controller<T>(
         &self,
-        f: impl FnOnce(&DockerVmController) -> Result<T, String>,
+        f: impl FnOnce(&DockerVmController<'_>) -> Result<T, String>,
     ) -> Result<T, String> {
-        let controller = DockerVmController::new()?;
+        let controller = DockerVmController::new(&self.settings)?;
         f(&controller)
     }
 }
 
-impl DockerVmController {
-    fn new() -> Result<Self, String> {
+impl<'a> DockerVmController<'a> {
+    fn new(settings: &'a DockerSettings) -> Result<Self, String> {
         Docker::connect_with_local_defaults()
-            .map(|docker| Self { docker })
+            .map(|docker| Self { docker, settings })
             .map_err(|e| format!("docker client init failed: {}", e))
     }
 
@@ -121,7 +152,7 @@ impl DockerVmController {
         let persistent = packet["persistent"].as_bool().unwrap_or(true);
         let force_restart = packet["forceRestart"].as_bool().unwrap_or(false);
         let mount_dir = if persistent {
-            Some(docker_session_vm_dir(&vm_cache_key)?)
+            Some(self.settings.sandbox.session_dir(&vm_cache_key)?)
         } else {
             None
         };
@@ -189,20 +220,14 @@ impl DockerVmController {
                     .collect::<Vec<String>>()
             })
             .unwrap_or_default();
-        env_vars.extend(gateway_container_env(&vm_cache_key));
+        env_vars.extend(gateway_container_env(self.settings, &vm_cache_key));
         let env = Some(env_vars);
         let cmd = packet["command"]
             .as_str()
             .map(|command| vec!["sh".to_string(), "-lc".to_string(), command.to_string()]);
 
-        // Container sandbox runtime. Defaults to gVisor ("runsc"); environments
-        // without gVisor set `CASPAR_DOCKER_RUNTIME=runc` (or `default`/empty).
-        let runtime = aseman_config::runtime_config().docker_runtime;
-
-        // Per-container disk quota via `storage_opt` only works on a backing
-        // storage driver that supports it; opt out with
-        // `CASPAR_DOCKER_DISK_QUOTA=0` (also accepts off/false/no).
-        let storage_opt = if aseman_config::runtime_config().docker_disk_quota {
+        let runtime = self.settings.runtime.clone();
+        let storage_opt = if self.settings.disk_quota {
             Some(HashMap::from([(
                 "size".to_string(),
                 format!("{}G", limits.disk_gb),
@@ -226,7 +251,7 @@ impl DockerVmController {
                     cmd,
                     host_config: Some(HostConfig {
                         runtime,
-                        network_mode: Some(gateway_network_name()),
+                        network_mode: Some(self.settings.gateway_network.clone()),
                         // Resolve `host.docker.internal` to the node host inside the
                         // bridge network so the container can dial the gateway.
                         extra_hosts: Some(vec!["host.docker.internal:host-gateway".to_string()]),
@@ -416,8 +441,8 @@ impl DockerVmController {
 
         let mut purged = false;
         if purge {
-            let dir = docker_vm_dir_path(&vm_cache_key);
-            if dir.exists() && docker_is_within_vms_root(&dir) {
+            let dir = self.settings.sandbox.vm_dir(&vm_cache_key);
+            if dir.exists() && self.settings.sandbox.contains(&dir) {
                 std::fs::remove_dir_all(&dir)
                     .map_err(|e| format!("failed to purge sandbox dir {}: {}", dir.display(), e))?;
                 purged = true;
@@ -651,7 +676,7 @@ impl DockerVmController {
                 ..Default::default()
             },
         )))?;
-        let gateway_net = gateway_network_name();
+        let gateway_net = &self.settings.gateway_network;
         for c in summaries {
             let is_match = c
                 .names
@@ -674,7 +699,7 @@ impl DockerVmController {
                 None => return Ok(None),
             };
             // Prefer the shared gateway network; fall back to any attached net.
-            if let Some(ep) = networks.get(&gateway_net) {
+            if let Some(ep) = networks.get(gateway_net) {
                 if let Some(ip) = ep.ip_address.as_deref().filter(|s| !s.is_empty()) {
                     return Ok(Some(ip.to_string()));
                 }
@@ -716,7 +741,7 @@ impl DockerVmController {
         let ip = self
             .find_container_ip(&container_id)?
             .ok_or_else(|| format!("no running container found for {}", container_id))?;
-        let port = vm_http_port();
+        let port = self.settings.vm_http_port;
 
         let raw_path = packet["path"].as_str().unwrap_or("/");
         let path = if raw_path.starts_with('/') {
@@ -747,7 +772,7 @@ impl DockerVmController {
             .unwrap_or_default();
 
         let client = reqwest::blocking::Client::builder()
-            .timeout(Duration::from_secs(vm_http_timeout_secs()))
+            .timeout(self.settings.vm_http_timeout)
             .build()
             .map_err(|e| format!("http client init failed: {}", e))?;
         let mut builder = client.request(method, &url).body(body);
@@ -1069,17 +1094,14 @@ impl VmPlugin for DockerVmPlugin {
 /// gateway address. The node identifies which creature a connection belongs to
 /// from the connection's docker-network source IP, which a container cannot
 /// forge. `CASPAR_VM_ID` is exposed for log readability only.
-fn gateway_container_env(vm_id: &str) -> Vec<String> {
-    let config = aseman_config::runtime_config();
-    let host = config.docker_gateway_host;
-    let port = config.docker_gateway_port;
+fn gateway_container_env(settings: &DockerSettings, vm_id: &str) -> Vec<String> {
     vec![
-        format!("CASPAR_GATEWAY_HOST={}", host),
-        format!("CASPAR_GATEWAY_PORT={}", port),
+        format!("CASPAR_GATEWAY_HOST={}", settings.gateway_host),
+        format!("CASPAR_GATEWAY_PORT={}", settings.gateway_port),
         format!("CASPAR_VM_ID={}", vm_id),
         // The port the container's own HTTP server should bind to so the VMM
         // HTTP ingress can proxy inbound requests to it.
-        format!("CASPAR_VM_HTTP_PORT={}", vm_http_port()),
+        format!("CASPAR_VM_HTTP_PORT={}", settings.vm_http_port),
     ]
 }
 
@@ -1193,73 +1215,4 @@ fn build_context_from_path(path: &str) -> Result<Vec<u8>, String> {
         tar.finish().map_err(|e| e.to_string())?;
     }
     Ok(buf)
-}
-
-// ── Persistent, non-escapable per-VM storage for docker sandboxes ────────────
-//
-// Mirrors the fire runtime layout: `{STORAGE_ROOT_PATH}/vms/<vm>`.
-
-fn docker_storage_root() -> PathBuf {
-    if let Some(path) = aseman_config::runtime_config().storage_root {
-        return PathBuf::from(path);
-    }
-    let in_container = PathBuf::from("/app/data/storage");
-    if in_container.exists() {
-        return in_container;
-    }
-    PathBuf::from("/tmp/caspar/storage")
-}
-
-fn docker_vms_root() -> PathBuf {
-    docker_storage_root().join("vms")
-}
-
-fn docker_sanitize_component(raw: &str) -> String {
-    let mut out = String::with_capacity(raw.len());
-    for ch in raw.chars() {
-        if ch.is_ascii_alphanumeric() || ch == '-' || ch == '_' {
-            out.push(ch);
-        } else {
-            out.push('_');
-        }
-    }
-    if out.is_empty() {
-        "default".to_string()
-    } else {
-        out
-    }
-}
-
-fn docker_vm_dir_path(vm_id: &str) -> PathBuf {
-    let vm = docker_sanitize_component(if vm_id.is_empty() { "main" } else { vm_id });
-    docker_vms_root().join(vm)
-}
-
-fn docker_session_vm_dir(vm_id: &str) -> Result<PathBuf, String> {
-    let root = docker_vms_root();
-    std::fs::create_dir_all(&root)
-        .map_err(|e| format!("failed to prepare vms root {}: {}", root.display(), e))?;
-    let canon_root = std::fs::canonicalize(&root)
-        .map_err(|e| format!("failed to canonicalize vms root: {}", e))?;
-    let dir = docker_vm_dir_path(vm_id);
-    std::fs::create_dir_all(&dir)
-        .map_err(|e| format!("failed to create session vm dir {}: {}", dir.display(), e))?;
-    let canon_dir = std::fs::canonicalize(&dir)
-        .map_err(|e| format!("failed to canonicalize session vm dir: {}", e))?;
-    if !canon_dir.starts_with(&canon_root) || canon_dir == canon_root {
-        return Err(format!(
-            "refusing to use vm dir outside sandbox root: {}",
-            canon_dir.display()
-        ));
-    }
-    Ok(canon_dir)
-}
-
-fn docker_is_within_vms_root(dir: &Path) -> bool {
-    let root = docker_vms_root();
-    let canon_root = std::fs::canonicalize(&root).unwrap_or(root);
-    match std::fs::canonicalize(dir) {
-        Ok(c) => c.starts_with(&canon_root) && c != canon_root,
-        Err(_) => dir.starts_with(&canon_root) && dir != canon_root,
-    }
 }

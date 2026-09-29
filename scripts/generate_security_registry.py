@@ -66,8 +66,8 @@ def validate(registry: dict) -> list[str]:
             "identity.challenge.issue",
         }:
             errors.append(f"{action_id}: a {action['class']} action cannot be public")
-        if action["legacy_guard"] not in guards:
-            errors.append(f"{action_id}: unknown legacy guard {action['legacy_guard']}")
+        if action["packet_guard"] not in guards:
+            errors.append(f"{action_id}: unknown legacy guard {action['packet_guard']}")
         for surface in action["surfaces"]:
             if surface in claimed:
                 errors.append(f"{surface}: claimed by {claimed[surface]} and {action_id}")
@@ -109,7 +109,7 @@ def markdown(registry: dict) -> str:
             rule += f" (removed: {action['removal']})"
         lines.append(
             f"| `{action['id']}` | {action['resource']} | {action['class']} | "
-            f"{', '.join(action['subjects'])} | {rule} | {action['legacy_guard']} | {len(action['surfaces'])} |"
+            f"{', '.join(action['subjects'])} | {rule} | {action['packet_guard']} | {len(action['surfaces'])} |"
         )
     return "\n".join(lines) + "\n"
 

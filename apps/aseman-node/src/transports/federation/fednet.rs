@@ -1,0 +1,379 @@
+//! Federation requests, responses, and updates. Outbound, it forwards a request
+//! to its origin node and pushes store updates; inbound, it runs forwarded
+//! requests through the operations and applies peers' store updates.
+
+use std::net::ToSocketAddrs;
+use std::sync::{Arc, Mutex};
+use std::thread;
+use std::time::Duration;
+
+use dashmap::DashMap;
+use serde_json::Value;
+
+use crate::actions::wire::store as stores;
+use crate::live::hub::Signaler;
+use crate::node::Node;
+use crate::state::StorePermissions;
+use crate::storage::NodeStorage;
+use crate::storage::Trx;
+use crate::transports::federation::FedRequestCallback;
+use crate::util::crypto::secure_unique_string;
+use aseman_contracts::wire::packet::{OriginPacket, build_error_json};
+use aseman_network_shell::TlsConfig;
+
+use super::netserver::{FedApi, Socket, Tcp};
+
+/// In-flight callback awaiting a federation response.
+struct FedPacketCallback {
+    callback: Arc<Mutex<Option<FedRequestCallback>>>,
+}
+
+/// Federation over the framed TCP server.
+pub struct FedNet {
+    app: Arc<Node>,
+    storage: Mutex<Option<Arc<NodeStorage>>>,
+    signaler: Mutex<Option<Arc<Signaler>>>,
+    gateway: Mutex<Option<Arc<Tcp>>>,
+    packet_callbacks: Arc<DashMap<String, Arc<FedPacketCallback>>>,
+    port: Mutex<i64>,
+    tls_config: Mutex<Option<TlsConfig>>,
+}
+
+impl FedNet {
+    /// Stage one — `FirstStageBackFill(core)`. The federation driver is
+    /// instantiated before `Core.tools` is fully wired (a chicken-and-egg
+    /// problem otherwise papered over with mutation); we keep the same
+    /// two-stage handshake.
+    pub fn first_stage(app: Arc<Node>) -> Arc<FedNet> {
+        Arc::new(FedNet {
+            app,
+            storage: Mutex::new(None),
+            signaler: Mutex::new(None),
+            gateway: Mutex::new(None),
+            packet_callbacks: Arc::new(DashMap::new()),
+            port: Mutex::new(0),
+            tls_config: Mutex::new(None),
+        })
+    }
+
+    /// Stage two — `SecondStageForFill(storage, signaler)`. Wires the
+    /// driver to the rest of the runtime and installs the inbound bridge on
+    /// the federation TCP gateway.
+    pub fn second_stage(self: &Arc<Self>, storage: Arc<NodeStorage>, signaler: Arc<Signaler>) {
+        *self.storage.lock().unwrap() = Some(storage);
+        *self.signaler.lock().unwrap() = Some(signaler);
+
+        let gateway = Tcp::new(self.app.clone());
+        let trans = self.clone();
+        let bridge: FedApi = Arc::new(move |socket, ip, pack| {
+            trans.handle_packet(socket, ip, pack);
+        });
+        gateway.inject_bridge(bridge);
+        *self.gateway.lock().unwrap() = Some(gateway);
+    }
+
+    fn resolve_destination(&self, dest_org: &str) -> Option<String> {
+        // Resolve to IPv4, then verify the IP is in the chain's peer list
+        // (a DNS lookup filtered by the chain's peers).
+        let addrs = (dest_org, 0u16).to_socket_addrs().ok()?;
+        let mut ipv4 = None;
+        for a in addrs {
+            if let std::net::IpAddr::V4(v4) = a.ip() {
+                ipv4 = Some(v4.to_string());
+                break;
+            }
+        }
+        let ip = ipv4?;
+        let peers = self.app.tools().network().chain().peers();
+        if !peers.iter().any(|p| p == &ip) {
+            return None;
+        }
+        let port = *self.port.lock().unwrap();
+        Some(format!("{}:{}", dest_org, port))
+    }
+
+    fn open_socket(&self, address: &str) -> Option<Arc<Socket>> {
+        let gateway = self.gateway.lock().unwrap().clone()?;
+        let tls = self.tls_config.lock().unwrap().clone();
+        gateway.new_outbound_socket(address, tls.as_ref())
+    }
+
+    fn handle_packet(&self, socket: Arc<Socket>, ip: String, pack: OriginPacket) {
+        // Resolve the source channel id from the chain peer table.
+        let host_name = self.resolve_hostname_for_ip(&ip);
+        if host_name.is_empty() {
+            return;
+        }
+        match pack.typ.as_str() {
+            "response" => self.handle_response(pack),
+            "update" => self.handle_update(pack),
+            "request" => self.handle_request(socket, &host_name, pack),
+            _ => {}
+        }
+    }
+
+    /// The host name of a peer address. Nothing records one since ADR 0036 (the
+    /// legacy `NodeIpToHost` links were hand-written, and migration refuses them), so
+    /// an inbound peer is known by its address alone.
+    fn resolve_hostname_for_ip(&self, _ip: &str) -> String {
+        String::new()
+    }
+
+    fn handle_response(&self, pack: OriginPacket) {
+        let Some(cb) = self
+            .packet_callbacks
+            .get(&pack.request_id)
+            .map(|e| e.value().clone())
+        else {
+            return;
+        };
+        self.packet_callbacks.remove(&pack.request_id);
+        let mut slot = cb.callback.lock().unwrap();
+        if let Some(callback) = slot.take() {
+            if pack.res_code != 0 {
+                let err_obj: aseman_contracts::wire::packet::Error =
+                    serde_json::from_slice(&pack.binary).unwrap_or_default();
+                callback(Vec::new(), 1, Some(anyhow::anyhow!(err_obj.message)));
+            } else {
+                callback(pack.binary, 0, None);
+            }
+        }
+    }
+
+    fn handle_update(&self, pack: OriginPacket) {
+        self.react_to_update(&pack.key, &pack.binary);
+        if let Some(sig) = self.signaler.lock().unwrap().clone() {
+            if pack.store_id.is_empty() {
+                let value = serde_json::from_slice::<Value>(&pack.binary).unwrap_or(Value::Null);
+                sig.signal_user(&pack.key, &pack.user_id, value);
+            } else {
+                let value = serde_json::from_slice::<Value>(&pack.binary).unwrap_or(Value::Null);
+                // Resolve this node's members of the store from state, the same
+                // way the originating node did — never from the group registry,
+                // which only knows the stores a member had when they connected.
+                // `federate: false`: this packet already came over federation,
+                // and pushing it onward would bounce it around the network.
+                sig.signal_store(&pack.key, &pack.store_id, value, pack.exceptions, false);
+            }
+        }
+    }
+
+    /// Mirrors a remote membership change through the store port: `Some` grants
+    /// the permissions, `None` removes the member.
+    fn apply_membership(&self, store_id: &str, member_id: &str, grant: Option<StorePermissions>) {
+        let store_id = store_id.to_string();
+        let member_id = member_id.to_string();
+        if let Err(error) = self.app.in_action(|trx: &Trx| {
+            let ports = crate::state::store_ports::MembershipPorts { trx };
+            let outcome = match grant {
+                Some(permissions) => {
+                    aseman_ports::StoreAccess::join(&ports, &store_id, &member_id, permissions)
+                }
+                None => aseman_ports::StoreAccess::leave(&ports, &store_id, &member_id),
+            };
+            outcome.map_err(|error| anyhow::anyhow!("{error}"))
+        }) {
+            eprintln!("storage: {error}");
+        }
+    }
+
+    fn react_to_update(&self, key: &str, data: &[u8]) {
+        match key {
+            "stores/update" => {
+                if let Ok(tc) = serde_json::from_slice::<stores::Update>(data)
+                    && let Err(error) = self.app.in_action(|trx: &Trx| {
+                        // A mirrored update of a store this node does not hold is
+                        // ignored rather than recreated without a creator.
+                        let stores = crate::state::store_ports::StorePorts { trx };
+                        let record = aseman_domain::store::StoreRecord {
+                            id: tc.store.id.clone(),
+                            persistent_history: tc.store.pers_hist,
+                            signal_count: tc.store.signal_count,
+                            tag: tc.store.tag.clone(),
+                            parent_id: tc.store.parent_id.clone(),
+                            is_public: tc.store.is_public,
+                            member_count: i64::from(tc.store.member_count),
+                        };
+                        match aseman_ports::StoreDirectory::update_store(&stores, &record) {
+                            Err(aseman_ports::PortError::NotFound) => Ok(()),
+                            other => other.map_err(|error| anyhow::anyhow!("{error}")),
+                        }
+                    })
+                {
+                    eprintln!("storage: {error}");
+                }
+            }
+            "stores/delete" => {
+                if let Ok(tc) = serde_json::from_slice::<stores::Delete>(data) {
+                    let id = tc.store.id;
+                    if let Err(error) = self.app.in_action(|trx: &Trx| {
+                        // LD-20: the store is really removed; the old key never existed.
+                        let stores = crate::state::store_ports::StorePorts { trx };
+                        aseman_ports::StoreDirectory::delete_store(&stores, &id)
+                            .map_err(|error| anyhow::anyhow!("{error}"))?;
+                        aseman_ports::StoreMetadata::delete_store_metadata(&stores, &id)
+                            .map_err(|error| anyhow::anyhow!("{error}"))
+                    }) {
+                        eprintln!("storage: {error}");
+                    }
+                }
+            }
+            "stores/addMember" | "stores/join" => {
+                if let Ok(tc) = serde_json::from_slice::<stores::AddMember>(data) {
+                    self.apply_membership(
+                        &tc.store_id,
+                        &tc.user.id,
+                        Some(StorePermissions::member()),
+                    );
+                }
+            }
+            "stores/removeMember" => {
+                if let Ok(tc) = serde_json::from_slice::<stores::AddMember>(data) {
+                    self.apply_membership(&tc.store_id, &tc.user.id, None);
+                }
+            }
+            // Member metadata was written but never read; it is not state (ADR 0036).
+            "stores/updateMember" => {}
+            _ => {}
+        }
+    }
+
+    fn handle_request(&self, socket: Arc<Socket>, channel_id: &str, pack: OriginPacket) {
+        let _ = socket; // request responses are sent via SendFedResponse below
+        let answer = self.app.router().run_forwarded(
+            &pack.key,
+            &crate::actions::guard::SignedPacket {
+                user_id: &pack.user_id,
+                payload: &pack.binary,
+                signature: &pack.signature,
+            },
+        );
+        match answer {
+            Ok(res) => self.send_fed_response_inner(channel_id, &pack.request_id, 0, &res),
+            Err(refusal) => self.send_fed_response_inner(
+                channel_id,
+                &pack.request_id,
+                1,
+                &build_error_json(&refusal.message()),
+            ),
+        }
+    }
+
+    fn send_fed_response_inner<T: serde::Serialize>(
+        &self,
+        dest_org: &str,
+        request_id: &str,
+        res_code: i64,
+        res: &T,
+    ) {
+        let Some(address) = self.resolve_destination(dest_org) else {
+            return;
+        };
+        let Some(socket) = self.open_socket(&address) else {
+            return;
+        };
+        let payload = serde_json::to_vec(res).unwrap_or_default();
+        socket.write_response(request_id, res_code, "", &payload);
+    }
+}
+
+impl FedNet {
+    pub(crate) fn listen(&self, port: i64, tls_config: Option<TlsConfig>) {
+        *self.port.lock().unwrap() = port;
+        *self.tls_config.lock().unwrap() = tls_config.clone();
+        if let Some(gateway) = self.gateway.lock().unwrap().clone() {
+            gateway.listen(port, tls_config);
+        }
+    }
+    pub(crate) fn send_fed_update(
+        &self,
+        dest_org: &str,
+        key: &str,
+        update_pack: Value,
+        target_type: &str,
+        target_id_val: &str,
+        exceptions: Vec<String>,
+    ) {
+        let Some(address) = self.resolve_destination(dest_org) else {
+            return;
+        };
+        let Some(socket) = self.open_socket(&address) else {
+            return;
+        };
+        let payload = serde_json::to_vec(&update_pack).unwrap_or_default();
+        let signature = self.app.sign_packet(&payload);
+        socket.write_update(
+            key,
+            target_type,
+            target_id_val,
+            &exceptions,
+            &signature,
+            &payload,
+        );
+    }
+
+    pub(crate) fn send_fed_request_by_callback(
+        &self,
+        dest_org: &str,
+        user_id: &str,
+        path: &str,
+        payload: Vec<u8>,
+        signature: &str,
+        callback: FedRequestCallback,
+    ) {
+        let Some(address) = self.resolve_destination(dest_org) else {
+            callback(
+                Vec::new(),
+                0,
+                Some(anyhow::anyhow!("no route to destination")),
+            );
+            return;
+        };
+        let callback_id = secure_unique_string();
+        let cb = Arc::new(FedPacketCallback {
+            callback: Arc::new(Mutex::new(Some(callback))),
+        });
+        self.packet_callbacks
+            .insert(callback_id.clone(), cb.clone());
+
+        // 120 s timeout.
+        let trans_callbacks = self.packet_callbacks.clone();
+        let cb_for_timeout = cb.clone();
+        let callback_id_for_timeout = callback_id.clone();
+        thread::spawn(move || {
+            thread::sleep(Duration::from_secs(120));
+            if trans_callbacks.remove(&callback_id_for_timeout).is_some() {
+                let mut slot = cb_for_timeout.callback.lock().unwrap();
+                if let Some(cb) = slot.take() {
+                    cb(
+                        Vec::new(),
+                        0,
+                        Some(anyhow::anyhow!("federation callback timeout")),
+                    );
+                }
+            }
+        });
+        let _ = cb;
+
+        // If we can't open the socket the callback will never be called via
+        // the normal response path.  Remove it from the map and invoke it
+        // immediately so callers don't silently block until the 120 s timeout.
+        let Some(socket) = self.open_socket(&address) else {
+            if let Some((_, pending)) = self.packet_callbacks.remove(&callback_id) {
+                let mut slot = pending.callback.lock().unwrap();
+                if let Some(cb) = slot.take() {
+                    cb(
+                        Vec::new(),
+                        0,
+                        Some(anyhow::anyhow!(
+                            "federation: could not open socket to {}",
+                            address
+                        )),
+                    );
+                }
+            }
+            return;
+        };
+        socket.write_request(&callback_id, user_id, path, &payload, signature);
+    }
+}

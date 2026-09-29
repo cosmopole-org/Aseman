@@ -1,36 +1,35 @@
-// Caspar node — Rust translation of the Caspar (kasper) Go node.
-//
-// This crate is the Aseman node composition root. It is organized by hexagonal
-// layer:
-//
-// - [`api`] — inbound transport and API adapters (the shell surface, RL-004).
-// - [`adapters`] — concrete outbound/infrastructure adapters (storage, network,
-//   security, signaler, VMM, cluster, ...).
-// - [`core`] — node orchestration and compatibility state that survives until
-//   the removal-ledger rows pass their gates.
-// - [`observability`] — telemetry, profiling, and resource reporting.
-// - [`encoding`], [`sync`] — small named helpers.
-//
-// [`app::NodeApp`] is where the pieces are wired.
-//
-// There is no crate-wide lint suppression. Translated-but-unwired items of the A008
-// characterized legacy surface carry a scoped `expect(dead_code, reason = ...)` naming
-// the removal-ledger row (RL-002..RL-013) that owns them. `expect` fails the build
-// once an item becomes used or is deleted, so each attribute retires with its row.
+//! The Aseman node.
+//!
+//! - [`app`] — the composition root: configuration in, the node started.
+//! - `node` — the running node and its components.
+//! - `actions` — the operations, one router behind every surface (ADR 0039).
+//! - `state` — the node's records and ports over the storage module (ADR 0036).
+//! - `transports` — public HTTP, the signed-packet transports, the chain,
+//!   federation, public files, and module administration.
+//! - `live` — live delivery to connected clients.
+//! - `workloads` — the VMM client and the host calls guests make.
+//! - `identity`, `ratelimit`, `storage`, `blobs`, `util` — the node's keys,
+//!   admission control, storage, files, and small helpers.
+//! - `observability` — telemetry, profiling, and resource reporting.
 
-mod adapters;
-mod api;
+mod actions;
 pub mod app;
-mod core;
-pub mod encoding;
-mod models;
+mod blobs;
+mod identity;
+mod live;
+mod node;
 mod observability;
-mod sync;
+mod ratelimit;
+mod state;
+mod storage;
+mod transports;
+mod util;
+mod workloads;
 
 use aseman_config::AsemanConfig;
 
-/// `aseman-node vmm-handoff ...`: the operator's ADR 0022 handoff of legacy VM
-/// instances to the configured VMM (run while the node is stopped). Returns the exit
+/// `aseman-node vmm-handoff ...`: the operator's ADR 0022 handoff of VM instances
+/// a Aseman-era node ran to the configured VMM (run while the node is stopped). Returns the exit
 /// status.
 pub fn vmm_handoff(arguments: &[String]) -> i32 {
     let config = match AsemanConfig::from_process_with_dotenv(".env") {
@@ -40,7 +39,7 @@ pub fn vmm_handoff(arguments: &[String]) -> i32 {
             return 2;
         }
     };
-    match crate::api::workloads::handoff(&config, arguments) {
+    match crate::workloads::vmm::handoff(&config, arguments) {
         Ok(()) => 0,
         Err(error) => {
             eprintln!("vmm-handoff: {error}");
@@ -49,8 +48,34 @@ pub fn vmm_handoff(arguments: &[String]) -> i32 {
     }
 }
 
+/// `aseman-node storage migrate ...`: the ADR 0036 storage migration (run while the
+/// node is stopped). Returns the exit status.
+pub fn storage(arguments: &[String]) -> i32 {
+    if arguments.first().map(String::as_str) != Some("migrate") {
+        eprintln!("{}", aseman_storage_providers::migrate::USAGE);
+        return 2;
+    }
+    let config = match AsemanConfig::from_process_with_dotenv(".env") {
+        Ok(config) => config,
+        Err(error) => {
+            eprintln!("invalid Aseman configuration: {error}");
+            return 2;
+        }
+    };
+    match aseman_storage_providers::migrate::command(&config, &arguments[1..]) {
+        Ok(report) => {
+            print!("{report}");
+            0
+        }
+        Err(error) => {
+            eprintln!("storage migrate: {error}");
+            1
+        }
+    }
+}
+
 /// Bring the node up: parse the typed configuration and start the composition in
-/// [`app::NodeApp`]. Entry point used by `main.rs` and the `caspar-node` alias.
+/// [`app::NodeApp`].
 pub fn run() {
     match app::NodeApp::from_process().and_then(app::NodeApp::start) {
         Ok(()) => {}

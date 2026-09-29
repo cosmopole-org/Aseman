@@ -7,21 +7,18 @@ verification: cargo xtask fast
 
 # Aseman documentation
 
-- [Migration status](migration/status.md) — implemented, partial, and externally
-  blocked work.
-- [Glossary](glossary.md) — canonical terms and legacy-name mapping.
-- [Architecture](architecture/) — trust, state, data flow, consistency, and failure
-  models.
-- [Decisions](decisions/) — accepted ADRs.
-- [Development](development/) — dependency rules and common-change playbooks,
+- [Glossary](glossary.md): canonical terms and the Caspar names.
+- [Architecture](architecture/): trust, state, data flow, consistency, and failure
+  models. The top-level [architecture map](../ARCHITECTURE.md) is the entry point.
+- [Decisions](decisions/): accepted ADRs. [ADR 0039](decisions/0039-the-node-runs-on-one-router.md)
+  records the node's router and the close of the Caspar-to-Aseman migration.
+- [Development](development/): dependency rules and common-change playbooks,
   including the per-runtime [creature implementation guide](development/creature-implementation.md).
-- [Operations](operations/) — topology, migration, handoff, and recovery runbooks;
+- [Operations](operations/): topology, storage providers, backup and restore,
+  upgrades from Caspar-era deployments, and recovery runbooks;
   [storage providers](operations/storage-providers.md) covers PostgreSQL sharding and
   RocksDB/OpenRaft clusters.
-- [Generated references](generated/) — workspace, routes, configuration, contracts,
-  mappings, and traceability.
-- [Archived Caspar documentation](legacy/caspar/) — explicitly historical material
-  retained only for compatibility users; it is not current architecture guidance.
-
-The proposed architecture and its phase gates live in [`../plan/migration/`](../plan/migration/).
-Generated documents are not edited by hand.
+- [Reference](reference/): the [artifact catalog](reference/artifacts.md) (`A###`) and
+  the [defects the rewrite resolved](reference/defects.md) (`LD-##`).
+- [Generated references](generated/): workspace, routes, configuration, contracts,
+  and mappings. Generated documents are not edited by hand.

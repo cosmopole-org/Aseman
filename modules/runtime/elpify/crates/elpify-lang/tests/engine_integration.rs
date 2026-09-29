@@ -254,7 +254,7 @@ fn off_chain_proof_verifies_on_chain_for_simple_arithmetic() {
     );
 
     // On-chain side: verify the proof against the (program info, public
-    // inputs, public outputs, proof) tuple — the exact data Caspar would
+    // inputs, public outputs, proof) tuple — the exact data Aseman would
     // ship across consensus.
     let outputs = stack_outputs_from_ints(&artifacts.stack_outputs).expect("outputs convert");
     let cycles = verify_execution(
@@ -312,7 +312,7 @@ fn execute_with_proof_errors_on_invalid_masm() {
     // Pre-compiled MASM with a syntax error should propagate as an
     // ExecutorError, never panic.
     let err = execute_with_proof("not valid masm at all", &[]).expect_err("should fail");
-    assert!(format!("{}", err).len() > 0);
+    assert!(!format!("{}", err).is_empty());
 }
 
 #[test]

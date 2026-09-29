@@ -1,16 +1,17 @@
 [package]
-name = "caspar-vm-docker"
+name = "aseman-vm-docker"
 version = "0.1.0"
 edition = "2021"
-description = "Caspar VM plugin: Docker container runtime (key: docker)"
+license = "MIT"
+description = "Aseman VM plugin: Docker container runtime (key: docker)"
 
 [lib]
-name = "caspar_vm_docker"
+name = "aseman_vm_docker"
 path = "src/lib.rs"
 
 [dependencies]
 aseman-config = { path = "../../../crates/aseman-config" }
-caspar-vm-sdk = { path = "../sdk-legacy" }
+aseman-vm-sdk = { path = "../sdk" }
 base64 = "0.22"
 bollard = "0.17"
 chrono = { version = "0.4", default-features = false, features = ["clock", "std"] }

@@ -1,28 +1,26 @@
-//! Program entity repositories on the capsule protocol (RL-004 strangler, target side).
+//! Program entity repositories on the capsule protocol.
 //!
 //! Stored exactly as the A308 export writes them:
 //! - a `core.entity` capsule per `{program}::{entity}`, scoped like its program and
 //!   related to it, with a `core.legacy_identity` row;
 //! - a `core.entity_artifact` capsule per entity and role, carrying the blob evidence
 //!   of the file (ADR 0027), never its bytes;
-//! - the `core.entity_config` document (legacy `Json::ProxyEntity`);
+//! - the `core.entity_config` document (`Json::ProxyEntity`);
 //! - a `core.vm_resource_entity` capsule per resource entity: its payload document and
 //!   the evidence of its data file, scoped like its resource store.
 //!
-//! Legacy's `vmEntityType` link is derived: it is the entity's type whenever the
+//! The `vmEntityType` link is derived: it is the entity's type whenever the
 //! entity has a primary file.
 
 use crate::store::{body, next_revision, port_error};
 use crate::support::{
-    Capsules, DocumentFamily, MAX_CAS_ATTEMPTS, failed, legacy_identity, new_capsule, relationship,
-    text, tombstone,
+    Capsules, DocumentFamily, MAX_CAS_ATTEMPTS, legacy_identity, new_capsule, relationship, text,
+    tombstone,
 };
 use crate::{CapsuleStore, CapsuleStoreError};
 use aseman_contracts::capsule::{CapsuleEnvelope, CapsuleValue, StorageClass};
-use aseman_contracts::legacy_documents::{
-    capsule_value_to_json, legacy_document_fields, merge_legacy_objects,
-};
-use aseman_contracts::legacy_realtime::deterministic_legacy_capsule_id;
+use aseman_contracts::documents::{capsule_value_to_json, document_fields, merge_objects};
+use aseman_contracts::signals::derived_capsule_id;
 use aseman_domain::blob::BlobEvidence;
 use aseman_domain::program::{
     ArtifactRole, EntityArtifact, EntityRecord, ResourceEntityRef, VmResourceEntity,
@@ -45,11 +43,11 @@ fn entity_key(program_id: &str, entity_id: &str) -> String {
 }
 
 fn entity_capsule_id(key: &str) -> [u8; 16] {
-    deterministic_legacy_capsule_id("Entity", key.as_bytes())
+    derived_capsule_id("Entity", key.as_bytes())
 }
 
 fn artifact_id(key: &str, role: ArtifactRole) -> [u8; 16] {
-    deterministic_legacy_capsule_id(
+    derived_capsule_id(
         "EntityArtifact",
         [key, "\0", role.as_str()].concat().as_bytes(),
     )
@@ -70,7 +68,8 @@ fn artifact_fields(evidence: &BlobEvidence) -> PortResult<BTreeMap<String, Capsu
         (
             "size_bytes".to_owned(),
             CapsuleValue::Integer(
-                i64::try_from(evidence.size_bytes).map_err(|_| failed("file is too large"))?,
+                i64::try_from(evidence.size_bytes)
+                    .map_err(|_| PortError::failed("file is too large"))?,
             ),
         ),
         (
@@ -145,8 +144,7 @@ impl EntityDirectory for CapsuleEntityPorts<'_> {
     }
 
     fn put_entity(&self, entity: &EntityRecord) -> PortResult<()> {
-        let program_capsule =
-            deterministic_legacy_capsule_id("Program", entity.program_id.as_bytes());
+        let program_capsule = derived_capsule_id("Program", entity.program_id.as_bytes());
         let program = self
             .capsules()
             .live(PROGRAM, program_capsule)?
@@ -199,7 +197,7 @@ impl EntityDirectory for CapsuleEntityPorts<'_> {
             store_key: match fields.get("artifact_present") {
                 Some(CapsuleValue::Bool(true)) => Some(text(fields, "store_key")),
                 Some(CapsuleValue::Bool(false)) => None,
-                _ => return Err(failed("entity artifact has no presence")),
+                _ => return Err(PortError::failed("entity artifact has no presence")),
             },
         }))
     }
@@ -252,7 +250,7 @@ impl EntityDirectory for CapsuleEntityPorts<'_> {
                 .iter()
                 .find(|relationship| relationship.name == "program")
                 .and_then(|relationship| programs.get(&relationship.target_id.0))
-                .ok_or_else(|| failed(format!("entity {key} names no program")))?;
+                .ok_or_else(|| PortError::failed(format!("entity {key} names no program")))?;
             deployed.push(program.clone());
         }
         deployed.sort_by(|left, right| left.as_bytes().cmp(right.as_bytes()));
@@ -283,14 +281,14 @@ const RESOURCE_ENTITY: &str = "core.vm_resource_entity";
 const RESOURCE_STORE: &str = "core.vm_resource_store";
 
 fn resource_entity_id(entity: &ResourceEntityRef) -> [u8; 16] {
-    deterministic_legacy_capsule_id("VmResourceEntity", entity.legacy_id().as_bytes())
+    derived_capsule_id("VmResourceEntity", entity.legacy_id().as_bytes())
 }
 
 fn valid(entity: &ResourceEntityRef) -> PortResult<()> {
     if entity.is_valid() {
         Ok(())
     } else {
-        Err(failed(format!(
+        Err(PortError::failed(format!(
             "invalid resource entity {}",
             entity.legacy_id()
         )))
@@ -309,9 +307,9 @@ impl VmResourceEntities for CapsuleEntityPorts<'_> {
         let fields = body(&capsule).ok_or(PortError::NotFound)?;
         let payload = match fields.get("document").map(capsule_value_to_json) {
             Some(Ok(document @ serde_json::Value::Object(_))) => {
-                serde_json::to_string(&document).map_err(failed)?
+                serde_json::to_string(&document).map_err(PortError::failed)?
             }
-            _ => return Err(failed("resource entity has no payload document")),
+            _ => return Err(PortError::failed("resource entity has no payload document")),
         };
         Ok(Some(VmResourceEntity {
             reference: entity.clone(),
@@ -319,7 +317,7 @@ impl VmResourceEntities for CapsuleEntityPorts<'_> {
             data_key: match fields.get("artifact_present") {
                 Some(CapsuleValue::Bool(true)) => Some(text(fields, "store_key")),
                 Some(CapsuleValue::Bool(false)) => None,
-                _ => return Err(failed("resource entity has no data presence")),
+                _ => return Err(PortError::failed("resource entity has no data presence")),
             },
         }))
     }
@@ -332,10 +330,9 @@ impl VmResourceEntities for CapsuleEntityPorts<'_> {
     ) -> PortResult<()> {
         valid(entity)?;
         let Ok(serde_json::Value::Object(incoming)) = serde_json::from_str(payload) else {
-            return Err(failed("payload must be a JSON object"));
+            return Err(PortError::failed("payload must be a JSON object"));
         };
-        let store_capsule =
-            deterministic_legacy_capsule_id("VmResourceStore", entity.store_id.as_bytes());
+        let store_capsule = derived_capsule_id("VmResourceStore", entity.store_id.as_bytes());
         let store = self
             .capsules()
             .live(RESOURCE_STORE, store_capsule)?
@@ -353,8 +350,9 @@ impl VmResourceEntities for CapsuleEntityPorts<'_> {
                 Some(Ok(serde_json::Value::Object(document))) => document,
                 _ => serde_json::Map::new(),
             };
-            merge_legacy_objects(&mut document, &incoming);
-            let mut fields = legacy_document_fields(&key, "payload", &document).map_err(failed)?;
+            merge_objects(&mut document, &incoming);
+            let mut fields =
+                document_fields(&key, "payload", &document).map_err(PortError::failed)?;
             fields.extend([
                 (
                     "entity_type".to_owned(),

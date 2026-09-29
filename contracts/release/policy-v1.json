@@ -88,25 +88,6 @@
       "AGPL-1.0",
       "AGPL-3.0",
       "SSPL-1.0"
-    ],
-    "migration_exceptions": [
-      {
-        "packages": [
-          "caspar-vm-docker",
-          "caspar-vm-elpian",
-          "caspar-vm-elpify",
-          "caspar-vm-fire",
-          "caspar-vm-javascript",
-          "caspar-vm-modal",
-          "caspar-vm-plugins",
-          "caspar-vm-sdk",
-          "caspar-vm-wasm",
-          "elpian-vm"
-        ],
-        "owner": "runtime-migration/RL-014",
-        "reason": "legacy workspace packages do not yet declare SPDX metadata",
-        "expiry": "Phase 10 deletion gate"
-      }
     ]
   },
   "ci": {

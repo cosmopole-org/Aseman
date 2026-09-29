@@ -1,7 +1,7 @@
 # `javascript` — the QuickJS VM plugin
 
 Runs deployed JavaScript program entities **in-process** on QuickJS
-(`rquickjs`), with the full Caspar host-call ABI, the per-VM JSON transaction,
+(`rquickjs`), with the full Aseman host-call ABI, the per-VM JSON transaction,
 memory and stack limits, and a real interrupt-based execution deadline.
 
 A creature written in JavaScript has exactly the same host capabilities as one
@@ -89,5 +89,5 @@ examples/counter.js a complete, deployable creature
 ## Tests
 
 ```bash
-cargo test -p caspar-vm-javascript --manifest-path ../../node/Cargo.toml
+cargo test -p aseman-vm-javascript --manifest-path ../../node/Cargo.toml
 ```

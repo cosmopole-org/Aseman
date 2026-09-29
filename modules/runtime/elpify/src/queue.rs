@@ -15,13 +15,16 @@ use base64::Engine;
 use elpify_lang::execute_batch_with_proof;
 use serde_json::{json, Value as JsonValue};
 
-use caspar_vm_sdk::host::{host, log, set_log_vm_context};
-use caspar_vm_sdk::util::{emit_vm_error, panic_message};
-use caspar_vm_sdk::VmResourceLimits;
+use aseman_vm_sdk::host::{host, log, set_log_vm_context};
+use aseman_vm_sdk::util::{emit_vm_error, panic_message};
+use aseman_vm_sdk::VmResourceLimits;
 
-fn global_elpify_vms() -> &'static Arc<Mutex<HashMap<String, Arc<ElpifyManagedVm>>>> {
-    static CELL: OnceLock<Arc<Mutex<HashMap<String, Arc<ElpifyManagedVm>>>>> = OnceLock::new();
-    CELL.get_or_init(|| Arc::new(Mutex::new(HashMap::new())))
+/// The running Elpify VMs by id.
+type VmRegistry = Mutex<HashMap<String, Arc<ElpifyManagedVm>>>;
+
+fn global_elpify_vms() -> &'static VmRegistry {
+    static CELL: OnceLock<VmRegistry> = OnceLock::new();
+    CELL.get_or_init(|| Mutex::new(HashMap::new()))
 }
 
 pub(crate) struct ElpifyTask {

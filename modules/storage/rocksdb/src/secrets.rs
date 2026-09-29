@@ -112,7 +112,7 @@ impl LegacySnapshotGraph {
                             family: "CreatureSecret",
                             kind: "core.creature_secret",
                             storage_class: StorageClass::Core,
-                            owner_scope: OwnerScope::Creature(deterministic_legacy_capsule_id(
+                            owner_scope: OwnerScope::Creature(derived_capsule_id(
                                 "Creature",
                                 owner.as_bytes(),
                             )),
@@ -122,10 +122,7 @@ impl LegacySnapshotGraph {
                         vec![CapsuleRelationship {
                             name: "creature".to_owned(),
                             target_kind: CapsuleKind("core.creature".to_owned()),
-                            target_id: CapsuleId(deterministic_legacy_capsule_id(
-                                "Creature",
-                                owner.as_bytes(),
-                            )),
+                            target_id: CapsuleId(derived_capsule_id("Creature", owner.as_bytes())),
                         }],
                         BTreeMap::from([
                             ("name".to_owned(), CapsuleValue::Text(name.to_owned())),
@@ -213,7 +210,7 @@ impl LegacySnapshotGraph {
             let mut relationships = vec![CapsuleRelationship {
                 name: "secret".to_owned(),
                 target_kind: CapsuleKind("core.creature_secret".to_owned()),
-                target_id: CapsuleId(deterministic_legacy_capsule_id(
+                target_id: CapsuleId(derived_capsule_id(
                     "CreatureSecret",
                     format!("{owner}::{name}").as_bytes(),
                 )),
@@ -225,10 +222,7 @@ impl LegacySnapshotGraph {
                 relationships.push(CapsuleRelationship {
                     name: "grantee".to_owned(),
                     target_kind: CapsuleKind("core.creature".to_owned()),
-                    target_id: CapsuleId(deterministic_legacy_capsule_id(
-                        "Creature",
-                        grantee.as_bytes(),
-                    )),
+                    target_id: CapsuleId(derived_capsule_id("Creature", grantee.as_bytes())),
                 });
             }
             capsules.push(seal_legacy_capsule(
@@ -236,7 +230,7 @@ impl LegacySnapshotGraph {
                     family: "SecretGrant",
                     kind: "core.secret_grant",
                     storage_class: StorageClass::Core,
-                    owner_scope: OwnerScope::Creature(deterministic_legacy_capsule_id(
+                    owner_scope: OwnerScope::Creature(derived_capsule_id(
                         "Creature",
                         owner.as_bytes(),
                     )),

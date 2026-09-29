@@ -1,4 +1,4 @@
-//! The guest gateway (A405, P4-04). A workload reaches its own creature's guest database
+//! The guest gateway (A405). A workload reaches its own creature's guest database
 //! and nothing else:
 //!
 //! 1. The workload is authenticated: by an A401 proof ([`ServeSignedGuestRequest`]), or,

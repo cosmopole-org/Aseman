@@ -1,10 +1,8 @@
-//! Translation of `telemetry/server.go`.
+//! The telemetry HTTP server.
 
 use std::collections::HashMap;
-use std::fs;
 use std::io::{BufRead, BufReader, Read, Write};
 use std::net::TcpListener;
-use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 use std::thread;
 use std::time::{Duration, SystemTime};
@@ -37,7 +35,7 @@ pub struct Snapshot {
     pub election: HashMap<String, Value>,
     /// Host CPU / memory / disk sampled straight from the machine (see
     /// `telemetry::resources`). Present whether the node runs in Docker or as a
-    /// bare process, so `casparctl stats` and the admin panel show resource
+    /// bare process, so `asemanctl stats` and the admin panel show resource
     /// usage with no Docker dependency.
     #[serde(default)]
     pub resources: HashMap<String, Value>,
@@ -67,10 +65,10 @@ pub fn start(config: &AsemanConfig) -> Result<()> {
         cached: Mutex::new(None),
         started_at: SystemTime::now(),
         origin: config.node.origin.clone(),
-        chain_port: config.network.legacy_consensus_port,
-        federation_port: config.network.legacy_federation_port,
-        client_tcp_port: config.network.legacy_tcp_port,
-        client_ws_port: config.network.legacy_ws_port,
+        chain_port: config.network.chain_port,
+        federation_port: config.network.federation_port,
+        client_tcp_port: config.network.tcp_port,
+        client_ws_port: config.network.ws_port,
         entity_port: config.telemetry.entity_port,
         vm_port: config.telemetry.vm_port,
         telemetry_port: config.telemetry.api_port,
@@ -153,7 +151,10 @@ impl TelemetryServer {
     fn cached_or_collect(&self) -> Result<Snapshot> {
         let _guard = self.lock.lock().unwrap();
         // Cache check.
-        let mut cached = self.cached.lock().unwrap_or_else(|error| error.into_inner());
+        let mut cached = self
+            .cached
+            .lock()
+            .unwrap_or_else(|error| error.into_inner());
         if let Some(snapshot) = cached.as_ref()
             && let Ok(ts) = chrono::DateTime::parse_from_rfc3339(&snapshot.timestamp)
             && Utc::now().signed_duration_since(ts).num_milliseconds() < 2000

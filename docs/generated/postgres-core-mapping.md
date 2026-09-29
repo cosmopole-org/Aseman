@@ -2,7 +2,7 @@
 status: GENERATED
 owner: storage/postgres
 source_of_truth: contracts/capsule/kinds, contracts/storage/postgres, and scripts/generate_postgres_core.py
-last_verified_commit: 99ceca299efa
+last_verified_commit: 5ce22a407da0
 verification: python3 scripts/generate_postgres_core.py --check
 ---
 
@@ -64,19 +64,36 @@ accepted logical schema in both layouts. No guest payload table exists.
 | `core.billing_catalog` | `aseman_core.billing_catalogs` | 1 | 0 | 1 |
 | `core.billing_quote` | `aseman_core.billing_quotes` | 1 | 0 | 1 |
 | `core.namespace_document` | `aseman_core.namespace_documents` | 1 | 0 | 1 |
-| `core.user_email` | `aseman_core.user_emails` | 2 | 0 | 2 |
 | `core.replay_nonce` | `aseman_core.nonce_records` | 3 | 0 | 1 |
 | `core.identity_challenge` | `aseman_core.auth_challenges` | 4 | 0 | 1 |
 | `core.public_idempotency` | `aseman_core.public_idempotency_claims` | 7 | 0 | 1 |
-| `core.chain` | `aseman_core.chains` | 3 | 0 | 1 |
-| `core.chain_shard` | `aseman_core.chain_shards` | 3 | 0 | 1 |
 | `core.session_token` | `aseman_core.session_tokens` | 2 | 0 | 1 |
 | `core.vm_instance` | `aseman_core.vm_instances` | 7 | 0 | 1 |
 | `core.vm_distribution` | `aseman_core.vm_distributions` | 2 | 0 | 1 |
 | `core.vm_terminal` | `aseman_core.vm_terminals` | 4 | 0 | 1 |
 | `core.token_lock` | `aseman_core.token_locks` | 3 | 0 | 1 |
-| `core.secret_value` | `aseman_core.secret_values` | 4 | 0 | 1 |
-| `core.secret_access` | `aseman_core.secret_accesses` | 5 | 0 | 1 |
+| `core.proxy_correlation` | `aseman_core.proxy_correlations` | 2 | 0 | 1 |
+| `core.guest_pair` | `aseman_core.guest_pairs` | 5 | 0 | 1 |
+| `core.chain` | `aseman_core.chains` | 3 | 1 | 2 |
+| `core.chain_shard` | `aseman_core.chain_shards` | 3 | 1 | 2 |
+| `core.coordination_lease` | `aseman_core.coordination_leases` | 5 | 0 | 1 |
+| `core.coordination_fence` | `aseman_core.coordination_fences` | 2 | 0 | 1 |
+| `core.realtime_log_event` | `aseman_core.realtime_log_events` | 12 | 0 | 2 |
+| `core.realtime_outbox_entry` | `aseman_core.realtime_outbox_entries` | 5 | 0 | 1 |
+| `core.realtime_checkpoint` | `aseman_core.realtime_checkpoints` | 5 | 0 | 1 |
+| `core.usage_sample` | `aseman_core.usage_samples` | 6 | 0 | 1 |
+| `core.usage_interval` | `aseman_core.usage_intervals` | 5 | 0 | 1 |
+| `core.journal_record` | `aseman_core.journal_records` | 4 | 0 | 1 |
+| `core.journal_entry` | `aseman_core.journal_entries` | 5 | 0 | 1 |
+| `core.price_list` | `aseman_core.price_lists` | 3 | 0 | 1 |
+| `core.federation_node_descriptor` | `aseman_core.federation_node_descriptors` | 4 | 0 | 1 |
+| `core.federation_workload_descriptor` | `aseman_core.federation_workload_descriptors` | 4 | 0 | 1 |
+| `core.federation_nonce` | `aseman_core.federation_nonces` | 2 | 0 | 1 |
+| `core.federation_answer` | `aseman_core.federation_answers` | 3 | 0 | 1 |
+| `core.vmm_workload` | `aseman_core.vmm_workloads` | 5 | 0 | 1 |
+| `core.vmm_operation` | `aseman_core.vmm_operations` | 5 | 0 | 1 |
+| `core.vmm_idempotency` | `aseman_core.vmm_idempotency_records` | 9 | 0 | 1 |
+| `core.vmm_event` | `aseman_core.vmm_events` | 5 | 0 | 2 |
 
 The guest catalog tables contain only trusted bindings and schema definitions.
 Creature-owned rows are stored later in separate provider-native databases/namespaces

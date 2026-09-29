@@ -1,7 +1,7 @@
 {
   "_meta": {
     "artifact": "A301-A304",
-    "generator": "scripts/generate_phase3_contracts.py",
+    "generator": "scripts/generate_capsule_contracts.py",
     "last_verified_commit": "800df24076c794f9b33c29a9f301dd9d674f47d6",
     "status": "ACCEPTED"
   },
@@ -51,7 +51,7 @@
       "path": "contracts/capsule/guest/fixtures/valid-multi-table.json"
     },
     {
-      "digest": "sha256:e15bfcf11512f7089651362eb6c3452cd8234930006a7aafc0b7b95590b832ec",
+      "digest": "sha256:0999c195f0dee743feed3daad8fe922edd68535c293d618251061fa3e6934fa4",
       "path": "contracts/capsule/guest/isolation-rules.json"
     },
     {
@@ -67,15 +67,15 @@
       "path": "contracts/capsule/guest/schema-mutation.schema.json"
     },
     {
-      "digest": "sha256:2fa8a7b596d41c7c4420111045ecee1a4b18a70a4ebb0b0bba7d1f45ae8cda6d",
+      "digest": "sha256:5981382a44aff1bf74be60e9fa244a955104c46c3978bada7a1a3df0cf927dc6",
       "path": "contracts/capsule/kinds/core-logical-schemas.json"
     },
     {
-      "digest": "sha256:f9761ccb6a3b07bdcd15dbc7f3b76128345b63cd6606a38c8802feb4ca8e4c7e",
+      "digest": "sha256:d5069e4e38a6d1766392c8e30299a1336a71783290a407de52cfd9f342045825",
       "path": "contracts/capsule/kinds/core-logical-schemas.schema.json"
     },
     {
-      "digest": "sha256:aa528ed38d468fd19c57957412c7577e19452412dbf4076e49bf10c650d28966",
+      "digest": "sha256:9c697194ed4e4c27d8bd50ff0e7b20f579df2728ca61ce369ea1ba4357ad7e91",
       "path": "contracts/capsule/kinds/core-registry.json"
     },
     {
@@ -353,26 +353,6 @@
       "table": "guest_schema_definitions"
     },
     {
-      "consistency": "serializable",
-      "kind": "core.chain",
-      "owner_scope": "creature",
-      "required_capabilities": [
-        "indexes.unique"
-      ],
-      "storage_class": "core",
-      "table": "chains"
-    },
-    {
-      "consistency": "serializable",
-      "kind": "core.chain_shard",
-      "owner_scope": "creature",
-      "required_capabilities": [
-        "relationships.foreign_keys"
-      ],
-      "storage_class": "core",
-      "table": "chain_shards"
-    },
-    {
       "consistency": "snapshot",
       "kind": "core.entity",
       "owner_scope": "creature",
@@ -564,6 +544,448 @@
       ],
       "storage_class": "core",
       "table": "legacy_identities"
+    },
+    {
+      "consistency": "serializable",
+      "kind": "core.counter",
+      "owner_scope": "global",
+      "required_capabilities": [
+        "indexes.unique"
+      ],
+      "storage_class": "core",
+      "table": "counters"
+    },
+    {
+      "consistency": "serializable",
+      "kind": "core.marker",
+      "owner_scope": "global",
+      "required_capabilities": [
+        "indexes.unique"
+      ],
+      "storage_class": "core",
+      "table": "markers"
+    },
+    {
+      "consistency": "serializable",
+      "kind": "core.finance_account",
+      "owner_scope": "global",
+      "required_capabilities": [
+        "indexes.unique"
+      ],
+      "storage_class": "core",
+      "table": "finance_accounts"
+    },
+    {
+      "consistency": "serializable",
+      "kind": "core.finance_hold",
+      "owner_scope": "global",
+      "required_capabilities": [
+        "indexes.unique"
+      ],
+      "storage_class": "core",
+      "table": "finance_holds"
+    },
+    {
+      "consistency": "serializable",
+      "kind": "core.finance_pool",
+      "owner_scope": "global",
+      "required_capabilities": [
+        "indexes.unique"
+      ],
+      "storage_class": "core",
+      "table": "finance_pools"
+    },
+    {
+      "consistency": "serializable",
+      "kind": "core.finance_pool_reservation",
+      "owner_scope": "global",
+      "required_capabilities": [
+        "indexes.unique"
+      ],
+      "storage_class": "core",
+      "table": "finance_pool_reservations"
+    },
+    {
+      "consistency": "serializable",
+      "kind": "core.finance_live_debit",
+      "owner_scope": "global",
+      "required_capabilities": [
+        "indexes.unique"
+      ],
+      "storage_class": "core",
+      "table": "finance_live_debits"
+    },
+    {
+      "consistency": "serializable",
+      "kind": "core.finance_project_budget",
+      "owner_scope": "global",
+      "required_capabilities": [
+        "indexes.unique"
+      ],
+      "storage_class": "core",
+      "table": "finance_project_budgets"
+    },
+    {
+      "consistency": "serializable",
+      "kind": "core.finance_payout",
+      "owner_scope": "global",
+      "required_capabilities": [
+        "indexes.unique"
+      ],
+      "storage_class": "core",
+      "table": "finance_payouts"
+    },
+    {
+      "consistency": "serializable",
+      "kind": "core.finance_journal",
+      "owner_scope": "global",
+      "required_capabilities": [
+        "indexes.unique"
+      ],
+      "storage_class": "core",
+      "table": "finance_journals"
+    },
+    {
+      "consistency": "serializable",
+      "kind": "core.finance_journal_participant",
+      "owner_scope": "global",
+      "required_capabilities": [
+        "indexes.unique"
+      ],
+      "storage_class": "core",
+      "table": "finance_journal_participants"
+    },
+    {
+      "consistency": "serializable",
+      "kind": "core.billing_catalog",
+      "owner_scope": "global",
+      "required_capabilities": [
+        "indexes.unique"
+      ],
+      "storage_class": "core",
+      "table": "billing_catalogs"
+    },
+    {
+      "consistency": "serializable",
+      "kind": "core.billing_quote",
+      "owner_scope": "global",
+      "required_capabilities": [
+        "indexes.unique"
+      ],
+      "storage_class": "core",
+      "table": "billing_quotes"
+    },
+    {
+      "consistency": "serializable",
+      "kind": "core.namespace_document",
+      "owner_scope": "global",
+      "required_capabilities": [
+        "indexes.unique"
+      ],
+      "storage_class": "core",
+      "table": "namespace_documents"
+    },
+    {
+      "consistency": "serializable",
+      "kind": "core.replay_nonce",
+      "owner_scope": "global",
+      "required_capabilities": [
+        "indexes.unique"
+      ],
+      "storage_class": "core",
+      "table": "nonce_records"
+    },
+    {
+      "consistency": "serializable",
+      "kind": "core.identity_challenge",
+      "owner_scope": "global",
+      "required_capabilities": [
+        "indexes.unique"
+      ],
+      "storage_class": "core",
+      "table": "auth_challenges"
+    },
+    {
+      "consistency": "serializable",
+      "kind": "core.public_idempotency",
+      "owner_scope": "global",
+      "required_capabilities": [
+        "indexes.unique"
+      ],
+      "storage_class": "core",
+      "table": "public_idempotency_claims"
+    },
+    {
+      "consistency": "serializable",
+      "kind": "core.session_token",
+      "owner_scope": "global",
+      "required_capabilities": [
+        "indexes.unique"
+      ],
+      "storage_class": "core",
+      "table": "session_tokens"
+    },
+    {
+      "consistency": "serializable",
+      "kind": "core.vm_instance",
+      "owner_scope": "global",
+      "required_capabilities": [
+        "indexes.unique"
+      ],
+      "storage_class": "core",
+      "table": "vm_instances"
+    },
+    {
+      "consistency": "serializable",
+      "kind": "core.vm_distribution",
+      "owner_scope": "global",
+      "required_capabilities": [
+        "indexes.unique"
+      ],
+      "storage_class": "core",
+      "table": "vm_distributions"
+    },
+    {
+      "consistency": "serializable",
+      "kind": "core.vm_terminal",
+      "owner_scope": "global",
+      "required_capabilities": [
+        "indexes.unique"
+      ],
+      "storage_class": "core",
+      "table": "vm_terminals"
+    },
+    {
+      "consistency": "serializable",
+      "kind": "core.token_lock",
+      "owner_scope": "global",
+      "required_capabilities": [
+        "indexes.unique"
+      ],
+      "storage_class": "core",
+      "table": "token_locks"
+    },
+    {
+      "consistency": "serializable",
+      "kind": "core.proxy_correlation",
+      "owner_scope": "global",
+      "required_capabilities": [
+        "indexes.unique"
+      ],
+      "storage_class": "core",
+      "table": "proxy_correlations"
+    },
+    {
+      "consistency": "serializable",
+      "kind": "core.guest_pair",
+      "owner_scope": "global",
+      "required_capabilities": [
+        "indexes.unique"
+      ],
+      "storage_class": "core",
+      "table": "guest_pairs"
+    },
+    {
+      "consistency": "serializable",
+      "kind": "core.chain",
+      "owner_scope": "creature",
+      "required_capabilities": [
+        "relationships.foreign_keys",
+        "indexes.unique"
+      ],
+      "storage_class": "core",
+      "table": "chains"
+    },
+    {
+      "consistency": "serializable",
+      "kind": "core.chain_shard",
+      "owner_scope": "creature",
+      "required_capabilities": [
+        "relationships.foreign_keys",
+        "indexes.unique"
+      ],
+      "storage_class": "core",
+      "table": "chain_shards"
+    },
+    {
+      "consistency": "serializable",
+      "kind": "core.coordination_lease",
+      "owner_scope": "global",
+      "required_capabilities": [
+        "indexes.unique"
+      ],
+      "storage_class": "core",
+      "table": "coordination_leases"
+    },
+    {
+      "consistency": "serializable",
+      "kind": "core.coordination_fence",
+      "owner_scope": "global",
+      "required_capabilities": [
+        "indexes.unique"
+      ],
+      "storage_class": "core",
+      "table": "coordination_fences"
+    },
+    {
+      "consistency": "serializable",
+      "kind": "core.realtime_log_event",
+      "owner_scope": "global",
+      "required_capabilities": [
+        "indexes.unique"
+      ],
+      "storage_class": "core",
+      "table": "realtime_log_events"
+    },
+    {
+      "consistency": "serializable",
+      "kind": "core.realtime_outbox_entry",
+      "owner_scope": "global",
+      "required_capabilities": [
+        "indexes.unique"
+      ],
+      "storage_class": "core",
+      "table": "realtime_outbox_entries"
+    },
+    {
+      "consistency": "serializable",
+      "kind": "core.realtime_checkpoint",
+      "owner_scope": "global",
+      "required_capabilities": [
+        "indexes.unique"
+      ],
+      "storage_class": "core",
+      "table": "realtime_checkpoints"
+    },
+    {
+      "consistency": "serializable",
+      "kind": "core.usage_sample",
+      "owner_scope": "global",
+      "required_capabilities": [
+        "indexes.unique"
+      ],
+      "storage_class": "core",
+      "table": "usage_samples"
+    },
+    {
+      "consistency": "serializable",
+      "kind": "core.usage_interval",
+      "owner_scope": "global",
+      "required_capabilities": [
+        "indexes.unique"
+      ],
+      "storage_class": "core",
+      "table": "usage_intervals"
+    },
+    {
+      "consistency": "serializable",
+      "kind": "core.journal_record",
+      "owner_scope": "global",
+      "required_capabilities": [
+        "indexes.unique"
+      ],
+      "storage_class": "core",
+      "table": "journal_records"
+    },
+    {
+      "consistency": "serializable",
+      "kind": "core.journal_entry",
+      "owner_scope": "global",
+      "required_capabilities": [
+        "indexes.unique"
+      ],
+      "storage_class": "core",
+      "table": "journal_entries"
+    },
+    {
+      "consistency": "serializable",
+      "kind": "core.price_list",
+      "owner_scope": "global",
+      "required_capabilities": [
+        "indexes.unique"
+      ],
+      "storage_class": "core",
+      "table": "price_lists"
+    },
+    {
+      "consistency": "serializable",
+      "kind": "core.federation_node_descriptor",
+      "owner_scope": "global",
+      "required_capabilities": [
+        "indexes.unique"
+      ],
+      "storage_class": "core",
+      "table": "federation_node_descriptors"
+    },
+    {
+      "consistency": "serializable",
+      "kind": "core.federation_workload_descriptor",
+      "owner_scope": "global",
+      "required_capabilities": [
+        "indexes.unique"
+      ],
+      "storage_class": "core",
+      "table": "federation_workload_descriptors"
+    },
+    {
+      "consistency": "serializable",
+      "kind": "core.federation_nonce",
+      "owner_scope": "global",
+      "required_capabilities": [
+        "indexes.unique"
+      ],
+      "storage_class": "core",
+      "table": "federation_nonces"
+    },
+    {
+      "consistency": "serializable",
+      "kind": "core.federation_answer",
+      "owner_scope": "global",
+      "required_capabilities": [
+        "indexes.unique"
+      ],
+      "storage_class": "core",
+      "table": "federation_answers"
+    },
+    {
+      "consistency": "serializable",
+      "kind": "core.vmm_workload",
+      "owner_scope": "global",
+      "required_capabilities": [
+        "indexes.unique"
+      ],
+      "storage_class": "core",
+      "table": "vmm_workloads"
+    },
+    {
+      "consistency": "serializable",
+      "kind": "core.vmm_operation",
+      "owner_scope": "global",
+      "required_capabilities": [
+        "indexes.unique"
+      ],
+      "storage_class": "core",
+      "table": "vmm_operations"
+    },
+    {
+      "consistency": "serializable",
+      "kind": "core.vmm_idempotency",
+      "owner_scope": "global",
+      "required_capabilities": [
+        "indexes.unique"
+      ],
+      "storage_class": "core",
+      "table": "vmm_idempotency_records"
+    },
+    {
+      "consistency": "serializable",
+      "kind": "core.vmm_event",
+      "owner_scope": "global",
+      "required_capabilities": [
+        "indexes.unique"
+      ],
+      "storage_class": "core",
+      "table": "vmm_events"
     }
   ],
   "digest": "sha2-256",

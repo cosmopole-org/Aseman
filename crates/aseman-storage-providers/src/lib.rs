@@ -4,8 +4,13 @@
 //! configuration names; nothing else names a provider.
 #![forbid(unsafe_code)]
 
-use aseman_storage::Registry;
+use aseman_config::{AsemanConfig, CoreStorageProvider};
+use aseman_storage::{ProviderSettings, Registry, Storage, StorageError, StorageResult};
+use std::path::PathBuf;
 use std::sync::Arc;
+
+pub mod migrate;
+pub mod port_tables;
 
 /// Every provider plugin: `postgres` and `rocksdb`.
 #[must_use]
@@ -15,6 +20,103 @@ pub fn registry() -> Registry {
         .register(Arc::new(aseman_storage_postgres::plugin::PostgresPlugin))
         .register(Arc::new(aseman_storage_rocksdb::model_store::RocksDbPlugin));
     registry
+}
+
+/// PostgreSQL connections the node's transactions may hold.
+const STATE_CONNECTIONS: u32 = 16;
+
+/// The plugin name of a configured provider.
+#[must_use]
+pub fn provider_name(provider: CoreStorageProvider) -> &'static str {
+    match provider {
+        CoreStorageProvider::Postgres => aseman_storage_postgres::plugin::NAME,
+        CoreStorageProvider::RocksDb => aseman_storage_rocksdb::model_store::NAME,
+    }
+}
+
+/// Secret overrides for a provider other than the configured one.
+#[derive(Clone, Debug, Default)]
+pub struct SecretOverrides {
+    /// A file holding the database URL (`--database-url-secret`).
+    pub database_url_secret: Option<PathBuf>,
+    /// A file holding a PostgreSQL shard map (`--shards-secret`).
+    pub shards_secret: Option<PathBuf>,
+}
+
+/// The settings `config` gives a provider, with its secrets read. Overrides replace
+/// the configured secrets (a migration target).
+///
+/// # Errors
+///
+/// An unreadable secret.
+pub fn settings(
+    config: &AsemanConfig,
+    overrides: &SecretOverrides,
+) -> StorageResult<ProviderSettings> {
+    let read = |path: &std::path::Path, max: usize| {
+        aseman_config::read_secret_file(path, max)
+            .map_err(|error| StorageError::invalid(format!("secret {}: {error}", path.display())))
+    };
+    let mut settings = ProviderSettings::embedded(&config.storage.root_path)?;
+    settings.max_connections = STATE_CONNECTIONS;
+    settings.layout = config.core_storage.layout;
+    settings.binding_generation = config.core_storage.binding_generation;
+    settings.cluster = config.cluster.clone();
+    settings.rocksdb = config.services.rocksdb;
+    // A RocksDB store from before ADR 0036 must be converted first.
+    settings.legacy_store = Some(PathBuf::from(&config.storage.base_db_path));
+    let database_url = overrides
+        .database_url_secret
+        .clone()
+        .or_else(|| config.database_url_secret.as_ref().map(PathBuf::from));
+    if let Some(secret) = database_url {
+        settings.database_url = Some(read(&secret, 4096)?);
+    }
+    let shards = overrides.shards_secret.clone().or_else(|| {
+        config
+            .core_storage
+            .postgres_shards_secret
+            .as_ref()
+            .map(PathBuf::from)
+    });
+    if let Some(secret) = shards {
+        settings.shard_map = Some(read(&secret, 64 * 1024)?);
+    }
+    Ok(settings)
+}
+
+/// A service's storage on the PostgreSQL provider at `database_url` (the VMM service
+/// and the meter keep their state in a database of their own, never a node's).
+///
+/// # Errors
+///
+/// An unreachable database or a failed schema migration.
+pub fn open_database(database_url: String, max_connections: u32) -> StorageResult<Storage> {
+    open(
+        &registry(),
+        aseman_storage_postgres::plugin::NAME,
+        &ProviderSettings::database(database_url, max_connections)?,
+    )
+}
+
+/// Open the provider plugin `name` from `registry`. A PostgreSQL database first has
+/// the tables of the PostgreSQL-only port adapters imported ([`port_tables`]).
+///
+/// # Errors
+///
+/// The provider failed to open, or the import failed.
+pub fn open(
+    registry: &Registry,
+    name: &str,
+    settings: &ProviderSettings,
+) -> StorageResult<Storage> {
+    let storage = Storage::open(registry, name, settings)?;
+    if name == aseman_storage_postgres::plugin::NAME
+        && let Some(database_url) = &settings.database_url
+    {
+        port_tables::import(&storage, database_url)?;
+    }
+    Ok(storage)
 }
 
 /// Readers of stores from before ADR 0036, for the one-shot legacy migration commands
@@ -43,13 +145,9 @@ pub struct GuestProxy<'a> {
 /// guest data plane, whichever provider holds the node's models.
 pub fn guest_kv(proxy: &GuestProxy<'_>) -> Result<Arc<dyn aseman_ports::GuestKv>, String> {
     use aseman_storage_postgres::guest::{GuestPoolRouter, PostgresGuestKv};
-    let mut router = GuestPoolRouter::new(
-        proxy.url,
-        proxy.role,
-        proxy.max_pools,
-        proxy.max_pool_size,
-    )
-    .map_err(|error| error.to_string())?;
+    let mut router =
+        GuestPoolRouter::new(proxy.url, proxy.role, proxy.max_pools, proxy.max_pool_size)
+            .map_err(|error| error.to_string())?;
     if let Some(map) = proxy.shard_map {
         let map = aseman_storage_postgres::shard::ShardMap::parse(map)
             .map_err(|error| error.to_string())?;
@@ -69,6 +167,9 @@ mod tests {
     #[test]
     fn both_providers_are_registered() {
         let registry = super::registry();
-        assert_eq!(registry.names().collect::<Vec<_>>(), ["postgres", "rocksdb"]);
+        assert_eq!(
+            registry.names().collect::<Vec<_>>(),
+            ["postgres", "rocksdb"]
+        );
     }
 }

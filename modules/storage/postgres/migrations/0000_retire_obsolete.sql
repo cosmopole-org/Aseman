@@ -2,7 +2,7 @@
 -- had no writer, so 0001 recreates them in the current shape. Idempotent: a table in
 -- its current shape is never touched.
 
--- A401 (P4-01): identity keys replaced node keys, which never had a writer.
+-- A401: identity keys replaced node keys, which never had a writer.
 DO $$
 BEGIN
   IF to_regclass('aseman_core.node_keys') IS NOT NULL THEN
@@ -10,7 +10,7 @@ BEGIN
   END IF;
 END $$;
 
--- A403 (P4-03): capability grants gained subjects of every class, action sets,
+-- A403: capability grants gained subjects of every class, action sets,
 -- selectors, delegation, and parents. The first shape (one `action` column, user-only
 -- subjects) never had a writer.
 DO $$
@@ -23,3 +23,10 @@ BEGIN
     EXECUTE 'DROP TABLE aseman_core.capability_grants CASCADE';
   END IF;
 END $$;
+
+-- ADR 0036: replay nonces, identity challenges, and public idempotency claims are
+-- models of the storage module (`nonce_records`, `auth_challenges`,
+-- `public_idempotency_claims`). Their old tables held only short-lived entries.
+DROP TABLE IF EXISTS aseman_core."replay_nonces";
+DROP TABLE IF EXISTS aseman_core."identity_challenges";
+DROP TABLE IF EXISTS aseman_core.public_idempotency;

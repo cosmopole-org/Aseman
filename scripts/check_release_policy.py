@@ -124,17 +124,10 @@ def check_repository(policy: dict) -> list[str]:
     license_policy = policy.get("licenses", {})
     allowed = set(license_policy.get("allowed_spdx_ids", []))
     denied = set(license_policy.get("denied_spdx_ids", []))
-    exceptions = {
-        package
-        for row in license_policy.get("migration_exceptions", [])
-        if all(row.get(field) for field in ("owner", "reason", "expiry"))
-        for package in row.get("packages", [])
-    }
     for package in cargo_packages():
         expression = package.get("license")
         if not expression:
-            if package["name"] not in exceptions:
-                problems.append(f"{package['name']} has no SPDX license and no migration exception")
+            problems.append(f"{package['name']} has no SPDX license")
             continue
         tokens = license_tokens(expression.replace("/", " OR "))
         if tokens & denied:

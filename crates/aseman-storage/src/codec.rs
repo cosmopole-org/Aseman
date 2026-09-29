@@ -55,7 +55,10 @@ pub fn validate(model: &Model, data: &Data, complete: bool) -> StorageResult<()>
             .iter()
             .find(|field| data.get(*field).is_none_or(Value::is_null))
     {
-        return Err(invalid(model, format!("required field {missing} is missing")));
+        return Err(invalid(
+            model,
+            format!("required field {missing} is missing"),
+        ));
     }
     Ok(())
 }

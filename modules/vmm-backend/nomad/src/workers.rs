@@ -1,4 +1,4 @@
-//! Worker lifecycle: enroll, cordon, drain, and removal (P6-03, A606).
+//! Worker lifecycle: enroll, cordon, drain, and removal (A606).
 //!
 //! These are operator actions, not scheduling. They use an operator-scoped Nomad
 //! token, never the backend's: a component that runs workloads must not be able to

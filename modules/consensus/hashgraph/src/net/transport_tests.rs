@@ -10,7 +10,7 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 use std::thread;
 use std::time::Duration;
 
-use crossbeam_channel::{RecvTimeoutError, bounded};
+use crossbeam_channel::bounded;
 
 use crate::hashgraph::{
     Block, BlockSignature, Event, Frame, FrameEvent, InternalTransaction, Root, TransactionType,
@@ -491,11 +491,4 @@ fn tcp_unknown_chain_returns_error() {
     assert!(msg.contains("no consumer"), "unexpected error: {}", msg);
     let _ = trans1.close();
     let _ = trans2.close();
-}
-
-// Suppresses the "unused" warning on `RecvTimeoutError` (it's only used for
-// type clarity above).
-#[allow(dead_code)]
-fn _unused_recv_timeout_error_marker() -> RecvTimeoutError {
-    RecvTimeoutError::Timeout
 }

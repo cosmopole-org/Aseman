@@ -8,7 +8,6 @@ license.workspace = true
 repository.workspace = true
 
 [dependencies]
-aseman-config = { path = "../../../crates/aseman-config" }
 aseman-contracts = { path = "../../../crates/aseman-contracts" }
 aseman-domain = { path = "../../../crates/aseman-domain" }
 aseman-ports = { path = "../../../crates/aseman-ports" }

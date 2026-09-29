@@ -1,7 +1,7 @@
 ---
 status: ACCEPTED
 owner: architecture
-source_of_truth: plan/migration/14-plan-integrity-and-traceability.md
+source_of_truth: this document and the ADRs it cites
 last_verified_commit: 800df24076c7
 verification: contract and integration suites introduced by owning phases
 ---

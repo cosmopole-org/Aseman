@@ -1,10 +1,10 @@
 //! The creature ports run on capsules with the rules the legacy adapter
-//! characterizes (RL-004 strangler, target side).
+//! characterizes.
 
 use aseman_capsule::CapsuleStore;
 use aseman_capsule::creature::CapsuleCreaturePorts;
 use aseman_contracts::capsule::{CapsuleEnvelope, CapsuleId, CapsuleKind, CapsuleValue};
-use aseman_contracts::legacy_realtime::deterministic_legacy_capsule_id;
+use aseman_contracts::signals::derived_capsule_id;
 use aseman_domain::creature::CreatureRecord;
 use aseman_ports::{CreatureBalances, CreatureDirectory, PortError};
 use aseman_storage_postgres::PostgresCapsuleRepository;
@@ -81,7 +81,7 @@ fn live_creature_ports_pass_conformance_on_capsules() {
     let carol_identity = repository
         .get(
             &identity_kind,
-            &CapsuleId(deterministic_legacy_capsule_id(
+            &CapsuleId(derived_capsule_id(
                 "LegacyIdentity",
                 b"Creature\x007@conformance",
             )),
@@ -89,7 +89,7 @@ fn live_creature_ports_pass_conformance_on_capsules() {
         .unwrap()
         .unwrap();
     let fresh_identity = CapsuleEnvelope {
-        id: CapsuleId(deterministic_legacy_capsule_id(
+        id: CapsuleId(derived_capsule_id(
             "LegacyIdentity",
             b"Creature\x009@conformance",
         )),
@@ -115,12 +115,12 @@ fn live_creature_ports_pass_conformance_on_capsules() {
     let carol_user = repository
         .get(
             &CapsuleKind("core.user".to_owned()),
-            &CapsuleId(deterministic_legacy_capsule_id("User", b"7@conformance")),
+            &CapsuleId(derived_capsule_id("User", b"7@conformance")),
         )
         .unwrap()
         .unwrap();
     let username_clash = CapsuleEnvelope {
-        id: CapsuleId(deterministic_legacy_capsule_id("User", b"9@conformance")),
+        id: CapsuleId(derived_capsule_id("User", b"9@conformance")),
         ..carol_user
     }
     .seal()
@@ -142,7 +142,7 @@ fn live_creature_ports_pass_conformance_on_capsules() {
     };
     aseman_ports::conformance::program_directory(&programs, ["1@conformance", "7@conformance"]);
     aseman_ports::conformance::program_metadata(&programs, "12@conformance");
-    let stream_policy = |_: &str| aseman_contracts::legacy_realtime::SignalStreamPolicy {
+    let stream_policy = |_: &str| aseman_contracts::signals::SignalStreamPolicy {
         authorization_scope: vec![1],
         retention_class: "persistent".to_owned(),
     };
@@ -195,8 +195,8 @@ fn live_creature_ports_pass_conformance_on_capsules() {
             .seal()
             .unwrap()
         };
-    let creature = deterministic_legacy_capsule_id("Creature", b"1@conformance");
-    let store = deterministic_legacy_capsule_id("Store", b"store-1");
+    let creature = derived_capsule_id("Creature", b"1@conformance");
+    let store = derived_capsule_id("Store", b"store-1");
     CapsuleStore::put_all(
         &repository,
         &[
@@ -221,7 +221,7 @@ fn live_creature_ports_pass_conformance_on_capsules() {
             ),
             (
                 sealed(
-                    deterministic_legacy_capsule_id("LegacyIdentity", b"Store\x00store-1"),
+                    derived_capsule_id("LegacyIdentity", b"Store\x00store-1"),
                     "core.legacy_identity",
                     aseman_contracts::capsule::OwnerScope::Global,
                     Vec::new(),

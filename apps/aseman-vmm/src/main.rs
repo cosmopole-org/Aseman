@@ -1,7 +1,8 @@
 //! `aseman-vmm`: the provider-neutral VMM service (plan 04, ADR 0029).
 //!
 //! It serves A501 to the nodes admitted by `ASEMAN_VMM_CLIENTS` over mutual TLS,
-//! keeps workloads, operations, idempotency keys, and events in PostgreSQL, and does
+//! keeps workloads, operations, idempotency keys, and events in its storage (the
+//! PostgreSQL provider, ADR 0038), and does
 //! infrastructure work through the A504 backend at `ASEMAN_VMM_BACKEND_ENDPOINT`.
 //! A worker thread runs the executor, the observer, reconciliation, and retention —
 //! all of it singleton work, so it runs only while this replica holds the fenced
@@ -14,12 +15,12 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::Duration;
 
 use aseman_application::singleton::{Pass, Singleton};
+use aseman_capsule::coordination::StorageCoordination;
+use aseman_capsule::vmm::StorageVmmStore;
 use aseman_config::{VmmServiceConfig, read_secret_file};
 use aseman_contracts::vmm::IDEMPOTENCY_RETENTION_MILLIS;
 use aseman_domain::coordination::{LeaseName, SafetyMargin};
 use aseman_ports::ClockPort;
-use aseman_storage_postgres::coordination::PostgresCoordination;
-use aseman_storage_postgres::vmm::PostgresVmmStore;
 use aseman_vmm_backend_grpc::client::GrpcBackend;
 use aseman_vmm_backend_grpc::routing::RoutingBackend;
 use aseman_vmm_http::server::{ServerTls, VmmHttpState, health_router, serve};
@@ -92,11 +93,11 @@ fn tick(state: &VmmHttpState, clock: &SystemClock, last_retention: &mut i64) {
 fn main() -> Result<(), Failure> {
     let config = VmmServiceConfig::from_process()?;
     let clock = Arc::new(SystemClock);
-    let store = Arc::new(PostgresVmmStore::connect(
-        &read_secret_file(&config.database_url_secret, 4096)?,
+    let storage = aseman_storage_providers::open_database(
+        read_secret_file(&config.database_url_secret, 4096)?,
         config.database_pool_size,
-    )?);
-    store.migrate()?;
+    )?;
+    let store = Arc::new(StorageVmmStore::new(storage.clone()));
     let default_backend: Arc<dyn aseman_ports::vmm::VmmBackend> = Arc::new(GrpcBackend::connect(
         &config.backend_endpoint,
         Duration::from_secs(60),
@@ -140,9 +141,7 @@ fn main() -> Result<(), Failure> {
     // The executor, observer, reconciler, and retention are singleton work: two
     // replicas running them would execute the same operation twice. The lease makes
     // exactly one replica the worker, and the rest serve the API (ADR 0013).
-    let coordination =
-        PostgresCoordination::connect(&read_secret_file(&config.database_url_secret, 4096)?, 2)?;
-    coordination.migrate()?;
+    let coordination = StorageCoordination::new(storage);
     let lease_name = LeaseName::new("aseman-vmm-reconcile")?;
     let margin = SafetyMargin::new(config.lease_margin_millis)?;
     let ttl = config.lease_ttl_millis;

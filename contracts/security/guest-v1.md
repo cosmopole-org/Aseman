@@ -3,7 +3,7 @@ status: ACCEPTED
 owner: security/guest
 source_of_truth: this contract, ADR 0001, ADR 0021, ADR 0030, contracts/capsule/guest/isolation-rules.json
 last_verified_commit: eebb9c5
-verification: cargo test -p aseman-application guest; live aseman-storage-postgres live_guest_gateway; modules/vmm-backend/native-legacy/tests/system.rs (host calls from a real runtime)
+verification: cargo test -p aseman-application guest; live aseman-storage-postgres live_guest_gateway; modules/vmm-backend/native/tests/system.rs (host calls from a real runtime)
 ---
 
 # A405: guest gateway resolution and authorization (v1)
@@ -27,7 +27,7 @@ apart, which is the point:
 - **In-process runtime.** The VMM backend hosting the runtime holds one credential per
   workload it runs and signs on its behalf.
 
-Since P5-06 there is no unauthenticated in-process path: the node registers no VM
+There is no unauthenticated in-process path: the node registers no VM
 handles and serves no callback. A `vmId`, `programId`, or any other identity carried in
 the guest's input never establishes the caller (LD-14, LD-27).
 
@@ -78,7 +78,7 @@ checked before and after (A306).
 keyed `{key}::{path}`. `putJson` writes exactly the records the legacy `index_json`
 wrote: the object at `path`, merged with the stored one when `merge` is set, then every
 nested object and non-null leaf at `path.member`
-(`aseman-contracts::legacy_documents::legacy_json_index_writes`).
+(`aseman-contracts::documents::json_index_writes`).
 - `getJson` returns the object stored at the path, or `{}`.
 - `delKey` with an empty path deletes every record of the document; otherwise it
   deletes the record at the path and its subtree.

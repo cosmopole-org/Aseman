@@ -1,7 +1,7 @@
 //! Behavioral suites every adapter of a port must pass (feature `conformance`).
 //!
-//! The legacy adapters and the capsule adapters run the same suite, so a use case
-//! behaves identically before and after cutover.
+//! Every provider's adapters run the same suite, so a use case behaves identically on
+//! each.
 
 pub mod consensus_log;
 pub mod coordination;
@@ -73,7 +73,7 @@ pub fn creature_directory(
     assert_eq!(directory.create(&impostor), Err(PortError::Conflict));
     assert_eq!(directory.creature(&impostor.id), Ok(None));
 
-    // Identity order, type filter, and the legacy window.
+    // Identity order, type filter, and the list window.
     let ids = |records: Vec<CreatureRecord>| {
         records
             .into_iter()
@@ -150,7 +150,7 @@ pub fn creature_directory(
     );
     directory.delete(&bob.id).unwrap();
 
-    // A deleted identity can be registered again (legacy allows it; compensations
+    // A deleted identity can be registered again (compensations
     // rely on it).
     let revived = CreatureRecord {
         public_key: keys[2].to_owned(),
@@ -212,7 +212,7 @@ pub fn creature_metadata(
         read(Creature, "metadata.public.profile").as_deref(),
         Some(r#"{"name":"a"}"#)
     );
-    // Only objects answer a path, as legacy `get_json` does.
+    // Only objects answer a path, as `get_json` does.
     assert_eq!(read(Creature, "metadata.tags"), None);
     assert_eq!(read(Creature, "metadata.none"), None);
     // The user document is a separate document of the same creature.
@@ -1376,7 +1376,7 @@ pub fn guest_kv(kv: &dyn crate::GuestKv, binding: &aseman_domain::CreatureDataba
         }
     );
 
-    // Documents (ADR 0028): the legacy JSON store's records, one row each.
+    // Documents (ADR 0028): the JSON store's records, one row each.
     let put_json = |key: &str, path: &str, data: &str, merge: bool| {
         kv.execute(
             binding,

@@ -39,12 +39,12 @@ verification: python3 scripts/generate_security_registry.py --check
 | `node.id.generate` | node | write | workload | `same_creature` (removed: P4 UUIDv7 identities (ADR 0020)) | guest | 1 |
 | `node.telemetry.read` | node | administrative | user, service | `node_admin` | http_public | 1 |
 | `node.profiling.read` | node | administrative | user, service | `node_admin` | http_public | 7 |
-| `node.cluster.administer` | node | administrative | user, service | `node_admin` (removed: RL-012 (ADR 0012)) | http_cluster | 12 |
-| `node.cluster.replicate` | node | administrative | node | `node_admin` (removed: RL-012 (ADR 0012)) | http_cluster | 3 |
-| `node.protocol.call` | node | write | workload | `never` (removed: P4-04 (LD-14: forwarded guest-chosen operations to the identity-less callback protocol)) | guest | 2 |
-| `raw_state.read` | raw_state | read | workload | `never` (removed: P4-04 guest gateway (LD-24)) | guest | 0 |
-| `raw_state.write` | raw_state | write | workload | `never` (removed: P4-04 guest gateway (LD-24)) | guest | 0 |
-| `identity.session.create` | session | security | user, creature, node, service, workload, module_publisher | `public` (removed: P7-05 (legacy framing expiry)) | user | 1 |
+| `node.cluster.administer` | node | administrative | user, service | `node_admin` (removed: ADR 0012) | http_cluster | 12 |
+| `node.cluster.replicate` | node | administrative | node | `node_admin` (removed: ADR 0012) | http_cluster | 3 |
+| `node.protocol.call` | node | write | workload | `never` (removed: the guest gateway (LD-14: forwarded guest-chosen operations to the identity-less callback protocol)) | guest | 2 |
+| `raw_state.read` | raw_state | read | workload | `never` (removed: the guest gateway (LD-24)) | guest | 0 |
+| `raw_state.write` | raw_state | write | workload | `never` (removed: the guest gateway (LD-24)) | guest | 0 |
+| `identity.session.create` | session | security | user, creature, node, service, workload, module_publisher | `public` | user | 1 |
 | `identity.signature.check` | identity_key | read | user, creature, node, service, workload, module_publisher | `authenticated` | user | 2 |
 | `identity.key.rotate` | identity_key | security | user, creature, node, service, workload | `self` | new | 0 |
 | `identity.key.revoke` | identity_key | security | user, creature, node, service, workload | `self` or `node_admin` | new | 0 |

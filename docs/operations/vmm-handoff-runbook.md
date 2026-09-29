@@ -15,8 +15,10 @@ in order; each step is safe to stop at.
 1. The Phase 3 cutover is complete: `ASEMAN_CORE_STORAGE_PROVIDER=postgres` with its
    guest proxy (`docs/operations/storage-migration-runbook.md`). The node refuses a
    VMM endpoint on the legacy provider.
-2. A VMM database for `aseman-vmm` (its own `aseman_vmm` schema; the service migrates
-   it at startup).
+2. A VMM database for `aseman-vmm`, of its own: the service keeps its state there on
+   the PostgreSQL storage provider and migrates it at startup (ADR 0038). A database
+   from an earlier release has its `aseman_vmm` tables imported at startup and moved
+   to `aseman_retired`.
 3. Certificates:
    - the VMM's server certificate and the CA its clients chain to;
    - this node's client certificate, whose SHA-256 fingerprint is listed in
@@ -26,10 +28,13 @@ in order; each step is safe to stop at.
 ## 2. Start the backend and the service
 
 1. `aseman-vmm-backend-native 127.0.0.1:PORT backend.json`, where `backend.json` is
-   `{"state_dir": "...", "node_ca": "<the node's guest API CA>"}`. Its runtime
-   settings (docker gateway port and network, Firecracker, Modal, storage root) come
-   from the environment, as they did in the node. Give it the same storage root the
-   node used, so docker sandboxes keep their contents.
+   `{"state_dir": "...", "node_ca": "<the node's guest API CA>", "vm_types": [...],
+   "runtime": {...}}`. `vm_types` names the runtimes to serve (every compiled one when
+   absent); `runtime` holds their settings (`aseman_config::RuntimeConfig`: docker
+   gateway port and network, Firecracker, Modal with its credentials as secret files,
+   the storage root), which no longer come from the environment. Give it the same
+   storage root the node used, so docker sandboxes keep their contents. On a compact
+   deployment, `asemanctl bootstrap --backend native` writes this file.
 2. `aseman-vmm` with `ASEMAN_VMM_LISTEN`, its TLS material, `ASEMAN_VMM_CLIENTS`,
    `ASEMAN_VMM_DATABASE_URL_SECRET`, and
    `ASEMAN_VMM_BACKEND_ENDPOINT=http://127.0.0.1:PORT`.

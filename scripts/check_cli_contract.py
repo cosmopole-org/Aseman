@@ -21,7 +21,7 @@ def check() -> list[str]:
     names = [row.get("name") for row in commands]
     if len(names) != len(set(names)):
         problems.append("command names are not unique")
-    actual = {row["command"] for row in inventory["casparctl"]["top_level"]}
+    actual = {row["command"] for row in inventory["asemanctl"]["top_level"]}
     declared = set(names)
     if actual != declared:
         problems.append(

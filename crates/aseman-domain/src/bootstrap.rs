@@ -1,4 +1,4 @@
-//! The bootstrap workflow (Phase 9, plan 08).
+//! The bootstrap workflow (plan 08).
 //!
 //! One workflow takes a clean host to a healthy node. It is idempotent, it resumes
 //! after an interruption, and a failed stage rolls itself back without destroying

@@ -58,7 +58,7 @@
       "outbound": "A501 usage reads and its restricted PostgreSQL meter role only"
     },
     "aseman-vmm-backend": {
-      "role": "an A504 backend (native-legacy or nomad)",
+      "role": "an A504 backend (native or nomad)",
       "ports": [
         { "name": "a504", "port": 9090, "protocol": "grpc", "bind": "loopback", "reachable_by": "the VMM service on the same host only" }
       ],

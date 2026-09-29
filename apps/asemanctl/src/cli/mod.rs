@@ -11,25 +11,35 @@
 
 use std::process::Command;
 
+use aseman_config::CliConfig;
 use serde_json::{Value, json};
 
+mod admin;
 mod args;
 mod bootstrap;
 mod cluster;
 mod compact;
 mod modules;
 mod ops;
+mod storage;
 mod vms;
 
+/// A configuration from an empty environment, for tests.
+#[cfg(test)]
+fn test_config() -> CliConfig {
+    CliConfig::from_map(&std::collections::BTreeMap::new()).expect("empty configuration")
+}
+
 pub fn main() {
-    if let Err(error) = aseman_config::install_cli_process_config() {
-        eprintln!("invalid Aseman CLI configuration: {error}");
-        std::process::exit(2);
-    }
+    let config = match CliConfig::from_process() {
+        Ok(config) => config,
+        Err(error) => {
+            eprintln!("invalid Aseman CLI configuration: {error}");
+            std::process::exit(2);
+        }
+    };
     let args: Vec<String> = std::env::args().collect();
-    if !aseman_config::cli_config().is_some_and(|config| config.structured_child)
-        && args.iter().skip(1).any(|argument| argument == "--json")
-    {
+    if !config.structured_child && args.iter().skip(1).any(|argument| argument == "--json") {
         run_structured(&args);
     }
     if args.len() < 2 {
@@ -38,18 +48,19 @@ pub fn main() {
     }
     let rest = &args[2..];
     let result = match args[1].as_str() {
-        "bootstrap" => bootstrap::run_bootstrap(rest),
-        "status" => compact::run_status(rest),
-        "start" => compact::run_start(rest),
-        "stop" => compact::run_stop(rest),
-        "module" | "modules" => modules::run_modules(rest),
-        "vms" => vms::run_vms(rest),
-        "cluster" => cluster::run_cluster(rest),
-        "doctor" => ops::run_doctor(rest),
-        "backup" => ops::run_backup(rest),
-        "restore" => ops::run_restore(rest),
-        "upgrade" => ops::run_upgrade(rest),
-        "support-bundle" => ops::run_support_bundle(rest),
+        "bootstrap" => bootstrap::run_bootstrap(&config, rest),
+        "status" => compact::run_status(&config, rest),
+        "start" => compact::run_start(&config, rest),
+        "stop" => compact::run_stop(&config, rest),
+        "module" | "modules" => modules::run_modules(&config, rest),
+        "vms" => vms::run_vms(&config, rest),
+        "cluster" => cluster::run_cluster(&config, rest),
+        "storage" => storage::run_storage(&config, rest),
+        "doctor" => ops::run_doctor(&config, rest),
+        "backup" => ops::run_backup(&config, rest),
+        "restore" => ops::run_restore(&config, rest),
+        "upgrade" => ops::run_upgrade(&config, rest),
+        "support-bundle" => ops::run_support_bundle(&config, rest),
         "help" | "-h" | "--help" => {
             print_usage();
             Ok(())
@@ -163,7 +174,8 @@ fn print_usage() {
          Extensions:\n  \
          module          Manage signed provider modules\n  \
          vms             Manage the native backend's runtime plugins\n  \
-         cluster         Operate the RocksDB storage module's OpenRaft cluster\n\n\
+         cluster         Operate the RocksDB storage module's OpenRaft cluster\n  \
+         storage         Migrate the node's storage (legacy layouts, provider switch)\n\n\
          Run \"asemanctl <command> --help\" for command-specific flags."
     );
 }

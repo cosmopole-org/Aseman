@@ -1,7 +1,7 @@
 //! Validator staking ledger: bond/unbond/slash and mature-unbond settlement.
 //!
-//! Moved from the node's legacy globe (`core/module/globe`) into the consensus
-//! engine (RL-011): the staking rules are governance, not node orchestration.
+//! The staking rules are governance, which belongs to the consensus engine, not to
+//! node orchestration.
 
 use std::collections::HashMap;
 

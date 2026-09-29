@@ -1,4 +1,4 @@
-//! Finance ordering through the consensus port (Phase 8, RL-011).
+//! Finance ordering through the consensus port.
 //!
 //! Finance decides wallets, pricing, and the ledger without consensus. What consensus
 //! adds is an agreed **order** past which records will not change — the epoch boundary

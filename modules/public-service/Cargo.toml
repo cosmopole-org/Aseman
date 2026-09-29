@@ -1,6 +1,6 @@
 [package]
 name = "aseman-public-service"
-description = "The composed public action service (P7-06): A401 auth, A402 authorization, execution, and durable idempotency behind the A701 transport contract."
+description = "The composed public action service: A401 auth, A402 authorization, execution, and durable idempotency behind the A701 transport contract."
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true

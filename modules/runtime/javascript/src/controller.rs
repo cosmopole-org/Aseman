@@ -16,9 +16,9 @@ use std::time::Duration;
 use elpify_lang::transpile_js_to_masm;
 use serde_json::{json, Value as JsonValue};
 
-use caspar_vm_sdk::host::{host, log, set_log_vm_context};
-use caspar_vm_sdk::util::{emit_vm_error, panic_message, parse_vm_resource_limits};
-use caspar_vm_sdk::{VmPlugin, VmPluginMeta};
+use aseman_vm_sdk::host::{host, log, set_log_vm_context};
+use aseman_vm_sdk::util::{emit_vm_error, panic_message, parse_vm_resource_limits};
+use aseman_vm_sdk::{VmPlugin, VmPluginMeta};
 
 use crate::runtime::{
     global_managed_vms, terminate_managed_machine, terminate_managed_vm, vm_key, JsMac,

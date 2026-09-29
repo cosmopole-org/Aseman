@@ -535,7 +535,10 @@ fn constraint_name(prefix: &str, table: &str, fields: &[String]) -> String {
         return source;
     }
     let digest = Sha256::digest(source.as_bytes());
-    let hex = digest.iter().map(|byte| format!("{byte:02x}")).collect::<String>();
+    let hex = digest
+        .iter()
+        .map(|byte| format!("{byte:02x}"))
+        .collect::<String>();
     format!("{}_{}", &source[..52], &hex[..10])
 }
 

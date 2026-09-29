@@ -12,7 +12,8 @@ use std::fs;
 use std::path::{Path, PathBuf};
 
 use anyhow::{Result, anyhow};
-use aseman_config::ClusterBootstrapConfig;
+use aseman_config::{ClusterBootstrapConfig, TlsFiles};
+use aseman_fs::{Access, write_atomic};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
@@ -68,6 +69,10 @@ pub struct ClusterConfig {
     /// Optional shared secret; when set every cluster HTTP call must carry
     /// it in the `x-aseman-cluster-token` header.
     pub auth_token: String,
+    /// This replica's mutual TLS: its certificate and key, and the cluster CA every
+    /// replica's and administrator's certificate chains to. Required whenever the
+    /// listener runs.
+    pub tls: TlsFiles,
 
     // ── Raft tuning ─────────────────────────────────────────────────────
     pub heartbeat_interval_ms: u64,
@@ -105,6 +110,7 @@ impl Default for ClusterConfig {
             listen_addr: "0.0.0.0:7440".to_string(),
             advertise_addr: "127.0.0.1:7440".to_string(),
             auth_token: String::new(),
+            tls: TlsFiles::default(),
             heartbeat_interval_ms: 500,
             election_timeout_min_ms: 1500,
             election_timeout_max_ms: 3000,
@@ -134,21 +140,33 @@ impl ClusterConfig {
         Ok(serde_json::from_str(&raw)?)
     }
 
+    /// Persist the configuration owner-only (it holds the cluster's auth token).
     pub fn save(&self, path: &Path) -> Result<()> {
         if let Some(parent) = path.parent() {
             fs::create_dir_all(parent)?;
         }
-        fs::write(path, serde_json::to_vec_pretty(self)?)?;
+        write_atomic(path, &serde_json::to_vec_pretty(self)?, Access::Private)?;
         Ok(())
     }
 
-    /// Load from disk (if present) and fold typed composition overrides on top.
+    /// Load from disk (defaults when there is no file yet) and fold typed composition
+    /// overrides on top.
+    ///
+    /// # Errors
+    ///
+    /// A configuration file that exists but cannot be read or parsed: a replica never
+    /// silently restarts from defaults.
     pub fn bootstrap(
         storage_root: &str,
         source: &ClusterBootstrapConfig,
-    ) -> (ClusterConfig, PathBuf) {
+    ) -> Result<(ClusterConfig, PathBuf)> {
         let path = Self::default_path(storage_root, source);
-        let mut cfg = Self::load(&path).unwrap_or_default();
+        let mut cfg = match fs::read_to_string(&path) {
+            Ok(raw) => serde_json::from_str(&raw)
+                .map_err(|error| anyhow!("cluster config {}: {error}", path.display()))?,
+            Err(error) if error.kind() == std::io::ErrorKind::NotFound => ClusterConfig::default(),
+            Err(error) => return Err(anyhow!("read cluster config {}: {error}", path.display())),
+        };
         if let Some(value) = source.enabled {
             cfg.enabled = value;
         }
@@ -168,10 +186,13 @@ impl ClusterConfig {
         apply(&source.listen_addr, &mut cfg.listen_addr);
         apply(&source.advertise_addr, &mut cfg.advertise_addr);
         apply(&source.auth_token, &mut cfg.auth_token);
+        if let Some(tls) = &source.tls {
+            cfg.tls = tls.clone();
+        }
         if cfg.node_name.is_empty() {
             cfg.node_name = format!("aseman-node-{}", cfg.node_id);
         }
-        (cfg, path)
+        Ok((cfg, path))
     }
 
     /// Read a single dotted-key value (`peers.2.addr`, `heartbeat_interval_ms`).

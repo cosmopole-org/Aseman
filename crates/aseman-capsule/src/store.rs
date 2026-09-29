@@ -1,9 +1,9 @@
-//! Store repositories on the capsule protocol (RL-004 strangler, target side): stores
+//! Store repositories on the capsule protocol: stores
 //! and memberships as core capsules, and signals as `realtime.event` streams encoded
 //! exactly like migrated history. Works with any provider behind [`CapsuleStore`].
 
 use crate::support::{
-    Capsules, DocumentFamily, MAX_CAS_ATTEMPTS, failed, legacy_identity, new_capsule, tombstone,
+    Capsules, DocumentFamily, MAX_CAS_ATTEMPTS, legacy_identity, new_capsule, tombstone,
 };
 use crate::{CapsuleStore, CapsuleStoreError};
 use aseman_contracts::capsule::OwnerScope;
@@ -11,8 +11,8 @@ use aseman_contracts::capsule::{
     CapsuleEnvelope, CapsuleId, CapsuleKind, CapsuleQuery, CapsuleRelationship, CapsuleValue,
     ComparisonOperator, MAX_QUERY_LIMIT, QueryPredicate, QuerySort, SortDirection, StorageClass,
 };
-use aseman_contracts::legacy_realtime::{
-    SignalStreamPolicy, StoreSignalPayload, decode_store_signal, deterministic_legacy_capsule_id,
+use aseman_contracts::signals::{
+    SignalStreamPolicy, StoreSignalPayload, decode_store_signal, derived_capsule_id,
     store_signal_event, store_signal_stream,
 };
 use aseman_domain::signal_tags::LogQuery;
@@ -21,7 +21,7 @@ use aseman_domain::store_permissions::StorePermissions;
 use aseman_ports::{PortError, PortResult, SignalLog, StoreAccess, StoreDirectory, StoreMetadata};
 use std::collections::{BTreeMap, BTreeSet};
 
-/// Resolves each store stream's authorization scope and retention (P7-04 rule).
+/// Resolves each store stream's authorization scope and retention.
 pub type StreamPolicyResolver = dyn Fn(&str) -> SignalStreamPolicy + Send + Sync;
 
 pub struct CapsuleStorePorts<'a> {
@@ -80,10 +80,7 @@ impl CapsuleStorePorts<'_> {
         self.repository
             .get(
                 &CapsuleKind(kind.to_owned()),
-                &CapsuleId(deterministic_legacy_capsule_id(
-                    family,
-                    legacy_id.as_bytes(),
-                )),
+                &CapsuleId(derived_capsule_id(family, legacy_id.as_bytes())),
             )
             .map_err(port_error)
     }
@@ -143,10 +140,7 @@ fn store_relationships(record: &StoreRecord, creator: CapsuleId) -> Vec<CapsuleR
         relationships.push(CapsuleRelationship {
             name: "parent".to_owned(),
             target_kind: CapsuleKind("core.store".to_owned()),
-            target_id: CapsuleId(deterministic_legacy_capsule_id(
-                "Store",
-                record.parent_id.as_bytes(),
-            )),
+            target_id: CapsuleId(derived_capsule_id("Store", record.parent_id.as_bytes())),
         });
     }
     relationships
@@ -214,7 +208,7 @@ impl StoreDirectory for CapsuleStorePorts<'_> {
             .legacy_ids("Store")?
             .into_values()
             .collect::<Vec<_>>();
-        // Legacy lists objects in identity byte order.
+        // Objects list in identity byte order.
         identities.sort_by(|left, right| left.as_bytes().cmp(right.as_bytes()));
         let mut records = Vec::new();
         for legacy_id in identities {
@@ -226,10 +220,7 @@ impl StoreDirectory for CapsuleStorePorts<'_> {
     }
 
     fn create_store(&self, record: &StoreRecord, creator_id: &str) -> PortResult<()> {
-        let id = CapsuleId(deterministic_legacy_capsule_id(
-            "Store",
-            record.id.as_bytes(),
-        ));
+        let id = CapsuleId(derived_capsule_id("Store", record.id.as_bytes()));
         let existing = self
             .repository
             .get(&CapsuleKind("core.store".to_owned()), &id)
@@ -238,15 +229,17 @@ impl StoreDirectory for CapsuleStorePorts<'_> {
             return Err(PortError::Conflict);
         }
         // The creator owns the store; it must be a live creature, as in the export.
-        let creator = deterministic_legacy_capsule_id("Creature", creator_id.as_bytes());
+        let creator = derived_capsule_id("Creature", creator_id.as_bytes());
         if self
             .get("core.creature", "Creature", creator_id)?
             .is_none_or(|capsule| capsule.tombstone)
         {
-            return Err(failed(format!("store creator {creator_id} does not exist")));
+            return Err(PortError::failed(format!(
+                "store creator {creator_id} does not exist"
+            )));
         }
         let writes = match existing {
-            // Registering a deleted store again revives it, as legacy allows.
+            // Registering a deleted store again revives it.
             Some(tombstoned) => vec![(
                 CapsuleEnvelope {
                     owner_scope: OwnerScope::Creature(creator),
@@ -254,7 +247,7 @@ impl StoreDirectory for CapsuleStorePorts<'_> {
                     ..next_revision(&tombstoned, store_fields(record))?
                 }
                 .seal()
-                .map_err(failed)?,
+                .map_err(PortError::failed)?,
                 Some(tombstoned.revision),
             )],
             None => vec![
@@ -286,13 +279,13 @@ impl StoreDirectory for CapsuleStorePorts<'_> {
                 .iter()
                 .find(|relationship| relationship.name == "creature")
                 .map(|relationship| relationship.target_id.clone())
-                .ok_or_else(|| failed("store has no creator"))?;
+                .ok_or_else(|| PortError::failed("store has no creator"))?;
             let next = CapsuleEnvelope {
                 relationships: store_relationships(record, creator),
                 ..next_revision(&current, store_fields(record))?
             }
             .seal()
-            .map_err(failed)?;
+            .map_err(PortError::failed)?;
             match self.repository.put(&next, Some(current.revision)) {
                 Err(CapsuleStoreError::Conflict) => continue,
                 other => return other.map_err(port_error),
@@ -396,10 +389,7 @@ impl StoreAccess for CapsuleStorePorts<'_> {
             relationships.push(CapsuleRelationship {
                 name: name.to_owned(),
                 target_kind: CapsuleKind(kind.to_owned()),
-                target_id: CapsuleId(deterministic_legacy_capsule_id(
-                    family,
-                    member_id.as_bytes(),
-                )),
+                target_id: CapsuleId(derived_capsule_id(family, member_id.as_bytes())),
             });
         }
         let now = now_micros();
@@ -430,10 +420,7 @@ impl StoreAccess for CapsuleStorePorts<'_> {
         }
         let capsule = CapsuleEnvelope {
             encoding_version: 1,
-            id: CapsuleId(deterministic_legacy_capsule_id(
-                "StoreMembership",
-                identity.as_bytes(),
-            )),
+            id: CapsuleId(derived_capsule_id("StoreMembership", identity.as_bytes())),
             kind: CapsuleKind("core.store_membership".to_owned()),
             storage_class: StorageClass::Core,
             owner_scope: store.owner_scope.clone(),
@@ -460,9 +447,7 @@ impl StoreAccess for CapsuleStorePorts<'_> {
     }
 
     fn members(&self, store_id: &str) -> PortResult<Vec<(String, StorePermissions)>> {
-        let store = CapsuleValue::Bytes(
-            deterministic_legacy_capsule_id("Store", store_id.as_bytes()).to_vec(),
-        );
+        let store = CapsuleValue::Bytes(derived_capsule_id("Store", store_id.as_bytes()).to_vec());
         let rows = self
             .repository
             .query(&membership_query("store", store))

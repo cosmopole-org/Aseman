@@ -1,6 +1,6 @@
 # `modal` — Modal cloud sandbox runtime
 
-The seventh Caspar VM plugin. A VM of this runtime is a **Modal sandbox**: a
+The seventh Aseman VM plugin. A VM of this runtime is a **Modal sandbox**: a
 container running in Modal's cloud, not on this node, with a persistent Modal
 Volume mounted at `/data`.
 
@@ -69,7 +69,7 @@ both.
 ## Terminate vs delete
 
 `terminate_vm` ends the container but **keeps the Volume**, so a later run
-mounts the same `/data` and the VM continues where it left off — Caspar's
+mounts the same `/data` and the VM continues where it left off — Aseman's
 suspend semantics, on a runtime that has no native suspend. `delete_vm`
 terminates, deletes the Volume and drops every link: nothing is left to resume
 from.

@@ -1,4 +1,4 @@
-"""Shared helpers for reproducible Phase 0 inventory generators."""
+"""Shared helpers for the reproducible inventory generators."""
 
 from __future__ import annotations
 

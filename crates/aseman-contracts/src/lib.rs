@@ -7,20 +7,20 @@ mod parser_properties;
 use serde::{Deserialize, Serialize};
 
 pub mod capsule;
+pub mod creature_keys;
+pub mod documents;
 pub mod guest;
 pub mod guest_api;
 pub mod identity;
-pub mod legacy_documents;
-pub mod legacy_gateway;
-pub mod legacy_keys;
-pub mod legacy_realtime;
-pub mod legacy_storage_http;
-pub mod legacy_wire;
 pub mod migration;
 pub mod module;
 pub mod security;
+pub mod signals;
+pub mod storage_http;
+pub mod vm_routes;
 pub mod vmm;
 pub mod vmm_agent;
+pub mod wire;
 
 // Tonic's generated service signatures return its fixed `Status` error by value.
 // This boundary code cannot change that ABI; application code maps it immediately.

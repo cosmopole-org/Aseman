@@ -14,12 +14,13 @@ use crate::{
 use aseman_capsule::CapsuleStoreError;
 use aseman_contracts::capsule::{CapsuleEnvelope, CapsuleId, CapsuleKind};
 use aseman_ports::consensus_log::ConsensusLogStorage;
+use aseman_postgres::Database;
 use aseman_storage::provider::{
     CapsuleTransaction, Mode, ProviderPlugin, ProviderSettings, StorageProvider,
 };
 use aseman_storage::schema::Model;
 use aseman_storage::{FindMany, Id, StorageError, StorageResult, Where};
-use postgres::{Client, NoTls};
+use postgres::Client;
 use std::sync::Arc;
 use uuid::Uuid;
 
@@ -97,11 +98,17 @@ impl ProviderPlugin for PostgresPlugin {
             };
         let logs =
             PostgresConsensusLogStorage::connect(&url, 4).map_err(StorageError::unavailable)?;
+        let clock = Database::parse(&shards[home])
+            .map_err(StorageError::unavailable)
+            .and_then(|database| {
+                aseman_postgres::pool(&database, 1).map_err(StorageError::unavailable)
+            })?;
         Ok(Arc::new(PostgresProvider {
             factory,
             shards,
             home,
             logs: Arc::new(logs),
+            clock,
         }))
     }
 }
@@ -112,11 +119,16 @@ pub struct PostgresProvider {
     shards: Vec<String>,
     home: usize,
     logs: Arc<PostgresConsensusLogStorage>,
+    /// A connection to the home shard for the database's clock.
+    clock: aseman_postgres::Pool,
 }
 
 impl PostgresProvider {
     fn client(url: &str) -> StorageResult<Client> {
-        Client::connect(url, NoTls).map_err(StorageError::unavailable)
+        Database::parse(url)
+            .map_err(StorageError::unavailable)?
+            .connect()
+            .map_err(StorageError::unavailable)
     }
 
     /// The shards that hold `kind`: home for a reference kind, every shard otherwise.
@@ -132,6 +144,18 @@ impl PostgresProvider {
 impl StorageProvider for PostgresProvider {
     fn name(&self) -> &str {
         NAME
+    }
+
+    fn now_millis(&self) -> StorageResult<i64> {
+        self.clock
+            .get()
+            .map_err(StorageError::unavailable)?
+            .query_one(
+                "SELECT (extract(epoch from clock_timestamp()) * 1000)::bigint AS now",
+                &[],
+            )
+            .map(|row| row.get("now"))
+            .map_err(StorageError::unavailable)
     }
 
     fn begin(&self, mode: Mode) -> StorageResult<Box<dyn CapsuleTransaction>> {
@@ -231,7 +255,36 @@ impl StorageProvider for PostgresProvider {
                 return Ok(Some("legacy key/value (aseman_compat)".to_owned()));
             }
         }
-        Ok(None)
+        // Consensus logs named by an engine's absolute directory (before ADR 0036).
+        let absolute: bool = client
+            .query_one(
+                "SELECT EXISTS (SELECT 1 FROM aseman_consensus.log_entries \
+                 WHERE starts_with(log, '/') AND strpos(log, '--UTC--') = 0)",
+                &[],
+            )
+            .map_err(StorageError::unavailable)?
+            .get(0);
+        Ok(absolute.then(|| "legacy consensus log names (absolute paths)".to_owned()))
+    }
+
+    fn retire_legacy_layout(&self) -> StorageResult<()> {
+        let mut client = Self::client(&self.shards[self.home])?;
+        let present: bool = client
+            .query_one("SELECT to_regnamespace('aseman_compat') IS NOT NULL", &[])
+            .map_err(StorageError::unavailable)?
+            .get(0);
+        if present {
+            let retired = format!(
+                "aseman_compat_retired_{}",
+                std::time::SystemTime::now()
+                    .duration_since(std::time::UNIX_EPOCH)
+                    .map_or(0, |elapsed| elapsed.as_secs())
+            );
+            client
+                .batch_execute(&format!("ALTER SCHEMA aseman_compat RENAME TO {retired}"))
+                .map_err(StorageError::unavailable)?;
+        }
+        Ok(())
     }
 }
 

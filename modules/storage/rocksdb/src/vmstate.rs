@@ -1,5 +1,5 @@
 //! ADR 0022: legacy VM state. Observed runtime is shape-checked, inventoried for the
-//! native-legacy VMM backend, and never exported; durable intent migrates elsewhere.
+//! native VMM backend, and never exported; durable intent migrates elsewhere.
 
 use super::*;
 

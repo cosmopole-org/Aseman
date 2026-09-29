@@ -1,10 +1,10 @@
 //! The wasm guest ABI: WasmEdge host functions exposed to creature modules.
 //!
-//! Every interaction with the Caspar platform flows through the unified
+//! Every interaction with the Aseman platform flows through the unified
 //! `hostCall` function (JSON request/response over guest memory); the other
 //! exports are legacy single-purpose entry points kept for older creature
 //! SDK builds. All host capabilities are reached exclusively through the
-//! `caspar_vm_sdk` host interface.
+//! `aseman_vm_sdk` host interface.
 
 use std::ops::DerefMut;
 use std::str;
@@ -13,7 +13,7 @@ use serde_json::{json, Value as JsonValue};
 use wasmedge_sys::{AsInstance, CallingFrame, Executor, Instance, WasmValue};
 use wasmedge_types::error::CoreError;
 
-use caspar_vm_sdk::host::{host, log_vm};
+use aseman_vm_sdk::host::{host, log_vm};
 
 use crate::runtime::{HostData, WasmMac};
 
@@ -36,7 +36,7 @@ fn dispatch_owned(rt: &WasmMac, op: &str, input: &JsonValue) -> String {
             "machineId": rt.machine_id,
             "vmId": rt.vm_id,
         })),
-        None => json!({"ok": false, "error": "caspar vm host is not initialised"}).to_string(),
+        None => json!({"ok": false, "error": "the VM host is not initialised"}).to_string(),
     }
 }
 
@@ -123,7 +123,7 @@ pub fn host_call(
             }
             // Also flush the low-level raw dbOp buffer.
             rt.trx.commit_as_offchain();
-            rt.trx = Box::new(crate::models::Trx::new());
+            *rt.trx = crate::models::Trx::new();
             json!({"ok": true}).to_string()
         }
         "lockResource" => {
@@ -133,7 +133,7 @@ pub fn host_call(
                 .unwrap_or(rt.machine_id.as_str());
             let result = match host() {
                 Some(h) => h.acquire_resource_lock(resource_id, owner_id),
-                None => Err("caspar vm host is not initialised".to_string()),
+                None => Err("the VM host is not initialised".to_string()),
             };
             match result {
                 Ok(()) => json!({"ok": true}).to_string(),
@@ -147,7 +147,7 @@ pub fn host_call(
                 .unwrap_or(rt.machine_id.as_str());
             let result = match host() {
                 Some(h) => h.release_resource_lock(resource_id, owner_id),
-                None => Err("caspar vm host is not initialised".to_string()),
+                None => Err("the VM host is not initialised".to_string()),
             };
             match result {
                 Ok(()) => json!({"ok": true}).to_string(),
@@ -203,7 +203,7 @@ pub fn host_call(
                     "vmId": rt.vm_id,
                 })),
                 None => {
-                    json!({"ok": false, "error": "caspar vm host is not initialised"}).to_string()
+                    json!({"ok": false, "error": "the VM host is not initialised"}).to_string()
                 }
             }
         }

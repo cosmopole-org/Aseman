@@ -566,7 +566,7 @@ fn samples() -> Vec<(&'static str, Value)> {
             value(&Capabilities {
                 api_version: API_VERSION.to_owned(),
                 backend: BackendInfo {
-                    name: "native-legacy".to_owned(),
+                    name: "native".to_owned(),
                     version: "1".to_owned(),
                 },
                 runtimes: vec![],

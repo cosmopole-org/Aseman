@@ -64,4 +64,4 @@ reconciler's.
 
 `ModalVolume` handles from the Phase 3 export are `provider_local` and are not adopted
 automatically. An operator adopts or explicitly releases each one; they are never
-orphaned and never silently dropped (ADR 0022, removal ledger RL-005 and RL-013).
+orphaned and never silently dropped (ADR 0022).

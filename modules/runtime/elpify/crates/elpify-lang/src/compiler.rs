@@ -322,18 +322,12 @@ impl Parser {
                 self.expect(Token::Semicolon)?;
                 Ok(Stmt::Continue)
             }
-            Some(Token::Ident(_)) => {
-                if self.peek_next() == Some(&Token::Assign) {
-                    let name = self.expect_ident()?;
-                    self.expect(Token::Assign)?;
-                    let expr = self.parse_expr()?;
-                    self.expect(Token::Semicolon)?;
-                    Ok(Stmt::Assign(name, expr))
-                } else {
-                    let expr = self.parse_expr()?;
-                    self.expect(Token::Semicolon)?;
-                    Ok(Stmt::Expr(expr))
-                }
+            Some(Token::Ident(_)) if self.peek_next() == Some(&Token::Assign) => {
+                let name = self.expect_ident()?;
+                self.expect(Token::Assign)?;
+                let expr = self.parse_expr()?;
+                self.expect(Token::Semicolon)?;
+                Ok(Stmt::Assign(name, expr))
             }
             _ => {
                 let expr = self.parse_expr()?;

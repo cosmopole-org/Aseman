@@ -1,6 +1,6 @@
 //! The fire (Firecracker) VM controller — full lifecycle management for
-//! Firecracker microVM sandboxes, exposed to the Caspar VMM through the
-//! `caspar_vm_sdk::VmPlugin` interface.
+//! Firecracker microVM sandboxes, exposed to the Aseman VMM through the
+//! `aseman_vm_sdk::VmPlugin` interface.
 
 use std::collections::HashMap;
 use std::io::{Read, Write};
@@ -14,8 +14,9 @@ use std::time::Duration;
 use once_cell_lite::Lazy;
 use serde_json::{json, Value as JsonValue};
 
-use caspar_vm_sdk::host::{host, log};
-use caspar_vm_sdk::{parse_vm_resource_limits, VmPlugin, VmPluginMeta, VmResourceLimits};
+use aseman_vm_sdk::host::{host, log};
+use aseman_vm_sdk::sandbox::{default_storage_root, VmSandbox};
+use aseman_vm_sdk::{parse_vm_resource_limits, VmPlugin, VmPluginMeta, VmResourceLimits};
 
 use crate::models::FireVmProcess;
 
@@ -53,17 +54,55 @@ pub(crate) static GLOBAL_FIRE_VMS: Lazy<Arc<Mutex<HashMap<String, FireVmProcess>
 fn dispatch(packet: &JsonValue) -> String {
     match host() {
         Some(h) => h.dispatch(packet),
-        None => json!({"ok": false, "error": "caspar vm host is not initialised"}).to_string(),
+        None => json!({"ok": false, "error": "the VM host is not initialised"}).to_string(),
+    }
+}
+
+/// How the controller runs Firecracker (`ASEMAN_FIRECRACKER_*`, the storage root).
+#[derive(Clone, Debug)]
+pub struct FireSettings {
+    pub binary: String,
+    /// Where session directories live: `{storage_root}/vms`.
+    pub sandbox: VmSandbox,
+    pub kernel_image: Option<PathBuf>,
+    pub rootfs_image: Option<PathBuf>,
+    pub boot_args: String,
+}
+
+impl FireSettings {
+    #[must_use]
+    pub fn from_config(config: &aseman_config::RuntimeConfig) -> Self {
+        Self {
+            binary: config.firecracker_binary.clone(),
+            sandbox: VmSandbox::under(
+                &config
+                    .storage_root
+                    .as_ref()
+                    .map_or_else(default_storage_root, PathBuf::from),
+            ),
+            kernel_image: config.firecracker_kernel_image.as_ref().map(PathBuf::from),
+            rootfs_image: config.firecracker_rootfs_image.as_ref().map(PathBuf::from),
+            boot_args: config.firecracker_boot_args.clone(),
+        }
+    }
+
+    /// The base boot images, when both are configured and exist on disk. When
+    /// absent, the controller runs in scaffold mode.
+    fn boot_images(&self) -> Option<(PathBuf, PathBuf)> {
+        let kernel = self.kernel_image.clone()?;
+        let rootfs = self.rootfs_image.clone()?;
+        (kernel.exists() && rootfs.exists()).then_some((kernel, rootfs))
     }
 }
 
 pub struct FireVmController {
     meta: VmPluginMeta,
+    settings: FireSettings,
 }
 
 impl FireVmController {
-    pub fn new(meta: VmPluginMeta) -> Self {
-        Self { meta }
+    pub fn new(meta: VmPluginMeta, settings: FireSettings) -> Self {
+        Self { meta, settings }
     }
 
     fn ensure_vm_root(&self) -> Result<(), String> {
@@ -121,7 +160,7 @@ impl FireVmController {
         // Resolve (and create) the non-escapable per-session sandbox directory
         // before doing anything else, so a bad store/vm id is rejected early.
         let vm_dir = if persistent {
-            Some(session_vm_dir(vm_id)?)
+            Some(self.settings.sandbox.session_dir(vm_id)?)
         } else {
             None
         };
@@ -129,8 +168,7 @@ impl FireVmController {
         self.terminate_by_key(&process_key);
         let _ = std::fs::remove_file(&socket_path);
 
-        let firecracker_bin = aseman_config::runtime_config().firecracker_binary;
-        let child = Command::new(&firecracker_bin)
+        let child = Command::new(&self.settings.binary)
             .arg("--api-sock")
             .arg(&socket_path)
             .stdin(Stdio::piped())
@@ -144,7 +182,7 @@ impl FireVmController {
         // boot a real guest whose only visible block devices are this session's
         // own disks — the host filesystem is unreachable from inside the VM.
         if let Some(ref dir) = vm_dir {
-            if let Err(err) = provision_and_boot_guest(&socket_path, dir, &limits) {
+            if let Err(err) = provision_and_boot_guest(&self.settings, &socket_path, dir, &limits) {
                 log(format!(
                     "fire vm {}: persistent guest boot unavailable, running in scaffold mode: {}",
                     process_key, err
@@ -330,9 +368,10 @@ impl FireVmController {
 
         let mut purged = false;
         if purge {
-            let target = captured_dir.or_else(|| vm_dir_path(vm_id));
+            let sandbox = &self.settings.sandbox;
+            let target = captured_dir.or_else(|| Some(sandbox.vm_dir(vm_id)));
             if let Some(dir) = target {
-                if dir.exists() && is_within_vms_root(&dir) {
+                if dir.exists() && sandbox.contains(&dir) {
                     match std::fs::remove_dir_all(&dir) {
                         Ok(()) => purged = true,
                         Err(e) => {
@@ -653,98 +692,30 @@ fn emit_fire_output_signal(
 
 // ── Persistent, non-escapable session storage ────────────────────────────────
 
-/// Root of Caspar's data storage folder, as configured for the node
-/// (`STORAGE_ROOT_PATH`). Falls back to the in-container default and finally to
-/// a local dev path.
-fn fire_storage_root() -> PathBuf {
-    if let Some(path) = aseman_config::runtime_config().storage_root {
-        return PathBuf::from(path);
-    }
-    let in_container = PathBuf::from("/app/data/storage");
-    if in_container.exists() {
-        return in_container;
-    }
-    PathBuf::from("/tmp/caspar/storage")
-}
-
-/// The `vms` directory inside the storage folder that holds every session's
-/// persistent sandbox.
-fn fire_vms_root() -> PathBuf {
-    fire_storage_root().join("vms")
-}
-
-/// Reduce a caller-supplied id to a single safe path component.
-fn sanitize_component(raw: &str) -> String {
-    let mut out = String::with_capacity(raw.len());
-    for ch in raw.chars() {
-        if ch.is_ascii_alphanumeric() || ch == '-' || ch == '_' {
-            out.push(ch);
-        } else {
-            out.push('_');
-        }
-    }
-    if out.is_empty() {
-        "default".to_string()
-    } else {
-        out
-    }
-}
-
-/// Deterministic on-disk path for a sandbox (no side effects).
-fn vm_dir_path(vm_id: &str) -> Option<PathBuf> {
-    let vm = sanitize_component(if vm_id.is_empty() { "main" } else { vm_id });
-    Some(fire_vms_root().join(vm))
-}
-
-/// Resolve (and create) the per-VM sandbox directory, guaranteeing — by
-/// canonicalising the result and asserting containment — that it can never
-/// resolve outside the vms root.
-fn session_vm_dir(vm_id: &str) -> Result<PathBuf, String> {
-    let root = fire_vms_root();
-    std::fs::create_dir_all(&root)
-        .map_err(|e| format!("failed to prepare vms root {}: {}", root.display(), e))?;
-    let canon_root = std::fs::canonicalize(&root)
-        .map_err(|e| format!("failed to canonicalize vms root: {}", e))?;
-    let dir = vm_dir_path(vm_id).ok_or_else(|| "failed to resolve sandbox dir".to_string())?;
-    std::fs::create_dir_all(&dir)
-        .map_err(|e| format!("failed to create session vm dir {}: {}", dir.display(), e))?;
-    let canon_dir = std::fs::canonicalize(&dir)
-        .map_err(|e| format!("failed to canonicalize session vm dir: {}", e))?;
-    if !canon_dir.starts_with(&canon_root) || canon_dir == canon_root {
-        return Err(format!(
-            "refusing to use vm dir outside sandbox root: {}",
-            canon_dir.display()
-        ));
-    }
-    Ok(canon_dir)
-}
-
-/// Guard used before a destructive purge: the directory must sit strictly
-/// inside the vms root.
-fn is_within_vms_root(dir: &Path) -> bool {
-    let root = fire_vms_root();
-    let canon_root = std::fs::canonicalize(&root).unwrap_or(root);
-    match std::fs::canonicalize(dir) {
-        Ok(c) => c.starts_with(&canon_root) && c != canon_root,
-        Err(_) => dir.starts_with(&canon_root) && dir != canon_root,
-    }
-}
-
 /// Create a sparse, ext4-formatted backing disk if it does not already exist.
 fn ensure_persistent_disk(path: &Path, disk_gb: u64) -> Result<(), String> {
-    if path.exists() {
-        return Ok(());
-    }
     let bytes = disk_gb
         .max(1)
         .saturating_mul(1024)
         .saturating_mul(1024)
         .saturating_mul(1024);
-    let file = std::fs::OpenOptions::new()
-        .create(true)
+    // `create_new` makes "does it exist" and "create it" one atomic step: an
+    // existing disk holds guest data and must never be resized or reformatted.
+    let file = match std::fs::OpenOptions::new()
+        .create_new(true)
         .write(true)
         .open(path)
-        .map_err(|e| format!("failed to create disk image {}: {}", path.display(), e))?;
+    {
+        Ok(file) => file,
+        Err(e) if e.kind() == std::io::ErrorKind::AlreadyExists => return Ok(()),
+        Err(e) => {
+            return Err(format!(
+                "failed to create disk image {}: {}",
+                path.display(),
+                e
+            ));
+        }
+    };
     file.set_len(bytes)
         .map_err(|e| format!("failed to size disk image {}: {}", path.display(), e))?;
     drop(file);
@@ -756,19 +727,6 @@ fn ensure_persistent_disk(path: &Path, disk_gb: u64) -> Result<(), String> {
         .arg(path)
         .status();
     Ok(())
-}
-
-/// Configured base boot images, if both a kernel and a base rootfs exist on
-/// disk. When absent, the controller runs in scaffold mode.
-fn fire_boot_images() -> Option<(PathBuf, PathBuf)> {
-    let config = aseman_config::runtime_config();
-    let kernel = PathBuf::from(config.firecracker_kernel_image?);
-    let rootfs = PathBuf::from(config.firecracker_rootfs_image?);
-    if kernel.exists() && rootfs.exists() {
-        Some((kernel, rootfs))
-    } else {
-        None
-    }
 }
 
 /// Minimal HTTP/1.1-over-unix-socket call to the Firecracker API.
@@ -805,6 +763,7 @@ fn fc_api(socket_path: &Path, method: &str, url_path: &str, body: &str) -> Resul
 /// configured, boot a real Firecracker guest whose only block devices are this
 /// session's own rootfs + data disk.
 fn provision_and_boot_guest(
+    settings: &FireSettings,
     socket_path: &Path,
     vm_dir: &Path,
     limits: &VmResourceLimits,
@@ -814,7 +773,7 @@ fn provision_and_boot_guest(
     let data_disk = vm_dir.join("data.ext4");
     ensure_persistent_disk(&data_disk, limits.disk_gb)?;
 
-    let (kernel, base_rootfs) = match fire_boot_images() {
+    let (kernel, base_rootfs) = match settings.boot_images() {
         Some(pair) => pair,
         None => {
             return Err(
@@ -831,10 +790,9 @@ fn provision_and_boot_guest(
             .map_err(|e| format!("failed to materialise session rootfs: {}", e))?;
     }
 
-    let boot_args = aseman_config::runtime_config().firecracker_boot_args;
     let boot_body = json!({
         "kernel_image_path": kernel.display().to_string(),
-        "boot_args": boot_args,
+        "boot_args": settings.boot_args,
     })
     .to_string();
     fc_api(socket_path, "PUT", "/boot-source", &boot_body)?;

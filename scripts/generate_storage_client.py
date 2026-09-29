@@ -13,6 +13,7 @@ Usage: generate_storage_client.py [--check]
 from __future__ import annotations
 
 import argparse
+import subprocess
 import json
 import sys
 from pathlib import Path
@@ -41,6 +42,10 @@ KEYWORDS = {
     "unsized", "virtual", "yield", "try", "gen",
 }
 RESERVED = {"id", "revision", "record_created_micros", "record_updated_micros"}
+
+
+# Method-name prefixes clippy reserves for conversions and predicates.
+CONVERSION_PREFIXES = ("as_", "from_", "into_", "is_", "to_")
 
 
 def ident(name: str) -> str:
@@ -87,7 +92,6 @@ def model_module(model: dict) -> str:
     lines = [
         f"    /// `{kind}`.",
         f"    pub mod {ident(kind.split('.', 1)[1])} {{",
-        "        #![allow(clippy::all, unused_imports)]",
         "        use crate::error::StorageResult;",
         "        use crate::query::Unique;",
         "        use crate::typed::{self, Field, Update};",
@@ -185,6 +189,13 @@ def model_module(model: dict) -> str:
         "        impl Updater {",
     ]
     for name, rust, required in fields:
+        if name.startswith(CONVERSION_PREFIXES):
+            # The setter takes the schema field's name, which here reads like a
+            # Rust conversion or predicate method.
+            lines.append(
+                "            #[expect(clippy::wrong_self_convention, "
+                'reason = "a setter named after its schema field")]'
+            )
         if required:
             lines += [
                 "            #[must_use]",
@@ -252,7 +263,6 @@ def render(models: list[dict]) -> str:
         "// contracts/capsule/kinds; do not edit by hand.",
         "//! The typed storage client (ADR 0036): one module per model, and [`Models`],",
         "//! which gives a transaction one accessor per model.",
-        "#![allow(clippy::too_many_lines, clippy::module_name_repetitions)]",
         "",
         "use crate::engine::Trx;",
         "use crate::typed::ModelClient;",
@@ -284,11 +294,23 @@ def render(models: list[dict]) -> str:
     return "\n".join(out)
 
 
+def formatted(text: str) -> str:
+    """The client as rustfmt lays it out, so the gate's format check agrees."""
+    return subprocess.run(
+        ["rustfmt", "--edition", "2024", "--emit", "stdout"],
+        input=text,
+        capture_output=True,
+        text=True,
+        check=True,
+        cwd=ROOT,
+    ).stdout
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--check", action="store_true")
     arguments = parser.parse_args()
-    text = render(load())
+    text = formatted(render(load()))
     if arguments.check:
         if not OUT.exists() or OUT.read_text(encoding="utf-8") != text:
             print("stale: crates/aseman-storage/src/client.rs", file=sys.stderr)

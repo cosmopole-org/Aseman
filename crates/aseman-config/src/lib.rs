@@ -1,35 +1,41 @@
-//! Typed Aseman configuration with explicit source precedence and bounded legacy aliases.
+//! Typed Aseman configuration: one parse of the process environment and `.env`,
+//! refusing retired Aseman names.
 #![forbid(unsafe_code)]
 
-use serde::Deserialize;
 use serde::de::DeserializeOwned;
+use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
-use std::ffi::OsString;
 use std::fs;
 use std::io::ErrorKind;
-use std::path::Path;
-use std::sync::OnceLock;
+use std::path::{Path, PathBuf};
 use thiserror::Error;
 
-const LEGACY_ALIASES_JSON: &str = include_str!("../../../contracts/config/legacy-aliases.json");
+const RETIRED_NAMES_JSON: &str = include_str!("../../../contracts/config/retired-names.json");
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct AsemanConfig {
     pub node: NodeIdentityConfig,
     pub network: NetworkConfig,
-    pub storage: LegacyStorageConfig,
+    pub storage: StoragePathsConfig,
     pub allocator: AllocatorConfig,
     pub telemetry: TelemetryConfig,
     pub cluster: ClusterBootstrapConfig,
     pub core: CoreConfig,
     pub rate_limit: RateLimitConfig,
-    pub legacy_adapters: LegacyAdapterConfig,
-    pub runtime: RuntimeConfig,
-    /// The VMM the node commands over A501; `None` keeps the embedded VMM until the
-    /// P5-03 extraction completes.
+    pub services: ServicesConfig,
+    /// The VMM the node commands over A501; `None` when it is not configured.
     pub vmm: Option<VmmClientConfig>,
     pub database_url_secret: Option<String>,
     pub core_storage: CoreStorageConfig,
+    /// The A701 public HTTP listener; `None` when it is not configured.
+    pub public_http: Option<PublicHttpListenerConfig>,
+    /// The A705 federation listener; `None` when it is not configured.
+    pub federation_listener: Option<FederationListenerConfig>,
+    /// Outbound federation; `None` when it is not configured.
+    pub federation_outbound: Option<FederationOutboundConfig>,
+    /// Consensus provider properties (`ASEMAN_CONSENSUS_*`) as the provider's
+    /// dotted keys, forwarded through `ConsensusProvider::set`.
+    pub consensus_properties: Vec<(String, String)>,
 }
 
 /// Which provider is authoritative for the core port families (ADR 0026), and the
@@ -41,8 +47,8 @@ pub struct CoreStorageConfig {
     /// The trusted guest proxy (A306/A405), required on PostgreSQL: guest data is
     /// served from each creature's own database once the node runs there.
     pub guest_proxy: Option<GuestProxyConfig>,
-    /// Where the legacy store-signal and build-log families live
-    /// (`ASEMAN_SIGNAL_LOG_PROVIDER`).
+    /// Where the legacy signal history is (`ASEMAN_SIGNAL_LOG_PROVIDER`), read once by
+    /// `storage migrate` (ADR 0036); the node keeps signals as models.
     pub signal_log: SignalLogProvider,
     /// The PostgreSQL provider's cluster mode: a shard-map file
     /// (`ASEMAN_POSTGRES_SHARDS_SECRET`, ADR 0033). Absent, one database serves.
@@ -75,10 +81,11 @@ impl CapsuleLayout {
     }
 }
 
-/// The server holding the legacy signal (`storage`) and build-log tables.
+/// The server holding the legacy signal history (QuestDB's `storage` table or
+/// PostgreSQL's `aseman_legacy_log.signals`) that `storage migrate` converts.
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
 pub enum SignalLogProvider {
-    /// QuestDB on `ASEMAN_LEGACY_QUESTDB_PORT`: the RocksDB provider's default.
+    /// QuestDB on `ASEMAN_QUESTDB_PORT`: the RocksDB provider's default.
     QuestDb,
     /// PostgreSQL through `ASEMAN_DATABASE_URL_SECRET`: the PostgreSQL provider's
     /// default. History already in QuestDB is not moved by selecting it.
@@ -99,7 +106,7 @@ pub struct GuestProxyConfig {
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum CoreStorageProvider {
     /// PostgreSQL through `ASEMAN_DATABASE_URL_SECRET` (the default): capsules, the
-    /// compatibility transaction surface, and every PostgreSQL-backed port.
+    /// node's models, and every PostgreSQL-backed port.
     Postgres,
     /// Embedded RocksDB under the storage root, self-contained on one host; in
     /// cluster mode its commits replicate through OpenRaft (ADR 0012 amendment).
@@ -118,14 +125,15 @@ pub struct NetworkConfig {
     pub public_http_port: u16,
     pub public_storage_port: u16,
     pub vm_http_ingress_port: u16,
-    pub legacy_tcp_port: u16,
-    pub legacy_ws_port: u16,
-    pub legacy_federation_port: u16,
-    pub legacy_consensus_port: u16,
+    pub tcp_port: u16,
+    pub ws_port: u16,
+    pub federation_port: u16,
+    pub chain_port: u16,
 }
 
+/// Where the node keeps its local files under the storage root.
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub struct LegacyStorageConfig {
+pub struct StoragePathsConfig {
     pub root_path: String,
     pub base_db_path: String,
     pub applet_db_path: String,
@@ -151,6 +159,9 @@ pub struct TelemetryConfig {
 /// The RocksDB provider's cluster bootstrap inputs (ADR 0033).
 #[derive(Clone, Debug, Default, Eq, PartialEq)]
 pub struct ClusterBootstrapConfig {
+    /// The cluster's mutual TLS (`ASEMAN_CLUSTER_TLS_*`): every replica's listener,
+    /// its calls to other replicas, and administration.
+    pub tls: Option<TlsFiles>,
     pub config_path: Option<String>,
     pub enabled: Option<bool>,
     pub bootstrap: Option<bool>,
@@ -160,6 +171,45 @@ pub struct ClusterBootstrapConfig {
     pub listen_addr: Option<String>,
     pub advertise_addr: Option<String>,
     pub auth_token: Option<String>,
+}
+
+/// A mutual-TLS identity: this party's certificate chain and private key (PEM
+/// files), and the CA (PEM) its peers' certificates must chain to.
+#[derive(Clone, Debug, Default, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(default, deny_unknown_fields)]
+pub struct TlsFiles {
+    pub certificate: PathBuf,
+    pub key_secret: PathBuf,
+    pub ca: PathBuf,
+}
+
+impl TlsFiles {
+    /// `{prefix}_CERTIFICATE`, `{prefix}_KEY_SECRET`, and `{prefix}_CA`: all three, or
+    /// none (`None`).
+    ///
+    /// # Errors
+    ///
+    /// Some but not all of the three are set.
+    fn from_canonical(
+        values: &BTreeMap<String, String>,
+        prefix: &'static str,
+    ) -> Result<Option<Self>, ConfigError> {
+        let certificate = nonempty(values, &format!("{prefix}_CERTIFICATE"));
+        let key_secret = nonempty(values, &format!("{prefix}_KEY_SECRET"));
+        let ca = nonempty(values, &format!("{prefix}_CA"));
+        match (certificate, key_secret, ca) {
+            (None, None, None) => Ok(None),
+            (Some(certificate), Some(key_secret), Some(ca)) => Ok(Some(Self {
+                certificate: certificate.into(),
+                key_secret: key_secret.into(),
+                ca: ca.into(),
+            })),
+            _ => Err(ConfigError::Invalid {
+                key: prefix,
+                reason: "set its _CERTIFICATE, _KEY_SECRET, and _CA together",
+            }),
+        }
+    }
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -185,33 +235,85 @@ pub struct RateLimitConfig {
     pub idle_evict_seconds: f64,
 }
 
+/// The RocksDB memory budget (`ASEMAN_ROCKSDB_*`), shared by every RocksDB
+/// database a process opens.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct RocksDbTuning {
+    /// Open table readers; negative keeps RocksDB's unbounded default.
+    pub max_open_files: i32,
+    /// The process-wide block cache.
+    pub block_cache_mb: usize,
+    /// Each store's write buffer.
+    pub write_buffer_mb: usize,
+}
+
+impl Default for RocksDbTuning {
+    fn default() -> Self {
+        Self {
+            max_open_files: 512,
+            block_cache_mb: 128,
+            write_buffer_mb: 32,
+        }
+    }
+}
+
+impl RocksDbTuning {
+    fn from_canonical(values: &BTreeMap<String, String>) -> Result<Self, ConfigError> {
+        let defaults = Self::default();
+        Ok(Self {
+            max_open_files: parse_or(
+                values,
+                "ASEMAN_ROCKSDB_MAX_OPEN_FILES",
+                defaults.max_open_files,
+            )?,
+            block_cache_mb: parse_or(
+                values,
+                "ASEMAN_ROCKSDB_BLOCK_CACHE_MB",
+                defaults.block_cache_mb,
+            )?,
+            write_buffer_mb: parse_or(
+                values,
+                "ASEMAN_ROCKSDB_WRITE_BUFFER_MB",
+                defaults.write_buffer_mb,
+            )?,
+        })
+    }
+}
+
+/// The node's own services: the chain engine, the public storage limits, and the
+/// signal history server `storage migrate` reads.
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub struct LegacyAdapterConfig {
+pub struct ServicesConfig {
     pub main_port: String,
     pub public_storage_max_bytes: usize,
     pub questdb_port: u16,
-    pub rocksdb_max_open_files: i32,
-    pub rocksdb_block_cache_mb: usize,
-    pub rocksdb_write_buffer_mb: usize,
+    pub rocksdb: RocksDbTuning,
     pub babble_data_dir: Option<String>,
     pub babble_frame_cache: usize,
     pub babble_frame_retention: i64,
     pub is_head: bool,
     pub blockchain_api_port: u16,
     pub ip_address: String,
-    pub home_dir: Option<String>,
-    pub user_profile_dir: Option<String>,
 }
 
-#[derive(Clone, Debug, PartialEq)]
+/// The native VMM backend's runtime-plugin settings: the `runtime` section of its
+/// configuration file, which `asemanctl bootstrap` writes from its parameters for the
+/// enabled VM types. Every field has a default; unknown fields are refused.
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+#[serde(default, deny_unknown_fields)]
 pub struct RuntimeConfig {
+    /// Where runtimes keep per-VM files; `None` uses the runtime's default.
     pub storage_root: Option<String>,
+    /// The port a VM's own HTTP server listens on, and the timeout of a forwarded
+    /// request.
     pub vm_http_port: u16,
     pub vm_http_timeout_seconds: u64,
     pub docker_gateway_network: String,
+    /// The container runtime (gVisor `runsc` by default); `None` is Docker's own.
     pub docker_runtime: Option<String>,
     pub docker_disk_quota: bool,
     pub docker_gateway_host: String,
+    /// The docker-host gateway port; zero serves no gateway.
     pub docker_gateway_port: u16,
     pub firecracker_binary: String,
     pub firecracker_kernel_image: Option<String>,
@@ -219,9 +321,11 @@ pub struct RuntimeConfig {
     pub firecracker_boot_args: String,
     pub wasm_aot: bool,
     pub wasm_vm_cache: bool,
-    pub modal_api_key: String,
-    pub modal_token_id: String,
-    pub modal_token_secret: String,
+    /// Modal credentials, as secret files: `<token-id>:<token-secret>` in one file,
+    /// or the two halves in two.
+    pub modal_api_key_secret: Option<PathBuf>,
+    pub modal_token_id_secret: Option<PathBuf>,
+    pub modal_token_secret_secret: Option<PathBuf>,
     pub modal_environment: String,
     pub modal_server_url: String,
     pub modal_client_version: String,
@@ -234,136 +338,60 @@ pub struct RuntimeConfig {
     pub modal_task_ready_timeout_seconds: f32,
     pub modal_volume_mount_path: String,
     pub modal_volume_settle_ms: u64,
-    pub probe_machine_id: String,
-    pub probe_vm_id: String,
-    pub probe_command: String,
-}
-
-impl RuntimeConfig {
-    fn from_canonical(values: &BTreeMap<String, String>) -> Result<Self, ConfigError> {
-        Ok(Self {
-            storage_root: nonempty(values, "ASEMAN_LEGACY_STORAGE_ROOT_PATH"),
-            vm_http_port: parse_or(values, "ASEMAN_VM_HTTP_PORT", 8080)?,
-            vm_http_timeout_seconds: parse_or(values, "ASEMAN_VM_HTTP_TIMEOUT_SECS", 30)?,
-            docker_gateway_network: value_or(values, "ASEMAN_GATEWAY_NETWORK", "kasper"),
-            docker_runtime: match values.get("ASEMAN_DOCKER_RUNTIME") {
-                None => Some("runsc".to_owned()),
-                Some(value)
-                    if value.trim().is_empty()
-                        || value.trim().eq_ignore_ascii_case("default")
-                        || value.trim().eq_ignore_ascii_case("runc") =>
-                {
-                    None
-                }
-                Some(value) => Some(value.trim().to_owned()),
-            },
-            docker_disk_quota: !falsey(values.get("ASEMAN_DOCKER_DISK_QUOTA")),
-            docker_gateway_host: value_or(
-                values,
-                "ASEMAN_LEGACY_DOCKER_HOST_GATEWAY_ADVERTISE_HOST",
-                "host.docker.internal",
-            ),
-            docker_gateway_port: parse_or(values, "ASEMAN_LEGACY_DOCKER_HOST_GATEWAY_PORT", 8079)?,
-            firecracker_binary: value_or(
-                values,
-                "ASEMAN_LEGACY_FIRECRACKER_BIN",
-                "/usr/local/bin/firecracker",
-            ),
-            firecracker_kernel_image: nonempty(values, "ASEMAN_LEGACY_FIRECRACKER_KERNEL_IMAGE"),
-            firecracker_rootfs_image: nonempty(values, "ASEMAN_LEGACY_FIRECRACKER_ROOTFS_IMAGE"),
-            firecracker_boot_args: value_or(
-                values,
-                "ASEMAN_LEGACY_FIRECRACKER_BOOT_ARGS",
-                "console=ttyS0 reboot=k panic=1 pci=off root=/dev/vda rw",
-            ),
-            wasm_aot: !falsey(values.get("ASEMAN_WASM_AOT")),
-            wasm_vm_cache: !falsey(values.get("ASEMAN_WASM_VM_CACHE")),
-            modal_api_key: optional(values, "ASEMAN_LEGACY_MODAL_API_KEY"),
-            modal_token_id: optional(values, "ASEMAN_LEGACY_MODAL_TOKEN_ID"),
-            modal_token_secret: optional(values, "ASEMAN_LEGACY_MODAL_TOKEN_SECRET"),
-            modal_environment: optional(values, "ASEMAN_LEGACY_MODAL_ENVIRONMENT"),
-            modal_server_url: value_or(
-                values,
-                "ASEMAN_LEGACY_MODAL_SERVER_URL",
-                "https://api.modal.com:443",
-            ),
-            modal_client_version: value_or(values, "ASEMAN_LEGACY_MODAL_CLIENT_VERSION", "1.0.0"),
-            modal_app_name: nonempty(values, "ASEMAN_LEGACY_MODAL_APP_NAME"),
-            modal_app_prefix: value_or(values, "ASEMAN_LEGACY_MODAL_APP_PREFIX", "caspar"),
-            modal_builder_version: optional(values, "ASEMAN_LEGACY_MODAL_BUILDER_VERSION"),
-            modal_default_image: value_or(
-                values,
-                "ASEMAN_LEGACY_MODAL_DEFAULT_IMAGE",
-                "ubuntu:24.04",
-            ),
-            modal_image_build_timeout_seconds: parse_or(
-                values,
-                "ASEMAN_LEGACY_MODAL_IMAGE_BUILD_TIMEOUT_SECS",
-                900,
-            )?,
-            modal_sandbox_timeout_seconds: parse_optional(
-                values,
-                "ASEMAN_LEGACY_MODAL_SANDBOX_TIMEOUT_SECS",
-            )?,
-            modal_task_ready_timeout_seconds: parse_or(
-                values,
-                "ASEMAN_LEGACY_MODAL_TASK_READY_TIMEOUT_SECS",
-                60.0,
-            )?,
-            modal_volume_mount_path: value_or(
-                values,
-                "ASEMAN_LEGACY_MODAL_VOLUME_MOUNT_PATH",
-                "/data",
-            ),
-            modal_volume_settle_ms: parse_or(values, "ASEMAN_LEGACY_MODAL_VOLUME_SETTLE_MS", 3000)?,
-            probe_machine_id: optional(values, "ASEMAN_LEGACY_PROBE_MACHINE_ID"),
-            probe_vm_id: optional(values, "ASEMAN_LEGACY_PROBE_VM_ID"),
-            probe_command: value_or(
-                values,
-                "ASEMAN_LEGACY_PROBE_CMD",
-                "tail -60 /var/log/decillion/bridge.log 2>&1",
-            ),
-        })
-    }
-
-    pub fn from_process() -> Result<Self, ConfigError> {
-        let values: BTreeMap<String, String> = std::env::vars().collect();
-        let (values, _) = canonicalize(&values)?;
-        Self::from_canonical(&values)
-    }
 }
 
 impl Default for RuntimeConfig {
     fn default() -> Self {
-        Self::from_canonical(&BTreeMap::new()).expect("runtime defaults are valid")
+        Self {
+            storage_root: None,
+            vm_http_port: 8080,
+            vm_http_timeout_seconds: 30,
+            docker_gateway_network: "kasper".to_owned(),
+            docker_runtime: Some("runsc".to_owned()),
+            docker_disk_quota: true,
+            docker_gateway_host: "host.docker.internal".to_owned(),
+            docker_gateway_port: 8079,
+            firecracker_binary: "/usr/local/bin/firecracker".to_owned(),
+            firecracker_kernel_image: None,
+            firecracker_rootfs_image: None,
+            firecracker_boot_args: "console=ttyS0 reboot=k panic=1 pci=off root=/dev/vda rw"
+                .to_owned(),
+            wasm_aot: true,
+            wasm_vm_cache: true,
+            modal_api_key_secret: None,
+            modal_token_id_secret: None,
+            modal_token_secret_secret: None,
+            modal_environment: String::new(),
+            modal_server_url: "https://api.modal.com:443".to_owned(),
+            modal_client_version: "1.0.0".to_owned(),
+            modal_app_name: None,
+            modal_app_prefix: "caspar".to_owned(),
+            modal_builder_version: String::new(),
+            modal_default_image: "ubuntu:24.04".to_owned(),
+            modal_image_build_timeout_seconds: 900,
+            modal_sandbox_timeout_seconds: None,
+            modal_task_ready_timeout_seconds: 60.0,
+            modal_volume_mount_path: "/data".to_owned(),
+            modal_volume_settle_ms: 3000,
+        }
     }
 }
 
-pub fn runtime_config() -> RuntimeConfig {
-    ACTIVE_CONFIG
-        .get()
-        .map(|config| config.runtime.clone())
-        .unwrap_or_else(|| RuntimeConfig::from_process().unwrap_or_default())
-}
-
-static ACTIVE_CONFIG: OnceLock<AsemanConfig> = OnceLock::new();
-static ACTIVE_CLI_CONFIG: OnceLock<CliConfig> = OnceLock::new();
-
+/// `asemanctl`'s configuration, parsed once by its `main`.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct CliConfig {
+    /// The storage cluster's administration API.
     pub cluster_endpoint: String,
     pub cluster_token: String,
-    pub telemetry_url: String,
-    pub pprof_url: String,
-    pub library_path: Option<String>,
-    pub executable_path: Option<OsString>,
-    pub owner_username: Option<String>,
-    pub owner_email: Option<String>,
+    /// The client identity and CA for the cluster's mutual TLS.
+    pub cluster_tls: Option<TlsFiles>,
+    /// Where `asemanctl vms` finds the runtime projects.
     pub vms_dir: Option<String>,
-    /// Journal/state directory override for `asemanctl doctor|backup|restore|upgrade|support-bundle`.
-    pub state_dir: Option<String>,
-    /// Operator Ed25519 seed used to sign backup manifests (A902).
-    pub operator_signing_key: Option<String>,
+    /// The journal and state directory: `ASEMAN_CTL_STATE_DIR`, else
+    /// `$XDG_STATE_HOME/asemanctl`, else `$HOME/.local/state/asemanctl`.
+    pub state_dir: PathBuf,
+    /// The operator Ed25519 seed that signs backup manifests (A902).
+    pub operator_signing_key: Option<PathBuf>,
     /// Internal recursion guard for asemanctl's global structured-output wrapper.
     pub structured_child: bool,
 }
@@ -377,6 +405,16 @@ pub struct IntegrationTestConfig {
     /// An administrative URL of a server with `max_prepared_transactions > 0`, on
     /// which the sharding suite creates its shards (ADR 0033).
     pub postgres_shards_url: Option<String>,
+    /// A server that offers TLS, with its CA as the URL's `sslrootcert`; the TLS
+    /// suite checks verified connections against it.
+    pub postgres_tls_url: Option<String>,
+    /// Modal credentials for the ignored live Modal tests (`MODAL_TOKEN_ID`,
+    /// `MODAL_TOKEN_SECRET`), and the sandbox the manual probe inspects.
+    pub modal_token_id: Option<String>,
+    pub modal_token_secret: Option<String>,
+    pub probe_machine_id: Option<String>,
+    pub probe_vm_id: Option<String>,
+    pub probe_command: Option<String>,
     /// The Nomad cluster a live backend test runs against; absent skips the test,
     /// because Aseman never installs a scheduler (ADR 0002).
     pub nomad_endpoint: Option<String>,
@@ -399,6 +437,24 @@ impl IntegrationTestConfig {
             postgres_shards_url: std::env::var("ASEMAN_TEST_POSTGRES_SHARDS_URL")
                 .ok()
                 .filter(|value| !value.trim().is_empty()),
+            postgres_tls_url: std::env::var("ASEMAN_TEST_POSTGRES_TLS_URL")
+                .ok()
+                .filter(|value| !value.trim().is_empty()),
+            modal_token_id: std::env::var("MODAL_TOKEN_ID")
+                .ok()
+                .filter(|value| !value.is_empty()),
+            modal_token_secret: std::env::var("MODAL_TOKEN_SECRET")
+                .ok()
+                .filter(|value| !value.is_empty()),
+            probe_machine_id: std::env::var("PROBE_MACHINE_ID")
+                .ok()
+                .filter(|value| !value.is_empty()),
+            probe_vm_id: std::env::var("PROBE_VM_ID")
+                .ok()
+                .filter(|value| !value.is_empty()),
+            probe_command: std::env::var("PROBE_CMD")
+                .ok()
+                .filter(|value| !value.is_empty()),
             nomad_endpoint: std::env::var("ASEMAN_TEST_NOMAD_ENDPOINT")
                 .ok()
                 .filter(|value| !value.trim().is_empty()),
@@ -411,30 +467,40 @@ impl IntegrationTestConfig {
 }
 
 impl CliConfig {
+    /// # Errors
+    ///
+    /// A retired configuration name.
     pub fn from_process() -> Result<Self, ConfigError> {
-        let values: BTreeMap<String, String> = std::env::vars().collect();
-        let (values, _) = canonicalize(&values)?;
+        Self::from_map(&std::env::vars().collect())
+    }
+
+    /// # Errors
+    ///
+    /// A retired configuration name.
+    pub fn from_map(values: &BTreeMap<String, String>) -> Result<Self, ConfigError> {
+        let values = canonicalize(values)?;
+        let state_dir = nonempty(&values, "ASEMAN_CTL_STATE_DIR")
+            .map(PathBuf::from)
+            .unwrap_or_else(|| {
+                nonempty(&values, "XDG_STATE_HOME")
+                    .map(PathBuf::from)
+                    .unwrap_or_else(|| {
+                        PathBuf::from(optional(&values, "HOME")).join(".local/state")
+                    })
+                    .join("asemanctl")
+            });
         Ok(Self {
-            cluster_endpoint: values
-                .get("ASEMAN_LEGACY_CASPARCTL_CLUSTER_ENDPOINT")
-                .cloned()
-                .unwrap_or_else(|| "http://127.0.0.1:7440".to_owned()),
+            cluster_endpoint: value_or(
+                &values,
+                "ASEMAN_CTL_CLUSTER_ENDPOINT",
+                "https://127.0.0.1:7440",
+            ),
             cluster_token: optional(&values, "ASEMAN_CLUSTER_TOKEN"),
-            telemetry_url: values
-                .get("ASEMAN_LEGACY_CASPARCTL_TELEMETRY")
-                .cloned()
-                .unwrap_or_else(|| "http://127.0.0.1:9099/telemetry/snapshot".to_owned()),
-            pprof_url: values
-                .get("ASEMAN_LEGACY_CASPARCTL_PPROF")
-                .cloned()
-                .unwrap_or_else(|| "http://127.0.0.1:9999".to_owned()),
-            library_path: nonempty(&values, "ASEMAN_LEGACY_LD_LIBRARY_PATH"),
-            executable_path: std::env::var_os("PATH"),
-            owner_username: nonempty(&values, "ASEMAN_OWNER_USERNAME"),
-            owner_email: nonempty(&values, "ASEMAN_OWNER_EMAIL"),
+            cluster_tls: TlsFiles::from_canonical(&values, "ASEMAN_CLUSTER_TLS")?,
             vms_dir: nonempty(&values, "ASEMAN_VMS_DIR"),
-            state_dir: nonempty(&values, "ASEMAN_CTL_STATE_DIR"),
-            operator_signing_key: nonempty(&values, "ASEMAN_OPERATOR_SIGNING_KEY"),
+            state_dir,
+            operator_signing_key: nonempty(&values, "ASEMAN_OPERATOR_SIGNING_KEY")
+                .map(PathBuf::from),
             structured_child: values
                 .get("ASEMAN_CLI_STRUCTURED_CHILD")
                 .is_some_and(|value| value == "1"),
@@ -442,63 +508,25 @@ impl CliConfig {
     }
 }
 
-/// The XDG state home (`$XDG_STATE_HOME`, else `$HOME/.local/state`) that asemanctl
-/// journals and support-bundle collections live under.
-#[must_use]
-pub fn process_state_home() -> std::path::PathBuf {
-    std::env::var("XDG_STATE_HOME")
-        .map(std::path::PathBuf::from)
-        .unwrap_or_else(|_| {
-            let home = std::env::var("HOME").unwrap_or_default();
-            std::path::PathBuf::from(format!("{home}/.local/state"))
-        })
-}
-
-pub fn install_cli_process_config() -> Result<(), ConfigError> {
-    ACTIVE_CLI_CONFIG
-        .set(CliConfig::from_process()?)
-        .map_err(|_| ConfigError::AlreadyInstalled)
-}
-
-pub fn cli_config() -> Option<&'static CliConfig> {
-    ACTIVE_CLI_CONFIG.get()
-}
-
-/// Install the validated process snapshot for legacy leaf adapters that cannot yet
-/// accept constructor injection. New code should receive the narrow typed sub-config.
-pub fn install_legacy_adapter_snapshot(config: &AsemanConfig) -> Result<(), ConfigError> {
-    ACTIVE_CONFIG
-        .set(config.clone())
-        .map_err(|_| ConfigError::AlreadyInstalled)
-}
-
-pub fn legacy_adapter_snapshot() -> Option<&'static LegacyAdapterConfig> {
-    ACTIVE_CONFIG.get().map(|config| &config.legacy_adapters)
-}
-
-/// Root-node endpoint for legacy consensus bootstrap. This narrow accessor is
-/// retained only while the embedded Hashgraph adapter remains in the node.
-pub fn consensus_root_node() -> Option<&'static str> {
-    ACTIVE_CONFIG
-        .get()
-        .and_then(|config| config.core.root_node.as_deref())
-}
-
-/// Provider-specific consensus properties read from `ASEMAN_CONSENSUS_*`
-/// environment variables.
+/// Provider-specific consensus properties from the `ASEMAN_CONSENSUS_*` keys.
 ///
 /// The core never couples to any one consensus provider's feature set. It reads
-/// environment variables as generic `key = value` pairs and forwards them through
+/// the keys as generic `key = value` pairs and forwards them through
 /// `ConsensusProvider::set`; each provider interprets the keys it understands and
 /// refuses the rest. The mapping below is an explicit allowlist: every variable is
 /// renamed to the lower-case dotted key this backend documents, so a provider with
 /// a different vocabulary simply refuses keys it does not know and the composition
 /// still works. A Hashgraph backend understands `staking.*` and `election.*` keys.
-#[must_use]
-pub fn consensus_env_properties() -> Vec<(String, String)> {
+/// Whether any of `keys` holds a non-empty value.
+fn any_set(values: &BTreeMap<String, String>, keys: &[&str]) -> bool {
+    keys.iter()
+        .any(|key| values.get(*key).is_some_and(|value| !value.is_empty()))
+}
+
+fn consensus_properties(values: &BTreeMap<String, String>) -> Vec<(String, String)> {
     const PREFIX: &str = "ASEMAN_CONSENSUS_";
     let mut properties = Vec::new();
-    for (env_key, value) in std::env::vars() {
+    for (env_key, value) in values {
         let Some(rest) = env_key.strip_prefix(PREFIX) else {
             continue;
         };
@@ -511,7 +539,7 @@ pub fn consensus_env_properties() -> Vec<(String, String)> {
             "ELECTION_REVEAL_SECONDS" => "election.reveal_seconds",
             _ => continue,
         };
-        properties.push((key.to_string(), value));
+        properties.push((key.to_string(), value.clone()));
     }
     properties
 }
@@ -532,7 +560,7 @@ pub fn process_home_dir() -> Option<String> {
 pub enum ConfigError {
     #[error("missing configuration key {0}")]
     Missing(&'static str),
-    #[error("{legacy} is a retired Caspar configuration name; set {canonical} instead")]
+    #[error("{legacy} is a retired Aseman configuration name; set {canonical} instead")]
     RetiredName { canonical: String, legacy: String },
     #[error("invalid value for {key}: {reason}")]
     Invalid {
@@ -590,7 +618,7 @@ struct AliasRow {
 impl AliasRow {
     /// A variable owned by the operating system or another tool (`HOME`, `PATH`,
     /// `XDG_STATE_HOME`, Modal's `MODAL_*` namespace, ...). Reading it is how the node
-    /// learns its environment, not a Caspar alias, so it keeps flowing into its
+    /// learns its environment, not a Aseman alias, so it keeps flowing into its
     /// canonical key.
     fn is_standard_environment(&self) -> bool {
         self.category == "process-environment"
@@ -603,11 +631,9 @@ impl AliasRow {
 }
 
 impl AsemanConfig {
-    /// Load the process environment once, then apply the legacy `.env` precedence.
-    ///
-    /// The old node loaded `.env` after process startup and overwrote matching process
-    /// variables. This deliberately preserves that behavior during the compatibility
-    /// window without mutating the process environment. A missing file is allowed.
+    /// Load the process environment once, then `.env` over it: a key in the file
+    /// overrides the process variable of the same name, without mutating the process
+    /// environment. A missing file is allowed.
     pub fn from_process_with_dotenv(path: impl AsRef<Path>) -> Result<Self, ConfigError> {
         let mut values: BTreeMap<String, String> = std::env::vars().collect();
         match fs::read_to_string(path) {
@@ -619,7 +645,7 @@ impl AsemanConfig {
     }
 
     pub fn from_map(values: &BTreeMap<String, String>) -> Result<Self, ConfigError> {
-        let (values, _) = canonicalize(values)?;
+        let values = canonicalize(values)?;
         let vmm = VmmClientConfig::from_canonical(&values)?;
         let core_storage = CoreStorageConfig::from_canonical(&values)?;
         // Remote workloads are `core.workload` capsules resolved by the guest API: the
@@ -634,124 +660,112 @@ impl AsemanConfig {
             node: NodeIdentityConfig {
                 id: required(&values, "ASEMAN_NODE_ID")?,
                 private_key_secret: required(&values, "ASEMAN_NODE_PRIVATE_KEY_SECRET")?,
-                origin: optional(&values, "ASEMAN_LEGACY_ORIGIN"),
+                origin: optional(&values, "ASEMAN_ORIGIN"),
             },
             network: NetworkConfig {
                 public_http_port: parse_or(&values, "ASEMAN_PUBLIC_HTTP_PORT", 8080)?,
                 public_storage_port: parse_or(&values, "ASEMAN_PUBLIC_STORAGE_PORT", 8091)?,
-                vm_http_ingress_port: parse_or(
-                    &values,
-                    "ASEMAN_LEGACY_VM_HTTP_INGRESS_PORT",
-                    8090,
-                )?,
-                legacy_tcp_port: parse_or(&values, "ASEMAN_LEGACY_TCP_PORT", 0)?,
-                legacy_ws_port: parse_or(&values, "ASEMAN_LEGACY_WS_PORT", 0)?,
-                legacy_federation_port: parse_or(&values, "ASEMAN_LEGACY_FEDERATION_PORT", 0)?,
-                legacy_consensus_port: parse_or(&values, "ASEMAN_LEGACY_CONSENSUS_PORT", 0)?,
+                vm_http_ingress_port: parse_or(&values, "ASEMAN_VM_HTTP_INGRESS_PORT", 8090)?,
+                tcp_port: parse_or(&values, "ASEMAN_TCP_PORT", 0)?,
+                ws_port: parse_or(&values, "ASEMAN_WS_PORT", 0)?,
+                federation_port: parse_or(&values, "ASEMAN_FEDERATION_PORT", 0)?,
+                chain_port: parse_or(&values, "ASEMAN_CHAIN_PORT", 0)?,
             },
-            storage: LegacyStorageConfig {
-                root_path: optional(&values, "ASEMAN_LEGACY_STORAGE_ROOT_PATH"),
-                base_db_path: optional(&values, "ASEMAN_LEGACY_BASE_DB_PATH"),
-                applet_db_path: optional(&values, "ASEMAN_LEGACY_APPLET_DB_PATH"),
-                store_logs_db: optional(&values, "ASEMAN_LEGACY_STORE_LOGS_DB"),
-                search_index_path: optional(&values, "ASEMAN_LEGACY_SEARCH_INDEX_PATH"),
+            storage: StoragePathsConfig {
+                root_path: optional(&values, "ASEMAN_STORAGE_ROOT_PATH"),
+                base_db_path: optional(&values, "ASEMAN_BASE_DB_PATH"),
+                applet_db_path: optional(&values, "ASEMAN_APPLET_DB_PATH"),
+                store_logs_db: optional(&values, "ASEMAN_STORE_LOGS_DB"),
+                search_index_path: optional(&values, "ASEMAN_SEARCH_INDEX_PATH"),
             },
             allocator: AllocatorConfig {
                 arena_max: parse_or(&values, "ASEMAN_MALLOC_ARENA_MAX", 2)?,
                 trim_interval_seconds: parse_or(&values, "ASEMAN_MALLOC_TRIM_SECS", 30)?,
             },
             telemetry: TelemetryConfig {
-                database_path: optional(&values, "ASEMAN_LEGACY_TELEMETRY_DB_PATH"),
-                api_port: parse_or(&values, "ASEMAN_LEGACY_TELEMETRY_API_PORT", 9099)?,
-                pprof_port: parse_or(&values, "ASEMAN_LEGACY_PPROF_PORT", 9999)?,
-                entity_port: parse_or(&values, "ASEMAN_LEGACY_ENTITY_API_PORT", 0)?,
-                vm_port: parse_or(&values, "ASEMAN_LEGACY_VM_API_PORT", 0)?,
+                database_path: optional(&values, "ASEMAN_TELEMETRY_DB_PATH"),
+                api_port: parse_or(&values, "ASEMAN_TELEMETRY_API_PORT", 9099)?,
+                pprof_port: parse_or(&values, "ASEMAN_PPROF_PORT", 9999)?,
+                entity_port: parse_or(&values, "ASEMAN_ENTITY_API_PORT", 0)?,
+                vm_port: parse_or(&values, "ASEMAN_VM_API_PORT", 0)?,
             },
             cluster: ClusterBootstrapConfig {
-                config_path: nonempty(&values, "ASEMAN_LEGACY_CLUSTER_CONFIG_PATH"),
-                enabled: legacy_bool(&values, "ASEMAN_LEGACY_CLUSTER_ENABLED"),
-                bootstrap: legacy_bool(&values, "ASEMAN_LEGACY_CLUSTER_BOOTSTRAP"),
-                node_id: parse_optional(&values, "ASEMAN_LEGACY_CLUSTER_NODE_ID")?,
-                node_name: nonempty(&values, "ASEMAN_LEGACY_CLUSTER_NODE_NAME"),
-                region: nonempty(&values, "ASEMAN_LEGACY_CLUSTER_REGION"),
-                listen_addr: nonempty(&values, "ASEMAN_LEGACY_CLUSTER_LISTEN_ADDR"),
-                advertise_addr: nonempty(&values, "ASEMAN_LEGACY_CLUSTER_ADVERTISE_ADDR"),
-                auth_token: nonempty(&values, "ASEMAN_LEGACY_CLUSTER_AUTH_TOKEN"),
+                tls: TlsFiles::from_canonical(&values, "ASEMAN_CLUSTER_TLS")?,
+                config_path: nonempty(&values, "ASEMAN_CLUSTER_CONFIG_PATH"),
+                enabled: flag(&values, "ASEMAN_CLUSTER_ENABLED"),
+                bootstrap: flag(&values, "ASEMAN_CLUSTER_BOOTSTRAP"),
+                node_id: parse_optional(&values, "ASEMAN_CLUSTER_NODE_ID")?,
+                node_name: nonempty(&values, "ASEMAN_CLUSTER_NODE_NAME"),
+                region: nonempty(&values, "ASEMAN_CLUSTER_REGION"),
+                listen_addr: nonempty(&values, "ASEMAN_CLUSTER_LISTEN_ADDR"),
+                advertise_addr: nonempty(&values, "ASEMAN_CLUSTER_ADVERTISE_ADDR"),
+                auth_token: nonempty(&values, "ASEMAN_CLUSTER_AUTH_TOKEN"),
             },
             core: CoreConfig {
-                root_node: nonempty(&values, "ASEMAN_LEGACY_ROOT_NODE"),
-                tls_certificate_path: nonempty(&values, "ASEMAN_LEGACY_TLS_CERT_PATH"),
-                tls_private_key_path: nonempty(&values, "ASEMAN_LEGACY_TLS_KEY_PATH"),
+                root_node: nonempty(&values, "ASEMAN_ROOT_NODE"),
+                tls_certificate_path: nonempty(&values, "ASEMAN_TLS_CERT_PATH"),
+                tls_private_key_path: nonempty(&values, "ASEMAN_TLS_KEY_PATH"),
                 execution_cost_per_second: parse_or(
                     &values,
-                    "ASEMAN_LEGACY_VM_EXEC_COST_PER_SECOND",
+                    "ASEMAN_VM_EXEC_COST_PER_SECOND",
                     0_i64,
                 )?
                 .max(0),
                 ram_cost_per_mb_minute: parse_or(
                     &values,
-                    "ASEMAN_LEGACY_VM_RAM_COST_PER_MB_PER_MINUTE",
+                    "ASEMAN_VM_RAM_COST_PER_MB_PER_MINUTE",
                     0_i64,
                 )?
                 .max(0),
                 cpu_core_cost_per_minute: parse_or(
                     &values,
-                    "ASEMAN_LEGACY_VM_CPU_CORE_COST_PER_MINUTE",
+                    "ASEMAN_VM_CPU_CORE_COST_PER_MINUTE",
                     0_i64,
                 )?
                 .max(0),
                 disk_cost_per_gb_minute: parse_or(
                     &values,
-                    "ASEMAN_LEGACY_VM_DISK_COST_PER_GB_PER_MINUTE",
+                    "ASEMAN_VM_DISK_COST_PER_GB_PER_MINUTE",
                     0_i64,
                 )?
                 .max(0),
             },
             rate_limit: RateLimitConfig {
                 enabled: rate_limit_enabled(&values),
-                authenticated_rps: parse_or(&values, "ASEMAN_LEGACY_RATE_LIMIT_AUTH_RPS", 50.0)?,
-                authenticated_burst: parse_or(
-                    &values,
-                    "ASEMAN_LEGACY_RATE_LIMIT_AUTH_BURST",
-                    100.0,
-                )?,
-                anonymous_rps: parse_or(&values, "ASEMAN_LEGACY_RATE_LIMIT_ANON_RPS", 10.0)?,
-                anonymous_burst: parse_or(&values, "ASEMAN_LEGACY_RATE_LIMIT_ANON_BURST", 20.0)?,
-                global_rps: parse_or(&values, "ASEMAN_LEGACY_RATE_LIMIT_GLOBAL_RPS", 5000.0)?,
-                global_burst: parse_or(&values, "ASEMAN_LEGACY_RATE_LIMIT_GLOBAL_BURST", 10000.0)?,
-                idle_evict_seconds: parse_or(
-                    &values,
-                    "ASEMAN_LEGACY_RATE_LIMIT_IDLE_EVICT_SECS",
-                    300.0,
-                )?,
+                authenticated_rps: parse_or(&values, "ASEMAN_RATE_LIMIT_AUTH_RPS", 50.0)?,
+                authenticated_burst: parse_or(&values, "ASEMAN_RATE_LIMIT_AUTH_BURST", 100.0)?,
+                anonymous_rps: parse_or(&values, "ASEMAN_RATE_LIMIT_ANON_RPS", 10.0)?,
+                anonymous_burst: parse_or(&values, "ASEMAN_RATE_LIMIT_ANON_BURST", 20.0)?,
+                global_rps: parse_or(&values, "ASEMAN_RATE_LIMIT_GLOBAL_RPS", 5000.0)?,
+                global_burst: parse_or(&values, "ASEMAN_RATE_LIMIT_GLOBAL_BURST", 10000.0)?,
+                idle_evict_seconds: parse_or(&values, "ASEMAN_RATE_LIMIT_IDLE_EVICT_SECS", 300.0)?,
             },
-            legacy_adapters: LegacyAdapterConfig {
-                main_port: optional(&values, "ASEMAN_LEGACY_MAIN_PORT"),
+            services: ServicesConfig {
+                main_port: optional(&values, "ASEMAN_MAIN_PORT"),
                 public_storage_max_bytes: parse_or(
                     &values,
                     "ASEMAN_STORAGE_MAX_BYTES",
                     10 * 1024 * 1024,
                 )?,
-                questdb_port: parse_or(&values, "ASEMAN_LEGACY_QUESTDB_PORT", 8812)?,
-                rocksdb_max_open_files: parse_or(&values, "ASEMAN_ROCKSDB_MAX_OPEN_FILES", 512)?,
-                rocksdb_block_cache_mb: parse_or(&values, "ASEMAN_ROCKSDB_BLOCK_CACHE_MB", 128)?,
-                rocksdb_write_buffer_mb: parse_or(&values, "ASEMAN_ROCKSDB_WRITE_BUFFER_MB", 32)?,
-                babble_data_dir: nonempty(&values, "ASEMAN_LEGACY_BABBLE_DATA_DIR"),
+                questdb_port: parse_or(&values, "ASEMAN_QUESTDB_PORT", 8812)?,
+                rocksdb: RocksDbTuning::from_canonical(&values)?,
+                babble_data_dir: nonempty(&values, "ASEMAN_BABBLE_DATA_DIR"),
                 babble_frame_cache: parse_or(&values, "ASEMAN_BABBLE_FRAME_CACHE", 25)?,
                 babble_frame_retention: parse_or(&values, "ASEMAN_BABBLE_FRAME_RETENTION", 25)?,
                 is_head: values
-                    .get("ASEMAN_LEGACY_IS_HEAD")
+                    .get("ASEMAN_IS_HEAD")
                     .map(|value| value == "true")
                     .unwrap_or(false),
-                blockchain_api_port: parse_or(&values, "ASEMAN_LEGACY_CONSENSUS_PORT", 1337)?,
-                ip_address: optional(&values, "ASEMAN_LEGACY_IPADDR"),
-                home_dir: nonempty(&values, "ASEMAN_LEGACY_HOME"),
-                user_profile_dir: nonempty(&values, "ASEMAN_LEGACY_USERPROFILE"),
+                blockchain_api_port: parse_or(&values, "ASEMAN_CHAIN_PORT", 1337)?,
+                ip_address: optional(&values, "ASEMAN_IPADDR"),
             },
-            runtime: RuntimeConfig::from_canonical(&values)?,
             vmm,
             database_url_secret: values.get("ASEMAN_DATABASE_URL_SECRET").cloned(),
             core_storage,
+            public_http: PublicHttpListenerConfig::from_map_optional(&values)?,
+            federation_listener: FederationListenerConfig::from_map_optional(&values)?,
+            federation_outbound: FederationOutboundConfig::from_map_optional(&values)?,
+            consensus_properties: consensus_properties(&values),
         })
     }
 }
@@ -936,7 +950,7 @@ impl VmmServiceConfig {
     }
 }
 
-/// Typed configuration for the hardened A701 public HTTP listener (P7-06).
+/// Typed configuration for the hardened A701 public HTTP listener.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct PublicHttpListenerConfig {
     /// The TLS listener, for example `0.0.0.0:443`.
@@ -992,30 +1006,24 @@ pub struct FederationOutboundConfig {
 }
 
 impl FederationOutboundConfig {
-    pub fn from_process_optional() -> Result<Option<Self>, ConfigError> {
-        Self::from_map_optional(&std::env::vars().collect())
-    }
-
+    /// Outbound federation when any of its required keys is set, else `None`.
+    ///
+    /// # Errors
+    ///
+    /// Configured outbound federation with missing or invalid keys.
     pub fn from_map_optional(
         values: &BTreeMap<String, String>,
     ) -> Result<Option<Self>, ConfigError> {
-        let configured = [
-            "ASEMAN_FEDERATION_HTTP_SERVER_CA",
-            "ASEMAN_FEDERATION_HTTP_CLIENT_CERTIFICATE",
-            "ASEMAN_FEDERATION_HTTP_CLIENT_KEY_SECRET",
-            "ASEMAN_FEDERATION_REQUEST_SIGNING_KEY_SECRET",
-        ]
-        .iter()
-        .any(|key| values.get(*key).is_some_and(|value| !value.is_empty()));
-        if configured {
-            Self::from_map(values).map(Some)
-        } else {
-            Ok(None)
-        }
-    }
-
-    pub fn from_process() -> Result<Self, ConfigError> {
-        Self::from_map(&std::env::vars().collect())
+        let configured = any_set(
+            values,
+            &[
+                "ASEMAN_FEDERATION_HTTP_SERVER_CA",
+                "ASEMAN_FEDERATION_HTTP_CLIENT_CERTIFICATE",
+                "ASEMAN_FEDERATION_HTTP_CLIENT_KEY_SECRET",
+                "ASEMAN_FEDERATION_REQUEST_SIGNING_KEY_SECRET",
+            ],
+        );
+        configured.then(|| Self::from_map(values)).transpose()
     }
 
     pub fn from_map(values: &BTreeMap<String, String>) -> Result<Self, ConfigError> {
@@ -1064,8 +1072,25 @@ impl FederationOutboundConfig {
 }
 
 impl FederationListenerConfig {
-    pub fn from_process() -> Result<Self, ConfigError> {
-        Self::from_map(&std::env::vars().collect())
+    /// The listener when any of its required keys is set, else `None`.
+    ///
+    /// # Errors
+    ///
+    /// A configured listener with missing or invalid keys.
+    pub fn from_map_optional(
+        values: &BTreeMap<String, String>,
+    ) -> Result<Option<Self>, ConfigError> {
+        let configured = any_set(
+            values,
+            &[
+                "ASEMAN_FEDERATION_HTTP_TLS_CERTIFICATE",
+                "ASEMAN_FEDERATION_HTTP_TLS_KEY_SECRET",
+                "ASEMAN_FEDERATION_HTTP_CLIENT_CA",
+                "ASEMAN_FEDERATION_RESPONSE_SIGNING_KEY_SECRET",
+                "ASEMAN_FEDERATION_HTTP_AUDIENCE",
+            ],
+        );
+        configured.then(|| Self::from_map(values)).transpose()
     }
 
     pub fn from_map(values: &BTreeMap<String, String>) -> Result<Self, ConfigError> {
@@ -1089,7 +1114,7 @@ impl FederationListenerConfig {
     }
 }
 
-/// Configuration for the independent Phase 8 metering process.
+/// Configuration for the independent metering process.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct MeterConfig {
     pub database_url_secret: String,
@@ -1145,13 +1170,23 @@ impl MeterConfig {
 }
 
 impl PublicHttpListenerConfig {
-    /// Read the listener configuration from the process environment.
+    /// The listener when any of its required keys is set, else `None`.
     ///
     /// # Errors
     ///
-    /// Missing or invalid keys.
-    pub fn from_process() -> Result<Self, ConfigError> {
-        Self::from_map(&std::env::vars().collect())
+    /// A configured listener with missing or invalid keys.
+    pub fn from_map_optional(
+        values: &BTreeMap<String, String>,
+    ) -> Result<Option<Self>, ConfigError> {
+        let configured = any_set(
+            values,
+            &[
+                "ASEMAN_PUBLIC_HTTP_TLS_CERTIFICATE",
+                "ASEMAN_PUBLIC_HTTP_TLS_KEY_SECRET",
+                "ASEMAN_PUBLIC_HTTP_AUDIENCE",
+            ],
+        );
+        configured.then(|| Self::from_map(values)).transpose()
     }
 
     /// # Errors
@@ -1290,17 +1325,6 @@ fn value_or(values: &BTreeMap<String, String>, key: &str, default: &str) -> Stri
     nonempty(values, key).unwrap_or_else(|| default.to_owned())
 }
 
-fn falsey(value: Option<&String>) -> bool {
-    value
-        .map(|value| {
-            matches!(
-                value.trim().to_ascii_lowercase().as_str(),
-                "0" | "false" | "off" | "no"
-            )
-        })
-        .unwrap_or(false)
-}
-
 fn nonempty(values: &BTreeMap<String, String>, key: &str) -> Option<String> {
     values
         .get(key)
@@ -1308,7 +1332,7 @@ fn nonempty(values: &BTreeMap<String, String>, key: &str) -> Option<String> {
         .cloned()
 }
 
-fn legacy_bool(values: &BTreeMap<String, String>, key: &str) -> Option<bool> {
+fn flag(values: &BTreeMap<String, String>, key: &str) -> Option<bool> {
     values
         .get(key)
         .map(|value| matches!(value.trim(), "1" | "true" | "yes" | "on"))
@@ -1316,7 +1340,7 @@ fn legacy_bool(values: &BTreeMap<String, String>, key: &str) -> Option<bool> {
 
 fn rate_limit_enabled(values: &BTreeMap<String, String>) -> bool {
     values
-        .get("ASEMAN_LEGACY_RATE_LIMIT_ENABLED")
+        .get("ASEMAN_RATE_LIMIT_ENABLED")
         .map(|value| {
             !matches!(
                 value.trim().to_ascii_lowercase().as_str(),
@@ -1412,15 +1436,14 @@ pub fn parse_dotenv(contents: &str) -> Result<BTreeMap<String, String>, ConfigEr
     Ok(output)
 }
 
-/// Map the A003 catalog onto canonical keys. The ADR-0004 compatibility window is
-/// closed: a retired Caspar name is refused with the canonical name to use instead.
-/// Standard environment variables owned by the system or another tool still feed
-/// their canonical keys, since reading them is not compatibility.
+/// Map the retired-name catalog (A003) onto canonical keys: a retired Aseman name is
+/// refused with the canonical name to use instead. Standard environment variables
+/// owned by the system or another tool feed their canonical keys.
 pub fn canonicalize(
     values: &BTreeMap<String, String>,
-) -> Result<(BTreeMap<String, String>, Vec<String>), ConfigError> {
+) -> Result<BTreeMap<String, String>, ConfigError> {
     let catalog: AliasCatalog =
-        serde_json::from_str(LEGACY_ALIASES_JSON).map_err(|_| ConfigError::InvalidAliasCatalog)?;
+        serde_json::from_str(RETIRED_NAMES_JSON).map_err(|_| ConfigError::InvalidAliasCatalog)?;
     let mut output = values.clone();
     for row in catalog.aliases {
         if row.legacy == row.canonical {
@@ -1437,7 +1460,7 @@ pub fn canonicalize(
         }
         output.entry(row.canonical).or_insert_with(|| value.clone());
     }
-    Ok((output, Vec::new()))
+    Ok(output)
 }
 
 #[cfg(test)]
@@ -1460,8 +1483,16 @@ mod tests {
     fn canonical_defaults_are_typed() {
         let config = AsemanConfig::from_map(&base()).unwrap();
         assert_eq!(config.network.public_http_port, 8080);
-        assert_eq!(config.runtime.docker_gateway_port, 8079);
         assert_eq!(config.allocator.trim_interval_seconds, 30);
+    }
+
+    #[test]
+    fn runtime_settings_default_every_field_and_refuse_unknown_ones() {
+        let parsed: RuntimeConfig = serde_json::from_str(r#"{"modal_app_name": "prod"}"#).unwrap();
+        assert_eq!(parsed.modal_app_name.as_deref(), Some("prod"));
+        assert_eq!(parsed.docker_gateway_port, 8079);
+        assert_eq!(parsed.docker_runtime.as_deref(), Some("runsc"));
+        assert!(serde_json::from_str::<RuntimeConfig>(r#"{"modal_token": "x"}"#).is_err());
     }
 
     #[test]
@@ -1574,8 +1605,8 @@ mod tests {
         let mut values = base();
         values.insert("HOME".into(), "/home/operator".into());
         values.insert("XDG_STATE_HOME".into(), "/state".into());
-        let (canonical, _) = canonicalize(&values).unwrap();
-        assert_eq!(canonical["ASEMAN_LEGACY_HOME"], "/home/operator");
+        let canonical = canonicalize(&values).unwrap();
+        assert_eq!(canonical["ASEMAN_HOME"], "/home/operator");
         assert!(AsemanConfig::from_map(&values).is_ok());
     }
 

@@ -47,7 +47,7 @@ fn a_provider_local_volume_may_not_leave_its_provider() {
         plan_move(
             &volumes,
             &placement("a", "docker", "nomad"),
-            &placement("b", "docker", "native-legacy"),
+            &placement("b", "docker", "native"),
         ),
         Err(PortabilityError::ProviderLocalVolume {
             name: "data".to_owned()
@@ -135,7 +135,7 @@ fn a_shared_external_volume_is_reattached_not_copied() {
         plan_move(
             &[volume("shared", PortabilityTier::SharedExternal, "s3")],
             &placement("a", "docker", "nomad"),
-            &placement("b", "docker", "native-legacy"),
+            &placement("b", "docker", "native"),
         )
         .expect("a move"),
         MovePlan::Reattach,

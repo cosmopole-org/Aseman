@@ -3,6 +3,10 @@ name: aseman-compact
 # Executable A602 compact profile. Nomad remains operator-supplied under ADR 0002;
 # point NOMAD_ENDPOINT at that installation. `asemanctl bootstrap` prepares the
 # configuration directory and then drives this profile in dependency order.
+#
+# The VMM backend is one Compose profile: `nomad` (the default) or `native`
+# (`asemanctl bootstrap --backend native --vm-types …`), named by ASEMAN_BACKEND and
+# COMPOSE_PROFILES in the generated compact.env.
 services:
   postgres:
     image: ${POSTGRES_IMAGE:-postgres:18-bookworm}
@@ -59,7 +63,9 @@ services:
     security_opt: [no-new-privileges:true]
 
   nomad-backend:
-    image: ${ASEMAN_NOMAD_BACKEND_IMAGE:?set ASEMAN_NOMAD_BACKEND_IMAGE}
+    profiles: [nomad]
+    # ASEMAN_NOMAD_BACKEND_IMAGE is the name deployments before ASEMAN_BACKEND used.
+    image: ${ASEMAN_BACKEND_IMAGE:-${ASEMAN_NOMAD_BACKEND_IMAGE:?set ASEMAN_BACKEND_IMAGE}}
     restart: unless-stopped
     # A504 is intentionally loopback-only. Sharing the VMM network namespace keeps
     # it unreachable from every other container while preserving separate processes.
@@ -73,6 +79,27 @@ services:
     cap_drop: [ALL]
     security_opt: [no-new-privileges:true]
 
+  native-backend:
+    profiles: [native]
+    image: ${ASEMAN_BACKEND_IMAGE:-${ASEMAN_NOMAD_BACKEND_IMAGE:?set ASEMAN_BACKEND_IMAGE}}
+    restart: unless-stopped
+    # The same loopback-only A504 as the Nomad backend. Its runtimes are the ones that
+    # need no host device (Modal and the in-process runtimes): the compact topology
+    # grants no Docker socket and no KVM device. Modal is reached over the VMM
+    # namespace's routed scheduler network.
+    network_mode: service:vmm
+    depends_on: [vmm]
+    command: ["127.0.0.1:9090", "/etc/aseman/native-backend.json"]
+    volumes:
+      - ${ASEMAN_CONFIG_DIR}/native-backend.json:/etc/aseman/native-backend.json:ro
+      - ${ASEMAN_CONFIG_DIR}/tls/ca-cert.pem:/etc/aseman/tls/ca-cert.pem:ro
+      - ${ASEMAN_CONFIG_DIR}/secrets/runtimes:/run/aseman/secrets/runtimes:ro
+      - native-backend-data:/var/lib/aseman-backend
+    read_only: true
+    tmpfs: [/tmp]
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+
   node:
     image: ${ASEMAN_NODE_IMAGE:?set ASEMAN_NODE_IMAGE}
     restart: unless-stopped
@@ -80,8 +107,6 @@ services:
       postgres:
         condition: service_healthy
       vmm:
-        condition: service_started
-      nomad-backend:
         condition: service_started
     environment:
       ASEMAN_NODE_ID: ${ASEMAN_NODE_ID:?set ASEMAN_NODE_ID}
@@ -105,22 +130,22 @@ services:
       ASEMAN_PUBLIC_HTTP_TLS_CERTIFICATE: /etc/aseman/tls/node-cert.pem
       ASEMAN_PUBLIC_HTTP_TLS_KEY_SECRET: /etc/aseman/tls/node-key.pem
       ASEMAN_PUBLIC_HTTP_AUDIENCE: ${ASEMAN_PUBLIC_HTTP_AUDIENCE:-aseman-public}
-      ASEMAN_LEGACY_TELEMETRY_API_PORT: 8080
-      ASEMAN_LEGACY_STORAGE_ROOT_PATH: /var/lib/aseman/storage
-      ASEMAN_LEGACY_BASE_DB_PATH: /var/lib/aseman/storage/base
-      ASEMAN_LEGACY_APPLET_DB_PATH: /var/lib/aseman/storage/applet
-      ASEMAN_LEGACY_STORE_LOGS_DB: /var/lib/aseman/storage/store-logs
-      ASEMAN_LEGACY_SEARCH_INDEX_PATH: /var/lib/aseman/storage/search
-      ASEMAN_LEGACY_TELEMETRY_DB_PATH: /var/lib/aseman/telemetry
-      ASEMAN_LEGACY_TCP_PORT: "0"
-      ASEMAN_LEGACY_WS_PORT: "0"
-      ASEMAN_LEGACY_FEDERATION_PORT: "0"
-      # The compact node heads its own single-validator Hashgraph chain (RL-011) on
+      ASEMAN_TELEMETRY_API_PORT: 8080
+      ASEMAN_STORAGE_ROOT_PATH: /var/lib/aseman/storage
+      ASEMAN_BASE_DB_PATH: /var/lib/aseman/storage/base
+      ASEMAN_APPLET_DB_PATH: /var/lib/aseman/storage/applet
+      ASEMAN_STORE_LOGS_DB: /var/lib/aseman/storage/store-logs
+      ASEMAN_SEARCH_INDEX_PATH: /var/lib/aseman/storage/search
+      ASEMAN_TELEMETRY_DB_PATH: /var/lib/aseman/telemetry
+      ASEMAN_TCP_PORT: "0"
+      ASEMAN_WS_PORT: "0"
+      ASEMAN_FEDERATION_PORT: "0"
+      # The compact node heads its own single-validator Hashgraph chain on
       # an unpublished loopback address named by the generated genesis.
-      ASEMAN_LEGACY_CONSENSUS_PORT: "1337"
-      ASEMAN_LEGACY_IPADDR: 127.0.0.1
-      ASEMAN_LEGACY_IS_HEAD: "true"
-      ASEMAN_LEGACY_BABBLE_DATA_DIR: /etc/aseman/babble
+      ASEMAN_CHAIN_PORT: "1337"
+      ASEMAN_IPADDR: 127.0.0.1
+      ASEMAN_IS_HEAD: "true"
+      ASEMAN_BABBLE_DATA_DIR: /etc/aseman/babble
     volumes:
       - ${ASEMAN_CONFIG_DIR}/tls/ca-cert.pem:/etc/aseman/tls/ca-cert.pem:ro
       - ${ASEMAN_CONFIG_DIR}/tls/node-cert.pem:/etc/aseman/tls/node-cert.pem:ro
@@ -176,3 +201,4 @@ networks:
 volumes:
   postgres-data:
   node-data:
+  native-backend-data:

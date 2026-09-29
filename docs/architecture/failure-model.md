@@ -1,7 +1,7 @@
 ---
 status: ACCEPTED
 owner: reliability
-source_of_truth: plan/migration/01-target-architecture.md and plan/migration/10-verification-and-acceptance.md
+source_of_truth: this document and the ADRs it cites
 last_verified_commit: 800df24076c7
 verification: phase-owned recovery, failover, and chaos suites
 ---

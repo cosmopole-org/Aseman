@@ -1,4 +1,4 @@
-//! Hashgraph/Babble consensus engine extracted from the canonical node (RL-011).
+//! Hashgraph/Babble consensus engine extracted from the canonical node.
 //!
 //! This crate owns the algorithm, peer transport, event store, and consensus-node
 //! machinery. Node-specific finance/action translation remains in the node adapter.

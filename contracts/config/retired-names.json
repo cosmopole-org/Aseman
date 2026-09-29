@@ -1,0 +1,1710 @@
+{
+  "_meta": {
+    "artifact": "A103",
+    "generator": "scripts/generate_core_contracts.py",
+    "last_verified_commit": "800df24076c794f9b33c29a9f301dd9d674f47d6",
+    "legacy_key_count": 124,
+    "status": "ACCEPTED"
+  },
+  "aliases": [
+    {
+      "canonical": "ASEMAN_APPLET_DB_PATH",
+      "category": "runtime-or-storage",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "APPLET_DB_PATH",
+      "occurrences": [
+        {
+          "kind": "retired-name",
+          "source": "contracts/config/retired-names.json:15"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_CTL_STATE_DIR",
+      "category": "runtime-or-storage",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "ASEMAN_CTL_STATE_DIR",
+      "occurrences": [
+        {
+          "kind": "retired-name",
+          "source": "contracts/config/retired-names.json:28"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_OPERATOR_SIGNING_KEY",
+      "category": "runtime-or-storage",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "ASEMAN_OPERATOR_SIGNING_KEY",
+      "occurrences": [
+        {
+          "kind": "retired-name",
+          "source": "contracts/config/retired-names.json:41"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_RUN_LOAD_TESTS",
+      "category": "runtime-or-storage",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "ASEMAN_RUN_LOAD_TESTS",
+      "occurrences": [
+        {
+          "kind": "retired-name",
+          "source": "contracts/config/retired-names.json:54"
+        },
+        {
+          "kind": "read",
+          "source": "crates/aseman-config/src/lib.rs:461"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_RUN_SOAK_TESTS",
+      "category": "runtime-or-storage",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "ASEMAN_RUN_SOAK_TESTS",
+      "occurrences": [
+        {
+          "kind": "retired-name",
+          "source": "contracts/config/retired-names.json:71"
+        },
+        {
+          "kind": "read",
+          "source": "crates/aseman-config/src/lib.rs:463"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_TEST_NOMAD_ENDPOINT",
+      "category": "network",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "ASEMAN_TEST_NOMAD_ENDPOINT",
+      "occurrences": [
+        {
+          "kind": "retired-name",
+          "source": "contracts/config/retired-names.json:88"
+        },
+        {
+          "kind": "read",
+          "source": "crates/aseman-config/src/lib.rs:458"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_TEST_POSTGRES_RESTORE_URL",
+      "category": "network",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "ASEMAN_TEST_POSTGRES_RESTORE_URL",
+      "occurrences": [
+        {
+          "kind": "retired-name",
+          "source": "contracts/config/retired-names.json:105"
+        },
+        {
+          "kind": "read",
+          "source": "crates/aseman-config/src/lib.rs:434"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_TEST_POSTGRES_SHARDS_URL",
+      "category": "network",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "ASEMAN_TEST_POSTGRES_SHARDS_URL",
+      "occurrences": [
+        {
+          "kind": "retired-name",
+          "source": "contracts/config/retired-names.json:122"
+        },
+        {
+          "kind": "read",
+          "source": "crates/aseman-config/src/lib.rs:437"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_TEST_POSTGRES_TLS_URL",
+      "category": "network",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "ASEMAN_TEST_POSTGRES_TLS_URL",
+      "occurrences": [
+        {
+          "kind": "retired-name",
+          "source": "contracts/config/retired-names.json:139"
+        },
+        {
+          "kind": "read",
+          "source": "crates/aseman-config/src/lib.rs:440"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_TEST_POSTGRES_URL",
+      "category": "network",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "ASEMAN_TEST_POSTGRES_URL",
+      "occurrences": [
+        {
+          "kind": "retired-name",
+          "source": "contracts/config/retired-names.json:156"
+        },
+        {
+          "kind": "read",
+          "source": "crates/aseman-config/src/lib.rs:431"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_BABBLE_DATA_DIR",
+      "category": "runtime-or-storage",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "BABBLE_DATA_DIR",
+      "occurrences": [
+        {
+          "kind": "retired-name",
+          "source": "contracts/config/retired-names.json:173"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_BABBLE_DIR",
+      "category": "runtime-or-storage",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "BABBLE_DIR",
+      "occurrences": [
+        {
+          "kind": "retired-name",
+          "source": "contracts/config/retired-names.json:186"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_BASE_DB_PATH",
+      "category": "runtime-or-storage",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "BASE_DB_PATH",
+      "occurrences": [
+        {
+          "kind": "retired-name",
+          "source": "contracts/config/retired-names.json:199"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_CHAIN_PORT",
+      "category": "network",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "BLOCKCHAIN_API_PORT",
+      "occurrences": [
+        {
+          "kind": "retired-name",
+          "source": "contracts/config/retired-names.json:212"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_CTL_CLUSTER_ENDPOINT",
+      "category": "network",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "CASPARCTL_CLUSTER_ENDPOINT",
+      "occurrences": [
+        {
+          "kind": "retired-name",
+          "source": "contracts/config/retired-names.json:225"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_CTL_PPROF",
+      "category": "runtime-or-storage",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "CASPARCTL_PPROF",
+      "occurrences": [
+        {
+          "kind": "retired-name",
+          "source": "contracts/config/retired-names.json:238"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_CTL_TELEMETRY",
+      "category": "runtime-or-storage",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "CASPARCTL_TELEMETRY",
+      "occurrences": [
+        {
+          "kind": "retired-name",
+          "source": "contracts/config/retired-names.json:251"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_BABBLE_FRAME_CACHE",
+      "category": "application",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "CASPAR_BABBLE_FRAME_CACHE",
+      "occurrences": [
+        {
+          "kind": "retired-name",
+          "source": "contracts/config/retired-names.json:264"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_BABBLE_FRAME_RETENTION",
+      "category": "application",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "CASPAR_BABBLE_FRAME_RETENTION",
+      "occurrences": [
+        {
+          "kind": "retired-name",
+          "source": "contracts/config/retired-names.json:277"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_CLUSTER_TOKEN",
+      "category": "secret-or-sensitive",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "CASPAR_CLUSTER_TOKEN",
+      "occurrences": [
+        {
+          "kind": "retired-name",
+          "source": "contracts/config/retired-names.json:290"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_DOCKER_DISK_QUOTA",
+      "category": "application",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "CASPAR_DOCKER_DISK_QUOTA",
+      "occurrences": [
+        {
+          "kind": "retired-name",
+          "source": "contracts/config/retired-names.json:303"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_DOCKER_RUNTIME",
+      "category": "application",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "CASPAR_DOCKER_RUNTIME",
+      "occurrences": [
+        {
+          "kind": "retired-name",
+          "source": "contracts/config/retired-names.json:316"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_GATEWAY_NETWORK",
+      "category": "application",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "CASPAR_GATEWAY_NETWORK",
+      "occurrences": [
+        {
+          "kind": "retired-name",
+          "source": "contracts/config/retired-names.json:329"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_HOST",
+      "category": "network",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "CASPAR_HOST",
+      "occurrences": [
+        {
+          "kind": "typescript-read",
+          "source": "apps/aseman-client/index.ts:1200"
+        },
+        {
+          "kind": "retired-name",
+          "source": "contracts/config/retired-names.json:342"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_INSECURE",
+      "category": "application",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "CASPAR_INSECURE",
+      "occurrences": [
+        {
+          "kind": "typescript-read",
+          "source": "apps/aseman-client/index.ts:78"
+        },
+        {
+          "kind": "retired-name",
+          "source": "contracts/config/retired-names.json:359"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_LOGIN_MODE",
+      "category": "application",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "CASPAR_LOGIN_MODE",
+      "occurrences": [
+        {
+          "kind": "retired-name",
+          "source": "contracts/config/retired-names.json:376"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_MALLOC_ARENA_MAX",
+      "category": "application",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "CASPAR_MALLOC_ARENA_MAX",
+      "occurrences": [
+        {
+          "kind": "retired-name",
+          "source": "contracts/config/retired-names.json:389"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_MALLOC_TRIM_SECS",
+      "category": "application",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "CASPAR_MALLOC_TRIM_SECS",
+      "occurrences": [
+        {
+          "kind": "retired-name",
+          "source": "contracts/config/retired-names.json:402"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_OWNER_EMAIL",
+      "category": "application",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "CASPAR_OWNER_EMAIL",
+      "occurrences": [
+        {
+          "kind": "retired-name",
+          "source": "contracts/config/retired-names.json:415"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_OWNER_USERNAME",
+      "category": "application",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "CASPAR_OWNER_USERNAME",
+      "occurrences": [
+        {
+          "kind": "retired-name",
+          "source": "contracts/config/retired-names.json:428"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_PORT",
+      "category": "network",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "CASPAR_PORT",
+      "occurrences": [
+        {
+          "kind": "typescript-read",
+          "source": "apps/aseman-client/index.ts:1202"
+        },
+        {
+          "kind": "retired-name",
+          "source": "contracts/config/retired-names.json:441"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_PROTO",
+      "category": "application",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "CASPAR_PROTO",
+      "occurrences": [
+        {
+          "kind": "typescript-read",
+          "source": "apps/aseman-client/index.ts:1201"
+        },
+        {
+          "kind": "retired-name",
+          "source": "contracts/config/retired-names.json:458"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_ROCKSDB_BLOCK_CACHE_MB",
+      "category": "application",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "CASPAR_ROCKSDB_BLOCK_CACHE_MB",
+      "occurrences": [
+        {
+          "kind": "retired-name",
+          "source": "contracts/config/retired-names.json:475"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_ROCKSDB_MAX_OPEN_FILES",
+      "category": "application",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "CASPAR_ROCKSDB_MAX_OPEN_FILES",
+      "occurrences": [
+        {
+          "kind": "retired-name",
+          "source": "contracts/config/retired-names.json:488"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_ROCKSDB_WRITE_BUFFER_MB",
+      "category": "application",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "CASPAR_ROCKSDB_WRITE_BUFFER_MB",
+      "occurrences": [
+        {
+          "kind": "retired-name",
+          "source": "contracts/config/retired-names.json:501"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_SIGNAL_TIMEOUT_MS",
+      "category": "application",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "CASPAR_SIGNAL_TIMEOUT_MS",
+      "occurrences": [
+        {
+          "kind": "typescript-read",
+          "source": "apps/aseman-client/index.ts:572"
+        },
+        {
+          "kind": "retired-name",
+          "source": "contracts/config/retired-names.json:514"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_STORAGE_MAX_BYTES",
+      "category": "application",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "CASPAR_STORAGE_MAX_BYTES",
+      "occurrences": [
+        {
+          "kind": "retired-name",
+          "source": "contracts/config/retired-names.json:531"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_PUBLIC_STORAGE_PORT",
+      "category": "network",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "CASPAR_STORAGE_PORT",
+      "occurrences": [
+        {
+          "kind": "retired-name",
+          "source": "contracts/config/retired-names.json:544"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_TLS",
+      "category": "application",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "CASPAR_TLS",
+      "occurrences": [
+        {
+          "kind": "typescript-read",
+          "source": "apps/aseman-client/index.ts:51"
+        },
+        {
+          "kind": "retired-name",
+          "source": "contracts/config/retired-names.json:557"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_VMS_DIR",
+      "category": "application",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "CASPAR_VMS_DIR",
+      "occurrences": [
+        {
+          "kind": "retired-name",
+          "source": "contracts/config/retired-names.json:574"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_VM_HTTP_PORT",
+      "category": "network",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "CASPAR_VM_HTTP_PORT",
+      "occurrences": [
+        {
+          "kind": "retired-name",
+          "source": "contracts/config/retired-names.json:587"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_VM_HTTP_TIMEOUT_SECS",
+      "category": "application",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "CASPAR_VM_HTTP_TIMEOUT_SECS",
+      "occurrences": [
+        {
+          "kind": "retired-name",
+          "source": "contracts/config/retired-names.json:600"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_WASM_AOT",
+      "category": "application",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "CASPAR_WASM_AOT",
+      "occurrences": [
+        {
+          "kind": "retired-name",
+          "source": "contracts/config/retired-names.json:613"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_WASM_VM_CACHE",
+      "category": "application",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "CASPAR_WASM_VM_CACHE",
+      "occurrences": [
+        {
+          "kind": "retired-name",
+          "source": "contracts/config/retired-names.json:626"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_TCP_PORT",
+      "category": "network",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "CLIENT_TCP_API_PORT",
+      "occurrences": [
+        {
+          "kind": "retired-name",
+          "source": "contracts/config/retired-names.json:639"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_WS_PORT",
+      "category": "network",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "CLIENT_WS_API_PORT",
+      "occurrences": [
+        {
+          "kind": "retired-name",
+          "source": "contracts/config/retired-names.json:652"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_CLUSTER_ADVERTISE_ADDR",
+      "category": "network",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "CLUSTER_ADVERTISE_ADDR",
+      "occurrences": [
+        {
+          "kind": "retired-name",
+          "source": "contracts/config/retired-names.json:665"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_CLUSTER_AUTH_TOKEN",
+      "category": "secret-or-sensitive",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "CLUSTER_AUTH_TOKEN",
+      "occurrences": [
+        {
+          "kind": "retired-name",
+          "source": "contracts/config/retired-names.json:678"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_CLUSTER_BOOTSTRAP",
+      "category": "application",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "CLUSTER_BOOTSTRAP",
+      "occurrences": [
+        {
+          "kind": "retired-name",
+          "source": "contracts/config/retired-names.json:691"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_CLUSTER_CONFIG_PATH",
+      "category": "application",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "CLUSTER_CONFIG_PATH",
+      "occurrences": [
+        {
+          "kind": "retired-name",
+          "source": "contracts/config/retired-names.json:704"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_CLUSTER_ENABLED",
+      "category": "application",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "CLUSTER_ENABLED",
+      "occurrences": [
+        {
+          "kind": "retired-name",
+          "source": "contracts/config/retired-names.json:717"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_CLUSTER_LISTEN_ADDR",
+      "category": "network",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "CLUSTER_LISTEN_ADDR",
+      "occurrences": [
+        {
+          "kind": "retired-name",
+          "source": "contracts/config/retired-names.json:730"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_CLUSTER_NODE_ID",
+      "category": "application",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "CLUSTER_NODE_ID",
+      "occurrences": [
+        {
+          "kind": "retired-name",
+          "source": "contracts/config/retired-names.json:743"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_CLUSTER_NODE_NAME",
+      "category": "application",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "CLUSTER_NODE_NAME",
+      "occurrences": [
+        {
+          "kind": "retired-name",
+          "source": "contracts/config/retired-names.json:756"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_CLUSTER_REGION",
+      "category": "application",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "CLUSTER_REGION",
+      "occurrences": [
+        {
+          "kind": "retired-name",
+          "source": "contracts/config/retired-names.json:769"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_DEBIAN_FRONTEND",
+      "category": "runtime-or-storage",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "DEBIAN_FRONTEND",
+      "occurrences": [
+        {
+          "kind": "retired-name",
+          "source": "contracts/config/retired-names.json:782"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_DOCKER_HOST_GATEWAY_ADVERTISE_HOST",
+      "category": "network",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "DOCKER_HOST_GATEWAY_ADVERTISE_HOST",
+      "occurrences": [
+        {
+          "kind": "retired-name",
+          "source": "contracts/config/retired-names.json:795"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_DOCKER_HOST_GATEWAY_PORT",
+      "category": "network",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "DOCKER_HOST_GATEWAY_PORT",
+      "occurrences": [
+        {
+          "kind": "retired-name",
+          "source": "contracts/config/retired-names.json:808"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_ENTITY_API_PORT",
+      "category": "network",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "ENTITY_API_PORT",
+      "occurrences": [
+        {
+          "kind": "retired-name",
+          "source": "contracts/config/retired-names.json:821"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_FC_VERSION",
+      "category": "runtime-or-storage",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "FC_VERSION",
+      "occurrences": [
+        {
+          "kind": "retired-name",
+          "source": "contracts/config/retired-names.json:834"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_FEDERATION_PORT",
+      "category": "network",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "FEDERATION_API_PORT",
+      "occurrences": [
+        {
+          "kind": "retired-name",
+          "source": "contracts/config/retired-names.json:847"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_FIRECRACKER_BIN",
+      "category": "runtime-or-storage",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "FIRECRACKER_BIN",
+      "occurrences": [
+        {
+          "kind": "retired-name",
+          "source": "contracts/config/retired-names.json:860"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_FIRECRACKER_BOOT_ARGS",
+      "category": "runtime-or-storage",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "FIRECRACKER_BOOT_ARGS",
+      "occurrences": [
+        {
+          "kind": "retired-name",
+          "source": "contracts/config/retired-names.json:873"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_FIRECRACKER_KERNEL_IMAGE",
+      "category": "runtime-or-storage",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "FIRECRACKER_KERNEL_IMAGE",
+      "occurrences": [
+        {
+          "kind": "retired-name",
+          "source": "contracts/config/retired-names.json:886"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_FIRECRACKER_ROOTFS_IMAGE",
+      "category": "runtime-or-storage",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "FIRECRACKER_ROOTFS_IMAGE",
+      "occurrences": [
+        {
+          "kind": "retired-name",
+          "source": "contracts/config/retired-names.json:899"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_HOME",
+      "category": "process-environment",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "HOME",
+      "occurrences": [
+        {
+          "kind": "retired-name",
+          "source": "contracts/config/retired-names.json:912"
+        },
+        {
+          "kind": "read",
+          "source": "crates/aseman-config/src/lib.rs:549"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_INSTALL_FIRECRACKER",
+      "category": "runtime-or-storage",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "INSTALL_FIRECRACKER",
+      "occurrences": [
+        {
+          "kind": "retired-name",
+          "source": "contracts/config/retired-names.json:929"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_IPADDR",
+      "category": "network",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "IPADDR",
+      "occurrences": [
+        {
+          "kind": "retired-name",
+          "source": "contracts/config/retired-names.json:942"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_IS_HEAD",
+      "category": "runtime-or-storage",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "IS_HEAD",
+      "occurrences": [
+        {
+          "kind": "retired-name",
+          "source": "contracts/config/retired-names.json:955"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_LD_LIBRARY_PATH",
+      "category": "process-environment",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "LD_LIBRARY_PATH",
+      "occurrences": [
+        {
+          "kind": "retired-name",
+          "source": "contracts/config/retired-names.json:968"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_MAIN_PORT",
+      "category": "network",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "MAIN_PORT",
+      "occurrences": [
+        {
+          "kind": "retired-name",
+          "source": "contracts/config/retired-names.json:981"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_MODAL_API_KEY",
+      "category": "secret-or-sensitive",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "MODAL_API_KEY",
+      "occurrences": [
+        {
+          "kind": "retired-name",
+          "source": "contracts/config/retired-names.json:994"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_MODAL_APP_NAME",
+      "category": "application",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "MODAL_APP_NAME",
+      "occurrences": [
+        {
+          "kind": "retired-name",
+          "source": "contracts/config/retired-names.json:1007"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_MODAL_APP_PREFIX",
+      "category": "application",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "MODAL_APP_PREFIX",
+      "occurrences": [
+        {
+          "kind": "retired-name",
+          "source": "contracts/config/retired-names.json:1020"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_MODAL_BUILDER_VERSION",
+      "category": "application",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "MODAL_BUILDER_VERSION",
+      "occurrences": [
+        {
+          "kind": "retired-name",
+          "source": "contracts/config/retired-names.json:1033"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_MODAL_CLIENT_VERSION",
+      "category": "application",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "MODAL_CLIENT_VERSION",
+      "occurrences": [
+        {
+          "kind": "retired-name",
+          "source": "contracts/config/retired-names.json:1046"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_MODAL_DEFAULT_IMAGE",
+      "category": "application",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "MODAL_DEFAULT_IMAGE",
+      "occurrences": [
+        {
+          "kind": "retired-name",
+          "source": "contracts/config/retired-names.json:1059"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_MODAL_ENVIRONMENT",
+      "category": "application",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "MODAL_ENVIRONMENT",
+      "occurrences": [
+        {
+          "kind": "retired-name",
+          "source": "contracts/config/retired-names.json:1072"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_MODAL_IMAGE_BUILD_TIMEOUT_SECS",
+      "category": "application",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "MODAL_IMAGE_BUILD_TIMEOUT_SECS",
+      "occurrences": [
+        {
+          "kind": "retired-name",
+          "source": "contracts/config/retired-names.json:1085"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_MODAL_SANDBOX_TIMEOUT_SECS",
+      "category": "application",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "MODAL_SANDBOX_TIMEOUT_SECS",
+      "occurrences": [
+        {
+          "kind": "retired-name",
+          "source": "contracts/config/retired-names.json:1098"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_MODAL_SERVER_URL",
+      "category": "network",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "MODAL_SERVER_URL",
+      "occurrences": [
+        {
+          "kind": "retired-name",
+          "source": "contracts/config/retired-names.json:1111"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_MODAL_TASK_READY_TIMEOUT_SECS",
+      "category": "application",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "MODAL_TASK_READY_TIMEOUT_SECS",
+      "occurrences": [
+        {
+          "kind": "retired-name",
+          "source": "contracts/config/retired-names.json:1124"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_MODAL_TOKEN_ID",
+      "category": "secret-or-sensitive",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "MODAL_TOKEN_ID",
+      "occurrences": [
+        {
+          "kind": "retired-name",
+          "source": "contracts/config/retired-names.json:1137"
+        },
+        {
+          "kind": "read",
+          "source": "crates/aseman-config/src/lib.rs:443"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_MODAL_TOKEN_SECRET",
+      "category": "secret-or-sensitive",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "MODAL_TOKEN_SECRET",
+      "occurrences": [
+        {
+          "kind": "retired-name",
+          "source": "contracts/config/retired-names.json:1154"
+        },
+        {
+          "kind": "read",
+          "source": "crates/aseman-config/src/lib.rs:446"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_MODAL_VOLUME_MOUNT_PATH",
+      "category": "application",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "MODAL_VOLUME_MOUNT_PATH",
+      "occurrences": [
+        {
+          "kind": "retired-name",
+          "source": "contracts/config/retired-names.json:1171"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_MODAL_VOLUME_SETTLE_MS",
+      "category": "application",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "MODAL_VOLUME_SETTLE_MS",
+      "occurrences": [
+        {
+          "kind": "retired-name",
+          "source": "contracts/config/retired-names.json:1184"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_ORIGIN",
+      "category": "network",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "ORIGIN",
+      "occurrences": [
+        {
+          "kind": "retired-name",
+          "source": "contracts/config/retired-names.json:1197"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_NODE_ID",
+      "category": "runtime-or-storage",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "OWNER_ID",
+      "occurrences": [
+        {
+          "kind": "retired-name",
+          "source": "contracts/config/retired-names.json:1210"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_NODE_PRIVATE_KEY_SECRET",
+      "category": "secret-or-sensitive",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "OWNER_PRIVATE_KEY",
+      "occurrences": [
+        {
+          "kind": "retired-name",
+          "source": "contracts/config/retired-names.json:1223"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_PATH",
+      "category": "process-environment",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "PATH",
+      "occurrences": [
+        {
+          "kind": "retired-name",
+          "source": "contracts/config/retired-names.json:1236"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_PPROF_PORT",
+      "category": "network",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "PPROF_PORT",
+      "occurrences": [
+        {
+          "kind": "retired-name",
+          "source": "contracts/config/retired-names.json:1249"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_PROBE_CMD",
+      "category": "runtime-or-storage",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "PROBE_CMD",
+      "occurrences": [
+        {
+          "kind": "retired-name",
+          "source": "contracts/config/retired-names.json:1262"
+        },
+        {
+          "kind": "read",
+          "source": "crates/aseman-config/src/lib.rs:455"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_PROBE_MACHINE_ID",
+      "category": "runtime-or-storage",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "PROBE_MACHINE_ID",
+      "occurrences": [
+        {
+          "kind": "retired-name",
+          "source": "contracts/config/retired-names.json:1279"
+        },
+        {
+          "kind": "read",
+          "source": "crates/aseman-config/src/lib.rs:449"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_PROBE_VM_ID",
+      "category": "runtime-or-storage",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "PROBE_VM_ID",
+      "occurrences": [
+        {
+          "kind": "retired-name",
+          "source": "contracts/config/retired-names.json:1296"
+        },
+        {
+          "kind": "read",
+          "source": "crates/aseman-config/src/lib.rs:452"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_QUESTDB_DATA_DIR",
+      "category": "runtime-or-storage",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "QUESTDB_DATA_DIR",
+      "occurrences": [
+        {
+          "kind": "retired-name",
+          "source": "contracts/config/retired-names.json:1313"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_QUESTDB_HTTP_MIN_PORT",
+      "category": "network",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "QUESTDB_HTTP_MIN_PORT",
+      "occurrences": [
+        {
+          "kind": "retired-name",
+          "source": "contracts/config/retired-names.json:1326"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_QUESTDB_HTTP_PORT",
+      "category": "network",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "QUESTDB_HTTP_PORT",
+      "occurrences": [
+        {
+          "kind": "retired-name",
+          "source": "contracts/config/retired-names.json:1339"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_QUESTDB_ILP_PORT",
+      "category": "network",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "QUESTDB_ILP_PORT",
+      "occurrences": [
+        {
+          "kind": "retired-name",
+          "source": "contracts/config/retired-names.json:1352"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_QUESTDB_PORT",
+      "category": "network",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "QUESTDB_PORT",
+      "occurrences": [
+        {
+          "kind": "retired-name",
+          "source": "contracts/config/retired-names.json:1365"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_RATE_LIMIT_ANON_BURST",
+      "category": "application",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "RATE_LIMIT_ANON_BURST",
+      "occurrences": [
+        {
+          "kind": "retired-name",
+          "source": "contracts/config/retired-names.json:1378"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_RATE_LIMIT_ANON_RPS",
+      "category": "application",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "RATE_LIMIT_ANON_RPS",
+      "occurrences": [
+        {
+          "kind": "retired-name",
+          "source": "contracts/config/retired-names.json:1391"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_RATE_LIMIT_AUTH_BURST",
+      "category": "application",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "RATE_LIMIT_AUTH_BURST",
+      "occurrences": [
+        {
+          "kind": "retired-name",
+          "source": "contracts/config/retired-names.json:1404"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_RATE_LIMIT_AUTH_RPS",
+      "category": "application",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "RATE_LIMIT_AUTH_RPS",
+      "occurrences": [
+        {
+          "kind": "retired-name",
+          "source": "contracts/config/retired-names.json:1417"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_RATE_LIMIT_ENABLED",
+      "category": "application",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "RATE_LIMIT_ENABLED",
+      "occurrences": [
+        {
+          "kind": "retired-name",
+          "source": "contracts/config/retired-names.json:1430"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_RATE_LIMIT_GLOBAL_BURST",
+      "category": "application",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "RATE_LIMIT_GLOBAL_BURST",
+      "occurrences": [
+        {
+          "kind": "retired-name",
+          "source": "contracts/config/retired-names.json:1443"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_RATE_LIMIT_GLOBAL_RPS",
+      "category": "application",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "RATE_LIMIT_GLOBAL_RPS",
+      "occurrences": [
+        {
+          "kind": "retired-name",
+          "source": "contracts/config/retired-names.json:1456"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_RATE_LIMIT_IDLE_EVICT_SECS",
+      "category": "application",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "RATE_LIMIT_IDLE_EVICT_SECS",
+      "occurrences": [
+        {
+          "kind": "retired-name",
+          "source": "contracts/config/retired-names.json:1469"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_ROOT_NODE",
+      "category": "runtime-or-storage",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "ROOT_NODE",
+      "occurrences": [
+        {
+          "kind": "retired-name",
+          "source": "contracts/config/retired-names.json:1482"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_SEARCH_INDEX_PATH",
+      "category": "runtime-or-storage",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "SEARCH_INDEX_PATH",
+      "occurrences": [
+        {
+          "kind": "retired-name",
+          "source": "contracts/config/retired-names.json:1495"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_STORAGE_ROOT_PATH",
+      "category": "runtime-or-storage",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "STORAGE_ROOT_PATH",
+      "occurrences": [
+        {
+          "kind": "retired-name",
+          "source": "contracts/config/retired-names.json:1508"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_STORE_LOGS_DB",
+      "category": "runtime-or-storage",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "STORE_LOGS_DB",
+      "occurrences": [
+        {
+          "kind": "retired-name",
+          "source": "contracts/config/retired-names.json:1521"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_TELEMETRY_API_PORT",
+      "category": "network",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "TELEMETRY_API_PORT",
+      "occurrences": [
+        {
+          "kind": "retired-name",
+          "source": "contracts/config/retired-names.json:1534"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_TELEMETRY_DB_PATH",
+      "category": "runtime-or-storage",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "TELEMETRY_DB_PATH",
+      "occurrences": [
+        {
+          "kind": "retired-name",
+          "source": "contracts/config/retired-names.json:1547"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_TLS_CERT_PATH",
+      "category": "runtime-or-storage",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "TLS_CERT_PATH",
+      "occurrences": [
+        {
+          "kind": "retired-name",
+          "source": "contracts/config/retired-names.json:1560"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_TLS_KEY_PATH",
+      "category": "secret-or-sensitive",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "TLS_KEY_PATH",
+      "occurrences": [
+        {
+          "kind": "retired-name",
+          "source": "contracts/config/retired-names.json:1573"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_USERPROFILE",
+      "category": "process-environment",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "USERPROFILE",
+      "occurrences": [
+        {
+          "kind": "retired-name",
+          "source": "contracts/config/retired-names.json:1586"
+        },
+        {
+          "kind": "read",
+          "source": "crates/aseman-config/src/lib.rs:553"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_VM_API_PORT",
+      "category": "network",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "VM_API_PORT",
+      "occurrences": [
+        {
+          "kind": "retired-name",
+          "source": "contracts/config/retired-names.json:1603"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_VM_CPU_CORE_COST_PER_MINUTE",
+      "category": "application",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "VM_CPU_CORE_COST_PER_MINUTE",
+      "occurrences": [
+        {
+          "kind": "retired-name",
+          "source": "contracts/config/retired-names.json:1616"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_VM_DISK_COST_PER_GB_PER_MINUTE",
+      "category": "application",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "VM_DISK_COST_PER_GB_PER_MINUTE",
+      "occurrences": [
+        {
+          "kind": "retired-name",
+          "source": "contracts/config/retired-names.json:1629"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_VM_EXEC_COST_PER_SECOND",
+      "category": "application",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "VM_EXEC_COST_PER_SECOND",
+      "occurrences": [
+        {
+          "kind": "retired-name",
+          "source": "contracts/config/retired-names.json:1642"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_VM_HTTP_INGRESS_PORT",
+      "category": "network",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "VM_HTTP_INGRESS_PORT",
+      "occurrences": [
+        {
+          "kind": "retired-name",
+          "source": "contracts/config/retired-names.json:1655"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_VM_RAM_COST_PER_MB_PER_MINUTE",
+      "category": "application",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "VM_RAM_COST_PER_MB_PER_MINUTE",
+      "occurrences": [
+        {
+          "kind": "retired-name",
+          "source": "contracts/config/retired-names.json:1668"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_WASMEDGE_LIB_DIR",
+      "category": "runtime-or-storage",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "WASMEDGE_LIB_DIR",
+      "occurrences": [
+        {
+          "kind": "retired-name",
+          "source": "contracts/config/retired-names.json:1681"
+        }
+      ]
+    },
+    {
+      "canonical": "ASEMAN_XDG_STATE_HOME",
+      "category": "runtime-or-storage",
+      "conflict_policy": "fail",
+      "expiry": "ADR-0004 window after canonical replacement",
+      "legacy": "XDG_STATE_HOME",
+      "occurrences": [
+        {
+          "kind": "retired-name",
+          "source": "contracts/config/retired-names.json:1694"
+        }
+      ]
+    }
+  ],
+  "canonical_collisions": {},
+  "rules": [
+    "Canonical and legacy values supplied together fail closed, even when textually equal.",
+    "Legacy usage emits a redaction-safe warning and counter.",
+    "Aliases are removed only under ADR 0004 and their removal-ledger row.",
+    "Unknown keys fail schema validation."
+  ]
+}

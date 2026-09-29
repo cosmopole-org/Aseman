@@ -34,7 +34,7 @@ Two facts shape how far this can go at once:
    custom gateway routes, resource locks, and the guest CRUD host actions. The packet
    router, the `VmHost` bridge, the runtime bootstrap, the identity-less callback
    protocol, the VM-context registry, the per-VM write buffers, and the dead VM gateway
-   service are deleted. `caspar-vm-sdk` and `caspar-vm-plugins` are no longer node
+   service are deleted. `aseman-vm-sdk` and `aseman-vm-plugins` are no longer node
    dependencies, so no runtime engine links into the node binary.
 2. **Every VM operation is an A501 call.** `runVm`, `terminateVm`, `deleteVm`,
    `execVm`, `statusVm`, `copyToVm`, `copyFromVm`, `buildVmImage`, `vmEndpoints`, and

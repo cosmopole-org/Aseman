@@ -1,7 +1,7 @@
 [workspace]
 resolver = "2"
 # The backend family directory holds member crates of its own.
-exclude = ["modules/consensus", "modules/federation", "modules/finance", "modules/network", "modules/realtime", "modules/runtime", "modules/security", "modules/storage", "modules/vmm-backend"]
+exclude = ["modules/consensus", "modules/federation", "modules/network", "modules/runtime", "modules/security", "modules/storage", "modules/vmm-backend"]
 members = [
   "apps/aseman-keygen",
   "apps/aseman-meter",
@@ -9,16 +9,13 @@ members = [
   "apps/aseman-vmm",
   "apps/aseman-vmm-agent",
   "apps/asemanctl",
-  "apps/scan-vmdb",
   "crates/*",
   "modules/*",
   "modules/network/http",
   "modules/network/gateway",
-  "modules/network/legacy",
+  "modules/network/shell",
   "modules/federation/http",
   "modules/consensus/hashgraph",
-  "modules/finance/ledger",
-  "modules/realtime/durable",
   "modules/runtime/docker",
   "modules/runtime/elpian",
   "modules/runtime/elpian/crates/elpian-vm",
@@ -27,19 +24,18 @@ members = [
   "modules/runtime/firecracker",
   "modules/runtime/javascript",
   "modules/runtime/modal",
-  "modules/runtime/sdk-legacy",
+  "modules/runtime/sdk",
   "modules/runtime/wasm",
   "modules/security/capabilities",
   "modules/storage/postgres",
   "modules/storage/rocksdb",
-  "modules/vmm-backend/native-legacy",
-  "modules/vmm-backend/native-legacy/crates/caspar-vm-plugins",
+  "modules/vmm-backend/native",
+  "modules/vmm-backend/native/crates/vm-plugins",
   "modules/vmm-backend/nomad",
   "tests/contracts/module",
   "tests/contracts/policy",
   "tests/contracts/vmm-backend",
   "tests/contracts/storage",
-  "tests/migration",
   "xtask",
 ]
 
@@ -68,6 +64,7 @@ semver = "1.0.28"
 serde = { version = "1.0.228", features = ["derive"] }
 serde_json = "1.0.149"
 sha2 = "0.10.9"
+tempfile = "3.27.0"
 thiserror = "2.0.18"
 tokio = { version = "1.50.0", features = ["macros", "rt-multi-thread", "net", "signal", "time"] }
 tonic = { version = "0.12.3", features = ["transport"] }

@@ -9,7 +9,6 @@
 //! `Node` accessors).
 
 use std::fs;
-use std::path::Path;
 use std::sync::Arc;
 
 use anyhow::{Result, anyhow};
@@ -194,7 +193,10 @@ impl Babble {
     fn init_store(&mut self) -> Result<()> {
         if !self.config.store {
             self.logger.debug("Creating InmemStore");
-            self.store = Some(Box::new(InmemStore::new(self.config.cache_size)));
+            self.store = Some(Box::new(InmemStore::new(
+                self.config.cache_size,
+                self.config.frame_limits,
+            )));
         } else {
             let db_path = &self.config.database_dir;
             let storage = self.config.log_storage.as_ref().ok_or_else(|| {
@@ -210,6 +212,7 @@ impl Babble {
                 .map_err(|error| anyhow!("open consensus log {db_path}: {error}"))?;
             let store = PersistentStore::new(
                 self.config.cache_size,
+                self.config.frame_limits,
                 log,
                 db_path,
                 self.config.maintenance_mode,
@@ -322,7 +325,7 @@ pub fn load_key_for_config(config: &mut Config) -> Result<()> {
 
         // Also write key.pub next to the shard's priv_key. Without it,
         // anything that reads the shard directory to rebuild a peer set
-        // (other follower nodes, `casparctl peers`, etc.) has no way to
+        // (other follower nodes, `asemanctl peers`, etc.) has no way to
         // know which PubKeyHex this validator owns.
         let derived_pub = crate::crypto::keys::public_key_hex(new_key.verifying_key());
         if let Some(parent) = std::path::Path::new(&keyfile_path).parent() {
@@ -336,9 +339,7 @@ pub fn load_key_for_config(config: &mut Config) -> Result<()> {
         // every node downstream then sees a validator id that doesn't match
         // its own peer entry, gets stuck in JOINING forever, and never
         // opens its TCP API listener.
-        if let Some(babble_dir) = aseman_config::legacy_adapter_snapshot()
-            .and_then(|config| config.babble_data_dir.as_ref())
-        {
+        if let Some(babble_dir) = &config.key_mirror_dir {
             let _ = fs::create_dir_all(babble_dir);
             let mirror_priv = SimpleKeyfile::new(&format!("{}/priv_key", babble_dir));
             let _ = mirror_priv.write_key(&new_key);
@@ -359,9 +360,6 @@ pub fn load_key_for_config(config: &mut Config) -> Result<()> {
     config.key = Some(key);
     Ok(())
 }
-
-// Unused-import suppression in case `Path` becomes needed later.
-const _: fn() -> Option<&'static Path> = || None;
 
 #[cfg(test)]
 mod tests {

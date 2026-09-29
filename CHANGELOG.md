@@ -1,14 +1,15 @@
 # Changelog
 
-This file records release-visible changes. The migration's detailed implementation
-evidence remains in [`docs/migration/`](docs/migration/) and generated inventories.
+This file records release-visible changes.
 
 ## Unreleased
 
-- The Aseman architecture is being introduced behind compatibility edges while Caspar
-  names and protocols remain governed by ADR 0004.
-- PostgreSQL, VMM, module, identity/policy, federation, realtime, finance, and public
-  HTTP boundaries are available at the stages recorded in
-  [`docs/migration/status.md`](docs/migration/status.md).
-
-No stable Aseman release or compatibility-window start is declared by this entry.
+- The node runs every operation through one router shared by HTTP, the signed-packet
+  transports, the chain, federation, and guest calls (ADR 0039).
+- Configuration keys lose their `ASEMAN_LEGACY_` prefix: `ASEMAN_LEGACY_X` is now
+  `ASEMAN_X`, `ASEMAN_LEGACY_CONSENSUS_PORT` is `ASEMAN_CHAIN_PORT`, and
+  `ASEMAN_LEGACY_CASPARCTL_*` is `ASEMAN_CTL_*`.
+- The command-line client is `aseman-client`, configured by `ASEMAN_HOST`,
+  `ASEMAN_PROTO`, `ASEMAN_PORT`, `ASEMAN_TLS`, `ASEMAN_INSECURE`, and
+  `ASEMAN_SIGNAL_TIMEOUT_MS`.
+- Every persisted port runs on the storage module, on every provider (ADR 0038).

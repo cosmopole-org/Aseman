@@ -1,7 +1,7 @@
 ---
 status: ACCEPTED
 owner: security
-source_of_truth: plan/migration/05-security-and-authority.md
+source_of_truth: this document and contracts/security/
 last_verified_commit: 800df24076c7
 verification: security contract and adversarial suites introduced in Phases 2-7
 ---

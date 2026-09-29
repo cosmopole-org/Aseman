@@ -8,7 +8,7 @@ rebuilt and verified on read. With `ASEMAN_STORAGE_CAPSULE_MODE=on`, `capsule_cb
 also packs the exact canonical envelope. Neither layout is a universal entity table.
 
 The guest catalog stores bindings and schema definitions only. Guest payloads belong
-in separate creature databases/namespaces and are implemented by P3-03.
+in separate creature databases/namespaces (ADR 0001).
 
 Run static checks with `cargo test -p aseman-storage-postgres`. Live integration tests
 use `ASEMAN_TEST_POSTGRES_URL` and an isolated disposable database.

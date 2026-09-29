@@ -1,4 +1,4 @@
-//! Worker lifecycle on a real Nomad cluster (P6-03, A606): cordon stops placement,
+//! Worker lifecycle on a real Nomad cluster (A606): cordon stops placement,
 //! drain moves work off, a cancelled drain does not silently return the worker to
 //! service, and none of it changes the workload's identity or generation.
 //!

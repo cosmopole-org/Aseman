@@ -3,7 +3,7 @@
 `query.schema.json` defines closed, bounded, provider-neutral queries. Raw provider
 query text is always rejected.
 
-## Relationship equality predicates (P3-06 extension)
+## Relationship equality predicates
 
 A `compare` predicate may name a declared **relationship** instead of a field, for
 example `{"op":"compare","field":"store","operator":"equal","value":{"type":"bytes",...}}`.

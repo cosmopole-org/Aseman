@@ -14,8 +14,8 @@ CAPACITY = ROOT / "contracts/realtime/capacity-v1.json"
 DASHBOARD = ROOT / "deploy/observability/grafana/aseman-overview.json"
 ALERTS = ROOT / "deploy/observability/prometheus/aseman-alerts.yml"
 RUNBOOK = ROOT / "docs/operations/observability.md"
-REALTIME = ROOT / "modules/realtime/durable/src/lib.rs"
-MIGRATION = ROOT / "modules/realtime/durable/migrations/0001_realtime.sql"
+REALTIME = ROOT / "crates/aseman-capsule/src/realtime.rs"
+MODELS = ROOT / "contracts/capsule/kinds/core-logical-schemas.json"
 
 METRIC_RE = re.compile(r"\baseman_[a-z0-9_]+\b")
 ALERT_RE = re.compile(r"^\s*- alert: ([A-Za-z][A-Za-z0-9]+)\s*$", re.MULTILINE)
@@ -113,12 +113,16 @@ def main() -> None:
 
     semantics = capacity.get("fixed_semantics", {})
     realtime_source = REALTIME.read_text()
-    if f"const MAX_ATTEMPTS: i32 = {semantics.get('claim_max_attempts')};" not in realtime_source:
+    if f"const MAX_ATTEMPTS: i64 = {semantics.get('claim_max_attempts')};" not in realtime_source:
         fail("A708 max-attempts value drifted from the provider")
-    migration = MIGRATION.read_text()
+    # The realtime tables are storage-module models (ADR 0038): every provider indexes
+    # what the model declares.
+    models = {model["kind"]: model for model in load(MODELS)["definitions"]}
     for index in semantics.get("required_indexes", []):
-        if index not in migration:
-            fail(f"A708 required index is absent from the migration: {index}")
+        model = models.get(index.get("model"), {})
+        declared = model.get("range_indexes", []) + model.get("unique_indexes", [])
+        if index.get("fields") not in declared:
+            fail(f"A708 required index is not declared by its model: {index}")
     defaults = capacity.get("planning_defaults", {})
     if defaults.get("headroom_factor", 0) < 1.5 or defaults.get("storage_overhead_factor", 0) < 1:
         fail("A708 planning factors do not reserve usable headroom")

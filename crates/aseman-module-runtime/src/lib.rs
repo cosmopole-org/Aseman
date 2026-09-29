@@ -5,16 +5,15 @@ use aseman_contracts::module::{
     AmodBundle, AmodFile, BootstrapSnapshot, ModuleHandshake, ModuleKind, ModuleLifecycleState,
     ModuleManifest, ModulePermissions, SignatureEnvelope,
 };
+use aseman_fs::{Access, write_atomic};
 use base64::Engine;
 use ring::signature;
 use semver::{Version, VersionReq};
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use std::collections::{BTreeMap, BTreeSet};
-use std::fs::{self, OpenOptions};
-use std::io::Write;
+use std::fs;
 use std::path::{Path, PathBuf};
-use std::sync::atomic::{AtomicU64, Ordering};
 use thiserror::Error;
 
 const ARTIFACT_DOMAIN: &[u8] = b"ASEMAN-MODULE-ARTIFACT-V1\0";
@@ -22,7 +21,6 @@ const BOOTSTRAP_DOMAIN: &[u8] = b"ASEMAN-MODULE-BOOTSTRAP-V1\0";
 const AMOD_PAYLOAD_DOMAIN: &[u8] = b"ASEMAN-AMOD-PAYLOAD-V1\0";
 const MAX_AMOD_FILES: usize = 1024;
 const MAX_AMOD_BYTES: usize = 256 * 1024 * 1024;
-static TEMPORARY_FILE_SEQUENCE: AtomicU64 = AtomicU64::new(0);
 
 pub type ModuleResult<T> = Result<T, ModuleError>;
 
@@ -331,26 +329,13 @@ impl ArtifactCache {
             }
             return Ok(target);
         }
-        let temporary = unique_temporary_path(&target);
-        let mut file = OpenOptions::new()
-            .create_new(true)
-            .write(true)
-            .open(&temporary)?;
-        if let Err(error) = file
-            .write_all(artifact.bytes())
-            .and_then(|()| file.sync_all())
-            .and_then(|()| fs::rename(&temporary, &target))
-        {
-            if target.exists()
-                && fs::read(&target)
-                    .map(|bytes| sha256_digest(&bytes) == artifact.cache_digest)
-                    .unwrap_or(false)
-            {
-                let _ = fs::remove_file(&temporary);
-                return Ok(target);
+        if let Err(error) = write_atomic(&target, artifact.bytes(), Access::Shared) {
+            // A concurrent store of the same artifact wins the race harmlessly.
+            let stored =
+                fs::read(&target).is_ok_and(|bytes| sha256_digest(&bytes) == artifact.cache_digest);
+            if !stored {
+                return Err(error.into());
             }
-            let _ = fs::remove_file(&temporary);
-            return Err(error.into());
         }
         Ok(target)
     }
@@ -363,11 +348,6 @@ impl ArtifactCache {
         }
         Ok(bytes)
     }
-}
-
-fn unique_temporary_path(target: &Path) -> PathBuf {
-    let sequence = TEMPORARY_FILE_SEQUENCE.fetch_add(1, Ordering::Relaxed);
-    target.with_extension(format!("tmp-{}-{sequence}", std::process::id()))
 }
 
 fn validated_digest_hex(digest: &str) -> ModuleResult<&str> {
@@ -1043,18 +1023,7 @@ impl BootstrapStore {
             ModuleError::BootstrapEncoding("snapshot path has no parent".to_owned())
         })?;
         fs::create_dir_all(parent)?;
-        let temporary = unique_temporary_path(&self.path);
-        let mut options = OpenOptions::new();
-        options.create_new(true).write(true);
-        let mut file = options.open(&temporary)?;
-        #[cfg(unix)]
-        {
-            use std::os::unix::fs::PermissionsExt;
-            file.set_permissions(fs::Permissions::from_mode(0o600))?;
-        }
-        file.write_all(&encoded)?;
-        file.sync_all()?;
-        fs::rename(&temporary, &self.path)?;
+        write_atomic(&self.path, &encoded, Access::Private)?;
         Ok(())
     }
 

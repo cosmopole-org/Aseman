@@ -6,8 +6,8 @@ use std::time::{Duration, Instant};
 use elpian_vm::api as elpian_api;
 use serde_json::{json, Value as JsonValue};
 
-use caspar_vm_sdk::host::{host, log, set_log_vm_context};
-use caspar_vm_sdk::VmResourceLimits;
+use aseman_vm_sdk::host::{host, log, set_log_vm_context};
+use aseman_vm_sdk::VmResourceLimits;
 
 /// Serve one guest host call. The guest's call names an operation and its input,
 /// nothing else: it goes through the node's unified host-call dispatcher under the
@@ -48,7 +48,7 @@ fn host_call(machine_id: &str, vm_id: &str, call: &JsonValue) -> String {
             "machineId": machine_id,
             "vmId": vm_id,
         })),
-        None => json!({"ok": false, "error": "caspar vm host is not initialised"}).to_string(),
+        None => json!({"ok": false, "error": "the VM host is not initialised"}).to_string(),
     }
 }
 

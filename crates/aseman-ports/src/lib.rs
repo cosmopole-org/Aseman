@@ -19,9 +19,6 @@ use aseman_domain::program::{
     VmResourceEntity, VmResourceStore,
 };
 use aseman_domain::signal_tags::LogQuery;
-use aseman_domain::storage_migration::{
-    CanonicalWrite, MigrationPhase, MigrationRecord, StorageMigration,
-};
 use aseman_domain::store::{StoreRecord, StoreSignal};
 use aseman_domain::store_permissions::StorePermissions;
 use aseman_domain::{CreatureDatabaseBinding, CreatureId, DesiredWorkload, Generation, WorkloadId};
@@ -55,9 +52,21 @@ pub enum PortError {
     Deadline,
     #[error("unsupported capability: {0}")]
     Unsupported(&'static str),
+    /// The operation refused the request (invalid input, or a rule it enforces);
+    /// the message tells the caller why.
+    #[error("refused: {0}")]
+    Refused(String),
     /// An adapter failure whose message is part of the client-visible contract.
     #[error("{0}")]
     Failed(String),
+}
+
+impl PortError {
+    /// An adapter failure carrying `error`'s message.
+    #[must_use]
+    pub fn failed(error: impl std::fmt::Display) -> Self {
+        Self::Failed(error.to_string())
+    }
 }
 
 pub trait WorkloadRepository: Send + Sync {
@@ -107,30 +116,6 @@ pub trait ServerIdentityPort: Send + Sync {
 /// Current consensus peers exposed by the bootstrap API.
 pub trait PeerDirectoryPort: Send + Sync {
     fn peer_servers(&self) -> PortResult<Vec<String>>;
-}
-
-/// Durable storage-migration state with compare-and-swap on the expected phase.
-pub trait MigrationStateStore: Send + Sync {
-    fn load(&self, migration_id: &str) -> PortResult<Option<StorageMigration>>;
-    /// Persist `migration` only if the stored phase still equals `expected`
-    /// (`None` means the migration must not exist yet); otherwise `Conflict`.
-    fn save(
-        &self,
-        migration: &StorageMigration,
-        expected: Option<MigrationPhase>,
-    ) -> PortResult<()>;
-}
-
-/// A consistent snapshot of every canonical record held by one provider generation.
-pub trait MigrationRecordSource: Send + Sync {
-    fn snapshot(&self) -> PortResult<Vec<MigrationRecord>>;
-}
-
-/// Accepts one canonical write for one provider generation. Implementations must
-/// reject (`Conflict`) a write whose `generation` is below the provider's fenced
-/// minimum, so a writer routed before a cutover or rollback cannot land late.
-pub trait CanonicalRecordWriter: Send + Sync {
-    fn write(&self, write: &CanonicalWrite) -> PortResult<()>;
 }
 
 /// Creature identity records, keyed by legacy identity. Balances are separate
@@ -183,7 +168,7 @@ pub trait CreatureMetadata: Send + Sync {
 }
 
 /// The creature type registry (ADR 0016 amendment). Specs cross the port as JSON
-/// object text; an empty spec reads as an unregistered type, as in legacy.
+/// object text; an empty spec reads as an unregistered type.
 pub trait CreatureTypes: Send + Sync {
     fn creature_type(&self, name: &str) -> PortResult<Option<String>>;
     /// Every registered type with a non-empty spec, in name order.
@@ -193,8 +178,8 @@ pub trait CreatureTypes: Send + Sync {
 }
 
 /// Creature balances in minor units. They change together with the finance
-/// counters and journal, so they are served by the finance subsystem's provider,
-/// which stays the legacy provider until P8 (ADR 0017).
+/// counters and journal, so they are served by the finance subsystem's provider
+/// (ADR 0017).
 pub trait CreatureBalances: Send + Sync {
     /// Open the balance of a newly registered creature. `Conflict` when it is open.
     fn open(&self, creature_id: &str, opening_balance: i64) -> PortResult<()>;
@@ -226,14 +211,14 @@ pub trait ProgramDirectory: Send + Sync {
 pub trait ProgramMetadata: Send + Sync {
     /// The object at a dotted legacy `path` under `metadata`, as JSON object text.
     fn program_metadata(&self, program_id: &str, path: &str) -> PortResult<Option<String>>;
-    /// Deep-merge a JSON object into the document, creating it when absent, as legacy
+    /// Deep-merge a JSON object into the document, creating it when absent, as
     /// `put_json(.., merge = true)` does. Any other JSON is `Failed`.
     fn merge_program_metadata(&self, program_id: &str, document: &str) -> PortResult<()>;
     /// Remove the document. Removing an absent document succeeds.
     fn delete_program_metadata(&self, program_id: &str) -> PortResult<()>;
 }
 
-/// A program's pending alarm (legacy `vmAlarm*`, target `core.program_alarm`).
+/// A program's pending alarm (`vmAlarm*`, target `core.program_alarm`).
 pub trait ProgramAlarms: Send + Sync {
     fn alarm(&self, program_id: &str) -> PortResult<Option<ProgramAlarm>>;
     /// Replace the program's alarm.
@@ -247,7 +232,7 @@ pub trait ProgramAlarms: Send + Sync {
 pub trait StoreMetadata: Send + Sync {
     /// The object at a dotted legacy `path` under `metadata`, as JSON object text.
     fn store_metadata(&self, store_id: &str, path: &str) -> PortResult<Option<String>>;
-    /// Deep-merge a JSON object into the document, creating it when absent, as legacy
+    /// Deep-merge a JSON object into the document, creating it when absent, as
     /// `put_json(.., merge = true)` does. Any other JSON is `Failed`.
     fn merge_store_metadata(&self, store_id: &str, document: &str) -> PortResult<()>;
     /// Remove the document. Removing an absent document succeeds.
@@ -293,7 +278,7 @@ pub trait VmResourceStores: Send + Sync {
     fn delete_resource_store(&self, store_id: &str) -> PortResult<()>;
 }
 
-/// Program entities, their deployed files, and their configuration (legacy `Entity`,
+/// Program entities, their deployed files, and their configuration (`Entity`,
 /// the `vmEntity*` links and `Json::ProxyEntity`; target `core.entity`,
 /// `core.entity_artifact` and `core.entity_config`). Entities are never deleted, as in
 /// legacy.
@@ -320,7 +305,7 @@ pub trait EntityDirectory: Send + Sync {
     fn deployed_programs(&self) -> PortResult<Vec<String>>;
     /// The entity's configuration document as JSON object text.
     fn entity_config(&self, program_id: &str, entity_id: &str) -> PortResult<Option<String>>;
-    /// Deep-merge a JSON object into the configuration, as legacy
+    /// Deep-merge a JSON object into the configuration, as
     /// `put_json(.., merge = true)`. `NotFound` when the entity does not exist; any
     /// other JSON is `Failed`.
     fn merge_entity_config(
@@ -331,12 +316,12 @@ pub trait EntityDirectory: Send + Sync {
     ) -> PortResult<()>;
 }
 
-/// VM resource entities (legacy `Json::VmResourceEntity` with its data file, target
+/// VM resource entities (`Json::VmResourceEntity` with its data file, target
 /// `core.vm_resource_entity`). An invalid reference
 /// ([`aseman_domain::program::ResourceEntityRef::is_valid`]) is `Failed`.
 pub trait VmResourceEntities: Send + Sync {
     fn resource_entity(&self, entity: &ResourceEntityRef) -> PortResult<Option<VmResourceEntity>>;
-    /// Create or update an entity: deep-merge the payload JSON object, as legacy
+    /// Create or update an entity: deep-merge the payload JSON object, as
     /// `put_json(.., merge = true)`, and record its stored data. `NotFound` when the
     /// resource store does not exist.
     fn put_resource_entity(
@@ -475,17 +460,25 @@ pub enum PublicActionClaim {
     Mismatch,
 }
 
-/// Stable request identity supplied to an action executor. Federation adapters use
-/// this context to preserve one A705 request identity across caller retries.
+/// One authenticated and authorized invocation of an action.
+///
+/// `operation` is the contract route the request addressed. Several operations may
+/// share one action (it is what they are authorized as), each with its own request
+/// and answer. `request_id` and `idempotency_key` are the caller's request identity,
+/// which federation adapters keep across retries (A705).
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub struct ActionExecutionContext {
+pub struct ActionCall {
+    pub subject: Subject,
+    pub operation: String,
+    pub action: String,
+    pub body: Vec<u8>,
     pub request_id: String,
     pub idempotency_key: Option<String>,
 }
 
-/// Resolves the resource an action targets and runs it (P7-06, RL-004). The node
-/// shell implements this seam over the migrated application use cases, so the
-/// transport and the composition never call a legacy handler directly.
+/// Resolves the resource an action targets and runs it. The node implements
+/// this seam over the application use cases, so transports never run an action body
+/// themselves.
 pub trait ActionExecutor: Send + Sync {
     /// The resource `action` targets on `subject`'s behalf, and the facts about it,
     /// resolved server-side from the request body (A402).
@@ -495,25 +488,13 @@ pub trait ActionExecutor: Send + Sync {
         action: &str,
         body: &[u8],
     ) -> PortResult<(ResourceRef, std::collections::BTreeSet<Condition>)>;
-    /// Run the action. The caller has authenticated and authorized it.
-    fn execute(&self, subject: Subject, action: &str, body: &[u8]) -> PortResult<Vec<u8>>;
-
-    /// Run with the originating request identity. Existing in-process adapters may
-    /// use the default; remote adapters override it to retain cross-retry identity.
-    fn execute_with_context(
-        &self,
-        subject: Subject,
-        action: &str,
-        body: &[u8],
-        _context: &ActionExecutionContext,
-    ) -> PortResult<Vec<u8>> {
-        self.execute(subject, action, body)
-    }
+    /// Run the call. The caller has authenticated and authorized it.
+    fn execute(&self, call: &ActionCall) -> PortResult<Vec<u8>>;
 }
 
-/// Session resolution (A701 "session" authentication). Sessions are legacy bearer
-/// credentials; the node resolves a live session to its subject through the legacy
-/// storage provider during the ADR 0004 window, and refuses unknown or expired ones.
+/// Session resolution (A701 "session" authentication). Sessions are bearer
+/// credentials; the node resolves a live session to its subject through its storage,
+/// and refuses unknown or expired ones.
 pub trait SessionDirectory: Send + Sync {
     /// The subject a live session token names, or `None` for an unknown, expired, or
     /// revoked session.
@@ -556,7 +537,7 @@ pub trait StoreDirectory: Send + Sync {
     /// Remove a store. Removing an absent store succeeds; memberships are left to
     /// [`StoreAccess`].
     fn delete_store(&self, store_id: &str) -> PortResult<()>;
-    /// Drop a deleted creator's claim on a store that outlives it. Legacy removes
+    /// Drop a deleted creator's claim on a store that outlives it. The wire removes
     /// the `creatorof` link; the capsule provider keeps the store's creator
     /// relationship to the tombstoned creature.
     fn release_creator(&self, store_id: &str, creator_id: &str) -> PortResult<()>;

@@ -1,4 +1,4 @@
-//! Metering, pricing, and the ledger (Phase 8).
+//! Metering, pricing, and the ledger.
 //!
 //! Money is integer minor units. Never a float: a binary float cannot represent a
 //! tenth, and a charge that is off by a ten-thousandth of a unit every minute is a

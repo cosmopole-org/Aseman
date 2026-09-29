@@ -12,8 +12,8 @@ topology, ports, identities, certificates, tokens, and privileges are defined in
 [`../contracts/deploy/topology.json`](../contracts/deploy/topology.json) and explained
 in [`../docs/operations/topology.md`](../docs/operations/topology.md).
 
-`images/` contains separate one-process definitions for the node, VMM, meter, and Nomad
-backend. They run as uid/gid 65532, declare a process health check, request no Docker
+`images/` contains separate one-process definitions for the node, VMM, meter, and the
+two VMM backends (Nomad and native). They run as uid/gid 65532, declare a process health check, request no Docker
 socket or KVM device, and are intended to run with a read-only root. Their build
 context is a staged release tree (`scripts/stage-release.sh OUT`, or an unpacked
 `aseman-dist-<arch>.tgz` from a GitHub Release), e.g.
@@ -34,6 +34,19 @@ container's network namespace, starts services in A602 order, drops every capabi
 uses read-only roots, and exposes only the public node endpoint plus host-local health
 ports. `compose/compact.env.example` documents its non-secret inputs; bootstrap creates
 the secret files outside the repository.
+
+The VMM backend is one Compose profile, chosen at installation:
+`asemanctl bootstrap --backend nomad` (the default) runs workloads on the operator's
+Nomad; `--backend native --vm-types modal,…` runs the native backend's runtime plugins
+instead. The native backend serves only the VM types that need no host device (Modal
+and the in-process runtimes; Docker and Firecracker need the Docker socket or KVM,
+which the compact topology never grants). Each enabled type takes its settings as
+bootstrap parameters, e.g. `--modal-api-key-secret FILE --modal-app-name NAME`; secret
+values are always files, copied into the configuration directory's
+`secrets/runtimes/` and handed to the backend's user. Bootstrap writes the backend's
+`native-backend.json` and records `ASEMAN_BACKEND` and `COMPOSE_PROFILES` in
+`compact.env`. The native image fetches the WasmEdge library pinned in
+`contracts/release/runtime-dependencies.json` and refuses any other archive.
 
 `compose/cluster.compose.yaml` is the executable service composition for three control
 replicas sharing one node identity and external PostgreSQL/Nomad. It publishes the

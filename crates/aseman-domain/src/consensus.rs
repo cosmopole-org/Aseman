@@ -1,4 +1,4 @@
-//! Ordering and finalizing financial records (Phase 8, RL-011).
+//! Ordering and finalizing financial records.
 //!
 //! Finance does not depend on a consensus implementation: wallets, pricing, and the
 //! ledger are decided without one. What consensus adds is an **order** that several
@@ -157,7 +157,7 @@ pub enum ConsensusError {
 mod tests;
 
 // ---------------------------------------------------------------------------
-// Validator governance: staking and weighted-election state (RL-011).
+// Validator governance: staking and weighted-election state.
 //
 // Staking (bond/unbond/slash) and the hourly weighted-validator election are
 // validator-set governance concerns. They belong with consensus, not with the
@@ -166,7 +166,7 @@ mod tests;
 // pure contracts the provider implements and the node observes.
 // ---------------------------------------------------------------------------
 
-/// A validator's stake ledger entry, mirroring the legacy `StakingNodeState`.
+/// A validator's stake ledger entry, mirroring the `StakingNodeState`.
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ValidatorStake {
     pub node_id: String,

@@ -24,7 +24,43 @@ struct ActionEntry {
     rule: Vec<String>,
     delegable: bool,
     #[serde(default)]
+    packet_guard: Option<String>,
+    #[serde(default)]
     surfaces: Vec<String>,
+}
+
+/// How a signed shell action authenticates its caller on the signed-packet transports
+/// (TCP, WebSocket, chain, and federation), as the registry records it.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum PacketGuard {
+    /// Anonymous callers are admitted; a supplied signature must verify.
+    Public,
+    /// A verified creature; a machine may use the in-process applet marker.
+    User,
+    /// A verified creature that is a member of the addressed store.
+    Store,
+    /// A verified creature with a real signature: value never moves on the
+    /// applet marker.
+    Finance,
+}
+
+impl PacketGuard {
+    fn parse(name: &str) -> Option<Self> {
+        match name {
+            "public" => Some(Self::Public),
+            "user" => Some(Self::User),
+            "store" => Some(Self::Store),
+            "finance" => Some(Self::Finance),
+            _ => None,
+        }
+    }
+}
+
+/// One signed shell operation: the action it is authorized as and its guard.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct ShellOperation {
+    pub action: String,
+    pub guard: PacketGuard,
 }
 
 /// Parse a registry document.
@@ -93,6 +129,38 @@ pub fn surface_actions() -> Result<std::collections::BTreeMap<String, String>, S
     Ok(map)
 }
 
+/// Every signed shell path of the compiled-in registry, with the action it is
+/// authorized as and its guard.
+///
+/// # Errors
+///
+/// As [`parse_action_registry`], or a shell surface without a legacy guard.
+pub fn shell_operations() -> Result<std::collections::BTreeMap<String, ShellOperation>, String> {
+    let file: RegistryFile =
+        serde_json::from_str(ACTIONS_JSON).map_err(|error| error.to_string())?;
+    let mut map = std::collections::BTreeMap::new();
+    for entry in file.actions {
+        for surface in &entry.surfaces {
+            let Some(path) = surface.strip_prefix("signed-shell-action ") else {
+                continue;
+            };
+            let guard = entry
+                .packet_guard
+                .as_deref()
+                .and_then(PacketGuard::parse)
+                .ok_or_else(|| format!("{}: a shell surface needs a shell guard", entry.id))?;
+            map.insert(
+                path.to_owned(),
+                ShellOperation {
+                    action: entry.id.clone(),
+                    guard,
+                },
+            );
+        }
+    }
+    Ok(map)
+}
+
 /// The compiled-in A402 registry.
 ///
 /// # Errors
@@ -127,6 +195,10 @@ mod tests {
             surfaces["signed-shell-action /stores/signal"],
             "store.signal"
         );
+        let shell = shell_operations().unwrap();
+        assert_eq!(shell.len(), 76);
+        assert_eq!(shell["/creatures/transfer"].guard, PacketGuard::Finance);
+        assert_eq!(shell["/stores/signal"].guard, PacketGuard::Store);
         // The actions the application already asks about exist.
         for id in [
             "workload.start",

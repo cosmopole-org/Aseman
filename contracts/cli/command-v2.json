@@ -99,6 +99,11 @@
       "name": "support-bundle",
       "class": "journaled_mutation",
       "output": "json_optional"
+    },
+    {
+      "name": "storage",
+      "class": "mixed",
+      "output": "json_optional"
     }
   ],
   "compatibility": {

@@ -2,8 +2,8 @@
 //! mesh (OpenRaft-replicated cluster of same-origin nodes).
 //!
 //! The commands talk to the node's cluster HTTP listener (default
-//! `127.0.0.1:7440`, override with `--endpoint` or `CASPARCTL_CLUSTER_ENDPOINT`;
-//! set `--token` / `CASPAR_CLUSTER_TOKEN` when the mesh uses a shared secret).
+//! `127.0.0.1:7440`, override with `--endpoint` or `ASEMAN_CTL_CLUSTER_ENDPOINT`;
+//! set `--token` / `ASEMAN_CLUSTER_TOKEN` when the mesh uses a shared secret).
 //!
 //! Peers can be introduced one by one (`add-peer --id 2 --addr host:7440`)
 //! or all at once from a cluster config document (`apply -f cluster.json`);
@@ -12,26 +12,27 @@
 //!
 //! HTTP calls shell out to `curl`, matching the rest of the CLI.
 
-use std::process::Command;
+use aseman_config::CliConfig;
 
 use anyhow::{Result, anyhow, bail};
 use serde_json::{Value, json};
 
-pub fn run_cluster(args: &[String]) -> Result<()> {
+pub fn run_cluster(config: &CliConfig, args: &[String]) -> Result<()> {
     if args.is_empty() {
         print_cluster_usage();
         return Ok(());
     }
+    let a = parse_args(config, &args[1..]);
     match args[0].as_str() {
-        "status" => cmd_status(&args[1..]),
-        "init" => cmd_init(&args[1..]),
-        "peers" => cmd_peers(&args[1..]),
-        "nearest" => cmd_nearest(&args[1..]),
-        "add-peer" => cmd_add_peer(&args[1..]),
-        "remove-peer" => cmd_remove_peer(&args[1..]),
-        "promote" => cmd_promote(&args[1..]),
-        "config" => cmd_config(&args[1..]),
-        "apply" => cmd_apply(&args[1..]),
+        "status" => cmd_status(&a),
+        "init" => cmd_init(&a),
+        "peers" => cmd_peers(&a),
+        "nearest" => cmd_nearest(&a),
+        "add-peer" => cmd_add_peer(&a),
+        "remove-peer" => cmd_remove_peer(&a),
+        "promote" => cmd_promote(&a),
+        "config" => cmd_config(&a),
+        "apply" => cmd_apply(&a),
         "help" | "-h" | "--help" => {
             print_cluster_usage();
             Ok(())
@@ -62,28 +63,28 @@ fn print_cluster_usage() {
          config set <key> <value>     Set one dotted config key\n  \
          apply -f cluster.json        Apply a whole cluster config document\n\n\
          Global flags:\n  \
-         --endpoint URL   Cluster listener (default http://127.0.0.1:7440,\n                   \
-         env CASPARCTL_CLUSTER_ENDPOINT)\n  \
-         --token SECRET   Shared cluster secret (env CASPAR_CLUSTER_TOKEN)"
+         --endpoint URL   Cluster listener (default https://127.0.0.1:7440,\n                   \
+         env ASEMAN_CTL_CLUSTER_ENDPOINT)\n  \
+         --token SECRET   Shared cluster secret (env ASEMAN_CLUSTER_TOKEN)\n\n\
+         Every call uses the cluster's mutual TLS: ASEMAN_CLUSTER_TLS_CERTIFICATE,\n\
+         ASEMAN_CLUSTER_TLS_KEY_SECRET, and ASEMAN_CLUSTER_TLS_CA name the operator's\n\
+         identity and the cluster CA."
     );
 }
 
 // ───────────────────────── flag helpers ────────────────────────────────────
 
 struct ClusterArgs {
+    config: CliConfig,
     endpoint: String,
     token: String,
     values: std::collections::HashMap<String, String>,
     positional: Vec<String>,
 }
 
-fn parse_args(args: &[String]) -> ClusterArgs {
-    let mut endpoint = aseman_config::cli_config()
-        .map(|config| config.cluster_endpoint.clone())
-        .unwrap_or_else(|| "http://127.0.0.1:7440".to_string());
-    let mut token = aseman_config::cli_config()
-        .map(|config| config.cluster_token.clone())
-        .unwrap_or_default();
+fn parse_args(config: &CliConfig, args: &[String]) -> ClusterArgs {
+    let mut endpoint = config.cluster_endpoint.clone();
+    let mut token = config.cluster_token.clone();
     let mut values = std::collections::HashMap::new();
     let mut positional = Vec::new();
     let mut i = 0;
@@ -119,6 +120,7 @@ fn parse_args(args: &[String]) -> ClusterArgs {
         i += 1;
     }
     ClusterArgs {
+        config: config.clone(),
         endpoint: endpoint.trim_end_matches('/').to_string(),
         token,
         values,
@@ -129,40 +131,13 @@ fn parse_args(args: &[String]) -> ClusterArgs {
 // ───────────────────────── HTTP via curl ───────────────────────────────────
 
 fn curl(a: &ClusterArgs, method: &str, path: &str, body: Option<&Value>) -> Result<Value> {
-    let url = format!("{}{}", a.endpoint, path);
-    let mut cmd = Command::new("curl");
-    cmd.arg("-sS")
-        .arg("--max-time")
-        .arg("35")
-        .arg("-X")
-        .arg(method)
-        .arg("-H")
-        .arg("content-type: application/json");
-    if !a.token.is_empty() {
-        cmd.arg("-H")
-            .arg(format!("x-aseman-cluster-token: {}", a.token));
-    }
-    if let Some(b) = body {
-        cmd.arg("-d").arg(serde_json::to_string(b)?);
-    }
-    cmd.arg(&url);
-    let out = cmd
-        .output()
-        .map_err(|e| anyhow!("curl not available: {}", e))?;
-    if !out.status.success() {
-        bail!(
-            "request to {} failed: {}",
-            url,
-            String::from_utf8_lossy(&out.stderr).trim()
-        );
-    }
-    let text = String::from_utf8_lossy(&out.stdout);
-    let parsed: Value = serde_json::from_str(text.trim())
-        .map_err(|_| anyhow!("unexpected response from {}: {}", url, text.trim()))?;
-    if let Some(err) = parsed.get("error").and_then(|e| e.as_str()) {
-        bail!("{}", err);
-    }
-    Ok(parsed)
+    super::admin::call(
+        &a.config,
+        &a.token,
+        method,
+        &format!("{}{}", a.endpoint, path),
+        body,
+    )
 }
 
 fn print_json(v: &Value) {
@@ -171,38 +146,33 @@ fn print_json(v: &Value) {
 
 // ───────────────────────── subcommands ─────────────────────────────────────
 
-fn cmd_status(args: &[String]) -> Result<()> {
-    let a = parse_args(args);
-    print_json(&curl(&a, "GET", "/cluster/status", None)?);
+fn cmd_status(a: &ClusterArgs) -> Result<()> {
+    print_json(&curl(a, "GET", "/cluster/status", None)?);
     Ok(())
 }
 
-fn cmd_init(args: &[String]) -> Result<()> {
-    let a = parse_args(args);
+fn cmd_init(a: &ClusterArgs) -> Result<()> {
     let include_peers = a
         .values
         .get("include-peers")
         .map(|v| v == "true")
         .unwrap_or(false);
     let body = json!({"includePeers": include_peers});
-    print_json(&curl(&a, "POST", "/cluster/init", Some(&body))?);
+    print_json(&curl(a, "POST", "/cluster/init", Some(&body))?);
     Ok(())
 }
 
-fn cmd_peers(args: &[String]) -> Result<()> {
-    let a = parse_args(args);
-    print_json(&curl(&a, "GET", "/cluster/peers", None)?);
+fn cmd_peers(a: &ClusterArgs) -> Result<()> {
+    print_json(&curl(a, "GET", "/cluster/peers", None)?);
     Ok(())
 }
 
-fn cmd_nearest(args: &[String]) -> Result<()> {
-    let a = parse_args(args);
-    print_json(&curl(&a, "GET", "/cluster/nearest", None)?);
+fn cmd_nearest(a: &ClusterArgs) -> Result<()> {
+    print_json(&curl(a, "GET", "/cluster/nearest", None)?);
     Ok(())
 }
 
-fn cmd_add_peer(args: &[String]) -> Result<()> {
-    let a = parse_args(args);
+fn cmd_add_peer(a: &ClusterArgs) -> Result<()> {
     let id: u64 = a
         .values
         .get("id")
@@ -228,24 +198,22 @@ fn cmd_add_peer(args: &[String]) -> Result<()> {
     if let Some(lon) = a.values.get("lon").and_then(|v| v.parse::<f64>().ok()) {
         body["longitude"] = json!(lon);
     }
-    print_json(&curl(&a, "POST", "/cluster/add-peer", Some(&body))?);
+    print_json(&curl(a, "POST", "/cluster/add-peer", Some(&body))?);
     Ok(())
 }
 
-fn cmd_remove_peer(args: &[String]) -> Result<()> {
-    let a = parse_args(args);
+fn cmd_remove_peer(a: &ClusterArgs) -> Result<()> {
     let id: u64 = a
         .values
         .get("id")
         .and_then(|v| v.parse().ok())
         .ok_or_else(|| anyhow!("--id <number> is required"))?;
     let body = json!({"id": id});
-    print_json(&curl(&a, "POST", "/cluster/remove-peer", Some(&body))?);
+    print_json(&curl(a, "POST", "/cluster/remove-peer", Some(&body))?);
     Ok(())
 }
 
-fn cmd_promote(args: &[String]) -> Result<()> {
-    let a = parse_args(args);
+fn cmd_promote(a: &ClusterArgs) -> Result<()> {
     let ids: Vec<u64> = a
         .values
         .get("ids")
@@ -259,15 +227,14 @@ fn cmd_promote(args: &[String]) -> Result<()> {
         bail!("--ids 1,2,3 is required");
     }
     let body = json!({"ids": ids});
-    print_json(&curl(&a, "POST", "/cluster/promote", Some(&body))?);
+    print_json(&curl(a, "POST", "/cluster/promote", Some(&body))?);
     Ok(())
 }
 
-fn cmd_config(args: &[String]) -> Result<()> {
-    let a = parse_args(args);
+fn cmd_config(a: &ClusterArgs) -> Result<()> {
     match a.positional.first().map(|s| s.as_str()) {
         Some("list") | None => {
-            print_json(&curl(&a, "GET", "/cluster/config", None)?);
+            print_json(&curl(a, "GET", "/cluster/config", None)?);
             Ok(())
         }
         Some("get") => {
@@ -275,7 +242,7 @@ fn cmd_config(args: &[String]) -> Result<()> {
                 .positional
                 .get(1)
                 .ok_or_else(|| anyhow!("usage: asemanctl cluster config get <key>"))?;
-            let cfg = curl(&a, "GET", "/cluster/config", None)?;
+            let cfg = curl(a, "GET", "/cluster/config", None)?;
             let pointer = format!("/{}", key.replace('.', "/"));
             match cfg.pointer(&pointer) {
                 Some(v) => {
@@ -295,15 +262,14 @@ fn cmd_config(args: &[String]) -> Result<()> {
                 .get(2)
                 .ok_or_else(|| anyhow!("usage: asemanctl cluster config set <key> <value>"))?;
             let body = json!({"key": key, "value": value});
-            print_json(&curl(&a, "POST", "/cluster/config", Some(&body))?);
+            print_json(&curl(a, "POST", "/cluster/config", Some(&body))?);
             Ok(())
         }
         Some(other) => bail!("unknown config subcommand \"{}\" (list|get|set)", other),
     }
 }
 
-fn cmd_apply(args: &[String]) -> Result<()> {
-    let a = parse_args(args);
+fn cmd_apply(a: &ClusterArgs) -> Result<()> {
     let file = a
         .values
         .get("f")
@@ -313,6 +279,6 @@ fn cmd_apply(args: &[String]) -> Result<()> {
     let raw = std::fs::read_to_string(file).map_err(|e| anyhow!("read {}: {}", file, e))?;
     let doc: Value =
         serde_json::from_str(&raw).map_err(|e| anyhow!("{} is not valid JSON: {}", file, e))?;
-    print_json(&curl(&a, "POST", "/cluster/config/apply", Some(&doc))?);
+    print_json(&curl(a, "POST", "/cluster/config/apply", Some(&doc))?);
     Ok(())
 }

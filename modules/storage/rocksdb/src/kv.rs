@@ -99,9 +99,12 @@ fn storage_error(error: rocksdb::Error) -> LegacyMigrationError {
 }
 
 impl RocksDbKvStore {
-    /// Open (creating if missing) with the shared bounded-memory tuning.
-    pub fn open_tuned(path: &Path) -> LegacyMigrationResult<Self> {
-        let mut options = crate::tuning::tuned_options();
+    /// Open (creating if missing) with the bounded-memory `tuning`.
+    pub fn open_tuned(
+        path: &Path,
+        tuning: &aseman_config::RocksDbTuning,
+    ) -> LegacyMigrationResult<Self> {
+        let mut options = crate::tuning::tuned_options(tuning);
         options.create_if_missing(true);
         TransactionDB::open(&options, &TransactionDBOptions::default(), path)
             .map(|db| Self { db })

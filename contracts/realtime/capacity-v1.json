@@ -31,9 +31,9 @@
       "durable": null
     },
     "required_indexes": [
-      "realtime_event_stream",
-      "realtime_event_retention",
-      "realtime_outbox_claimable"
+      {"model": "core.realtime_log_event", "fields": ["stream", "sequence"]},
+      {"model": "core.realtime_log_event", "fields": ["at_millis"]},
+      {"model": "core.realtime_outbox_entry", "fields": ["published", "attempts"]}
     ]
   },
   "planning_defaults": {

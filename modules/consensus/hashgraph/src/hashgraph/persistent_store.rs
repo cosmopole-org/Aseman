@@ -16,6 +16,7 @@ use std::sync::{Arc, Mutex};
 use anyhow::{Result, anyhow};
 use aseman_ports::consensus_log::{ConsensusLog, ConsensusLogWrite};
 
+use super::FrameLimits;
 use super::block::Block;
 use super::event::Event;
 use super::frame::Frame;
@@ -63,22 +64,6 @@ fn frame_key(index: i64) -> String {
     format!("{}_{:09}", FRAME_PREFIX, index)
 }
 
-/// How many recent frames to keep on disk. Babble writes a frame per decided
-/// round and never removes them, so the store otherwise grows without bound
-/// (each frame is a full round snapshot — the single biggest consumer, and the
-/// main driver of the data-dir bloat that fills the box). A pruned frame is
-/// recomputed from the retained events/rounds on the rare miss (see
-/// `Hashgraph::get_frame`), so trimming old ones is safe. The last 25 rounds
-/// by default, env-tunable through `CASPAR_BABBLE_FRAME_RETENTION`.
-const DEFAULT_FRAME_RETENTION_ROUNDS: i64 = 25;
-
-fn frame_retention_rounds() -> i64 {
-    aseman_config::legacy_adapter_snapshot()
-        .map(|config| config.babble_frame_retention)
-        .filter(|&n| n > 0)
-        .unwrap_or(DEFAULT_FRAME_RETENTION_ROUNDS)
-}
-
 /// Prune frames older than the retention window at most every this many
 /// rounds — a range delete is one tombstone, so an infrequent cadence keeps
 /// read amplification negligible while still cleaning up any existing backlog.
@@ -105,6 +90,7 @@ impl Log {
         }])
     }
 
+    #[cfg(test)]
     fn scan_prefix(&self, prefix: &[u8]) -> Result<Vec<(Vec<u8>, Vec<u8>)>> {
         Ok(self.0.scan_prefix(prefix)?)
     }
@@ -122,6 +108,7 @@ impl Log {
 /// `maintenance_mode` is active, data is written only to the caches.
 pub struct PersistentStore {
     inmem_store: InmemStore,
+    frame_retention_rounds: i64,
     db: Log,
     path: String,
     maintenance_mode: Cell<bool>,
@@ -133,12 +120,14 @@ impl PersistentStore {
     /// still adding/updating the in-memory store.
     pub fn new(
         cache_size: i64,
+        frames: FrameLimits,
         log: Arc<dyn ConsensusLog>,
         path: &str,
         maintenance_mode: bool,
     ) -> PersistentStore {
         PersistentStore {
-            inmem_store: InmemStore::new(cache_size),
+            frame_retention_rounds: frames.retained_rounds,
+            inmem_store: InmemStore::new(cache_size, frames),
             db: Log(log),
             path: path.to_string(),
             maintenance_mode: Cell::new(maintenance_mode),
@@ -156,7 +145,7 @@ impl PersistentStore {
             .get_or_init(MemoryConsensusLogStorage::default)
             .open(name, false)
             .unwrap();
-        PersistentStore::new(cache_size, log, name, false)
+        PersistentStore::new(cache_size, FrameLimits::default(), log, name, false)
     }
 
     /// Getter for the maintenance-mode flag.
@@ -185,7 +174,7 @@ impl PersistentStore {
     // DB methods
     // -----------------------------------------------------------------------
 
-    #[allow(dead_code)] // exercised by the store's own tests
+    #[cfg(test)]
     fn db_get_repertoire(&self) -> Result<std::collections::HashMap<String, Peer>> {
         let mut repertoire = std::collections::HashMap::new();
         for (_, v) in self.db.scan_prefix(REPERTOIRE_PREFIX.as_bytes())? {
@@ -321,7 +310,7 @@ impl PersistentStore {
         }
     }
 
-    #[allow(dead_code)] // exercised by the store's own tests
+    #[cfg(test)]
     fn db_get_round(&self, index: i64) -> Result<RoundInfo> {
         let key = round_key(index);
         match self.db.get(key.as_bytes())? {
@@ -382,7 +371,7 @@ impl PersistentStore {
         // keys with round < cutoff. Range-delete cleans the whole backlog (not
         // just one round), which is what reclaims a data-dir already bloated by
         // old frames. Pruned frames recompute on the rare miss.
-        let retention = frame_retention_rounds();
+        let retention = self.frame_retention_rounds;
         if frame.round > 0 && frame.round % frame_prune_every_rounds(retention) == 0 {
             let cutoff = frame.round - retention;
             if cutoff > 0 {

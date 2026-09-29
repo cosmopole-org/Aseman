@@ -1,4 +1,4 @@
-//! [`VmmBackend`] over Nomad (P6-01).
+//! [`VmmBackend`] over Nomad.
 //!
 //! The backend owns no Aseman state. It turns an A504 request into a Nomad job
 //! registration or a client-API read, and turns Nomad's allocation state back into an
@@ -427,7 +427,7 @@ impl VmmBackend for NomadBackend {
 
     fn put_file(&self, _workload: &WorkloadRecord, _path: &str, _bytes: &[u8]) -> PortResult<()> {
         // Nomad's client API reads an allocation directory; it does not write one.
-        // Writing into a running workload is the worker agent's (P6-05).
+        // Writing into a running workload is the worker agent's.
         Err(PortError::Unsupported("writing files on the Nomad backend"))
     }
 
@@ -566,10 +566,10 @@ pub fn runtime_capabilities(
         invocation: flag("invocation") && http,
         long_running: flag("long_running"),
         // Nomad has no allocation-level pause or snapshot; both belong to the worker
-        // agent (ADR 0010, P6-05).
+        // agent (ADR 0010).
         pause: false,
         snapshot: false,
-        // Nomad's exec is a websocket the backend does not speak yet (P6-05).
+        // Nomad's exec is a websocket the backend does not speak yet.
         exec: false,
         terminal: false,
         http_ingress: http,

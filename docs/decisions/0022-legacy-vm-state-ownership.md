@@ -18,7 +18,7 @@ not exported as Aseman capsules; it is rebuilt by P5 restart reconciliation.
 
 Plan 04 states: "Aseman owns desired workload state, identity, policy, and finance. The
 VMM owns observed runtime state." It also requires extracting the embedded VMM into
-`modules/vmm-backend/native-legacy` with valid runtime behavior preserved (RL-013).
+`modules/vmm-backend/native` with valid runtime behavior preserved (RL-013).
 
 Legacy evidence:
 
@@ -47,10 +47,10 @@ Legacy evidence:
 
 - The export shape-checks these records, so an unknown family still fails closed. It
   emits no capsule and reports per-family counts as the **VMM handoff inventory**.
-- They stay in the legacy RocksDB as the native-legacy backend's runtime state until
+- They stay in the legacy RocksDB as the native backend's runtime state until
   RL-013 extraction. RL-005 cutover and deletion must not remove them before RL-013
   passes its replacement and deletion gates.
-- In P5, the native-legacy backend reports these instances as observed workloads, and
+- In P5, the native backend reports these instances as observed workloads, and
   reconciliation creates or updates `core.workload` records (desired and observed
   generations under A503). Phase 3 never fabricates a desired `core.workload`.
 - `ModalVolume` handles point at external user data. They must be adopted by the P6

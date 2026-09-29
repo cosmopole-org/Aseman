@@ -1745,33 +1745,6 @@
       "document_fields": [],
       "field_columns": {
         "key": "key",
-        "user_ref": "user_ref"
-      },
-      "fields": {
-        "key": "text",
-        "user_ref": "text"
-      },
-      "kind": "core.user_email",
-      "range_indexes": [],
-      "relationships": {},
-      "required_fields": [
-        "key",
-        "user_ref"
-      ],
-      "table": "user_emails",
-      "unique_indexes": [
-        [
-          "key"
-        ],
-        [
-          "user_ref"
-        ]
-      ]
-    },
-    {
-      "document_fields": [],
-      "field_columns": {
-        "key": "key",
         "key_ref": "key_ref",
         "retain_until_millis": "retain_until_millis"
       },
@@ -1865,56 +1838,6 @@
         "completed"
       ],
       "table": "public_idempotency_claims",
-      "unique_indexes": [
-        [
-          "key"
-        ]
-      ]
-    },
-    {
-      "document_fields": [],
-      "field_columns": {
-        "key": "key",
-        "status": "status",
-        "store_id": "store_id"
-      },
-      "fields": {
-        "key": "text",
-        "status": "text",
-        "store_id": "text"
-      },
-      "kind": "core.chain",
-      "range_indexes": [],
-      "relationships": {},
-      "required_fields": [
-        "key"
-      ],
-      "table": "chains",
-      "unique_indexes": [
-        [
-          "key"
-        ]
-      ]
-    },
-    {
-      "document_fields": [],
-      "field_columns": {
-        "key": "key",
-        "shard_name": "shard_name",
-        "work_chain_id": "work_chain_id"
-      },
-      "fields": {
-        "key": "text",
-        "shard_name": "text",
-        "work_chain_id": "text"
-      },
-      "kind": "core.chain_shard",
-      "range_indexes": [],
-      "relationships": {},
-      "required_fields": [
-        "key"
-      ],
-      "table": "chain_shards",
       "unique_indexes": [
         [
           "key"
@@ -2081,34 +2004,575 @@
       ]
     },
     {
-      "document_fields": [],
+      "document_fields": [
+        "record"
+      ],
       "field_columns": {
-        "blob": "blob",
-        "key": "key",
-        "name": "name",
-        "owner_ref": "owner_ref"
+        "expires_at_millis": "expires_at_millis",
+        "key": "key"
       },
       "fields": {
-        "blob": "text",
-        "key": "text",
-        "name": "text",
-        "owner_ref": "text"
+        "expires_at_millis": "integer",
+        "key": "text"
       },
-      "kind": "core.secret_value",
+      "kind": "core.proxy_correlation",
       "range_indexes": [
         [
-          "owner_ref",
-          "name"
+          "expires_at_millis"
+        ]
+      ],
+      "relationships": {},
+      "required_fields": [
+        "key",
+        "expires_at_millis",
+        "record"
+      ],
+      "table": "proxy_correlations",
+      "unique_indexes": [
+        [
+          "key"
+        ]
+      ]
+    },
+    {
+      "document_fields": [],
+      "field_columns": {
+        "key": "key",
+        "name": "name",
+        "namespace": "namespace",
+        "owner_ref": "owner_ref",
+        "value": "value"
+      },
+      "fields": {
+        "key": "text",
+        "name": "text",
+        "namespace": "text",
+        "owner_ref": "text",
+        "value": "text"
+      },
+      "kind": "core.guest_pair",
+      "range_indexes": [
+        [
+          "owner_ref"
         ]
       ],
       "relationships": {},
       "required_fields": [
         "key",
         "owner_ref",
+        "namespace",
         "name",
-        "blob"
+        "value"
       ],
-      "table": "secret_values",
+      "table": "guest_pairs",
+      "unique_indexes": [
+        [
+          "key"
+        ]
+      ]
+    },
+    {
+      "document_fields": [],
+      "field_columns": {
+        "key": "key",
+        "status": "status",
+        "store_id": "store_id"
+      },
+      "fields": {
+        "key": "text",
+        "status": "text",
+        "store_id": "text"
+      },
+      "kind": "core.chain",
+      "range_indexes": [],
+      "relationships": {
+        "store": {
+          "on_delete": "restrict",
+          "required": false,
+          "target_kind": "core.store",
+          "target_table": "stores"
+        }
+      },
+      "required_fields": [
+        "key",
+        "store_id",
+        "status"
+      ],
+      "table": "chains",
+      "unique_indexes": [
+        [
+          "key"
+        ],
+        [
+          "store_id"
+        ]
+      ]
+    },
+    {
+      "document_fields": [],
+      "field_columns": {
+        "key": "key",
+        "shard_name": "shard_name",
+        "work_chain_id": "work_chain_id"
+      },
+      "fields": {
+        "key": "text",
+        "shard_name": "text",
+        "work_chain_id": "text"
+      },
+      "kind": "core.chain_shard",
+      "range_indexes": [],
+      "relationships": {
+        "chain": {
+          "on_delete": "cascade",
+          "required": false,
+          "target_kind": "core.chain",
+          "target_table": "chains"
+        }
+      },
+      "required_fields": [
+        "key",
+        "work_chain_id",
+        "shard_name"
+      ],
+      "table": "chain_shards",
+      "unique_indexes": [
+        [
+          "key"
+        ],
+        [
+          "work_chain_id",
+          "shard_name"
+        ]
+      ]
+    },
+    {
+      "document_fields": [],
+      "field_columns": {
+        "acquired_at_millis": "acquired_at_millis",
+        "expires_at_millis": "expires_at_millis",
+        "instance": "instance",
+        "key": "key",
+        "token": "token"
+      },
+      "fields": {
+        "acquired_at_millis": "integer",
+        "expires_at_millis": "integer",
+        "instance": "text",
+        "key": "text",
+        "token": "integer"
+      },
+      "kind": "core.coordination_lease",
+      "range_indexes": [],
+      "relationships": {},
+      "required_fields": [
+        "key",
+        "instance",
+        "token",
+        "acquired_at_millis",
+        "expires_at_millis"
+      ],
+      "table": "coordination_leases",
+      "unique_indexes": [
+        [
+          "key"
+        ]
+      ]
+    },
+    {
+      "document_fields": [],
+      "field_columns": {
+        "key": "key",
+        "token": "token"
+      },
+      "fields": {
+        "key": "text",
+        "token": "integer"
+      },
+      "kind": "core.coordination_fence",
+      "range_indexes": [],
+      "relationships": {},
+      "required_fields": [
+        "key",
+        "token"
+      ],
+      "table": "coordination_fences",
+      "unique_indexes": [
+        [
+          "key"
+        ]
+      ]
+    },
+    {
+      "document_fields": [],
+      "field_columns": {
+        "at_millis": "at_millis",
+        "creature_id": "creature_id",
+        "event_kind": "event_kind",
+        "idempotency_key": "idempotency_key",
+        "key": "key",
+        "payload": "payload",
+        "payload_digest": "payload_digest",
+        "producer": "producer",
+        "retention": "retention",
+        "sequence": "sequence",
+        "stream": "stream",
+        "version": "version"
+      },
+      "fields": {
+        "at_millis": "integer",
+        "creature_id": "text",
+        "event_kind": "text",
+        "idempotency_key": "text",
+        "key": "text",
+        "payload": "bytes",
+        "payload_digest": "text",
+        "producer": "text",
+        "retention": "text",
+        "sequence": "integer",
+        "stream": "text",
+        "version": "text"
+      },
+      "kind": "core.realtime_log_event",
+      "range_indexes": [
+        [
+          "stream",
+          "sequence"
+        ],
+        [
+          "at_millis"
+        ]
+      ],
+      "relationships": {},
+      "required_fields": [
+        "key",
+        "stream",
+        "sequence",
+        "creature_id",
+        "event_kind",
+        "producer",
+        "at_millis",
+        "payload_digest",
+        "retention",
+        "version",
+        "payload"
+      ],
+      "table": "realtime_log_events",
+      "unique_indexes": [
+        [
+          "key"
+        ],
+        [
+          "stream",
+          "sequence"
+        ]
+      ]
+    },
+    {
+      "document_fields": [],
+      "field_columns": {
+        "attempts": "attempts",
+        "claimed_by": "claimed_by",
+        "claimed_until_millis": "claimed_until_millis",
+        "key": "key",
+        "published": "published"
+      },
+      "fields": {
+        "attempts": "integer",
+        "claimed_by": "text",
+        "claimed_until_millis": "integer",
+        "key": "text",
+        "published": "bool"
+      },
+      "kind": "core.realtime_outbox_entry",
+      "range_indexes": [
+        [
+          "published",
+          "attempts"
+        ]
+      ],
+      "relationships": {},
+      "required_fields": [
+        "key",
+        "attempts",
+        "published"
+      ],
+      "table": "realtime_outbox_entries",
+      "unique_indexes": [
+        [
+          "key"
+        ]
+      ]
+    },
+    {
+      "document_fields": [],
+      "field_columns": {
+        "at_millis": "at_millis",
+        "consumer": "consumer",
+        "key": "key",
+        "sequence": "sequence",
+        "stream": "stream"
+      },
+      "fields": {
+        "at_millis": "integer",
+        "consumer": "text",
+        "key": "text",
+        "sequence": "integer",
+        "stream": "text"
+      },
+      "kind": "core.realtime_checkpoint",
+      "range_indexes": [],
+      "relationships": {},
+      "required_fields": [
+        "key",
+        "consumer",
+        "stream",
+        "sequence",
+        "at_millis"
+      ],
+      "table": "realtime_checkpoints",
+      "unique_indexes": [
+        [
+          "key"
+        ]
+      ]
+    },
+    {
+      "document_fields": [],
+      "field_columns": {
+        "collected_at_millis": "collected_at_millis",
+        "key": "key",
+        "provider": "provider",
+        "provider_sample_id": "provider_sample_id",
+        "sample": "sample",
+        "workload_id": "workload_id"
+      },
+      "fields": {
+        "collected_at_millis": "integer",
+        "key": "text",
+        "provider": "text",
+        "provider_sample_id": "text",
+        "sample": "text",
+        "workload_id": "text"
+      },
+      "kind": "core.usage_sample",
+      "range_indexes": [
+        [
+          "workload_id",
+          "collected_at_millis"
+        ]
+      ],
+      "relationships": {},
+      "required_fields": [
+        "key",
+        "workload_id",
+        "provider_sample_id",
+        "provider",
+        "collected_at_millis",
+        "sample"
+      ],
+      "table": "usage_samples",
+      "unique_indexes": [
+        [
+          "key"
+        ]
+      ]
+    },
+    {
+      "document_fields": [],
+      "field_columns": {
+        "interval": "interval",
+        "interval_end_millis": "interval_end_millis",
+        "interval_start_millis": "interval_start_millis",
+        "key": "key",
+        "workload_id": "workload_id"
+      },
+      "fields": {
+        "interval": "text",
+        "interval_end_millis": "integer",
+        "interval_start_millis": "integer",
+        "key": "text",
+        "workload_id": "text"
+      },
+      "kind": "core.usage_interval",
+      "range_indexes": [
+        [
+          "interval_start_millis",
+          "key"
+        ],
+        [
+          "workload_id"
+        ]
+      ],
+      "relationships": {},
+      "required_fields": [
+        "key",
+        "workload_id",
+        "interval_start_millis",
+        "interval_end_millis",
+        "interval"
+      ],
+      "table": "usage_intervals",
+      "unique_indexes": [
+        [
+          "key"
+        ]
+      ]
+    },
+    {
+      "document_fields": [],
+      "field_columns": {
+        "at_millis": "at_millis",
+        "key": "key",
+        "price_version": "price_version",
+        "record": "record"
+      },
+      "fields": {
+        "at_millis": "integer",
+        "key": "text",
+        "price_version": "text",
+        "record": "text"
+      },
+      "kind": "core.journal_record",
+      "range_indexes": [],
+      "relationships": {},
+      "required_fields": [
+        "key",
+        "at_millis",
+        "record"
+      ],
+      "table": "journal_records",
+      "unique_indexes": [
+        [
+          "key"
+        ]
+      ]
+    },
+    {
+      "document_fields": [],
+      "field_columns": {
+        "account": "account",
+        "amount": "amount",
+        "key": "key",
+        "ordinal": "ordinal",
+        "record_key": "record_key"
+      },
+      "fields": {
+        "account": "text",
+        "amount": "integer",
+        "key": "text",
+        "ordinal": "integer",
+        "record_key": "text"
+      },
+      "kind": "core.journal_entry",
+      "range_indexes": [
+        [
+          "account"
+        ],
+        [
+          "record_key"
+        ]
+      ],
+      "relationships": {},
+      "required_fields": [
+        "key",
+        "record_key",
+        "ordinal",
+        "account",
+        "amount"
+      ],
+      "table": "journal_entries",
+      "unique_indexes": [
+        [
+          "key"
+        ]
+      ]
+    },
+    {
+      "document_fields": [],
+      "field_columns": {
+        "effective_from_millis": "effective_from_millis",
+        "key": "key",
+        "list": "list"
+      },
+      "fields": {
+        "effective_from_millis": "integer",
+        "key": "text",
+        "list": "text"
+      },
+      "kind": "core.price_list",
+      "range_indexes": [
+        [
+          "effective_from_millis"
+        ]
+      ],
+      "relationships": {},
+      "required_fields": [
+        "key",
+        "effective_from_millis",
+        "list"
+      ],
+      "table": "price_lists",
+      "unique_indexes": [
+        [
+          "key"
+        ]
+      ]
+    },
+    {
+      "document_fields": [],
+      "field_columns": {
+        "descriptor": "descriptor",
+        "expires_at_millis": "expires_at_millis",
+        "key": "key",
+        "sequence": "sequence"
+      },
+      "fields": {
+        "descriptor": "text",
+        "expires_at_millis": "integer",
+        "key": "text",
+        "sequence": "integer"
+      },
+      "kind": "core.federation_node_descriptor",
+      "range_indexes": [],
+      "relationships": {},
+      "required_fields": [
+        "key",
+        "sequence",
+        "expires_at_millis",
+        "descriptor"
+      ],
+      "table": "federation_node_descriptors",
+      "unique_indexes": [
+        [
+          "key"
+        ]
+      ]
+    },
+    {
+      "document_fields": [],
+      "field_columns": {
+        "descriptor": "descriptor",
+        "expires_at_millis": "expires_at_millis",
+        "key": "key",
+        "workload_revision": "workload_revision"
+      },
+      "fields": {
+        "descriptor": "text",
+        "expires_at_millis": "integer",
+        "key": "text",
+        "workload_revision": "integer"
+      },
+      "kind": "core.federation_workload_descriptor",
+      "range_indexes": [],
+      "relationships": {},
+      "required_fields": [
+        "key",
+        "workload_revision",
+        "expires_at_millis",
+        "descriptor"
+      ],
+      "table": "federation_workload_descriptors",
       "unique_indexes": [
         [
           "key"
@@ -2119,38 +2583,240 @@
       "document_fields": [],
       "field_columns": {
         "expires_at_millis": "expires_at_millis",
-        "grantee_ref": "grantee_ref",
-        "key": "key",
-        "name": "name",
-        "owner_ref": "owner_ref"
+        "key": "key"
       },
       "fields": {
         "expires_at_millis": "integer",
-        "grantee_ref": "text",
-        "key": "text",
-        "name": "text",
-        "owner_ref": "text"
+        "key": "text"
       },
-      "kind": "core.secret_access",
+      "kind": "core.federation_nonce",
       "range_indexes": [
         [
-          "grantee_ref",
-          "owner_ref",
-          "name"
+          "expires_at_millis"
         ]
       ],
       "relationships": {},
       "required_fields": [
         "key",
-        "owner_ref",
-        "name",
-        "grantee_ref",
         "expires_at_millis"
       ],
-      "table": "secret_accesses",
+      "table": "federation_nonces",
       "unique_indexes": [
         [
           "key"
+        ]
+      ]
+    },
+    {
+      "document_fields": [],
+      "field_columns": {
+        "answer": "answer",
+        "expires_at_millis": "expires_at_millis",
+        "key": "key"
+      },
+      "fields": {
+        "answer": "text",
+        "expires_at_millis": "integer",
+        "key": "text"
+      },
+      "kind": "core.federation_answer",
+      "range_indexes": [
+        [
+          "expires_at_millis"
+        ]
+      ],
+      "relationships": {},
+      "required_fields": [
+        "key",
+        "answer",
+        "expires_at_millis"
+      ],
+      "table": "federation_answers",
+      "unique_indexes": [
+        [
+          "key"
+        ]
+      ]
+    },
+    {
+      "document_fields": [
+        "record"
+      ],
+      "field_columns": {
+        "creature_id": "creature_id",
+        "key": "key",
+        "observed_state": "observed_state",
+        "owner": "owner",
+        "resource_version": "resource_version"
+      },
+      "fields": {
+        "creature_id": "text",
+        "key": "text",
+        "observed_state": "text",
+        "owner": "text",
+        "resource_version": "integer"
+      },
+      "kind": "core.vmm_workload",
+      "range_indexes": [
+        [
+          "owner",
+          "key"
+        ]
+      ],
+      "relationships": {},
+      "required_fields": [
+        "key",
+        "owner",
+        "creature_id",
+        "resource_version",
+        "record"
+      ],
+      "table": "vmm_workloads",
+      "unique_indexes": [
+        [
+          "key"
+        ]
+      ]
+    },
+    {
+      "document_fields": [
+        "record"
+      ],
+      "field_columns": {
+        "created_at_millis": "created_at_millis",
+        "key": "key",
+        "owner": "owner",
+        "state": "state",
+        "workload_id": "workload_id"
+      },
+      "fields": {
+        "created_at_millis": "integer",
+        "key": "text",
+        "owner": "text",
+        "state": "text",
+        "workload_id": "text"
+      },
+      "kind": "core.vmm_operation",
+      "range_indexes": [
+        [
+          "owner",
+          "created_at_millis"
+        ],
+        [
+          "state",
+          "created_at_millis"
+        ],
+        [
+          "created_at_millis"
+        ]
+      ],
+      "relationships": {},
+      "required_fields": [
+        "key",
+        "owner",
+        "state",
+        "created_at_millis",
+        "record"
+      ],
+      "table": "vmm_operations",
+      "unique_indexes": [
+        [
+          "key"
+        ]
+      ]
+    },
+    {
+      "document_fields": [],
+      "field_columns": {
+        "claimed_at_millis": "claimed_at_millis",
+        "digest": "digest",
+        "key": "key",
+        "owner": "owner",
+        "request_key": "request_key",
+        "response_body": "response_body",
+        "response_content_type": "response_content_type",
+        "response_location": "response_location",
+        "response_status": "response_status"
+      },
+      "fields": {
+        "claimed_at_millis": "integer",
+        "digest": "bytes",
+        "key": "text",
+        "owner": "text",
+        "request_key": "text",
+        "response_body": "bytes",
+        "response_content_type": "text",
+        "response_location": "text",
+        "response_status": "integer"
+      },
+      "kind": "core.vmm_idempotency",
+      "range_indexes": [
+        [
+          "claimed_at_millis"
+        ]
+      ],
+      "relationships": {},
+      "required_fields": [
+        "key",
+        "owner",
+        "request_key",
+        "digest",
+        "claimed_at_millis"
+      ],
+      "table": "vmm_idempotency_records",
+      "unique_indexes": [
+        [
+          "key"
+        ]
+      ]
+    },
+    {
+      "document_fields": [
+        "record"
+      ],
+      "field_columns": {
+        "at_millis": "at_millis",
+        "key": "key",
+        "owner": "owner",
+        "sequence": "sequence",
+        "workload_id": "workload_id"
+      },
+      "fields": {
+        "at_millis": "integer",
+        "key": "text",
+        "owner": "text",
+        "sequence": "integer",
+        "workload_id": "text"
+      },
+      "kind": "core.vmm_event",
+      "range_indexes": [
+        [
+          "sequence"
+        ],
+        [
+          "owner",
+          "sequence"
+        ],
+        [
+          "at_millis"
+        ]
+      ],
+      "relationships": {},
+      "required_fields": [
+        "key",
+        "sequence",
+        "owner",
+        "workload_id",
+        "at_millis",
+        "record"
+      ],
+      "table": "vmm_events",
+      "unique_indexes": [
+        [
+          "key"
+        ],
+        [
+          "sequence"
         ]
       ]
     }

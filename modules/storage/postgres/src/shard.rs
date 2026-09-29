@@ -25,7 +25,6 @@ use std::time::Duration;
 
 use aseman_capsule::{CapsuleStore, CapsuleStoreError, CapsuleStoreResult};
 use aseman_contracts::capsule::{CapsuleEnvelope, CapsuleId, CapsuleKind, CapsuleQuery};
-use postgres::NoTls;
 use serde::Deserialize;
 use sha2::{Digest, Sha256};
 
@@ -260,7 +259,10 @@ impl ShardedUnitOfWorkFactory {
     }
 
     fn admin(&self, shard: usize) -> StorageResult<postgres::Client> {
-        postgres::Client::connect(&self.shards[shard].admin, NoTls).map_err(map_postgres_error)
+        aseman_postgres::Database::parse(&self.shards[shard].admin)
+            .map_err(crate::PostgresStorageError::Unavailable)?
+            .connect()
+            .map_err(map_postgres_error)
     }
 
     /// Resolve every prepared Aseman transaction: commit the ones whose decision is
@@ -533,7 +535,8 @@ impl UnitOfWork for ShardedUnitOfWork {
         query: &aseman_storage::FindMany,
     ) -> StorageResult<Vec<CapsuleEnvelope>> {
         let capsule_kind = CapsuleKind(kind.to_owned());
-        let failed = |error: CapsuleStoreError| PostgresStorageError::Unavailable(error.to_string());
+        let failed =
+            |error: CapsuleStoreError| PostgresStorageError::Unavailable(error.to_string());
         if is_reference_kind(&capsule_kind)? {
             return self
                 .with_unit(self.factory.home, |unit| {
@@ -561,7 +564,8 @@ impl UnitOfWork for ShardedUnitOfWork {
     }
 
     fn count(&self, kind: &str, filter: Option<&aseman_storage::Where>) -> StorageResult<u64> {
-        let failed = |error: CapsuleStoreError| PostgresStorageError::Unavailable(error.to_string());
+        let failed =
+            |error: CapsuleStoreError| PostgresStorageError::Unavailable(error.to_string());
         if is_reference_kind(&CapsuleKind(kind.to_owned()))? {
             return self
                 .with_unit(self.factory.home, |unit| {

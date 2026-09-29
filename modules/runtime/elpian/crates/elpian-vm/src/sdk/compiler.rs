@@ -42,9 +42,7 @@ fn serialize_expr(val: serde_json::Value) -> Vec<u8> {
         }
         "i64" => {
             result.push(3);
-            result.append(
-                &mut i64::to_be_bytes(val["data"]["value"].as_i64().unwrap() as i64).to_vec(),
-            );
+            result.append(&mut i64::to_be_bytes(val["data"]["value"].as_i64().unwrap()).to_vec());
         }
         "f32" => {
             result.push(4);
@@ -54,9 +52,7 @@ fn serialize_expr(val: serde_json::Value) -> Vec<u8> {
         }
         "f64" => {
             result.push(5);
-            result.append(
-                &mut f64::to_be_bytes(val["data"]["value"].as_f64().unwrap() as f64).to_vec(),
-            );
+            result.append(&mut f64::to_be_bytes(val["data"]["value"].as_f64().unwrap()).to_vec());
         }
         "bool" => {
             result.push(6);
@@ -685,10 +681,9 @@ fn free_vars(params: &[Value], body: &[Value]) -> Vec<String> {
 
 pub fn compile_ast(program: serde_json::Value, start_point: usize) -> Vec<u8> {
     let mut result: Vec<u8> = vec![];
-    let mut op_counter: i64 = 1;
     let mut step_start_map: HashMap<i64, usize> = HashMap::new();
     let mut reserved_branch_map: HashMap<i64, Vec<usize>> = HashMap::new();
-    for operation in program["body"].as_array().unwrap().iter() {
+    for (op_counter, operation) in (1_i64..).zip(program["body"].as_array().unwrap().iter()) {
         step_start_map
             .entry(op_counter)
             .or_insert(start_point + result.len());
@@ -981,7 +976,6 @@ pub fn compile_ast(program: serde_json::Value, start_point: usize) -> Vec<u8> {
                 // skip
             }
         }
-        op_counter += 1;
     }
     for (key, value) in reserved_branch_map {
         let step_point = *step_start_map.get(&key).unwrap();
@@ -1017,7 +1011,7 @@ pub fn parse_code(program: String) -> serde_json::Value {
         }
         let c_stred: &str = &c.to_string();
         if c == ' ' || c == '\n' || c == '\t' {
-            if temp_token.len() > 0 {
+            if !temp_token.is_empty() {
                 tokens.push(temp_token);
                 temp_token = "".to_string();
             }
@@ -1028,7 +1022,7 @@ pub fn parse_code(program: String) -> serde_json::Value {
         ]
         .contains(&c_stred)
         {
-            if temp_token.len() > 0 {
+            if !temp_token.is_empty() {
                 tokens.push(temp_token);
                 temp_token = "".to_string();
             }
@@ -1037,7 +1031,7 @@ pub fn parse_code(program: String) -> serde_json::Value {
         }
         temp_token.push(c);
     }
-    if temp_token.len() > 0 {
+    if !temp_token.is_empty() {
         tokens.push(temp_token);
     }
     // log(&format!("{:?}", tokens));
@@ -1060,7 +1054,7 @@ pub fn parse_code(program: String) -> serde_json::Value {
         if counter > 50 {
             break;
         }
-        if stack.len() == 0 && p >= tokens.len() {
+        if stack.is_empty() && p >= tokens.len() {
             break;
         }
         if p >= tokens.len() {
@@ -1070,14 +1064,7 @@ pub fn parse_code(program: String) -> serde_json::Value {
                 stack.pop();
                 continue;
             } else if state_num == 101 {
-                if current_reg
-                    .get("type")
-                    .unwrap()
-                    .as_str()
-                    .unwrap()
-                    .to_string()
-                    == "functionCall"
-                {
+                if current_reg.get("type").unwrap().as_str().unwrap() == "functionCall" {
                     stack
                         .last_mut()
                         .unwrap()
@@ -1226,61 +1213,55 @@ pub fn parse_code(program: String) -> serde_json::Value {
                 p += 1;
                 continue;
             }
-            let parse_res_i16 = token.parse::<i16>();
-            if parse_res_i16.is_ok() {
+            if let Ok(value) = token.parse::<i16>() {
                 current_reg = json!({
                     "type": "i16",
-                    "data": { "value": parse_res_i16.unwrap() }
+                    "data": { "value": value }
                 });
                 p += 1;
                 state_num = 101;
                 continue;
             }
-            let parse_res_i32 = token.parse::<i32>();
-            if parse_res_i32.is_ok() {
+            if let Ok(value) = token.parse::<i32>() {
                 current_reg = json!({
                     "type": "i32",
-                    "data": { "value": parse_res_i32.unwrap() }
+                    "data": { "value": value }
                 });
                 p += 1;
                 state_num = 101;
                 continue;
             }
-            let parse_res_i64 = token.parse::<i64>();
-            if parse_res_i64.is_ok() {
+            if let Ok(value) = token.parse::<i64>() {
                 current_reg = json!({
                     "type": "i64",
-                    "data": { "value": parse_res_i64.unwrap() }
+                    "data": { "value": value }
                 });
                 p += 1;
                 state_num = 101;
                 continue;
             }
-            let parse_res_f32 = token.parse::<f32>();
-            if parse_res_f32.is_ok() {
+            if let Ok(value) = token.parse::<f32>() {
                 current_reg = json!({
                     "type": "f32",
-                    "data": { "value": parse_res_f32.unwrap() }
+                    "data": { "value": value }
                 });
                 p += 1;
                 state_num = 101;
                 continue;
             }
-            let parse_res_f64 = token.parse::<f64>();
-            if parse_res_f64.is_ok() {
+            if let Ok(value) = token.parse::<f64>() {
                 current_reg = json!({
                     "type": "f64",
-                    "data": { "value": parse_res_f64.unwrap() }
+                    "data": { "value": value }
                 });
                 p += 1;
                 state_num = 101;
                 continue;
             }
-            let parse_res_bool = token.parse::<bool>();
-            if parse_res_bool.is_ok() {
+            if let Ok(value) = token.parse::<bool>() {
                 current_reg = json!({
                     "type": "bool",
-                    "data": { "value": parse_res_bool.unwrap() }
+                    "data": { "value": value }
                 });
                 p += 1;
                 state_num = 101;
@@ -1324,16 +1305,7 @@ pub fn parse_code(program: String) -> serde_json::Value {
                     .insert(key, current_reg.clone());
                 state_num = 103;
                 continue;
-            } else if stack
-                .last()
-                .unwrap()
-                .get("type")
-                .unwrap()
-                .as_str()
-                .unwrap()
-                .to_string()
-                == "arithmetic"
-            {
+            } else if stack.last().unwrap().get("type").unwrap().as_str().unwrap() == "arithmetic" {
                 let last_stage = stack.last().unwrap().clone();
                 stack.pop();
                 current_reg = json!({
@@ -1345,16 +1317,7 @@ pub fn parse_code(program: String) -> serde_json::Value {
                     }
                 });
                 continue;
-            } else if stack
-                .last()
-                .unwrap()
-                .get("type")
-                .unwrap()
-                .as_str()
-                .unwrap()
-                .to_string()
-                == "definition"
-            {
+            } else if stack.last().unwrap().get("type").unwrap().as_str().unwrap() == "definition" {
                 let last_stage = stack.last().unwrap().clone();
                 stack.pop();
                 stack.last_mut().unwrap().get_mut("body").unwrap().as_array_mut().unwrap().push(json!({
@@ -1371,16 +1334,7 @@ pub fn parse_code(program: String) -> serde_json::Value {
                     }));
                 state_num = 0;
                 continue;
-            } else if stack
-                .last()
-                .unwrap()
-                .get("type")
-                .unwrap()
-                .as_str()
-                .unwrap()
-                .to_string()
-                == "assignment"
-            {
+            } else if stack.last().unwrap().get("type").unwrap().as_str().unwrap() == "assignment" {
                 let last_stage = stack.last().unwrap().clone();
                 stack.pop();
                 stack.last_mut().unwrap().get_mut("body").unwrap().as_array_mut().unwrap().push(json!({
@@ -1400,14 +1354,7 @@ pub fn parse_code(program: String) -> serde_json::Value {
             } else {
                 if token == "}" {
                     p += 1;
-                    if stack
-                        .last()
-                        .unwrap()
-                        .get("type")
-                        .unwrap()
-                        .as_str()
-                        .unwrap()
-                        .to_string()
+                    if stack.last().unwrap().get("type").unwrap().as_str().unwrap()
                         == "objPropValue"
                     {
                         stack.pop();
@@ -1427,14 +1374,7 @@ pub fn parse_code(program: String) -> serde_json::Value {
                     }
                     let last_stage = stack.last().unwrap().clone();
                     stack.pop();
-                    if last_stage
-                        .get("type")
-                        .unwrap()
-                        .as_str()
-                        .unwrap()
-                        .to_string()
-                        == "objectExpr"
-                    {
+                    if last_stage.get("type").unwrap().as_str().unwrap() == "objectExpr" {
                         current_reg = json!({
                             "type": "object",
                             "data": {
@@ -1444,27 +1384,11 @@ pub fn parse_code(program: String) -> serde_json::Value {
                     }
                     continue;
                 } else if token == ")" {
-                    if stack
-                        .last()
-                        .unwrap()
-                        .get("type")
-                        .unwrap()
-                        .as_str()
-                        .unwrap()
-                        .to_string()
-                        == "paren"
-                    {
+                    if stack.last().unwrap().get("type").unwrap().as_str().unwrap() == "paren" {
                         p += 1;
                         stack.pop();
                         continue;
-                    } else if stack
-                        .last()
-                        .unwrap()
-                        .get("type")
-                        .unwrap()
-                        .as_str()
-                        .unwrap()
-                        .to_string()
+                    } else if stack.last().unwrap().get("type").unwrap().as_str().unwrap()
                         == "functionCall"
                     {
                         p += 1;
@@ -1484,10 +1408,7 @@ pub fn parse_code(program: String) -> serde_json::Value {
                         });
                         continue;
                     }
-                } else if vec!["+", "-", "/", "*", "^", "%"]
-                    .iter()
-                    .any(|op| op.to_string() == token)
-                {
+                } else if ["+", "-", "/", "*", "^", "%"].iter().any(|op| *op == token) {
                     stack.push(HashMap::new());
                     stack
                         .last_mut()
@@ -1504,40 +1425,25 @@ pub fn parse_code(program: String) -> serde_json::Value {
                     p += 1;
                     state_num = 100;
                     continue;
-                } else if token == "," {
-                    if stack
-                        .last()
-                        .unwrap()
-                        .get("type")
-                        .unwrap()
-                        .as_str()
-                        .unwrap()
-                        .to_string()
+                } else if token == ","
+                    && stack.last().unwrap().get("type").unwrap().as_str().unwrap()
                         == "functionCall"
-                    {
-                        p += 1;
-                        stack
-                            .last_mut()
-                            .unwrap()
-                            .get_mut("args")
-                            .unwrap()
-                            .as_array_mut()
-                            .unwrap()
-                            .push(current_reg.clone());
-                        state_num = 100;
-                        continue;
-                    }
+                {
+                    p += 1;
+                    stack
+                        .last_mut()
+                        .unwrap()
+                        .get_mut("args")
+                        .unwrap()
+                        .as_array_mut()
+                        .unwrap()
+                        .push(current_reg.clone());
+                    state_num = 100;
+                    continue;
                 }
             }
             if !stack.last().unwrap().get("body").is_none() {
-                if current_reg
-                    .get("type")
-                    .unwrap()
-                    .as_str()
-                    .unwrap()
-                    .to_string()
-                    == "functionCall"
-                {
+                if current_reg.get("type").unwrap().as_str().unwrap() == "functionCall" {
                     stack
                         .last_mut()
                         .unwrap()
@@ -1573,11 +1479,9 @@ pub fn parse_code(program: String) -> serde_json::Value {
                 state_num = 101;
                 continue;
             }
-        } else if state_num == 104 {
-            if token == ":" {
-                p += 1;
-                state_num = 100;
-            }
+        } else if state_num == 104 && token == ":" {
+            p += 1;
+            state_num = 100;
         }
     }
     result
@@ -1616,7 +1520,7 @@ pub fn compile_code(p: String) -> Vec<u8> {
         }
         let c_stred: &str = &c.to_string();
         if c == ' ' || c == '\n' || c == '\t' {
-            if temp_token.len() > 0 {
+            if !temp_token.is_empty() {
                 tokens.push(temp_token);
                 temp_token = "".to_string();
             }
@@ -1627,7 +1531,7 @@ pub fn compile_code(p: String) -> Vec<u8> {
         ]
         .contains(&c_stred)
         {
-            if temp_token.len() > 0 {
+            if !temp_token.is_empty() {
                 tokens.push(temp_token);
                 temp_token = "".to_string();
             }
@@ -1636,7 +1540,7 @@ pub fn compile_code(p: String) -> Vec<u8> {
         }
         temp_token.push(c);
     }
-    if temp_token.len() > 0 {
+    if !temp_token.is_empty() {
         tokens.push(temp_token);
     }
     log(&format!("{:?}", tokens));
@@ -1773,7 +1677,7 @@ pub fn compile_code(p: String) -> Vec<u8> {
                 continue;
             }
             let path = pa.borrow().clone();
-            if path.prefix == "" {
+            if path.prefix.is_empty() {
                 let mut prev_exists = false;
                 for hist in stack.clone().into_iter().rev() {
                     if hist.1.id == path.id && hist.3 == stack.len() {
@@ -1848,12 +1752,10 @@ pub fn compile_code(p: String) -> Vec<u8> {
             println!("Finished !");
             break;
         }
-        if !found {
-            if stack.len() > 0 {
-                stack.pop();
-            }
+        if !found && !stack.is_empty() {
+            stack.pop();
         }
-        if stack.len() == 0 {
+        if stack.is_empty() {
             break;
         }
     }

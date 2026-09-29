@@ -114,8 +114,8 @@ impl LegacySnapshotGraph {
             let entry_count = i64::try_from(grant.len()).map_err(|_| {
                 LegacyMigrationError::Invalid("legacy bridge grant is too large".to_owned())
             })?;
-            let document = legacy_json_to_capsule_value(key, &Value::Object(grant))?;
-            let content_digest = legacy_document_digest(&document)?;
+            let document = json_to_capsule_value(key, &Value::Object(grant))?;
+            let content_digest = document_digest(&document)?;
             let expires_micros = expires.checked_mul(1_000).ok_or_else(|| {
                 LegacyMigrationError::Invalid("legacy bridge grant expiry overflows".to_owned())
             })?;

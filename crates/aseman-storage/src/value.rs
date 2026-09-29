@@ -21,7 +21,7 @@ impl Id {
     /// records keep their ids.
     #[must_use]
     pub fn for_key(family: &str, key: &str) -> Self {
-        Self(aseman_contracts::legacy_realtime::deterministic_legacy_capsule_id(
+        Self(aseman_contracts::signals::derived_capsule_id(
             family,
             key.as_bytes(),
         ))

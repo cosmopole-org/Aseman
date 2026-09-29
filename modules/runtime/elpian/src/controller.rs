@@ -3,8 +3,8 @@
 
 use serde_json::{json, Value as JsonValue};
 
-use caspar_vm_sdk::util::{emit_vm_error, panic_message, parse_vm_resource_limits};
-use caspar_vm_sdk::{VmPlugin, VmPluginMeta};
+use aseman_vm_sdk::util::{emit_vm_error, panic_message, parse_vm_resource_limits};
+use aseman_vm_sdk::{VmPlugin, VmPluginMeta};
 
 use crate::runtime::execute_elpian_task;
 
@@ -82,7 +82,7 @@ impl VmPlugin for ElpianVmController {
         }
         let vm_id = packet["vmId"].as_str().unwrap_or("main");
         let _ = elpian_vm::api::destroy_vm(machine_id.to_string());
-        if let Some(h) = caspar_vm_sdk::host::host() {
+        if let Some(h) = aseman_vm_sdk::host::host() {
             h.end_vm_json_trx(vm_id);
             h.commit_vm_buffer(vm_id);
             h.unregister_vm_context(vm_id);

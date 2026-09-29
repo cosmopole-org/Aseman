@@ -1,4 +1,4 @@
-//! Gateway route repositories on the capsule protocol (RL-004 strangler, target side).
+//! Gateway route repositories on the capsule protocol.
 //!
 //! A route is a `core.gateway_route` capsule, as the A308 export writes it: scoped to
 //! its creature and related to the creature and the program. The reverse index and the
@@ -7,17 +7,17 @@
 
 use crate::store::{body, next_revision, port_error};
 use crate::support::{
-    Capsules, MAX_CAS_ATTEMPTS, equal, failed, new_capsule, relationship, text, tombstone,
+    Capsules, MAX_CAS_ATTEMPTS, equal, new_capsule, relationship, text, tombstone,
 };
 use crate::{CapsuleStore, CapsuleStoreError};
 use aseman_contracts::capsule::{
     CapsuleEnvelope, CapsuleKind, CapsuleQuery, CapsuleValue, MAX_QUERY_LIMIT, OwnerScope,
     QueryPredicate, StorageClass,
 };
-use aseman_contracts::legacy_gateway::username_local_part;
-use aseman_contracts::legacy_realtime::deterministic_legacy_capsule_id;
+use aseman_contracts::signals::derived_capsule_id;
+use aseman_contracts::vm_routes::username_local_part;
 use aseman_domain::gateway::GatewayRoute;
-use aseman_ports::{GatewayRoutes, PortResult};
+use aseman_ports::{GatewayRoutes, PortError, PortResult};
 use std::collections::{BTreeMap, BTreeSet};
 
 const ROUTE: &str = "core.gateway_route";
@@ -30,14 +30,14 @@ pub struct CapsuleGatewayRoutes<'a> {
 }
 
 fn route_id(creature_id: &str, path: &str) -> [u8; 16] {
-    deterministic_legacy_capsule_id(
+    derived_capsule_id(
         "GatewayRoute",
         [creature_id, "::", path].concat().as_bytes(),
     )
 }
 
 fn id_of(legacy_family: &str, legacy_id: &str) -> [u8; 16] {
-    deterministic_legacy_capsule_id(legacy_family, legacy_id.as_bytes())
+    derived_capsule_id(legacy_family, legacy_id.as_bytes())
 }
 
 impl CapsuleGatewayRoutes<'_> {
@@ -73,7 +73,7 @@ impl CapsuleGatewayRoutes<'_> {
             .relationships
             .iter()
             .find(|relationship| relationship.name == name)
-            .ok_or_else(|| failed(format!("gateway route has no {name}")))?;
+            .ok_or_else(|| PortError::failed(format!("gateway route has no {name}")))?;
         self.capsules().legacy_id_of(kind, target.target_id.0)
     }
 }
@@ -83,7 +83,8 @@ impl GatewayRoutes for CapsuleGatewayRoutes<'_> {
         let Some(capsule) = self.capsules().live(ROUTE, route_id(creature_id, path))? else {
             return Ok(None);
         };
-        let fields = body(&capsule).ok_or_else(|| failed("gateway route has no body"))?;
+        let fields =
+            body(&capsule).ok_or_else(|| PortError::failed("gateway route has no body"))?;
         Ok(Some(GatewayRoute {
             creature_id: creature_id.to_owned(),
             path: path.to_owned(),
@@ -111,7 +112,7 @@ impl GatewayRoutes for CapsuleGatewayRoutes<'_> {
                 ],
             }),
         )?;
-        // Legacy's reverse link names the most recently stored route of the entity.
+        // The reverse link names the most recently stored route of the entity.
         let Some(latest) = rows.iter().max_by(|left, right| {
             left.updated_at_micros
                 .cmp(&right.updated_at_micros)
@@ -121,7 +122,7 @@ impl GatewayRoutes for CapsuleGatewayRoutes<'_> {
         };
         let path = body(latest)
             .map(|fields| text(fields, "path"))
-            .ok_or_else(|| failed("gateway route has no body"))?;
+            .ok_or_else(|| PortError::failed("gateway route has no body"))?;
         Ok(Some((self.related(latest, "creature", CREATURE)?, path)))
     }
 
@@ -151,7 +152,7 @@ impl GatewayRoutes for CapsuleGatewayRoutes<'_> {
                         ..next_revision(&current, fields.clone())?
                     }
                     .seal()
-                    .map_err(failed)?;
+                    .map_err(PortError::failed)?;
                     self.repository.put(&next, Some(current.revision))
                 }
                 None => self.repository.put(

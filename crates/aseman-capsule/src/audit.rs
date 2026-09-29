@@ -4,7 +4,7 @@
 //! appends retry instead of forking the chain.
 
 use crate::store::{body, port_error};
-use crate::support::{MAX_CAS_ATTEMPTS, equal, failed, new_capsule, text};
+use crate::support::{MAX_CAS_ATTEMPTS, equal, new_capsule, text};
 use crate::{CapsuleStore, CapsuleStoreError};
 use aseman_contracts::capsule::{
     CapsuleEnvelope, CapsuleKind, CapsuleQuery, CapsuleValue, MAX_QUERY_LIMIT, OwnerScope,
@@ -19,18 +19,18 @@ const AUDIT_EVENT: &str = "audit.event";
 const POLICY_CONTRACT_VERSION: i64 = 1;
 
 /// Decision audit over any [`CapsuleStore`].
-pub struct CapsuleDecisionAudit<'a> {
-    pub repository: &'a dyn CapsuleStore,
+pub struct CapsuleDecisionAudit<R> {
+    pub repository: R,
 }
 
 fn integer(fields: &BTreeMap<String, CapsuleValue>, name: &str) -> PortResult<i64> {
     match fields.get(name) {
         Some(CapsuleValue::Integer(value)) => Ok(*value),
-        _ => Err(failed(format!("audit event has no {name}"))),
+        _ => Err(PortError::failed(format!("audit event has no {name}"))),
     }
 }
 
-impl CapsuleDecisionAudit<'_> {
+impl<R: CapsuleStore> CapsuleDecisionAudit<R> {
     fn events(
         &self,
         actor: &str,
@@ -55,12 +55,12 @@ impl CapsuleDecisionAudit<'_> {
     }
 }
 
-impl DecisionAudit for CapsuleDecisionAudit<'_> {
+impl<R: CapsuleStore> DecisionAudit for CapsuleDecisionAudit<R> {
     fn record(&self, record: &AuditRecord) -> PortResult<u64> {
         let occurred = record
             .occurred_at_millis
             .checked_mul(1_000)
-            .ok_or_else(|| failed("audit time overflows microseconds"))?;
+            .ok_or_else(|| PortError::failed("audit time overflows microseconds"))?;
         for _ in 0..MAX_CAS_ATTEMPTS {
             let last = self
                 .events(&record.actor, SortDirection::Descending, 1)?
@@ -127,7 +127,7 @@ impl DecisionAudit for CapsuleDecisionAudit<'_> {
                 Err(CapsuleStoreError::Conflict) => continue,
                 other => {
                     other.map_err(port_error)?;
-                    return u64::try_from(sequence).map_err(failed);
+                    return u64::try_from(sequence).map_err(PortError::failed);
                 }
             }
         }
@@ -141,12 +141,13 @@ impl DecisionAudit for CapsuleDecisionAudit<'_> {
                 let fields = body(event).ok_or(PortError::NotFound)?;
                 let details = match fields.get("details") {
                     Some(CapsuleValue::Bytes(bytes)) => {
-                        String::from_utf8(bytes.clone()).map_err(failed)?
+                        String::from_utf8(bytes.clone()).map_err(PortError::failed)?
                     }
                     _ => String::new(),
                 };
                 Ok(AuditedDecision {
-                    sequence: u64::try_from(integer(fields, "sequence")?).map_err(failed)?,
+                    sequence: u64::try_from(integer(fields, "sequence")?)
+                        .map_err(PortError::failed)?,
                     record: AuditRecord {
                         actor: text(fields, "actor"),
                         action: text(fields, "action"),

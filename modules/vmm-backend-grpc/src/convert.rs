@@ -21,6 +21,7 @@ pub fn error(error: &PortError) -> ModuleError {
         PortError::Unavailable(_) => (ErrorCode::Unavailable, true),
         PortError::Deadline => (ErrorCode::DeadlineExceeded, true),
         PortError::Unsupported(_) => (ErrorCode::Unsupported, false),
+        PortError::Refused(_) => (ErrorCode::InvalidArgument, false),
         PortError::Failed(_) => (ErrorCode::Internal, false),
     };
     ModuleError {

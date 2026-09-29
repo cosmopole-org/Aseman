@@ -1,9 +1,9 @@
 ---
 status: GENERATED
-owner: architecture/phase-1
+owner: architecture
 source_of_truth: crates/aseman-domain/src/lib.rs
 last_verified_commit: 800df24076c7
-verification: python3 scripts/generate_phase1_contracts.py --check
+verification: python3 scripts/generate_core_contracts.py --check
 ---
 
 # Domain catalog

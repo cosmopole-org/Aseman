@@ -1,6 +1,6 @@
 [package]
 name = "aseman-config"
-description = "Typed Aseman configuration and bounded Caspar compatibility aliases."
+description = "Typed Aseman configuration and bounded Aseman compatibility aliases."
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true

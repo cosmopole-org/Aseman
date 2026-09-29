@@ -54,7 +54,7 @@ impl LegacyClusterCheckpoint {
             ));
         };
         let operator_knobs = knobs.keys().cloned().collect();
-        let state = legacy_json_to_capsule_value("OpenRaft state", &value)?;
+        let state = json_to_capsule_value("OpenRaft state", &value)?;
         let encoded = encode_value(&state)
             .map_err(|error| LegacyMigrationError::Contract(error.to_string()))?;
         let mut hasher = Sha256::new();

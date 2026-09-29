@@ -15,16 +15,12 @@ use crate::{
 use aseman_capsule::{CapsuleStore, CapsuleStoreError, CapsuleStoreResult};
 use aseman_config::CapsuleLayout;
 use aseman_contracts::capsule::{CapsuleEnvelope, CapsuleId, CapsuleKind, CapsuleQuery};
-use postgres::NoTls;
-use r2d2::{Pool, PooledConnection};
-use r2d2_postgres::PostgresConnectionManager;
+use aseman_postgres::{Connection, Database, Pool, pool};
 use std::sync::Mutex;
-
-type Manager = PostgresConnectionManager<NoTls>;
 
 /// Opens units of work on a bounded connection pool.
 pub struct PostgresUnitOfWorkFactory {
-    pool: Pool<Manager>,
+    pool: Pool,
     generation: Option<u64>,
     layout: CapsuleLayout,
 }
@@ -36,15 +32,9 @@ impl PostgresUnitOfWorkFactory {
         max_connections: u32,
         generation: Option<u64>,
     ) -> StorageResult<Self> {
-        let manager = PostgresConnectionManager::new(
-            connection_uri.parse().map_err(|error: postgres::Error| {
-                PostgresStorageError::Unavailable(error.to_string())
-            })?,
-            NoTls,
-        );
-        let pool = Pool::builder()
-            .max_size(max_connections.max(1))
-            .build(manager)
+        let database =
+            Database::parse(connection_uri).map_err(PostgresStorageError::Unavailable)?;
+        let pool = pool(&database, max_connections)
             .map_err(|error| PostgresStorageError::Unavailable(error.to_string()))?;
         // Units write in the layout the database was last migrated to (ADR 0034).
         let layout = pool
@@ -83,7 +73,7 @@ impl PostgresUnitOfWorkFactory {
 
 /// One open transaction. Dropping it without [`Self::commit`] rolls it back.
 pub struct PostgresUnitOfWork {
-    connection: Mutex<Option<PooledConnection<Manager>>>,
+    connection: Mutex<Option<Connection>>,
     generation: Option<u64>,
     layout: CapsuleLayout,
 }
@@ -209,7 +199,7 @@ impl PostgresUnitOfWork {
 
 /// A unit prepared by [`PostgresUnitOfWork::prepare`], awaiting phase two.
 pub struct PreparedUnit {
-    connection: PooledConnection<Manager>,
+    connection: Connection,
     gid: String,
 }
 

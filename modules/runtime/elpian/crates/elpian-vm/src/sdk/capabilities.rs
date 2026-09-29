@@ -13,6 +13,8 @@
 //! covers every present and future API in a family (`net.*`, `fs.*`, …).
 
 use std::collections::HashMap;
+use std::fmt;
+use std::str::FromStr;
 
 /// A class of side effect a guest may be permitted to perform.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
@@ -78,22 +80,6 @@ impl Capability {
         }
     }
 
-    /// Parse a capability from its stable name (host config ingestion).
-    pub fn from_str(name: &str) -> Option<Capability> {
-        Some(match name {
-            "logging" => Capability::Logging,
-            "gpu" => Capability::Gpu,
-            "module_import" => Capability::ModuleImport,
-            "network" => Capability::Network,
-            "storage" => Capability::Storage,
-            "clock" => Capability::Clock,
-            "randomness" => Capability::Randomness,
-            "vm_manage" => Capability::VmManage,
-            "other" => Capability::Other,
-            _ => return None,
-        })
-    }
-
     /// Every capability, for enumeration / bulk toggling.
     pub fn all() -> [Capability; 9] {
         [
@@ -107,6 +93,38 @@ impl Capability {
             Capability::VmManage,
             Capability::Other,
         ]
+    }
+}
+
+/// A capability name no [`Capability`] has.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct UnknownCapability(pub String);
+
+impl fmt::Display for UnknownCapability {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "unknown capability `{}`", self.0)
+    }
+}
+
+impl std::error::Error for UnknownCapability {}
+
+impl FromStr for Capability {
+    type Err = UnknownCapability;
+
+    /// Parse a capability from its stable name (host config ingestion).
+    fn from_str(name: &str) -> Result<Self, Self::Err> {
+        Ok(match name {
+            "logging" => Capability::Logging,
+            "gpu" => Capability::Gpu,
+            "module_import" => Capability::ModuleImport,
+            "network" => Capability::Network,
+            "storage" => Capability::Storage,
+            "clock" => Capability::Clock,
+            "randomness" => Capability::Randomness,
+            "vm_manage" => Capability::VmManage,
+            "other" => Capability::Other,
+            _ => return Err(UnknownCapability(name.to_owned())),
+        })
     }
 }
 
@@ -220,7 +238,7 @@ mod tests {
     #[test]
     fn names_round_trip() {
         for cap in Capability::all() {
-            assert_eq!(Capability::from_str(cap.as_str()), Some(cap));
+            assert_eq!(cap.as_str().parse::<Capability>(), Ok(cap));
         }
     }
 }

@@ -46,3 +46,26 @@ pub use persistent_store::PersistentStore;
 pub use root::Root;
 pub use round_info::{RoundEvent, RoundInfo};
 pub use store::Store;
+
+/// How many consensus frames a store keeps. A frame is a full round snapshot, by
+/// far the heaviest item a store holds, so neither copy grows with the cache size.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct FrameLimits {
+    /// Frames resident in memory. Frames are persisted to the consensus log and
+    /// re-read on a miss (`PersistentStore::get_frame`), so only a hot set of
+    /// recent rounds needs to stay cached; caching thousands of them once pinned
+    /// gigabytes of snapshots in RAM.
+    pub cached: usize,
+    /// Rounds of frames kept on disk. Older frames are pruned and recomputed from
+    /// the retained events and rounds on the rare miss (`Hashgraph::get_frame`).
+    pub retained_rounds: i64,
+}
+
+impl Default for FrameLimits {
+    fn default() -> Self {
+        Self {
+            cached: 25,
+            retained_rounds: 25,
+        }
+    }
+}

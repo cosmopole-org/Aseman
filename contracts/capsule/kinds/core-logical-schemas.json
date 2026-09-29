@@ -1329,28 +1329,6 @@
       "key_family": "NamespaceDocument"
     },
     {
-      "kind": "core.user_email",
-      "fields": {
-        "key": "text",
-        "user_ref": "text"
-      },
-      "required": [
-        "key",
-        "user_ref"
-      ],
-      "unique_indexes": [
-        [
-          "key"
-        ],
-        [
-          "user_ref"
-        ]
-      ],
-      "relationships": {},
-      "retention": "operational",
-      "key_family": "UserEmail"
-    },
-    {
       "kind": "core.replay_nonce",
       "fields": {
         "key": "text",
@@ -1431,44 +1409,6 @@
       "relationships": {},
       "retention": "operational",
       "key_family": "PublicIdempotency"
-    },
-    {
-      "kind": "core.chain",
-      "fields": {
-        "key": "text",
-        "store_id": "text",
-        "status": "text"
-      },
-      "required": [
-        "key"
-      ],
-      "unique_indexes": [
-        [
-          "key"
-        ]
-      ],
-      "relationships": {},
-      "retention": "operational",
-      "key_family": "Chain"
-    },
-    {
-      "kind": "core.chain_shard",
-      "fields": {
-        "key": "text",
-        "work_chain_id": "text",
-        "shard_name": "text"
-      },
-      "required": [
-        "key"
-      ],
-      "unique_indexes": [
-        [
-          "key"
-        ]
-      ],
-      "relationships": {},
-      "retention": "operational",
-      "key_family": "ChainShard"
     },
     {
       "kind": "core.session_token",
@@ -1598,18 +1538,16 @@
       ]
     },
     {
-      "kind": "core.secret_value",
+      "kind": "core.proxy_correlation",
       "fields": {
         "key": "text",
-        "owner_ref": "text",
-        "name": "text",
-        "blob": "text"
+        "expires_at_millis": "integer",
+        "record": "document"
       },
       "required": [
         "key",
-        "owner_ref",
-        "name",
-        "blob"
+        "expires_at_millis",
+        "record"
       ],
       "unique_indexes": [
         [
@@ -1618,28 +1556,110 @@
       ],
       "relationships": {},
       "retention": "operational",
-      "key_family": "SecretValue",
+      "key_family": "ProxyCorrelation",
       "range_indexes": [
         [
-          "owner_ref",
-          "name"
+          "expires_at_millis"
         ]
       ]
     },
     {
-      "kind": "core.secret_access",
+      "kind": "core.guest_pair",
       "fields": {
         "key": "text",
         "owner_ref": "text",
+        "namespace": "text",
         "name": "text",
-        "grantee_ref": "text",
-        "expires_at_millis": "integer"
+        "value": "text"
       },
       "required": [
         "key",
         "owner_ref",
+        "namespace",
         "name",
-        "grantee_ref",
+        "value"
+      ],
+      "unique_indexes": [
+        [
+          "key"
+        ]
+      ],
+      "relationships": {},
+      "retention": "operational",
+      "key_family": "GuestPair",
+      "range_indexes": [
+        [
+          "owner_ref"
+        ]
+      ]
+    },
+    {
+      "kind": "core.chain",
+      "fields": {
+        "key": "text",
+        "store_id": "text",
+        "status": "text"
+      },
+      "required": [
+        "key",
+        "store_id",
+        "status"
+      ],
+      "unique_indexes": [
+        [
+          "key"
+        ],
+        [
+          "store_id"
+        ]
+      ],
+      "relationships": {
+        "store": "core.store"
+      },
+      "retention": "authority",
+      "key_family": "Chain"
+    },
+    {
+      "kind": "core.chain_shard",
+      "fields": {
+        "key": "text",
+        "work_chain_id": "text",
+        "shard_name": "text"
+      },
+      "required": [
+        "key",
+        "work_chain_id",
+        "shard_name"
+      ],
+      "unique_indexes": [
+        [
+          "key"
+        ],
+        [
+          "work_chain_id",
+          "shard_name"
+        ]
+      ],
+      "relationships": {
+        "chain": "core.chain"
+      },
+      "retention": "authority",
+      "key_family": "ChainShard"
+    },
+    {
+      "kind": "core.coordination_lease",
+      "fields": {
+        "key": "text",
+        "instance": "text",
+        "token": "integer",
+        "acquired_at_millis": "integer",
+        "expires_at_millis": "integer"
+      },
+      "required": [
+        "key",
+        "instance",
+        "token",
+        "acquired_at_millis",
         "expires_at_millis"
       ],
       "unique_indexes": [
@@ -1649,12 +1669,520 @@
       ],
       "relationships": {},
       "retention": "operational",
-      "key_family": "SecretAccess",
+      "key_family": "CoordinationLease"
+    },
+    {
+      "kind": "core.coordination_fence",
+      "fields": {
+        "key": "text",
+        "token": "integer"
+      },
+      "required": [
+        "key",
+        "token"
+      ],
+      "unique_indexes": [
+        [
+          "key"
+        ]
+      ],
+      "relationships": {},
+      "retention": "operational",
+      "key_family": "CoordinationFence"
+    },
+    {
+      "kind": "core.realtime_log_event",
+      "fields": {
+        "key": "text",
+        "stream": "text",
+        "sequence": "integer",
+        "creature_id": "text",
+        "event_kind": "text",
+        "producer": "text",
+        "at_millis": "integer",
+        "payload_digest": "text",
+        "retention": "text",
+        "version": "text",
+        "idempotency_key": "text",
+        "payload": "bytes"
+      },
+      "required": [
+        "key",
+        "stream",
+        "sequence",
+        "creature_id",
+        "event_kind",
+        "producer",
+        "at_millis",
+        "payload_digest",
+        "retention",
+        "version",
+        "payload"
+      ],
+      "unique_indexes": [
+        [
+          "key"
+        ],
+        [
+          "stream",
+          "sequence"
+        ]
+      ],
+      "relationships": {},
+      "retention": "operational",
+      "key_family": "RealtimeLogEvent",
       "range_indexes": [
         [
-          "grantee_ref",
-          "owner_ref",
-          "name"
+          "stream",
+          "sequence"
+        ],
+        [
+          "at_millis"
+        ]
+      ]
+    },
+    {
+      "kind": "core.realtime_outbox_entry",
+      "fields": {
+        "key": "text",
+        "claimed_by": "text",
+        "claimed_until_millis": "integer",
+        "attempts": "integer",
+        "published": "bool"
+      },
+      "required": [
+        "key",
+        "attempts",
+        "published"
+      ],
+      "unique_indexes": [
+        [
+          "key"
+        ]
+      ],
+      "relationships": {},
+      "retention": "operational",
+      "key_family": "RealtimeOutboxEntry",
+      "range_indexes": [
+        [
+          "published",
+          "attempts"
+        ]
+      ]
+    },
+    {
+      "kind": "core.realtime_checkpoint",
+      "fields": {
+        "key": "text",
+        "consumer": "text",
+        "stream": "text",
+        "sequence": "integer",
+        "at_millis": "integer"
+      },
+      "required": [
+        "key",
+        "consumer",
+        "stream",
+        "sequence",
+        "at_millis"
+      ],
+      "unique_indexes": [
+        [
+          "key"
+        ]
+      ],
+      "relationships": {},
+      "retention": "operational",
+      "key_family": "RealtimeCheckpoint"
+    },
+    {
+      "kind": "core.usage_sample",
+      "fields": {
+        "key": "text",
+        "workload_id": "text",
+        "provider_sample_id": "text",
+        "provider": "text",
+        "collected_at_millis": "integer",
+        "sample": "text"
+      },
+      "required": [
+        "key",
+        "workload_id",
+        "provider_sample_id",
+        "provider",
+        "collected_at_millis",
+        "sample"
+      ],
+      "unique_indexes": [
+        [
+          "key"
+        ]
+      ],
+      "relationships": {},
+      "retention": "operational",
+      "key_family": "UsageSample",
+      "range_indexes": [
+        [
+          "workload_id",
+          "collected_at_millis"
+        ]
+      ]
+    },
+    {
+      "kind": "core.usage_interval",
+      "fields": {
+        "key": "text",
+        "workload_id": "text",
+        "interval_start_millis": "integer",
+        "interval_end_millis": "integer",
+        "interval": "text"
+      },
+      "required": [
+        "key",
+        "workload_id",
+        "interval_start_millis",
+        "interval_end_millis",
+        "interval"
+      ],
+      "unique_indexes": [
+        [
+          "key"
+        ]
+      ],
+      "relationships": {},
+      "retention": "operational",
+      "key_family": "UsageInterval",
+      "range_indexes": [
+        [
+          "interval_start_millis",
+          "key"
+        ],
+        [
+          "workload_id"
+        ]
+      ]
+    },
+    {
+      "kind": "core.journal_record",
+      "fields": {
+        "key": "text",
+        "at_millis": "integer",
+        "price_version": "text",
+        "record": "text"
+      },
+      "required": [
+        "key",
+        "at_millis",
+        "record"
+      ],
+      "unique_indexes": [
+        [
+          "key"
+        ]
+      ],
+      "relationships": {},
+      "retention": "operational",
+      "key_family": "JournalRecord"
+    },
+    {
+      "kind": "core.journal_entry",
+      "fields": {
+        "key": "text",
+        "record_key": "text",
+        "ordinal": "integer",
+        "account": "text",
+        "amount": "integer"
+      },
+      "required": [
+        "key",
+        "record_key",
+        "ordinal",
+        "account",
+        "amount"
+      ],
+      "unique_indexes": [
+        [
+          "key"
+        ]
+      ],
+      "relationships": {},
+      "retention": "operational",
+      "key_family": "JournalEntry",
+      "range_indexes": [
+        [
+          "account"
+        ],
+        [
+          "record_key"
+        ]
+      ]
+    },
+    {
+      "kind": "core.price_list",
+      "fields": {
+        "key": "text",
+        "effective_from_millis": "integer",
+        "list": "text"
+      },
+      "required": [
+        "key",
+        "effective_from_millis",
+        "list"
+      ],
+      "unique_indexes": [
+        [
+          "key"
+        ]
+      ],
+      "relationships": {},
+      "retention": "operational",
+      "key_family": "PriceList",
+      "range_indexes": [
+        [
+          "effective_from_millis"
+        ]
+      ]
+    },
+    {
+      "kind": "core.federation_node_descriptor",
+      "fields": {
+        "key": "text",
+        "sequence": "integer",
+        "expires_at_millis": "integer",
+        "descriptor": "text"
+      },
+      "required": [
+        "key",
+        "sequence",
+        "expires_at_millis",
+        "descriptor"
+      ],
+      "unique_indexes": [
+        [
+          "key"
+        ]
+      ],
+      "relationships": {},
+      "retention": "operational",
+      "key_family": "FederationNodeDescriptor"
+    },
+    {
+      "kind": "core.federation_workload_descriptor",
+      "fields": {
+        "key": "text",
+        "workload_revision": "integer",
+        "expires_at_millis": "integer",
+        "descriptor": "text"
+      },
+      "required": [
+        "key",
+        "workload_revision",
+        "expires_at_millis",
+        "descriptor"
+      ],
+      "unique_indexes": [
+        [
+          "key"
+        ]
+      ],
+      "relationships": {},
+      "retention": "operational",
+      "key_family": "FederationWorkloadDescriptor"
+    },
+    {
+      "kind": "core.federation_nonce",
+      "fields": {
+        "key": "text",
+        "expires_at_millis": "integer"
+      },
+      "required": [
+        "key",
+        "expires_at_millis"
+      ],
+      "unique_indexes": [
+        [
+          "key"
+        ]
+      ],
+      "relationships": {},
+      "retention": "operational",
+      "key_family": "FederationNonce",
+      "range_indexes": [
+        [
+          "expires_at_millis"
+        ]
+      ]
+    },
+    {
+      "kind": "core.federation_answer",
+      "fields": {
+        "key": "text",
+        "answer": "text",
+        "expires_at_millis": "integer"
+      },
+      "required": [
+        "key",
+        "answer",
+        "expires_at_millis"
+      ],
+      "unique_indexes": [
+        [
+          "key"
+        ]
+      ],
+      "relationships": {},
+      "retention": "operational",
+      "key_family": "FederationAnswer",
+      "range_indexes": [
+        [
+          "expires_at_millis"
+        ]
+      ]
+    },
+    {
+      "kind": "core.vmm_workload",
+      "fields": {
+        "key": "text",
+        "owner": "text",
+        "creature_id": "text",
+        "observed_state": "text",
+        "resource_version": "integer",
+        "record": "document"
+      },
+      "required": [
+        "key",
+        "owner",
+        "creature_id",
+        "resource_version",
+        "record"
+      ],
+      "unique_indexes": [
+        [
+          "key"
+        ]
+      ],
+      "relationships": {},
+      "retention": "operational",
+      "key_family": "VmmWorkload",
+      "range_indexes": [
+        [
+          "owner",
+          "key"
+        ]
+      ]
+    },
+    {
+      "kind": "core.vmm_operation",
+      "fields": {
+        "key": "text",
+        "owner": "text",
+        "workload_id": "text",
+        "state": "text",
+        "created_at_millis": "integer",
+        "record": "document"
+      },
+      "required": [
+        "key",
+        "owner",
+        "state",
+        "created_at_millis",
+        "record"
+      ],
+      "unique_indexes": [
+        [
+          "key"
+        ]
+      ],
+      "relationships": {},
+      "retention": "operational",
+      "key_family": "VmmOperation",
+      "range_indexes": [
+        [
+          "owner",
+          "created_at_millis"
+        ],
+        [
+          "state",
+          "created_at_millis"
+        ],
+        [
+          "created_at_millis"
+        ]
+      ]
+    },
+    {
+      "kind": "core.vmm_idempotency",
+      "fields": {
+        "key": "text",
+        "owner": "text",
+        "request_key": "text",
+        "digest": "bytes",
+        "claimed_at_millis": "integer",
+        "response_status": "integer",
+        "response_body": "bytes",
+        "response_content_type": "text",
+        "response_location": "text"
+      },
+      "required": [
+        "key",
+        "owner",
+        "request_key",
+        "digest",
+        "claimed_at_millis"
+      ],
+      "unique_indexes": [
+        [
+          "key"
+        ]
+      ],
+      "relationships": {},
+      "retention": "operational",
+      "key_family": "VmmIdempotency",
+      "range_indexes": [
+        [
+          "claimed_at_millis"
+        ]
+      ]
+    },
+    {
+      "kind": "core.vmm_event",
+      "fields": {
+        "key": "text",
+        "sequence": "integer",
+        "owner": "text",
+        "workload_id": "text",
+        "at_millis": "integer",
+        "record": "document"
+      },
+      "required": [
+        "key",
+        "sequence",
+        "owner",
+        "workload_id",
+        "at_millis",
+        "record"
+      ],
+      "unique_indexes": [
+        [
+          "key"
+        ],
+        [
+          "sequence"
+        ]
+      ],
+      "relationships": {},
+      "retention": "operational",
+      "key_family": "VmmEvent",
+      "range_indexes": [
+        [
+          "sequence"
+        ],
+        [
+          "owner",
+          "sequence"
+        ],
+        [
+          "at_millis"
         ]
       ]
     }

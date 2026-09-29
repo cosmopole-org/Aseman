@@ -66,8 +66,8 @@ impl Scope {
     }
     pub fn update_val(&mut self, name: String, val: Val) -> bool {
         let mut v = self.memory.borrow_mut();
-        if v.data.contains_key(&name) {
-            v.data.insert(name, val);
+        if let std::collections::hash_map::Entry::Occupied(mut e) = v.data.entry(name) {
+            e.insert(val);
             return true;
         }
         false
@@ -80,6 +80,12 @@ impl Scope {
 
 pub struct Context {
     pub memory: Vec<Rc<RefCell<Scope>>>,
+}
+
+impl Default for Context {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl Context {

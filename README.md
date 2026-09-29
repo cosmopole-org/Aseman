@@ -1,68 +1,62 @@
 # Aseman
 
-Aseman is a modular workload-hosting control plane under active migration from the
-legacy Caspar implementation. The checked-in revision uses a root Rust workspace,
-typed domain/application/port boundaries, versioned contracts, PostgreSQL adapters,
-an out-of-process VMM, native and Nomad backends, capability policy, federation,
-durable realtime, and finance/metering rules.
+Aseman is a modular workload-hosting control plane. A node hosts *creatures*
+(human and machine accounts), their *stores* (shared message spaces), and their
+*programs* (deployable workloads). It runs workloads through an out-of-process VMM on
+native or Nomad backends, orders shared state and finance on a Hashgraph chain,
+federates with other clusters, and keeps its state on a pluggable storage provider
+(PostgreSQL or embedded RocksDB).
 
-Migration is not complete. PostgreSQL cutover is an operator action, the public HTTP
-service is not yet composed into the node, Phase 9 packaging is partial, and legacy
-paths remain until their replacement, rollback, and ADR 0004 deletion gates pass. See
-the [current migration status](docs/migration/status.md) for the exact state and the
-[generated requirements report](docs/generated/requirements-traceability.md) for
-traceability.
+The code is a Rust workspace with typed domain, port, and application layers, and
+versioned contracts between replaceable providers.
 
 ## Start here
 
-- [Architecture map](ARCHITECTURE.md)
+- [Architecture map](ARCHITECTURE.md): the layers, the node, and the providers.
 - [Documentation portal](docs/README.md)
-- [Canonical glossary](docs/glossary.md)
-- [Current workspace inventory](docs/generated/current-workspace.md)
-- [Migration plan](plan/migration/README.md)
+- [Glossary](docs/glossary.md)
 - [Contribution workflow](CONTRIBUTING.md)
 - [Security policy](SECURITY.md)
 
-Legacy Caspar behavior is isolated at canonical edges: warning alias binaries live in
-the Aseman app packages, the legacy client lives at `apps/aseman-client`, runtime
-compatibility code is under `modules/runtime`, and historical operator material is
-archived under `docs/legacy/caspar`. The former `wiki`, `node`, `cmd`, `client-cli`,
-`sdk`, `vm-sdk`, and `vms` roots have been consolidated. Remaining compatibility
-conditions are tracked in the [removal ledger](docs/migration/removal-ledger.md).
-
 ## Repository map
 
-- `apps/` — executable composition roots (`aseman-node`, `asemanctl`, VMM, and agent).
-- `crates/` — reusable domain, ports, application, contracts, configuration, and
-  runtime libraries.
-- `modules/` — provider and transport implementations.
-- `contracts/` — source schemas and wire contracts.
-- `deploy/` — deployment-profile ownership root; executable assets are still Phase 9.
-- `docs/` — current architecture, ADRs, development guidance, operations, and
-  generated references.
-- `tests/` — characterization, conformance, migration, cross-service, and
-  cold-start agent-comprehension (under `tests/evals/`) suites.
-- `xtask/` — deterministic architecture and verification automation.
+- `apps/`: executables. `aseman-node` (the node), `asemanctl` (administration and
+  bootstrap), `aseman-vmm` (the VMM service), `aseman-vmm-agent` (the privileged
+  Firecracker worker agent), `aseman-meter` (metering), `aseman-keygen`, and
+  `aseman-client` (command-line and generated HTTP clients).
+- `crates/`: the domain, ports, application use cases, contracts, configuration, the
+  storage module and its provider loader, and shared runtime libraries.
+- `modules/`: providers and transports: storage (PostgreSQL, RocksDB), consensus
+  (Hashgraph), VMM backends (native, Nomad) and their runtime plugins, identity,
+  policy, federation, the public HTTP service, and the network transports.
+- `contracts/`: source schemas and wire contracts; the public HTTP API is
+  `contracts/public/openapi.json`, the action registry `contracts/security/actions.json`.
+- `deploy/`: container images, compose profiles, systemd units, and observability
+  assets.
+- `docs/`: architecture, decisions (ADRs), development guides, operations runbooks,
+  references, and generated catalogs.
+- `tests/`: conformance kits, contract checks, the storage-migration end-to-end suite,
+  and the agent-comprehension evaluations.
+- `xtask/`: architecture and verification automation.
 
-The generated [repository hierarchy report](docs/generated/repository-layout.md)
-compares the current tree with the plan’s canonical final hierarchy without treating
-an empty directory or compatibility wrapper as completed implementation.
+The generated [repository layout](docs/generated/repository-layout.md) and
+[workspace inventory](docs/generated/current-workspace.md) list every package.
 
 ## Development
 
-The pinned toolchain and root workspace are authoritative:
+The pinned toolchain and the root workspace are authoritative:
 
 ```sh
-cargo xtask doctor
-cargo xtask fast
+cargo xtask arch   # dependency direction
+cargo xtask fast   # formatting, generated contracts, contract checks, core tests, lints
+cargo xtask full   # fast, plus the node's binaries and the native VMM backend's runtimes
 ```
 
-Run `cargo xtask full` for changes that cross storage, security, process, network,
-VMM, finance, or compatibility boundaries. Live suites use the configured PostgreSQL,
-Nomad, Docker, and Firecracker services; a skipped external-service test is not proof
-that the corresponding deployment gate passed.
+Live suites use the configured PostgreSQL, Nomad, Docker, and Firecracker services
+(`ASEMAN_TEST_POSTGRES_URL`, …); a skipped external-service test is not proof that the
+corresponding deployment works.
 
-Canonical binaries are built from their application roots:
+Build the executables from their application roots:
 
 ```sh
 cargo build -p aseman-node
@@ -70,6 +64,5 @@ cargo build -p asemanctl
 cargo build -p aseman-vmm
 ```
 
-`caspar-node` and `casparctl` are deprecated compatibility aliases governed by ADR
-0004. No stable replacement release or compatibility-window start is implied merely
-by their presence in this development tree.
+`asemanctl bootstrap` brings up a compact deployment; see
+[docs/operations/topology.md](docs/operations/topology.md).

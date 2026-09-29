@@ -67,34 +67,7 @@ pub(crate) fn image_link_key(machine_id: &str, entity_id: &str) -> String {
     format!("ModalImage::{}::{}", machine_id, entity_id)
 }
 
-/// Node-wide app cache. One Modal app owns every project sandbox.
-pub(crate) fn shared_app_link_key() -> String {
-    format!("ModalApp::{}", modal_app_name())
-}
-
-/// The Modal app every sandbox on this node belongs to.
-///
-/// Modal groups sandboxes and volumes under an app. One app per *project*
-/// filled the dashboard with empty apps and made every provision do its own
-/// AppGetOrCreate. Sandboxes and volumes already carry the project id; the
-/// app is the node's grouping, not the project's.
-///
-/// Override with `MODAL_APP_NAME`, or `MODAL_APP_PREFIX` (default `caspar`).
-pub(crate) fn modal_app_name() -> String {
-    let config = aseman_config::runtime_config();
-    if let Some(name) = config.modal_app_name {
-        return sanitize_component(&name);
-    }
-    sanitize_component(&config.modal_app_prefix)
-}
-
-/// Deterministic Modal volume name for one VM instance.
-pub(crate) fn modal_volume_name(vm_id: &str) -> String {
-    let prefix = aseman_config::runtime_config().modal_app_prefix;
-    format!("{}-vol-{}", prefix, sanitize_component(vm_id))
-}
-
-/// Reduce an arbitrary Caspar id to the `[a-z0-9-]` alphabet Modal accepts for
+/// Reduce an arbitrary Aseman id to the `[a-z0-9-]` alphabet Modal accepts for
 /// resource names, keeping it stable (the same id always maps to the same
 /// name, which is what makes get-or-create idempotent).
 pub(crate) fn sanitize_component(raw: &str) -> String {

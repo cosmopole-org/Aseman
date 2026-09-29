@@ -1,14 +1,16 @@
 [package]
-name = "caspar-vm-elpian"
+name = "aseman-vm-elpian"
 version = "0.1.0"
 edition = "2021"
-description = "Caspar VM plugin: Elpian AST interpreter runtime (key: elpian)"
+license = "MIT"
+description = "Aseman VM plugin: Elpian AST interpreter runtime (key: elpian)"
 
 [lib]
-name = "caspar_vm_elpian"
+name = "aseman_vm_elpian"
 path = "src/lib.rs"
 
 [dependencies]
-caspar-vm-sdk = { path = "../sdk-legacy" }
+aseman-config = { path = "../../../crates/aseman-config" }
+aseman-vm-sdk = { path = "../sdk" }
 elpian_vm = { path = "crates/elpian-vm", package = "elpian-vm" }
 serde_json = "1"

@@ -1,4 +1,4 @@
-//! Aseman administration command groups (RL-015, A902, A903).
+//! Aseman administration command groups (A902, A903).
 //!
 //! `doctor`, `backup`, `restore`, `upgrade`, and `support-bundle` drive the ordered,
 //! resumable [`OperationJournal`] plans from `aseman-domain::operations`. The pure
@@ -16,7 +16,7 @@ use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 
 use anyhow::{Context, Result, anyhow, bail};
-use aseman_config::AsemanConfig;
+use aseman_config::{AsemanConfig, CliConfig};
 use aseman_domain::operations::{OperationJournal, OperationKind, OperationStep};
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
@@ -109,6 +109,7 @@ impl BackupManifest {
 /// Everything a driver needs beyond the journal itself.
 struct OpContext<'a> {
     args: &'a [String],
+    cli: &'a CliConfig,
     /// A host node's data directory (`--data-dir`), whose `.env` holds its
     /// configuration. Absent, the drivers act on the bootstrapped compact deployment.
     data_dir: Option<PathBuf>,
@@ -122,12 +123,13 @@ struct OpContext<'a> {
 }
 
 impl<'a> OpContext<'a> {
-    fn new(args: &'a [String]) -> Result<Self> {
+    fn new(args: &'a [String], cli: &'a CliConfig) -> Result<Self> {
         let data_dir = args::flag_value(args, "data-dir").map(PathBuf::from);
-        let state_dir = state_dir(args);
+        let state_dir = super::compact::state_dir(args, cli);
         fs::create_dir_all(&state_dir)?;
         Ok(Self {
             args,
+            cli,
             data_dir,
             state_dir,
             config: None,
@@ -230,7 +232,7 @@ impl<'a> OpContext<'a> {
         if self.data_dir.is_some() {
             return None;
         }
-        Compact::locate(self.args)
+        Compact::locate(self.args, self.cli)
     }
 
     /// How to reach the PostgreSQL core storage, if the target uses it.
@@ -259,16 +261,6 @@ impl<'a> OpContext<'a> {
 }
 
 // ───────────────────────── state directory and journal ────────────────────
-
-fn state_dir(args: &[String]) -> PathBuf {
-    if let Some(dir) = args::flag_value(args, "state-dir") {
-        return PathBuf::from(dir);
-    }
-    aseman_config::cli_config()
-        .and_then(|config| config.state_dir.as_deref())
-        .map(PathBuf::from)
-        .unwrap_or_else(|| aseman_config::process_state_home().join("asemanctl"))
-}
 
 fn kind_name(kind: OperationKind) -> &'static str {
     match kind {
@@ -303,10 +295,11 @@ fn persist(journal: &OperationJournal, path: &Path) -> Result<()> {
 /// every transition, stop on the first failure so a re-run retries that step.
 fn drive_journal(
     kind: OperationKind,
+    cli: &CliConfig,
     args: &[String],
     mut step: impl FnMut(OperationStep, &mut OpContext<'_>) -> Result<()>,
 ) -> Result<()> {
-    let mut ctx = OpContext::new(args)?;
+    let mut ctx = OpContext::new(args, cli)?;
     let path = journal_path(kind, &ctx.state_dir);
     let mut journal = load_journal(&path, kind);
     ctx.rehydrate(kind)?;
@@ -530,11 +523,7 @@ fn trusted_public_key(ctx: &OpContext<'_>) -> Result<String> {
     let path = ctx
         .signing_key
         .clone()
-        .or_else(|| {
-            aseman_config::cli_config()
-                .and_then(|config| config.operator_signing_key.clone())
-                .map(PathBuf::from)
-        })
+        .or_else(|| ctx.cli.operator_signing_key.clone())
         .ok_or_else(|| {
             anyhow!(
                 "a trusted operator key is required to restore (--trusted-key, \
@@ -562,12 +551,12 @@ fn safe_join(base: &Path, relative: &str) -> Result<PathBuf> {
 /// `asemanctl doctor` — run every health check, collect findings, and fail only at
 /// the `Health` step if a fatal finding exists. A doctor run is always fresh; the
 /// persisted journal records the last outcome.
-pub fn run_doctor(args: &[String]) -> Result<()> {
+pub fn run_doctor(cli: &CliConfig, args: &[String]) -> Result<()> {
     if args::has_flag(args, "help") {
         print_doctor_usage();
         return Ok(());
     }
-    let mut ctx = OpContext::new(args)?;
+    let mut ctx = OpContext::new(args, cli)?;
     let mut journal = OperationJournal::new(OperationKind::Doctor);
     for &step in OperationKind::Doctor.steps() {
         print!("doctor: {} … ", step_label(step));
@@ -798,7 +787,7 @@ fn print_doctor_usage() {
          Usage:\n  asemanctl doctor [flags]\n\n\
          Flags:\n  \
          --repo-dir PATH   repo root containing dist/ (auto-detected)\n  \
-         --data-dir PATH   node data directory (default <repo>/caspar-data/node1)\n  \
+         --data-dir PATH   node data directory\n  \
          --state-dir PATH  state/journal directory (default $XDG_STATE_HOME/asemanctl)\n  \
          --json            emit a machine-readable findings report\n\n\
          Checks configuration, dependencies, storage, runtime liveness, and secret\n\
@@ -810,12 +799,12 @@ fn print_doctor_usage() {
 
 /// `asemanctl backup` — snapshot the node's storage into a target directory and
 /// produce a signed backup manifest.
-pub fn run_backup(args: &[String]) -> Result<()> {
+pub fn run_backup(cli: &CliConfig, args: &[String]) -> Result<()> {
     if args::has_flag(args, "help") {
         print_backup_usage();
         return Ok(());
     }
-    drive_journal(OperationKind::Backup, args, backup_step)
+    drive_journal(OperationKind::Backup, cli, args, backup_step)
 }
 
 fn backup_step(step: OperationStep, ctx: &mut OpContext<'_>) -> Result<()> {
@@ -926,11 +915,10 @@ fn backup_step(step: OperationStep, ctx: &mut OpContext<'_>) -> Result<()> {
             persist_pending_manifest(ctx)?;
         }
         OperationStep::SignManifest => {
-            let key_path = ctx.signing_key.clone().or_else(|| {
-                aseman_config::cli_config()
-                    .and_then(|config| config.operator_signing_key.clone())
-                    .map(PathBuf::from)
-            });
+            let key_path = ctx
+                .signing_key
+                .clone()
+                .or_else(|| ctx.cli.operator_signing_key.clone());
             let key_path = key_path.ok_or_else(|| {
                 anyhow!("an operator signing key is required (ASEMAN_OPERATOR_SIGNING_KEY or --signing-key)")
             })?;
@@ -1024,7 +1012,7 @@ fn print_backup_usage() {
          --signing-key FILE  Ed25519 seed (32 bytes or 64 hex chars) to sign the manifest\n  \
          --allow-running     snapshot without stopping the node (best effort)\n  \
          --repo-dir PATH     repo root containing dist/ (auto-detected)\n  \
-         --data-dir PATH     node data directory (default <repo>/caspar-data/node1)\n  \
+         --data-dir PATH     node data directory\n  \
          --state-dir PATH    state/journal directory (default $XDG_STATE_HOME/asemanctl)\n\n\
          Writes <out>/snapshot/* and a signed <out>/backup-manifest.json. PostgreSQL\n\
          core storage adds snapshot/postgres/: cluster roles (no passwords), the core\n\
@@ -1035,12 +1023,12 @@ fn print_backup_usage() {
 // ───────────────────────── restore ────────────────────────────────────────
 
 /// `asemanctl restore` — restore a node from a backup directory or manifest.
-pub fn run_restore(args: &[String]) -> Result<()> {
+pub fn run_restore(cli: &CliConfig, args: &[String]) -> Result<()> {
     if args::has_flag(args, "help") {
         print_restore_usage();
         return Ok(());
     }
-    drive_journal(OperationKind::Restore, args, restore_step)
+    drive_journal(OperationKind::Restore, cli, args, restore_step)
 }
 
 fn restore_step(step: OperationStep, ctx: &mut OpContext<'_>) -> Result<()> {
@@ -1073,7 +1061,8 @@ fn restore_step(step: OperationStep, ctx: &mut OpContext<'_>) -> Result<()> {
             match (&catalog, &database) {
                 (Some(_), Some(access @ postgres::PgAccess::Compact(compact))) => {
                     // Every writer stops before the catalog is replaced.
-                    compact.compose(&["stop", "node", "meter", "vmm", "nomad-backend"])?;
+                    let backend = compact.backend()?.service();
+                    compact.compose(&["stop", "node", "meter", "vmm", backend])?;
                     postgres::prepare_compact_target(access, args::has_flag(ctx.args, "replace"))?;
                 }
                 (Some(catalog), Some(access)) => postgres::ensure_empty_target(access, catalog)?,
@@ -1267,7 +1256,7 @@ fn print_restore_usage() {
          --trusted-key HEX   operator Ed25519 public key the manifest must be signed by\n  \
          --signing-key FILE  or derive the trusted public key from this Ed25519 seed\n  \
          --repo-dir PATH     repo root containing dist/ (auto-detected)\n  \
-         --data-dir PATH     node data directory (default <repo>/caspar-data/node1)\n  \
+         --data-dir PATH     node data directory\n  \
          --state-dir PATH    state/journal directory (default $XDG_STATE_HOME/asemanctl)"
     );
 }
@@ -1276,12 +1265,12 @@ fn print_restore_usage() {
 
 /// `asemanctl upgrade` — snapshot the running tree, stop the node, replace the
 /// binaries, migrate the schema, and bring the node back up.
-pub fn run_upgrade(args: &[String]) -> Result<()> {
+pub fn run_upgrade(cli: &CliConfig, args: &[String]) -> Result<()> {
     if args::has_flag(args, "help") {
         print_upgrade_usage();
         return Ok(());
     }
-    drive_journal(OperationKind::Upgrade, args, upgrade_step)
+    drive_journal(OperationKind::Upgrade, cli, args, upgrade_step)
 }
 
 /// The compact services an upgrade can move, with their `compact.env` image keys.
@@ -1289,7 +1278,8 @@ const UPGRADE_IMAGES: [(&str, &str); 4] = [
     ("node-image", "ASEMAN_NODE_IMAGE"),
     ("vmm-image", "ASEMAN_VMM_IMAGE"),
     ("meter-image", "ASEMAN_METER_IMAGE"),
-    ("backend-image", "ASEMAN_NOMAD_BACKEND_IMAGE"),
+    // Whichever backend the deployment runs (`ASEMAN_BACKEND`).
+    ("backend-image", super::compact::BACKEND_IMAGE_KEY),
 ];
 
 /// The images named by `--node-image` and friends, with their `compact.env` keys.
@@ -1303,7 +1293,7 @@ fn requested_images(args: &[String]) -> Vec<(&'static str, String)> {
 fn upgrade_step(step: OperationStep, ctx: &mut OpContext<'_>) -> Result<()> {
     match step {
         OperationStep::Preflight => {
-            Compact::require(ctx.args)?;
+            Compact::require(ctx.args, ctx.cli)?;
             if requested_images(ctx.args).is_empty() {
                 bail!(
                     "name at least one new image (--node-image, --vmm-image, --meter-image, --backend-image)"
@@ -1339,7 +1329,7 @@ fn upgrade_step(step: OperationStep, ctx: &mut OpContext<'_>) -> Result<()> {
             }
         }
         OperationStep::SnapshotStores => {
-            let compact = Compact::require(ctx.args)?;
+            let compact = Compact::require(ctx.args, ctx.cli)?;
             let snapshot = ctx.state_dir.join(format!(
                 "upgrade-snapshot-{}",
                 chrono::Utc::now().timestamp()
@@ -1352,10 +1342,10 @@ fn upgrade_step(step: OperationStep, ctx: &mut OpContext<'_>) -> Result<()> {
             print!("(database snapshot in {}); ", snapshot.display());
         }
         OperationStep::DrainServices => {
-            Compact::require(ctx.args)?.compose(&["stop", "node", "meter"])?;
+            Compact::require(ctx.args, ctx.cli)?.compose(&["stop", "node", "meter"])?;
         }
         OperationStep::ApplyUpgrade => {
-            let compact = Compact::require(ctx.args)?;
+            let compact = Compact::require(ctx.args, ctx.cli)?;
             for (key, image) in requested_images(ctx.args) {
                 compact.set_env_value(key, &image)?;
             }
@@ -1364,10 +1354,11 @@ fn upgrade_step(step: OperationStep, ctx: &mut OpContext<'_>) -> Result<()> {
             print!("(schema migrations run when the node starts); ");
         }
         OperationStep::StartServices => {
-            Compact::require(ctx.args)?.compose(&["up", "-d", "--wait"])?;
+            Compact::require(ctx.args, ctx.cli)?.compose(&["up", "-d", "--wait"])?;
         }
         OperationStep::Health
-            if !Compact::require(ctx.args)?.wait_healthy(std::time::Duration::from_secs(120)) =>
+            if !Compact::require(ctx.args, ctx.cli)?
+                .wait_healthy(std::time::Duration::from_secs(120)) =>
         {
             bail!("the node did not become healthy after the upgrade");
         }
@@ -1393,12 +1384,12 @@ fn print_upgrade_usage() {
 
 /// `asemanctl support-bundle` — collect diagnostics, redact secrets against the
 /// checked contract, and package a tar.gz.
-pub fn run_support_bundle(args: &[String]) -> Result<()> {
+pub fn run_support_bundle(cli: &CliConfig, args: &[String]) -> Result<()> {
     if args::has_flag(args, "help") {
         print_support_bundle_usage();
         return Ok(());
     }
-    drive_journal(OperationKind::SupportBundle, args, support_bundle_step)
+    drive_journal(OperationKind::SupportBundle, cli, args, support_bundle_step)
 }
 
 /// Records the collection directory of the support bundle being built, for resume.
@@ -1539,7 +1530,7 @@ fn print_support_bundle_usage() {
          Flags:\n  \
          --out FILE          archive path (default <state>/support-bundle-<ts>.tar.gz)\n  \
          --repo-dir PATH     repo root containing dist/ (auto-detected)\n  \
-         --data-dir PATH     node data directory (default <repo>/caspar-data/node1)\n  \
+         --data-dir PATH     node data directory\n  \
          --state-dir PATH    state/journal directory (default $XDG_STATE_HOME/asemanctl)\n\n\
          Applies the checked support-bundle redaction contract before packaging,\n\
          and the never_collect list governs what is never read in the first place."
