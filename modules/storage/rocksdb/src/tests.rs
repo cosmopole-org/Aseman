@@ -77,7 +77,7 @@ impl LegacyTransformer for FixtureTransformer {
         }
         let mut capsule = CapsuleEnvelope {
             encoding_version: 1,
-            id: CapsuleId(deterministic_legacy_capsule_id("fixture", &record.value)),
+            id: CapsuleId(derived_capsule_id("fixture", &record.value)),
             kind: CapsuleKind("core.user".to_owned()),
             storage_class: StorageClass::Core,
             owner_scope: OwnerScope::Global,
@@ -201,7 +201,7 @@ fn legacy_program_fixture_maps_identity_owner_relationship_and_fields() {
     let capsule = transform_legacy_program("program-one", &columns, 50).unwrap();
     capsule.verify().unwrap();
     assert_eq!(capsule.kind.0, "core.program");
-    let creature_id = deterministic_legacy_capsule_id("Creature", b"creature-one");
+    let creature_id = derived_capsule_id("Creature", b"creature-one");
     assert_eq!(capsule.owner_scope, OwnerScope::Creature(creature_id));
     assert_eq!(capsule.relationships[0].target_id.0, creature_id);
     assert!(matches!(
@@ -233,7 +233,7 @@ fn legacy_build_log_requires_resolved_owner_and_converts_millis() {
     assert_eq!(capsule.created_at_micros, 1_700_000_000_123_000);
     assert_eq!(
         capsule.owner_scope,
-        OwnerScope::Creature(deterministic_legacy_capsule_id("Creature", b"creature-one"))
+        OwnerScope::Creature(derived_capsule_id("Creature", b"creature-one"))
     );
     assert!(matches!(
         &capsule.body,
@@ -363,7 +363,7 @@ fn legacy_entity_maps_composite_identity_program_and_resolved_owner() {
     assert_eq!(capsule.kind.0, "core.entity");
     assert_eq!(
         capsule.relationships[0].target_id.0,
-        deterministic_legacy_capsule_id("Program", b"program-one")
+        derived_capsule_id("Program", b"program-one")
     );
     assert!(transform_legacy_entity("wrong", &columns, "creature-one", 60).is_err());
     assert!(transform_legacy_entity("program-one::worker", &columns, "", 60).is_err());
@@ -886,7 +886,7 @@ fn reviewed_metadata_documents_become_structured_subject_bound_capsules() {
             .find(|capsule| capsule.kind.0 == kind)
             .unwrap_or_else(|| panic!("missing {kind}"))
     };
-    let creature_id = CapsuleId(deterministic_legacy_capsule_id("Creature", b"human-one"));
+    let creature_id = CapsuleId(derived_capsule_id("Creature", b"human-one"));
 
     let user = find("core.user_metadata");
     let creature = find("core.creature_metadata");
@@ -921,7 +921,7 @@ fn reviewed_metadata_documents_become_structured_subject_bound_capsules() {
         );
         assert_eq!(
             body["content_digest"],
-            CapsuleValue::Bytes(legacy_document_digest(&body["document"]).unwrap())
+            CapsuleValue::Bytes(document_digest(&body["document"]).unwrap())
         );
     }
     let user_body = user.body.as_ref().unwrap();
@@ -933,14 +933,14 @@ fn reviewed_metadata_documents_become_structured_subject_bound_capsules() {
     assert_eq!(store.relationships[0].name, "store");
     assert_eq!(
         store.relationships[0].target_id,
-        CapsuleId(deterministic_legacy_capsule_id("Store", b"store-one"))
+        CapsuleId(derived_capsule_id("Store", b"store-one"))
     );
 
     let program = find("core.program_metadata");
     assert_eq!(program.owner_scope, OwnerScope::Creature(creature_id.0));
     assert_eq!(
         program.relationships[0].target_id,
-        CapsuleId(deterministic_legacy_capsule_id("Program", b"program-one"))
+        CapsuleId(derived_capsule_id("Program", b"program-one"))
     );
     assert!(matches!(
         &program.body,
@@ -1289,7 +1289,7 @@ fn reconciled_finance_epoch_exports_authorities_and_drops_projections() {
     );
     assert_eq!(
         body["content_digest"],
-        CapsuleValue::Bytes(legacy_document_digest(&body["document"]).unwrap())
+        CapsuleValue::Bytes(document_digest(&body["document"]).unwrap())
     );
     // Re-running the export yields byte-identical capsules.
     assert_eq!(finance_capsules(finance_fixture()).unwrap(), capsules);
@@ -1506,8 +1506,8 @@ fn membership_capsules(
 fn memberships_keep_exact_permissions_and_typed_principals() {
     let capsules = membership_capsules(membership_fixture(), &["global", "local.example"]).unwrap();
     assert_eq!(capsules.len(), 3);
-    let creature = CapsuleId(deterministic_legacy_capsule_id("Creature", b"human-one"));
-    let store = CapsuleId(deterministic_legacy_capsule_id("Store", b"store-one"));
+    let creature = CapsuleId(derived_capsule_id("Creature", b"human-one"));
+    let store = CapsuleId(derived_capsule_id("Store", b"store-one"));
     let mut seen = BTreeMap::new();
     for capsule in &capsules {
         assert!(capsule.verify().is_ok());
@@ -1765,7 +1765,7 @@ fn guest_kv_moves_into_its_machine_creature_and_foreign_prefixes_fail() {
         .filter(|capsule| capsule.kind.0 == LEGACY_GUEST_KV_KIND)
         .collect::<Vec<_>>();
     assert_eq!(capsules.len(), 2);
-    let owner = deterministic_legacy_capsule_id("Creature", b"human-one");
+    let owner = derived_capsule_id("Creature", b"human-one");
     for capsule in &capsules {
         assert!(capsule.verify().is_ok());
         assert_eq!(capsule.storage_class, StorageClass::GuestData);
@@ -1852,7 +1852,7 @@ fn applet_db_guest_storage_resolves_creature_or_program_owner() {
         .filter(|capsule| capsule.kind.0 == LEGACY_GUEST_KV_KIND)
         .collect::<Vec<_>>();
     assert_eq!(capsules.len(), 3);
-    let owner = deterministic_legacy_capsule_id("Creature", b"human-one");
+    let owner = derived_capsule_id("Creature", b"human-one");
     let mut seen = capsules
         .iter()
         .map(|capsule| {
@@ -1897,7 +1897,7 @@ fn confined_guest_documents_become_json_rows_of_their_creature() {
         .into_iter()
         .filter(|capsule| capsule.kind.0 == LEGACY_GUEST_KV_KIND)
         .collect::<Vec<_>>();
-    let owner = deterministic_legacy_capsule_id("Creature", b"human-one");
+    let owner = derived_capsule_id("Creature", b"human-one");
     let text = |value: &str| CapsuleValue::Text(value.to_owned());
     let mut rows = capsules
         .iter()
@@ -2006,7 +2006,7 @@ fn observed_vm_runtime_is_inventoried_for_the_vmm_and_never_exported() {
         ("link::VmOwnerProgram::vm-9", "program-one"),
         (
             "link::VmContainerName::program-one::main::vm-9",
-            "caspar-vm-9",
+            "aseman-vm-9",
         ),
         ("link::VmTerminal::human-one::vm-9::human-one", "true"),
         ("link::VmBuilds::vm-9::build-1", "true"),
@@ -2284,7 +2284,7 @@ fn vm_resources_configs_and_artifacts_migrate_with_evidence() {
             .filter(|capsule| capsule.kind.0 == kind)
             .collect::<Vec<_>>()
     };
-    let owner = OwnerScope::Creature(deterministic_legacy_capsule_id("Creature", b"human-one"));
+    let owner = OwnerScope::Creature(derived_capsule_id("Creature", b"human-one"));
     let stores = of("core.vm_resource_store");
     // Each resource store maps back to its legacy id, so it can be listed after cutover.
     let store_identities = of("core.legacy_identity")
@@ -2522,7 +2522,7 @@ fn bridge_grants_migrate_by_digest_with_topic_claims() {
     // A program-minted grant belongs to the program's machine creature.
     assert_eq!(
         grant.owner_scope,
-        OwnerScope::Creature(deterministic_legacy_capsule_id("Creature", b"human-one"))
+        OwnerScope::Creature(derived_capsule_id("Creature", b"human-one"))
     );
     assert_eq!(
         capsules

@@ -1,7 +1,7 @@
 //! The global VM plugin registry.
 //!
 //! Plugins are registered at node start-up by the build-time-generated
-//! aggregation crate; afterwards the Caspar node resolves every runtime
+//! aggregation crate; afterwards the Aseman node resolves every runtime
 //! operation dynamically through this registry — no VM key is ever named in
 //! the node's own code.
 

@@ -15,9 +15,9 @@ use base64::Engine;
 use elpify_lang::execute_batch_with_proof;
 use serde_json::{json, Value as JsonValue};
 
-use caspar_vm_sdk::host::{host, log, set_log_vm_context};
-use caspar_vm_sdk::util::{emit_vm_error, panic_message};
-use caspar_vm_sdk::VmResourceLimits;
+use aseman_vm_sdk::host::{host, log, set_log_vm_context};
+use aseman_vm_sdk::util::{emit_vm_error, panic_message};
+use aseman_vm_sdk::VmResourceLimits;
 
 /// The running Elpify VMs by id.
 type VmRegistry = Mutex<HashMap<String, Arc<ElpifyManagedVm>>>;

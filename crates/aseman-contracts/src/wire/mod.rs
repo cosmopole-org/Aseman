@@ -1,9 +1,5 @@
-//! Migrated legacy wire DTOs (RL-002).
-//!
-//! Wire values that used to live in the node's `models/` god-bucket and moved here
-//! with compatibility re-exports, one family at a time. Contracts own wire values;
-//! the node's `models/` modules are now thin re-export shims until the legacy
-//! transports retire (RL-009).
+//! The signed-packet transports' wire values: the packets the TCP, WebSocket,
+//! federation, and chain transports frame, and the chain's ordered requests.
 
 pub mod chain;
 pub mod packet;
@@ -65,7 +61,7 @@ pub struct Update {
     pub typ: String,
     #[serde(rename = "key")]
     pub key: String,
-    #[serde(rename = "val", with = "crate::legacy_wire::bytes_base64", default)]
+    #[serde(rename = "val", with = "crate::wire::bytes_base64", default)]
     pub val: Vec<u8>,
 }
 

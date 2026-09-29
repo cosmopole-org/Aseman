@@ -11,11 +11,13 @@ use std::time::Duration;
 
 use serde_json::{json, Value as JsonValue};
 
-use caspar_vm_sdk::host::{host, log, set_log_vm_context};
-use caspar_vm_sdk::util::{emit_vm_error, panic_message, parse_vm_resource_limits};
-use caspar_vm_sdk::{VmPlugin, VmPluginMeta};
+use aseman_vm_sdk::host::{host, log, set_log_vm_context};
+use aseman_vm_sdk::util::{emit_vm_error, panic_message, parse_vm_resource_limits};
+use aseman_vm_sdk::{VmPlugin, VmPluginMeta};
 
-use crate::runtime::{global_managed_vms, terminate_managed_vm, ManagedVmHandle, WasmMac};
+use crate::runtime::{
+    global_managed_vms, terminate_managed_vm, ManagedVmHandle, WasmMac, WasmSettings,
+};
 
 /// Spawn a **cancellable** exec-timeout watchdog for one wasm run.
 ///
@@ -53,11 +55,12 @@ fn spawn_exec_watchdog(
 
 pub struct WasmVmController {
     meta: VmPluginMeta,
+    settings: WasmSettings,
 }
 
 impl WasmVmController {
-    pub fn new(meta: VmPluginMeta) -> Self {
-        Self { meta }
+    pub fn new(meta: VmPluginMeta, settings: WasmSettings) -> Self {
+        Self { meta, settings }
     }
 }
 
@@ -86,6 +89,7 @@ impl VmPlugin for WasmVmController {
         let machine_id = packet["machineId"].as_str().unwrap_or("").to_string();
         let vm_id = packet["vmId"].as_str().unwrap_or("main").to_string();
         let limits = parse_vm_resource_limits(packet);
+        let settings = self.settings;
 
         let spawn_machine = machine_id.clone();
         let spawn_vm = vm_id.clone();
@@ -108,9 +112,10 @@ impl VmPlugin for WasmVmController {
                     store_id,
                     ast_path.clone(),
                     limits.ram_mb,
+                    settings,
                     Box::new(|packet: JsonValue| match host() {
                         Some(h) => h.dispatch(&packet),
-                        None => json!({"ok": false, "error": "caspar vm host is not initialised"})
+                        None => json!({"ok": false, "error": "the VM host is not initialised"})
                             .to_string(),
                     }),
                 );

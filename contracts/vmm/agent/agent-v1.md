@@ -1,7 +1,7 @@
 ---
 status: ACCEPTED
 owner: vmm/agent
-source_of_truth: this contract, ADR 0010, plan/migration/04-vmm-nomad-and-runtimes.md
+source_of_truth: this contract, ADR 0010
 last_verified_commit: eebb9c5
 verification: cargo test -p aseman-vmm-agent; live Firecracker v1.17.0
 ---

@@ -1,4 +1,4 @@
-//! The composed service behind the transport contract (P7-06). Authentication,
+//! The composed service behind the transport contract. Authentication,
 //! authorization, idempotency, and audit are proven at the application boundary; here
 //! the composed service's own `PublicActionService` mapping and its RFC 9457 error
 //! translation are exercised with in-memory ports. Route parsing and the proof header
@@ -16,9 +16,9 @@ use aseman_domain::identity::{
     KeyPurpose, Proof, RotationPolicy, SignatureContext, Subject, SubjectKind,
 };
 use aseman_ports::{
-    ActionExecutor, ClockPort, DecisionAudit, GrantStore, IdentityVerifier, KeyDirectory,
-    PolicyDecisionPort, PortError, PortResult, PublicActionClaim, PublicActionIdempotency,
-    ReplayGuard, SessionDirectory,
+    ActionCall, ActionExecutor, ClockPort, DecisionAudit, GrantStore, IdentityVerifier,
+    KeyDirectory, PolicyDecisionPort, PortError, PortResult, PublicActionClaim,
+    PublicActionIdempotency, ReplayGuard, SessionDirectory,
 };
 
 use super::*;
@@ -245,7 +245,7 @@ impl ActionExecutor for World {
             BTreeSet::from([Condition::Authenticated]),
         ))
     }
-    fn execute(&self, _: Subject, _: &str, _: &[u8]) -> PortResult<Vec<u8>> {
+    fn execute(&self, _: &ActionCall) -> PortResult<Vec<u8>> {
         *self.executed.lock().unwrap() += 1;
         Ok(br#"{"ok":true}"#.to_vec())
     }

@@ -1,4 +1,4 @@
-//! Guest host calls over the network (A405 "Host calls", P5-04), and provisioning of
+//! Guest host calls over the network (A405 "Host calls"), and provisioning of
 //! the workloads that make them.
 //!
 //! A remote runtime acts for a workload with that workload's own key. The node

@@ -1,22 +1,20 @@
-//! The Phase 7 gate, live: two independently administered Aseman clusters.
+//! Two independently administered Aseman clusters.
 //!
-//! Each cluster has its own database, its own directory, and its own envelope guard —
+//! Each cluster has its own storage, its own directory, and its own envelope guard —
 //! nothing is shared but the wire. A permitted operation crosses and is executed; a
 //! forbidden one **fails at the destination**, whatever the source believed; a replay
 //! is refused; and a retry is answered from the record rather than executed twice.
 
-use std::str::FromStr;
 use std::sync::atomic::{AtomicUsize, Ordering};
 
 use aseman_application::federation::{Refusal, ServeFederatedRequest, Served};
+use aseman_capsule::federation::StorageFederation;
 use aseman_domain::Uuid;
 use aseman_domain::authority::DecisionReason;
 use aseman_domain::federation::{Envelope, FederationError, NodeDescriptor};
-use aseman_federation_http::PostgresFederation;
 use aseman_policy_native::RegistryPolicy;
 use aseman_ports::ClockPort;
 use aseman_ports::federation::{Directory, EnvelopeGuard};
-use postgres::{Client, Config, NoTls};
 
 /// A clock the test moves by hand, so expiry is exercised rather than waited for.
 struct Fixed(std::sync::Mutex<i64>);
@@ -35,8 +33,7 @@ impl Fixed {
 
 struct Cluster {
     node_id: Uuid,
-    federation: PostgresFederation,
-    database: String,
+    federation: StorageFederation,
 }
 
 fn descriptor(node: Uuid, sequence: u64) -> NodeDescriptor {
@@ -71,36 +68,33 @@ fn envelope(from: &Cluster, to: &Cluster, action: &str, target: &str, nonce: &st
     }
 }
 
-fn build(admin_uri: &str, name: &str) -> Cluster {
-    let database = format!("aseman_fed_{name}_{}", uuid::Uuid::now_v7().simple());
-    let mut admin = Client::connect(admin_uri, NoTls).unwrap();
-    admin
-        .batch_execute(&format!("CREATE DATABASE {database}"))
-        .unwrap();
-    let mut config = Config::from_str(admin_uri).unwrap();
-    config.dbname(&database);
+/// A node with a storage of its own.
+fn federation(node_id: Uuid) -> StorageFederation {
+    StorageFederation::new(
+        aseman_storage::Storage::new(
+            aseman_storage::memory::MemoryProvider::new(),
+            aseman_storage::schema::Schema::catalog().unwrap(),
+        ),
+        node_id,
+    )
+}
+
+fn build() -> Cluster {
     let node_id = Uuid::now_v7();
-    let federation = PostgresFederation::connect_config(config, 4, node_id).unwrap();
-    federation.migrate().unwrap();
     Cluster {
         node_id,
-        federation,
-        database,
+        federation: federation(node_id),
     }
 }
 
 #[test]
 fn two_clusters_federate_and_the_destination_decides() {
-    let Some(admin_uri) = aseman_config::IntegrationTestConfig::from_process().postgres_url else {
-        eprintln!("ASEMAN_TEST_POSTGRES_URL is absent; skipping federation gate test");
-        return;
-    };
-    let one = build(&admin_uri, "one");
-    let two = build(&admin_uri, "two");
+    let one = build();
+    let two = build();
     assert_ne!(one.node_id, two.node_id);
 
     // Each cluster records its own descriptor and learns the other's. Nothing else is
-    // shared: separate databases, separate directories, separate guards.
+    // shared: separate storages, separate directories, separate guards.
     for cluster in [&one, &two] {
         cluster
             .federation
@@ -199,13 +193,7 @@ fn two_clusters_federate_and_the_destination_decides() {
     // A peer this cluster does not know is refused before its subject is considered.
     let stranger = Cluster {
         node_id: Uuid::now_v7(),
-        federation: PostgresFederation::connect_config(
-            Config::from_str(&admin_uri).unwrap(),
-            1,
-            Uuid::now_v7(),
-        )
-        .unwrap(),
-        database: String::new(),
+        federation: federation(Uuid::now_v7()),
     };
     let unknown_peer = envelope(&stranger, &two, "node.diagnostics.read", "node:two", "n-5");
     assert_eq!(
@@ -234,14 +222,4 @@ fn two_clusters_federate_and_the_destination_decides() {
             .is_none(),
         "the destination's record is its own"
     );
-
-    let mut admin = Client::connect(&admin_uri, NoTls).unwrap();
-    drop(one.federation);
-    drop(two.federation);
-    drop(stranger.federation);
-    for database in [one.database, two.database] {
-        admin
-            .batch_execute(&format!("DROP DATABASE {database} WITH (FORCE)"))
-            .unwrap();
-    }
 }

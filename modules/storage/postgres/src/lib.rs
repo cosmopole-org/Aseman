@@ -8,7 +8,7 @@ use aseman_contracts::capsule::{
     QueryPredicate, StorageCapability, StorageClass,
 };
 use postgres::types::ToSql;
-use postgres::{Client, GenericClient, NoTls};
+use postgres::{Client, GenericClient};
 use serde::Deserialize;
 use std::collections::{BTreeMap, BTreeSet};
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -21,15 +21,12 @@ pub use service::PostgresStorageService;
 pub mod capsule_store;
 pub mod compatibility;
 pub mod consensus_log;
-pub mod coordination;
 pub mod guest;
 mod layout;
-pub mod migration;
 mod model_query;
 pub mod plugin;
 pub mod shard;
 pub mod unit_of_work;
-pub mod vmm;
 
 const MAPPING_JSON: &str = include_str!("../../../../contracts/storage/postgres/core-mapping.json");
 #[cfg(test)]
@@ -41,7 +38,6 @@ pub const STORAGE_CLASS_MIGRATION: &str = include_str!("../migrations/0002_stora
 pub const MIGRATION_FENCE_MIGRATION: &str = include_str!("../migrations/0003_migration_fence.sql");
 pub const PROGRAM_MACHINE_MIGRATION: &str =
     include_str!("../migrations/0004_program_machine_not_unique.sql");
-pub const COORDINATION_MIGRATION: &str = include_str!("../migrations/0006_coordination.sql");
 pub const STORAGE_LAYOUT_MIGRATION: &str = include_str!("../migrations/0012_storage_layout.sql");
 pub const CONSENSUS_LOG_MIGRATION: &str = include_str!("../migrations/0013_consensus_log.sql");
 pub(crate) const SCHEMA: &str = "aseman_core";
@@ -398,7 +394,9 @@ pub struct PostgresCapsuleRepository {
 impl PostgresCapsuleRepository {
     /// Connect, writing in the layout the database was last migrated to.
     pub fn connect(connection_uri: &str) -> StorageResult<Self> {
-        let client = Client::connect(connection_uri, NoTls)
+        let client = aseman_postgres::Database::parse(connection_uri)
+            .map_err(PostgresStorageError::Unavailable)?
+            .connect()
             .map_err(|error| PostgresStorageError::Unavailable(error.to_string()))?;
         Ok(Self::from_client(client))
     }
@@ -447,7 +445,6 @@ impl PostgresCapsuleRepository {
             client.batch_execute(STORAGE_CLASS_MIGRATION)?;
             client.batch_execute(MIGRATION_FENCE_MIGRATION)?;
             client.batch_execute(PROGRAM_MACHINE_MIGRATION)?;
-            client.batch_execute(COORDINATION_MIGRATION)?;
             client.batch_execute(STORAGE_LAYOUT_MIGRATION)?;
             client.batch_execute(CONSENSUS_LOG_MIGRATION)
         })?;
@@ -566,27 +563,6 @@ impl PostgresCapsuleRepository {
                 )
                 .map(|_| ())
         })
-    }
-
-    /// Every capsule in every mapped table (core and storage classes), in
-    /// deterministic table/ID order, for A309 comparison.
-    pub fn snapshot_all(&self) -> StorageResult<Vec<CapsuleEnvelope>> {
-        let mut guard = self
-            .client
-            .lock()
-            .map_err(|_| PostgresStorageError::Unavailable("client lock poisoned".to_owned()))?;
-        let mut capsules = Vec::new();
-        for mapping in all_tables()? {
-            let statement = format!(
-                "SELECT {} FROM {} ORDER BY id",
-                layout::select_list(mapping),
-                qualified(mapping)
-            );
-            for row in guard.query(&statement, &[]).map_err(map_postgres_error)? {
-                capsules.push(layout::envelope_from_row(mapping, &row)?);
-            }
-        }
-        Ok(capsules)
     }
 
     pub fn get(

@@ -1,6 +1,6 @@
-//! Canonical encoding of legacy creature public keys (A304 `public_key` bytes).
+//! Canonical encoding of creature public keys (A304 `public_key` bytes).
 //!
-//! Legacy stores the client's RSA SPKI PEM string. Capsules store the multicodec
+//! A client presents its RSA SPKI PEM string. Capsules store the multicodec
 //! `rsa-pub` (0x1205) prefix followed by the SPKI DER, so two PEM spellings of one key
 //! are one value. Decoding yields the standard PEM spelling of that DER.
 

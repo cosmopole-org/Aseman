@@ -1,6 +1,6 @@
 ---
 status: CURRENT
-owner: migration/P0-01
+owner: platform
 source_of_truth: CLI dispatch tables and root shell-script option cases
 last_verified_commit: 800df24076c794f9b33c29a9f301dd9d674f47d6
 verification: python3 scripts/generate_current_surface_inventories.py --check
@@ -16,7 +16,6 @@ verification: python3 scripts/generate_current_surface_inventories.py --check
 - vms: `list`, `enable`, `disable`, `sync`, `new`
 - cluster: `status`, `init`, `peers`, `nearest`, `add-peer`, `remove-peer`, `promote`, `config`, `apply`
 - cluster config: `list`, `get`, `set`
-- pprof: `runtime`, `heap`, `threads`, `flamegraph`, `profile`
 
 ## caspar-client
 

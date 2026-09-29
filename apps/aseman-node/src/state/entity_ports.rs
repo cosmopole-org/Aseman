@@ -8,7 +8,7 @@ use aseman_domain::program::{
 };
 use aseman_ports::{EntityDirectory, PortResult, VmResourceEntities};
 
-use crate::core::trx::Trx;
+use crate::storage::Trx;
 
 /// The entity ports of one state action.
 pub(crate) struct EntityPorts<'a> {

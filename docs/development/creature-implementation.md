@@ -1,6 +1,6 @@
 ---
 status: CURRENT
-owner: runtime/migration/P7-05
+owner: runtime
 source_of_truth: modules/runtime/*, apps/aseman-node/src/adapters/vmm/host/vm_host_functions.rs, crates/aseman-contracts/src/guest_api.rs
 verification: cargo xtask fast
 ---

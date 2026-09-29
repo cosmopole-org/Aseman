@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate Phase 1 config schema, alias map, and domain/port catalogs."""
+"""Generate the configuration schema, the retired-name map, and the domain/port catalogs."""
 
 from __future__ import annotations
 
@@ -16,19 +16,19 @@ from inventory_common import retained_revision
 ROOT = Path(__file__).resolve().parents[1]
 CONFIG_INPUT = ROOT / "docs/generated/current-configuration.json"
 SCHEMA = ROOT / "contracts/config/aseman-config.schema.json"
-ALIASES = ROOT / "contracts/config/legacy-aliases.json"
+ALIASES = ROOT / "contracts/config/retired-names.json"
 DOMAIN_DOC = ROOT / "docs/generated/domain-catalog.md"
 PORT_DOC = ROOT / "docs/generated/port-catalog.md"
-GENERATOR = "scripts/generate_phase1_contracts.py"
+GENERATOR = "scripts/generate_core_contracts.py"
 OVERRIDES = {
     "OWNER_ID": "ASEMAN_NODE_ID",
     "OWNER_PRIVATE_KEY": "ASEMAN_NODE_PRIVATE_KEY_SECRET",
     "DATABASE_URL_SECRET": "ASEMAN_DATABASE_URL_SECRET",
     "VMM_ENDPOINT": "ASEMAN_VMM_ENDPOINT",
-    "CLIENT_TCP_API_PORT": "ASEMAN_LEGACY_TCP_PORT",
-    "CLIENT_WS_API_PORT": "ASEMAN_LEGACY_WS_PORT",
-    "FEDERATION_API_PORT": "ASEMAN_LEGACY_FEDERATION_PORT",
-    "BLOCKCHAIN_API_PORT": "ASEMAN_LEGACY_CONSENSUS_PORT",
+    "CLIENT_TCP_API_PORT": "ASEMAN_TCP_PORT",
+    "CLIENT_WS_API_PORT": "ASEMAN_WS_PORT",
+    "FEDERATION_API_PORT": "ASEMAN_FEDERATION_PORT",
+    "BLOCKCHAIN_API_PORT": "ASEMAN_CHAIN_PORT",
     "CASPAR_STORAGE_PORT": "ASEMAN_PUBLIC_STORAGE_PORT",
 }
 
@@ -38,9 +38,11 @@ def canonical(key: str) -> str:
         return OVERRIDES[key]
     if key.startswith("ASEMAN_"):
         return key
+    if key.startswith("CASPARCTL_"):
+        return "ASEMAN_CTL_" + key.removeprefix("CASPARCTL_")
     if key.startswith("CASPAR_"):
         return "ASEMAN_" + key.removeprefix("CASPAR_")
-    return "ASEMAN_LEGACY_" + key
+    return "ASEMAN_" + key
 
 
 def property_schema(item: dict[str, Any]) -> dict[str, Any]:
@@ -108,9 +110,8 @@ def config_contract() -> tuple[dict[str, Any], dict[str, Any]]:
         "aliases": alias_rows,
         "canonical_collisions": duplicate_targets,
         "rules": [
-            "Canonical and legacy values supplied together fail closed, even when textually equal.",
-            "Legacy usage emits a redaction-safe warning and counter.",
-            "Aliases are removed only under ADR 0004 and their removal-ledger row.",
+            "A retired name is refused with the canonical key to set instead.",
+            "Standard environment variables owned by the system or another tool feed their canonical keys.",
             "Unknown keys fail schema validation.",
         ],
     }
@@ -129,7 +130,7 @@ def public_items(path: Path, kind: str) -> list[str]:
 def catalog(title: str, crate: str, values: list[str], artifact: str, revision: str) -> str:
     label = "Domain type/state machine" if artifact == "A104" else "Behavioral port"
     lines = [
-        "---", "status: GENERATED", "owner: architecture/phase-1",
+        "---", "status: GENERATED", "owner: architecture",
         f"source_of_truth: crates/{crate}/src/lib.rs", f"last_verified_commit: {revision[:12]}",
         f"verification: python3 {GENERATOR} --check", "---", "", f"# {title}", "",
         f"| {label} | Owning crate |", "|---|---|",
@@ -161,7 +162,7 @@ def main() -> int:
     }
     ok = all(write_or_check(path, value, args.check) for path, value in outputs.items())
     if args.check and not ok:
-        print("Phase 1 generated contracts are stale", file=sys.stderr)
+        print("the core generated contracts are stale", file=sys.stderr)
         return 1
     return 0
 

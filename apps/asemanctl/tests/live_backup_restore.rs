@@ -86,7 +86,7 @@ impl Node {
                  ASEMAN_DATABASE_URL_SECRET={}\n\
                  ASEMAN_GUEST_PROXY_URL_SECRET={}\n\
                  ASEMAN_GUEST_PROXY_ROLE=aseman_guest_proxy\n\
-                 ASEMAN_LEGACY_STORAGE_ROOT_PATH={}\n",
+                 ASEMAN_STORAGE_ROOT_PATH={}\n",
                 secrets.join("node-key").display(),
                 secrets.join("database-url").display(),
                 secrets.join("guest-proxy-url").display(),

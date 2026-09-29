@@ -10,7 +10,7 @@
 //! per call: creating a multi-thread runtime for every exec would cost more
 //! than the RPC it wraps.
 
-use std::sync::OnceLock;
+use std::sync::{Mutex, OnceLock};
 use std::time::Duration;
 
 use tonic::metadata::MetadataValue;
@@ -19,6 +19,7 @@ use tonic::transport::{Channel, ClientTlsConfig};
 use tonic::Request;
 
 use crate::proto::modal_client_client::ModalClientClient;
+use crate::settings::ModalSettings;
 
 /// Modal API credentials and the workspace context every call runs in.
 #[derive(Clone, Debug)]
@@ -30,20 +31,24 @@ pub(crate) struct ModalCredentials {
 }
 
 impl ModalCredentials {
-    /// Read credentials from the node's environment.
+    /// The credentials the runtime configuration names, read from their secret files.
     ///
-    /// `MODAL_API_KEY` is the single-variable form the deploy uses —
-    /// `<token-id>:<token-secret>`, the same pair Modal's dashboard issues.
-    /// The split `MODAL_TOKEN_ID` / `MODAL_TOKEN_SECRET` form (what Modal's
-    /// own tooling exports) is accepted too, so a host that already has a
-    /// Modal profile configured needs no new variable.
-    pub(crate) fn from_env() -> Result<Self, String> {
-        let config = aseman_config::runtime_config();
-        let mut token_id = config.modal_token_id;
-        let mut token_secret = config.modal_token_secret;
+    /// The API key secret holds `<token-id>:<token-secret>`, the pair Modal's
+    /// dashboard issues; the token id and secret may instead be two files, the form
+    /// Modal's own tooling exports.
+    pub(crate) fn from_config(config: &aseman_config::RuntimeConfig) -> Result<Self, String> {
+        let read = |secret: &Option<std::path::PathBuf>| -> Result<String, String> {
+            secret.as_ref().map_or(Ok(String::new()), |path| {
+                aseman_config::read_secret_file(path, 4096)
+                    .map(|value| value.trim().to_owned())
+                    .map_err(|error| format!("modal secret {}: {}", path.display(), error))
+            })
+        };
+        let mut token_id = read(&config.modal_token_id_secret)?;
+        let mut token_secret = read(&config.modal_token_secret_secret)?;
 
         if token_id.is_empty() || token_secret.is_empty() {
-            let api_key = config.modal_api_key;
+            let api_key = read(&config.modal_api_key_secret)?;
             if !api_key.is_empty() {
                 match api_key.split_once(':') {
                     Some((id, secret)) => {
@@ -51,7 +56,10 @@ impl ModalCredentials {
                         token_secret = secret.trim().to_string();
                     }
                     None => {
-                        return Err("MODAL_API_KEY must be '<token-id>:<token-secret>'".to_string())
+                        return Err(
+                            "the modal API key secret must be '<token-id>:<token-secret>'"
+                                .to_string(),
+                        )
                     }
                 }
             }
@@ -59,7 +67,8 @@ impl ModalCredentials {
 
         if token_id.is_empty() || token_secret.is_empty() {
             return Err(
-                "modal runtime is not configured: set MODAL_API_KEY (or MODAL_TOKEN_ID + MODAL_TOKEN_SECRET)"
+                "modal runtime is not configured: give its API key secret (or its token id and \
+                 token secret)"
                     .to_string(),
             );
         }
@@ -67,8 +76,8 @@ impl ModalCredentials {
         Ok(Self {
             token_id,
             token_secret,
-            environment: config.modal_environment,
-            server_url: config.modal_server_url,
+            environment: config.modal_environment.clone(),
+            server_url: config.modal_server_url.clone(),
         })
     }
 }
@@ -76,28 +85,6 @@ impl ModalCredentials {
 /// Client type Modal's server expects in `x-modal-client-type`
 /// (`CLIENT_TYPE_CLIENT`).
 const CLIENT_TYPE_CLIENT: &str = "1";
-/// Version string reported to Modal in `x-modal-client-version`.
-///
-/// Modal PARSES this and refuses anything it cannot read as a version of a
-/// supported client — `FailedPrecondition: Invalid client version` — so it is
-/// not a free-form identifier, however much it looks like one. A name-and-slash
-/// string ("caspar-vm-modal/0.1.0") is rejected outright, which is why this is
-/// a bare semver: it is a compatibility assertion, and Modal enforces it.
-///
-/// Modal raises its minimum supported client over time, so this is
-/// overridable from the environment: a node can be moved onto an accepted
-/// version without waiting for a release of this plugin.
-const DEFAULT_CLIENT_VERSION: &str = "1.0.0";
-
-pub(crate) fn client_version() -> String {
-    let configured = aseman_config::runtime_config().modal_client_version;
-    if configured.is_empty() {
-        DEFAULT_CLIENT_VERSION.to_string()
-    } else {
-        configured
-    }
-}
-
 /// The authenticated stub type produced by [`connect`].
 pub(crate) type ModalStub = ModalClientClient<InterceptedService<Channel, AuthInterceptor>>;
 
@@ -184,11 +171,14 @@ pub(crate) struct ModalConn {
 /// The channel is lazily connected and cheaply cloneable, so it is built once
 /// and reused: Modal's control plane is remote, and re-establishing TLS per
 /// operation would put a round trip in front of every exec.
-pub(crate) fn connect() -> Result<ModalConn, String> {
-    static CHANNEL: OnceLock<Result<(Channel, ModalCredentials), String>> = OnceLock::new();
-    let (channel, creds) = CHANNEL
-        .get_or_init(|| {
-            let creds = ModalCredentials::from_env()?;
+pub(crate) fn connect(settings: &ModalSettings, cache: &ChannelCache) -> Result<ModalConn, String> {
+    let creds = settings.credentials.as_ref().map_err(Clone::clone)?;
+    let mut cached = cache
+        .lock()
+        .map_err(|_| "modal channel cache is poisoned".to_string())?;
+    let channel = match cached.as_ref() {
+        Some(channel) => channel.clone(),
+        None => {
             let tls = ClientTlsConfig::new().with_enabled_roots();
             let endpoint = Channel::from_shared(creds.server_url.clone())
                 .map_err(|e| format!("invalid MODAL_SERVER_URL: {}", e))?
@@ -215,21 +205,22 @@ pub(crate) fn connect() -> Result<ModalConn, String> {
             // a blocking network round trip out of this initializer, and the
             // first RPC surfaces a connection failure as that call's error.
             let _guard = runtime()?.enter();
-            Ok((endpoint.connect_lazy(), creds))
-        })
-        .as_ref()
-        .map_err(|e| e.clone())?;
+            // Only a built channel is cached: a failure is retried on the next call.
+            let channel = endpoint.connect_lazy();
+            *cached = Some(channel.clone());
+            channel
+        }
+    };
+    drop(cached);
 
     let interceptor = AuthInterceptor {
         token_id: creds.token_id.clone(),
         token_secret: creds.token_secret.clone(),
         environment: creds.environment.clone(),
-        // Read per connect, not once per process, so a node that has to move
-        // onto a different accepted version only needs a restart.
-        client_version: client_version(),
+        client_version: settings.client_version.clone(),
     };
     Ok(ModalConn {
-        stub: ModalClientClient::with_interceptor(channel.clone(), interceptor)
+        stub: ModalClientClient::with_interceptor(channel, interceptor)
             // Sandbox images and file payloads exceed tonic's 4 MiB default.
             .max_decoding_message_size(64 * 1024 * 1024)
             .max_encoding_message_size(64 * 1024 * 1024),
@@ -237,11 +228,8 @@ pub(crate) fn connect() -> Result<ModalConn, String> {
     })
 }
 
-/// Whether the node is configured to talk to Modal at all. Used to fail a
-/// modal operation with a clear message instead of a transport error.
-pub(crate) fn is_configured() -> bool {
-    ModalCredentials::from_env().is_ok()
-}
+/// The plugin's lazily built Modal channel.
+pub(crate) type ChannelCache = Mutex<Option<Channel>>;
 
 #[cfg(test)]
 mod tests {
@@ -274,21 +262,25 @@ mod tests {
     /// the node does.
     #[test]
     fn connects_from_a_thread_with_no_tokio_runtime() {
-        // Placeholders only when the process has no real credentials. The
-        // channel and the credentials behind it are cached process-wide, so
-        // overwriting a configured token here would break every live test that
-        // runs after this one in the same binary.
-        if !ModalCredentials::from_env().is_ok() {
-            std::env::set_var("MODAL_TOKEN_ID", "ak-test");
-            std::env::set_var("MODAL_TOKEN_SECRET", "as-test");
-        }
+        // Placeholder credentials: building the channel does not contact Modal.
+        let secrets =
+            std::env::temp_dir().join(format!("modal-connect-test-{}", std::process::id()));
+        std::fs::create_dir_all(&secrets).unwrap();
+        std::fs::write(secrets.join("api-key"), "ak-test:as-test").unwrap();
+        let config = aseman_config::RuntimeConfig {
+            modal_api_key_secret: Some(secrets.join("api-key")),
+            ..aseman_config::RuntimeConfig::default()
+        };
+        let settings = ModalSettings::from_config(&config);
+        std::fs::remove_dir_all(&secrets).unwrap();
+        assert!(settings.is_configured());
 
-        let built = std::thread::spawn(|| {
+        let built = std::thread::spawn(move || {
             assert!(
                 tokio::runtime::Handle::try_current().is_err(),
                 "the test thread must have no runtime, like the node's own threads",
             );
-            connect().map(|_| ())
+            connect(&settings, &ChannelCache::default()).map(|_| ())
         })
         .join();
 

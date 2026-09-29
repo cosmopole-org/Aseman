@@ -1,15 +1,7 @@
-//! Translation of `src/telemetry/server.go`.
-//!
-//! Minimal HTTP telemetry server. Two routes:
-//!
-//!   `/telemetry/health`   — always returns `{"status":"ok"}`.
-//!   `/telemetry/snapshot` — returns the cached snapshot if it's < 2 s old,
-//!                          otherwise re-collects it from the live node.
-//!
-//! Storage moved from Badger to RocksDB (single key, `latest_snapshot`,
-//! holding the JSON-encoded `Snapshot`). The HTTP layer is a tiny hand-
-//! written sync implementation over `std::net::TcpListener` so we avoid
-//! pulling in axum/hyper.
+//! The node's telemetry: `/telemetry/health` (always `{"status":"ok"}`) and
+//! `/telemetry/snapshot` (the cached snapshot when under 2 s old, else a fresh
+//! one), served by a small synchronous HTTP server, plus runtime profiling
+//! ([`pprof`]) and resource usage ([`resources`]).
 
 pub mod pprof;
 pub mod resources;

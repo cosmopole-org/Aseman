@@ -8,32 +8,28 @@
 //! returning the resulting JSON body so the wasm program sees a real
 //! response instead of an "unsupported packet" stub.
 
-use crate::adapters::vmm::globals::with_global_app;
-use crate::adapters::vmm::prelude::*;
+use crate::workloads::prelude::*;
 
-fn dispatch_store(op: &str, input: &JsonValue) -> String {
-    match with_global_app(|app| app.tools().workloads().host_action_store(op, input, 0).0) {
-        Some(out) => out,
-        None => json!({"ok": false, "error": "vmm not initialised"}).to_string(),
-    }
+fn dispatch_store(node: &Arc<Node>, op: &str, input: &JsonValue) -> String {
+    node.tools().workloads().host_action_store(op, input, 0).0
 }
 
-pub(crate) fn host_fn_create_store(input: &JsonValue) -> String {
-    dispatch_store("create", input)
+pub(crate) fn host_fn_create_store(node: &Arc<Node>, input: &JsonValue) -> String {
+    dispatch_store(node, "create", input)
 }
 
-pub(crate) fn host_fn_delete_store(input: &JsonValue) -> String {
-    dispatch_store("delete", input)
+pub(crate) fn host_fn_delete_store(node: &Arc<Node>, input: &JsonValue) -> String {
+    dispatch_store(node, "delete", input)
 }
 
-pub(crate) fn host_fn_get_store(input: &JsonValue) -> String {
-    dispatch_store("get", input)
+pub(crate) fn host_fn_get_store(node: &Arc<Node>, input: &JsonValue) -> String {
+    dispatch_store(node, "get", input)
 }
 
-pub(crate) fn host_fn_list_stores(input: &JsonValue) -> String {
-    dispatch_store("list", input)
+pub(crate) fn host_fn_list_stores(node: &Arc<Node>, input: &JsonValue) -> String {
+    dispatch_store(node, "list", input)
 }
 
-pub(crate) fn host_fn_update_store(input: &JsonValue) -> String {
-    dispatch_store("update", input)
+pub(crate) fn host_fn_update_store(node: &Arc<Node>, input: &JsonValue) -> String {
+    dispatch_store(node, "update", input)
 }

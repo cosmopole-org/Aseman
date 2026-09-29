@@ -1,7 +1,7 @@
 ---
 status: ACCEPTED
 owner: security
-source_of_truth: plan/migration/05-security-and-authority.md and ADR 0001
+source_of_truth: this document, ADR 0001, and contracts/security/
 last_verified_commit: 800df24076c7
 verification: property, adversarial, fuzz, and authorization suites in owning phases
 ---

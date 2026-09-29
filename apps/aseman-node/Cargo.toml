@@ -14,15 +14,17 @@ path = "src/runner.rs"
 
 
 [dependencies]
+aseman-admin-http = { path = "../../crates/aseman-admin-http" }
 aseman-application = { path = "../../crates/aseman-application" }
 aseman-config = { path = "../../crates/aseman-config" }
 aseman-contracts = { path = "../../crates/aseman-contracts" }
 aseman-domain = { path = "../../crates/aseman-domain" }
 aseman-fs = { path = "../../crates/aseman-fs" }
 aseman-module-runtime = { path = "../../crates/aseman-module-runtime" }
-aseman-network-legacy = { path = "../../modules/network/legacy" }
+aseman-network-shell = { path = "../../modules/network/shell" }
 aseman-observability = { path = "../../crates/aseman-observability" }
 aseman-ports = { path = "../../crates/aseman-ports" }
+aseman-postgres = { path = "../../crates/aseman-postgres" }
 aseman-capsule = { path = "../../crates/aseman-capsule" }
 aseman-consensus-hashgraph = { path = "../../modules/consensus/hashgraph" }
 aseman-storage = { path = "../../crates/aseman-storage" }
@@ -32,7 +34,6 @@ aseman-public-http = { path = "../../modules/network/http" }
 aseman-gateway-rpc = { path = "../../modules/network/gateway" }
 aseman-federation-http = { path = "../../modules/federation/http" }
 aseman-public-service = { path = "../../modules/public-service" }
-aseman-realtime-durable = { path = "../../modules/realtime/durable" }
 aseman-identity-native = { path = "../../modules/identity-native" }
 aseman-guest-http = { path = "../../modules/guest-http" }
 aseman-vmm-http = { path = "../../modules/vmm-http" }

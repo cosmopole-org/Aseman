@@ -2,7 +2,7 @@
 -- had no writer, so 0001 recreates them in the current shape. Idempotent: a table in
 -- its current shape is never touched.
 
--- A401 (P4-01): identity keys replaced node keys, which never had a writer.
+-- A401: identity keys replaced node keys, which never had a writer.
 DO $$
 BEGIN
   IF to_regclass('aseman_core.node_keys') IS NOT NULL THEN
@@ -10,7 +10,7 @@ BEGIN
   END IF;
 END $$;
 
--- A403 (P4-03): capability grants gained subjects of every class, action sets,
+-- A403: capability grants gained subjects of every class, action sets,
 -- selectors, delegation, and parents. The first shape (one `action` column, user-only
 -- subjects) never had a writer.
 DO $$

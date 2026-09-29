@@ -7,19 +7,19 @@
 //! its data. Without one, the node's storage serves every creature's guest data
 //! (`StorageGuestKv`, ADR 0036), on whichever provider the node loaded.
 
-use std::sync::OnceLock;
-
 use aseman_capsule::auto::AutoCommit;
 use aseman_capsule::guest_kv::StorageGuestKv;
 use aseman_capsule::workload::CapsuleWorkloads;
-use aseman_contracts::legacy_realtime::deterministic_legacy_capsule_id;
+use aseman_contracts::signals::derived_capsule_id;
 use aseman_domain::guest::{GuestKvOperation, GuestKvOutcome, LegacyKvNamespace, MAX_GUEST_LIST};
 use aseman_domain::{BindingStatus, CreatureId, Uuid};
 use aseman_ports::{CreatureDatabaseBindings, GuestKv};
 use serde_json::{Value, json};
 use std::sync::Arc;
 
-enum GuestRouting {
+/// Where guest data is served: each creature's own guest database, or the node's
+/// storage.
+pub(crate) enum GuestData {
     /// Each creature's own guest database.
     Databases {
         kv: Arc<dyn GuestKv>,
@@ -29,45 +29,39 @@ enum GuestRouting {
     Node(StorageGuestKv),
 }
 
-static ROUTING: OnceLock<GuestRouting> = OnceLock::new();
-
-/// Serve guest data from creature databases through `kv` or, without a guest data
-/// plane, from the node's storage (called once).
-pub(crate) fn install(
-    kv: Option<Arc<dyn GuestKv>>,
-    storage: aseman_storage::Storage,
-) -> anyhow::Result<()> {
-    let routing = match kv {
-        Some(kv) => GuestRouting::Databases {
-            kv,
-            catalog: AutoCommit(storage),
-        },
-        None => GuestRouting::Node(StorageGuestKv::new(storage)),
-    };
-    ROUTING
-        .set(routing)
-        .map_err(|_| anyhow::anyhow!("guest data routing is already installed"))
+impl GuestData {
+    /// Guest data from creature databases through `kv` or, without a guest data
+    /// plane, from the node's storage.
+    pub(crate) fn new(kv: Option<Arc<dyn GuestKv>>, storage: aseman_storage::Storage) -> Self {
+        match kv {
+            Some(kv) => Self::Databases {
+                kv,
+                catalog: AutoCommit(storage),
+            },
+            None => Self::Node(StorageGuestKv::new(storage)),
+        }
+    }
 }
 
 fn execute(
-    routing: &GuestRouting,
+    routing: &GuestData,
     creature: &str,
     operation: &GuestKvOperation,
 ) -> Result<GuestKvOutcome, String> {
     if creature.trim().is_empty() {
         return Err("guest data needs an identified creature".to_owned());
     }
-    let creature_id = CreatureId::from_uuid(Uuid::from_bytes(deterministic_legacy_capsule_id(
+    let creature_id = CreatureId::from_uuid(Uuid::from_bytes(derived_capsule_id(
         "Creature",
         creature.as_bytes(),
     )));
     let (kv, catalog) = match routing {
-        GuestRouting::Node(kv) => {
+        GuestData::Node(kv) => {
             return kv
                 .execute_for(creature_id, operation)
                 .map_err(|error| error.to_string());
         }
-        GuestRouting::Databases { kv, catalog } => (kv, catalog),
+        GuestData::Databases { kv, catalog } => (kv, catalog),
     };
     let binding = CapsuleWorkloads {
         repository: catalog,
@@ -80,26 +74,18 @@ fn execute(
         .map_err(|error| error.to_string())
 }
 
-/// Whether guest data is served from creature databases.
-#[expect(
-    dead_code,
-    reason = "RL-004: characterized legacy action surface (A008) kept until its deletion gate"
-)]
-pub(crate) fn on_postgres() -> bool {
-    ROUTING.get().is_some()
-}
-
-/// The confined document and link calls (ADR 0028), in their legacy response shapes.
+/// The confined document and link calls (ADR 0028), in their wire response shapes.
 pub(crate) fn route_state(
+    routing: &GuestData,
     creature: &str,
     op: &str,
     input: &Value,
-) -> Option<Result<Value, String>> {
-    Some(state_with(ROUTING.get()?, creature, op, input))
+) -> Result<Value, String> {
+    state_with(routing, creature, op, input)
 }
 
 fn state_with(
-    routing: &GuestRouting,
+    routing: &GuestData,
     creature: &str,
     op: &str,
     input: &Value,
@@ -140,30 +126,23 @@ fn state_with(
     })
 }
 
-/// A key/value `dbOp` (`put`/`get`/`del`/`getByPrefix`) in `namespace`, in the legacy
+/// A key/value `dbOp` (`put`/`get`/`del`/`getByPrefix`) in `namespace`, in the wire
 /// `vm_db_op` response shapes. `getByPrefix` returns the values of committed pairs,
-/// which legacy never did (ADR 0021).
+/// which the key/value store never did before (ADR 0021).
 pub(crate) fn route_db_op(
+    routing: &GuestData,
     creature: &str,
     namespace: LegacyKvNamespace,
     op: &str,
     key: &str,
     value: &str,
     prefix: &str,
-) -> Option<Result<String, String>> {
-    Some(db_op_with(
-        ROUTING.get()?,
-        creature,
-        namespace,
-        op,
-        key,
-        value,
-        prefix,
-    ))
+) -> Result<String, String> {
+    db_op_with(routing, creature, namespace, op, key, value, prefix)
 }
 
 fn db_op_with(
-    routing: &GuestRouting,
+    routing: &GuestData,
     creature: &str,
     namespace: LegacyKvNamespace,
     op: &str,
@@ -204,13 +183,7 @@ fn db_op_with(
 
 /// Split a runtime `dbOp` key `{creature}::{guestKey}`; runtimes build it from the
 /// node-assigned machine id, so the first segment is the creature.
-#[cfg_attr(
-    not(test),
-    expect(
-        dead_code,
-        reason = "RL-004: characterized legacy action surface (A008) kept until its deletion gate"
-    )
-)]
+#[cfg(test)]
 pub(crate) fn split_runtime_key(key: &str) -> Option<(&str, &str)> {
     key.split_once("::")
         .filter(|(creature, _)| creature.contains('@'))

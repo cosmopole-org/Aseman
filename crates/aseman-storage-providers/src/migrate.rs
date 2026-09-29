@@ -300,10 +300,11 @@ fn relocate_legacy_logs(
     source_logs: &dyn ConsensusLogStorage,
     storage_root: &Path,
     target: &dyn ConsensusLogStorage,
+    tuning: aseman_config::RocksDbTuning,
     report: &mut Report,
 ) -> StorageResult<()> {
     if provider == aseman_storage_rocksdb::model_store::NAME {
-        let root = RocksDbConsensusLogStorage::new(storage_root);
+        let root = RocksDbConsensusLogStorage::new(storage_root, tuning);
         for log in legacy_consensus_logs(storage_root).map_err(port)? {
             let from = log
                 .path
@@ -729,7 +730,7 @@ pub fn convert_legacy(
             .iter()
             .map(|row| {
                 let policy =
-                    aseman_contracts::legacy_realtime::SignalStreamPolicy::for_store(&row.store_id);
+                    aseman_contracts::signals::SignalStreamPolicy::for_store(&row.store_id);
                 (
                     row.store_id.clone(),
                     LegacySignalStreamPolicy {
@@ -815,7 +816,7 @@ fn signal_log_source(
     args: &[String],
 ) -> StorageResult<Option<LegacySignalLogSource>> {
     let questdb = || LegacySignalLogSource::QuestDb {
-        port: config.legacy_adapters.questdb_port,
+        port: config.services.questdb_port,
     };
     let postgres = || -> StorageResult<LegacySignalLogSource> {
         let url = settings(config, &SecretOverrides::default())?
@@ -954,6 +955,7 @@ pub fn command(config: &AsemanConfig, args: &[String]) -> StorageResult<String> 
             source.provider().consensus_logs().as_ref(),
             &storage_root,
             target.provider().consensus_logs().as_ref(),
+            config.services.rocksdb,
             &mut report,
         )?;
     }

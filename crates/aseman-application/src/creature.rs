@@ -1,7 +1,6 @@
-//! Creature identity use cases (RL-004 strangler slice: `/creatures/create`, `get`,
-//! `list`, `update`, `delete`, `getByUsername`, `find`). The rules and client-visible
-//! error texts are identical to the legacy actions. Sessions, metadata documents, and
-//! memberships stay with the adapter until their own slices.
+//! Creature identity use cases: `/creatures/create`, `get`, `list`, `update`,
+//! `delete`, `getByUsername`, `find`. Sessions, metadata documents, and memberships
+//! are the node's operations over these.
 
 use crate::ApplicationError;
 use aseman_domain::creature::{CreatureRecord, HUMAN_OWNER};
@@ -14,7 +13,7 @@ fn denied(message: &str) -> ApplicationError {
     ApplicationError::Denied(message.to_owned())
 }
 
-/// A creature as the legacy wire shows it: identity plus balance.
+/// A creature as the wire shows it: identity plus balance.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct CreatureView {
     pub record: CreatureRecord,

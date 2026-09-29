@@ -34,7 +34,7 @@ pub enum PortabilityTier {
 pub struct Volume {
     pub name: String,
     pub tier: PortabilityTier,
-    /// The provider that holds it, for example `nomad` or `native-legacy`.
+    /// The provider that holds it, for example `nomad` or `native`.
     pub provider: String,
     /// The snapshot format its provider writes, when it writes one.
     #[serde(default, skip_serializing_if = "Option::is_none")]

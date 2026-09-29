@@ -1,4 +1,4 @@
-//! Node composition root (RL-001).
+//! The node's composition root.
 //!
 //! [`NodeApp`] is where configuration is parsed and the adapters are wired together.
 //! It is the single place a new node process is brought up; the binaries in `main.rs`
@@ -7,17 +7,15 @@
 //! adapters it wires sit behind the ports in `aseman-ports`.
 
 use std::collections::HashMap;
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 use std::thread;
 use std::time::Duration;
 
 use anyhow::Result;
 use aseman_config::{AllocatorConfig, AsemanConfig};
 
-use crate::api::kasper::new_configured_app;
-use crate::api::main_api::plug_all;
-use crate::models::action::ExtendedField;
-use crate::models::core::ICore;
+use crate::actions::Router;
+use crate::node::Node;
 use crate::observability;
 
 /// The composed node: a typed configuration plus everything wired from it.
@@ -26,213 +24,82 @@ pub struct NodeApp {
 }
 
 impl NodeApp {
-    /// Parse the process configuration, with the legacy `.env` precedence.
+    /// Parse the process configuration: the environment, overridden by `.env`.
     pub fn from_process() -> Result<Self> {
         let config = Arc::new(AsemanConfig::from_process_with_dotenv(".env")?);
         Ok(Self { config })
     }
 
-    /// Bring the node up: profiler, telemetry, core storage, the legacy app, the VMM
-    /// listener restore, and the network/cluster ingress. Blocks forever once running.
+    /// Bring the node up: profiler, telemetry, the node and its components, the
+    /// operations, the workload services, and the listeners. Blocks while the node
+    /// runs.
+    ///
+    /// # Errors
+    ///
+    /// A missing owner key, or a component that cannot start.
     pub fn start(self) -> Result<()> {
-        let config: &AsemanConfig = &self.config;
+        let config = self.config.clone();
 
-        // Cap glibc's per-thread arena pool and keep freed pages returning to the
-        // OS. Must run before any worker thread is spawned (pprof/telemetry below
-        // both spawn), so glibc never grows past the cap. See
-        // `configure_allocator` for the leak this addresses.
+        // Cap glibc's arena pool before any worker thread is spawned (the profiler
+        // and telemetry below both spawn); see `configure_allocator`.
         configure_allocator(&config.allocator);
-
-        // Runtime profiling HTTP server (was Go `net/http/pprof` on :9999;
-        // now Rust-native via the `pprof` crate). Queried by `casparctl pprof`.
         observability::pprof::start(config.telemetry.pprof_port);
-
-        if let Err(e) = observability::start(config) {
-            eprintln!("telemetry server start failed: {}", e);
+        if let Err(error) = observability::start(&config) {
+            eprintln!("telemetry server start failed: {error}");
         }
 
-        let owner_priv = match parse_owner_key(&config.node.private_key_secret) {
-            Some(key) => key,
-            None => {
-                return Err(anyhow::anyhow!(
-                    "ASEMAN_NODE_PRIVATE_KEY_SECRET missing or unparseable"
-                ));
-            }
-        };
-        let app = new_configured_app(
-            &config.node.origin,
-            &config.node.id,
-            owner_priv,
-            self.config.clone(),
-        );
+        let owner_key = parse_owner_key(&config.node.private_key_secret).ok_or_else(|| {
+            anyhow::anyhow!("ASEMAN_NODE_PRIVATE_KEY_SECRET missing or unparseable")
+        })?;
+        let node = Node::new(config.clone(), owner_key);
+        node.load()
+            .map_err(|error| anyhow::anyhow!("the node could not load: {error}"))?;
+        install_core_storage(&config, &node)
+            .map_err(|error| anyhow::anyhow!("core storage services could not start: {error}"))?;
+        let router = Router::new(node.clone())?;
+        node.install_router(router.clone());
 
-        if let Err(e) = app.load_inner(
-            vec!["keyhan".to_string()],
-            &config.storage.root_path,
-            &config.storage.base_db_path,
-        ) {
-            eprintln!("app.load failed: {}", e);
-            return Err(anyhow::anyhow!("app.load failed: {e}"));
-        }
-        if let Err(error) = install_core_storage(config) {
-            eprintln!("core storage services could not start: {error}");
-            return Err(anyhow::anyhow!(
-                "core storage services could not start: {error}"
-            ));
-        }
-
-        // Install SIGINT / SIGTERM handler: when received, close the app and
-        // exit. We use a small helper instead of pulling in signal-hook.
         install_signal_handler({
-            let app = app.clone();
+            let node = node.clone();
             move || {
-                app.close();
+                node.close();
                 std::process::exit(0);
             }
         });
 
-        let mut user_extender: HashMap<String, ExtendedField> = HashMap::new();
-        let make_field = |name: &str,
-                          default: serde_json::Value,
-                          searchable: bool,
-                          primary: bool| ExtendedField {
-            name: name.to_string(),
-            path: "metadata.public.profile".to_string(),
-            typ: "string".to_string(),
-            default,
-            required: true,
-            searchable,
-            primary_prop: primary,
-            get_value: None,
-        };
-        user_extender.insert(
-            "name".to_string(),
-            make_field("name", serde_json::json!("Anonymous User"), true, true),
-        );
-        user_extender.insert(
-            "avatar".to_string(),
-            make_field("avatar", serde_json::json!("avatar"), false, true),
-        );
-        user_extender.insert(
-            "bio".to_string(),
-            make_field(
-                "bio",
-                serde_json::json!("I'm a DecillionAI User"),
-                false,
-                false,
-            ),
-        );
-        user_extender.insert(
-            "location".to_string(),
-            make_field(
-                "location",
-                serde_json::json!("DecillionAI Land"),
-                false,
-                false,
-            ),
-        );
-        let mut store_extender: HashMap<String, ExtendedField> = HashMap::new();
-        store_extender.insert(
-            "title".to_string(),
-            make_field("title", serde_json::json!("Untitled Store"), true, true),
-        );
-        store_extender.insert(
-            "avatar".to_string(),
-            make_field("avatar", serde_json::json!("avatar"), false, true),
-        );
-        let mut model_extender: HashMap<String, HashMap<String, ExtendedField>> = HashMap::new();
-        model_extender.insert("user".to_string(), user_extender);
-        model_extender.insert("store".to_string(), store_extender);
+        crate::actions::install_creature_types(&node)?;
+        crate::actions::start_workload_services(&node)?;
 
-        let app_for_plug: Arc<dyn crate::models::core::ICore> = app.clone();
-        plug_all(
-            app_for_plug,
-            &model_extender,
-            &config.legacy_adapters.main_port,
-        );
-
-        // ── Startup VMM listener restore ──────────────────────────────────────────
-        // The signaler listeners that vmm.assign() registers are in-memory only.
-        // After a node restart they are gone, so creature signals to deployed
-        // machines would silently drop. Re-register one listener per program with a
-        // deployed entity.
-        {
-            let programs_slot = Arc::new(Mutex::new(Vec::<String>::new()));
-            let programs_clone = programs_slot.clone();
-            app.modify_state(
-                true,
-                Box::new(move |trx: &crate::core::trx::Trx| {
-                    let entities = crate::api::model::entity_ports::EntityPorts { trx };
-                    *programs_clone.lock().unwrap() =
-                        aseman_ports::EntityDirectory::deployed_programs(&entities)
-                            .map_err(|error| anyhow::anyhow!("{error}"))?;
-                    Ok(())
-                }),
-            );
-            let programs = programs_slot.lock().unwrap().clone();
-            for program_id in &programs {
-                app.tools().workloads().assign(program_id);
-            }
-            if !programs.is_empty() {
-                eprintln!(
-                    "[startup] Restored VMM listeners for {} machine(s): {:?}",
-                    programs.len(),
-                    programs
-                );
-            }
-        }
-
-        app.run();
-
-        // ── VMM HTTP ingress ──────────────────────────────────────────────────────
-        // Inbound HTTP server that accepts requests shaped as
-        // `/{creatureId}/{programId}/{entityId}/{vmId}/{path…}` and forwards them to
-        // the HTTP server of the named VM instance: the docker runtime proxies to
-        // the container's HTTP server, every other runtime falls back to signalling
-        // the VM. Disabled when the port is unset/zero.
-        app.tools()
+        // Inbound HTTP for VM instances: `/{creatureId}/{programId}/{entityId}/{vmId}/…`
+        // and custom gateway routes (disabled when the port is zero).
+        node.tools()
             .workloads()
             .start_http_ingress(i64::from(config.network.vm_http_ingress_port));
-
-        // ── Public file storage HTTP server ───────────────────────────────────────
-        // Serves public binary blobs (avatars/images) over plain HTTP so the Nest
-        // backend can proxy authenticated uploads and re-serve downloads to clients
-        // without pushing binaries through the signed action/consensus path.
-        // Internal port (like the docker gateway); disabled when unset/zero.
-        {
-            let app_for_storage: Arc<dyn crate::models::core::ICore> = app.clone();
-            crate::api::storage_http::start(
-                app_for_storage,
-                i64::from(config.network.public_storage_port),
-                config.legacy_adapters.public_storage_max_bytes,
-            );
-        }
-
-        // ── Public HTTP gateway (RL-004) ─────────────────────────────────────────
-        // Serves the generated A701 public contract over TLS when the
-        // ASEMAN_PUBLIC_HTTP_* configuration is present. A no-op otherwise.
-        if let Err(error) = crate::api::public_http::start_public_http(config, app.clone()) {
+        // Public blobs (avatars, images) over plain HTTP on an internal port, so a
+        // backend can proxy authenticated uploads and serve downloads (disabled when
+        // the port is zero).
+        crate::transports::storage_http::start(
+            node.clone(),
+            i64::from(config.network.public_storage_port),
+            config.services.public_storage_max_bytes,
+        );
+        // The public contract over TLS (A701), when `ASEMAN_PUBLIC_HTTP_*` is set.
+        if let Err(error) = crate::transports::http::start_public_http(&config, router) {
             eprintln!("public HTTP gateway could not start: {error}");
         }
 
-        let mut ports: HashMap<String, i64> = HashMap::new();
-        ports.insert("tcp".to_string(), i64::from(config.network.legacy_tcp_port));
-        ports.insert("ws".to_string(), i64::from(config.network.legacy_ws_port));
-        ports.insert(
-            "fed".to_string(),
-            i64::from(config.network.legacy_federation_port),
-        );
-        ports.insert(
-            "chain".to_string(),
-            i64::from(config.network.legacy_consensus_port),
-        );
-        app.tools().network().run(ports);
+        let ports = HashMap::from([
+            ("tcp".to_owned(), i64::from(config.network.tcp_port)),
+            ("ws".to_owned(), i64::from(config.network.ws_port)),
+            ("fed".to_owned(), i64::from(config.network.federation_port)),
+            ("chain".to_owned(), i64::from(config.network.chain_port)),
+        ]);
+        node.tools().network().run(ports);
 
-        // Periodically hand freed heap pages back to the OS (see
-        // `configure_allocator`). Cheap once arenas are capped.
+        // Hand freed heap pages back to the OS periodically (see `configure_allocator`).
         spawn_malloc_trimmer(&config.allocator);
 
-        // Block forever — background threads run the gossip / chain dispatch.
+        // The listeners and the chain run on their own threads.
         loop {
             thread::sleep(Duration::from_secs(60 * 60));
         }
@@ -243,10 +110,9 @@ impl NodeApp {
 /// decision audit, guest data (from each creature's own database through the
 /// PostgreSQL guest data plane, ADR 0021, or else from the node's storage), and the
 /// VMM workload catalog.
-fn install_core_storage(config: &AsemanConfig) -> Result<()> {
-    let storage = crate::adapters::storage::installed()
-        .ok_or_else(|| anyhow::anyhow!("the node's storage is not open"))?;
-    crate::api::audit::install(storage.clone())?;
+fn install_core_storage(config: &AsemanConfig, node: &Arc<Node>) -> Result<()> {
+    let storage = node.tools().storage().storage();
+    node.audit().start(storage.clone())?;
     let guest_plane = match &config.core_storage.guest_proxy {
         Some(proxy) => {
             let url = aseman_config::read_secret_file(&proxy.url_secret, 4096)?;
@@ -266,11 +132,17 @@ fn install_core_storage(config: &AsemanConfig) -> Result<()> {
         }
         None => None,
     };
-    crate::api::model::guest_data::install(guest_plane, storage.clone())?;
+    let _ = node
+        .guest_data
+        .set(crate::state::guest_data::GuestData::new(
+            guest_plane,
+            storage.clone(),
+        ));
     // Program entities run on the configured VMM; their host calls come back through
-    // the guest API (P5-03, P5-04).
+    // the guest API.
     if let Some(vmm) = &config.vmm {
-        crate::api::workloads::install(vmm, &config.node.id, storage, &config.storage.root_path)?;
+        let remote = crate::workloads::vmm::install(vmm, node, storage, &config.storage.root_path)?;
+        let _ = node.vmm.set(remote);
     }
     Ok(())
 }
@@ -362,7 +234,7 @@ fn parse_owner_key(secret: &str) -> Option<rsa::RsaPrivateKey> {
 fn install_signal_handler<F: FnOnce() + Send + 'static>(callback: F) {
     // Minimal SIGINT / SIGTERM handling without signal-hook: spawn a thread
     // that masks the signals and waits via `libc::sigwait`. Linux only —
-    // matches the Caspar deployment target.
+    // the deployment target.
     thread::spawn(move || {
         #[cfg(target_os = "linux")]
         unsafe {

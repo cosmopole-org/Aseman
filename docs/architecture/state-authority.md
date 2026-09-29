@@ -1,9 +1,9 @@
 ---
 status: ACCEPTED
 owner: architecture
-source_of_truth: plan/migration/01-target-architecture.md and plan/migration/14-plan-integrity-and-traceability.md
+source_of_truth: this document and the ADRs it cites
 last_verified_commit: 800df24076c7
-verification: architecture tests introduced in Phase 1
+verification: cargo xtask arch
 ---
 
 # State authority model
@@ -33,8 +33,8 @@ become authoritative.
 
 - Cross-authority workflows use durable operation records, outboxes, idempotent
   commands, deadlines, and reconciliation rather than distributed transactions.
-- A compatibility path may mirror state only with an explicit source, generation,
-  comparison rule, rollback point, and removal-ledger entry.
+- A path may mirror state only with an explicit source, generation, comparison rule,
+  and rollback point.
 - When two stores claim authority without an accepted cutover record, fail closed and
   surface an operator-visible conflict.
 - The guest-data proxy derives database and role from the authenticated workload,

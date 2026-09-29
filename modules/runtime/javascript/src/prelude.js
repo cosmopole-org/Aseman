@@ -15,7 +15,7 @@
   //
   // QuickJS's own console.log writes to the process stdout, which on a node
   // running dozens of creatures is nobody's log. Every level is routed to the
-  // VM's log stream instead, so `casparctl` and `programs/readVmLogs` show it.
+  // VM's log stream instead, so `asemanctl` and `programs/readVmLogs` show it.
   function render(value, seen) {
     if (typeof value === "string") return value;
     if (value instanceof Error) return String(value.stack || value);

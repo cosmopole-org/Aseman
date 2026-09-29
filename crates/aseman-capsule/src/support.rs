@@ -8,7 +8,7 @@ use aseman_contracts::capsule::{
     CapsuleValue, ComparisonOperator, MAX_QUERY_LIMIT, OwnerScope, QueryPredicate, QuerySort,
     SortDirection, StorageClass,
 };
-use aseman_contracts::legacy_realtime::deterministic_legacy_capsule_id;
+use aseman_contracts::signals::derived_capsule_id;
 use aseman_ports::{PortError, PortResult};
 use std::collections::{BTreeMap, BTreeSet};
 
@@ -86,9 +86,9 @@ pub(crate) fn legacy_identity(
     legacy_id: &str,
     target_kind: &str,
 ) -> PortResult<CapsuleEnvelope> {
-    let target = deterministic_legacy_capsule_id(family, legacy_id.as_bytes());
+    let target = derived_capsule_id(family, legacy_id.as_bytes());
     new_capsule(
-        deterministic_legacy_capsule_id(
+        derived_capsule_id(
             "LegacyIdentity",
             format!("{family}\0{legacy_id}").as_bytes(),
         ),
@@ -212,7 +212,12 @@ impl Capsules<'_> {
     }
 
     /// The legacy identity of one canonical ID, by the unique target index.
-    pub(crate) fn legacy_id_of(&self, target_kind: &str, target: [u8; 16]) -> PortResult<String> {
+    /// The legacy id recorded for the capsule `target` of `target_kind`, if any.
+    pub(crate) fn find_legacy_id(
+        &self,
+        target_kind: &str,
+        target: [u8; 16],
+    ) -> PortResult<Option<String>> {
         let rows = self
             .0
             .query(&CapsuleQuery {
@@ -231,16 +236,16 @@ impl Capsules<'_> {
                 cursor: None,
             })
             .map_err(port_error)?;
-        match rows
+        Ok(rows
             .first()
             .and_then(body)
             .map(|fields| text(fields, "legacy_id"))
-        {
-            Some(legacy_id) if !legacy_id.is_empty() => Ok(legacy_id),
-            _ => Err(PortError::failed(format!(
-                "{target_kind} has no legacy identity"
-            ))),
-        }
+            .filter(|legacy_id| !legacy_id.is_empty()))
+    }
+
+    pub(crate) fn legacy_id_of(&self, target_kind: &str, target: [u8; 16]) -> PortResult<String> {
+        self.find_legacy_id(target_kind, target)?
+            .ok_or_else(|| PortError::failed(format!("{target_kind} has no legacy identity")))
     }
 }
 
@@ -263,7 +268,7 @@ fn stored_document(
 ) -> PortResult<serde_json::Map<String, serde_json::Value>> {
     match body(capsule)
         .and_then(|fields| fields.get("document"))
-        .map(aseman_contracts::legacy_documents::capsule_value_to_json)
+        .map(aseman_contracts::documents::capsule_value_to_json)
         .transpose()
         .map_err(PortError::failed)?
     {
@@ -273,24 +278,24 @@ fn stored_document(
 }
 
 impl Capsules<'_> {
-    /// The object at a legacy dotted `path` under the root, as legacy `get_json`.
+    /// The object at a legacy dotted `path` under the root, as `get_json`.
     pub(crate) fn document_at(
         &self,
         family: &DocumentFamily,
         legacy_id: &str,
         path: &str,
     ) -> PortResult<Option<String>> {
-        let id = deterministic_legacy_capsule_id(family.family, legacy_id.as_bytes());
+        let id = derived_capsule_id(family.family, legacy_id.as_bytes());
         let Some(capsule) = self.live(family.kind, id)? else {
             return Ok(None);
         };
         let document = stored_document(&capsule)?;
-        aseman_contracts::legacy_documents::legacy_document_object_at(family.root, &document, path)
+        aseman_contracts::documents::document_object_at(family.root, &document, path)
             .map(|object| serde_json::to_string(object).map_err(PortError::failed))
             .transpose()
     }
 
-    /// Deep-merge a JSON object into the document, as legacy `put_json(.., true)`.
+    /// Deep-merge a JSON object into the document, as `put_json(.., true)`.
     pub(crate) fn merge_document(
         &self,
         family: &DocumentFamily,
@@ -303,9 +308,9 @@ impl Capsules<'_> {
                 family.root
             )));
         };
-        let id = deterministic_legacy_capsule_id(family.family, legacy_id.as_bytes());
+        let id = derived_capsule_id(family.family, legacy_id.as_bytes());
         let key = format!("{}{legacy_id}", family.key_prefix);
-        let subject = deterministic_legacy_capsule_id(family.subject_family, legacy_id.as_bytes());
+        let subject = derived_capsule_id(family.subject_family, legacy_id.as_bytes());
         for _ in 0..MAX_CAS_ATTEMPTS {
             let written = match self.get(family.kind, id)? {
                 Some(current) => {
@@ -314,16 +319,10 @@ impl Capsules<'_> {
                     } else {
                         stored_document(&current)?
                     };
-                    aseman_contracts::legacy_documents::merge_legacy_objects(
-                        &mut merged,
-                        &incoming,
-                    );
-                    let fields = aseman_contracts::legacy_documents::legacy_document_fields(
-                        &key,
-                        family.root,
-                        &merged,
-                    )
-                    .map_err(PortError::failed)?;
+                    aseman_contracts::documents::merge_objects(&mut merged, &incoming);
+                    let fields =
+                        aseman_contracts::documents::document_fields(&key, family.root, &merged)
+                            .map_err(PortError::failed)?;
                     let next = crate::store::next_revision(&current, fields)?;
                     self.0.put(&next, Some(current.revision))
                 }
@@ -332,12 +331,9 @@ impl Capsules<'_> {
                         .live(family.subject_kind, subject)?
                         .ok_or(PortError::NotFound)?
                         .owner_scope;
-                    let fields = aseman_contracts::legacy_documents::legacy_document_fields(
-                        &key,
-                        family.root,
-                        &incoming,
-                    )
-                    .map_err(PortError::failed)?;
+                    let fields =
+                        aseman_contracts::documents::document_fields(&key, family.root, &incoming)
+                            .map_err(PortError::failed)?;
                     self.0.put(
                         &new_capsule(
                             id,
@@ -369,7 +365,7 @@ impl Capsules<'_> {
         family: &DocumentFamily,
         legacy_id: &str,
     ) -> PortResult<()> {
-        let id = deterministic_legacy_capsule_id(family.family, legacy_id.as_bytes());
+        let id = derived_capsule_id(family.family, legacy_id.as_bytes());
         for _ in 0..MAX_CAS_ATTEMPTS {
             let Some(current) = self.live(family.kind, id)? else {
                 return Ok(());

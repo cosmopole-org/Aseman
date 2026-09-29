@@ -1,4 +1,4 @@
-//! Gateway route repositories on the capsule protocol (RL-004 strangler, target side).
+//! Gateway route repositories on the capsule protocol.
 //!
 //! A route is a `core.gateway_route` capsule, as the A308 export writes it: scoped to
 //! its creature and related to the creature and the program. The reverse index and the
@@ -14,8 +14,8 @@ use aseman_contracts::capsule::{
     CapsuleEnvelope, CapsuleKind, CapsuleQuery, CapsuleValue, MAX_QUERY_LIMIT, OwnerScope,
     QueryPredicate, StorageClass,
 };
-use aseman_contracts::legacy_gateway::username_local_part;
-use aseman_contracts::legacy_realtime::deterministic_legacy_capsule_id;
+use aseman_contracts::signals::derived_capsule_id;
+use aseman_contracts::vm_routes::username_local_part;
 use aseman_domain::gateway::GatewayRoute;
 use aseman_ports::{GatewayRoutes, PortError, PortResult};
 use std::collections::{BTreeMap, BTreeSet};
@@ -30,14 +30,14 @@ pub struct CapsuleGatewayRoutes<'a> {
 }
 
 fn route_id(creature_id: &str, path: &str) -> [u8; 16] {
-    deterministic_legacy_capsule_id(
+    derived_capsule_id(
         "GatewayRoute",
         [creature_id, "::", path].concat().as_bytes(),
     )
 }
 
 fn id_of(legacy_family: &str, legacy_id: &str) -> [u8; 16] {
-    deterministic_legacy_capsule_id(legacy_family, legacy_id.as_bytes())
+    derived_capsule_id(legacy_family, legacy_id.as_bytes())
 }
 
 impl CapsuleGatewayRoutes<'_> {
@@ -112,7 +112,7 @@ impl GatewayRoutes for CapsuleGatewayRoutes<'_> {
                 ],
             }),
         )?;
-        // Legacy's reverse link names the most recently stored route of the entity.
+        // The reverse link names the most recently stored route of the entity.
         let Some(latest) = rows.iter().max_by(|left, right| {
             left.updated_at_micros
                 .cmp(&right.updated_at_micros)

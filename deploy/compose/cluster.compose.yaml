@@ -24,17 +24,17 @@ x-node-environment: &node-environment
   ASEMAN_PUBLIC_HTTP_TLS_CERTIFICATE: /etc/aseman/tls/node-cert.pem
   ASEMAN_PUBLIC_HTTP_TLS_KEY_SECRET: /etc/aseman/tls/node-key.pem
   ASEMAN_PUBLIC_HTTP_AUDIENCE: ${ASEMAN_PUBLIC_HTTP_AUDIENCE:-aseman-public}
-  ASEMAN_LEGACY_TELEMETRY_API_PORT: 8080
-  ASEMAN_LEGACY_STORAGE_ROOT_PATH: /var/lib/aseman/storage
-  ASEMAN_LEGACY_BASE_DB_PATH: /var/lib/aseman/storage/base
-  ASEMAN_LEGACY_APPLET_DB_PATH: /var/lib/aseman/storage/applet
-  ASEMAN_LEGACY_STORE_LOGS_DB: /var/lib/aseman/storage/store-logs
-  ASEMAN_LEGACY_SEARCH_INDEX_PATH: /var/lib/aseman/storage/search
-  ASEMAN_LEGACY_TELEMETRY_DB_PATH: /var/lib/aseman/telemetry
-  ASEMAN_LEGACY_TCP_PORT: "0"
-  ASEMAN_LEGACY_WS_PORT: "0"
-  ASEMAN_LEGACY_FEDERATION_PORT: "0"
-  ASEMAN_LEGACY_CONSENSUS_PORT: "0"
+  ASEMAN_TELEMETRY_API_PORT: 8080
+  ASEMAN_STORAGE_ROOT_PATH: /var/lib/aseman/storage
+  ASEMAN_BASE_DB_PATH: /var/lib/aseman/storage/base
+  ASEMAN_APPLET_DB_PATH: /var/lib/aseman/storage/applet
+  ASEMAN_STORE_LOGS_DB: /var/lib/aseman/storage/store-logs
+  ASEMAN_SEARCH_INDEX_PATH: /var/lib/aseman/storage/search
+  ASEMAN_TELEMETRY_DB_PATH: /var/lib/aseman/telemetry
+  ASEMAN_TCP_PORT: "0"
+  ASEMAN_WS_PORT: "0"
+  ASEMAN_FEDERATION_PORT: "0"
+  ASEMAN_CHAIN_PORT: "0"
 
 x-node: &node
   image: ${ASEMAN_NODE_IMAGE:?set ASEMAN_NODE_IMAGE}

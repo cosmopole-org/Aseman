@@ -40,7 +40,7 @@
       "apps/aseman-client/package-lock.json"
     ],
     "tracked_dist_file_count": 0,
-    "tracked_file_count": 1108,
+    "tracked_file_count": 1022,
     "tracked_files_by_top_level": {
       ".cargo": 1,
       ".gitattributes": 1,
@@ -54,23 +54,23 @@
       "Cargo.toml": 1,
       "README.md": 1,
       "SECURITY.md": 1,
-      "apps": 203,
+      "apps": 153,
       "clippy.toml": 1,
-      "contracts": 102,
-      "crates": 150,
+      "contracts": 101,
+      "crates": 158,
       "deploy": 12,
-      "docs": 175,
-      "modules": 361,
+      "docs": 166,
+      "modules": 341,
       "plan": 18,
       "rust-toolchain.toml": 1,
       "rustfmt.toml": 1,
-      "scripts": 40,
-      "tests": 29,
+      "scripts": 29,
+      "tests": 26,
       "xtask": 3
     },
     "tracked_source_files_by_extension": {
-      ".py": 48,
-      ".rs": 590,
+      ".py": 36,
+      ".rs": 535,
       ".sh": 2,
       ".ts": 2
     }
@@ -135,22 +135,23 @@
             "scope": "normal"
           },
           {
+            "name": "aseman-capsule",
+            "path": "crates/aseman-capsule",
+            "scope": "normal"
+          },
+          {
             "name": "aseman-config",
             "path": "crates/aseman-config",
             "scope": "normal"
           },
           {
-            "name": "aseman-finance-ledger",
-            "path": "modules/finance/ledger",
+            "name": "aseman-storage-providers",
+            "path": "crates/aseman-storage-providers",
             "scope": "normal"
           },
           {
             "name": "aseman-vmm-http",
             "path": "modules/vmm-http",
-            "scope": "normal"
-          },
-          {
-            "name": "postgres",
             "scope": "normal"
           }
         ],
@@ -178,6 +179,11 @@
             "name": "anyhow",
             "scope": "normal",
             "version": "1.0.102"
+          },
+          {
+            "name": "aseman-admin-http",
+            "path": "crates/aseman-admin-http",
+            "scope": "normal"
           },
           {
             "name": "aseman-application",
@@ -215,6 +221,11 @@
             "scope": "normal"
           },
           {
+            "name": "aseman-fs",
+            "path": "crates/aseman-fs",
+            "scope": "normal"
+          },
+          {
             "name": "aseman-gateway-rpc",
             "path": "modules/network/gateway",
             "scope": "normal"
@@ -235,8 +246,8 @@
             "scope": "normal"
           },
           {
-            "name": "aseman-network-legacy",
-            "path": "modules/network/legacy",
+            "name": "aseman-network-shell",
+            "path": "modules/network/shell",
             "scope": "normal"
           },
           {
@@ -255,6 +266,11 @@
             "scope": "normal"
           },
           {
+            "name": "aseman-postgres",
+            "path": "crates/aseman-postgres",
+            "scope": "normal"
+          },
+          {
             "name": "aseman-public-http",
             "path": "modules/network/http",
             "scope": "normal"
@@ -262,11 +278,6 @@
           {
             "name": "aseman-public-service",
             "path": "modules/public-service",
-            "scope": "normal"
-          },
-          {
-            "name": "aseman-realtime-durable",
-            "path": "modules/realtime/durable",
             "scope": "normal"
           },
           {
@@ -544,6 +555,11 @@
             "scope": "normal"
           },
           {
+            "name": "aseman-capsule",
+            "path": "crates/aseman-capsule",
+            "scope": "normal"
+          },
+          {
             "name": "aseman-config",
             "path": "crates/aseman-config",
             "scope": "normal"
@@ -564,8 +580,8 @@
             "scope": "normal"
           },
           {
-            "name": "aseman-storage-postgres",
-            "path": "modules/storage/postgres",
+            "name": "aseman-storage-providers",
+            "path": "crates/aseman-storage-providers",
             "scope": "normal"
           },
           {
@@ -789,6 +805,11 @@
             "scope": "normal"
           },
           {
+            "name": "aseman-admin-http",
+            "path": "crates/aseman-admin-http",
+            "scope": "normal"
+          },
+          {
             "name": "aseman-config",
             "path": "crates/aseman-config",
             "scope": "normal"
@@ -796,6 +817,11 @@
           {
             "name": "aseman-domain",
             "path": "crates/aseman-domain",
+            "scope": "normal"
+          },
+          {
+            "name": "aseman-fs",
+            "path": "crates/aseman-fs",
             "scope": "normal"
           },
           {
@@ -837,6 +863,17 @@
           {
             "name": "regex",
             "scope": "normal"
+          },
+          {
+            "default-features": false,
+            "features": [
+              "blocking",
+              "json",
+              "rustls-tls"
+            ],
+            "name": "reqwest",
+            "scope": "normal",
+            "version": "0.12"
           },
           {
             "name": "ring",
@@ -889,23 +926,74 @@
       {
         "dependencies": [
           {
-            "name": "aseman-storage-rocksdb",
-            "path": "modules/storage/rocksdb",
+            "name": "aseman-config",
+            "path": "crates/aseman-config",
             "scope": "normal"
+          },
+          {
+            "default-features": false,
+            "features": [
+              "crypto",
+              "pem",
+              "ring"
+            ],
+            "name": "rcgen",
+            "optional": true,
+            "scope": "normal",
+            "version": "0.14"
+          },
+          {
+            "default-features": false,
+            "features": [
+              "blocking",
+              "json",
+              "rustls-tls"
+            ],
+            "name": "reqwest",
+            "scope": "normal",
+            "version": "0.12"
+          },
+          {
+            "default-features": false,
+            "features": [
+              "ring",
+              "std",
+              "tls12"
+            ],
+            "name": "rustls",
+            "scope": "normal",
+            "version": "0.23"
+          },
+          {
+            "name": "rustls-pemfile",
+            "scope": "normal",
+            "version": "2"
+          },
+          {
+            "features": [
+              "testing"
+            ],
+            "name": "aseman-admin-http",
+            "path": "crates/aseman-admin-http",
+            "scope": "dev"
           }
         ],
-        "description": "Diagnostic: list legacy `vmEntityType` links in an application store.",
+        "description": "The authenticated administration HTTP of the storage cluster and the node: minimal HTTP/1.1 over mutual TLS with a bearer token.",
         "edition": {
           "workspace": true
         },
-        "features": {},
-        "manifest": "apps/scan-vmdb/Cargo.toml",
-        "name": "scan-vmdb",
+        "features": {
+          "testing": [
+            "dep:rcgen"
+          ]
+        },
+        "manifest": "crates/aseman-admin-http/Cargo.toml",
+        "name": "aseman-admin-http",
         "targets": [
           {
-            "kind": "bin",
-            "name": "scan-vmdb",
-            "path": "src/main.rs"
+            "kind": "lib",
+            "name": "aseman-admin-http",
+            "path": "src/lib.rs"
           }
         ],
         "version": {
@@ -995,6 +1083,10 @@
           {
             "name": "aseman-storage",
             "path": "crates/aseman-storage",
+            "scope": "normal"
+          },
+          {
+            "name": "serde",
             "scope": "normal"
           },
           {
@@ -1184,6 +1276,31 @@
       {
         "dependencies": [
           {
+            "name": "tempfile",
+            "scope": "normal"
+          }
+        ],
+        "description": "Durable, atomic file replacement shared by the node, the CLI, and the module runtime.",
+        "edition": {
+          "workspace": true
+        },
+        "features": {},
+        "manifest": "crates/aseman-fs/Cargo.toml",
+        "name": "aseman-fs",
+        "targets": [
+          {
+            "kind": "lib",
+            "name": "aseman-fs",
+            "path": "src/lib.rs"
+          }
+        ],
+        "version": {
+          "workspace": true
+        }
+      },
+      {
+        "dependencies": [
+          {
             "name": "aseman-contracts",
             "path": "crates/aseman-contracts",
             "scope": "normal"
@@ -1221,6 +1338,11 @@
           {
             "name": "aseman-contracts",
             "path": "crates/aseman-contracts",
+            "scope": "normal"
+          },
+          {
+            "name": "aseman-fs",
+            "path": "crates/aseman-fs",
             "scope": "normal"
           },
           {
@@ -1342,6 +1464,96 @@
       {
         "dependencies": [
           {
+            "name": "aseman-ports",
+            "path": "crates/aseman-ports",
+            "scope": "normal"
+          },
+          {
+            "name": "postgres",
+            "scope": "normal"
+          },
+          {
+            "name": "r2d2",
+            "scope": "normal"
+          },
+          {
+            "name": "r2d2_postgres",
+            "scope": "normal"
+          },
+          {
+            "default-features": false,
+            "features": [
+              "ring",
+              "std",
+              "tls12"
+            ],
+            "name": "rustls",
+            "scope": "normal",
+            "version": "0.23"
+          },
+          {
+            "name": "rustls-pemfile",
+            "scope": "normal",
+            "version": "2"
+          },
+          {
+            "features": [
+              "io-util"
+            ],
+            "name": "tokio",
+            "scope": "normal"
+          },
+          {
+            "default-features": false,
+            "features": [
+              "ring",
+              "tls12"
+            ],
+            "name": "tokio-rustls",
+            "scope": "normal",
+            "version": "0.26"
+          },
+          {
+            "name": "url",
+            "scope": "normal"
+          },
+          {
+            "name": "webpki-roots",
+            "scope": "normal",
+            "version": "1"
+          },
+          {
+            "name": "aseman-config",
+            "path": "crates/aseman-config",
+            "scope": "dev"
+          }
+        ],
+        "description": "PostgreSQL plumbing shared by the adapters that own a PostgreSQL schema: verified TLS, the pool, connection checkout, and driver-error mapping.",
+        "edition": {
+          "workspace": true
+        },
+        "features": {},
+        "manifest": "crates/aseman-postgres/Cargo.toml",
+        "name": "aseman-postgres",
+        "targets": [
+          {
+            "kind": "lib",
+            "name": "aseman-postgres",
+            "path": "src/lib.rs"
+          }
+        ],
+        "version": {
+          "workspace": true
+        }
+      },
+      {
+        "dependencies": [
+          {
+            "name": "aseman-admin-http",
+            "path": "crates/aseman-admin-http",
+            "scope": "normal"
+          },
+          {
             "name": "aseman-config",
             "path": "crates/aseman-config",
             "scope": "normal"
@@ -1431,6 +1643,11 @@
             "scope": "normal"
           },
           {
+            "name": "aseman-postgres",
+            "path": "crates/aseman-postgres",
+            "scope": "normal"
+          },
+          {
             "name": "aseman-storage",
             "path": "crates/aseman-storage",
             "scope": "normal"
@@ -1450,6 +1667,10 @@
             "scope": "normal"
           },
           {
+            "name": "postgres",
+            "scope": "normal"
+          },
+          {
             "name": "serde_json",
             "scope": "normal"
           },
@@ -1458,11 +1679,28 @@
             "scope": "normal"
           },
           {
-            "name": "postgres",
+            "name": "aseman-application",
+            "path": "crates/aseman-application",
+            "scope": "dev"
+          },
+          {
+            "features": [
+              "conformance"
+            ],
+            "name": "aseman-ports",
+            "path": "crates/aseman-ports",
             "scope": "dev"
           },
           {
             "name": "rsa",
+            "scope": "dev"
+          },
+          {
+            "name": "serde",
+            "scope": "dev"
+          },
+          {
+            "name": "uuid",
             "scope": "dev"
           }
         ],
@@ -1488,11 +1726,6 @@
         "dependencies": [
           {
             "name": "anyhow",
-            "scope": "normal"
-          },
-          {
-            "name": "aseman-config",
-            "path": "crates/aseman-config",
             "scope": "normal"
           },
           {
@@ -1679,21 +1912,6 @@
             "version": "0.1"
           },
           {
-            "features": [
-              "with-uuid-1"
-            ],
-            "name": "postgres",
-            "scope": "normal"
-          },
-          {
-            "name": "r2d2",
-            "scope": "normal"
-          },
-          {
-            "name": "r2d2_postgres",
-            "scope": "normal"
-          },
-          {
             "default-features": false,
             "features": [
               "blocking",
@@ -1764,6 +1982,11 @@
             "version": "0.5"
           },
           {
+            "name": "aseman-capsule",
+            "path": "crates/aseman-capsule",
+            "scope": "dev"
+          },
+          {
             "name": "aseman-config",
             "path": "crates/aseman-config",
             "scope": "dev"
@@ -1782,11 +2005,16 @@
             "scope": "dev"
           },
           {
+            "name": "aseman-storage",
+            "path": "crates/aseman-storage",
+            "scope": "dev"
+          },
+          {
             "name": "uuid",
             "scope": "dev"
           }
         ],
-        "description": "Aseman federation HTTP transport and PostgreSQL directory/replay provider.",
+        "description": "Aseman federation HTTP transport.",
         "edition": {
           "workspace": true
         },
@@ -1797,65 +2025,6 @@
           {
             "kind": "lib",
             "name": "aseman-federation-http",
-            "path": "src/lib.rs"
-          }
-        ],
-        "version": {
-          "workspace": true
-        }
-      },
-      {
-        "dependencies": [
-          {
-            "name": "aseman-domain",
-            "path": "crates/aseman-domain",
-            "scope": "normal"
-          },
-          {
-            "name": "aseman-ports",
-            "path": "crates/aseman-ports",
-            "scope": "normal"
-          },
-          {
-            "features": [
-              "with-uuid-1"
-            ],
-            "name": "postgres",
-            "scope": "normal"
-          },
-          {
-            "name": "r2d2",
-            "scope": "normal"
-          },
-          {
-            "name": "r2d2_postgres",
-            "scope": "normal"
-          },
-          {
-            "name": "serde_json",
-            "scope": "normal"
-          },
-          {
-            "name": "aseman-config",
-            "path": "crates/aseman-config",
-            "scope": "dev"
-          },
-          {
-            "name": "uuid",
-            "scope": "dev"
-          }
-        ],
-        "description": "PostgreSQL-backed Aseman usage, pricing, and double-entry ledger provider.",
-        "edition": {
-          "workspace": true
-        },
-        "features": {},
-        "manifest": "modules/finance/ledger/Cargo.toml",
-        "name": "aseman-finance-ledger",
-        "targets": [
-          {
-            "kind": "lib",
-            "name": "aseman-finance-ledger",
             "path": "src/lib.rs"
           }
         ],
@@ -2260,17 +2429,17 @@
             "scope": "normal"
           }
         ],
-        "description": "Deprecated Caspar TCP/WebSocket TLS and binary framing compatibility implementation.",
+        "description": "TLS and binary framing of the signed-packet TCP, WebSocket, and federation transports.",
         "edition": {
           "workspace": true
         },
         "features": {},
-        "manifest": "modules/network/legacy/Cargo.toml",
-        "name": "aseman-network-legacy",
+        "manifest": "modules/network/shell/Cargo.toml",
+        "name": "aseman-network-shell",
         "targets": [
           {
             "kind": "lib",
-            "name": "aseman-network-legacy",
+            "name": "aseman-network-shell",
             "path": "src/lib.rs"
           }
         ],
@@ -2331,71 +2500,13 @@
       {
         "dependencies": [
           {
-            "name": "aseman-domain",
-            "path": "crates/aseman-domain",
-            "scope": "normal"
-          },
-          {
-            "name": "aseman-ports",
-            "path": "crates/aseman-ports",
-            "scope": "normal"
-          },
-          {
-            "features": [
-              "with-uuid-1"
-            ],
-            "name": "postgres",
-            "scope": "normal"
-          },
-          {
-            "name": "r2d2",
-            "scope": "normal"
-          },
-          {
-            "name": "r2d2_postgres",
-            "scope": "normal"
-          },
-          {
             "name": "aseman-config",
             "path": "crates/aseman-config",
-            "scope": "dev"
+            "scope": "normal"
           },
           {
-            "features": [
-              "conformance"
-            ],
-            "name": "aseman-ports",
-            "path": "crates/aseman-ports",
-            "scope": "dev"
-          },
-          {
-            "name": "uuid",
-            "scope": "dev"
-          }
-        ],
-        "description": "PostgreSQL durable event log, outbox, and checkpoint provider for Aseman.",
-        "edition": {
-          "workspace": true
-        },
-        "features": {},
-        "manifest": "modules/realtime/durable/Cargo.toml",
-        "name": "aseman-realtime-durable",
-        "targets": [
-          {
-            "kind": "lib",
-            "name": "aseman-realtime-durable",
-            "path": "src/lib.rs"
-          }
-        ],
-        "version": {
-          "workspace": true
-        }
-      },
-      {
-        "dependencies": [
-          {
-            "name": "aseman-config",
-            "path": "crates/aseman-config",
+            "name": "aseman-vm-sdk",
+            "path": "modules/runtime/sdk",
             "scope": "normal"
           },
           {
@@ -2407,11 +2518,6 @@
             "name": "bollard",
             "scope": "normal",
             "version": "0.17"
-          },
-          {
-            "name": "caspar-vm-sdk",
-            "path": "modules/runtime/sdk-legacy",
-            "scope": "normal"
           },
           {
             "default-features": false,
@@ -2471,11 +2577,11 @@
         "edition": "2021",
         "features": {},
         "manifest": "modules/runtime/docker/Cargo.toml",
-        "name": "caspar-vm-docker",
+        "name": "aseman-vm-docker",
         "targets": [
           {
             "kind": "lib",
-            "name": "caspar_vm_docker",
+            "name": "aseman_vm_docker",
             "path": "src/lib.rs"
           }
         ],
@@ -2484,8 +2590,13 @@
       {
         "dependencies": [
           {
-            "name": "caspar-vm-sdk",
-            "path": "modules/runtime/sdk-legacy",
+            "name": "aseman-config",
+            "path": "crates/aseman-config",
+            "scope": "normal"
+          },
+          {
+            "name": "aseman-vm-sdk",
+            "path": "modules/runtime/sdk",
             "scope": "normal"
           },
           {
@@ -2504,11 +2615,11 @@
         "edition": "2021",
         "features": {},
         "manifest": "modules/runtime/elpian/Cargo.toml",
-        "name": "caspar-vm-elpian",
+        "name": "aseman-vm-elpian",
         "targets": [
           {
             "kind": "lib",
-            "name": "caspar_vm_elpian",
+            "name": "aseman_vm_elpian",
             "path": "src/lib.rs"
           }
         ],
@@ -2558,14 +2669,19 @@
       {
         "dependencies": [
           {
+            "name": "aseman-config",
+            "path": "crates/aseman-config",
+            "scope": "normal"
+          },
+          {
+            "name": "aseman-vm-sdk",
+            "path": "modules/runtime/sdk",
+            "scope": "normal"
+          },
+          {
             "name": "base64",
             "scope": "normal",
             "version": "0.22"
-          },
-          {
-            "name": "caspar-vm-sdk",
-            "path": "modules/runtime/sdk-legacy",
-            "scope": "normal"
           },
           {
             "name": "elpify-lang",
@@ -2582,11 +2698,11 @@
         "edition": "2021",
         "features": {},
         "manifest": "modules/runtime/elpify/Cargo.toml",
-        "name": "caspar-vm-elpify",
+        "name": "aseman-vm-elpify",
         "targets": [
           {
             "kind": "lib",
-            "name": "caspar_vm_elpify",
+            "name": "aseman_vm_elpify",
             "path": "src/lib.rs"
           }
         ],
@@ -2623,8 +2739,8 @@
             "scope": "normal"
           },
           {
-            "name": "caspar-vm-sdk",
-            "path": "modules/runtime/sdk-legacy",
+            "name": "aseman-vm-sdk",
+            "path": "modules/runtime/sdk",
             "scope": "normal"
           },
           {
@@ -2637,11 +2753,11 @@
         "edition": "2021",
         "features": {},
         "manifest": "modules/runtime/firecracker/Cargo.toml",
-        "name": "caspar-vm-fire",
+        "name": "aseman-vm-fire",
         "targets": [
           {
             "kind": "lib",
-            "name": "caspar_vm_fire",
+            "name": "aseman_vm_fire",
             "path": "src/lib.rs"
           }
         ],
@@ -2650,8 +2766,13 @@
       {
         "dependencies": [
           {
-            "name": "caspar-vm-sdk",
-            "path": "modules/runtime/sdk-legacy",
+            "name": "aseman-config",
+            "path": "crates/aseman-config",
+            "scope": "normal"
+          },
+          {
+            "name": "aseman-vm-sdk",
+            "path": "modules/runtime/sdk",
             "scope": "normal"
           },
           {
@@ -2679,11 +2800,11 @@
         "edition": "2021",
         "features": {},
         "manifest": "modules/runtime/javascript/Cargo.toml",
-        "name": "caspar-vm-javascript",
+        "name": "aseman-vm-javascript",
         "targets": [
           {
             "kind": "lib",
-            "name": "caspar_vm_javascript",
+            "name": "aseman_vm_javascript",
             "path": "src/lib.rs"
           }
         ],
@@ -2697,14 +2818,14 @@
             "scope": "normal"
           },
           {
+            "name": "aseman-vm-sdk",
+            "path": "modules/runtime/sdk",
+            "scope": "normal"
+          },
+          {
             "name": "base64",
             "scope": "normal",
             "version": "0.22"
-          },
-          {
-            "name": "caspar-vm-sdk",
-            "path": "modules/runtime/sdk-legacy",
-            "scope": "normal"
           },
           {
             "name": "chrono",
@@ -2789,11 +2910,11 @@
         "edition": "2021",
         "features": {},
         "manifest": "modules/runtime/modal/Cargo.toml",
-        "name": "caspar-vm-modal",
+        "name": "aseman-vm-modal",
         "targets": [
           {
             "kind": "lib",
-            "name": "caspar_vm_modal",
+            "name": "aseman_vm_modal",
             "path": "src/lib.rs"
           }
         ],
@@ -2820,15 +2941,15 @@
             "version": "1"
           }
         ],
-        "description": "Interface SDK for Caspar VM plugins \u2014 every VM type project imports this crate and implements its traits so the compiler can verify all interactions between the VM controller and the Caspar VMM.",
+        "description": "Interface SDK for Aseman VM plugins: every VM type implements its traits, so the compiler checks each interaction between a VM controller and the native VMM backend.",
         "edition": "2021",
         "features": {},
-        "manifest": "modules/runtime/sdk-legacy/Cargo.toml",
-        "name": "caspar-vm-sdk",
+        "manifest": "modules/runtime/sdk/Cargo.toml",
+        "name": "aseman-vm-sdk",
         "targets": [
           {
             "kind": "lib",
-            "name": "caspar_vm_sdk",
+            "name": "aseman_vm_sdk",
             "path": "src/lib.rs"
           }
         ],
@@ -2842,8 +2963,8 @@
             "scope": "normal"
           },
           {
-            "name": "caspar-vm-sdk",
-            "path": "modules/runtime/sdk-legacy",
+            "name": "aseman-vm-sdk",
+            "path": "modules/runtime/sdk",
             "scope": "normal"
           },
           {
@@ -2876,11 +2997,11 @@
         "edition": "2021",
         "features": {},
         "manifest": "modules/runtime/wasm/Cargo.toml",
-        "name": "caspar-vm-wasm",
+        "name": "aseman-vm-wasm",
         "targets": [
           {
             "kind": "lib",
-            "name": "caspar_vm_wasm",
+            "name": "aseman_vm_wasm",
             "path": "src/lib.rs"
           }
         ],
@@ -3024,6 +3145,11 @@
             "scope": "normal"
           },
           {
+            "name": "aseman-postgres",
+            "path": "crates/aseman-postgres",
+            "scope": "normal"
+          },
+          {
             "name": "aseman-storage",
             "path": "crates/aseman-storage",
             "scope": "normal"
@@ -3146,6 +3272,11 @@
             "scope": "normal"
           },
           {
+            "name": "aseman-admin-http",
+            "path": "crates/aseman-admin-http",
+            "scope": "normal"
+          },
+          {
             "name": "aseman-capsule",
             "path": "crates/aseman-capsule",
             "scope": "normal"
@@ -3166,8 +3297,18 @@
             "scope": "normal"
           },
           {
+            "name": "aseman-fs",
+            "path": "crates/aseman-fs",
+            "scope": "normal"
+          },
+          {
             "name": "aseman-ports",
             "path": "crates/aseman-ports",
+            "scope": "normal"
+          },
+          {
+            "name": "aseman-postgres",
+            "path": "crates/aseman-postgres",
             "scope": "normal"
           },
           {
@@ -3265,6 +3406,14 @@
           },
           {
             "features": [
+              "testing"
+            ],
+            "name": "aseman-admin-http",
+            "path": "crates/aseman-admin-http",
+            "scope": "dev"
+          },
+          {
+            "features": [
               "conformance"
             ],
             "name": "aseman-ports",
@@ -3321,6 +3470,11 @@
             "scope": "normal"
           },
           {
+            "name": "aseman-fs",
+            "path": "crates/aseman-fs",
+            "scope": "normal"
+          },
+          {
             "name": "aseman-guest-http",
             "path": "modules/guest-http",
             "scope": "normal"
@@ -3331,22 +3485,22 @@
             "scope": "normal"
           },
           {
+            "name": "aseman-vm-plugins",
+            "path": "modules/vmm-backend/native/crates/vm-plugins",
+            "scope": "normal"
+          },
+          {
+            "name": "aseman-vm-sdk",
+            "path": "modules/runtime/sdk",
+            "scope": "normal"
+          },
+          {
             "name": "aseman-vmm-backend-grpc",
             "path": "modules/vmm-backend-grpc",
             "scope": "normal"
           },
           {
             "name": "base64",
-            "scope": "normal"
-          },
-          {
-            "name": "caspar-vm-plugins",
-            "path": "modules/vmm-backend/native-legacy/crates/caspar-vm-plugins",
-            "scope": "normal"
-          },
-          {
-            "name": "caspar-vm-sdk",
-            "path": "modules/runtime/sdk-legacy",
             "scope": "normal"
           },
           {
@@ -3392,6 +3546,11 @@
             "scope": "dev"
           },
           {
+            "name": "aseman-capsule",
+            "path": "crates/aseman-capsule",
+            "scope": "dev"
+          },
+          {
             "name": "aseman-guest-http",
             "path": "modules/guest-http",
             "scope": "dev"
@@ -3405,8 +3564,8 @@
             "scope": "dev"
           },
           {
-            "name": "aseman-storage-postgres",
-            "path": "modules/storage/postgres",
+            "name": "aseman-storage-providers",
+            "path": "crates/aseman-storage-providers",
             "scope": "dev"
           },
           {
@@ -3456,12 +3615,12 @@
             "version": "0.23"
           }
         ],
-        "description": "The native-legacy VMM backend (P5-03): the Caspar runtime plugins behind A504, calling the node only through the authenticated guest API.",
+        "description": "The native VMM backend: the runtime plugins behind the VMM backend contract, calling the node only through the authenticated guest API.",
         "edition": {
           "workspace": true
         },
         "features": {},
-        "manifest": "modules/vmm-backend/native-legacy/Cargo.toml",
+        "manifest": "modules/vmm-backend/native/Cargo.toml",
         "name": "aseman-vmm-backend-native",
         "targets": [
           {
@@ -3482,55 +3641,60 @@
       {
         "dependencies": [
           {
-            "name": "caspar-vm-docker",
+            "name": "aseman-config",
+            "path": "crates/aseman-config",
+            "scope": "normal"
+          },
+          {
+            "name": "aseman-vm-docker",
             "path": "modules/runtime/docker",
             "scope": "normal"
           },
           {
-            "name": "caspar-vm-elpian",
+            "name": "aseman-vm-elpian",
             "path": "modules/runtime/elpian",
             "scope": "normal"
           },
           {
-            "name": "caspar-vm-elpify",
+            "name": "aseman-vm-elpify",
             "path": "modules/runtime/elpify",
             "scope": "normal"
           },
           {
-            "name": "caspar-vm-fire",
+            "name": "aseman-vm-fire",
             "path": "modules/runtime/firecracker",
             "scope": "normal"
           },
           {
-            "name": "caspar-vm-javascript",
+            "name": "aseman-vm-javascript",
             "path": "modules/runtime/javascript",
             "scope": "normal"
           },
           {
-            "name": "caspar-vm-modal",
+            "name": "aseman-vm-modal",
             "path": "modules/runtime/modal",
             "scope": "normal"
           },
           {
-            "name": "caspar-vm-sdk",
-            "path": "modules/runtime/sdk-legacy",
+            "name": "aseman-vm-sdk",
+            "path": "modules/runtime/sdk",
             "scope": "normal"
           },
           {
-            "name": "caspar-vm-wasm",
+            "name": "aseman-vm-wasm",
             "path": "modules/runtime/wasm",
             "scope": "normal"
           }
         ],
-        "description": "GENERATED aggregation crate that compiles the enabled Caspar VM plugins into the node binary and registers them with the VMM.",
+        "description": "GENERATED aggregation crate that compiles the enabled VM plugins into the native VMM backend and registers them.",
         "edition": "2021",
         "features": {},
-        "manifest": "modules/vmm-backend/native-legacy/crates/caspar-vm-plugins/Cargo.toml",
-        "name": "caspar-vm-plugins",
+        "manifest": "modules/vmm-backend/native/crates/vm-plugins/Cargo.toml",
+        "name": "aseman-vm-plugins",
         "targets": [
           {
             "kind": "lib",
-            "name": "caspar_vm_plugins",
+            "name": "aseman_vm_plugins",
             "path": "src/lib.rs"
           }
         ],
@@ -4051,6 +4215,11 @@
             "scope": "dev"
           },
           {
+            "name": "aseman-postgres",
+            "path": "crates/aseman-postgres",
+            "scope": "dev"
+          },
+          {
             "name": "aseman-storage-postgres",
             "path": "modules/storage/postgres",
             "scope": "dev"
@@ -4130,9 +4299,7 @@
         "exclude": [
           "modules/consensus",
           "modules/federation",
-          "modules/finance",
           "modules/network",
-          "modules/realtime",
           "modules/runtime",
           "modules/security",
           "modules/storage",
@@ -4146,16 +4313,13 @@
           "apps/aseman-vmm",
           "apps/aseman-vmm-agent",
           "apps/asemanctl",
-          "apps/scan-vmdb",
           "crates/*",
           "modules/*",
           "modules/consensus/hashgraph",
           "modules/federation/http",
-          "modules/finance/ledger",
           "modules/network/gateway",
           "modules/network/http",
-          "modules/network/legacy",
-          "modules/realtime/durable",
+          "modules/network/shell",
           "modules/runtime/docker",
           "modules/runtime/elpian",
           "modules/runtime/elpian/crates/elpian-vm",
@@ -4164,13 +4328,13 @@
           "modules/runtime/firecracker",
           "modules/runtime/javascript",
           "modules/runtime/modal",
-          "modules/runtime/sdk-legacy",
+          "modules/runtime/sdk",
           "modules/runtime/wasm",
           "modules/security/capabilities",
           "modules/storage/postgres",
           "modules/storage/rocksdb",
-          "modules/vmm-backend/native-legacy",
-          "modules/vmm-backend/native-legacy/crates/caspar-vm-plugins",
+          "modules/vmm-backend/native",
+          "modules/vmm-backend/native/crates/vm-plugins",
           "modules/vmm-backend/nomad",
           "tests/contracts/module",
           "tests/contracts/policy",

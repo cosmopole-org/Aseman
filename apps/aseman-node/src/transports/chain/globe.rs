@@ -1,22 +1,14 @@
-//! Translation of `core/module/globe/globe.go`.
-//!
-//! `Globe` implements the [`IGlobe`] trait: chain request/response plumbing.
-//! Validator-set staking and the hourly weighted-validator election live in the
-//! consensus engine's `governance` subsystem (RL-011), driven by the provider's
-//! autonomous scheduler and the orchestrator's chain-packet routing; the globe
-//! is pure transport and carries no staking/election state or controllers.
+//! The chain request/response plumbing: submitting a base request and
+//! completing its callback when the chain runs it. Staking and the validator
+//! election belong to the consensus provider's governance.
 //!
 //! - [`types`] — the packet envelope and injected closure signatures.
-//! - [`transport`] — the [`IGlobe`] trait surface (chain RPC).
+//! - [`transport`] — sending base requests.
 
-#[cfg(test)]
-mod tests;
 mod transport;
 mod types;
 
-pub use types::{
-    ChainPacketOp, SetChainCallbackFn, SetMessageCbFn, SignPacketFn, SubmitChainPacketFn,
-};
+pub use types::{ChainPacketOp, SetChainCallbackFn, SignPacketFn, SubmitChainPacketFn};
 
 use std::sync::Arc;
 
@@ -26,14 +18,6 @@ pub struct Globe {
     sign_packet_fn: SignPacketFn,
     submit_chain_packet_fn: SubmitChainPacketFn,
     set_chain_callback_fn: SetChainCallbackFn,
-    #[cfg_attr(
-        not(test),
-        expect(
-            dead_code,
-            reason = "RL-003: legacy orchestration surface kept until its deletion gate"
-        )
-    )]
-    set_message_cb_fn: SetMessageCbFn,
 }
 
 impl Globe {
@@ -44,14 +28,12 @@ impl Globe {
         sign_packet_fn: SignPacketFn,
         submit_chain_packet_fn: SubmitChainPacketFn,
         set_chain_callback_fn: SetChainCallbackFn,
-        set_message_cb_fn: SetMessageCbFn,
     ) -> Arc<Globe> {
         Arc::new(Globe {
             node_id,
             sign_packet_fn,
             submit_chain_packet_fn,
             set_chain_callback_fn,
-            set_message_cb_fn,
         })
     }
 }

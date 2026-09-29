@@ -1,4 +1,4 @@
-//! Creature repositories on the capsule protocol (RL-004 strangler, target side).
+//! Creature repositories on the capsule protocol.
 //!
 //! A creature is stored exactly as the A308 export writes it:
 //! - `core.creature` holds the identity.
@@ -16,11 +16,9 @@ use crate::{CapsuleStore, CapsuleStoreError};
 use aseman_contracts::capsule::{
     CapsuleEnvelope, CapsuleValue, OwnerScope, QueryPredicate, StorageClass,
 };
-use aseman_contracts::legacy_documents::{
-    capsule_value_to_json, legacy_document_fields, legacy_document_object_at,
-};
-use aseman_contracts::legacy_keys::{decode_legacy_rsa_public_key, encode_legacy_rsa_public_key};
-use aseman_contracts::legacy_realtime::deterministic_legacy_capsule_id;
+use aseman_contracts::creature_keys::{decode_legacy_rsa_public_key, encode_legacy_rsa_public_key};
+use aseman_contracts::documents::{capsule_value_to_json, document_fields, document_object_at};
+use aseman_contracts::signals::derived_capsule_id;
 use aseman_domain::creature::{
     CreatureRecord, HUMAN_OWNER, METADATA_ROOT, MetadataKind, legacy_page,
 };
@@ -42,11 +40,11 @@ pub struct CapsuleCreaturePorts<'a> {
 }
 
 fn creature_id(legacy_id: &str) -> [u8; 16] {
-    deterministic_legacy_capsule_id("Creature", legacy_id.as_bytes())
+    derived_capsule_id("Creature", legacy_id.as_bytes())
 }
 
 fn user_id(legacy_id: &str) -> [u8; 16] {
-    deterministic_legacy_capsule_id("User", legacy_id.as_bytes())
+    derived_capsule_id("User", legacy_id.as_bytes())
 }
 
 impl CapsuleCreaturePorts<'_> {
@@ -62,7 +60,7 @@ impl CapsuleCreaturePorts<'_> {
         let mut source = legacy_id.as_bytes().to_vec();
         source.push(0);
         source.extend_from_slice(self.currency.as_bytes());
-        deterministic_legacy_capsule_id("Wallet", &source)
+        derived_capsule_id("Wallet", &source)
     }
 
     fn scan(
@@ -80,6 +78,16 @@ impl CapsuleCreaturePorts<'_> {
 
     fn legacy_id_of(&self, target_kind: &str, target: [u8; 16]) -> PortResult<String> {
         Capsules(self.repository).legacy_id_of(target_kind, target)
+    }
+
+    /// The legacy id of the creature whose record id is `record` (the id a
+    /// creature's typed subject carries), or `None` when no creature has it.
+    ///
+    /// # Errors
+    ///
+    /// Storage failures.
+    pub fn creature_legacy_id(&self, record: aseman_domain::Uuid) -> PortResult<Option<String>> {
+        Capsules(self.repository).find_legacy_id(CREATURE, *record.as_bytes())
     }
 
     fn owner_legacy_id(&self, capsule: &CapsuleEnvelope, legacy_id: &str) -> PortResult<String> {
@@ -216,7 +224,7 @@ impl CreatureDirectory for CapsuleCreaturePorts<'_> {
                 username.contains(fragment).then_some((username, capsule))
             })
             .collect::<Vec<_>>();
-        // Legacy walks the username index in byte order.
+        // The username index is walked in byte order.
         rows.sort_by(|left, right| left.0.as_bytes().cmp(right.0.as_bytes()));
         let Some((_, capsule)) = rows.into_iter().next() else {
             return Ok(None);
@@ -248,7 +256,7 @@ impl CreatureDirectory for CapsuleCreaturePorts<'_> {
                 .ok_or_else(|| PortError::failed("creature has no legacy identity"))?;
             rows.push((legacy_id, capsule));
         }
-        // Legacy lists objects in identity byte order.
+        // Objects list in identity byte order.
         rows.sort_by(|left, right| left.0.as_bytes().cmp(right.0.as_bytes()));
         legacy_page(rows, offset, count)
             .into_iter()
@@ -291,7 +299,7 @@ impl CreatureDirectory for CapsuleCreaturePorts<'_> {
             }
         }
         match existing {
-            // Registering a deleted identity again revives it, as legacy allows.
+            // Registering a deleted identity again revives it.
             Some(tombstoned) => writes.push((
                 CapsuleEnvelope {
                     relationships: vec![relationship("owner", USER, owner)],
@@ -501,7 +509,7 @@ impl CreatureMetadata for CapsuleCreaturePorts<'_> {
         path: &str,
     ) -> PortResult<Option<String>> {
         let (kind_name, family, _) = metadata_kind(kind);
-        let id = deterministic_legacy_capsule_id(family, legacy_id.as_bytes());
+        let id = derived_capsule_id(family, legacy_id.as_bytes());
         let Some(capsule) = self.live(kind_name, id)? else {
             return Ok(None);
         };
@@ -518,7 +526,7 @@ impl CreatureMetadata for CapsuleCreaturePorts<'_> {
                 )));
             }
         };
-        legacy_document_object_at(METADATA_ROOT, &document, path)
+        document_object_at(METADATA_ROOT, &document, path)
             .map(|object| serde_json::to_string(object).map_err(PortError::failed))
             .transpose()
     }
@@ -533,13 +541,13 @@ impl CreatureMetadata for CapsuleCreaturePorts<'_> {
             return Err(PortError::failed("metadata must be a JSON object"));
         };
         let (kind_name, family, key_prefix) = metadata_kind(kind);
-        let fields = legacy_document_fields(
+        let fields = document_fields(
             &format!("{key_prefix}{legacy_id}"),
             METADATA_ROOT,
             &document,
         )
         .map_err(PortError::failed)?;
-        let id = deterministic_legacy_capsule_id(family, legacy_id.as_bytes());
+        let id = derived_capsule_id(family, legacy_id.as_bytes());
         for _ in 0..MAX_CAS_ATTEMPTS {
             let written = match self.get(kind_name, id)? {
                 // A replaced or revived document is the next revision of its chain.
@@ -569,7 +577,7 @@ impl CreatureMetadata for CapsuleCreaturePorts<'_> {
 
     fn delete_metadata(&self, kind: MetadataKind, legacy_id: &str) -> PortResult<()> {
         let (kind_name, family, _) = metadata_kind(kind);
-        let id = deterministic_legacy_capsule_id(family, legacy_id.as_bytes());
+        let id = derived_capsule_id(family, legacy_id.as_bytes());
         for _ in 0..MAX_CAS_ATTEMPTS {
             let Some(current) = self.live(kind_name, id)? else {
                 return Ok(());
@@ -607,7 +615,7 @@ impl CapsuleCreaturePorts<'_> {
 
 impl CreatureTypes for CapsuleCreaturePorts<'_> {
     fn creature_type(&self, name: &str) -> PortResult<Option<String>> {
-        let id = deterministic_legacy_capsule_id("CreatureType", name.as_bytes());
+        let id = derived_capsule_id("CreatureType", name.as_bytes());
         let Some(capsule) = self.live(CREATURE_TYPE, id)? else {
             return Ok(None);
         };
@@ -635,7 +643,7 @@ impl CreatureTypes for CapsuleCreaturePorts<'_> {
                 serde_json::to_string(&spec).map_err(PortError::failed)?,
             ));
         }
-        // Legacy lists the registry in flag-key byte order.
+        // The registry lists in flag-key byte order.
         types.sort_by(|left, right| left.0.as_bytes().cmp(right.0.as_bytes()));
         Ok(types)
     }
@@ -646,11 +654,10 @@ impl CreatureTypes for CapsuleCreaturePorts<'_> {
                 "a creature type spec must be a JSON object",
             ));
         };
-        let mut fields =
-            legacy_document_fields(&format!("Json::CreatureType::{name}"), "spec", &spec)
-                .map_err(PortError::failed)?;
+        let mut fields = document_fields(&format!("Json::CreatureType::{name}"), "spec", &spec)
+            .map_err(PortError::failed)?;
         fields.insert("type_name".to_owned(), CapsuleValue::Text(name.to_owned()));
-        let id = deterministic_legacy_capsule_id("CreatureType", name.as_bytes());
+        let id = derived_capsule_id("CreatureType", name.as_bytes());
         for _ in 0..MAX_CAS_ATTEMPTS {
             let written = match self.get(CREATURE_TYPE, id)? {
                 Some(current) => {

@@ -1,14 +1,11 @@
-//! Legacy wire packet types (RL-002). Migrated from the node's `models/packet`
-//! and `compat/multipart`; the node keeps a compatibility re-export shim until
-//! the legacy transports retire (RL-009).
+//! The signed-packet wire types, and the multipart file header uploads carry.
 
 use std::collections::HashMap;
 use std::io::Cursor;
 
 use serde::{Deserialize, Serialize};
 
-/// Minimal in-memory equivalent of Go's `mime/multipart.FileHeader`,
-/// covering the parts the Caspar node relies on.
+/// A multipart upload's file header: its name, headers, size, and content.
 #[derive(Debug, Clone, Default)]
 pub struct FileHeader {
     pub filename: String,
@@ -140,7 +137,7 @@ pub struct OriginPacket {
     pub store_id: String,
     pub request_id: String,
     pub res_code: i64,
-    #[serde(with = "crate::legacy_wire::bytes_base64", default)]
+    #[serde(with = "crate::wire::bytes_base64", default)]
     pub binary: Vec<u8>,
     pub signature: String,
     #[serde(default)]

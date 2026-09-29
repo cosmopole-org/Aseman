@@ -266,7 +266,7 @@ fn a_workload_runs_serves_http_and_is_purged() {
     });
 }
 
-/// The Phase 6 gate: the Nomad provider passes the same A504 suite as the native one.
+/// The Nomad provider passes the same A504 suite as the native one.
 #[test]
 fn the_nomad_backend_passes_the_backend_contract() {
     let Some(nomad) = cluster() else {
@@ -304,7 +304,7 @@ fn the_nomad_backend_passes_the_backend_contract() {
 }
 
 /// Deny-by-default egress is enforced by the network, not assumed by the mapping
-/// (A406, P6-04). The workload tries to reach the internet and says what happened.
+/// (A406). The workload tries to reach the internet and says what happened.
 #[test]
 fn a_workload_on_the_restricted_network_cannot_reach_the_internet() {
     let Some(nomad) = cluster() else {

@@ -286,12 +286,10 @@ fn live_postgres_round_trips_document_capsules_in_both_layouts() {
 }
 
 #[test]
-fn live_postgres_fences_old_generations_and_snapshots_for_comparison() {
+fn live_postgres_fences_old_generations() {
     let _serial = LIVE_DATABASE
         .lock()
         .unwrap_or_else(std::sync::PoisonError::into_inner);
-    use aseman_domain::storage_migration::{CanonicalWrite, compare_records};
-    use aseman_ports::{CanonicalRecordWriter, MigrationRecordSource, PortError};
     let Some(connection_uri) = aseman_config::IntegrationTestConfig::from_process().postgres_url
     else {
         eprintln!("ASEMAN_TEST_POSTGRES_URL is absent; skipping disposable PostgreSQL test");
@@ -323,21 +321,12 @@ fn live_postgres_fences_old_generations_and_snapshots_for_comparison() {
             ("status", text("active")),
         ],
     );
-    let write = |generation| CanonicalWrite {
-        kind: "core.user".to_owned(),
-        id: [31; 16],
-        canonical: user.canonical_bytes().unwrap(),
-        expected_revision: None,
-        generation,
-    };
+    let write = |generation| repository.put_fenced(&user, None, Some(generation));
     repository.raise_fence(7).unwrap();
+    // A fence only rises.
     repository.raise_fence(3).unwrap();
-    assert_eq!(repository.write(&write(6)), Err(PortError::Conflict));
-    repository.write(&write(7)).unwrap();
+    assert!(matches!(write(6), Err(PostgresStorageError::Conflict)));
+    write(7).unwrap();
     // An identical replay is idempotent.
-    repository.write(&write(7)).unwrap();
-
-    let snapshot = repository.snapshot().unwrap();
-    assert!(snapshot.iter().any(|record| record.id == [31; 16]));
-    assert!(compare_records(&snapshot, &repository.snapshot().unwrap()).is_clean());
+    write(7).unwrap();
 }

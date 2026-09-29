@@ -6,7 +6,7 @@ use anyhow::Result;
 use aseman_capsule::token_lock;
 use serde_json::{Map, Value};
 
-use crate::core::trx::{Trx, failed};
+use crate::storage::{Trx, failed};
 
 /// The lock `lock_id` of `owner`.
 pub(crate) fn lock(trx: &Trx, owner: &str, lock_id: &str) -> Result<Option<Map<String, Value>>> {
@@ -35,7 +35,7 @@ mod tests {
 
     #[test]
     fn locks_merge_read_and_delete() {
-        let trx = crate::core::trx::test_trx();
+        let trx = crate::storage::test_trx();
         let mut document = Map::new();
         document.insert("amount".into(), Value::from(5));
         put_lock(&trx, "u1", "l1", &document, true).unwrap();

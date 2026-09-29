@@ -1,19 +1,19 @@
 //! Administrative client for the authenticated module supervisor API.
 
+use aseman_config::CliConfig;
 use std::collections::HashMap;
 use std::fs;
-use std::process::Command;
 
 use anyhow::{Result, anyhow, bail};
 use base64::Engine;
 use serde_json::{Value, json};
 
-pub fn run_modules(args: &[String]) -> Result<()> {
+pub fn run_modules(config: &CliConfig, args: &[String]) -> Result<()> {
     if args.is_empty() {
         print_usage();
         return Ok(());
     }
-    let parsed = ModuleArgs::parse(&args[1..]);
+    let parsed = ModuleArgs::parse(config, &args[1..]);
     match args[0].as_str() {
         "list" => show(request(&parsed, "GET", "/modules", None)?),
         "inspect" | "status" => {
@@ -81,8 +81,8 @@ pub fn run_modules(args: &[String]) -> Result<()> {
 
 fn print_usage() {
     println!(
-        "casparctl module - manage signed Aseman provider modules\n\n\
-         Usage: casparctl module <command> [name|artifact] [flags]\n\n\
+        "asemanctl module - manage signed Aseman provider modules\n\n\
+         Usage: asemanctl module <command> [name|artifact] [flags]\n\n\
          Commands:\n  \
          list | inspect <name> | status <name>\n  \
          trust add <publisher-public-key>\n  \
@@ -95,6 +95,7 @@ fn print_usage() {
 }
 
 struct ModuleArgs {
+    config: CliConfig,
     endpoint: String,
     token: String,
     values: HashMap<String, String>,
@@ -102,14 +103,9 @@ struct ModuleArgs {
 }
 
 impl ModuleArgs {
-    fn parse(args: &[String]) -> Self {
-        let config = aseman_config::cli_config();
-        let mut endpoint = config
-            .map(|value| value.cluster_endpoint.clone())
-            .unwrap_or_else(|| "http://127.0.0.1:7440".to_owned());
-        let mut token = config
-            .map(|value| value.cluster_token.clone())
-            .unwrap_or_default();
+    fn parse(config: &CliConfig, args: &[String]) -> Self {
+        let mut endpoint = config.cluster_endpoint.clone();
+        let mut token = config.cluster_token.clone();
         let mut values = HashMap::new();
         let mut positional = Vec::new();
         let mut index = 0;
@@ -135,6 +131,7 @@ impl ModuleArgs {
             index += 1;
         }
         Self {
+            config: config.clone(),
             endpoint: endpoint.trim_end_matches('/').to_owned(),
             token,
             values,
@@ -172,36 +169,13 @@ fn valid_name(value: &str) -> bool {
 }
 
 fn request(args: &ModuleArgs, method: &str, path: &str, body: Option<&Value>) -> Result<Value> {
-    let url = format!("{}/v1/admin{}", args.endpoint, path);
-    let mut command = Command::new("curl");
-    command
-        .arg("-sS")
-        .arg("--fail-with-body")
-        .arg("--max-time")
-        .arg("35")
-        .arg("-X")
-        .arg(method)
-        .arg("-H")
-        .arg("content-type: application/json");
-    if !args.token.is_empty() {
-        command
-            .arg("-H")
-            .arg(format!("authorization: Bearer {}", args.token))
-            .arg("-H")
-            .arg(format!("x-aseman-cluster-token: {}", args.token));
-    }
-    if let Some(body) = body {
-        command.arg("-d").arg(serde_json::to_string(body)?);
-    }
-    let output = command.arg(&url).output()?;
-    if !output.status.success() {
-        bail!(
-            "module administration request failed: {}",
-            String::from_utf8_lossy(&output.stderr).trim()
-        );
-    }
-    serde_json::from_slice(&output.stdout)
-        .map_err(|error| anyhow!("invalid module administration response: {error}"))
+    super::admin::call(
+        &args.config,
+        &args.token,
+        method,
+        &format!("{}/v1/admin{}", args.endpoint, path),
+        body,
+    )
 }
 
 fn show(value: Value) {
@@ -225,9 +199,15 @@ mod tests {
 
     #[test]
     fn cluster_scope_is_explicit_and_fail_closed() {
-        let cluster = ModuleArgs::parse(&["sample".into(), "--scope".into(), "cluster".into()]);
+        let cluster = ModuleArgs::parse(
+            &super::super::test_config(),
+            &["sample".into(), "--scope".into(), "cluster".into()],
+        );
         assert_eq!(cluster.scope().unwrap(), "cluster");
-        let invalid = ModuleArgs::parse(&["sample".into(), "--scope=world".into()]);
+        let invalid = ModuleArgs::parse(
+            &super::super::test_config(),
+            &["sample".into(), "--scope=world".into()],
+        );
         assert!(invalid.scope().is_err());
     }
 }

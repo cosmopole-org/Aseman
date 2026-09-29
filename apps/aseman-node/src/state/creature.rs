@@ -1,4 +1,4 @@
-//! The legacy wire shape of a creature (persisted as `core.creature` and
+//! The wire shape of a creature (persisted as `core.creature` and
 //! `core.user`, with its balance in `finance.wallet`, ADR 0036).
 
 use serde::{Deserialize, Serialize};

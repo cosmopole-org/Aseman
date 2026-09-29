@@ -1,28 +1,22 @@
-//! Translation of `core/module/core/core.go` — the `Core` compatibility orchestrator.
+//! The running node: its identity, prices, and components, and how it starts
+//! them ([`Node::load`]).
 //!
-//! `Core` is the `ICore` implementation, the central object that gives every
-//! action / driver access to the rest of the system. It owns the `ITools`
-//! bundle (storage, security, signaler, network, vmm), the `IActor`
-//! registry, the `IGlobe` validator-set coordinator, and the chain dispatch
-//! channel.
-//!
-//! The chain dispatch goroutine, the election ticker, and the chain-packet
-//! callbacks all stay as background threads spawned by `Load`.
-//!
-//! - [`types`] — the `Core`/`Tools` type definitions.
-//! - [`finance`] — the core-owned finance state (free nodes + cost model).
-//! - [`constructor`] — construction (`new` / `new_configured`).
-//! - [`crypto`] — RSA private-key parsing and PSS-SHA256 signing.
-//! - [`chain`] — chain packet handling and chain-op submission.
-//! - [`icore`] — the `ICore` trait impl + ADR-0026 state helpers.
-//! - [`load`] — `run` and the strongly-typed `load_inner`.
+//! - [`types`] — the node and its components.
+//! - [`constructor`] — building a node from its configuration.
+//! - [`load`] — starting its components.
+//! - [`accessors`] — its accessors and transactions.
+//! - [`chain`] — the packets the main chain commits.
+//! - [`crypto`] — its RSA keys and signatures.
+//! - [`finance`] — its prices and free nodes.
 
+mod accessors;
 mod chain;
 mod constructor;
 mod crypto;
-mod finance;
-pub(crate) mod icore;
+pub(crate) mod finance;
 mod load;
+#[cfg(test)]
+mod testing;
 mod types;
 
-pub use types::Core;
+pub use types::{Node, Tools};

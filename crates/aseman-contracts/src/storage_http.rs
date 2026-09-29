@@ -1,4 +1,4 @@
-//! Pure compatibility rules for the legacy public-storage HTTP adapter.
+//! The public-storage HTTP listener's pure rules: safe ids and content types.
 
 #[must_use]
 pub fn is_safe_id(id: &str) -> bool {

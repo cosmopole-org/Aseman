@@ -1,4 +1,4 @@
-//! Store membership permissions. Absence and unknown legacy values deny by default.
+//! Store membership permissions. Absence and unknown values deny by default.
 
 use serde::{Deserialize, Serialize};
 

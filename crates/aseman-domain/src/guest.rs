@@ -62,7 +62,7 @@ pub enum GuestKvOperation {
         prefix: String,
         limit: u32,
     },
-    /// Legacy `putJson`: `data` is a JSON object's text, indexed at `{key}::{path}` in
+    /// `putJson`: `data` is a JSON object's text, indexed at `{key}::{path}` in
     /// the `json` namespace exactly as the legacy JSON store did (ADR 0028).
     PutJson {
         key: String,
@@ -70,12 +70,12 @@ pub enum GuestKvOperation {
         data: String,
         merge: bool,
     },
-    /// Legacy `getJson`: the object stored at `{key}::{path}`, or `{}`.
+    /// `getJson`: the object stored at `{key}::{path}`, or `{}`.
     GetJson { key: String, path: String },
-    /// Legacy `delKey`: the whole document when `path` is empty, else the subtree at
+    /// `delKey`: the whole document when `path` is empty, else the subtree at
     /// `path`.
     DeleteJson { key: String, path: String },
-    /// Legacy `getByPrefix`: the document record keys (`{key}::{path}`) with a prefix.
+    /// `getByPrefix`: the document record keys (`{key}::{path}`) with a prefix.
     ListJson { prefix: String, limit: u32 },
 }
 

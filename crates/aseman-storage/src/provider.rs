@@ -74,6 +74,21 @@ pub trait StorageProvider: Send + Sync {
         Ok(())
     }
     /// Whether the provider serves the settings' administration routes itself.
+    /// The provider's clock in milliseconds: the one time every process sharing this
+    /// storage agrees on (leases decide expiry by it, never by a caller's clock). An
+    /// embedded provider is one host, so its default is that host's clock.
+    ///
+    /// # Errors
+    ///
+    /// When the provider is unreachable.
+    fn now_millis(&self) -> StorageResult<i64> {
+        Ok(std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map_or(0, |elapsed| {
+                i64::try_from(elapsed.as_millis()).unwrap_or(i64::MAX)
+            }))
+    }
+
     fn serves_admin_routes(&self) -> bool {
         false
     }
@@ -82,7 +97,7 @@ pub trait StorageProvider: Send + Sync {
 /// Administration routes (`method`, `path`, `body`) -> `(status, body)`, answered
 /// by the node; a provider with its own authenticated listener (the RocksDB
 /// cluster) may serve them there.
-pub type AdminRoutes = Arc<dyn Fn(&str, &str, &[u8]) -> Option<(u16, Vec<u8>)> + Send + Sync>;
+pub use aseman_admin_http::Routes as AdminRoutes;
 
 /// What a plugin needs to open its provider.
 #[derive(Clone)]
@@ -130,6 +145,16 @@ impl ProviderSettings {
             legacy_store: None,
             admin_routes: None,
             schema: Schema::catalog()?,
+        })
+    }
+
+    /// Settings for a database provider at `database_url` with the catalog schema (a
+    /// service with no storage root of its own: the VMM service, the meter).
+    pub fn database(database_url: String, max_connections: u32) -> StorageResult<Self> {
+        Ok(Self {
+            database_url: Some(database_url),
+            max_connections,
+            ..Self::embedded(PathBuf::new())?
         })
     }
 }

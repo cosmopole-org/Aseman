@@ -1,5 +1,5 @@
 //! The modal VM controller — sandbox lifecycle, exec, file transfer and HTTP
-//! forwarding, exposed to the Caspar VMM through `caspar_vm_sdk::VmPlugin`.
+//! forwarding, exposed to the Aseman VMM through `aseman_vm_sdk::VmPlugin`.
 //!
 //! A modal VM is a Modal *sandbox*. Unlike docker (a container this node
 //! supervises) or fire (a microVM it boots), the instance lives in Modal's
@@ -9,39 +9,22 @@
 //! restore work — a node that comes back up re-attaches to sandboxes that
 //! never stopped running.
 
+use std::sync::Arc;
+
 use base64::engine::general_purpose::STANDARD as BASE64;
 use base64::Engine;
 use futures_util::StreamExt;
 use serde_json::{json, Map, Value as JsonValue};
 
-use caspar_vm_sdk::host::{host, log_vm, KvOp};
-use caspar_vm_sdk::{parse_vm_resource_limits, VmPlugin, VmPluginMeta};
+use aseman_vm_sdk::host::{host, log_vm, KvOp};
+use aseman_vm_sdk::{parse_vm_resource_limits, VmPlugin, VmPluginMeta};
 
-use crate::client::{block_on, connect, is_configured, public_status, ModalConn};
+use crate::client::{block_on, connect, public_status, ChannelCache, ModalConn};
 use crate::models::{
-    app_link_key, image_link_key, modal_app_name, modal_volume_name, sandbox_link_key,
-    shared_app_link_key, volume_link_key, ModalIdentity,
+    app_link_key, image_link_key, sandbox_link_key, volume_link_key, ModalIdentity,
 };
 use crate::proto;
-
-/// Port inside the sandbox the VMM ingress forwards HTTP to. Matches the
-/// docker runtime's `CASPAR_VM_HTTP_PORT` so a creature written for one
-/// runtime serves on the same port under the other.
-fn vm_http_port() -> u32 {
-    u32::from(aseman_config::runtime_config().vm_http_port)
-}
-
-/// Timeout (seconds) for a forwarded HTTP request to the sandbox.
-fn vm_http_timeout_secs() -> u64 {
-    Some(aseman_config::runtime_config().vm_http_timeout_seconds)
-        .filter(|s| *s > 0)
-        .unwrap_or(30)
-}
-
-/// Base image used when a packet names none.
-fn default_image_tag() -> String {
-    aseman_config::runtime_config().modal_default_image
-}
+use crate::settings::ModalSettings;
 
 /// Path on the Modal Volume (the `/data` mount), for list/read while the
 /// sandbox is asleep. Modal's volume APIs take a volume-relative path, not
@@ -62,18 +45,20 @@ fn volume_rel_path(path: &str) -> String {
 
 const VOLUME_READ_CAP: u64 = 200_000;
 
-fn volume_mount_path() -> String {
-    aseman_config::runtime_config().modal_volume_mount_path
-}
-
 #[derive(Clone)]
 pub struct ModalVmPlugin {
     meta: VmPluginMeta,
+    settings: Arc<ModalSettings>,
+    channel: Arc<ChannelCache>,
 }
 
 impl ModalVmPlugin {
-    pub fn new(meta: VmPluginMeta) -> Self {
-        Self { meta }
+    pub fn new(meta: VmPluginMeta, settings: ModalSettings) -> Self {
+        Self {
+            meta,
+            settings: Arc::new(settings),
+            channel: Arc::default(),
+        }
     }
 }
 
@@ -182,7 +167,7 @@ const MAX_EPHEMERAL_DISK_MB: u32 = 8_192_728;
 /// 8 GiB of RAM.
 fn sandbox_resources(
     packet: &JsonValue,
-    limits: &caspar_vm_sdk::VmResourceLimits,
+    limits: &aseman_vm_sdk::VmResourceLimits,
 ) -> proto::Resources {
     let memory_mb = match limits.ram_mb as u32 {
         // The parser floors an absent/zero value to 1, which Modal rejects.
@@ -258,7 +243,7 @@ fn env_pairs(packet: &JsonValue) -> Vec<(String, String)> {
 
 /// Ports the sandbox should expose through a Modal tunnel. The HTTP port is
 /// always included so `forward_http` has somewhere to proxy to.
-fn exposed_ports(packet: &JsonValue) -> Vec<u32> {
+fn exposed_ports(packet: &JsonValue, http: u32) -> Vec<u32> {
     let mut ports: Vec<u32> = packet["ports"]
         .as_array()
         .map(|items| {
@@ -268,7 +253,6 @@ fn exposed_ports(packet: &JsonValue) -> Vec<u32> {
                 .collect()
         })
         .unwrap_or_default();
-    let http = vm_http_port();
     if !ports.contains(&http) {
         ports.push(http);
     }
@@ -277,12 +261,10 @@ fn exposed_ports(packet: &JsonValue) -> Vec<u32> {
 
 impl ModalVmPlugin {
     fn conn(&self) -> Result<ModalConn, String> {
-        if !is_configured() {
-            return Err(
-                "modal runtime is not configured: set MODAL_API_KEY on the node".to_string(),
-            );
+        if !self.settings.is_configured() {
+            return Err("modal runtime is not configured: give it an API key secret".to_string());
         }
-        connect()
+        connect(&self.settings, &self.channel)
     }
 
     /// Resolve the Modal app that owns this node's sandboxes.
@@ -299,9 +281,9 @@ impl ModalVmPlugin {
     /// sleeping VM to the current app does not lose its persistent `/data`.
     fn app_id(&self, conn: &mut ModalConn, machine_id: &str) -> Result<String, String> {
         let legacy_key = app_link_key(machine_id);
-        let shared_key = shared_app_link_key();
+        let shared_key = self.settings.shared_app_link_key();
         let request = proto::AppGetOrCreateRequest {
-            app_name: modal_app_name(),
+            app_name: self.settings.app_name.clone(),
             environment_name: conn.environment.clone(),
             object_creation_type: proto::ObjectCreationType::CreateIfMissing as i32,
         };
@@ -334,7 +316,7 @@ impl ModalVmPlugin {
             .as_str()
             .map(|s| s.trim().to_string())
             .filter(|s| !s.is_empty())
-            .unwrap_or_else(default_image_tag);
+            .unwrap_or_else(|| self.settings.default_image.clone());
         let extra_commands = string_list(&packet["dockerfileCommands"]);
 
         // Cache only the plain-tag case: a Dockerfile-derived image changes
@@ -359,7 +341,7 @@ impl ModalVmPlugin {
             image: Some(image),
             app_id: app_id.to_string(),
             force_build: packet["forceBuild"].as_bool().unwrap_or(false),
-            builder_version: aseman_config::runtime_config().modal_builder_version,
+            builder_version: self.settings.builder_version.clone(),
             ..Default::default()
         };
         let response = block_on(conn.stub.image_get_or_create(request))?
@@ -394,10 +376,7 @@ impl ModalVmPlugin {
         let mut last_entry_id = String::new();
         // Modal's join stream ends at each timeout window; loop until the
         // build reports a result or the overall budget is spent.
-        let deadline = std::time::Instant::now()
-            + std::time::Duration::from_secs(
-                aseman_config::runtime_config().modal_image_build_timeout_seconds,
-            );
+        let deadline = std::time::Instant::now() + self.settings.image_build_timeout;
         loop {
             if std::time::Instant::now() > deadline {
                 return Err(format!("modal image {} did not finish building", image_id));
@@ -449,7 +428,7 @@ impl ModalVmPlugin {
             return Ok(cached);
         }
         let request = proto::VolumeGetOrCreateRequest {
-            deployment_name: modal_volume_name(vm_id),
+            deployment_name: self.settings.volume_name(vm_id),
             environment_name: conn.environment.clone(),
             object_creation_type: proto::ObjectCreationType::CreateIfMissing as i32,
             ..Default::default()
@@ -490,11 +469,11 @@ impl ModalVmPlugin {
         if state_get(&volume_link_key(vm_id)).is_empty() {
             return;
         }
-        let millis = aseman_config::runtime_config().modal_volume_settle_ms;
-        if millis == 0 {
+        let settle = self.settings.volume_settle;
+        if settle.is_zero() {
             return;
         }
-        std::thread::sleep(std::time::Duration::from_millis(millis));
+        std::thread::sleep(settle);
     }
 
     /// The sandbox id recorded for a VM, or an error naming the VM when none
@@ -516,7 +495,7 @@ impl ModalVmPlugin {
     fn task_id(&self, conn: &mut ModalConn, sandbox_id: &str) -> Result<String, String> {
         let request = proto::SandboxGetTaskIdRequest {
             sandbox_id: sandbox_id.to_string(),
-            timeout: Some(aseman_config::runtime_config().modal_task_ready_timeout_seconds),
+            timeout: Some(self.settings.task_ready_timeout_seconds),
             wait_until_ready: true,
         };
         let response = block_on(conn.stub.sandbox_get_task_id(request))?
@@ -779,7 +758,7 @@ impl ModalVmPlugin {
             let volume_id = self.volume_id(&mut conn, &identity.vm_id)?;
             volume_mounts.push(proto::VolumeMount {
                 volume_id,
-                mount_path: volume_mount_path(),
+                mount_path: self.settings.volume_mount_path.clone(),
                 allow_background_commits: true,
                 read_only: false,
                 sub_path: None,
@@ -795,7 +774,7 @@ impl ModalVmPlugin {
         env.push(("CASPAR_MACHINE_ID".to_string(), identity.machine_id.clone()));
         env.push((
             "CASPAR_VM_HTTP_PORT".to_string(),
-            vm_http_port().to_string(),
+            self.settings.vm_http_port.to_string(),
         ));
         let mut entrypoint = entrypoint_args(packet);
         if !env.is_empty() {
@@ -816,7 +795,7 @@ impl ModalVmPlugin {
             ];
         }
 
-        let ports: Vec<proto::PortSpec> = exposed_ports(packet)
+        let ports: Vec<proto::PortSpec> = exposed_ports(packet, self.settings.vm_http_port)
             .into_iter()
             .map(|port| proto::PortSpec {
                 port,
@@ -829,7 +808,11 @@ impl ModalVmPlugin {
             entrypoint_args: entrypoint,
             image_id: image_id.clone(),
             resources: Some(sandbox_resources(packet, &limits)),
-            timeout_secs: sandbox_timeout_secs(packet, limits.max_exec_time_secs),
+            timeout_secs: sandbox_timeout_secs(
+                packet,
+                limits.max_exec_time_secs,
+                self.settings.sandbox_timeout_seconds,
+            ),
             workdir: packet["workdir"].as_str().map(|s| s.to_string()),
             open_ports_oneof: Some(proto::sandbox::OpenPortsOneof::OpenPorts(
                 proto::PortSpecs { ports },
@@ -847,10 +830,10 @@ impl ModalVmPlugin {
             ..Default::default()
         };
 
-        // Tags are what make a sandbox findable from Caspar identity alone —
+        // Tags are what make a sandbox findable from Aseman identity alone —
         // the recovery path when node state and Modal disagree.
         let tags = vec![
-            tag("caspar-vm-id", &identity.vm_id),
+            tag("aseman-vm-id", &identity.vm_id),
             tag("caspar-machine-id", &identity.machine_id),
             tag("caspar-entity-id", &identity.entity_id),
             tag("caspar-creature-id", &identity.creature_id),
@@ -904,7 +887,7 @@ impl ModalVmPlugin {
     /// Stop a modal VM.
     ///
     /// Modal sandboxes have no suspend: terminate ends the container. What
-    /// makes this a *suspend* in Caspar's terms is that the VM's Volume is
+    /// makes this a *suspend* in Aseman's terms is that the VM's Volume is
     /// untouched, so a later `run_vm` mounts the same `/data` into a fresh
     /// sandbox and the VM continues where it left off. `purge` removes the
     /// volume too, which is what makes the stop unrecoverable.
@@ -1477,7 +1460,7 @@ impl ModalVmPlugin {
     fn forward_http_inner(&self, packet: &JsonValue) -> Result<JsonValue, String> {
         let identity = ModalIdentity::from_packet(packet);
         let sandbox_id = match state_get(&sandbox_link_key(&identity.vm_id)) {
-            id if id.is_empty() => return caspar_vm_sdk::plugin::forward_http_via_signal(packet),
+            id if id.is_empty() => return aseman_vm_sdk::plugin::forward_http_via_signal(packet),
             id => id,
         };
 
@@ -1492,14 +1475,14 @@ impl ModalVmPlugin {
         .map_err(|e| rpc_error("SandboxGetTunnels", e))?
         .into_inner();
 
-        let http_port = vm_http_port();
+        let http_port = self.settings.vm_http_port;
         let tunnel = tunnels
             .tunnels
             .iter()
             .find(|t| t.container_port == http_port)
             .or_else(|| tunnels.tunnels.first());
         let Some(tunnel) = tunnel else {
-            return caspar_vm_sdk::plugin::forward_http_via_signal(packet);
+            return aseman_vm_sdk::plugin::forward_http_via_signal(packet);
         };
 
         let path = packet["path"].as_str().unwrap_or("/");
@@ -1523,7 +1506,7 @@ impl ModalVmPlugin {
             .unwrap_or_default();
 
         let client = reqwest::blocking::Client::builder()
-            .timeout(std::time::Duration::from_secs(vm_http_timeout_secs()))
+            .timeout(self.settings.vm_http_timeout)
             .build()
             .map_err(|e| format!("http client init failed: {}", e))?;
         let mut request = client.request(method, &url).body(body);
@@ -1568,11 +1551,14 @@ impl ModalVmPlugin {
 /// Sandbox lifetime. Modal terminates a sandbox at `timeout_secs`, so the
 /// value is the VM's max lifetime, not one command's — a VM the platform
 /// keeps addressing must not be capped at a single exec's budget.
-fn sandbox_timeout_secs(packet: &JsonValue, max_exec_time_secs: u64) -> u32 {
+fn sandbox_timeout_secs(
+    packet: &JsonValue,
+    max_exec_time_secs: u64,
+    configured: Option<u32>,
+) -> u32 {
     if let Some(explicit) = packet["timeoutSecs"].as_u64() {
         return explicit as u32;
     }
-    let configured = aseman_config::runtime_config().modal_sandbox_timeout_seconds;
     if let Some(configured) = configured {
         return configured;
     }
@@ -1824,15 +1810,17 @@ mod tests {
 
     #[test]
     fn resource_names_are_stable_and_modal_safe() {
-        let a = crate::models::modal_app_name();
+        let config = aseman_config::RuntimeConfig {
+            modal_app_name: Some("My App/Prod".to_owned()),
+            ..aseman_config::RuntimeConfig::default()
+        };
+        let settings = ModalSettings::from_config(&config);
+        let a = settings.app_name.clone();
         assert!(a
             .chars()
             .all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == '-'));
-        assert_eq!(a, crate::models::modal_app_name());
-        assert_eq!(
-            crate::models::shared_app_link_key(),
-            format!("ModalApp::{}", a)
-        );
+        assert_eq!(a, ModalSettings::from_config(&config).app_name);
+        assert_eq!(settings.shared_app_link_key(), format!("ModalApp::{}", a));
     }
 
     #[test]
@@ -1896,9 +1884,9 @@ mod tests {
     #[test]
     fn http_port_is_always_exposed() {
         let packet = json!({"ports": [5900]});
-        let ports = exposed_ports(&packet);
+        let ports = exposed_ports(&packet, 8081);
         assert!(ports.contains(&5900));
-        assert!(ports.contains(&vm_http_port()));
+        assert!(ports.contains(&8081));
     }
 
     #[test]

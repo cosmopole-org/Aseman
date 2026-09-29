@@ -1,23 +1,15 @@
-//! Translation of `drivers/vmm/hostcall_entities.go` — the CRUD-style host
-//! calls available to wasm / javascript / fire runtimes.
+//! The CRUD-style host calls guests make: creatures, stores, programs, resource
+//! stores and entities, signals, and the micro calls.
 
-use std::collections::HashMap;
-use std::sync::{Arc, Mutex};
-
-use base64::Engine;
 use serde_json::{Map, Value, json};
 
-use crate::api::model::entity_ports::EntityPorts;
-use crate::api::model::{Creature, Program, Store, StorePermissions};
-use crate::core::actor::Info as BaseInfo;
-use crate::core::trx::Trx;
-use crate::models::core::StateClosure;
-use crate::models::info::IInfo;
-use crate::models::state::IState;
-use aseman_domain::program::{EntityRecord, ResourceEntityRef};
+use crate::state::entity_ports::EntityPorts;
+use crate::state::{Creature, StorePermissions};
+use crate::storage::Trx;
+use aseman_domain::program::ResourceEntityRef;
 use aseman_ports::BlobStore;
 
-use super::driver::{NodeWorkloads, check_bool, check_i64, check_str, normalize_runtime};
+use super::driver::{NodeWorkloads, check_bool, check_i64, check_str};
 
 fn number_from_input(input: &Value, key: &str, def: i64) -> i64 {
     check_i64(input, key, def)
@@ -49,36 +41,31 @@ impl NodeWorkloads {
                 let balance = number_from_input(input, "balance", 0);
                 let id_owned = id.clone();
                 let owner_owned = owner_id.clone();
-                let refused = Arc::new(Mutex::new(false));
-                let refused_slot = refused.clone();
-                self.app.modify_state(
-                    false,
-                    Box::new(move |t: &Trx| {
-                        let record = aseman_domain::creature::CreatureRecord {
-                            id: id_owned.clone(),
-                            creature_type: typ.clone(),
-                            username: username.clone(),
-                            public_key: public_key.clone(),
-                            chain_id: chain_id.clone(),
-                            subchain_id: subchain_id.clone(),
-                            owner_id: owner_owned.clone(),
-                        };
-                        // LD-14: an existing identity or username is refused instead
-                        // of overwritten.
-                        let creatures = crate::api::model::creature_ports::CreaturePorts { trx: t };
-                        match aseman_ports::CreatureDirectory::create(&creatures, &record) {
-                            Err(aseman_ports::PortError::Conflict) => {
-                                *refused_slot.lock().unwrap() = true;
-                                return Ok(());
-                            }
-                            other => other.map_err(|error| anyhow::anyhow!("{error}"))?,
+                let refused = self.app.with_outcome(false, false, |t: &Trx, outcome| {
+                    let record = aseman_domain::creature::CreatureRecord {
+                        id: id_owned.clone(),
+                        creature_type: typ.clone(),
+                        username: username.clone(),
+                        public_key: public_key.clone(),
+                        chain_id: chain_id.clone(),
+                        subchain_id: subchain_id.clone(),
+                        owner_id: owner_owned.clone(),
+                    };
+                    // LD-14: an existing identity or username is refused instead
+                    // of overwritten.
+                    let creatures = crate::state::creature_ports::CreaturePorts { trx: t };
+                    match aseman_ports::CreatureDirectory::create(&creatures, &record) {
+                        Err(aseman_ports::PortError::Conflict) => {
+                            *outcome = true;
+                            return Ok(());
                         }
-                        aseman_ports::CreatureBalances::open(&creatures, &id_owned, balance)
-                            .map_err(|error| anyhow::anyhow!("{error}"))?;
-                        Ok(())
-                    }),
-                );
-                if *refused.lock().unwrap() {
+                        other => other.map_err(|error| anyhow::anyhow!("{error}"))?,
+                    }
+                    aseman_ports::CreatureBalances::open(&creatures, &id_owned, balance)
+                        .map_err(|error| anyhow::anyhow!("{error}"))?;
+                    Ok(())
+                });
+                if refused {
                     return (
                         r#"{"ok":false,"error":"creature id or username already exists"}"#.into(),
                         req_id,
@@ -93,62 +80,57 @@ impl NodeWorkloads {
                 }
                 let input_owned = input.clone();
                 let id_owned = id.clone();
-                let outcome = Arc::new(Mutex::new(Ok(())));
-                let outcome_slot = outcome.clone();
-                self.app.modify_state(
-                    false,
-                    Box::new(move |t: &Trx| {
-                        let creatures = crate::api::model::creature_ports::CreaturePorts { trx: t };
-                        // LD-13: a missing creature is refused instead of being
-                        // recreated as a partial record.
-                        let Some(mut record) =
-                            aseman_ports::CreatureDirectory::creature(&creatures, &id_owned)
-                                .map_err(|error| anyhow::anyhow!("{error}"))?
-                        else {
-                            *outcome_slot.lock().unwrap() = Err("creature not found");
+                let outcome = self.app.with_outcome(false, Ok(()), |t: &Trx, outcome| {
+                    let creatures = crate::state::creature_ports::CreaturePorts { trx: t };
+                    // LD-13: a missing creature is refused instead of being
+                    // recreated as a partial record.
+                    let Some(mut record) =
+                        aseman_ports::CreatureDirectory::creature(&creatures, &id_owned)
+                            .map_err(|error| anyhow::anyhow!("{error}"))?
+                    else {
+                        *outcome = Err("creature not found");
+                        return Ok(());
+                    };
+                    let field = |name: &str| {
+                        input_owned
+                            .get(name)
+                            .and_then(Value::as_str)
+                            .map(str::to_string)
+                    };
+                    if let Some(v) = field("type") {
+                        record.creature_type = v;
+                    }
+                    if let Some(v) = field("username") {
+                        record.username = v;
+                    }
+                    if let Some(v) = field("publicKey") {
+                        record.public_key = v;
+                    }
+                    if let Some(v) = field("chainId") {
+                        record.chain_id = v;
+                    }
+                    if let Some(v) = field("subchainId") {
+                        record.subchain_id = v;
+                    }
+                    if let Some(v) = field("ownerId") {
+                        record.owner_id = v;
+                    }
+                    match aseman_ports::CreatureDirectory::update(&creatures, &record) {
+                        Err(aseman_ports::PortError::Conflict) => {
+                            *outcome = Err("username already exists");
                             return Ok(());
-                        };
-                        let field = |name: &str| {
-                            input_owned
-                                .get(name)
-                                .and_then(Value::as_str)
-                                .map(str::to_string)
-                        };
-                        if let Some(v) = field("type") {
-                            record.creature_type = v;
                         }
-                        if let Some(v) = field("username") {
-                            record.username = v;
-                        }
-                        if let Some(v) = field("publicKey") {
-                            record.public_key = v;
-                        }
-                        if let Some(v) = field("chainId") {
-                            record.chain_id = v;
-                        }
-                        if let Some(v) = field("subchainId") {
-                            record.subchain_id = v;
-                        }
-                        if let Some(v) = field("ownerId") {
-                            record.owner_id = v;
-                        }
-                        match aseman_ports::CreatureDirectory::update(&creatures, &record) {
-                            Err(aseman_ports::PortError::Conflict) => {
-                                *outcome_slot.lock().unwrap() = Err("username already exists");
-                                return Ok(());
-                            }
-                            other => other.map_err(|error| anyhow::anyhow!("{error}"))?,
-                        }
-                        if let Some(v) = input_owned.get("balance").and_then(Value::as_f64) {
-                            aseman_ports::CreatureBalances::set_balance(
-                                &creatures, &id_owned, v as i64,
-                            )
-                            .map_err(|error| anyhow::anyhow!("{error}"))?;
-                        }
-                        Ok(())
-                    }),
-                );
-                if let Err(message) = *outcome.lock().unwrap() {
+                        other => other.map_err(|error| anyhow::anyhow!("{error}"))?,
+                    }
+                    if let Some(v) = input_owned.get("balance").and_then(Value::as_f64) {
+                        aseman_ports::CreatureBalances::set_balance(
+                            &creatures, &id_owned, v as i64,
+                        )
+                        .map_err(|error| anyhow::anyhow!("{error}"))?;
+                    }
+                    Ok(())
+                });
+                if let Err(message) = outcome {
                     return (json!({"ok": false, "error": message}).to_string(), req_id);
                 }
                 (format!("{{\"ok\":true,\"id\":\"{}\"}}", id), req_id)
@@ -165,23 +147,22 @@ impl NodeWorkloads {
                     return (r#"{"ok":false,"error":"id is required"}"#.into(), req_id);
                 }
                 let id_owned = id.clone();
-                self.app.modify_state(
-                    false,
-                    Box::new(move |t: &Trx| {
-                        // Memberships go through the store port; the legacy
-                        // `Store::list(.., -1, -1)` walk here was always empty (LD-12).
-                        let ports = crate::api::model::store_ports::MembershipPorts { trx: t };
-                        ports
-                            .remove_member_everywhere(&id_owned)
-                            .map_err(|error| anyhow::anyhow!("{error}"))?;
-                        let creatures = crate::api::model::creature_ports::CreaturePorts { trx: t };
-                        aseman_ports::CreatureDirectory::delete(&creatures, &id_owned)
-                            .map_err(|error| anyhow::anyhow!("{error}"))?;
-                        aseman_ports::CreatureBalances::close(&creatures, &id_owned)
-                            .map_err(|error| anyhow::anyhow!("{error}"))?;
-                        Ok(())
-                    }),
-                );
+                if let Err(error) = self.app.in_action(|t: &Trx| {
+                    // Memberships go through the store port; the
+                    // `Store::list(.., -1, -1)` walk here was always empty (LD-12).
+                    let ports = crate::state::store_ports::MembershipPorts { trx: t };
+                    ports
+                        .remove_member_everywhere(&id_owned)
+                        .map_err(|error| anyhow::anyhow!("{error}"))?;
+                    let creatures = crate::state::creature_ports::CreaturePorts { trx: t };
+                    aseman_ports::CreatureDirectory::delete(&creatures, &id_owned)
+                        .map_err(|error| anyhow::anyhow!("{error}"))?;
+                    aseman_ports::CreatureBalances::close(&creatures, &id_owned)
+                        .map_err(|error| anyhow::anyhow!("{error}"))?;
+                    Ok(())
+                }) {
+                    eprintln!("storage: {error}");
+                }
                 (format!("{{\"ok\":true,\"id\":\"{}\"}}", id), req_id)
             }
             "get" => {
@@ -189,21 +170,19 @@ impl NodeWorkloads {
                 if id.is_empty() {
                     return (r#"{"ok":false,"error":"id is required"}"#.into(), req_id);
                 }
-                let slot = Arc::new(Mutex::new(Creature::default()));
-                let slot_clone = slot.clone();
                 let id_owned = id.clone();
-                self.app.modify_state(
-                    true,
-                    Box::new(move |t: &Trx| {
-                        let creatures = crate::api::model::creature_ports::CreaturePorts { trx: t };
+                let slot = self
+                    .app
+                    .with_outcome(true, Creature::default(), |t: &Trx, outcome| {
+                        let creatures = crate::state::creature_ports::CreaturePorts { trx: t };
                         // Legacy answers a missing id with an empty creature; kept.
                         let found = aseman_application::creature::GetCreature {
                             directory: &creatures,
                             balances: &creatures,
                         }
                         .by_id(&id_owned);
-                        *slot_clone.lock().unwrap() = match found {
-                            Ok(found) => crate::api::model::creature_ports::creature_view(
+                        *outcome = match found {
+                            Ok(found) => crate::state::creature_ports::creature_view(
                                 found.record,
                                 found.balance,
                             ),
@@ -213,9 +192,8 @@ impl NodeWorkloads {
                             },
                         };
                         Ok(())
-                    }),
-                );
-                let creature = slot.lock().unwrap().clone();
+                    });
+                let creature = slot.clone();
                 let out = json!({"ok": true, "creature": creature});
                 (serde_json::to_string(&out).unwrap_or_default(), req_id)
             }
@@ -225,32 +203,28 @@ impl NodeWorkloads {
                 if count <= 0 {
                     count = 100;
                 }
-                let slot: Arc<Mutex<Vec<Creature>>> = Arc::new(Mutex::new(Vec::new()));
-                let slot_clone = slot.clone();
-                self.app.modify_state(
-                    true,
-                    Box::new(move |t: &Trx| {
-                        let creatures = crate::api::model::creature_ports::CreaturePorts { trx: t };
-                        if let Ok(list) = (aseman_application::creature::GetCreature {
+                let creatures = self
+                    .app
+                    .read(|t| {
+                        let creatures = crate::state::creature_ports::CreaturePorts { trx: t };
+                        Ok(aseman_application::creature::GetCreature {
                             directory: &creatures,
                             balances: &creatures,
-                        })
+                        }
                         .list(None, offset, Some(count))
-                        {
-                            *slot_clone.lock().unwrap() = list
-                                .into_iter()
+                        .map(|list| {
+                            list.into_iter()
                                 .map(|found| {
-                                    crate::api::model::creature_ports::creature_view(
+                                    crate::state::creature_ports::creature_view(
                                         found.record,
                                         found.balance,
                                     )
                                 })
-                                .collect();
-                        }
-                        Ok(())
-                    }),
-                );
-                let creatures = slot.lock().unwrap().clone();
+                                .collect::<Vec<_>>()
+                        })
+                        .unwrap_or_default())
+                    })
+                    .unwrap_or_default();
                 let out = json!({"ok": true, "creatures": creatures});
                 (serde_json::to_string(&out).unwrap_or_default(), req_id)
             }
@@ -300,35 +274,32 @@ impl NodeWorkloads {
                     .unwrap_or_else(|| Value::Object(Map::new()));
                 let id_owned = id.clone();
                 let machine_id_owned = machine_id.clone();
-                let create_error = Arc::new(Mutex::new(String::new()));
-                let create_error_for_state = create_error.clone();
-                self.app.modify_state(
-                    false,
-                    Box::new(move |t: &Trx| {
-                        let programs = crate::api::model::program_ports::ProgramPorts { trx: t };
-                        let record = aseman_domain::program::ProgramRecord {
-                            id: id_owned.clone(),
-                            machine_id: machine_id_owned.clone(),
-                            runtime: runtime.clone(),
-                            path: path.clone(),
-                            comment: comment.clone(),
-                        };
-                        // LD-17: no partial machine is written for a missing machine.
-                        match aseman_ports::ProgramDirectory::create_program(&programs, &record) {
-                            Err(aseman_ports::PortError::Conflict) => {
-                                *create_error_for_state.lock().unwrap() =
-                                    "program already exists".to_string();
-                                return Ok(());
+                let create_error =
+                    self.app
+                        .with_outcome(false, String::new(), |t: &Trx, outcome| {
+                            let programs = crate::state::program_ports::ProgramPorts { trx: t };
+                            let record = aseman_domain::program::ProgramRecord {
+                                id: id_owned.clone(),
+                                machine_id: machine_id_owned.clone(),
+                                runtime: runtime.clone(),
+                                path: path.clone(),
+                                comment: comment.clone(),
+                            };
+                            // LD-17: no partial machine is written for a missing machine.
+                            match aseman_ports::ProgramDirectory::create_program(&programs, &record)
+                            {
+                                Err(aseman_ports::PortError::Conflict) => {
+                                    *outcome = "program already exists".to_string();
+                                    return Ok(());
+                                }
+                                other => other.map_err(|error| anyhow::anyhow!("{error}"))?,
                             }
-                            other => other.map_err(|error| anyhow::anyhow!("{error}"))?,
-                        }
-                        programs
-                            .merge_metadata_value(&id_owned, &metadata)
-                            .map_err(|error| anyhow::anyhow!("{error}"))?;
-                        Ok(())
-                    }),
-                );
-                let error = create_error.lock().unwrap().clone();
+                            programs
+                                .merge_metadata_value(&id_owned, &metadata)
+                                .map_err(|error| anyhow::anyhow!("{error}"))?;
+                            Ok(())
+                        });
+                let error = create_error.clone();
                 if !error.is_empty() {
                     return (json!({"ok": false, "error": error}).to_string(), req_id);
                 }
@@ -352,20 +323,17 @@ impl NodeWorkloads {
                     );
                 }
                 let id_owned = id.clone();
-                self.app.modify_state(
-                    false,
-                    Box::new(move |t: &Trx| {
-                        // LD-17: the program itself is removed, not only its relation.
-                        let programs = crate::api::model::program_ports::ProgramPorts { trx: t };
-                        aseman_ports::ProgramDirectory::delete_program(&programs, &id_owned)
-                            .map_err(|error| anyhow::anyhow!("{error}"))?;
-                        aseman_ports::ProgramMetadata::delete_program_metadata(
-                            &programs, &id_owned,
-                        )
+                if let Err(error) = self.app.in_action(|t: &Trx| {
+                    // LD-17: the program itself is removed, not only its relation.
+                    let programs = crate::state::program_ports::ProgramPorts { trx: t };
+                    aseman_ports::ProgramDirectory::delete_program(&programs, &id_owned)
                         .map_err(|error| anyhow::anyhow!("{error}"))?;
-                        Ok(())
-                    }),
-                );
+                    aseman_ports::ProgramMetadata::delete_program_metadata(&programs, &id_owned)
+                        .map_err(|error| anyhow::anyhow!("{error}"))?;
+                    Ok(())
+                }) {
+                    eprintln!("storage: {error}");
+                }
                 (format!("{{\"ok\":true,\"programId\":\"{}\"}}", id), req_id)
             }
             "get" => {
@@ -379,27 +347,19 @@ impl NodeWorkloads {
                         req_id,
                     );
                 }
-                let prog_slot = Arc::new(Mutex::new(Program::default()));
-                let meta_slot: Arc<Mutex<Map<String, Value>>> = Arc::new(Mutex::new(Map::new()));
-                let ps = prog_slot.clone();
-                let ms = meta_slot.clone();
-                let id_owned = id.clone();
-                self.app.modify_state(
-                    true,
-                    Box::new(move |t: &Trx| {
-                        let p = (crate::api::model::program_ports::ProgramPorts { trx: t })
-                            .program_or_empty(&id_owned.clone());
-                        *ps.lock().unwrap() = p;
-                        if let Some(m) = (crate::api::model::program_ports::ProgramPorts { trx: t })
-                            .metadata_object(&id_owned, "metadata")
-                        {
-                            *ms.lock().unwrap() = m;
-                        }
-                        Ok(())
-                    }),
-                );
-                let program = prog_slot.lock().unwrap().clone();
-                let metadata = Value::Object(meta_slot.lock().unwrap().clone());
+                let (program, metadata) = self
+                    .app
+                    .read(|trx| {
+                        let programs = crate::state::program_ports::ProgramPorts { trx };
+                        Ok((
+                            programs.program_or_empty(&id),
+                            programs
+                                .metadata_object(&id, "metadata")
+                                .unwrap_or_default(),
+                        ))
+                    })
+                    .unwrap_or_default();
+                let metadata = Value::Object(metadata);
                 let out = json!({"ok": true, "program": program, "metadata": metadata});
                 (serde_json::to_string(&out).unwrap_or_default(), req_id)
             }
@@ -409,25 +369,20 @@ impl NodeWorkloads {
                 if count <= 0 {
                     count = 100;
                 }
-                let slot: Arc<Mutex<Vec<Program>>> = Arc::new(Mutex::new(Vec::new()));
-                let sc = slot.clone();
-                self.app.modify_state(
-                    true,
-                    Box::new(move |t: &Trx| {
-                        if let Ok(list) = aseman_ports::ProgramDirectory::programs(
-                            &crate::api::model::program_ports::ProgramPorts { trx: t },
-                            offset,
-                            Some(count),
-                        ) {
-                            *sc.lock().unwrap() = list
-                                .into_iter()
-                                .map(crate::api::model::program_ports::program_view)
-                                .collect();
-                        }
-                        Ok(())
-                    }),
-                );
-                let programs = slot.lock().unwrap().clone();
+                let slot = self.app.with_outcome(true, Vec::new(), |t: &Trx, outcome| {
+                    if let Ok(list) = aseman_ports::ProgramDirectory::programs(
+                        &crate::state::program_ports::ProgramPorts { trx: t },
+                        offset,
+                        Some(count),
+                    ) {
+                        *outcome = list
+                            .into_iter()
+                            .map(crate::state::program_ports::program_view)
+                            .collect();
+                    }
+                    Ok(())
+                });
+                let programs = slot.clone();
                 (
                     serde_json::to_string(&json!({"ok": true, "programs": programs}))
                         .unwrap_or_default(),
@@ -445,25 +400,20 @@ impl NodeWorkloads {
                         req_id,
                     );
                 }
-                let slot: Arc<Mutex<Vec<Program>>> = Arc::new(Mutex::new(Vec::new()));
-                let sc = slot.clone();
                 let mid = machine_id.clone();
-                self.app.modify_state(
-                    true,
-                    Box::new(move |t: &Trx| {
-                        if let Ok(list) = aseman_ports::ProgramDirectory::programs_of_machine(
-                            &crate::api::model::program_ports::ProgramPorts { trx: t },
-                            &mid,
-                        ) {
-                            *sc.lock().unwrap() = list
-                                .into_iter()
-                                .map(crate::api::model::program_ports::program_view)
-                                .collect();
-                        }
-                        Ok(())
-                    }),
-                );
-                let programs = slot.lock().unwrap().clone();
+                let slot = self.app.with_outcome(true, Vec::new(), |t: &Trx, outcome| {
+                    if let Ok(list) = aseman_ports::ProgramDirectory::programs_of_machine(
+                        &crate::state::program_ports::ProgramPorts { trx: t },
+                        &mid,
+                    ) {
+                        *outcome = list
+                            .into_iter()
+                            .map(crate::state::program_ports::program_view)
+                            .collect();
+                    }
+                    Ok(())
+                });
+                let programs = slot.clone();
                 (
                     serde_json::to_string(&json!({"ok": true, "programs": programs}))
                         .unwrap_or_default(),
@@ -483,40 +433,34 @@ impl NodeWorkloads {
                 }
                 let input_owned = input.clone();
                 let id_owned = id.clone();
-                let missing = Arc::new(Mutex::new(false));
-                let missing_slot = missing.clone();
-                self.app.modify_state(
-                    false,
-                    Box::new(move |t: &Trx| {
-                        let programs = crate::api::model::program_ports::ProgramPorts { trx: t };
-                        // LD-13: a missing program is refused instead of created partially.
-                        let Some(mut p) =
-                            aseman_ports::ProgramDirectory::program(&programs, &id_owned)
-                                .map_err(|error| anyhow::anyhow!("{error}"))?
-                        else {
-                            *missing_slot.lock().unwrap() = true;
-                            return Ok(());
-                        };
-                        if let Some(v) = input_owned.get("comment").and_then(Value::as_str) {
-                            p.comment = v.to_string();
-                        }
-                        if let Some(v) = input_owned.get("runtime").and_then(Value::as_str) {
-                            p.runtime = v.to_string();
-                        }
-                        if let Some(v) = input_owned.get("path").and_then(Value::as_str) {
-                            p.path = v.to_string();
-                        }
-                        aseman_ports::ProgramDirectory::update_program(&programs, &p)
+                let missing = self.app.with_outcome(false, false, |t: &Trx, outcome| {
+                    let programs = crate::state::program_ports::ProgramPorts { trx: t };
+                    // LD-13: a missing program is refused instead of created partially.
+                    let Some(mut p) = aseman_ports::ProgramDirectory::program(&programs, &id_owned)
+                        .map_err(|error| anyhow::anyhow!("{error}"))?
+                    else {
+                        *outcome = true;
+                        return Ok(());
+                    };
+                    if let Some(v) = input_owned.get("comment").and_then(Value::as_str) {
+                        p.comment = v.to_string();
+                    }
+                    if let Some(v) = input_owned.get("runtime").and_then(Value::as_str) {
+                        p.runtime = v.to_string();
+                    }
+                    if let Some(v) = input_owned.get("path").and_then(Value::as_str) {
+                        p.path = v.to_string();
+                    }
+                    aseman_ports::ProgramDirectory::update_program(&programs, &p)
+                        .map_err(|error| anyhow::anyhow!("{error}"))?;
+                    if let Some(md) = input_owned.get("metadata") {
+                        programs
+                            .merge_metadata_value(&id_owned, md)
                             .map_err(|error| anyhow::anyhow!("{error}"))?;
-                        if let Some(md) = input_owned.get("metadata") {
-                            programs
-                                .merge_metadata_value(&id_owned, md)
-                                .map_err(|error| anyhow::anyhow!("{error}"))?;
-                        }
-                        Ok(())
-                    }),
-                );
-                if *missing.lock().unwrap() {
+                    }
+                    Ok(())
+                });
+                if missing {
                     return (
                         r#"{"ok":false,"error":"program does not exist"}"#.into(),
                         req_id,
@@ -529,251 +473,6 @@ impl NodeWorkloads {
                 req_id,
             ),
         }
-    }
-
-    /// Host-call deploy of a program entity (`deployEntity`), the VM-side
-    /// twin of the shell's `/programs/deploy`. Supports every registered VM
-    /// runtime plus the pseudo-runtime `"proxy"`: a proxy entity stores the
-    /// payload as a non-runnable data file and a target descriptor; incoming
-    /// signals are forwarded to the target with the data attached (see
-    /// `drivers::vmm::proxy`). Host-call deploys are always local — cluster
-    /// distribution stays a shell-API concern.
-    #[expect(
-        dead_code,
-        reason = "RL-006/RL-013: legacy VM host-call surface kept for the ADR-0004 window"
-    )]
-    pub(crate) fn handle_deploy_entity(&self, input: &Value, req_id: i64) -> (String, i64) {
-        use crate::adapters::vmm::proxy;
-
-        let mut program_id = check_str(input, "programId", "");
-        if program_id.is_empty() {
-            program_id = check_str(input, "machineId", "");
-        }
-        if program_id.is_empty() {
-            return (
-                r#"{"ok":false,"error":"programId is required"}"#.into(),
-                req_id,
-            );
-        }
-        let entity_id = check_str(input, "entityId", "");
-        if entity_id.is_empty() {
-            return (
-                r#"{"ok":false,"error":"entityId is required"}"#.into(),
-                req_id,
-            );
-        }
-        // LD-17: deploying into a missing program used to create a bare program with no
-        // machine, which the A308 export cannot migrate. Refuse before writing files.
-        let exists = Arc::new(Mutex::new(false));
-        let exists_slot = exists.clone();
-        let lookup_id = program_id.clone();
-        self.app.modify_state(
-            true,
-            Box::new(move |t: &Trx| {
-                *exists_slot.lock().unwrap() = aseman_ports::ProgramDirectory::program(
-                    &crate::api::model::program_ports::ProgramPorts { trx: t },
-                    &lookup_id,
-                )
-                .map_err(|error| anyhow::anyhow!("{error}"))?
-                .is_some();
-                Ok(())
-            }),
-        );
-        if !*exists.lock().unwrap() {
-            return (r#"{"ok":false,"error":"program not found"}"#.into(), req_id);
-        }
-        let entity_type = normalize_runtime(&check_str(input, "entityType", "wasm"));
-        let payload_b64 = check_str(input, "payload", "");
-        let data = match base64::engine::general_purpose::STANDARD.decode(&payload_b64) {
-            Ok(d) => d,
-            Err(e) => {
-                return (
-                    format!(
-                        "{{\"ok\":false,\"error\":\"invalid payload base64: {}\"}}",
-                        e
-                    ),
-                    req_id,
-                );
-            }
-        };
-        let metadata = input
-            .get("metadata")
-            .cloned()
-            .unwrap_or_else(|| Value::Object(Map::new()));
-        let build_folder_path = format!(
-            "{}/machines/{}/entities/{}",
-            self.app.tools().storage().storage_root(),
-            program_id,
-            entity_id
-        );
-
-        if entity_type == proxy::PROXY_RUNTIME_KEY {
-            let config = match proxy::config_from_metadata(|k| metadata.get(k).cloned()) {
-                Ok(c) => c,
-                Err(e) => {
-                    return (
-                        format!("{{\"ok\":false,\"error\":\"{}\"}}", e.replace('"', "\\\"")),
-                        req_id,
-                    );
-                }
-            };
-            let blobs = crate::adapters::blob_store::node_blobs(&*self.app.tools().storage());
-            let evidence = match blobs.put_entity_file(&program_id, &entity_id, "proxy.data", &data)
-            {
-                Ok(evidence) => evidence,
-                Err(e) => {
-                    return (
-                        format!(
-                            "{{\"ok\":false,\"error\":\"{}\"}}",
-                            e.to_string().replace('"', "\\\"")
-                        ),
-                        req_id,
-                    );
-                }
-            };
-            let program_id_owned = program_id.clone();
-            let entity_id_owned = entity_id.clone();
-            let config_owned = config.clone();
-            self.app.modify_state(
-                false,
-                Box::new(move |t: &Trx| {
-                    // LD-17: the program must exist (a bare proxy program needs no
-                    // runtime of its own); the entity write refuses a missing one.
-                    proxy::record_proxy_entity(
-                        t,
-                        &program_id_owned,
-                        &entity_id_owned,
-                        &evidence,
-                        &config_owned,
-                    )
-                }),
-            );
-            self.app.tools().workloads().assign(&program_id);
-            let out = json!({
-                "ok": true,
-                "programId": program_id,
-                "entityId": entity_id,
-                "entityType": proxy::PROXY_RUNTIME_KEY,
-                "proxy": config.to_value(),
-            });
-            return (serde_json::to_string(&out).unwrap_or_default(), req_id);
-        }
-
-        let Some(conventions) = crate::api::workloads::remote()
-            .and_then(|remote| remote.deploy_conventions(&entity_type))
-        else {
-            let offered = crate::api::workloads::remote()
-                .map(|remote| remote.runtime_keys().join("|"))
-                .unwrap_or_default();
-            return (
-                json!({
-                    "ok": false,
-                    "error": format!("invalid entityType, expected proxy or one of {offered}"),
-                })
-                .to_string(),
-                req_id,
-            );
-        };
-        let primary_file_name = conventions.entity_file_name.clone();
-        let accepts_extra_files = conventions.accepts_extra_files;
-        let blobs = crate::adapters::blob_store::node_blobs(&*self.app.tools().storage());
-        let primary =
-            match blobs.put_entity_file(&program_id, &entity_id, &primary_file_name, &data) {
-                Ok(evidence) => evidence,
-                Err(e) => {
-                    return (
-                        format!(
-                            "{{\"ok\":false,\"error\":\"{}\"}}",
-                            e.to_string().replace('"', "\\\"")
-                        ),
-                        req_id,
-                    );
-                }
-            };
-        if accepts_extra_files && let Some(files) = metadata.get("files").and_then(Value::as_object)
-        {
-            for (name, raw) in files {
-                let Some(content_b64) = raw.as_str() else {
-                    return (
-                        r#"{"ok":false,"error":"file bytecode not string"}"#.into(),
-                        req_id,
-                    );
-                };
-                let bytes = match base64::engine::general_purpose::STANDARD.decode(content_b64) {
-                    Ok(b) => b,
-                    Err(e) => {
-                        return (
-                            format!("{{\"ok\":false,\"error\":\"invalid file base64: {}\"}}", e),
-                            req_id,
-                        );
-                    }
-                };
-                if let Err(e) = blobs.put_entity_file(&program_id, &entity_id, name, &bytes) {
-                    return (
-                        format!(
-                            "{{\"ok\":false,\"error\":\"{}\"}}",
-                            e.to_string().replace('"', "\\\"")
-                        ),
-                        req_id,
-                    );
-                }
-            }
-        }
-        let downloadable = check_bool(input, "downloadable", false);
-        let program_id_owned = program_id.clone();
-        let entity_id_owned = entity_id.clone();
-        let entity_type_owned = entity_type.clone();
-        self.app.modify_state(
-            false,
-            Box::new(move |t: &Trx| {
-                // LD-17: deploying never creates a bare program without a machine.
-                let programs = crate::api::model::program_ports::ProgramPorts { trx: t };
-                let Some(mut program) =
-                    aseman_ports::ProgramDirectory::program(&programs, &program_id_owned)
-                        .map_err(|error| anyhow::anyhow!("{error}"))?
-                else {
-                    return Err(anyhow::anyhow!("program not found"));
-                };
-                if program.runtime.is_empty() {
-                    program.runtime = entity_type_owned.clone();
-                    aseman_ports::ProgramDirectory::update_program(&programs, &program)
-                        .map_err(|error| anyhow::anyhow!("{error}"))?;
-                }
-                aseman_application::program::RecordEntityDeployment {
-                    entities: &EntityPorts { trx: t },
-                }
-                .execute(&aseman_application::program::EntityDeployment {
-                    entity: EntityRecord {
-                        program_id: program_id_owned.clone(),
-                        entity_id: entity_id_owned.clone(),
-                        entity_type: entity_type_owned.clone(),
-                        image_name: entity_id_owned.clone(),
-                    },
-                    primary: primary.clone(),
-                    // The VMM fetches every runtime's primary file (P5-06).
-                    runtime_file: true,
-                    // Downloadable entities (e.g. a front-end script executed
-                    // client-side) are fetched by clients at any time via
-                    // /programs/downloadEntity.
-                    downloadable,
-                    config: None,
-                })
-                .map_err(|error| anyhow::anyhow!("{error}"))?;
-                Ok(())
-            }),
-        );
-        // A build-on-deploy runtime is built by the VMM before the entity's first
-        // start (P5-06).
-        self.app.tools().workloads().assign(&program_id);
-        let out = json!({
-            "ok": true,
-            "programId": program_id,
-            "entityId": entity_id,
-            "entityType": entity_type,
-            "entityPath": format!("{}/{}", build_folder_path, primary_file_name),
-            "downloadable": downloadable,
-        });
-        (serde_json::to_string(&out).unwrap_or_default(), req_id)
     }
 
     pub(crate) fn handle_resource_store_crud(
@@ -797,11 +496,9 @@ impl NodeWorkloads {
                 let store_id_owned = store_id.clone();
                 let machine_id_owned = machine_id.clone();
                 let name_owned = name.clone();
-                let refused = Arc::new(Mutex::new(String::new()));
-                let refused_slot = refused.clone();
-                self.app.modify_state(
-                    false,
-                    Box::new(move |t: &Trx| {
+                let refused = self
+                    .app
+                    .with_outcome(false, String::new(), |t: &Trx, outcome| {
                         // LD-21: an update without a machine keeps the owner, and a new
                         // store needs a machine to own it.
                         let metadata = if metadata.is_object() {
@@ -810,21 +507,20 @@ impl NodeWorkloads {
                             "{}".to_owned()
                         };
                         match aseman_ports::VmResourceStores::put_resource_store(
-                            &crate::api::model::program_ports::ProgramPorts { trx: t },
+                            &crate::state::program_ports::ProgramPorts { trx: t },
                             &store_id_owned,
                             &name_owned,
                             &machine_id_owned,
                             &metadata,
                         ) {
                             Err(aseman_ports::PortError::Failed(message)) => {
-                                *refused_slot.lock().unwrap() = message;
+                                *outcome = message;
                                 Ok(())
                             }
                             other => other.map_err(|error| anyhow::anyhow!("{error}")),
                         }
-                    }),
-                );
-                let refusal = refused.lock().unwrap().clone();
+                    });
+                let refusal = refused.clone();
                 if !refusal.is_empty() {
                     return (json!({"ok": false, "error": refusal}).to_string(), req_id);
                 }
@@ -842,17 +538,16 @@ impl NodeWorkloads {
                     );
                 }
                 let store_id_owned = store_id.clone();
-                self.app.modify_state(
-                    false,
-                    Box::new(move |t: &Trx| {
-                        // LD-06: the documents and the ownership link are really removed.
-                        aseman_ports::VmResourceStores::delete_resource_store(
-                            &crate::api::model::program_ports::ProgramPorts { trx: t },
-                            &store_id_owned,
-                        )
-                        .map_err(|error| anyhow::anyhow!("{error}"))
-                    }),
-                );
+                if let Err(error) = self.app.in_action(|t: &Trx| {
+                    // LD-06: the documents and the ownership link are really removed.
+                    aseman_ports::VmResourceStores::delete_resource_store(
+                        &crate::state::program_ports::ProgramPorts { trx: t },
+                        &store_id_owned,
+                    )
+                    .map_err(|error| anyhow::anyhow!("{error}"))
+                }) {
+                    eprintln!("storage: {error}");
+                }
                 (
                     format!("{{\"ok\":true,\"storeId\":\"{}\"}}", store_id),
                     req_id,
@@ -866,68 +561,55 @@ impl NodeWorkloads {
                         req_id,
                     );
                 }
-                let core_slot: Arc<Mutex<Map<String, Value>>> = Arc::new(Mutex::new(Map::new()));
-                let meta_slot: Arc<Mutex<Map<String, Value>>> = Arc::new(Mutex::new(Map::new()));
-                let core_clone = core_slot.clone();
-                let meta_clone = meta_slot.clone();
-                let store_id_owned = store_id.clone();
-                self.app.modify_state(
-                    true,
-                    Box::new(move |t: &Trx| {
-                        if let Some(store) = aseman_ports::VmResourceStores::resource_store(
-                            &crate::api::model::program_ports::ProgramPorts { trx: t },
-                            &store_id_owned,
+                let (core, meta) = self
+                    .app
+                    .read(|t| {
+                        let Some(store) = aseman_ports::VmResourceStores::resource_store(
+                            &crate::state::program_ports::ProgramPorts { trx: t },
+                            &store_id,
                         )
                         .map_err(|error| anyhow::anyhow!("{error}"))?
-                        {
-                            *core_clone.lock().unwrap() = match json!({
-                                "id": store.id,
-                                "name": store.name,
-                                "machineId": store.machine_id,
-                            }) {
-                                Value::Object(core) => core,
-                                _ => Map::new(),
-                            };
-                            *meta_clone.lock().unwrap() =
-                                serde_json::from_str(&store.metadata).unwrap_or_default();
-                        }
-                        Ok(())
-                    }),
-                );
-                let core = Value::Object(core_slot.lock().unwrap().clone());
-                let meta = Value::Object(meta_slot.lock().unwrap().clone());
+                        else {
+                            return Ok((Map::new(), Map::new()));
+                        };
+                        let core = Map::from_iter([
+                            ("id".to_owned(), json!(store.id)),
+                            ("name".to_owned(), json!(store.name)),
+                            ("machineId".to_owned(), json!(store.machine_id)),
+                        ]);
+                        Ok((
+                            core,
+                            serde_json::from_str(&store.metadata).unwrap_or_default(),
+                        ))
+                    })
+                    .unwrap_or_default();
+                let (core, meta) = (Value::Object(core), Value::Object(meta));
                 let out = json!({"ok": true, "store": {"core": core, "metadata": meta}});
                 (serde_json::to_string(&out).unwrap_or_default(), req_id)
             }
             "list" => {
                 let machine_id = check_str(input, "machineId", "");
-                let slot: Arc<Mutex<Vec<String>>> = Arc::new(Mutex::new(Vec::new()));
-                let slot_clone = slot.clone();
-                self.app.modify_state(
-                    true,
-                    Box::new(move |t: &Trx| {
-                        let programs = crate::api::model::program_ports::ProgramPorts { trx: t };
-                        let filter = (!machine_id.is_empty()).then_some(machine_id.as_str());
-                        let mut listed = Vec::new();
-                        for store_id in
-                            aseman_ports::VmResourceStores::resource_stores(&programs, filter)
-                                .map_err(|error| anyhow::anyhow!("{error}"))?
-                        {
-                            let owner = aseman_ports::VmResourceStores::resource_store(
-                                &programs, &store_id,
-                            )
+                let slot = self.app.with_outcome(true, Vec::new(), |t: &Trx, outcome| {
+                    let programs = crate::state::program_ports::ProgramPorts { trx: t };
+                    let filter = (!machine_id.is_empty()).then_some(machine_id.as_str());
+                    let mut listed = Vec::new();
+                    for store_id in
+                        aseman_ports::VmResourceStores::resource_stores(&programs, filter)
                             .map_err(|error| anyhow::anyhow!("{error}"))?
-                            .map(|store| store.machine_id)
-                            .unwrap_or_default();
-                            // Legacy returned the ownership link keys; the wire keeps
-                            // that format. Listing all stores used to return nothing.
-                            listed.push(["link::vmOwnedStore::", &owner, "::", &store_id].concat());
-                        }
-                        *slot_clone.lock().unwrap() = listed;
-                        Ok(())
-                    }),
-                );
-                let stores = slot.lock().unwrap().clone();
+                    {
+                        let owner =
+                            aseman_ports::VmResourceStores::resource_store(&programs, &store_id)
+                                .map_err(|error| anyhow::anyhow!("{error}"))?
+                                .map(|store| store.machine_id)
+                                .unwrap_or_default();
+                        // Legacy returned the ownership link keys; the wire keeps
+                        // that format. Listing all stores used to return nothing.
+                        listed.push(["link::vmOwnedStore::", &owner, "::", &store_id].concat());
+                    }
+                    *outcome = listed;
+                    Ok(())
+                });
+                let stores = slot.clone();
                 let out = json!({"ok": true, "stores": stores});
                 (serde_json::to_string(&out).unwrap_or_default(), req_id)
             }
@@ -962,28 +644,23 @@ impl NodeWorkloads {
             entity_type,
             entity_id: entity_id.clone(),
         };
-        let blobs = crate::adapters::blob_store::node_blobs(&*self.app.tools().storage());
+        let blobs = crate::blobs::node_blobs(&self.app.tools().storage());
         let path = blobs
             .local_path(&reference.data_key())
             .map(|path| path.to_string_lossy().into_owned())
             .unwrap_or_default();
-        let failure = Arc::new(Mutex::new(None));
-        let failure_slot = failure.clone();
-        self.app.modify_state(
-            false,
-            Box::new(move |t: &Trx| {
-                aseman_application::program::PutResourceEntity {
-                    entities: &EntityPorts { trx: t },
-                    blobs: &blobs,
-                }
-                .execute(&reference, &payload.to_string(), data.as_bytes())
-                .map_err(|error| {
-                    *failure_slot.lock().unwrap() = Some(error.to_string());
-                    anyhow::anyhow!("{error}")
-                })
-            }),
-        );
-        if let Some(error) = failure.lock().unwrap().take() {
+        let failure = self.app.with_outcome(false, None, |t: &Trx, outcome| {
+            aseman_application::program::PutResourceEntity {
+                entities: &EntityPorts { trx: t },
+                blobs: &blobs,
+            }
+            .execute(&reference, &payload.to_string(), data.as_bytes())
+            .map_err(|error| {
+                *outcome = Some(error.to_string());
+                anyhow::anyhow!("{error}")
+            })
+        });
+        if let Some(error) = failure {
             let out = json!({"ok": false, "error": error});
             return (out.to_string(), req_id);
         }
@@ -1016,141 +693,23 @@ impl NodeWorkloads {
             entity_type,
             entity_id,
         };
-        let blobs = crate::adapters::blob_store::node_blobs(&*self.app.tools().storage());
-        let failure = Arc::new(Mutex::new(None));
-        let failure_slot = failure.clone();
-        self.app.modify_state(
-            false,
-            Box::new(move |t: &Trx| {
-                aseman_application::program::DeleteResourceEntity {
-                    entities: &EntityPorts { trx: t },
-                    blobs: &blobs,
-                }
-                .execute(&reference)
-                .map_err(|error| {
-                    *failure_slot.lock().unwrap() = Some(error.to_string());
-                    anyhow::anyhow!("{error}")
-                })
-            }),
-        );
-        if let Some(error) = failure.lock().unwrap().take() {
+        let blobs = crate::blobs::node_blobs(&self.app.tools().storage());
+        let failure = self.app.with_outcome(false, None, |t: &Trx, outcome| {
+            aseman_application::program::DeleteResourceEntity {
+                entities: &EntityPorts { trx: t },
+                blobs: &blobs,
+            }
+            .execute(&reference)
+            .map_err(|error| {
+                *outcome = Some(error.to_string());
+                anyhow::anyhow!("{error}")
+            })
+        });
+        if let Some(error) = failure {
             let out = json!({"ok": false, "error": error});
             return (out.to_string(), req_id);
         }
         (r#"{"ok":true}"#.into(), req_id)
-    }
-
-    #[expect(
-        dead_code,
-        reason = "RL-006/RL-013: legacy VM host-call surface kept for the ADR-0004 window"
-    )]
-    pub(crate) fn handle_vm_chain_request(
-        &self,
-        op: &str,
-        input: &Value,
-        req_id: i64,
-    ) -> (String, i64) {
-        let store_id = check_str(input, "storeId", "");
-        let mut receivers: HashMap<String, HashMap<String, bool>> = HashMap::new();
-        receivers.insert("*".to_string(), HashMap::new());
-
-        match op {
-            "createWorkchain" => {
-                let chain_id = self
-                    .app
-                    .tools()
-                    .network()
-                    .chain()
-                    .create_work_chain(&store_id);
-                let payload = json!({"op": op, "chainId": chain_id, "storeId": store_id});
-                let payload_bytes = serde_json::to_vec(&payload).unwrap_or_default();
-                let owner_id = self.app.owner_id();
-                self.app.globe().send_typed_message_on_chain(
-                    "main",
-                    "chains/vm/request",
-                    "vm.chain",
-                    payload_bytes,
-                    "",
-                    &owner_id,
-                    receivers,
-                    "",
-                    &store_id,
-                    None,
-                    None,
-                );
-                (
-                    format!("{{\"ok\":true,\"chainId\":\"{}\"}}", chain_id),
-                    req_id,
-                )
-            }
-            "createSubchain" => {
-                let work_chain_id = check_str(input, "workChainId", "");
-                let mut subchain_id = check_str(input, "subchainId", "");
-                let peers: Vec<String> = input
-                    .get("peers")
-                    .and_then(Value::as_array)
-                    .map(|arr| {
-                        arr.iter()
-                            .filter_map(|v| v.as_str().map(str::to_string))
-                            .collect()
-                    })
-                    .unwrap_or_default();
-                subchain_id = self.app.tools().network().chain().create_shard_chain(
-                    &work_chain_id,
-                    &subchain_id,
-                    peers.clone(),
-                );
-                let payload = json!({
-                    "op": op,
-                    "workChainId": work_chain_id,
-                    "subchainId": subchain_id,
-                    "peers": peers,
-                });
-                let owner_id = self.app.owner_id();
-                self.app.globe().send_typed_message_on_chain(
-                    "main",
-                    "chains/vm/request",
-                    "vm.chain",
-                    serde_json::to_vec(&payload).unwrap_or_default(),
-                    "",
-                    &owner_id,
-                    receivers,
-                    "",
-                    &store_id,
-                    None,
-                    None,
-                );
-                (
-                    format!(
-                        "{{\"ok\":true,\"workChainId\":\"{}\",\"subchainId\":\"{}\"}}",
-                        work_chain_id, subchain_id
-                    ),
-                    req_id,
-                )
-            }
-            op if op.starts_with("delete") => {
-                let payload = json!({"op": op, "input": input.clone()});
-                let owner_id = self.app.owner_id();
-                self.app.globe().send_typed_message_on_chain(
-                    "main",
-                    "chains/vm/request",
-                    "vm.chain",
-                    serde_json::to_vec(&payload).unwrap_or_default(),
-                    "",
-                    &owner_id,
-                    receivers,
-                    "",
-                    &store_id,
-                    None,
-                    None,
-                );
-                (r#"{"ok":true,"notified":true}"#.into(), req_id)
-            }
-            _ => (
-                r#"{"ok":false,"error":"unsupported chain op"}"#.into(),
-                req_id,
-            ),
-        }
     }
 
     /// Run a registered shell action on behalf of a VM.
@@ -1202,73 +761,29 @@ impl NodeWorkloads {
                 check_str(input, "signature", ""),
             )
         };
-        let store_id = check_str(input, "storeId", "");
-        let packet_id = check_str(input, "packetId", "");
-
-        let secure = match self.app.actor().fetch_secure_action(&path) {
-            Some(s) => s,
-            None => return (r#"{"ok":false,"error":"action not found"}"#.into(), req_id),
+        let payload = serde_json::to_vec(&input.get("payload").cloned().unwrap_or(Value::Null))
+            .unwrap_or_default();
+        let request = crate::actions::dispatch::SignedRequest {
+            path: &path,
+            packet: crate::actions::guard::SignedPacket {
+                user_id: &user_id,
+                payload: &payload,
+                signature: &signature,
+            },
         };
-        let payload_raw = input.get("payload").cloned().unwrap_or(Value::Null);
-        let payload_bytes = serde_json::to_vec(&payload_raw).unwrap_or_default();
-        let parsed = match secure.parse_input("tcp", payload_raw) {
-            Ok(p) => p,
-            Err(e) => {
-                return (
-                    format!(
-                        "{{\"ok\":false,\"error\":\"{}\"}}",
-                        e.to_string().replace('"', "\\\"")
-                    ),
-                    req_id,
-                );
-            }
+        let answer = match self
+            .app
+            .router()
+            .dispatch(&request, crate::actions::guard::Entry::Inside)
+        {
+            Ok(value) => json!({"ok": true, "statusCode": 0, "result": value}),
+            Err(refusal) => json!({
+                "ok": false,
+                "statusCode": refusal.code(),
+                "error": refusal.message(),
+            }),
         };
-        let result_slot: Arc<Mutex<(i64, Value, Option<String>)>> =
-            Arc::new(Mutex::new((0, Value::Null, None)));
-        let result_clone = result_slot.clone();
-        let user_id_owned = user_id.clone();
-        let packet_id_owned = packet_id.clone();
-        let signature_owned = signature.clone();
-        let payload_bytes_owned = payload_bytes.clone();
-        let secure_clone = secure.clone();
-        let ip_addr = self.app.ip_addr();
-        let info: Arc<dyn IInfo> = Arc::new(BaseInfo::new(&user_id, &store_id));
-        let closure: StateClosure = Box::new(move |_state: Arc<dyn IState>| {
-            let r = secure_clone.securely_act(
-                &user_id_owned,
-                &packet_id_owned,
-                &payload_bytes_owned,
-                &signature_owned,
-                parsed.clone(),
-                &ip_addr,
-                &[true],
-            );
-            match r {
-                Ok((sc, v)) => *result_clone.lock().unwrap() = (sc, v, None),
-                Err(e) => *result_clone.lock().unwrap() = (0, Value::Null, Some(format!("{}", e))),
-            }
-            Ok(())
-        });
-        self.app.modify_state_securly(false, info, closure);
-
-        let (status, value, err) = {
-            let guard = result_slot.lock().unwrap();
-            (guard.0, guard.1.clone(), guard.2.clone())
-        };
-        match err {
-            Some(e) => (
-                format!(
-                    "{{\"ok\":false,\"statusCode\":{},\"error\":\"{}\"}}",
-                    status,
-                    e.replace('"', "\\\"")
-                ),
-                req_id,
-            ),
-            None => {
-                let out = json!({"ok": true, "statusCode": status, "result": value});
-                (serde_json::to_string(&out).unwrap_or_default(), req_id)
-            }
-        }
+        (answer.to_string(), req_id)
     }
 
     pub(crate) fn handle_micro_host_action(
@@ -1327,19 +842,13 @@ impl NodeWorkloads {
                 }
                 let user_id_owned = user_id.clone();
                 let store_id_owned = store_id.clone();
-                self.app.modify_state(
-                    false,
-                    Box::new(move |t: &Trx| {
-                        let ports = crate::api::model::store_ports::MembershipPorts { trx: t };
-                        aseman_ports::StoreAccess::join(
-                            &ports,
-                            &store_id_owned,
-                            &user_id_owned,
-                            perms,
-                        )
+                if let Err(error) = self.app.in_action(|t: &Trx| {
+                    let ports = crate::state::store_ports::MembershipPorts { trx: t };
+                    aseman_ports::StoreAccess::join(&ports, &store_id_owned, &user_id_owned, perms)
                         .map_err(|error| anyhow::anyhow!("{error}"))
-                    }),
-                );
+                }) {
+                    eprintln!("storage: {error}");
+                }
                 let out = json!({"ok": true, "permissions": perms});
                 (serde_json::to_string(&out).unwrap_or_default(), req_id)
             }
@@ -1360,14 +869,13 @@ impl NodeWorkloads {
                 }
                 let user_id_owned = user_id.clone();
                 let store_id_owned = store_id.clone();
-                self.app.modify_state(
-                    false,
-                    Box::new(move |t: &Trx| {
-                        let ports = crate::api::model::store_ports::MembershipPorts { trx: t };
-                        aseman_ports::StoreAccess::leave(&ports, &store_id_owned, &user_id_owned)
-                            .map_err(|error| anyhow::anyhow!("{error}"))
-                    }),
-                );
+                if let Err(error) = self.app.in_action(|t: &Trx| {
+                    let ports = crate::state::store_ports::MembershipPorts { trx: t };
+                    aseman_ports::StoreAccess::leave(&ports, &store_id_owned, &user_id_owned)
+                        .map_err(|error| anyhow::anyhow!("{error}"))
+                }) {
+                    eprintln!("storage: {error}");
+                }
                 (r#"{"ok":true}"#.into(), req_id)
             }
             "readSignals" => {
@@ -1393,7 +901,7 @@ impl NodeWorkloads {
                         })
                         .unwrap_or_default()
                 };
-                let query = crate::models::packet::LogQuery {
+                let query = aseman_domain::signal_tags::LogQuery {
                     tags_all: str_list("tagsAll"),
                     tags_any: str_list("tagsAny"),
                     before_time: check_i64(input, "beforeTime", 0),
@@ -1407,30 +915,28 @@ impl NodeWorkloads {
                         return (serde_json::to_string(&out).unwrap_or_default(), req_id);
                     }
                 };
-                let history = Arc::new(Mutex::new(Err(anyhow::anyhow!("state unavailable"))));
-                let slot = history.clone();
                 let (history_store, history_query) = (store_id.clone(), query.clone());
-                self.app.modify_state(
+                let history = self.app.with_outcome(
                     true,
-                    Box::new(move |trx: &Trx| {
+                    Err(anyhow::anyhow!("state unavailable")),
+                    |trx: &Trx, outcome| {
                         let signals = aseman_ports::SignalLog::history(
-                            &crate::api::model::store_ports::SignalPorts { trx },
+                            &crate::state::store_ports::SignalPorts { trx },
                             &history_store,
                             &history_query,
                         )
                         .map(|signals| {
                             signals
                                 .into_iter()
-                                .map(crate::api::model::store_ports::log_packet)
+                                .map(crate::state::store_ports::log_packet)
                                 .collect::<Vec<_>>()
                         })
                         .map_err(|error| anyhow::anyhow!("{error}"));
-                        *slot.lock().unwrap() = signals;
+                        *outcome = signals;
                         Ok(())
-                    }),
+                    },
                 );
-                let packets = match std::mem::replace(&mut *history.lock().unwrap(), Ok(Vec::new()))
-                {
+                let packets = match history {
                     Ok(p) => p,
                     Err(e) => {
                         // A creature must be able to tell "no history" from "the
@@ -1470,19 +976,17 @@ impl NodeWorkloads {
                 let key = check_str(input, "key", "");
                 let user_id = check_str(input, "userId", "");
                 let packet = check_str(input, "packet", "{}");
-                let is_system = check_bool(input, "system", true);
                 let value = serde_json::from_str::<Value>(&packet).unwrap_or(Value::Null);
                 self.app
                     .tools()
                     .signaler()
-                    .signal_user(&key, &user_id, value, is_system);
+                    .signal_user(&key, &user_id, value);
                 (r#"{"ok":true}"#.into(), req_id)
             }
             "signalGroup" => {
                 let key = check_str(input, "key", "");
                 let group_id = check_str(input, "groupId", "");
                 let packet = check_str(input, "packet", "{}");
-                let is_system = check_bool(input, "system", true);
                 let except: Vec<String> = input
                     .get("except")
                     .and_then(Value::as_array)
@@ -1496,7 +1000,7 @@ impl NodeWorkloads {
                 self.app
                     .tools()
                     .signaler()
-                    .signal_group(&key, &group_id, value, is_system, except);
+                    .signal_group(&key, &group_id, value, except);
                 (r#"{"ok":true}"#.into(), req_id)
             }
             "joinGroup" => {
@@ -1538,48 +1042,43 @@ impl NodeWorkloads {
                 let store_id_owned = store_id.clone();
                 let creator_id_owned = creator_id.clone();
                 let metadata_owned = metadata.clone();
-                let refused = Arc::new(Mutex::new(""));
-                let refused_slot = refused.clone();
-                self.app.modify_state(
-                    false,
-                    Box::new(move |t: &Trx| {
-                        let stores = crate::api::model::store_ports::StorePorts { trx: t };
-                        let record = aseman_domain::store::StoreRecord {
-                            id: store_id_owned.clone(),
-                            tag: tag.clone(),
-                            parent_id: parent_id.clone(),
-                            is_public,
-                            persistent_history: pers_hist,
-                            member_count: 1,
-                            signal_count: 0,
-                        };
-                        match aseman_ports::StoreDirectory::create_store(
-                            &stores,
-                            &record,
-                            &creator_id_owned,
-                        ) {
-                            Err(aseman_ports::PortError::Conflict) => {
-                                *refused_slot.lock().unwrap() = "store already exists";
-                                return Ok(());
-                            }
-                            other => other.map_err(|error| anyhow::anyhow!("{error}"))?,
+                let refused = self.app.with_outcome(false, "", |t: &Trx, outcome| {
+                    let stores = crate::state::store_ports::StorePorts { trx: t };
+                    let record = aseman_domain::store::StoreRecord {
+                        id: store_id_owned.clone(),
+                        tag: tag.clone(),
+                        parent_id: parent_id.clone(),
+                        is_public,
+                        persistent_history: pers_hist,
+                        member_count: 1,
+                        signal_count: 0,
+                    };
+                    match aseman_ports::StoreDirectory::create_store(
+                        &stores,
+                        &record,
+                        &creator_id_owned,
+                    ) {
+                        Err(aseman_ports::PortError::Conflict) => {
+                            *outcome = "store already exists";
+                            return Ok(());
                         }
-                        stores
-                            .merge_metadata_value(&store_id_owned, &metadata_owned)
-                            .map_err(|error| anyhow::anyhow!("{error}"))?;
-                        // The creator administers the store they just made.
-                        let ports = crate::api::model::store_ports::MembershipPorts { trx: t };
-                        aseman_ports::StoreAccess::join(
-                            &ports,
-                            &store_id_owned,
-                            &creator_id_owned,
-                            StorePermissions::owner(),
-                        )
+                        other => other.map_err(|error| anyhow::anyhow!("{error}"))?,
+                    }
+                    stores
+                        .merge_metadata_value(&store_id_owned, &metadata_owned)
                         .map_err(|error| anyhow::anyhow!("{error}"))?;
-                        Ok(())
-                    }),
-                );
-                let refusal = *refused.lock().unwrap();
+                    // The creator administers the store they just made.
+                    let ports = crate::state::store_ports::MembershipPorts { trx: t };
+                    aseman_ports::StoreAccess::join(
+                        &ports,
+                        &store_id_owned,
+                        &creator_id_owned,
+                        StorePermissions::owner(),
+                    )
+                    .map_err(|error| anyhow::anyhow!("{error}"))?;
+                    Ok(())
+                });
+                let refusal = refused;
                 if !refusal.is_empty() {
                     return (json!({"ok": false, "error": refusal}).to_string(), req_id);
                 }
@@ -1596,36 +1095,35 @@ impl NodeWorkloads {
                 }
                 let input_owned = input.clone();
                 let store_id_owned = store_id.clone();
-                self.app.modify_state(
-                    false,
-                    Box::new(move |t: &Trx| {
-                        let stores = crate::api::model::store_ports::StorePorts { trx: t };
-                        // A missing store stays a no-op, as before.
-                        let Some(mut store) =
-                            aseman_ports::StoreDirectory::store(&stores, &store_id_owned)
-                                .map_err(|error| anyhow::anyhow!("{error}"))?
-                        else {
-                            return Ok(());
-                        };
-                        if let Some(v) = input_owned.get("isPublic").and_then(Value::as_bool) {
-                            store.is_public = v;
-                        }
-                        if let Some(v) = input_owned.get("persHist").and_then(Value::as_bool) {
-                            store.persistent_history = v;
-                        }
-                        if let Some(v) = input_owned.get("tag").and_then(Value::as_str) {
-                            store.tag = v.to_string();
-                        }
-                        aseman_ports::StoreDirectory::update_store(&stores, &store)
+                if let Err(error) = self.app.in_action(|t: &Trx| {
+                    let stores = crate::state::store_ports::StorePorts { trx: t };
+                    // A missing store stays a no-op, as before.
+                    let Some(mut store) =
+                        aseman_ports::StoreDirectory::store(&stores, &store_id_owned)
+                            .map_err(|error| anyhow::anyhow!("{error}"))?
+                    else {
+                        return Ok(());
+                    };
+                    if let Some(v) = input_owned.get("isPublic").and_then(Value::as_bool) {
+                        store.is_public = v;
+                    }
+                    if let Some(v) = input_owned.get("persHist").and_then(Value::as_bool) {
+                        store.persistent_history = v;
+                    }
+                    if let Some(v) = input_owned.get("tag").and_then(Value::as_str) {
+                        store.tag = v.to_string();
+                    }
+                    aseman_ports::StoreDirectory::update_store(&stores, &store)
+                        .map_err(|error| anyhow::anyhow!("{error}"))?;
+                    if let Some(md) = input_owned.get("metadata") {
+                        stores
+                            .merge_metadata_value(&store_id_owned, md)
                             .map_err(|error| anyhow::anyhow!("{error}"))?;
-                        if let Some(md) = input_owned.get("metadata") {
-                            stores
-                                .merge_metadata_value(&store_id_owned, md)
-                                .map_err(|error| anyhow::anyhow!("{error}"))?;
-                        }
-                        Ok(())
-                    }),
-                );
+                    }
+                    Ok(())
+                }) {
+                    eprintln!("storage: {error}");
+                }
                 (
                     format!("{{\"ok\":true,\"storeId\":\"{}\"}}", store_id),
                     req_id,
@@ -1640,32 +1138,28 @@ impl NodeWorkloads {
                     );
                 }
                 let store_id_owned = store_id.clone();
-                self.app.modify_state(
-                    false,
-                    Box::new(move |t: &Trx| {
-                        // LD-06: the metadata document is really removed with the store.
-                        let stores = crate::api::model::store_ports::StorePorts { trx: t };
-                        aseman_ports::StoreDirectory::delete_store(&stores, &store_id_owned)
-                            .map_err(|error| anyhow::anyhow!("{error}"))?;
-                        aseman_ports::StoreMetadata::delete_store_metadata(
-                            &stores,
-                            &store_id_owned,
-                        )
+                if let Err(error) = self.app.in_action(|t: &Trx| {
+                    // LD-06: the metadata document is really removed with the store.
+                    let stores = crate::state::store_ports::StorePorts { trx: t };
+                    aseman_ports::StoreDirectory::delete_store(&stores, &store_id_owned)
                         .map_err(|error| anyhow::anyhow!("{error}"))?;
-                        // Membership links outlive the object unless we drop them:
-                        // listStores walks hasaccess, and a later getStore still
-                        // echoes the requested id, which is how a deleted space
-                        // came back as an untitled project.
-                        let ports = crate::api::model::store_ports::MembershipPorts { trx: t };
-                        let members = aseman_ports::StoreAccess::members(&ports, &store_id_owned)
+                    aseman_ports::StoreMetadata::delete_store_metadata(&stores, &store_id_owned)
+                        .map_err(|error| anyhow::anyhow!("{error}"))?;
+                    // Membership links outlive the object unless we drop them:
+                    // listStores walks hasaccess, and a later getStore still
+                    // echoes the requested id, which is how a deleted space
+                    // came back as an untitled project.
+                    let ports = crate::state::store_ports::MembershipPorts { trx: t };
+                    let members = aseman_ports::StoreAccess::members(&ports, &store_id_owned)
+                        .map_err(|error| anyhow::anyhow!("{error}"))?;
+                    for (member_id, _) in members {
+                        aseman_ports::StoreAccess::leave(&ports, &store_id_owned, &member_id)
                             .map_err(|error| anyhow::anyhow!("{error}"))?;
-                        for (member_id, _) in members {
-                            aseman_ports::StoreAccess::leave(&ports, &store_id_owned, &member_id)
-                                .map_err(|error| anyhow::anyhow!("{error}"))?;
-                        }
-                        Ok(())
-                    }),
-                );
+                    }
+                    Ok(())
+                }) {
+                    eprintln!("storage: {error}");
+                }
                 (
                     format!("{{\"ok\":true,\"storeId\":\"{}\"}}", store_id),
                     req_id,
@@ -1679,62 +1173,52 @@ impl NodeWorkloads {
                         req_id,
                     );
                 }
-                let store_slot = Arc::new(Mutex::new(Store::default()));
-                let meta_slot: Arc<Mutex<Map<String, Value>>> = Arc::new(Mutex::new(Map::new()));
-                let store_clone = store_slot.clone();
-                let meta_clone = meta_slot.clone();
-                let store_id_owned = store_id.clone();
-                self.app.modify_state(
-                    true,
-                    Box::new(move |t: &Trx| {
-                        let stores = crate::api::model::store_ports::StorePorts { trx: t };
-                        *store_clone.lock().unwrap() = stores.store_or_empty(&store_id_owned);
-                        if let Some(m) = stores.metadata_object(&store_id_owned, "metadata") {
-                            *meta_clone.lock().unwrap() = m;
-                        }
-                        Ok(())
-                    }),
-                );
-                let store = store_slot.lock().unwrap().clone();
-                let meta = Value::Object(meta_slot.lock().unwrap().clone());
+                let (store, meta) = self
+                    .app
+                    .read(|trx| {
+                        let stores = crate::state::store_ports::StorePorts { trx };
+                        Ok((
+                            stores.store_or_empty(&store_id),
+                            stores
+                                .metadata_object(&store_id, "metadata")
+                                .unwrap_or_default(),
+                        ))
+                    })
+                    .unwrap_or_default();
+                let meta = Value::Object(meta);
                 let out = json!({"ok": true, "store": store, "metadata": meta});
                 (serde_json::to_string(&out).unwrap_or_default(), req_id)
             }
             "list" => {
                 let user_id = check_str(input, "userId", "");
-                let slot: Arc<Mutex<Vec<Store>>> = Arc::new(Mutex::new(Vec::new()));
-                let slot_clone = slot.clone();
-                self.app.modify_state(
-                    true,
-                    Box::new(move |t: &Trx| {
-                        let list = if user_id.is_empty() {
-                            // The legacy `Store::list("obj::Store::", ..)` searched links and
-                            // was always empty; list the first 50 stores instead.
-                            aseman_ports::StoreDirectory::stores(
-                                &crate::api::model::store_ports::StorePorts { trx: t },
-                                0,
-                                Some(50),
-                            )
-                            .map(|records| {
-                                records
-                                    .into_iter()
-                                    .map(crate::api::model::store_ports::store_view)
-                                    .collect()
-                            })
+                let slot = self.app.with_outcome(true, Vec::new(), |t: &Trx, outcome| {
+                    let list = if user_id.is_empty() {
+                        // The legacy `Store::list("obj::Store::", ..)` searched links and
+                        // was always empty; list the first 50 stores instead.
+                        aseman_ports::StoreDirectory::stores(
+                            &crate::state::store_ports::StorePorts { trx: t },
+                            0,
+                            Some(50),
+                        )
+                        .map(|records| {
+                            records
+                                .into_iter()
+                                .map(crate::state::store_ports::store_view)
+                                .collect()
+                        })
+                        .map_err(|error| anyhow::anyhow!("{error}"))
+                    } else {
+                        let ports = crate::state::store_ports::MembershipPorts { trx: t };
+                        ports
+                            .member_stores(&user_id, 50)
                             .map_err(|error| anyhow::anyhow!("{error}"))
-                        } else {
-                            let ports = crate::api::model::store_ports::MembershipPorts { trx: t };
-                            ports
-                                .member_stores(&user_id, 50)
-                                .map_err(|error| anyhow::anyhow!("{error}"))
-                        };
-                        if let Ok(list) = list {
-                            *slot_clone.lock().unwrap() = list;
-                        }
-                        Ok(())
-                    }),
-                );
-                let stores = slot.lock().unwrap().clone();
+                    };
+                    if let Ok(list) = list {
+                        *outcome = list;
+                    }
+                    Ok(())
+                });
+                let stores = slot.clone();
                 let out = json!({"ok": true, "stores": stores});
                 (serde_json::to_string(&out).unwrap_or_default(), req_id)
             }
@@ -1750,33 +1234,28 @@ impl NodeWorkloads {
                     );
                 }
                 let want_type = check_str(input, "type", "");
-                let slot: Arc<Mutex<Vec<Creature>>> = Arc::new(Mutex::new(Vec::new()));
-                let sc = slot.clone();
                 let sid = store_id.clone();
                 let want_owned = want_type.clone();
-                self.app.modify_state(
-                    true,
-                    Box::new(move |t: &Trx| {
-                        let ports = crate::api::model::store_ports::MembershipPorts { trx: t };
-                        let members = aseman_ports::StoreAccess::members(&ports, &sid)
-                            .map_err(|error| anyhow::anyhow!("{error}"))?;
-                        let mut out: Vec<Creature> = Vec::new();
-                        for (member_id, _) in members {
-                            let c = (crate::api::model::creature_ports::CreaturePorts { trx: t })
-                                .creature_or_empty(&member_id);
-                            if c.id.is_empty() {
-                                continue;
-                            }
-                            if !want_owned.is_empty() && c.type_name != want_owned {
-                                continue;
-                            }
-                            out.push(c);
+                let slot = self.app.with_outcome(true, Vec::new(), |t: &Trx, outcome| {
+                    let ports = crate::state::store_ports::MembershipPorts { trx: t };
+                    let members = aseman_ports::StoreAccess::members(&ports, &sid)
+                        .map_err(|error| anyhow::anyhow!("{error}"))?;
+                    let mut out: Vec<Creature> = Vec::new();
+                    for (member_id, _) in members {
+                        let c = (crate::state::creature_ports::CreaturePorts { trx: t })
+                            .creature_or_empty(&member_id);
+                        if c.id.is_empty() {
+                            continue;
                         }
-                        *sc.lock().unwrap() = out;
-                        Ok(())
-                    }),
-                );
-                let members = slot.lock().unwrap().clone();
+                        if !want_owned.is_empty() && c.type_name != want_owned {
+                            continue;
+                        }
+                        out.push(c);
+                    }
+                    *outcome = out;
+                    Ok(())
+                });
+                let members = slot.clone();
                 let out =
                     json!({"ok": true, "storeId": store_id, "type": want_type, "members": members});
                 (serde_json::to_string(&out).unwrap_or_default(), req_id)
@@ -1786,138 +1265,6 @@ impl NodeWorkloads {
                 req_id,
             ),
         }
-    }
-
-    #[expect(
-        dead_code,
-        reason = "RL-006/RL-013: legacy VM host-call surface kept for the ADR-0004 window"
-    )]
-    pub(crate) fn handle_check_token_validity(&self, input: &Value, req_id: i64) -> (String, i64) {
-        let token_owner_id = check_str(input, "tokenOwnerId", "");
-        let token_id = check_str(input, "tokenId", "");
-        if token_owner_id.is_empty() || token_id.is_empty() {
-            return (r#"{"error":1}"#.into(), req_id);
-        }
-        let gas_slot = Arc::new(Mutex::new(0i64));
-        let gas_clone = gas_slot.clone();
-        let token_owner_owned = token_owner_id.clone();
-        let token_id_owned = token_id.clone();
-        self.app.modify_state(
-            true,
-            Box::new(move |t: &Trx| {
-                if let Some(m) =
-                    crate::api::model::token_locks::lock(t, &token_owner_owned, &token_id_owned)?
-                    && let Some(amount) = m.get("amount").and_then(Value::as_f64)
-                {
-                    *gas_clone.lock().unwrap() = amount as i64;
-                }
-                Ok(())
-            }),
-        );
-        let gas_limit = *gas_slot.lock().unwrap();
-        let out = json!({"gasLimit": gas_limit});
-        (serde_json::to_string(&out).unwrap_or_default(), req_id)
-    }
-
-    #[expect(
-        dead_code,
-        reason = "RL-006/RL-013: legacy VM host-call surface kept for the ADR-0004 window"
-    )]
-    pub(crate) fn handle_plant_trigger(&self, input: &Value, req_id: i64) -> (String, i64) {
-        use std::thread;
-        use std::time::Duration;
-
-        let count = check_i64(input, "count", 0);
-        let machine_id = check_str(input, "machineId", "");
-        if machine_id.is_empty() {
-            return (r#"{"error":1}"#.into(), req_id);
-        }
-        let tag = check_str(input, "tag", "");
-        if tag.is_empty() {
-            return (r#"{"error":1}"#.into(), req_id);
-        }
-        let store_id = check_str(input, "storeId", "");
-        if store_id.is_empty() {
-            return (r#"{"error":1}"#.into(), req_id);
-        }
-        let data = check_str(input, "input", "");
-        // The entity of `machine_id` to re-run on wake. Creatures deploy their
-        // module under a named entity ("main"), so the alarm must name it — the
-        // program's default module path is not the wasm file. Defaults to "main".
-        let mut entity_id = check_str(input, "entityId", "main");
-        if entity_id.is_empty() {
-            entity_id = "main".to_string();
-        }
-        if tag == "alarm" {
-            let app = self.app.clone();
-            let machine_id_owned = machine_id.clone();
-            let store_id_owned = store_id.clone();
-            let data_owned = data.clone();
-            let entity_id_owned = entity_id.clone();
-            thread::spawn(move || {
-                let machine_id_inner = machine_id_owned.clone();
-                let store_id_inner = store_id_owned.clone();
-                let data_inner = data_owned.clone();
-                let entity_id_inner = entity_id_owned.clone();
-                let now_ms = super::driver::now_unix_ms();
-                let alarm_time = now_ms + count * 1000;
-                let alarm = aseman_domain::program::ProgramAlarm {
-                    store_id: store_id_inner,
-                    fire_at_millis: alarm_time,
-                    data: data_inner,
-                    entity: entity_id_inner,
-                };
-                let planted = alarm.clone();
-                app.modify_state(
-                    false,
-                    Box::new(move |t: &Trx| {
-                        aseman_ports::ProgramAlarms::set_alarm(
-                            &crate::api::model::program_ports::ProgramPorts { trx: t },
-                            &machine_id_inner,
-                            &planted,
-                        )
-                        .map_err(|error| anyhow::anyhow!("{error}"))
-                    }),
-                );
-                thread::sleep(Duration::from_secs(count.max(0) as u64));
-                let machine_id_drain = machine_id_owned.clone();
-                app.modify_state(
-                    false,
-                    Box::new(move |t: &Trx| {
-                        // LD-19: clear only this alarm; a newer one planted while this
-                        // thread slept stays for its own thread and for restart replay.
-                        let programs = crate::api::model::program_ports::ProgramPorts { trx: t };
-                        let current =
-                            aseman_ports::ProgramAlarms::alarm(&programs, &machine_id_drain)
-                                .map_err(|error| anyhow::anyhow!("{error}"))?;
-                        if current.as_ref() == Some(&alarm) {
-                            aseman_ports::ProgramAlarms::clear_alarm(&programs, &machine_id_drain)
-                                .map_err(|error| anyhow::anyhow!("{error}"))?;
-                        }
-                        Ok(())
-                    }),
-                );
-                if app
-                    .tools()
-                    .security()
-                    .has_access_to_store(&machine_id_owned, &store_id_owned)
-                {
-                    // Run via the IWorkloads trait so other implementations are not
-                    // mandatory; this matches how Go re-entered itself. The entity
-                    // is named so the creature's real module is resolved.
-                    app.tools().workloads().run_vm_entity(
-                        &machine_id_owned,
-                        &store_id_owned,
-                        &data_owned,
-                        &entity_id_owned,
-                    );
-                }
-            });
-        } else {
-            self.app
-                .plant_chain_trigger(count, &machine_id, &tag, &machine_id, &store_id, &data);
-        }
-        ("{}".into(), req_id)
     }
 
     /// Post one signal into a store on behalf of the calling VM.
@@ -1973,201 +1320,43 @@ impl NodeWorkloads {
                     .collect()
             })
             .unwrap_or_default();
-        // Build the SignalInput action call.
-        use crate::api::packets::stores::SignalInput;
-        let signal_input = SignalInput {
-            typ,
-            data,
-            store_id: store_id.clone(),
-            user_id,
-            tags,
-            temp,
-            origin: String::new(),
-        };
-        let info: Arc<dyn IInfo> = Arc::new(BaseInfo::new(&machine_id, &store_id));
-        let app_for_closure = self.app.clone();
-        // Carry the action's own answer back to the caller. Returning a bare
-        // `{}` regardless of what happened is how a creature whose signals are
-        // ALL being refused — no `signal` permission on the store, a log that
-        // cannot be written — goes on believing every turn it posted landed.
-        let outcome: Arc<Mutex<Result<Value, String>>> = Arc::new(Mutex::new(Err(
-            "/stores/signal is not registered".to_string(),
-        )));
-        let outcome_clone = outcome.clone();
-        let closure: StateClosure = Box::new(move |state: Arc<dyn IState>| {
-            if let Some(action) = app_for_closure.actor().fetch_action("/stores/signal") {
-                let acted = match action.act(state, Arc::new(signal_input.clone())) {
-                    Ok((_code, v)) => Ok(v),
-                    Err(e) => Err(format!("{}", e)),
-                };
-                // LD-15: a refused signal's writes are discarded.
-                let failed = acted.as_ref().err().map(|error| anyhow::anyhow!("{error}"));
-                *outcome_clone.lock().unwrap() = acted;
-                if let Some(error) = failed {
-                    return Err(error);
-                }
-            }
-            Ok(())
+        let body = json!({
+            "type": typ,
+            "data": data,
+            "storeId": store_id,
+            "userId": user_id,
+            "tags": tags,
+            "temp": temp,
         });
-        let committed = self
-            .app
-            .modify_state_securly_checked(false, info, "", closure);
-        let mut settled = outcome.lock().unwrap().clone();
-        if let (Ok(_), Err(error)) = (&settled, committed) {
-            settled = Err(error.to_string());
-        }
-        match settled {
-            Ok(value) => {
-                let mut out = match value {
-                    Value::Object(map) => map,
-                    other => {
-                        let mut m = Map::new();
-                        m.insert("result".to_string(), other);
-                        m
-                    }
-                };
-                out.insert("ok".to_string(), Value::Bool(true));
-                (
-                    serde_json::to_string(&Value::Object(out)).unwrap_or_default(),
-                    req_id,
-                )
+        let router = self.app.router();
+        let Some(operation) = router.operation("/stores/signal") else {
+            return (
+                r#"{"ok":false,"error":"/stores/signal is not registered"}"#.into(),
+                req_id,
+            );
+        };
+        let caller = crate::actions::Caller {
+            user_id: machine_id,
+            store_id,
+            source: self.app.id(),
+        };
+        // The operation's own answer goes back to the creature: one whose signals
+        // are refused (no `signal` permission, an unwritable log) must learn it.
+        let answer = match router.execute(&caller, operation, body.to_string().as_bytes(), true) {
+            Ok(Value::Object(mut fields)) => {
+                fields.insert("ok".to_owned(), Value::Bool(true));
+                Value::Object(fields)
             }
-            Err(err) => {
-                let out = json!({"ok": false, "error": err});
-                (serde_json::to_string(&out).unwrap_or_default(), req_id)
-            }
-        }
-    }
-
-    #[expect(
-        dead_code,
-        reason = "RL-006/RL-013: legacy VM host-call surface kept for the ADR-0004 window"
-    )]
-    pub(crate) fn handle_send_message_on_chain(&self, input: &Value, req_id: i64) -> (String, i64) {
-        let chain_id = check_str(input, "chainId", "main");
-        let mut key = check_str(input, "msgKey", "");
-        if key.is_empty() {
-            key = check_str(input, "key", "");
-        }
-        if key.is_empty() {
-            return (r#"{"error":1}"#.into(), req_id);
-        }
-        let message_type = check_str(input, "messageType", "vm.execute");
-        let payload_str = check_str(input, "payload", "{}");
-        let signature = check_str(input, "signature", "");
-        let owner = self.app.owner_id();
-        let user_id = check_str(input, "userId", &owner);
-        let reply_to = check_str(input, "replyTo", "");
-        let store_id = check_str(input, "storeId", "");
-        let receivers = parse_chain_receivers(input);
-        let pay = parse_chain_pay_packet(input);
-        self.app.globe().send_typed_message_on_chain(
-            &chain_id,
-            &key,
-            &message_type,
-            payload_str.into_bytes(),
-            &signature,
-            &user_id,
-            receivers,
-            &reply_to,
-            &store_id,
-            pay,
-            None,
-        );
-        ("{}".into(), req_id)
+            Ok(other) => json!({"ok": true, "result": other}),
+            Err(error) => json!({"ok": false, "error": error.to_string()}),
+        };
+        (answer.to_string(), req_id)
     }
 
     /// Mint an id for `source` (its own short transaction).
     pub(super) fn gen_id(&self, source: &str) -> String {
         self.app.tools().storage().gen_id(source)
     }
-}
-
-#[expect(
-    dead_code,
-    reason = "RL-006/RL-013: legacy VM host-call surface kept for the ADR-0004 window"
-)]
-fn parse_chain_receivers(input: &Value) -> HashMap<String, HashMap<String, bool>> {
-    let mut receivers: HashMap<String, HashMap<String, bool>> = HashMap::new();
-    let Some(nodes) = input.get("receivers").and_then(Value::as_object) else {
-        receivers.insert("*".to_string(), HashMap::new());
-        return receivers;
-    };
-    for (node_id, machine_ids_raw) in nodes {
-        let mut bucket: HashMap<String, bool> = HashMap::new();
-        if let Some(arr) = machine_ids_raw.as_array() {
-            for m in arr {
-                if let Some(s) = m.as_str() {
-                    bucket.insert(s.to_string(), true);
-                }
-            }
-        }
-        receivers.insert(node_id.clone(), bucket);
-    }
-    if receivers.is_empty() {
-        receivers.insert("*".to_string(), HashMap::new());
-    }
-    receivers
-}
-
-#[expect(
-    dead_code,
-    reason = "RL-006/RL-013: legacy VM host-call surface kept for the ADR-0004 window"
-)]
-fn parse_chain_pay_packet(input: &Value) -> Option<crate::models::chain::ChainPayPacket> {
-    let pay_obj = input.get("pay").and_then(Value::as_object)?;
-    use crate::models::chain::ChainPayPacket;
-    let mut pay = ChainPayPacket::default();
-    let s = |k: &str| pay_obj.get(k).and_then(Value::as_str).map(str::to_string);
-    let i = |k: &str| {
-        pay_obj
-            .get(k)
-            .and_then(Value::as_i64)
-            .or_else(|| pay_obj.get(k).and_then(Value::as_f64).map(|v| v as i64))
-    };
-    if let Some(v) = s("type") {
-        pay.typ = v;
-    }
-    if let Some(v) = s("sessionId") {
-        pay.session_id = v;
-    }
-    if let Some(v) = s("userId") {
-        pay.user_id = v;
-    }
-    if let Some(v) = s("lockId") {
-        pay.lock_id = v;
-    }
-    if let Some(v) = s("lockSignature") {
-        pay.lock_signature = v;
-    }
-    if let Some(v) = s("storeId") {
-        pay.store_id = v;
-    }
-    if let Some(v) = s("vmPayload") {
-        pay.vm_payload = v;
-    }
-    if let Some(v) = s("error") {
-        pay.error = v;
-    }
-    if let Some(v) = i("amount") {
-        pay.amount = v;
-    }
-    if let Some(v) = i("requestedSeconds") {
-        pay.requested_seconds = v;
-    }
-    if let Some(v) = i("acceptedSeconds") {
-        pay.accepted_seconds = v;
-    }
-    if let Some(v) = i("costPerSecond") {
-        pay.cost_per_second = v;
-    }
-    if let Some(arr) = pay_obj.get("machineIds").and_then(Value::as_array) {
-        pay.machine_ids = arr
-            .iter()
-            .filter_map(|v| v.as_str().map(str::to_string))
-            .collect();
-    }
-    Some(pay)
 }
 
 #[cfg(test)]

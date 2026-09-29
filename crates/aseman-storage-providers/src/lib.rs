@@ -5,11 +5,12 @@
 #![forbid(unsafe_code)]
 
 use aseman_config::{AsemanConfig, CoreStorageProvider};
-use aseman_storage::{ProviderSettings, Registry, StorageError, StorageResult};
+use aseman_storage::{ProviderSettings, Registry, Storage, StorageError, StorageResult};
 use std::path::PathBuf;
 use std::sync::Arc;
 
 pub mod migrate;
+pub mod port_tables;
 
 /// Every provider plugin: `postgres` and `rocksdb`.
 #[must_use]
@@ -61,7 +62,7 @@ pub fn settings(
     settings.layout = config.core_storage.layout;
     settings.binding_generation = config.core_storage.binding_generation;
     settings.cluster = config.cluster.clone();
-    settings.rocksdb = config.legacy_adapters.rocksdb;
+    settings.rocksdb = config.services.rocksdb;
     // A RocksDB store from before ADR 0036 must be converted first.
     settings.legacy_store = Some(PathBuf::from(&config.storage.base_db_path));
     let database_url = overrides
@@ -82,6 +83,40 @@ pub fn settings(
         settings.shard_map = Some(read(&secret, 64 * 1024)?);
     }
     Ok(settings)
+}
+
+/// A service's storage on the PostgreSQL provider at `database_url` (the VMM service
+/// and the meter keep their state in a database of their own, never a node's).
+///
+/// # Errors
+///
+/// An unreachable database or a failed schema migration.
+pub fn open_database(database_url: String, max_connections: u32) -> StorageResult<Storage> {
+    open(
+        &registry(),
+        aseman_storage_postgres::plugin::NAME,
+        &ProviderSettings::database(database_url, max_connections)?,
+    )
+}
+
+/// Open the provider plugin `name` from `registry`. A PostgreSQL database first has
+/// the tables of the PostgreSQL-only port adapters imported ([`port_tables`]).
+///
+/// # Errors
+///
+/// The provider failed to open, or the import failed.
+pub fn open(
+    registry: &Registry,
+    name: &str,
+    settings: &ProviderSettings,
+) -> StorageResult<Storage> {
+    let storage = Storage::open(registry, name, settings)?;
+    if name == aseman_storage_postgres::plugin::NAME
+        && let Some(database_url) = &settings.database_url
+    {
+        port_tables::import(&storage, database_url)?;
+    }
+    Ok(storage)
 }
 
 /// Readers of stores from before ADR 0036, for the one-shot legacy migration commands

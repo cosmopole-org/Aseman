@@ -1,7 +1,6 @@
 //! Weighted validator election: start-round / commit / reveal / finalize.
 //!
-//! Moved from the node's legacy globe (`core/module/globe`) into the consensus
-//! engine (RL-011). The election decides the weighted validator set for a round
+//! Governance belongs to the consensus engine. The election decides the weighted validator set for a round
 //! from the staking ledger; packet transport stays at the node's chain edge.
 
 use std::collections::HashMap;

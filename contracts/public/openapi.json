@@ -4,7 +4,7 @@
     "title": "Aseman public API",
     "version": "1",
     "summary": "The default public protocol (A701).",
-    "description": "Generated from the A402 action registry by `scripts/generate_public_api.py`; do not edit by hand. Every operation here is one registered action, so nothing is reachable that is not authorizable. The legacy TCP and WebSocket transports carry these same actions and contain framing only."
+    "description": "Generated from the A402 action registry by `scripts/generate_public_api.py`; do not edit by hand. Every operation here is one registered action, so nothing is reachable that is not authorizable. The signed-packet TCP, WebSocket, and federation transports carry these same operations through the same router and contain framing only."
   },
   "servers": [
     {
@@ -94,7 +94,7 @@
         ],
         "x-aseman-action": "node.diagnostics.read",
         "x-aseman-class": "read",
-        "x-aseman-legacy-request": "HelloInput",
+        "x-aseman-handler": "diagnostics::hello",
         "requestBody": {
           "required": true,
           "content": {
@@ -172,7 +172,7 @@
         ],
         "x-aseman-action": "node.diagnostics.read",
         "x-aseman-class": "read",
-        "x-aseman-legacy-request": "HelloInput",
+        "x-aseman-handler": "diagnostics::ping",
         "requestBody": {
           "required": true,
           "content": {
@@ -250,7 +250,7 @@
         ],
         "x-aseman-action": "node.diagnostics.read",
         "x-aseman-class": "read",
-        "x-aseman-legacy-request": "HelloInput",
+        "x-aseman-handler": "diagnostics::time",
         "requestBody": {
           "required": true,
           "content": {
@@ -328,7 +328,7 @@
         ],
         "x-aseman-action": "node.identity.read",
         "x-aseman-class": "read",
-        "x-aseman-legacy-request": "GetServerKeyInput",
+        "x-aseman-handler": "diagnostics::server_public_key",
         "requestBody": {
           "required": true,
           "content": {
@@ -406,7 +406,7 @@
         ],
         "x-aseman-action": "node.peers.read",
         "x-aseman-class": "read",
-        "x-aseman-legacy-request": "GetServersMapInput",
+        "x-aseman-handler": "diagnostics::servers_map",
         "requestBody": {
           "required": true,
           "content": {
@@ -484,7 +484,7 @@
         ],
         "x-aseman-action": "identity.session.create",
         "x-aseman-class": "security",
-        "x-aseman-legacy-request": "AuthenticateInput",
+        "x-aseman-handler": "creature::authenticate",
         "requestBody": {
           "required": true,
           "content": {
@@ -562,7 +562,7 @@
         ],
         "x-aseman-action": "identity.signature.check",
         "x-aseman-class": "read",
-        "x-aseman-legacy-request": "CheckSignInput",
+        "x-aseman-handler": "creature::check_sign",
         "requestBody": {
           "required": true,
           "content": {
@@ -640,7 +640,7 @@
         ],
         "x-aseman-action": "finance.pool.close",
         "x-aseman-class": "financial",
-        "x-aseman-legacy-request": "ClosePoolInput",
+        "x-aseman-handler": "finance::close_pool",
         "requestBody": {
           "required": true,
           "content": {
@@ -718,7 +718,7 @@
         ],
         "x-aseman-action": "finance.lock.consume",
         "x-aseman-class": "financial",
-        "x-aseman-legacy-request": "ConsumeLockInput",
+        "x-aseman-handler": "finance::consume_lock",
         "requestBody": {
           "required": true,
           "content": {
@@ -796,7 +796,7 @@
         ],
         "x-aseman-action": "creature.create",
         "x-aseman-class": "write",
-        "x-aseman-legacy-request": "CreatureCreateInput",
+        "x-aseman-handler": "creature::create",
         "requestBody": {
           "required": true,
           "content": {
@@ -874,7 +874,7 @@
         ],
         "x-aseman-action": "finance.hold.create",
         "x-aseman-class": "financial",
-        "x-aseman-legacy-request": "CreateHoldInput",
+        "x-aseman-handler": "finance::create_hold",
         "requestBody": {
           "required": true,
           "content": {
@@ -952,7 +952,7 @@
         ],
         "x-aseman-action": "finance.pool.debit",
         "x-aseman-class": "financial",
-        "x-aseman-legacy-request": "DebitPoolInput",
+        "x-aseman-handler": "finance::debit_pool",
         "requestBody": {
           "required": true,
           "content": {
@@ -1030,7 +1030,7 @@
         ],
         "x-aseman-action": "creature.delete",
         "x-aseman-class": "write",
-        "x-aseman-legacy-request": "DeleteInput",
+        "x-aseman-handler": "creature::delete",
         "requestBody": {
           "required": true,
           "content": {
@@ -1108,7 +1108,7 @@
         ],
         "x-aseman-action": "creature.discover",
         "x-aseman-class": "read",
-        "x-aseman-legacy-request": "FindInput",
+        "x-aseman-handler": "creature::find",
         "requestBody": {
           "required": true,
           "content": {
@@ -1186,7 +1186,7 @@
         ],
         "x-aseman-action": "creature.read",
         "x-aseman-class": "read",
-        "x-aseman-legacy-request": "GetInput",
+        "x-aseman-handler": "creature::get",
         "requestBody": {
           "required": true,
           "content": {
@@ -1264,7 +1264,7 @@
         ],
         "x-aseman-action": "creature.read",
         "x-aseman-class": "read",
-        "x-aseman-legacy-request": "GetByUsernameInput",
+        "x-aseman-handler": "creature::get_by_username",
         "requestBody": {
           "required": true,
           "content": {
@@ -1342,7 +1342,7 @@
         ],
         "x-aseman-action": "finance.account.read",
         "x-aseman-class": "financial",
-        "x-aseman-legacy-request": "GetFinancialAccountInput",
+        "x-aseman-handler": "finance::get_financial_account",
         "requestBody": {
           "required": true,
           "content": {
@@ -1420,7 +1420,7 @@
         ],
         "x-aseman-action": "finance.hold.read",
         "x-aseman-class": "financial",
-        "x-aseman-legacy-request": "GetHoldInput",
+        "x-aseman-handler": "finance::get_hold",
         "requestBody": {
           "required": true,
           "content": {
@@ -1498,7 +1498,7 @@
         ],
         "x-aseman-action": "creature.list",
         "x-aseman-class": "read",
-        "x-aseman-legacy-request": "ListInput",
+        "x-aseman-handler": "creature::list",
         "requestBody": {
           "required": true,
           "content": {
@@ -1576,7 +1576,7 @@
         ],
         "x-aseman-action": "finance.payout.list",
         "x-aseman-class": "financial",
-        "x-aseman-legacy-request": "ListPayoutsInput",
+        "x-aseman-handler": "finance::list_payouts",
         "requestBody": {
           "required": true,
           "content": {
@@ -1654,7 +1654,7 @@
         ],
         "x-aseman-action": "finance.lock.create",
         "x-aseman-class": "financial",
-        "x-aseman-legacy-request": "LockTokenInput",
+        "x-aseman-handler": "finance::lock_token",
         "requestBody": {
           "required": true,
           "content": {
@@ -1732,7 +1732,7 @@
         ],
         "x-aseman-action": "creature.update",
         "x-aseman-class": "write",
-        "x-aseman-legacy-request": "MetaInput",
+        "x-aseman-handler": "creature::meta",
         "requestBody": {
           "required": true,
           "content": {
@@ -1810,7 +1810,7 @@
         ],
         "x-aseman-action": "finance.mint",
         "x-aseman-class": "financial",
-        "x-aseman-legacy-request": "MintInput",
+        "x-aseman-handler": "finance::mint",
         "requestBody": {
           "required": true,
           "content": {
@@ -1888,7 +1888,7 @@
         ],
         "x-aseman-action": "finance.pool.open",
         "x-aseman-class": "financial",
-        "x-aseman-legacy-request": "OpenPoolInput",
+        "x-aseman-handler": "finance::open_pool",
         "requestBody": {
           "required": true,
           "content": {
@@ -1966,7 +1966,7 @@
         ],
         "x-aseman-action": "finance.adjustment",
         "x-aseman-class": "financial",
-        "x-aseman-legacy-request": "PaymentAdjustmentInput",
+        "x-aseman-handler": "finance::payment_adjustment",
         "requestBody": {
           "required": true,
           "content": {
@@ -2044,7 +2044,7 @@
         ],
         "x-aseman-action": "finance.catalog.publish",
         "x-aseman-class": "financial",
-        "x-aseman-legacy-request": "PublishFinanceCatalogInput",
+        "x-aseman-handler": "finance::publish_finance_catalog",
         "requestBody": {
           "required": true,
           "content": {
@@ -2122,7 +2122,7 @@
         ],
         "x-aseman-action": "finance.quote.publish",
         "x-aseman-class": "financial",
-        "x-aseman-legacy-request": "PublishFinanceQuoteInput",
+        "x-aseman-handler": "finance::publish_finance_quote",
         "requestBody": {
           "required": true,
           "content": {
@@ -2200,7 +2200,7 @@
         ],
         "x-aseman-action": "finance.reconcile",
         "x-aseman-class": "financial",
-        "x-aseman-legacy-request": "ReconcileFinancialSystemInput",
+        "x-aseman-handler": "finance::reconcile_financial_system",
         "requestBody": {
           "required": true,
           "content": {
@@ -2278,7 +2278,7 @@
         ],
         "x-aseman-action": "finance.pool.refresh",
         "x-aseman-class": "financial",
-        "x-aseman-legacy-request": "RefreshPoolInput",
+        "x-aseman-handler": "finance::refresh_pool",
         "requestBody": {
           "required": true,
           "content": {
@@ -2356,7 +2356,7 @@
         ],
         "x-aseman-action": "finance.node.register",
         "x-aseman-class": "financial",
-        "x-aseman-legacy-request": "RegisterFinanceNodeInput",
+        "x-aseman-handler": "finance::register_finance_node",
         "requestBody": {
           "required": true,
           "content": {
@@ -2434,7 +2434,7 @@
         ],
         "x-aseman-action": "finance.resource.register",
         "x-aseman-class": "financial",
-        "x-aseman-legacy-request": "RegisterFinanceResourceInput",
+        "x-aseman-handler": "finance::register_finance_resource",
         "requestBody": {
           "required": true,
           "content": {
@@ -2512,7 +2512,7 @@
         ],
         "x-aseman-action": "finance.hold.release",
         "x-aseman-class": "financial",
-        "x-aseman-legacy-request": "ReleaseHoldInput",
+        "x-aseman-handler": "finance::release_hold",
         "requestBody": {
           "required": true,
           "content": {
@@ -2590,7 +2590,7 @@
         ],
         "x-aseman-action": "finance.pool.release",
         "x-aseman-class": "financial",
-        "x-aseman-legacy-request": "ReleasePoolInput",
+        "x-aseman-handler": "finance::release_pool",
         "requestBody": {
           "required": true,
           "content": {
@@ -2668,7 +2668,7 @@
         ],
         "x-aseman-action": "finance.payout.request",
         "x-aseman-class": "financial",
-        "x-aseman-legacy-request": "RequestPayoutInput",
+        "x-aseman-handler": "finance::request_payout",
         "requestBody": {
           "required": true,
           "content": {
@@ -2746,7 +2746,7 @@
         ],
         "x-aseman-action": "finance.pool.reserve",
         "x-aseman-class": "financial",
-        "x-aseman-legacy-request": "ReservePoolInput",
+        "x-aseman-handler": "finance::reserve_pool",
         "requestBody": {
           "required": true,
           "content": {
@@ -2824,7 +2824,7 @@
         ],
         "x-aseman-action": "finance.payout.resolve",
         "x-aseman-class": "financial",
-        "x-aseman-legacy-request": "ResolvePayoutInput",
+        "x-aseman-handler": "finance::resolve_payout",
         "requestBody": {
           "required": true,
           "content": {
@@ -2902,7 +2902,7 @@
         ],
         "x-aseman-action": "finance.node.retire",
         "x-aseman-class": "financial",
-        "x-aseman-legacy-request": "RetireFinanceNodeInput",
+        "x-aseman-handler": "finance::retire_finance_node",
         "requestBody": {
           "required": true,
           "content": {
@@ -2980,7 +2980,7 @@
         ],
         "x-aseman-action": "finance.resource.retire",
         "x-aseman-class": "financial",
-        "x-aseman-legacy-request": "RetireFinanceResourceInput",
+        "x-aseman-handler": "finance::retire_finance_resource",
         "requestBody": {
           "required": true,
           "content": {
@@ -3058,7 +3058,7 @@
         ],
         "x-aseman-action": "finance.resource.review",
         "x-aseman-class": "financial",
-        "x-aseman-legacy-request": "ReviewFinanceResourceInput",
+        "x-aseman-handler": "finance::review_finance_resource",
         "requestBody": {
           "required": true,
           "content": {
@@ -3136,7 +3136,7 @@
         ],
         "x-aseman-action": "secret.read",
         "x-aseman-class": "security",
-        "x-aseman-legacy-request": "SecretGetInput",
+        "x-aseman-handler": "secret::get",
         "requestBody": {
           "required": true,
           "content": {
@@ -3214,7 +3214,7 @@
         ],
         "x-aseman-action": "secret.grant",
         "x-aseman-class": "security",
-        "x-aseman-legacy-request": "SecretGrantInput",
+        "x-aseman-handler": "secret::grant",
         "requestBody": {
           "required": true,
           "content": {
@@ -3292,7 +3292,7 @@
         ],
         "x-aseman-action": "secret.list",
         "x-aseman-class": "read",
-        "x-aseman-legacy-request": "SecretListInput",
+        "x-aseman-handler": "secret::list",
         "requestBody": {
           "required": true,
           "content": {
@@ -3370,7 +3370,7 @@
         ],
         "x-aseman-action": "secret.list_granted",
         "x-aseman-class": "read",
-        "x-aseman-legacy-request": "SecretListGrantedInput",
+        "x-aseman-handler": "secret::list_granted",
         "requestBody": {
           "required": true,
           "content": {
@@ -3448,7 +3448,7 @@
         ],
         "x-aseman-action": "secret.write",
         "x-aseman-class": "security",
-        "x-aseman-legacy-request": "SecretPutInput",
+        "x-aseman-handler": "secret::put",
         "requestBody": {
           "required": true,
           "content": {
@@ -3526,7 +3526,7 @@
         ],
         "x-aseman-action": "secret.revoke",
         "x-aseman-class": "security",
-        "x-aseman-legacy-request": "SecretRevokeInput",
+        "x-aseman-handler": "secret::revoke",
         "requestBody": {
           "required": true,
           "content": {
@@ -3604,7 +3604,7 @@
         ],
         "x-aseman-action": "finance.hold.settle",
         "x-aseman-class": "financial",
-        "x-aseman-legacy-request": "SettleHoldInput",
+        "x-aseman-handler": "finance::settle_hold",
         "requestBody": {
           "required": true,
           "content": {
@@ -3682,7 +3682,7 @@
         ],
         "x-aseman-action": "finance.pool.settle",
         "x-aseman-class": "financial",
-        "x-aseman-legacy-request": "SettlePoolInput",
+        "x-aseman-handler": "finance::settle_pool",
         "requestBody": {
           "required": true,
           "content": {
@@ -3760,7 +3760,7 @@
         ],
         "x-aseman-action": "creature.signal",
         "x-aseman-class": "write",
-        "x-aseman-legacy-request": "CreatureSignalInput",
+        "x-aseman-handler": "creature::signal",
         "requestBody": {
           "required": true,
           "content": {
@@ -3838,7 +3838,7 @@
         ],
         "x-aseman-action": "finance.hold.start",
         "x-aseman-class": "financial",
-        "x-aseman-legacy-request": "StartHoldInput",
+        "x-aseman-handler": "finance::start_hold",
         "requestBody": {
           "required": true,
           "content": {
@@ -3916,7 +3916,7 @@
         ],
         "x-aseman-action": "finance.transfer",
         "x-aseman-class": "financial",
-        "x-aseman-legacy-request": "TransferInput",
+        "x-aseman-handler": "finance::transfer",
         "requestBody": {
           "required": true,
           "content": {
@@ -3994,7 +3994,7 @@
         ],
         "x-aseman-action": "creature.types.read",
         "x-aseman-class": "read",
-        "x-aseman-legacy-request": "ListInput",
+        "x-aseman-handler": "creature::types",
         "requestBody": {
           "required": true,
           "content": {
@@ -4072,7 +4072,7 @@
         ],
         "x-aseman-action": "creature.update",
         "x-aseman-class": "write",
-        "x-aseman-legacy-request": "UpdateInput",
+        "x-aseman-handler": "creature::update",
         "requestBody": {
           "required": true,
           "content": {
@@ -4150,7 +4150,7 @@
         ],
         "x-aseman-action": "topic.publish",
         "x-aseman-class": "write",
-        "x-aseman-legacy-request": "GatewaySignalInput",
+        "x-aseman-handler": "topic::publish",
         "requestBody": {
           "required": true,
           "content": {
@@ -4228,7 +4228,7 @@
         ],
         "x-aseman-action": "topic.subscribe",
         "x-aseman-class": "read",
-        "x-aseman-legacy-request": "GatewaySubscribeInput",
+        "x-aseman-handler": "topic::subscribe",
         "requestBody": {
           "required": true,
           "content": {
@@ -4306,7 +4306,7 @@
         ],
         "x-aseman-action": "topic.unsubscribe",
         "x-aseman-class": "read",
-        "x-aseman-legacy-request": "GatewayUnsubscribeInput",
+        "x-aseman-handler": "topic::unsubscribe",
         "requestBody": {
           "required": true,
           "content": {
@@ -4384,7 +4384,7 @@
         ],
         "x-aseman-action": "workload.terminal.close",
         "x-aseman-class": "write",
-        "x-aseman-legacy-request": "VmTerminalInput",
+        "x-aseman-handler": "workload::close_terminal",
         "requestBody": {
           "required": true,
           "content": {
@@ -4462,7 +4462,7 @@
         ],
         "x-aseman-action": "creature.list",
         "x-aseman-class": "read",
-        "x-aseman-legacy-request": "ListInput",
+        "x-aseman-handler": "creature::list_machines",
         "requestBody": {
           "required": true,
           "content": {
@@ -4540,7 +4540,7 @@
         ],
         "x-aseman-action": "workload.list",
         "x-aseman-class": "read",
-        "x-aseman-legacy-request": "RunProgramEntityInput",
+        "x-aseman-handler": "workload::list_entity_vms",
         "requestBody": {
           "required": true,
           "content": {
@@ -4618,7 +4618,7 @@
         ],
         "x-aseman-action": "program.list",
         "x-aseman-class": "read",
-        "x-aseman-legacy-request": "ListAppMachsInput",
+        "x-aseman-handler": "program::list_program_machines",
         "requestBody": {
           "required": true,
           "content": {
@@ -4696,7 +4696,7 @@
         ],
         "x-aseman-action": "workload.terminal.open",
         "x-aseman-class": "security",
-        "x-aseman-legacy-request": "VmTerminalInput",
+        "x-aseman-handler": "workload::open_terminal",
         "requestBody": {
           "required": true,
           "content": {
@@ -4774,7 +4774,7 @@
         ],
         "x-aseman-action": "workload.builds.read",
         "x-aseman-class": "read",
-        "x-aseman-legacy-request": "MachineBuildsInput",
+        "x-aseman-handler": "workload::read_builds",
         "requestBody": {
           "required": true,
           "content": {
@@ -4852,7 +4852,7 @@
         ],
         "x-aseman-action": "workload.logs.read",
         "x-aseman-class": "read",
-        "x-aseman-legacy-request": "ReadVmLogsInput",
+        "x-aseman-handler": "workload::read_logs",
         "requestBody": {
           "required": true,
           "content": {
@@ -4930,7 +4930,7 @@
         ],
         "x-aseman-action": "program.create",
         "x-aseman-class": "write",
-        "x-aseman-legacy-request": "CreateMachineInput",
+        "x-aseman-handler": "program::create",
         "requestBody": {
           "required": true,
           "content": {
@@ -5008,7 +5008,7 @@
         ],
         "x-aseman-action": "program.delete",
         "x-aseman-class": "write",
-        "x-aseman-legacy-request": "DeleteProgramInput",
+        "x-aseman-handler": "program::delete",
         "requestBody": {
           "required": true,
           "content": {
@@ -5086,7 +5086,7 @@
         ],
         "x-aseman-action": "entity.delete",
         "x-aseman-class": "write",
-        "x-aseman-legacy-request": "RunProgramEntityInput",
+        "x-aseman-handler": "workload::delete_entity",
         "requestBody": {
           "required": true,
           "content": {
@@ -5164,7 +5164,7 @@
         ],
         "x-aseman-action": "entity.deploy",
         "x-aseman-class": "write",
-        "x-aseman-legacy-request": "DeployInput",
+        "x-aseman-handler": "workload::deploy",
         "requestBody": {
           "required": true,
           "content": {
@@ -5242,7 +5242,7 @@
         ],
         "x-aseman-action": "entity.download",
         "x-aseman-class": "read",
-        "x-aseman-legacy-request": "DownloadEntityInput",
+        "x-aseman-handler": "workload::download_entity",
         "requestBody": {
           "required": true,
           "content": {
@@ -5320,7 +5320,7 @@
         ],
         "x-aseman-action": "program.list",
         "x-aseman-class": "read",
-        "x-aseman-legacy-request": "ListInput",
+        "x-aseman-handler": "program::list",
         "requestBody": {
           "required": true,
           "content": {
@@ -5398,7 +5398,7 @@
         ],
         "x-aseman-action": "workload.start",
         "x-aseman-class": "write",
-        "x-aseman-legacy-request": "RunProgramEntityInput",
+        "x-aseman-handler": "workload::run_entity",
         "requestBody": {
           "required": true,
           "content": {
@@ -5476,7 +5476,7 @@
         ],
         "x-aseman-action": "workload.stop",
         "x-aseman-class": "write",
-        "x-aseman-legacy-request": "RunProgramEntityInput",
+        "x-aseman-handler": "workload::stop_entity",
         "requestBody": {
           "required": true,
           "content": {
@@ -5554,7 +5554,7 @@
         ],
         "x-aseman-action": "program.update",
         "x-aseman-class": "write",
-        "x-aseman-legacy-request": "UpdateProgramInput",
+        "x-aseman-handler": "program::update",
         "requestBody": {
           "required": true,
           "content": {
@@ -5632,7 +5632,7 @@
         ],
         "x-aseman-action": "file.upload",
         "x-aseman-class": "write",
-        "x-aseman-legacy-request": "StorageUploadInput",
+        "x-aseman-handler": "file::upload",
         "requestBody": {
           "required": true,
           "content": {
@@ -5710,7 +5710,7 @@
         ],
         "x-aseman-action": "store.access.read",
         "x-aseman-class": "read",
-        "x-aseman-legacy-request": "GetAccessInput",
+        "x-aseman-handler": "store::get_access",
         "requestBody": {
           "required": true,
           "content": {
@@ -5788,7 +5788,7 @@
         ],
         "x-aseman-action": "store.history.read",
         "x-aseman-class": "read",
-        "x-aseman-legacy-request": "HistoryInput",
+        "x-aseman-handler": "store::history",
         "requestBody": {
           "required": true,
           "content": {
@@ -5866,7 +5866,7 @@
         ],
         "x-aseman-action": "store.access.write",
         "x-aseman-class": "security",
-        "x-aseman-legacy-request": "SetAccessInput",
+        "x-aseman-handler": "store::set_access",
         "requestBody": {
           "required": true,
           "content": {
@@ -5944,7 +5944,7 @@
         ],
         "x-aseman-action": "store.signal",
         "x-aseman-class": "write",
-        "x-aseman-legacy-request": "SignalInput",
+        "x-aseman-handler": "store::signal",
         "requestBody": {
           "required": true,
           "content": {

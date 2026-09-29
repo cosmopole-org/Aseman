@@ -1,9 +1,6 @@
-//! Canonical Aseman node executable composition root (RL-001).
-//!
-//! The implementation lives in this crate. `runner` is the canonical node
-//! process: it parses the typed configuration and starts the composition in
-//! [`aseman_node::app::NodeApp`], with two maintenance subcommands as special first
-//! arguments: the ADR-0022 `vmm-handoff` and the ADR-0036 `storage migrate` (which
+//! The node executable: it parses the typed configuration and starts the node
+//! ([`aseman_node::app::NodeApp`]). Two maintenance subcommands run instead when
+//! named first: `vmm-handoff` (ADR 0022) and `storage migrate` (ADR 0036, which
 //! `asemanctl storage migrate` runs inside a containerized deployment).
 
 fn main() {

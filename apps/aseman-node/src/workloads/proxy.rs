@@ -32,16 +32,16 @@
 //! trajectory (thoughts, tool steps) plus the final result back through the
 //! proxy to the requester on one correlation.
 
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 
 use serde_json::{Map, Value, json};
 use uuid::Uuid;
 
-use crate::api::model::Creature;
-use crate::api::model::entity_ports::EntityPorts;
-use crate::api::packets::stores::Send as StoresSend;
-use crate::core::trx::{Trx, failed};
-use crate::models::core::ICore;
+use crate::actions::wire::store::Send as StoresSend;
+use crate::node::Node;
+use crate::state::Creature;
+use crate::state::entity_ports::EntityPorts;
+use crate::storage::{Trx, failed};
 use aseman_domain::blob::BlobEvidence;
 use aseman_domain::program::{ArtifactRole, EntityRecord};
 use aseman_ports::{BlobStore, EntityDirectory};
@@ -329,32 +329,19 @@ pub fn record_proxy_entity(
     .map_err(|error| anyhow::anyhow!("{error}"))
 }
 
-fn read_state<T, F>(app: &Arc<dyn ICore>, default: T, f: F) -> T
-where
-    T: Clone + Send + 'static,
-    F: Fn(&Trx) -> T + Send + Sync + 'static,
-{
-    let slot = Arc::new(Mutex::new(default));
-    let slot_clone = slot.clone();
-    app.modify_state(
-        true,
-        Box::new(move |trx: &Trx| {
-            *slot_clone.lock().unwrap() = f(trx);
-            Ok(())
-        }),
-    );
-
-    slot.lock().unwrap().clone()
+/// `f` over a read-only transaction, or `default` when the transaction fails.
+fn read_state<T>(app: &Arc<Node>, default: T, f: impl FnOnce(&Trx) -> T) -> T {
+    app.read(|trx| Ok(f(trx))).unwrap_or(default)
 }
 
 /// The identity a proxied packet travels under: the proxy's program, with the
 /// owning machine creature's username when available.
-fn proxy_identity(app: &Arc<dyn ICore>, program_id: &str) -> Creature {
+fn proxy_identity(app: &Arc<Node>, program_id: &str) -> Creature {
     let program_id_owned = program_id.to_string();
     read_state(app, Creature::default(), move |trx| {
-        let program = (crate::api::model::program_ports::ProgramPorts { trx })
+        let program = (crate::state::program_ports::ProgramPorts { trx })
             .program_or_empty(&program_id_owned.clone());
-        let owner = (crate::api::model::creature_ports::CreaturePorts { trx })
+        let owner = (crate::state::creature_ports::CreaturePorts { trx })
             .creature_or_empty(&program.machine_id.clone());
         Creature {
             id: program_id_owned.clone(),
@@ -419,11 +406,7 @@ fn extract_correlation_id(value: &Value) -> String {
 /// with the proxy's identity as the response sender, drop the correlation
 /// record, and return `true`. Returns `false` when the packet is not a
 /// proxied response for this machine.
-pub fn try_route_proxy_response(
-    app: &Arc<dyn ICore>,
-    listener_machine_id: &str,
-    value: &Value,
-) -> bool {
+pub fn try_route_proxy_response(app: &Arc<Node>, listener_machine_id: &str, value: &Value) -> bool {
     let correlation_id = extract_correlation_id(value);
     if correlation_id.is_empty() {
         return false;
@@ -458,10 +441,9 @@ pub fn try_route_proxy_response(
     let expires_at = record.get("expiresAt").and_then(value_as_ms).unwrap_or(0);
     if expires_at > 0 && now_ms() > expires_at {
         let corr_owned = correlation_id.clone();
-        app.modify_state(
-            false,
-            Box::new(move |trx: &Trx| delete_correlation(trx, &corr_owned)),
-        );
+        if let Err(error) = app.in_action(|trx: &Trx| delete_correlation(trx, &corr_owned)) {
+            eprintln!("storage: {error}");
+        }
         proxy_log(format!(
             "proxy correlation {} expired; dropping late response for {}",
             correlation_id, listener_machine_id
@@ -497,30 +479,27 @@ pub fn try_route_proxy_response(
         let mut refreshed = record.clone();
         refreshed.insert("expiresAt".to_string(), json!(new_expires_at));
         let corr_owned = correlation_id.clone();
-        app.modify_state(
-            false,
-            Box::new(move |trx: &Trx| {
-                put_correlation(
-                    trx,
-                    &corr_owned,
-                    &Value::Object(refreshed.clone()),
-                    new_expires_at,
-                )
-            }),
-        );
+        if let Err(error) = app.in_action(|trx: &Trx| {
+            put_correlation(
+                trx,
+                &corr_owned,
+                &Value::Object(refreshed.clone()),
+                new_expires_at,
+            )
+        }) {
+            eprintln!("storage: {error}");
+        }
     } else {
         // Terminal: the round trip is complete — consume the record.
         let corr_owned = correlation_id.clone();
-        app.modify_state(
-            false,
-            Box::new(move |trx: &Trx| delete_correlation(trx, &corr_owned)),
-        );
+        if let Err(error) = app.in_action(|trx: &Trx| delete_correlation(trx, &corr_owned)) {
+            eprintln!("storage: {error}");
+        }
     }
     app.tools().signaler().signal_user(
         "creatures/signal",
         &sender_id,
         serde_json::to_value(&response).unwrap_or(Value::Null),
-        true,
     );
     true
 }
@@ -530,7 +509,7 @@ pub fn try_route_proxy_response(
 /// forward the repackaged signal to the configured target entity. Returns
 /// `true` when the signal was consumed by a proxy entity.
 pub fn try_forward_through_proxy(
-    app: &Arc<dyn ICore>,
+    app: &Arc<Node>,
     machine_id: &str,
     entity_id: &str,
     value: &Value,
@@ -588,7 +567,7 @@ pub fn try_forward_through_proxy(
     };
     let attachment = data_key
         .and_then(|key| {
-            crate::adapters::blob_store::node_blobs(&*app.tools().storage())
+            crate::blobs::node_blobs(&app.tools().storage())
                 .blob(&key)
                 .ok()
                 .flatten()
@@ -638,10 +617,11 @@ pub fn try_forward_through_proxy(
         "ttlMs": config.effective_correlation_ttl_ms(),
     });
     let corr_owned = correlation_id.clone();
-    app.modify_state(
-        false,
-        Box::new(move |trx: &Trx| put_correlation(trx, &corr_owned, &record, expires_at)),
-    );
+    if let Err(error) =
+        app.in_action(|trx: &Trx| put_correlation(trx, &corr_owned, &record, expires_at))
+    {
+        eprintln!("storage: {error}");
+    }
     // Say where this goes. A proxy relay is otherwise completely invisible: the
     // requester sees only silence if the configured target no longer exists (a
     // backbone redeployed under a new program id leaves every proxy pointing at
@@ -669,14 +649,13 @@ pub fn try_forward_through_proxy(
         "creatures/signal",
         &config.target_program_id,
         serde_json::to_value(&forwarded).unwrap_or(Value::Null),
-        true,
     );
     true
 }
 
 /// Drop every correlation record whose lifetime has elapsed (found through the
 /// model's expiry index).
-pub fn sweep_expired_correlations(app: &Arc<dyn ICore>) {
+pub fn sweep_expired_correlations(app: &Arc<Node>) {
     let now = now_ms();
     let expired = read_state(app, Vec::<String>::new(), move |trx| {
         trx.proxy_correlation()
@@ -690,15 +669,14 @@ pub fn sweep_expired_correlations(app: &Arc<dyn ICore>) {
         return;
     }
     let count = expired.len();
-    app.modify_state(
-        false,
-        Box::new(move |trx: &Trx| {
-            for corr_id in &expired {
-                delete_correlation(trx, corr_id)?;
-            }
-            Ok(())
-        }),
-    );
+    if let Err(error) = app.in_action(|trx: &Trx| {
+        for corr_id in &expired {
+            delete_correlation(trx, corr_id)?;
+        }
+        Ok(())
+    }) {
+        eprintln!("storage: {error}");
+    }
     proxy_log(format!(
         "proxy correlation reaper dropped {} expired record(s)",
         count
@@ -707,7 +685,7 @@ pub fn sweep_expired_correlations(app: &Arc<dyn ICore>) {
 
 /// Spawn the background reaper that keeps the correlation store bounded even
 /// when a target fails silently and never responds.
-pub fn start_correlation_reaper(app: Arc<dyn ICore>) {
+pub fn start_correlation_reaper(app: Arc<Node>) {
     std::thread::spawn(move || {
         loop {
             std::thread::sleep(std::time::Duration::from_secs(60));

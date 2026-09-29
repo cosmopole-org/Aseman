@@ -1,39 +1,35 @@
-//! The node's side of workloads (P5-06, ADR 0030): [`NodeWorkloads`].
+//! The node's side of workloads (ADR 0030): [`NodeWorkloads`].
 //!
 //! Signals to a program are delivered to its workloads on the node's VMM, after
 //! the node's own routing (proxy entities, proxied responses). HTTP ingress reaches
 //! a workload through the VMM, or, for a runtime without ingress, becomes a signal
 //! as it always did. Resource locks and the guest CRUD host actions are node state.
 
-use std::sync::{Arc, Mutex};
-use std::time::{SystemTime, UNIX_EPOCH};
+use std::sync::Arc;
 
 use serde_json::{Value, json};
 
-use crate::adapters::vmm::globals::ResourceLockRegistry;
-use crate::api::model::{Creature, Store};
-use crate::api::packets::stores;
-use crate::core::trx::Trx;
-use crate::models::core::ICore;
-use crate::models::ports::IWorkloads;
-use crate::models::ports::Listener;
+use crate::actions::wire::store as stores;
+use crate::live::hub::Listener;
+use crate::node::Node;
+use crate::state::Creature;
+use crate::workloads::globals::ResourceLockRegistry;
 
 pub struct NodeWorkloads {
-    pub(super) app: Arc<dyn ICore>,
+    pub(super) app: Arc<Node>,
     /// resource_id → per-resource lock state (the `lockResource` host call). The
     /// registry reaps idle entries so a guest cannot pin one lock per distinct
     /// `resource_id` for the life of the node.
     pub(crate) resource_locks: ResourceLockRegistry,
     /// The HTTP ingress server, owned here and reached through `tools().workloads()`.
-    pub(crate) http_ingress: Arc<crate::adapters::vmm::network::ingress::VmHttpIngress>,
+    pub(crate) http_ingress: Arc<crate::workloads::network::ingress::VmHttpIngress>,
 }
 
 impl NodeWorkloads {
-    pub fn new(app: Arc<dyn ICore>) -> Arc<NodeWorkloads> {
+    pub fn new(app: Arc<Node>) -> Arc<NodeWorkloads> {
         // Publish the core handle so stateless host-call handlers can reach the
         // signaler and storage tools.
-        crate::adapters::vmm::globals::set_global_app(app.clone());
-        let http_ingress = crate::adapters::vmm::network::ingress::VmHttpIngress::new(app.clone());
+        let http_ingress = crate::workloads::network::ingress::VmHttpIngress::new(app.clone());
         Arc::new(NodeWorkloads {
             app,
             resource_locks: ResourceLockRegistry::new(),
@@ -44,41 +40,28 @@ impl NodeWorkloads {
 
 /// The runtime of a program entity: the entity's type when it has one, else the
 /// program's runtime.
-pub(crate) fn entity_runtime(app: &Arc<dyn ICore>, program: &str, entity: &str) -> String {
-    let slot = Arc::new(Mutex::new(String::new()));
-    let out = slot.clone();
-    let program = program.to_owned();
-    let entity = entity.to_owned();
-    app.modify_state(
-        true,
-        Box::new(move |trx: &Trx| {
-            let record =
-                (crate::api::model::program_ports::ProgramPorts { trx }).program_or_empty(&program);
-            let mut runtime = record.runtime.trim().to_lowercase();
-            if !entity.is_empty()
-                && let Ok(Some(found)) = aseman_ports::EntityDirectory::entity(
-                    &crate::api::model::entity_ports::EntityPorts { trx },
-                    &program,
-                    &entity,
-                )
-                && !found.entity_type.trim().is_empty()
-            {
-                runtime = found.entity_type.trim().to_lowercase();
-            }
-            *out.lock()
-                .unwrap_or_else(std::sync::PoisonError::into_inner) = runtime;
-            Ok(())
-        }),
-    );
-
-    slot.lock()
-        .unwrap_or_else(std::sync::PoisonError::into_inner)
-        .clone()
+pub(crate) fn entity_runtime(app: &Arc<Node>, program: &str, entity: &str) -> String {
+    app.read(|trx| {
+        let record = crate::state::program_ports::ProgramPorts { trx }.program_or_empty(program);
+        let mut runtime = record.runtime.trim().to_lowercase();
+        if !entity.is_empty()
+            && let Ok(Some(found)) = aseman_ports::EntityDirectory::entity(
+                &crate::state::entity_ports::EntityPorts { trx },
+                program,
+                entity,
+            )
+            && !found.entity_type.trim().is_empty()
+        {
+            runtime = found.entity_type.trim().to_lowercase();
+        }
+        Ok(runtime)
+    })
+    .unwrap_or_default()
 }
 
 /// Deliver one signal to an entity of `program` through the node's VMM.
-fn deliver(app: &Arc<dyn ICore>, program: &str, entity: &str, store_id: &str, packet: Value) {
-    let Some(remote) = crate::api::workloads::remote() else {
+fn deliver(app: &Arc<Node>, program: &str, entity: &str, store_id: &str, packet: Value) {
+    let Some(remote) = app.vmm() else {
         eprintln!(
             "signal to {program}/{entity} dropped: this node has no VMM (ASEMAN_VMM_ENDPOINT)"
         );
@@ -88,9 +71,9 @@ fn deliver(app: &Arc<dyn ICore>, program: &str, entity: &str, store_id: &str, pa
     remote.signal(app, program, entity, &runtime, store_id, packet);
 }
 
-/// For a runtime without HTTP ingress, legacy forwarding: the request becomes a
+/// For a runtime without HTTP ingress, signal forwarding: the request becomes a
 /// `creatures/signal` to the entity and the caller gets `202 Accepted`.
-fn forward_as_signal(app: &Arc<dyn ICore>, request: &Value) -> Value {
+fn forward_as_signal(app: &Arc<Node>, request: &Value) -> Value {
     let program = request["programId"].as_str().unwrap_or("").trim();
     let entity = request["entityId"].as_str().unwrap_or("").trim();
     let http = json!({
@@ -114,14 +97,12 @@ fn forward_as_signal(app: &Arc<dyn ICore>, request: &Value) -> Value {
     })
 }
 
-impl IWorkloads for NodeWorkloads {
-    fn assign(&self, machine_id: &str) {
+impl NodeWorkloads {
+    pub(crate) fn assign(&self, machine_id: &str) {
         let app = self.app.clone();
         let machine = machine_id.to_string();
         let listener = Arc::new(Listener {
             id: machine_id.to_string(),
-            paused: false,
-            dis_time: 0,
             signal: Arc::new(move |key, value| {
                 if key != "creatures/signal" {
                     return;
@@ -138,11 +119,11 @@ impl IWorkloads for NodeWorkloads {
                     .unwrap_or_default();
                 // Proxied response: routed back to the original sender through the
                 // proxy entity instead of running anything here.
-                if crate::adapters::vmm::proxy::try_route_proxy_response(&app, &machine, &value) {
+                if crate::workloads::proxy::try_route_proxy_response(&app, &machine, &value) {
                     return;
                 }
                 // Proxy entity request: forwarded to its target.
-                if crate::adapters::vmm::proxy::try_forward_through_proxy(
+                if crate::workloads::proxy::try_forward_through_proxy(
                     &app, &machine, &entity_id, &value,
                 ) {
                     return;
@@ -153,32 +134,33 @@ impl IWorkloads for NodeWorkloads {
         self.app.tools().signaler().listen_to_single(listener);
     }
 
-    fn run_vm_entity(&self, machine_id: &str, store_id: &str, data: &str, entity_id: &str) {
+    pub(crate) fn run_vm_entity(
+        &self,
+        machine_id: &str,
+        store_id: &str,
+        data: &str,
+        entity_id: &str,
+    ) {
         // The program must be a member of the store it runs in.
-        let store_slot = Arc::new(Mutex::new(Store::default()));
-        let member_slot = Arc::new(Mutex::new(false));
-        let store_out = store_slot.clone();
-        let member_out = member_slot.clone();
-        let store_id_owned = store_id.to_string();
-        let machine_owned = machine_id.to_string();
-        self.app.modify_state(
-            true,
-            Box::new(move |trx: &Trx| {
-                *store_out.lock().unwrap() = (crate::api::model::store_ports::StorePorts { trx })
-                    .store_or_empty(&store_id_owned);
-                let ports = crate::api::model::store_ports::MembershipPorts { trx };
-                *member_out.lock().unwrap() =
-                    aseman_ports::StoreAccess::is_member(&ports, &store_id_owned, &machine_owned)
-                        .unwrap_or(false);
-                Ok(())
-            }),
-        );
-        if !*member_slot.lock().unwrap() {
+        let admitted = self
+            .app
+            .read(|trx| {
+                let store = crate::state::store_ports::StorePorts { trx }.store_or_empty(store_id);
+                let member = aseman_ports::StoreAccess::is_member(
+                    &crate::state::store_ports::MembershipPorts { trx },
+                    store_id,
+                    machine_id,
+                )
+                .unwrap_or(false);
+                Ok(member.then_some(store))
+            })
+            .unwrap_or_default();
+        let Some(store) = admitted else {
             return;
-        }
+        };
         let send = stores::Send {
             user: Creature::default(),
-            store: store_slot.lock().unwrap().clone(),
+            store,
             action: "single".to_string(),
             data: data.to_string(),
             entity_id: entity_id.to_string(),
@@ -193,12 +175,12 @@ impl IWorkloads for NodeWorkloads {
         );
     }
 
-    fn start_http_ingress(&self, port: i64) {
+    pub(crate) fn start_http_ingress(&self, port: i64) {
         self.http_ingress.listen(port);
     }
 
-    fn forward_http(&self, request: &Value) -> Value {
-        let Some(remote) = crate::api::workloads::remote() else {
+    pub(crate) fn forward_http(&self, request: &Value) -> Value {
+        let Some(remote) = self.app.vmm() else {
             return json!({"ok": false, "status": 503, "error": "this node has no VMM"});
         };
         match remote.forward_http(request) {
@@ -210,8 +192,8 @@ impl IWorkloads for NodeWorkloads {
         }
     }
 
-    fn resolve_http_route(&self, username: &str, path: &str) -> Option<Value> {
-        use crate::adapters::vmm::http_route;
+    pub(crate) fn resolve_http_route(&self, username: &str, path: &str) -> Option<Value> {
+        use aseman_contracts::vm_routes as http_route;
 
         let username = username.trim();
         if username.is_empty() {
@@ -230,13 +212,8 @@ impl IWorkloads for NodeWorkloads {
 
         // Resolve username → creature id and match a registered route inside a
         // single state read.
-        let result_slot = Arc::new(Mutex::new(None::<Value>));
-        let result_clone = result_slot.clone();
-        let username_owned = username.to_string();
-        let segments_owned = segments.clone();
-        self.app.modify_state(
-            true,
-            Box::new(move |trx: &Trx| {
+        self.app
+            .read(|trx| {
                 // The leading segment addresses the owning creature either by its
                 // username (resolved through the index) or — because a username
                 // qualified with a URL-shaped node source (e.g.
@@ -246,120 +223,125 @@ impl IWorkloads for NodeWorkloads {
                 // itself as the creature id. Routes are stored keyed by creature
                 // id, so both address forms converge on the same lookup.
                 let mut candidates: Vec<String> = Vec::new();
-                let creatures = crate::api::model::creature_ports::CreaturePorts { trx };
+                let creatures = crate::state::creature_ports::CreaturePorts { trx };
                 if let Some(via_username) =
-                    aseman_ports::CreatureDirectory::creature_id_by_username(
-                        &creatures,
-                        &username_owned,
-                    )
-                    .map_err(|error| anyhow::anyhow!("{error}"))?
+                    aseman_ports::CreatureDirectory::creature_id_by_username(&creatures, username)
+                        .map_err(|error| anyhow::anyhow!("{error}"))?
                 {
                     candidates.push(via_username);
                 }
                 // Bare username local part (e.g. `m-tool-github`) → creature id,
                 // via the alias link written when the route was registered.
-                let routes = crate::api::model::gateway_ports::GatewayPorts { trx };
-                if let Some(via_alias) =
-                    aseman_ports::GatewayRoutes::alias(&routes, &username_owned)
-                        .map_err(|error| anyhow::anyhow!("{error}"))?
+                let routes = crate::state::gateway_ports::GatewayPorts { trx };
+                if let Some(via_alias) = aseman_ports::GatewayRoutes::alias(&routes, username)
+                    .map_err(|error| anyhow::anyhow!("{error}"))?
                     && !candidates.iter().any(|c| c == &via_alias)
                 {
                     candidates.push(via_alias);
                 }
-                if !candidates.iter().any(|c| c == &username_owned) {
-                    candidates.push(username_owned.clone());
+                if !candidates.iter().any(|c| c == username) {
+                    candidates.push(username.to_owned());
                 }
-                let max = segments_owned.len().min(http_route::MAX_ROUTE_SEGMENTS);
-                'outer: for creature_id in &candidates {
+                let max = segments.len().min(http_route::MAX_ROUTE_SEGMENTS);
+                for creature_id in &candidates {
                     for take in (1..=max).rev() {
-                        let prefix = segments_owned[..take].join("/");
+                        let prefix = segments[..take].join("/");
                         let Some(route) =
                             aseman_ports::GatewayRoutes::route(&routes, creature_id, &prefix)
                                 .map_err(|error| anyhow::anyhow!("{error}"))?
                         else {
                             continue;
                         };
-                        let rest: Vec<&str> =
-                            segments_owned[take..].iter().map(|s| s.as_str()).collect();
-                        *result_clone.lock().unwrap() = Some(json!({
+                        let rest: Vec<&str> = segments[take..].iter().map(|s| s.as_str()).collect();
+                        return Ok(Some(json!({
                             "creatureId": creature_id,
                             "programId": route.program_id,
                             "entityId": route.entity_id,
                             "vmId": route.pinned_vm_id,
                             "runtime": route.runtime,
                             "path": format!("/{}", rest.join("/")),
-                        }));
-                        break 'outer;
+                        })));
                     }
                 }
-                Ok(())
-            }),
-        );
-
-        result_slot.lock().unwrap().take()
+                Ok(None)
+            })
+            .unwrap_or_default()
     }
 
-    fn acquire_resource_lock(&self, resource_id: &str, owner_id: &str) -> Result<(), String> {
+    pub(crate) fn acquire_resource_lock(
+        &self,
+        resource_id: &str,
+        owner_id: &str,
+    ) -> Result<(), String> {
         self.resource_locks.acquire(resource_id, owner_id)
     }
 
-    fn release_resource_lock(&self, resource_id: &str, owner_id: &str) -> Result<(), String> {
+    pub(crate) fn release_resource_lock(
+        &self,
+        resource_id: &str,
+        owner_id: &str,
+    ) -> Result<(), String> {
         self.resource_locks.release(resource_id, owner_id)
     }
 
-    fn host_action_micro(&self, op: &str, input: &Value, req_id: i64) -> (String, i64) {
+    pub(crate) fn host_action_micro(&self, op: &str, input: &Value, req_id: i64) -> (String, i64) {
         self.handle_micro_host_action(op, input, req_id)
     }
 
-    fn exec_shell_action(&self, caller: &str, input: &Value) -> String {
+    pub(crate) fn exec_shell_action(&self, caller: &str, input: &Value) -> String {
         self.handle_exec_shell_action(caller, input, 0).0
     }
 
-    fn host_action_resource_store(&self, op: &str, input: &Value, req_id: i64) -> (String, i64) {
+    pub(crate) fn host_action_resource_store(
+        &self,
+        op: &str,
+        input: &Value,
+        req_id: i64,
+    ) -> (String, i64) {
         self.handle_resource_store_crud(op, input, req_id)
     }
 
-    fn host_action_resource_entity_create(&self, input: &Value, req_id: i64) -> (String, i64) {
+    pub(crate) fn host_action_resource_entity_create(
+        &self,
+        input: &Value,
+        req_id: i64,
+    ) -> (String, i64) {
         self.handle_resource_entity_create(input, req_id)
     }
 
-    fn host_action_resource_entity_delete(&self, input: &Value, req_id: i64) -> (String, i64) {
+    pub(crate) fn host_action_resource_entity_delete(
+        &self,
+        input: &Value,
+        req_id: i64,
+    ) -> (String, i64) {
         self.handle_resource_entity_delete(input, req_id)
     }
 
-    fn host_action_store(&self, op: &str, input: &Value, req_id: i64) -> (String, i64) {
+    pub(crate) fn host_action_store(&self, op: &str, input: &Value, req_id: i64) -> (String, i64) {
         self.handle_store_crud(op, input, req_id)
     }
 
-    fn host_action_creature(&self, op: &str, input: &Value, req_id: i64) -> (String, i64) {
+    pub(crate) fn host_action_creature(
+        &self,
+        op: &str,
+        input: &Value,
+        req_id: i64,
+    ) -> (String, i64) {
         self.handle_creature_crud(op, input, req_id)
     }
 
-    fn host_action_program(&self, op: &str, input: &Value, req_id: i64) -> (String, i64) {
+    pub(crate) fn host_action_program(
+        &self,
+        op: &str,
+        input: &Value,
+        req_id: i64,
+    ) -> (String, i64) {
         self.handle_program_crud(op, input, req_id)
     }
 
-    fn host_action_signal(&self, input: &Value) -> String {
+    pub(crate) fn host_action_signal(&self, input: &Value) -> String {
         self.handle_signal_store(input, 0).0
     }
-}
-
-/// `normalizeRuntime` — Go's `strings.ToLower(TrimSpace(.))`.
-#[expect(
-    dead_code,
-    reason = "RL-006/RL-013: legacy VM host-call surface kept for the ADR-0004 window"
-)]
-pub(super) fn normalize_runtime(runtime: &str) -> String {
-    runtime.trim().to_lowercase()
-}
-
-/// Field-getter helper — emulates Go's generic `checkField[T]`.
-#[expect(
-    dead_code,
-    reason = "RL-006/RL-013: legacy VM host-call surface kept for the ADR-0004 window"
-)]
-pub(super) fn check_field<'a>(input: &'a Value, key: &str) -> Option<&'a Value> {
-    input.get(key)
 }
 
 pub(super) fn check_str(input: &Value, key: &str, default: &str) -> String {
@@ -387,16 +369,4 @@ pub(super) fn check_bool(input: &Value, key: &str, default: bool) -> bool {
         }
     }
     default
-}
-
-/// Convenience for `time.Now().UnixMilli()`.
-#[expect(
-    dead_code,
-    reason = "RL-006/RL-013: legacy VM host-call surface kept for the ADR-0004 window"
-)]
-pub(super) fn now_unix_ms() -> i64 {
-    SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .unwrap_or_default()
-        .as_millis() as i64
 }

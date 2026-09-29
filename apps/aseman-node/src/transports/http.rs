@@ -1,54 +1,41 @@
-//! RL-004 first composition: serve the generated A701 public contract over TLS.
+//! The node's public HTTP gateway (A701) and its federation edge (A705).
 //!
-//! This module is the node's half of the public HTTP gateway. The transport
-//! (`aseman-public-http`) owns the TLS/HTTP edge and the composed action service
-//! (`aseman-public-service`) owns A401 authentication, A402 authorization, execution,
-//! and durable idempotency. Here the node supplies the two ports that were missing:
-//! [`PublicActionExecutor`] (resolve + execute through migrated application use cases,
-//! migrating action families one at a time) and [`LegacySessionDirectory`] (resolve a
-//! legacy session token to its subject).
-//!
-//! The listener starts only when the `ASEMAN_PUBLIC_HTTP_*` configuration is present;
-//! an unconfigured node boots exactly as before.
+//! The transport (`aseman-public-http`) owns the TLS/HTTP edge; the composed action
+//! service (`aseman-public-service`) owns A401 authentication, A402 authorization,
+//! and durable idempotency. The node supplies the executor, which runs each
+//! operation on the node's router, and the session directory. The listener starts
+//! only when `ASEMAN_PUBLIC_HTTP_*` is configured.
 
 use std::collections::BTreeSet;
 use std::sync::Arc;
 use std::time::Duration;
 
 use anyhow::{Context, Result, anyhow};
-use aseman_application::creature::{
-    CreateCreature, CreaturePatch, DeleteCreature, GetCreature, NewCreature, UpdateCreature,
-};
 use aseman_application::federation::{FederatedAction, SendFederatedRequest};
-use aseman_application::finance as finance_use_cases;
 use aseman_application::identity::VerifierPolicy;
-use aseman_application::program::{CreateProgram, DeleteProgram, NewProgram, UpdateProgramPath};
-use aseman_application::store::{GetStoreAccess, ReadStoreHistory, SetStoreAccess, SignalStore};
-use aseman_application::{Diagnostics, GetServerPeers, GetServerPublicKey};
 use aseman_capsule::audit::CapsuleDecisionAudit;
 use aseman_capsule::auto::AutoCommit;
 use aseman_capsule::capability::CapsuleGrantStore;
+use aseman_capsule::federation::StorageFederation;
 use aseman_capsule::identity::CapsuleKeyDirectory;
-use aseman_config::{
-    AsemanConfig, FederationListenerConfig, FederationOutboundConfig, PublicHttpListenerConfig,
-};
+use aseman_capsule::realtime::StorageRealtime;
+use aseman_config::{AsemanConfig, PublicHttpListenerConfig};
 use aseman_domain::authority::{ActionRegistry, Condition, ResourceRef};
 use aseman_domain::federation::{Envelope, FederationReply};
 use aseman_domain::identity::Subject;
 use aseman_domain::realtime::{can_replay_from, may_deliver};
-use aseman_domain::signal_tags::LogQuery;
 use aseman_federation_http::{
     DescriptorHttpTransport, FederationClientConfig, FederationExecutor, FederationHttpConfig,
     FederationNodeCredential, FederationResponseSigner, FederationServerTls, FederationService,
-    FederationTls, PostgresFederation, federation_audience,
+    FederationTls, federation_audience,
 };
 use aseman_identity_native::NativeIdentityVerifier;
 use aseman_ports::federation::{Directory, Transport};
 use aseman_ports::realtime::EventLog;
 use aseman_ports::{
-    ActionExecutionContext, ActionExecutor, BlobStore, ClockPort, DecisionAudit, GrantStore,
-    IdentityVerifier, KeyDirectory, PolicyDecisionPort, PortError, PublicActionIdempotency,
-    ReplayGuard, SessionDirectory,
+    ActionCall, ActionExecutor, ClockPort, DecisionAudit, GrantStore, IdentityVerifier,
+    KeyDirectory, PolicyDecisionPort, PortError, PublicActionIdempotency, ReplayGuard,
+    SessionDirectory,
 };
 use aseman_public_http::{
     PublicActionError, PublicActionRequest, PublicActionResponse, PublicActionService,
@@ -57,63 +44,27 @@ use aseman_public_http::{
     PublicTerminalService, PublicTerminalSession,
 };
 use aseman_public_service::ComposedPublicActionService;
-use aseman_realtime_durable::PostgresRealtime;
+use base64::Engine;
 use ring::signature::Ed25519KeyPair;
 use rustls::pki_types::{CertificateDer, PrivateKeyDer};
 use serde_json::{Value, json};
 use sha2::{Digest, Sha256};
 
-use crate::adapters::blob_store::{PUBLIC_FILES, node_blobs};
-use crate::adapters::gateway_subs;
-use crate::api::actions::auth::LegacyAuthPorts;
-use crate::api::actions::creature as creature_actions;
-use crate::api::actions::creature::{
-    list_granted_secrets, resolve_initial_balance, valid_component,
-};
-use crate::api::actions::gateway::{bridge_signal_packet, resolve_bridge_grant};
-use crate::api::actions::program as program_actions;
-use crate::api::model::creature_ports::{CreaturePorts, creature_view};
-use crate::api::model::finance_ports::FinanceLedgerPorts;
-use crate::api::model::program_ports::{ProgramPorts, program_view};
-use crate::api::model::secrets;
-use crate::api::model::session::Session;
-use crate::api::model::store_ports::{
-    MembershipPorts, SignalPorts, StorePorts, legacy_error, log_packet,
-};
-use crate::api::packets::creatures::{
-    CreateInput as CreatureCreateInput, DeleteInput, FindInput, GetInput, ListInput,
-    SecretGetInput, SecretGrantInput, SecretListGrantedInput, SecretListInput, SecretPutInput,
-    SecretRevokeInput, StorageUploadInput, UpdateInput,
-};
-use crate::api::packets::gateway::{
-    GatewaySignalInput, GatewaySubscribeInput, GatewayUnsubscribeInput,
-};
-use crate::api::packets::program::{CreateMachineInput, DeleteProgramInput, UpdateProgramInput};
-use crate::api::packets::stores::{
-    GetAccessInput, HistoryInput, SetAccessInput, SignalInput as StoreSignalInput,
-};
-use crate::api::utils::future::async_once;
-use crate::api::utils::secret_crypto;
-use crate::api::workloads::{SystemClock, creature_subject};
-use crate::core::trx::Trx;
-use crate::models::core::ICore;
-use base64::Engine;
-use chrono::Utc;
+use crate::actions::{Caller, OperationError, Router};
+use crate::node::Node;
+use crate::workloads::vmm::{SystemClock, creature_subject};
 
-/// Resolve and execute a public action.
+/// The public contract's operations on the node's router (A701).
 ///
-/// `resolve` derives the resource kind from the A402 registry and the resource id
-/// from the request body (best effort), establishing `authenticated` facts plus
-/// `self` when the subject is the resource. `execute` runs the migrated application
-/// use cases; action families are migrated one at a time and anything not yet
-/// migrated fails closed.
-struct PublicActionExecutor {
-    app: Arc<dyn ICore>,
+/// `resolve` derives the resource kind from the A402 registry and its id from the
+/// request body (best effort), establishing `authenticated` plus `self` when the
+/// subject is the resource. `execute` runs the addressed operation for the
+/// creature the subject is; a workload operation on a workload homed on another
+/// node goes to that node (A705).
+struct RouterExecutor {
+    router: Arc<Router>,
     registry: ActionRegistry,
     clock: SystemClock,
-    advertised_port: String,
-    origin: String,
-    consensus: Option<Arc<dyn aseman_ports::consensus::ConsensusProvider>>,
     federation: Option<Arc<NodeFederationOutbound>>,
 }
 
@@ -145,14 +96,11 @@ fn resource_id(kind: &str, body: &[u8]) -> Option<String> {
     None
 }
 
-impl PublicActionExecutor {
-    fn federated_answer(
-        &self,
-        subject: Subject,
-        action: &str,
-        body: &[u8],
-        context: Option<&ActionExecutionContext>,
-    ) -> Result<Option<Vec<u8>>, PortError> {
+impl RouterExecutor {
+    /// The answer of the node a workload lives on, when the call targets a
+    /// workload homed elsewhere (A705).
+    fn federated_answer(&self, call: &ActionCall) -> Result<Option<Vec<u8>>, PortError> {
+        let (subject, action, body) = (call.subject, call.action.as_str(), call.body.as_slice());
         let Some(outbound) = &self.federation else {
             return Ok(None);
         };
@@ -161,7 +109,7 @@ impl PublicActionExecutor {
             return Ok(None);
         }
         let Ok(workload_id) = target.id.parse::<aseman_domain::Uuid>() else {
-            // Non-canonical legacy IDs remain local compatibility input.
+            // A workload named by a non-UUID id is this node's own.
             return Ok(None);
         };
         let Some(workload) = outbound
@@ -173,11 +121,9 @@ impl PublicActionExecutor {
         if workload.home_node == outbound.node_id {
             return Ok(None);
         }
-        let request_id = context.map_or_else(aseman_domain::Uuid::now_v7, |context| {
-            let stable = context
-                .idempotency_key
-                .as_deref()
-                .unwrap_or(&context.request_id);
+        // One request identity across the caller's retries.
+        let request_id = {
+            let stable = call.idempotency_key.as_deref().unwrap_or(&call.request_id);
             let mut hasher = Sha256::new();
             hasher.update(b"aseman-federation-request-v1\0");
             hasher.update(outbound.node_id.as_bytes());
@@ -198,7 +144,7 @@ impl PublicActionExecutor {
             bytes[6] = (bytes[6] & 0x0f) | 0x50;
             bytes[8] = (bytes[8] & 0x3f) | 0x80;
             aseman_domain::Uuid::from_bytes(bytes)
-        });
+        };
         let reply = SendFederatedRequest {
             directory: outbound.directory.as_ref(),
             transport: outbound.transport.as_ref(),
@@ -225,101 +171,27 @@ impl PublicActionExecutor {
         }
     }
 
-    /// After a finance action returns `{ "journalId": ... }`, offer the journal record
-    /// for ordering through the composed consensus provider (RL-011). Best-effort: the
-    /// journal is already durable; consensus ordering failing must not fail the action.
-    fn submit_finance_journal(&self, output: &Value) {
-        let Some(consensus) = &self.consensus else {
-            return;
-        };
-        let Some(journal_id) = output
-            .get("journalId")
-            .and_then(Value::as_str)
-            .filter(|id| !id.is_empty())
-        else {
-            return;
-        };
-        let submit = aseman_application::consensus::SubmitFinanceRecord {
-            consensus: &**consensus,
-        };
-        if let Err(error) = submit.execute(journal_id) {
-            log::warn!("finance journal {journal_id} could not be offered for ordering: {error}");
-        }
-    }
-
-    /// Run a finance action inside one node transaction, then offer any journal it
-    /// wrote for ordering through the composed consensus provider (RL-011).
-    fn in_finance(
-        &self,
-        readonly: bool,
-        f: impl FnMut(aseman_application::finance::FinancePorts<'_>) -> anyhow::Result<Value>
-        + Send
-        + 'static,
-    ) -> Result<Value, PortError> {
-        let output = self.in_finance_trx(readonly, f)?;
-        self.submit_finance_journal(&output);
-        Ok(output)
-    }
-
-    /// Run `f` inside one node state transaction with the finance ports bound, and
-    /// return its value.
-    fn in_finance_trx<R>(
-        &self,
-        readonly: bool,
-        mut f: impl FnMut(aseman_application::finance::FinancePorts<'_>) -> anyhow::Result<R>
-        + Send
-        + 'static,
-    ) -> Result<R, PortError>
-    where
-        R: Send + 'static,
-    {
-        self.in_trx(readonly, move |trx| {
-            let ledger = FinanceLedgerPorts { trx };
-            let creatures = CreaturePorts { trx };
-            let stores = StorePorts { trx };
-            let programs = ProgramPorts { trx };
-            let membership = MembershipPorts { trx };
-            let ports = aseman_application::finance::FinancePorts {
-                ledger: &ledger,
-                creatures: &creatures,
-                balances: &creatures,
-                stores: &stores,
-                store_metadata: &stores,
-                programs: &programs,
-                access: &membership,
-                clock: &SystemClock,
-            };
-            f(ports)
+    /// The creature a subject is: the legacy creature whose record the subject's
+    /// id names, or the subject itself when it names none.
+    fn caller(&self, subject: &Subject) -> Result<Caller, PortError> {
+        let node = self.router.node();
+        let user_id = node
+            .read(|trx| {
+                crate::state::creature_ports::CreaturePorts { trx }
+                    .legacy_id_of(subject.id)
+                    .map_err(|error| anyhow!("{error}"))
+            })
+            .map_err(PortError::failed)?
+            .unwrap_or_else(|| subject.id.to_string());
+        Ok(Caller {
+            user_id,
+            store_id: String::new(),
+            source: node.id(),
         })
-    }
-
-    /// Run `f` inside one node state transaction and return its value.
-    fn in_trx<R>(
-        &self,
-        readonly: bool,
-        mut f: impl FnMut(&Trx) -> anyhow::Result<R> + Send + 'static,
-    ) -> Result<R, PortError>
-    where
-        R: Send + 'static,
-    {
-        let slot = Arc::new(std::sync::Mutex::new(None));
-        let holder = slot.clone();
-        self.app.modify_state(
-            readonly,
-            Box::new(move |trx: &Trx| {
-                let value = f(trx).map_err(|error| anyhow!("{error}"))?;
-                *holder.lock().unwrap() = Some(value);
-                Ok(())
-            }),
-        );
-        slot.lock()
-            .unwrap()
-            .take()
-            .ok_or(PortError::Unavailable("transaction returned no result"))
     }
 }
 
-impl ActionExecutor for PublicActionExecutor {
+impl ActionExecutor for RouterExecutor {
     fn resolve(
         &self,
         subject: &Subject,
@@ -348,1093 +220,54 @@ impl ActionExecutor for PublicActionExecutor {
         ))
     }
 
-    fn execute(&self, subject: Subject, action: &str, body: &[u8]) -> Result<Vec<u8>, PortError> {
-        if let Some(answer) = self.federated_answer(subject, action, body, None)? {
+    fn execute(&self, call: &ActionCall) -> Result<Vec<u8>, PortError> {
+        if let Some(answer) = self.federated_answer(call)? {
             return Ok(answer);
         }
-        let output = match action {
-            "node.diagnostics.read" => {
-                let input: Value = serde_json::from_slice(body)
-                    .map_err(|_error| PortError::Unavailable("malformed diagnostics input"))?;
-                let name = input.get("name").and_then(Value::as_str).unwrap_or("");
-                let diagnostics = Diagnostics {
-                    clock: &self.clock,
-                    advertised_port: &self.advertised_port,
-                };
-                json!({
-                    "hello": diagnostics.hello(name),
-                    "time": diagnostics.time_millis(),
-                    "port": diagnostics.ping(),
-                })
-            }
-            "node.identity.read" => {
-                let ports = LegacyAuthPorts {
-                    app: self.app.clone(),
-                };
-                let public_key = GetServerPublicKey { identity: &ports }
-                    .execute()
-                    .map_err(|_error| PortError::Unavailable("identity read failed"))?;
-                json!({ "publicKey": public_key })
-            }
-            "node.peers.read" => {
-                let ports = LegacyAuthPorts {
-                    app: self.app.clone(),
-                };
-                let peers = GetServerPeers { peers: &ports }
-                    .execute()
-                    .map_err(|_error| PortError::Unavailable("peers read failed"))?;
-                json!({ "peers": peers })
-            }
-            "creature.create" => {
-                let input: CreatureCreateInput = serde_json::from_slice(body)
-                    .map_err(|_error| PortError::Unavailable("bad creature.create input"))?;
-                let app = self.app.clone();
-                let origin = self.origin.clone();
-                let caller = subject.id.to_string();
-                self.in_trx(false, move |trx| {
-                    let creatures = CreaturePorts { trx };
-                    let opening_balance = resolve_initial_balance(trx, &input.typ)?;
-                    let id = app.tools().storage().gen_id("global");
-                    let created = CreateCreature {
-                        directory: &creatures,
-                        balances: &creatures,
-                    }
-                    .execute(NewCreature {
-                        id,
-                        creature_type: input.typ.clone(),
-                        name: input.username.clone(),
-                        origin: origin.clone(),
-                        public_key: input.public_key.clone(),
-                        chain_id: input.chain_id.clone(),
-                        subchain_id: input.subchain_id.clone(),
-                        owner_id: input.owner_id.clone(),
-                        caller_id: caller.clone(),
-                        opening_balance,
-                    })
-                    .map_err(legacy_error)?;
-                    let creature = creature_view(created.record, created.balance);
-                    let session = Session {
-                        id: app.tools().storage().gen_id("global"),
-                        user_id: creature.id.clone(),
-                    };
-                    session.save(trx)?;
-                    if input.metadata.is_object() {
-                        for kind in [
-                            aseman_domain::creature::MetadataKind::Creature,
-                            aseman_domain::creature::MetadataKind::User,
-                        ] {
-                            creatures
-                                .replace_metadata_value(kind, &creature.id, &input.metadata)
-                                .map_err(|error| anyhow!("{error}"))?;
-                        }
-                    }
-                    Ok(json!({ "creature": creature, "session": session }))
-                })?
-            }
-            "creature.read" => {
-                let input: GetInput = serde_json::from_slice(body)
-                    .map_err(|_error| PortError::Unavailable("bad creature.read input"))?;
-                self.in_trx(true, move |trx| {
-                    let creatures = CreaturePorts { trx };
-                    let found = GetCreature {
-                        directory: &creatures,
-                        balances: &creatures,
-                    }
-                    .by_id(&input.user_id)
-                    .map_err(legacy_error)?;
-                    Ok(json!({ "creature": creature_view(found.record, found.balance) }))
-                })?
-            }
-            "creature.discover" => {
-                let input: FindInput = serde_json::from_slice(body)
-                    .map_err(|_error| PortError::Unavailable("bad creature.discover input"))?;
-                self.in_trx(true, move |trx| {
-                    let creatures = CreaturePorts { trx };
-                    let found = GetCreature {
-                        directory: &creatures,
-                        balances: &creatures,
-                    }
-                    .by_username_fragment(&input.username)
-                    .map_err(legacy_error)?;
-                    Ok(json!({ "user": creature_view(found.record, found.balance) }))
-                })?
-            }
-            "creature.list" => {
-                let input: ListInput = serde_json::from_slice(body)
-                    .map_err(|_error| PortError::Unavailable("bad creature.list input"))?;
-                self.in_trx(true, move |trx| {
-                    let creatures = CreaturePorts { trx };
-                    let found = GetCreature {
-                        directory: &creatures,
-                        balances: &creatures,
-                    }
-                    .list(
-                        (!input.param.is_empty()).then_some(input.param.as_str()),
-                        input.offset,
-                        Some(input.count),
-                    )
-                    .map_err(legacy_error)?;
-                    let creatures = found
-                        .into_iter()
-                        .map(|view| creature_view(view.record, view.balance))
-                        .collect::<Vec<_>>();
-                    Ok(json!({ "creatures": creatures }))
-                })?
-            }
-            "creature.update" => {
-                let input: UpdateInput = serde_json::from_slice(body)
-                    .map_err(|_error| PortError::Unavailable("bad creature.update input"))?;
-                let origin = self.origin.clone();
-                let caller = subject.id.to_string();
-                self.in_trx(false, move |trx| {
-                    UpdateCreature {
-                        directory: &CreaturePorts { trx },
-                    }
-                    .execute(
-                        &caller,
-                        &input.user_id,
-                        &origin,
-                        CreaturePatch {
-                            public_key: input.public_key.clone(),
-                            creature_type: input.typ.clone(),
-                            name: input.username.clone(),
-                        },
-                    )
-                    .map_err(legacy_error)?;
-                    Ok(json!({}))
-                })?
-            }
-            "creature.delete" => {
-                let input: DeleteInput = serde_json::from_slice(body)
-                    .map_err(|_error| PortError::Unavailable("bad creature.delete input"))?;
-                let caller = subject.id.to_string();
-                self.in_trx(false, move |trx| {
-                    let creatures = CreaturePorts { trx };
-                    DeleteCreature {
-                        directory: &creatures,
-                        balances: &creatures,
-                    }
-                    .execute(&caller, &input.user_id)
-                    .map_err(legacy_error)?;
-                    Ok(json!({}))
-                })?
-            }
-            "store.signal" => {
-                let input: StoreSignalInput = serde_json::from_slice(body)
-                    .map_err(|_error| PortError::Unavailable("bad store.signal input"))?;
-                let caller = subject.id.to_string();
-                self.in_trx(false, move |trx| {
-                    let membership = MembershipPorts { trx };
-                    let stores = StorePorts { trx };
-                    let signal_log = SignalPorts { trx };
-                    let outcome = SignalStore {
-                        stores: &stores,
-                        access: &membership,
-                        log: &signal_log,
-                        clock: &SystemClock,
-                    }
-                    .execute(
-                        &caller,
-                        &input.store_id,
-                        &input.data,
-                        &input.tags,
-                        input.temp,
-                    )
-                    .map_err(legacy_error)?;
-                    let signal_id = outcome
-                        .signal
-                        .as_ref()
-                        .map(|signal| signal.id.clone())
-                        .unwrap_or_default();
-                    Ok(json!({
-                        "passed": true,
-                        "persisted": outcome.persisted,
-                        "signalId": signal_id,
-                        "time": outcome.time_millis,
-                        "tags": outcome.tags,
-                    }))
-                })?
-            }
-            "store.history.read" => {
-                let input: HistoryInput = serde_json::from_slice(body)
-                    .map_err(|_error| PortError::Unavailable("bad store.history.read input"))?;
-                let caller = subject.id.to_string();
-                self.in_trx(true, move |trx| {
-                    let membership = MembershipPorts { trx };
-                    let signal_log = SignalPorts { trx };
-                    let signals = ReadStoreHistory {
-                        access: &membership,
-                        log: &signal_log,
-                    }
-                    .execute(
-                        &caller,
-                        &input.store_id,
-                        LogQuery {
-                            tags_all: input.tags_all.clone(),
-                            tags_any: input.tags_any.clone(),
-                            before_time: input.before_time,
-                            after_time: input.after_time,
-                            count: input.count,
-                        },
-                    )
-                    .map_err(legacy_error)?;
-                    Ok(json!({
-                        "storeId": input.store_id,
-                        "signals": signals.into_iter().map(log_packet).collect::<Vec<_>>(),
-                    }))
-                })?
-            }
-            "store.access.write" => {
-                let input: SetAccessInput = serde_json::from_slice(body)
-                    .map_err(|_error| PortError::Unavailable("bad store.access.write input"))?;
-                let caller = subject.id.to_string();
-                self.in_trx(false, move |trx| {
-                    let membership = MembershipPorts { trx };
-                    let perms = SetStoreAccess {
-                        access: &membership,
-                    }
-                    .execute(
-                        &caller,
-                        &input.store_id,
-                        &input.member_id,
-                        &input.permissions,
-                    )
-                    .map_err(legacy_error)?;
-                    Ok(json!({
-                        "storeId": input.store_id,
-                        "memberId": input.member_id,
-                        "permissions": perms,
-                    }))
-                })?
-            }
-            "store.access.read" => {
-                let input: GetAccessInput = serde_json::from_slice(body)
-                    .map_err(|_error| PortError::Unavailable("bad store.access.read input"))?;
-                let caller = subject.id.to_string();
-                self.in_trx(true, move |trx| {
-                    let membership = MembershipPorts { trx };
-                    let (member, perms) = GetStoreAccess {
-                        access: &membership,
-                    }
-                    .execute(&caller, &input.store_id, &input.member_id)
-                    .map_err(legacy_error)?;
-                    Ok(json!({
-                        "storeId": input.store_id,
-                        "memberId": member,
-                        "permissions": perms,
-                    }))
-                })?
-            }
-            "program.create" => {
-                let input: CreateMachineInput = serde_json::from_slice(body)
-                    .map_err(|_error| PortError::Unavailable("bad program.create input"))?;
-                let app = self.app.clone();
-                let caller = subject.id.to_string();
-                self.in_trx(false, move |trx| {
-                    let creatures = CreaturePorts { trx };
-                    let programs = ProgramPorts { trx };
-                    let created = CreateProgram {
-                        creatures: &creatures,
-                        programs: &programs,
-                    }
-                    .execute(
-                        &caller,
-                        NewProgram {
-                            id: app.tools().storage().gen_id("global"),
-                            machine_id: input.app_id.clone(),
-                            runtime: input.runtime.clone(),
-                            path: input.path.clone(),
-                            comment: input.comment.clone(),
-                        },
-                    )
-                    .map_err(legacy_error)?;
-                    Ok(json!({ "program": program_view(created) }))
-                })?
-            }
-            "program.update" => {
-                let input: UpdateProgramInput = serde_json::from_slice(body)
-                    .map_err(|_error| PortError::Unavailable("bad program.update input"))?;
-                let caller = subject.id.to_string();
-                self.in_trx(false, move |trx| {
-                    let programs = ProgramPorts { trx };
-                    let program = UpdateProgramPath {
-                        creatures: &CreaturePorts { trx },
-                        programs: &programs,
-                    }
-                    .execute(&caller, &input.program_id, &input.path)
-                    .map_err(legacy_error)?;
-                    if !input.metadata.is_empty() {
-                        let meta_value = Value::Object(
-                            input
-                                .metadata
-                                .iter()
-                                .map(|(k, v)| (k.clone(), v.clone()))
-                                .collect(),
-                        );
-                        programs
-                            .merge_metadata_value(&program.id, &meta_value)
-                            .map_err(|error| anyhow!("{error}"))?;
-                    }
-                    Ok(json!({}))
-                })?
-            }
-            "program.delete" => {
-                let input: DeleteProgramInput = serde_json::from_slice(body)
-                    .map_err(|_error| PortError::Unavailable("bad program.delete input"))?;
-                let caller = subject.id.to_string();
-                self.in_trx(false, move |trx| {
-                    DeleteProgram {
-                        creatures: &CreaturePorts { trx },
-                        programs: &ProgramPorts { trx },
-                    }
-                    .execute(&caller, &input.program_id)
-                    .map_err(legacy_error)?;
-                    Ok(json!({}))
-                })?
-            }
-            "secret.write" => {
-                let input: SecretPutInput = serde_json::from_slice(body)
-                    .map_err(|_error| PortError::Unavailable("bad secret.write input"))?;
-                let app = self.app.clone();
-                let caller = subject.id.to_string();
-                self.in_trx(false, move |trx| {
-                    if caller.is_empty() {
-                        return Err(anyhow!("not authenticated"));
-                    }
-                    if !valid_component(&input.name) {
-                        return Err(anyhow!("secret name is required and must not contain ':'"));
-                    }
-                    if input.value.is_empty() {
-                        return Err(anyhow!("secret value is required"));
-                    }
-                    let root = app.tools().storage().storage_root().to_string();
-                    let key = secret_crypto::master_key(&root)?;
-                    let blob = secret_crypto::encrypt(input.value.as_bytes(), &key)?;
-                    secrets::put_blob(trx, &caller, &input.name, &blob, &key)?;
-                    Ok(json!({ "ok": true, "name": input.name }))
-                })?
-            }
-            "secret.read" => {
-                let input: SecretGetInput = serde_json::from_slice(body)
-                    .map_err(|_error| PortError::Unavailable("bad secret.read input"))?;
-                let app = self.app.clone();
-                let caller = subject.id.to_string();
-                self.in_trx(true, move |trx| {
-                    if caller.is_empty() {
-                        return Err(anyhow!("not authenticated"));
-                    }
-                    if !valid_component(&input.name) {
-                        return Err(anyhow!("secret name is required"));
-                    }
-                    let owner = if input.owner.is_empty() {
-                        caller.clone()
-                    } else {
-                        input.owner.clone()
-                    };
-                    if owner != caller {
-                        let expires_at = secrets::grant_expiry(trx, &owner, &input.name, &caller)?;
-                        if expires_at <= 0 || Utc::now().timestamp_millis() >= expires_at {
-                            return Err(anyhow!("access denied: no valid grant for this secret"));
-                        }
-                    }
-                    let Some(blob) = secrets::blob(trx, &owner, &input.name)? else {
-                        return Err(anyhow!("secret not found"));
-                    };
-                    let root = app.tools().storage().storage_root().to_string();
-                    let key = secret_crypto::master_key(&root)?;
-                    let plaintext = secret_crypto::decrypt(&blob, &key)?;
-                    let value = String::from_utf8(plaintext)
-                        .map_err(|_| anyhow!("stored secret is not valid UTF-8"))?;
-                    Ok(json!({ "ok": true, "owner": owner, "name": input.name, "value": value }))
-                })?
-            }
-            "secret.grant" => {
-                let input: SecretGrantInput = serde_json::from_slice(body)
-                    .map_err(|_error| PortError::Unavailable("bad secret.grant input"))?;
-                let caller = subject.id.to_string();
-                self.in_trx(false, move |trx| {
-                    if caller.is_empty() {
-                        return Err(anyhow!("not authenticated"));
-                    }
-                    if !valid_component(&input.name) || !valid_component(&input.grantee) {
-                        return Err(anyhow!(
-                            "name and grantee are required and must not contain ':'"
-                        ));
-                    }
-                    if input.ttl_seconds <= 0 {
-                        return Err(anyhow!("ttlSeconds must be positive"));
-                    }
-                    if secrets::blob(trx, &caller, &input.name)?.is_none() {
-                        return Err(anyhow!("secret not found"));
-                    }
-                    let expires_at = Utc::now().timestamp_millis() + input.ttl_seconds * 1000;
-                    secrets::grant(trx, &caller, &input.name, &input.grantee, expires_at)?;
-                    Ok(json!({ "ok": true, "grantee": input.grantee, "expiresAt": expires_at }))
-                })?
-            }
-            "secret.revoke" => {
-                let input: SecretRevokeInput = serde_json::from_slice(body)
-                    .map_err(|_error| PortError::Unavailable("bad secret.revoke input"))?;
-                let caller = subject.id.to_string();
-                self.in_trx(false, move |trx| {
-                    if caller.is_empty() {
-                        return Err(anyhow!("not authenticated"));
-                    }
-                    if !valid_component(&input.name) || !valid_component(&input.grantee) {
-                        return Err(anyhow!("name and grantee are required"));
-                    }
-                    secrets::revoke(trx, &caller, &input.name, &input.grantee)?;
-                    Ok(json!({ "ok": true }))
-                })?
-            }
-            "secret.list_granted" => {
-                let _input: SecretListGrantedInput = serde_json::from_slice(body)
-                    .map_err(|_error| PortError::Unavailable("bad secret.list_granted input"))?;
-                let caller = subject.id.to_string();
-                self.in_trx(true, move |trx| {
-                    if caller.is_empty() {
-                        return Err(anyhow!("not authenticated"));
-                    }
-                    let grants = list_granted_secrets(trx, &caller)?;
-                    Ok(json!({ "ok": true, "grants": grants }))
-                })?
-            }
-            "secret.list" => {
-                let _input: SecretListInput = serde_json::from_slice(body)
-                    .map_err(|_error| PortError::Unavailable("bad secret.list input"))?;
-                let caller = subject.id.to_string();
-                self.in_trx(true, move |trx| {
-                    if caller.is_empty() {
-                        return Err(anyhow!("not authenticated"));
-                    }
-                    let names = secrets::names(trx, &caller)?;
-                    Ok(json!({ "ok": true, "names": names }))
-                })?
-            }
-            "topic.subscribe" => {
-                let input: GatewaySubscribeInput = serde_json::from_slice(body)
-                    .map_err(|_error| PortError::Unavailable("bad topic.subscribe input"))?;
-                self.in_trx(true, move |trx| {
-                    let Some(grant) = resolve_bridge_grant(trx, &input.token) else {
-                        return Err(anyhow!("invalid or expired bridge token"));
-                    };
-                    let requested: Vec<String> = input
-                        .topics
-                        .iter()
-                        .map(|t| t.trim().to_string())
-                        .filter(|t| !t.is_empty())
-                        .collect();
-                    let topics: Vec<String> = if requested.is_empty() {
-                        grant.topics.clone()
-                    } else {
-                        requested
-                            .into_iter()
-                            .filter(|t| grant.topics.iter().any(|g| g == t))
-                            .collect()
-                    };
-                    if topics.is_empty() {
-                        return Err(anyhow!("token grants none of the requested topics"));
-                    }
-                    Ok(json!({
-                        "ok": true,
-                        "gatewaySubscribe": {
-                            "topics": topics.clone(),
-                            "creatureId": grant.creature_id.clone(),
-                        },
-                        "topics": topics,
-                        "creatureId": grant.creature_id,
-                        "expiresAt": grant.expires_at,
-                    }))
-                })?
-            }
-            "topic.unsubscribe" => {
-                let input: GatewayUnsubscribeInput = serde_json::from_slice(body)
-                    .map_err(|_error| PortError::Unavailable("bad topic.unsubscribe input"))?;
-                self.in_trx(true, move |trx| {
-                    if resolve_bridge_grant(trx, &input.token).is_none() {
-                        return Err(anyhow!("invalid or expired bridge token"));
-                    }
-                    Ok(json!({ "ok": true, "gatewayUnsubscribe": true }))
-                })?
-            }
-            "topic.publish" => {
-                let input: GatewaySignalInput = serde_json::from_slice(body)
-                    .map_err(|_error| PortError::Unavailable("bad topic.publish input"))?;
-                let app = self.app.clone();
-                self.in_trx(true, move |trx| {
-                    let Some(grant) = resolve_bridge_grant(trx, &input.token) else {
-                        return Err(anyhow!("invalid or expired bridge token"));
-                    };
-                    let topic = input.topic.trim().to_string();
-                    if !topic.is_empty() && !grant.topics.iter().any(|t| t == &topic) {
-                        return Err(anyhow!("token does not grant this topic"));
-                    }
-                    let action = input.action.trim().to_string();
-                    if action.is_empty() {
-                        return Err(anyhow!("action is required"));
-                    }
-                    let packet = bridge_signal_packet(&input, &topic, &grant.creature_id);
-                    let creature_id = grant
-                        .routes
-                        .get(&action)
-                        .cloned()
-                        .unwrap_or_else(|| grant.deliver_to.clone());
-                    let app_async = app.clone();
-                    let target = creature_id.clone();
-                    let _ = async_once(move || {
-                        app_async.tools().signaler().signal_user(
-                            "creatures/signal",
-                            &target,
-                            packet,
-                            true,
-                        );
-                    });
-                    Ok(json!({
-                        "ok": true,
-                        "creatureId": creature_id,
-                        "correlationId": input.correlation_id,
-                    }))
-                })?
-            }
-            "file.upload" => {
-                let input: StorageUploadInput = serde_json::from_slice(body)
-                    .map_err(|_error| PortError::Unavailable("bad file.upload input"))?;
-                let app = self.app.clone();
-                let owner = subject.id.to_string();
-                let data = base64::engine::general_purpose::STANDARD
-                    .decode(input.data_base64.trim())
-                    .map_err(|_error| PortError::Unavailable("dataBase64 is not valid base64"))?;
-                if data.is_empty() {
-                    return Err(PortError::Unavailable("empty file"));
+        let operation = self
+            .router
+            .operation(&call.operation)
+            .or_else(|| self.router.operation_for_action(&call.action))
+            .filter(|operation| operation.action == call.action)
+            .ok_or(PortError::NotFound)?;
+        let caller = self.caller(&call.subject)?;
+        let output = self
+            .router
+            .execute(&caller, operation, &call.body, false)
+            .map_err(|error| match error {
+                OperationError::Invalid(message) | OperationError::Refused(message) => {
+                    PortError::Refused(message)
                 }
-                const MAX_FILE_BYTES: usize = 10 * 1024 * 1024;
-                if data.len() > MAX_FILE_BYTES {
-                    return Err(PortError::Unavailable("file too large"));
-                }
-                let ctype = {
-                    let c = input.content_type.trim();
-                    if c.is_empty() {
-                        "application/octet-stream".to_string()
-                    } else {
-                        c.to_string()
-                    }
-                };
-                let id = uuid::Uuid::new_v4().to_string();
-                let blobs = node_blobs(&*app.tools().storage());
-                blobs
-                    .put_blob(&[PUBLIC_FILES, "/", &id].concat(), &data, &ctype, true)
-                    .map_err(|_error| PortError::Unavailable("storage write failed"))?;
-                let _ = blobs.put_blob(
-                    &[PUBLIC_FILES, "/", &id, ".type"].concat(),
-                    ctype.as_bytes(),
-                    "text/plain",
-                    true,
-                );
-                let _ = blobs.put_blob(
-                    &[PUBLIC_FILES, "/", &id, ".owner"].concat(),
-                    owner.as_bytes(),
-                    "text/plain",
-                    true,
-                );
-                json!({ "ok": true, "id": id, "contentType": ctype })
-            }
-            "finance.catalog.publish" => {
-                let input: finance_use_cases::PublishFinanceCatalogInput =
-                    serde_json::from_slice(body).map_err(|_error| {
-                        PortError::Unavailable("bad finance.catalog.publish input")
-                    })?;
-                let caller = subject.id.to_string();
-                self.in_finance(false, move |ports| {
-                    finance_use_cases::publish_finance_catalog(&ports, &caller, input.clone())
-                        .map_err(legacy_error)
-                })?
-            }
-            "finance.node.register" => {
-                let input: finance_use_cases::RegisterFinanceNodeInput =
-                    serde_json::from_slice(body).map_err(|_error| {
-                        PortError::Unavailable("bad finance.node.register input")
-                    })?;
-                let caller = subject.id.to_string();
-                self.in_finance(false, move |ports| {
-                    finance_use_cases::register_finance_node(&ports, &caller, input.clone())
-                        .map_err(legacy_error)
-                })?
-            }
-            "finance.node.retire" => {
-                let input: finance_use_cases::RetireFinanceNodeInput = serde_json::from_slice(body)
-                    .map_err(|_error| PortError::Unavailable("bad finance.node.retire input"))?;
-                let caller = subject.id.to_string();
-                self.in_finance(false, move |ports| {
-                    finance_use_cases::retire_finance_node(&ports, &caller, input.clone())
-                        .map_err(legacy_error)
-                })?
-            }
-            "finance.resource.register" => {
-                let input: finance_use_cases::RegisterFinanceResourceInput =
-                    serde_json::from_slice(body).map_err(|_error| {
-                        PortError::Unavailable("bad finance.resource.register input")
-                    })?;
-                let caller = subject.id.to_string();
-                self.in_finance(false, move |ports| {
-                    finance_use_cases::register_finance_resource(&ports, &caller, input.clone())
-                        .map_err(legacy_error)
-                })?
-            }
-            "finance.resource.review" => {
-                let input: finance_use_cases::ReviewFinanceResourceInput =
-                    serde_json::from_slice(body).map_err(|_error| {
-                        PortError::Unavailable("bad finance.resource.review input")
-                    })?;
-                let caller = subject.id.to_string();
-                self.in_finance(false, move |ports| {
-                    finance_use_cases::review_finance_resource(&ports, &caller, input.clone())
-                        .map_err(legacy_error)
-                })?
-            }
-            "finance.resource.retire" => {
-                let input: finance_use_cases::RetireFinanceResourceInput =
-                    serde_json::from_slice(body).map_err(|_error| {
-                        PortError::Unavailable("bad finance.resource.retire input")
-                    })?;
-                let caller = subject.id.to_string();
-                self.in_finance(false, move |ports| {
-                    finance_use_cases::retire_finance_resource(&ports, &caller, input.clone())
-                        .map_err(legacy_error)
-                })?
-            }
-            "finance.quote.publish" => {
-                let input: finance_use_cases::PublishFinanceQuoteInput =
-                    serde_json::from_slice(body).map_err(|_error| {
-                        PortError::Unavailable("bad finance.quote.publish input")
-                    })?;
-                let caller = subject.id.to_string();
-                self.in_finance(false, move |ports| {
-                    finance_use_cases::publish_finance_quote(&ports, &caller, input.clone())
-                        .map_err(legacy_error)
-                })?
-            }
-            "finance.hold.create" => {
-                let input: finance_use_cases::CreateHoldInput = serde_json::from_slice(body)
-                    .map_err(|_error| PortError::Unavailable("bad finance.hold.create input"))?;
-                let caller = subject.id.to_string();
-                self.in_finance(false, move |ports| {
-                    finance_use_cases::create_hold(&ports, &caller, input.clone())
-                        .map_err(legacy_error)
-                })?
-            }
-            "finance.hold.start" => {
-                let input: finance_use_cases::StartHoldInput = serde_json::from_slice(body)
-                    .map_err(|_error| PortError::Unavailable("bad finance.hold.start input"))?;
-                let caller = subject.id.to_string();
-                self.in_finance(false, move |ports| {
-                    finance_use_cases::start_hold(&ports, &caller, input.clone())
-                        .map_err(legacy_error)
-                })?
-            }
-            "finance.hold.settle" => {
-                let input: finance_use_cases::SettleHoldInput = serde_json::from_slice(body)
-                    .map_err(|_error| PortError::Unavailable("bad finance.hold.settle input"))?;
-                let caller = subject.id.to_string();
-                self.in_finance(false, move |ports| {
-                    finance_use_cases::settle_hold(&ports, &caller, input.clone())
-                        .map_err(legacy_error)
-                })?
-            }
-            "finance.hold.release" => {
-                let input: finance_use_cases::ReleaseHoldInput = serde_json::from_slice(body)
-                    .map_err(|_error| PortError::Unavailable("bad finance.hold.release input"))?;
-                let caller = subject.id.to_string();
-                self.in_finance(false, move |ports| {
-                    finance_use_cases::release_hold(&ports, &caller, input.clone())
-                        .map_err(legacy_error)
-                })?
-            }
-            "finance.hold.read" => {
-                let input: finance_use_cases::GetHoldInput = serde_json::from_slice(body)
-                    .map_err(|_error| PortError::Unavailable("bad finance.hold.read input"))?;
-                let caller = subject.id.to_string();
-                self.in_finance(true, move |ports| {
-                    finance_use_cases::get_hold(&ports, &caller, input.clone())
-                        .map_err(legacy_error)
-                })?
-            }
-            "finance.account.read" => {
-                let input: finance_use_cases::GetFinancialAccountInput =
-                    serde_json::from_slice(body).map_err(|_error| {
-                        PortError::Unavailable("bad finance.account.read input")
-                    })?;
-                let caller = subject.id.to_string();
-                self.in_finance(true, move |ports| {
-                    finance_use_cases::get_financial_account(&ports, &caller, input.clone())
-                        .map_err(legacy_error)
-                })?
-            }
-            "finance.payout.request" => {
-                let input: finance_use_cases::RequestPayoutInput = serde_json::from_slice(body)
-                    .map_err(|_error| PortError::Unavailable("bad finance.payout.request input"))?;
-                let caller = subject.id.to_string();
-                self.in_finance(false, move |ports| {
-                    finance_use_cases::request_payout(&ports, &caller, input.clone())
-                        .map_err(legacy_error)
-                })?
-            }
-            "finance.payout.resolve" => {
-                let input: finance_use_cases::ResolvePayoutInput = serde_json::from_slice(body)
-                    .map_err(|_error| PortError::Unavailable("bad finance.payout.resolve input"))?;
-                let caller = subject.id.to_string();
-                self.in_finance(false, move |ports| {
-                    finance_use_cases::resolve_payout(&ports, &caller, input.clone())
-                        .map_err(legacy_error)
-                })?
-            }
-            "finance.payout.list" => {
-                let input: finance_use_cases::ListPayoutsInput = serde_json::from_slice(body)
-                    .map_err(|_error| PortError::Unavailable("bad finance.payout.list input"))?;
-                let caller = subject.id.to_string();
-                self.in_finance(true, move |ports| {
-                    finance_use_cases::list_payouts(&ports, &caller, input.clone())
-                        .map_err(legacy_error)
-                })?
-            }
-            "finance.pool.open" => {
-                let input: finance_use_cases::OpenPoolInput = serde_json::from_slice(body)
-                    .map_err(|_error| PortError::Unavailable("bad finance.pool.open input"))?;
-                let caller = subject.id.to_string();
-                self.in_finance(false, move |ports| {
-                    finance_use_cases::open_pool(&ports, &caller, input.clone())
-                        .map_err(legacy_error)
-                })?
-            }
-            "finance.pool.refresh" => {
-                let input: finance_use_cases::RefreshPoolInput = serde_json::from_slice(body)
-                    .map_err(|_error| PortError::Unavailable("bad finance.pool.refresh input"))?;
-                let caller = subject.id.to_string();
-                self.in_finance(false, move |ports| {
-                    finance_use_cases::refresh_pool(&ports, &caller, input.clone())
-                        .map_err(legacy_error)
-                })?
-            }
-            "finance.pool.close" => {
-                let input: finance_use_cases::ClosePoolInput = serde_json::from_slice(body)
-                    .map_err(|_error| PortError::Unavailable("bad finance.pool.close input"))?;
-                let caller = subject.id.to_string();
-                self.in_finance(false, move |ports| {
-                    finance_use_cases::close_pool(&ports, &caller, input.clone())
-                        .map_err(legacy_error)
-                })?
-            }
-            "finance.pool.reserve" => {
-                let input: finance_use_cases::ReservePoolInput = serde_json::from_slice(body)
-                    .map_err(|_error| PortError::Unavailable("bad finance.pool.reserve input"))?;
-                let caller = subject.id.to_string();
-                self.in_finance(false, move |ports| {
-                    finance_use_cases::reserve_pool(&ports, &caller, input.clone())
-                        .map_err(legacy_error)
-                })?
-            }
-            "finance.pool.settle" => {
-                let input: finance_use_cases::SettlePoolInput = serde_json::from_slice(body)
-                    .map_err(|_error| PortError::Unavailable("bad finance.pool.settle input"))?;
-                let caller = subject.id.to_string();
-                self.in_finance(false, move |ports| {
-                    finance_use_cases::settle_pool(&ports, &caller, input.clone())
-                        .map_err(legacy_error)
-                })?
-            }
-            "finance.pool.release" => {
-                let input: finance_use_cases::ReleasePoolInput = serde_json::from_slice(body)
-                    .map_err(|_error| PortError::Unavailable("bad finance.pool.release input"))?;
-                let caller = subject.id.to_string();
-                self.in_finance(false, move |ports| {
-                    finance_use_cases::release_pool(&ports, &caller, input.clone())
-                        .map_err(legacy_error)
-                })?
-            }
-            "finance.pool.debit" => {
-                let input: finance_use_cases::DebitPoolInput = serde_json::from_slice(body)
-                    .map_err(|_error| PortError::Unavailable("bad finance.pool.debit input"))?;
-                let caller = subject.id.to_string();
-                self.in_finance(false, move |ports| {
-                    finance_use_cases::debit_pool(&ports, &caller, input.clone())
-                        .map_err(legacy_error)
-                })?
-            }
-            "finance.reconcile" => {
-                let input: finance_use_cases::ReconcileFinancialSystemInput =
-                    serde_json::from_slice(body)
-                        .map_err(|_error| PortError::Unavailable("bad finance.reconcile input"))?;
-                let caller = subject.id.to_string();
-                self.in_finance(true, move |ports| {
-                    finance_use_cases::reconcile_financial_system(&ports, &caller, input.clone())
-                        .map_err(legacy_error)
-                })?
-            }
-            "finance.adjustment" => {
-                let input: finance_use_cases::PaymentAdjustmentInput = serde_json::from_slice(body)
-                    .map_err(|_error| PortError::Unavailable("bad finance.adjustment input"))?;
-                let caller = subject.id.to_string();
-                self.in_finance(false, move |ports| {
-                    finance_use_cases::payment_adjustment(&ports, &caller, input.clone())
-                        .map_err(legacy_error)
-                })?
-            }
-            "finance.transfer" => {
-                let input: finance_use_cases::TransferInput = serde_json::from_slice(body)
-                    .map_err(|_error| PortError::Unavailable("bad finance.transfer input"))?;
-                let caller = subject.id.to_string();
-                self.in_finance(false, move |ports| {
-                    finance_use_cases::transfer(&ports, &caller, input.clone())
-                        .map_err(legacy_error)
-                })?
-            }
-            "finance.mint" => {
-                let input: finance_use_cases::MintInput = serde_json::from_slice(body)
-                    .map_err(|_error| PortError::Unavailable("bad finance.mint input"))?;
-                let caller = subject.id.to_string();
-                self.in_finance(false, move |ports| {
-                    finance_use_cases::mint(&ports, &caller, input.clone()).map_err(legacy_error)
-                })?
-            }
-            "entity.deploy" => {
-                let input: crate::api::packets::program::DeployInput = serde_json::from_slice(body)
-                    .map_err(|_error| PortError::Unavailable("bad entity.deploy input"))?;
-                let app = self.app.clone();
-                let caller = subject.id.to_string();
-                self.in_trx(false, move |trx| {
-                    program_actions::serve_deploy_entity(&app, trx, &caller, input.clone())
-                        .map_err(|error| anyhow!("{error}"))
-                })?
-            }
-            "entity.download" => {
-                let input: crate::api::packets::program::DownloadEntityInput =
-                    serde_json::from_slice(body)
-                        .map_err(|_error| PortError::Unavailable("bad entity.download input"))?;
-                let app = self.app.clone();
-                let caller = subject.id.to_string();
-                self.in_trx(true, move |trx| {
-                    program_actions::serve_download_entity(&app, trx, &caller, input.clone())
-                        .map_err(|error| anyhow!("{error}"))
-                })?
-            }
-            "entity.delete" => {
-                let input: crate::api::packets::program::RunProgramEntityInput =
-                    serde_json::from_slice(body)
-                        .map_err(|_error| PortError::Unavailable("bad entity.delete input"))?;
-                let app = self.app.clone();
-                let caller = subject.id.to_string();
-                self.in_trx(false, move |trx| {
-                    program_actions::serve_delete_program_entity(&app, trx, &caller, input.clone())
-                        .map_err(|error| anyhow!("{error}"))
-                })?
-            }
-            "workload.start" => {
-                let input: crate::api::packets::program::RunProgramEntityInput =
-                    serde_json::from_slice(body)
-                        .map_err(|_error| PortError::Unavailable("bad workload.start input"))?;
-                let app = self.app.clone();
-                let caller = subject.id.to_string();
-                self.in_trx(false, move |trx| {
-                    program_actions::serve_run_program_entity(&app, trx, &caller, input.clone())
-                        .map_err(|error| anyhow!("{error}"))
-                })?
-            }
-            "workload.stop" => {
-                let input: crate::api::packets::program::RunProgramEntityInput =
-                    serde_json::from_slice(body)
-                        .map_err(|_error| PortError::Unavailable("bad workload.stop input"))?;
-                let app = self.app.clone();
-                let caller = subject.id.to_string();
-                self.in_trx(false, move |trx| {
-                    program_actions::serve_stop_program_entity(&app, trx, &caller, input.clone())
-                        .map_err(|error| anyhow!("{error}"))
-                })?
-            }
-            "workload.list" => {
-                let input: crate::api::packets::program::RunProgramEntityInput =
-                    serde_json::from_slice(body)
-                        .map_err(|_error| PortError::Unavailable("bad workload.list input"))?;
-                let app = self.app.clone();
-                let caller = subject.id.to_string();
-                self.in_trx(true, move |trx| {
-                    program_actions::serve_list_entity_vms(&app, trx, &caller, input.clone())
-                        .map_err(|error| anyhow!("{error}"))
-                })?
-            }
-            "workload.logs.read" => {
-                let input: crate::api::packets::program::ReadVmLogsInput =
-                    serde_json::from_slice(body)
-                        .map_err(|_error| PortError::Unavailable("bad workload.logs.read input"))?;
-                let app = self.app.clone();
-                let caller = subject.id.to_string();
-                self.in_trx(true, move |trx| {
-                    program_actions::serve_read_vm_logs(&app, trx, &caller, input.clone())
-                        .map_err(|error| anyhow!("{error}"))
-                })?
-            }
-            "workload.terminal.open" => {
-                let input: crate::api::packets::program::VmTerminalInput =
-                    serde_json::from_slice(body).map_err(|_error| {
-                        PortError::Unavailable("bad workload.terminal.open input")
-                    })?;
-                let app = self.app.clone();
-                let caller = subject.id.to_string();
-                self.in_trx(false, move |trx| {
-                    program_actions::serve_open_vm_terminal(&app, trx, &caller, input.clone())
-                        .map_err(|error| anyhow!("{error}"))
-                })?
-            }
-            "workload.terminal.close" => {
-                let input: crate::api::packets::program::VmTerminalInput =
-                    serde_json::from_slice(body).map_err(|_error| {
-                        PortError::Unavailable("bad workload.terminal.close input")
-                    })?;
-                let app = self.app.clone();
-                let caller = subject.id.to_string();
-                self.in_trx(false, move |trx| {
-                    program_actions::serve_close_vm_terminal(&app, trx, &caller, input.clone())
-                        .map_err(|error| anyhow!("{error}"))
-                })?
-            }
-            "workload.builds.read" => {
-                let input: crate::api::packets::program::MachineBuildsInput =
-                    serde_json::from_slice(body).map_err(|_error| {
-                        PortError::Unavailable("bad workload.builds.read input")
-                    })?;
-                let app = self.app.clone();
-                let caller = subject.id.to_string();
-                self.in_trx(true, move |trx| {
-                    program_actions::serve_read_machine_builds(&app, trx, &caller, input.clone())
-                        .map_err(|error| anyhow!("{error}"))
-                })?
-            }
-            "program.list" => {
-                let input: crate::api::packets::program::ListInput =
-                    serde_json::from_slice(body)
-                        .map_err(|_error| PortError::Unavailable("bad program.list input"))?;
-                let app = self.app.clone();
-                let caller = subject.id.to_string();
-                self.in_trx(true, move |trx| {
-                    program_actions::serve_list_programs(&app, trx, &caller, input.clone())
-                        .map_err(|error| anyhow!("{error}"))
-                })?
-            }
-            "identity.session.create" => {
-                let app = self.app.clone();
-                let caller = subject.id.to_string();
-                self.in_trx(true, move |trx| {
-                    creature_actions::serve_authenticate(&app, trx, &caller)
-                        .map_err(|error| anyhow!("{error}"))
-                })?
-            }
-            "creature.types.read" => {
-                let app = self.app.clone();
-                let caller = subject.id.to_string();
-                self.in_trx(true, move |trx| {
-                    creature_actions::serve_creature_types(&app, trx, &caller)
-                        .map_err(|error| anyhow!("{error}"))
-                })?
-            }
-            "creature.signal" => {
-                let input: crate::api::packets::creatures::SignalInput =
-                    serde_json::from_slice(body)
-                        .map_err(|_error| PortError::Unavailable("bad creature.signal input"))?;
-                let app = self.app.clone();
-                let caller = subject.id.to_string();
-                self.in_trx(true, move |trx| {
-                    creature_actions::serve_creature_signal(&app, trx, &caller, "", input.clone())
-                        .map_err(|error| anyhow!("{error}"))
-                })?
-            }
-            "finance.lock.create" => {
-                let input: crate::api::packets::creatures::LockTokenInput =
-                    serde_json::from_slice(body).map_err(|_error| {
-                        PortError::Unavailable("bad finance.lock.create input")
-                    })?;
-                let app = self.app.clone();
-                let caller = subject.id.to_string();
-                self.in_trx(false, move |trx| {
-                    creature_actions::serve_lock_token(&app, trx, &caller, input.clone())
-                        .map_err(|error| anyhow!("{error}"))
-                })?
-            }
-            "finance.lock.consume" => {
-                let input: crate::api::packets::creatures::ConsumeLockInput =
-                    serde_json::from_slice(body).map_err(|_error| {
-                        PortError::Unavailable("bad finance.lock.consume input")
-                    })?;
-                let app = self.app.clone();
-                let caller = subject.id.to_string();
-                self.in_trx(false, move |trx| {
-                    creature_actions::serve_consume_lock(&app, trx, &caller, input.clone())
-                        .map_err(|error| anyhow!("{error}"))
-                })?
-            }
-            "identity.signature.check" => {
-                return Err(PortError::Unsupported(
-                    "action has no migrated public executor yet",
-                ));
-            }
-            _ => {
-                return Err(PortError::Unsupported(
-                    "action has no migrated public executor yet",
-                ));
-            }
-        };
-        serde_json::to_vec(&output).map_err(|_error| PortError::Unavailable("encode failed"))
-    }
-
-    fn execute_with_context(
-        &self,
-        subject: Subject,
-        action: &str,
-        body: &[u8],
-        context: &ActionExecutionContext,
-    ) -> Result<Vec<u8>, PortError> {
-        if let Some(answer) = self.federated_answer(subject, action, body, Some(context))? {
-            return Ok(answer);
-        }
-        self.execute(subject, action, body)
+                OperationError::Unavailable(message) => PortError::Failed(message),
+            })?;
+        serde_json::to_vec(&output).map_err(|_| PortError::Unavailable("encode failed"))
     }
 }
 
-/// Resolve a legacy session token to its subject through the node's session store.
-struct LegacySessionDirectory {
-    app: Arc<dyn ICore>,
+/// A session token's subject, through the node's session store.
+struct NodeSessionDirectory {
+    node: Arc<Node>,
 }
 
-impl SessionDirectory for LegacySessionDirectory {
+impl SessionDirectory for NodeSessionDirectory {
     fn subject(&self, token: &str) -> Result<Option<Subject>, PortError> {
-        let token_owned = token.to_string();
-        let slot = Arc::new(std::sync::Mutex::new(None));
-        let holder = slot.clone();
-        self.app.modify_state(
-            true,
-            Box::new(move |trx: &crate::core::trx::Trx| {
-                let session = crate::api::model::session::Session::find(trx, &token_owned)?;
-                *holder.lock().unwrap() =
-                    Some(session.map(|session| session.user_id).unwrap_or_default());
-                Ok(())
-            }),
-        );
-
-        let user_id = slot
-            .lock()
-            .unwrap()
-            .clone()
-            .ok_or(PortError::Unavailable("session lookup failed"))?;
-        if user_id.is_empty() {
-            return Ok(None);
-        }
-        Ok(Some(creature_subject(&user_id)))
+        let session = self
+            .node
+            .read(|trx| crate::state::session::Session::find(trx, token))
+            .map_err(PortError::failed)?;
+        Ok(session
+            .map(|session| session.user_id)
+            .filter(|user_id| !user_id.is_empty())
+            .map(|user_id| creature_subject(&user_id)))
     }
 }
 
 /// The composed service that keeps the node's storage alive for the capsule-backed
 /// port adapters it owns.
 struct ComposedPublicHttp {
-    _repository: &'static AutoCommit,
+    node: Arc<Node>,
     service: ComposedPublicActionService,
-    realtime: Arc<PostgresRealtime>,
+    realtime: Arc<StorageRealtime>,
 }
 
 struct NodeFederationExecutor {
@@ -1453,7 +286,14 @@ impl FederationExecutor for NodeFederationExecutor {
                 "federation payload does not match the authorized target",
             ));
         }
-        let answer = self.actions.execute(subject, &envelope.action, payload)?;
+        let answer = self.actions.execute(&ActionCall {
+            subject,
+            operation: String::new(),
+            action: envelope.action.clone(),
+            body: payload.to_vec(),
+            request_id: envelope.request_id.to_string(),
+            idempotency_key: None,
+        })?;
         String::from_utf8(answer)
             .map_err(|_| PortError::Failed("federated answer is not UTF-8".to_owned()))
     }
@@ -1583,7 +423,7 @@ impl PublicEventService for ComposedPublicHttp {
 }
 
 struct VmmLogTerminal {
-    remote: Arc<crate::api::workloads::RemoteWorkloads>,
+    remote: Arc<crate::workloads::vmm::RemoteWorkloads>,
     workload: aseman_domain::WorkloadId,
 }
 
@@ -1618,7 +458,7 @@ impl PublicTerminalSession for VmmLogTerminal {
         Err(public_event_error(
             501,
             "unsupported_operation",
-            "the installed runtime exposes the legacy log terminal, not interactive stdin",
+            "the installed runtime exposes the log terminal, not interactive stdin",
         ))
     }
 
@@ -1626,7 +466,7 @@ impl PublicTerminalSession for VmmLogTerminal {
         Err(public_event_error(
             501,
             "unsupported_operation",
-            "the installed runtime exposes the legacy log terminal, not a PTY",
+            "the installed runtime exposes the log terminal, not a PTY",
         ))
     }
 
@@ -1648,7 +488,7 @@ impl PublicTerminalService for ComposedPublicHttp {
             .ok_or_else(|| {
                 public_event_error(400, "invalid_terminal_target", "workload ID is not a UUID")
             })?;
-        // The legacy terminal was a log subscription (ADR 0029). Admission therefore
+        // The terminal is a log subscription (ADR 0029). Admission therefore
         // uses the ordinary workload log action, which authenticates the caller and
         // proves ownership. Its response returns the resolved typed workload ID; the
         // supplied target must match it before any stream is opened.
@@ -1678,7 +518,7 @@ impl PublicTerminalService for ComposedPublicHttp {
                 "the admitted VM does not resolve to the requested workload",
             ));
         }
-        let remote = crate::api::workloads::remote().ok_or_else(|| {
+        let remote = self.node.vmm().ok_or_else(|| {
             public_event_error(
                 503,
                 "terminal_unavailable",
@@ -1687,14 +527,6 @@ impl PublicTerminalService for ComposedPublicHttp {
         })?;
         Ok(Arc::new(VmmLogTerminal { remote, workload }))
     }
-}
-
-fn read_database_url(config: &AsemanConfig) -> Result<String> {
-    let secret = config.database_url_secret.as_deref().ok_or_else(|| {
-        anyhow!("ASEMAN_DATABASE_URL_SECRET is required for the public HTTP service")
-    })?;
-    aseman_config::read_secret_file(secret, 4096)
-        .map_err(|error| anyhow!("cannot read database URL secret {secret}: {error}"))
 }
 
 fn transport_config(listener: &PublicHttpListenerConfig) -> PublicHttpConfig {
@@ -1716,63 +548,44 @@ fn transport_config(listener: &PublicHttpListenerConfig) -> PublicHttpConfig {
 /// # Errors
 ///
 /// Invalid TLS material, an unreadable database secret, or a bind failure.
-pub(crate) fn start_public_http(config: &AsemanConfig, app: Arc<dyn ICore>) -> Result<()> {
+pub(crate) fn start_public_http(config: &AsemanConfig, router: Arc<Router>) -> Result<()> {
     let Some(listener) = config.public_http.clone() else {
         return Ok(());
     };
-    // The node's storage backs every capsule port and lives for the node's lifetime
-    // (one transaction per port call). The capsule adapters borrow it, so one handle
-    // is leaked to 'static; the owned Arc serves the replay and idempotency ports.
-    let database_url = read_database_url(config)?;
-    let storage = crate::adapters::storage::installed()
-        .ok_or_else(|| anyhow!("the node's storage is not open"))?;
-    let repository_owned = Arc::new(AutoCommit(storage));
-    let repository: &'static AutoCommit = &*Box::leak(Box::new((*repository_owned).clone()));
-
+    // One transaction per port call, on the node's storage.
+    let storage = router.node().tools().storage().storage();
+    let repository = AutoCommit(storage.clone());
     let registry = aseman_contracts::security::action_registry()
         .map_err(|error| anyhow!("cannot load the A402 registry: {error}"))?;
     let policy: Arc<dyn PolicyDecisionPort> = Arc::new(aseman_policy_native::RegistryPolicy::new(
         registry.clone(),
         "node-v1",
     ));
-    let advertised_port = config.network.legacy_tcp_port.to_string();
-
-    let keys: Arc<dyn KeyDirectory> = Arc::new(CapsuleKeyDirectory { repository });
-    let replay: Arc<dyn ReplayGuard> = repository_owned.clone();
+    let keys: Arc<dyn KeyDirectory> = Arc::new(CapsuleKeyDirectory {
+        repository: repository.clone(),
+    });
+    let replay: Arc<dyn ReplayGuard> = Arc::new(repository.clone());
     let verifier: Arc<dyn IdentityVerifier> = Arc::new(NativeIdentityVerifier);
-    let grants: Arc<dyn GrantStore> = Arc::new(CapsuleGrantStore { repository });
-    let audit: Arc<dyn DecisionAudit> = Arc::new(CapsuleDecisionAudit { repository });
-    let idempotency: Arc<dyn PublicActionIdempotency> = repository_owned.clone();
-    let sessions: Arc<dyn SessionDirectory> = Arc::new(LegacySessionDirectory { app: app.clone() });
-    let origin = if config.node.origin.is_empty() {
-        "global".to_owned()
-    } else {
-        config.node.origin.clone()
-    };
-    // RL-011: finance journal records are offered for ordering through the Hashgraph
-    // consensus provider. The provider is composed once in `load_inner` (its proxy
-    // must be installed into a Babble engine to actually finalize; until then records
-    // remain pending — never mis-ordered). Provider-specific properties (staking
-    // thresholds, election timing, validator caps) are configured environment-style
-    // via `ConsensusProvider::set`, so the core does not couple to one provider's
-    // feature set. If no provider was composed, finance actions run without an
-    // ordering service (the same no-op the node used before RL-011).
-    let consensus: Option<Arc<dyn aseman_ports::consensus::ConsensusProvider>> =
-        app.consensus_provider();
-    let federation = compose_federation_outbound(config, &database_url, policy.clone())?;
-    let executor: Arc<dyn ActionExecutor> = Arc::new(PublicActionExecutor {
-        app,
+    let grants: Arc<dyn GrantStore> = Arc::new(CapsuleGrantStore {
+        repository: repository.clone(),
+    });
+    let audit: Arc<dyn DecisionAudit> = Arc::new(CapsuleDecisionAudit {
+        repository: repository.clone(),
+    });
+    let idempotency: Arc<dyn PublicActionIdempotency> = Arc::new(repository);
+    let node = router.node().clone();
+    let sessions: Arc<dyn SessionDirectory> = Arc::new(NodeSessionDirectory { node: node.clone() });
+    let federation = compose_federation_outbound(config, &storage, policy.clone())?;
+    let executor: Arc<dyn ActionExecutor> = Arc::new(RouterExecutor {
+        router,
         registry,
         clock: SystemClock,
-        advertised_port,
-        origin,
-        consensus,
         federation,
     });
 
     start_federation_http(
         config,
-        &database_url,
+        &storage,
         keys.clone(),
         replay.clone(),
         verifier.clone(),
@@ -1797,17 +610,11 @@ pub(crate) fn start_public_http(config: &AsemanConfig, app: Arc<dyn ICore>) -> R
             rotation: aseman_domain::identity::RotationPolicy::DEFAULT,
         },
     );
-    let realtime = Arc::new(
-        PostgresRealtime::connect(&database_url, 4)
-            .map_err(|error| anyhow!("cannot connect public realtime provider: {error}"))?,
-    );
-    realtime
-        .migrate()
-        .map_err(|error| anyhow!("cannot migrate public realtime provider: {error}"))?;
+    let realtime = Arc::new(StorageRealtime::new(storage));
     let event_log: Arc<dyn EventLog> = realtime.clone();
-    gateway_subs::configure_event_log(event_log);
+    node.topics().configure_event_log(event_log);
     let composed = Arc::new(ComposedPublicHttp {
-        _repository: repository,
+        node,
         service,
         realtime,
     });
@@ -1910,23 +717,14 @@ pub(crate) fn start_public_http(config: &AsemanConfig, app: Arc<dyn ICore>) -> R
 
 fn compose_federation_outbound(
     config: &AsemanConfig,
-    database_url: &str,
+    storage: &aseman_storage::Storage,
     policy: Arc<dyn PolicyDecisionPort>,
 ) -> Result<Option<Arc<NodeFederationOutbound>>> {
     let Some(outbound) = config.federation_outbound.clone() else {
         return Ok(None);
     };
-    let node_id = crate::api::workloads::node_subject(&config.node.id).id;
-    let database = database_url
-        .parse::<postgres::Config>()
-        .map_err(|error| anyhow!("invalid federation database URL: {error}"))?;
-    let provider = Arc::new(
-        PostgresFederation::connect_config(database, 8, node_id)
-            .map_err(|error| anyhow!("cannot connect federation provider: {error}"))?,
-    );
-    provider
-        .migrate()
-        .map_err(|error| anyhow!("cannot migrate federation provider: {error}"))?;
+    let node_id = crate::workloads::vmm::node_subject(&config.node.id).id;
+    let provider = Arc::new(StorageFederation::new(storage.clone(), node_id));
     let own = provider
         .own_node()
         .map_err(|error| anyhow!("cannot load this node's federation descriptor: {error}"))?;
@@ -1994,7 +792,7 @@ fn compose_federation_outbound(
 #[allow(clippy::too_many_arguments)]
 fn start_federation_http(
     config: &AsemanConfig,
-    database_url: &str,
+    storage: &aseman_storage::Storage,
     keys: Arc<dyn KeyDirectory>,
     replay: Arc<dyn ReplayGuard>,
     verifier: Arc<dyn IdentityVerifier>,
@@ -2004,23 +802,14 @@ fn start_federation_http(
     let Some(listener) = config.federation_listener.clone() else {
         return Ok(());
     };
-    let node_id = crate::api::workloads::node_subject(&config.node.id).id;
+    let node_id = crate::workloads::vmm::node_subject(&config.node.id).id;
     let expected_audience = federation_audience(node_id);
     if listener.audience != expected_audience {
         return Err(anyhow!(
             "ASEMAN_FEDERATION_HTTP_AUDIENCE must be {expected_audience} for this node"
         ));
     }
-    let database = database_url
-        .parse::<postgres::Config>()
-        .map_err(|error| anyhow!("invalid federation database URL: {error}"))?;
-    let provider = Arc::new(
-        PostgresFederation::connect_config(database, 8, node_id)
-            .map_err(|error| anyhow!("cannot connect federation provider: {error}"))?,
-    );
-    provider
-        .migrate()
-        .map_err(|error| anyhow!("cannot migrate federation provider: {error}"))?;
+    let provider = Arc::new(StorageFederation::new(storage.clone(), node_id));
 
     let signing_pem =
         aseman_config::read_secret_file(&listener.response_signing_key_secret, 64 * 1024)?;
@@ -2187,17 +976,6 @@ mod tests {
             Some("x")
         );
         assert_eq!(resource_id("node", br#"{}"#), None);
-    }
-
-    #[test]
-    fn diagnostics_use_case_answers() {
-        let diagnostics = Diagnostics {
-            clock: &SystemClock,
-            advertised_port: "8074",
-        };
-        assert_eq!(diagnostics.hello("world"), "hello world !");
-        assert_eq!(diagnostics.ping(), "8074");
-        assert!(diagnostics.time_millis() > 0);
     }
 
     #[test]

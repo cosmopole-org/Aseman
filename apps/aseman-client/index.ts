@@ -1,17 +1,17 @@
 #!/usr/bin/env node
 //
-// Caspar Client CLI (`caspar-client`)
+// Aseman Client CLI (`aseman-client`)
 // -----------------------------------
-// A thin TypeScript/Node.js client for a Caspar node's signed binary action
-// protocol (the "Caspar shell API"). Every command in this CLI maps directly
-// to a Caspar shell action route (`/creatures/*`, `/programs/*`) — there is no
+// A thin TypeScript/Node.js client for an Aseman node's signed binary action
+// protocol (the signed-packet API). Every command in this CLI maps directly
+// to an Aseman shell action route (`/creatures/*`, `/programs/*`) — there is no
 // dependency on any hosted backend, billing service or miniapp layer.
 //
 // It lets you:
 //   * authenticate against a node (`login` / `logout`),
 //   * manage creatures (identities/accounts) and send signals,
 //   * create, deploy, run and manage programs (the deployable VM units), and
-//   * scaffold ready-to-deploy VM project templates for all six Caspar
+//   * scaffold ready-to-deploy VM project templates for all six Aseman
 //     runtimes (`vm.init` / `vm.types`).
 //
 import tls from "tls";
@@ -27,7 +27,7 @@ import { WebSocket } from "ws";
 const USER_ID_NOT_SET_ERR_CODE: number = 10;
 const USER_ID_NOT_SET_ERR_MSG: string = "not authenticated, userId is not set";
 
-// The seven VM runtimes a Caspar node ships with. `vm.init` scaffolds a
+// The seven VM runtimes an Aseman node ships with. `vm.init` scaffolds a
 // deployable project for any of these keys.
 const VM_RUNTIMES = [
   "wasm",
@@ -40,15 +40,15 @@ const VM_RUNTIMES = [
 ] as const;
 type VmRuntime = (typeof VM_RUNTIMES)[number];
 
-class Caspar {
+class AsemanClient {
   port: number = 8077; // TCP action port (CLIENT_TCP_API_PORT)
   port2: number = 8076; // WebSocket action port (CLIENT_WS_API_PORT)
   host: string = "127.0.0.1";
   protocol: string = "ws";
-  // Transport TLS. A Caspar node serves plaintext ws/tcp directly; TLS is
-  // normally terminated by a front proxy (nginx). Set CASPAR_TLS=0 to connect
+  // Transport TLS. A Aseman node serves plaintext ws/tcp directly; TLS is
+  // normally terminated by a front proxy (nginx). Set ASEMAN_TLS=0 to connect
   // straight to a node with no proxy (plain ws:// / plain TCP).
-  useTls: boolean = process.env.CASPAR_TLS !== "0";
+  useTls: boolean = process.env.ASEMAN_TLS !== "0";
   callbacks: { [key: string]: (packageId: number, obj: any) => void } = {};
   socket: tls.TLSSocket | net.Socket | undefined;
   websocket: WebSocket | undefined;
@@ -75,7 +75,7 @@ class Caspar {
   }
   private async connectoToTlsServer() {
     return new Promise((resolve, reject) => {
-      const insecure = process.env.CASPAR_INSECURE === "1";
+      const insecure = process.env.ASEMAN_INSECURE === "1";
       if (this.protocol === "tcp") {
         const onData = (data: Buffer) => {
           setTimeout(() => {
@@ -235,7 +235,7 @@ class Caspar {
     const bytes = Buffer.from(x);
     return bytes;
   }
-  // Frame body layout expected by the Caspar action router:
+  // Frame body layout expected by the Aseman action router:
   // [sigLen][sig][uidLen][uid][pathLen][path][pidLen][pid][payload]
   // prefixed by a 4-byte big-endian body length.
   private createRequest(userId: string, path: string, obj: any) {
@@ -356,7 +356,7 @@ class Caspar {
   // Direct login against the node's `/creatures/login` action. The node issues
   // (or looks up) the account for `username`, treating `emailToken` as the
   // account email; it returns the userId and the account private key, which are
-  // persisted under ./auth. Works against any Caspar node — no hosted identity
+  // persisted under ./auth. Works against any Aseman node — no hosted identity
   // provider is involved.
   public async login(
     username: string,
@@ -433,7 +433,7 @@ class Caspar {
     return { resCode: 0, obj: { message: "user logged out" } };
   }
   public myUsername(): string {
-    return this.username ?? "Caspar User";
+    return this.username ?? "Aseman User";
   }
   public myPrivateKey(): string {
     if (this.privateKey) {
@@ -569,7 +569,7 @@ class Caspar {
       let responsePromise: Promise<{ resCode: number; obj: any }> | undefined;
       if (waitForResponse) {
         const timeoutMs = Number(
-          process.env.CASPAR_SIGNAL_TIMEOUT_MS || "30000"
+          process.env.ASEMAN_SIGNAL_TIMEOUT_MS || "30000"
         );
         const cid = correlationId;
         responsePromise = new Promise<{ resCode: number; obj: any }>(
@@ -875,7 +875,7 @@ class Caspar {
 
 // ── VM project scaffolding ───────────────────────────────────────────────────
 //
-// A deployable Caspar VM project follows the convention `programs.deploy`
+// A deployable Aseman VM project follows the convention `programs.deploy`
 // expects:
 //
 //   <project>/
@@ -916,10 +916,9 @@ fi
 cp ../src/module.wasm ./bytecode
 `,
         files: {
-          "module.wat": `;; Minimal Caspar wasm creature (placeholder).
+          "module.wat": `;; Minimal Aseman wasm creature (placeholder).
 ;; A real creature imports the host ABI (hostCall) and exports \`update\`
-;; plus \`malloc\`. See docs/legacy/caspar/05-caspar-protocol.md and
-;; docs/legacy/caspar/07-vm-types-and-implementation.md.
+;; plus \`malloc\`. See docs/development/creature-implementation.md.
 (module
   (memory (export "memory") 1)
   (func (export "update"))
@@ -966,7 +965,7 @@ set -e
 cp ../src/module.js ./bytecode
 `,
         files: {
-          "module.js": `// Caspar JavaScript creature entity.
+          "module.js": `// Aseman JavaScript creature entity.
 // \`onSignal\` receives the JSON signal payload and returns the entity's output.
 function onSignal(input) {
   const data = JSON.parse(input || "{}");
@@ -988,7 +987,7 @@ set -e
 cp ../src/Dockerfile ./bytecode
 `,
         files: {
-          Dockerfile: `# Caspar Docker entity — a long-lived HTTP server the node can proxy to.
+          Dockerfile: `# Aseman Docker entity — a long-lived HTTP server the node can proxy to.
 FROM alpine:3.20
 WORKDIR /app
 COPY . /app
@@ -996,8 +995,8 @@ RUN apk add --no-cache python3
 EXPOSE 8080
 CMD ["python3", "-m", "http.server", "8080"]
 `,
-          "index.html": `<!doctype html><title>Caspar docker entity</title>
-<h1>Hello from a Caspar docker VM</h1>
+          "index.html": `<!doctype html><title>Aseman docker entity</title>
+<h1>Hello from an Aseman docker VM</h1>
 `,
         },
       };
@@ -1013,7 +1012,7 @@ set -e
 cp ../src/Modalfile ./bytecode
 `,
         files: {
-          Modalfile: `# Caspar Modal entity — runs as a Modal cloud sandbox.
+          Modalfile: `# Aseman Modal entity — runs as a Modal cloud sandbox.
 # The FROM line names the registry base image; everything after it is layered
 # on top by Modal's builder.
 FROM ubuntu:24.04
@@ -1058,7 +1057,7 @@ set -e
 cp ../src/module.elpify.js ./bytecode
 `,
         files: {
-          "module.elpify.js": `// Caspar Elpify provable entity.
+          "module.elpify.js": `// Aseman Elpify provable entity.
 // Transpiled to MASM and executed by the STARK-proving VM.
 function main(a, b) {
   return a + b;
@@ -1109,7 +1108,7 @@ function scaffoldVmProject(
   }
 
   const deployMeta: { [k: string]: any } = { entityId: eid };
-  if (runtime === "docker") deployMeta.imageName = "caspar-" + eid + ":latest";
+  if (runtime === "docker") deployMeta.imageName = "aseman-" + eid + ":latest";
   fs.writeFileSync(
     path.join(abs, "vm.json"),
     JSON.stringify(
@@ -1127,7 +1126,7 @@ function scaffoldVmProject(
   const metaStr = JSON.stringify(deployMeta);
   fs.writeFileSync(
     path.join(abs, "README.md"),
-    `# Caspar ${runtime} VM project
+    `# Aseman ${runtime} VM project
 
 ${tpl.deployNote}
 
@@ -1137,20 +1136,20 @@ ${tpl.deployNote}
 - \`builder/build.sh\` — produces \`builder/bytecode\` (the deploy payload).
 - \`vm.json\` — local descriptor of the runtime + entity.
 
-## Deploy to Caspar
+## Deploy to Aseman
 
 \`\`\`bash
 # 1. create the creature that owns the program (once):
-caspar-client creatures.createMachine 1 my-${runtime}-app "My ${runtime} app" "demo"
+aseman-client creatures.createMachine 1 my-${runtime}-app "My ${runtime} app" "demo"
 
 # 2. create the program under that creature:
-caspar-client programs.create ${runtime}entity <creatureId> /api/main ${runtime} "entry"
+aseman-client programs.create ${runtime}entity <creatureId> /api/main ${runtime} "entry"
 
 # 3. deploy this project to the program:
-caspar-client programs.deploy <programId> ${targetPath} ${tpl.deployRuntime} '${metaStr}'
+aseman-client programs.deploy <programId> ${targetPath} ${tpl.deployRuntime} '${metaStr}'
 
 # 4. run it:
-caspar-client programs.run <programId>
+aseman-client programs.run <programId>
 \`\`\`
 `
   );
@@ -1162,7 +1161,7 @@ caspar-client programs.run <programId>
       path: abs,
       entityFile: tpl.entityFile,
       runtime: tpl.deployRuntime,
-      next: `caspar-client programs.deploy <programId> ${targetPath} ${tpl.deployRuntime} '${metaStr}'`,
+      next: `aseman-client programs.deploy <programId> ${targetPath} ${tpl.deployRuntime} '${metaStr}'`,
     },
   };
 }
@@ -1197,11 +1196,11 @@ const rl = readline.createInterface({
   output: process.stdout,
 });
 
-const envHost = process.env.CASPAR_HOST;
-const envProto = process.env.CASPAR_PROTO || "ws";
-const envPortStr = process.env.CASPAR_PORT;
+const envHost = process.env.ASEMAN_HOST;
+const envProto = process.env.ASEMAN_PROTO || "ws";
+const envPortStr = process.env.ASEMAN_PORT;
 const envPort = envPortStr ? parseInt(envPortStr, 10) : undefined;
-let app = new Caspar(envProto, envHost, envPort);
+let app = new AsemanClient(envProto, envHost, envPort);
 
 // ── Command table ────────────────────────────────────────────────────────────
 
@@ -1600,15 +1599,15 @@ const helpEntries: { [key: string]: string } = {
   Example1: programs.readBuildLogs
   Example2: programs.readBuildLogs 3bb9ed93-b842-4f8d-af36-6251969c62d6 runtime`,
   "vm.types": `vm.types
-  → List the six VM runtimes a Caspar node supports.
+  → List the six VM runtimes an Aseman node supports.
   Example: vm.types`,
   "vm.init": `vm.init [runtime] [path] [optional entityId]
   → Scaffold a deployable VM project for one of: ${VM_RUNTIMES.join(", ")}.
   Example: vm.init wasm ./my-wasm-vm main`,
 };
 
-const fullHelp = `Caspar Client CLI – Command Reference
-Every command maps directly to a Caspar node shell action route.
+const fullHelp = `Aseman Client CLI – Command Reference
+Every command maps directly to an Aseman node shell action route.
 
 ${Object.values(helpEntries).join("\n\n")}
 
@@ -1618,16 +1617,16 @@ help [optional command]
   Example2: help creatures.signal
 
 Connection (env vars):
-  CASPAR_HOST   node host (default 127.0.0.1)
-  CASPAR_PROTO  ws | tcp (default ws)
-  CASPAR_PORT   action port (ws default 8076, tcp default 8077)
-  CASPAR_INSECURE=1  skip TLS certificate verification (dev only)
+  ASEMAN_HOST   node host (default 127.0.0.1)
+  ASEMAN_PROTO  ws | tcp (default ws)
+  ASEMAN_PORT   action port (ws default 8076, tcp default 8077)
+  ASEMAN_INSECURE=1  skip TLS certificate verification (dev only)
 
 Non-interactive mode:
-  1) Single command: caspar-client <command> [args...]
-     Example: caspar-client creatures.me
-  2) Batch inline:   caspar-client --batch "creatures.me; programs.list 0 10"
-  3) Batch file:     caspar-client --batch-file ./commands.txt
+  1) Single command: aseman-client <command> [args...]
+     Example: aseman-client creatures.me
+  2) Batch inline:   aseman-client --batch "creatures.me; programs.list 0 10"
+  3) Batch file:     aseman-client --batch-file ./commands.txt
 `;
 
 // ── Runner ───────────────────────────────────────────────────────────────────
@@ -1790,7 +1789,7 @@ let ask = () => {
   }
   await app.connect();
   console.log(
-    'Welcome to the Caspar client shell — enter a command or "help" for the command reference:\n'
+    'Welcome to the Aseman client shell — enter a command or "help" for the command reference:\n'
   );
   ask();
 })();

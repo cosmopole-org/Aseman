@@ -13,7 +13,7 @@ use std::time::Duration;
 
 use serde_json::{json, Value};
 
-use caspar_vm_sdk::host::{set_host, KvOp, VmHost};
+use aseman_vm_sdk::host::{set_host, KvOp, VmHost};
 
 use crate::runtime::{terminate_managed_vm, JsMac, RunError};
 
@@ -717,7 +717,7 @@ fn an_unparseable_host_request_is_answered_not_swallowed() {
 /// says the bundling contract and the runtime contract agree.
 ///
 /// Skipped when the bundle has not been built (`creatures-js/build.mjs`), so a
-/// Caspar checkout without the Decillion tree beside it still tests clean.
+/// Aseman checkout without the Decillion tree beside it still tests clean.
 #[test]
 fn a_bundled_davinci_program_runs_and_posts_to_the_log() {
     let host = MockHost::get();

@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""Generate Phase 0 inventories for current interfaces and configuration.
+"""Generate the surface inventories: routes and operations, configuration keys, VM
+runtimes, and CLI commands, each row with its source location.
 
-The legacy project does not yet have source registries for these surfaces.  The
-extractors below are deliberately narrow and preserve source locations so every
-generated row can be reviewed before it becomes an accepted migration input.
+The public API, the security registry, the configuration contract, and the CLI
+contract are derived from or checked against these inventories.
 """
 
 from __future__ import annotations
@@ -105,34 +105,21 @@ def meta(artifact: str, source: str, command: str) -> dict[str, str]:
 
 
 def shell_actions() -> list[dict[str, str]]:
-    rows: list[dict[str, str]] = []
-    # A secured action is registered directly, through a typed helper that delegates
-    # to a use case (`served::<I>`, `finance_action::<I, A>`), or as a row of the
-    # finance action table (`"/path" => Input, use_case;`).
-    patterns = [
-        re.compile(
-            r"(?:build_secure_action|served|finance_action)::<\s*([^,>]+)\s*(?:,[^>]*)?>"
-            r"\(\s*[^,]+,\s*\"([^\"]+)\"",
-            re.S,
-        ),
-        re.compile(r'"(/[^"]+)"\s*=>\s*([A-Za-z0-9_]+)\s*,\s*[a-z0-9_]+\s*;'),
+    """The router's operation table: one row per signed-packet operation."""
+    path = "apps/aseman-node/src/actions/mod.rs"
+    value = text(path)
+    table = value.index("const OPERATIONS")
+    row = re.compile(r'"(/[^"]+)"\s+(Local|Replicated|Requested)\s*=>\s*([a-z_]+::[a-z_0-9]+)\s*;')
+    rows = [
+        {
+            "surface": "signed-shell-action",
+            "path": found.group(1),
+            "request_type": found.group(3),
+            "transport": "TCP/WebSocket/federation adapters",
+            "source": location(path, value, table + found.start()),
+        }
+        for found in row.finditer(value, table)
     ]
-    # Action families may be split into owned submodules as the migration
-    # progresses. Keep the public-route inventory independent of file layout.
-    for path in sorted((ROOT / "apps/aseman-node/src/api/actions").rglob("*.rs")):
-        value = path.read_text(encoding="utf-8")
-        found_all = [(found, 1, 2) for found in patterns[0].finditer(value)]
-        found_all += [(found, 2, 1) for found in patterns[1].finditer(value)]
-        for found, request, route in found_all:
-            rows.append(
-                {
-                    "surface": "signed-shell-action",
-                    "path": found.group(route),
-                    "request_type": found.group(request).strip(),
-                    "transport": "TCP/WebSocket/federation adapters",
-                    "source": location(rel(path), value, found.start()),
-                }
-            )
     return sorted(rows, key=lambda row: row["path"])
 
 
@@ -140,7 +127,7 @@ def static_http_routes() -> list[dict[str, str]]:
     rows: list[dict[str, str]] = []
     sources = {
         "modules/storage/rocksdb/src/cluster/server.rs": "cluster-admin-and-raft",
-        "apps/aseman-node/src/api/storage_http.rs": "public-storage-http",
+        "apps/aseman-node/src/transports/storage_http.rs": "public-storage-http",
     }
     pair = re.compile(r'\(\s*"(GET|POST|PUT|DELETE|HEAD|PATCH)"\s*,\s*"([^\"]+)"\s*\)')
     for path, surface in sources.items():
@@ -160,7 +147,7 @@ def static_http_routes() -> list[dict[str, str]]:
                 }
             )
 
-    storage = text("apps/aseman-node/src/api/storage_http.rs")
+    storage = text("apps/aseman-node/src/transports/storage_http.rs")
     marker = 'p.starts_with("/storage/file/")'
     offset = storage.find(marker)
     if offset >= 0:
@@ -170,7 +157,7 @@ def static_http_routes() -> list[dict[str, str]]:
                     "surface": "public-storage-http",
                     "method": method,
                     "path": "/storage/file/{id}",
-                    "source": location("apps/aseman-node/src/api/storage_http.rs", storage, offset),
+                    "source": location("apps/aseman-node/src/transports/storage_http.rs", storage, offset),
                 }
             )
 
@@ -194,7 +181,7 @@ def static_http_routes() -> list[dict[str, str]]:
                 }
             )
 
-    ingress_path = "apps/aseman-node/src/adapters/vmm/network/ingress.rs"
+    ingress_path = "apps/aseman-node/src/workloads/network/ingress.rs"
     ingress = text(ingress_path)
     rows.extend(
         [
@@ -208,7 +195,7 @@ def static_http_routes() -> list[dict[str, str]]:
                 "surface": "vm-http-ingress",
                 "method": "ANY",
                 "path": "/{creatureUsername}/{customPath...}",
-                "source": "apps/aseman-node/src/adapters/vmm/http_route.rs:1",
+                "source": f"{ingress_path}:1",
             },
         ]
     )
@@ -216,7 +203,7 @@ def static_http_routes() -> list[dict[str, str]]:
 
 
 def guest_operations() -> list[dict[str, str]]:
-    path = "apps/aseman-node/src/adapters/vmm/host/vm_host_functions.rs"
+    path = "apps/aseman-node/src/workloads/host/vm_host_functions.rs"
     value = text(path)
     anchor = value.index("pub(crate) fn handle_unified_host_call")
     match_at = value.index("match op {", anchor)
@@ -243,33 +230,19 @@ def route_inventory() -> dict[str, Any]:
     return {
         "_meta": meta(
             "A002",
-            "legacy action registration and HTTP/guest dispatch source",
+            "the router's operation table and the HTTP/guest dispatch source",
             "python3 scripts/generate_current_surface_inventories.py --check",
         ),
         "summary": {
             "signed_shell_actions": len(actions),
             "http_routes": len(http),
             "guest_operations": len(guest),
-            "node_facing_vmm_api": "absent; current VMM ingress is guest/public workload ingress",
             "federation_api": "custom framed action transport; signed shell paths are carried in envelopes",
         },
         "signed_shell_actions": actions,
         "http_routes": http,
         "guest_operations": guest,
     }
-
-
-def sample_env() -> dict[str, str]:
-    # The combined legacy image and its sample environment were retired with the
-    # ADR-0004 window; their declarations are no longer an inventory input.
-    values: dict[str, str] = {}
-    if not (ROOT / "deploy/legacy/sample.env").exists():
-        return values
-    for line in text("deploy/legacy/sample.env").splitlines():
-        found = re.match(r"^([A-Z][A-Z0-9_]*)=(.*)$", line.strip())
-        if found:
-            values[found.group(1)] = found.group(2).strip().strip('"')
-    return values
 
 
 def configuration_inventory() -> dict[str, Any]:
@@ -294,12 +267,9 @@ def configuration_inventory() -> dict[str, Any]:
                     {"kind": kind, "source": location(rel(path), value, found.start())}
                 )
 
-    # Once a direct read moves behind `aseman-config`, the legacy spelling must
-    # remain inventoried for the whole ADR-0004 compatibility window. The A103
-    # alias contract is therefore also a discoverable configuration surface;
-    # otherwise regenerating this inventory would silently erase aliases as
-    # soon as their scattered consumers are correctly deleted.
-    alias_path = ROOT / "contracts/config/legacy-aliases.json"
+    # A retired Caspar name stays inventoried: `aseman-config` refuses it with its
+    # canonical key (A103), so the retired-name contract is a configuration surface.
+    alias_path = ROOT / "contracts/config/retired-names.json"
     if alias_path.exists():
         alias_text = alias_path.read_text(encoding="utf-8")
         alias_contract = json.loads(alias_text)
@@ -309,28 +279,10 @@ def configuration_inventory() -> dict[str, Any]:
             offset = alias_text.find(marker)
             occurrences[key].append(
                 {
-                    "kind": "compatibility-alias",
+                    "kind": "retired-name",
                     "source": location(rel(alias_path), alias_text, max(offset, 0)),
                 }
             )
-
-    samples = sample_env()
-    for key in samples:
-        sample_text = text("deploy/legacy/sample.env")
-        offset = sample_text.find(f"{key}=")
-        occurrences[key].append(
-            {"kind": "sample-declaration", "source": location("deploy/legacy/sample.env", sample_text, offset)}
-        )
-
-    dockerfile = (
-        text("deploy/legacy/node.Dockerfile")
-        if (ROOT / "deploy/legacy/node.Dockerfile").exists()
-        else ""
-    )
-    for found in re.finditer(r'^(ENV|ARG)\s+([A-Z][A-Z0-9_]*)', dockerfile, re.M):
-        occurrences[found.group(2)].append(
-            {"kind": f"docker-{found.group(1).lower()}", "source": location("deploy/legacy/node.Dockerfile", dockerfile, found.start())}
-        )
 
     def category(key: str) -> str:
         if re.search(r"PRIVATE|SECRET|TOKEN|PASSWORD|API_KEY|AUTH_TOKEN|KEY_PATH", key):
@@ -350,14 +302,14 @@ def configuration_inventory() -> dict[str, Any]:
             {
                 "key": key,
                 "category": category(key),
-                "sample_value": samples.get(key),
+                "sample_value": None,
                 "occurrences": sorted(deduped.values(), key=lambda item: (item["source"], item["kind"])),
             }
         )
     return {
         "_meta": meta(
             "A003",
-            "literal environment reads, sample.env, deployment env generation, and Docker build args",
+            "literal environment reads and the retired-name contract",
             "python3 scripts/generate_current_surface_inventories.py --check",
         ),
         "summary": {
@@ -371,12 +323,12 @@ def configuration_inventory() -> dict[str, Any]:
 
 
 def runtime_inventory() -> dict[str, Any]:
-    aggregator_path = "modules/vmm-backend/native-legacy/crates/caspar-vm-plugins/src/lib.rs"
+    aggregator_path = "modules/vmm-backend/native/crates/vm-plugins/src/lib.rs"
     aggregator = text(aggregator_path)
     enabled_match = re.search(r"pub fn enabled_vm_keys\(\).*?vec!\[(.*?)\]", aggregator, re.S)
     enabled = set(re.findall(r'"([^\"]+)"', enabled_match.group(1))) if enabled_match else set()
 
-    trait_path = "modules/runtime/sdk-legacy/src/plugin.rs"
+    trait_path = "modules/runtime/sdk/src/plugin.rs"
     trait_source = text(trait_path)
     trait_anchor = trait_source.index("pub trait VmPlugin")
     trait_block = matching_block(trait_source, trait_source.index("{", trait_anchor))
@@ -433,10 +385,11 @@ def runtime_inventory() -> dict[str, Any]:
     }
 
 
-def rust_match_commands(path: str, anchor: str) -> list[dict[str, str]]:
+def rust_match_commands(path: str, anchor: str, dispatch: str = "match") -> list[dict[str, str]]:
+    """The string arms of the `dispatch` match expression after `anchor`."""
     value = text(path)
     start = value.index(anchor)
-    match_start = value.index("match", start)
+    match_start = value.index(dispatch, start)
     block = matching_block(value, value.index("{", match_start))
     rows: list[dict[str, str]] = []
     for found in re.finditer(r'((?:"[^\"]+"\s*\|\s*)*"[^\"]+")\s*=>\s*([^,\n{]+)', block):
@@ -454,19 +407,31 @@ def rust_match_commands(path: str, anchor: str) -> list[dict[str, str]]:
     return rows
 
 
+def rust_option_commands(path: str, anchor: str) -> list[dict[str, str]]:
+    """The `Some("…")` arms of the first match expression after `anchor`."""
+    value = text(path)
+    start = value.index(anchor)
+    match_start = value.index("match", start)
+    block = matching_block(value, value.index("{", match_start))
+    return [
+        {
+            "command": found.group(1),
+            "source": location(path, value, match_start + 1 + found.start()),
+        }
+        for found in re.finditer(r'Some\("([^"]+)"\)', block)
+    ]
+
+
 def cli_inventory() -> dict[str, Any]:
     asemanctl = {
-        "top_level": rust_match_commands("apps/asemanctl/src/cli/mod.rs", "fn main()"),
+        "top_level": rust_match_commands(
+            "apps/asemanctl/src/cli/mod.rs", "fn main()", "match args[1].as_str()"
+        ),
         "vms": rust_match_commands("apps/asemanctl/src/cli/vms.rs", "pub fn run_vms"),
         "cluster": rust_match_commands("apps/asemanctl/src/cli/cluster.rs", "pub fn run_cluster"),
-        "pprof": [
-            {"command": command, "source": f"apps/asemanctl/src/cli/mod.rs:{line}"}
-            for command, line in (("runtime", 1221), ("heap", 1222), ("threads", 1223), ("flamegraph", 1224), ("profile", 1225))
-        ],
-        "cluster_config": [
-            {"command": command, "source": "apps/asemanctl/src/cli/cluster.rs:261"}
-            for command in ("list", "get", "set")
-        ],
+        "cluster_config": rust_option_commands(
+            "apps/asemanctl/src/cli/cluster.rs", "fn cmd_config"
+        ),
     }
 
     client_path = "apps/aseman-client/index.ts"
@@ -504,13 +469,13 @@ def cli_inventory() -> dict[str, Any]:
             "python3 scripts/generate_current_surface_inventories.py --check",
         ),
         "summary": {
-            "casparctl_top_level_commands": len(asemanctl["top_level"]),
+            "asemanctl_top_level_commands": len(asemanctl["top_level"]),
             "client_cli_commands": len(client_commands),
             "root_scripts": len(scripts),
         },
         # Keep the A007 compatibility-surface key stable while its source owner is
         # canonical `apps/asemanctl`; ADR 0004 still supports these Caspar spellings.
-        "casparctl": asemanctl,
+        "asemanctl": asemanctl,
         "client_cli": client_commands,
         "root_scripts": scripts,
     }
@@ -520,7 +485,7 @@ def front_matter(source: str) -> list[str]:
     return [
         "---",
         "status: CURRENT",
-        "owner: migration/P0-01",
+        "owner: platform",
         f"source_of_truth: {source}",
         f"last_verified_commit: {COMMIT}",
         f"verification: python3 {GENERATOR} --check",
@@ -529,18 +494,17 @@ def front_matter(source: str) -> list[str]:
 
 
 def routes_markdown(data: dict[str, Any]) -> str:
-    lines = front_matter("legacy route/action dispatch source") + [
+    lines = front_matter("the router's operation table and the HTTP/guest dispatch source") + [
         "",
         "# Current route and operation inventory",
         "",
         f"> Generated by `{GENERATOR}`. Do not edit by hand.",
         "",
-        "This records current legacy surfaces. It is not the target HTTP/VMM contract.",
+        "This records the node's surfaces as the source declares them. The public HTTP contract is `contracts/public/openapi.json`.",
         "",
         f"- Signed shell actions: {data['summary']['signed_shell_actions']}",
         f"- HTTP routes/patterns: {data['summary']['http_routes']}",
         f"- Guest host operations and aliases: {data['summary']['guest_operations']}",
-        "- A node-facing VMM control API does not currently exist.",
         "- Federation carries signed action paths over a custom framed transport.",
         "",
         "## Signed shell actions",
@@ -593,7 +557,7 @@ def runtime_markdown(data: dict[str, Any]) -> str:
         f"> Generated by `{GENERATOR}`. Do not edit by hand.",
         "",
         "`override` means the runtime implements the trait method directly; `inherited-default`",
-        "means behavior comes from `modules/runtime/sdk-legacy/src/plugin.rs` and must not be mistaken for native support.",
+        "means behavior comes from `modules/runtime/sdk/src/plugin.rs` and must not be mistaken for native support.",
         "",
         "| Runtime | Enabled | In process | Default | Restorable | Chain transactions | Verification | Overrides |",
         "|---|---:|---:|---:|---:|---:|---:|---:|",
@@ -608,7 +572,7 @@ def runtime_markdown(data: dict[str, Any]) -> str:
     lines += [
         "",
         "The complete per-operation override matrix is in `current-runtime-matrix.json`.",
-        "All enabled runtimes are statically compiled through `caspar-vm-plugins`; runtime replacement is not dynamic.",
+        "All enabled runtimes are statically compiled through `aseman-vm-plugins`; runtime replacement is not dynamic.",
         "",
     ]
     return "\n".join(lines)
@@ -624,8 +588,8 @@ def cli_markdown(data: dict[str, Any]) -> str:
         "## asemanctl",
         "",
     ]
-    for group in ("top_level", "vms", "cluster", "cluster_config", "pprof"):
-        commands = ", ".join(f"`{row['command']}`" for row in data["casparctl"][group])
+    for group in ("top_level", "vms", "cluster", "cluster_config"):
+        commands = ", ".join(f"`{row['command']}`" for row in data["asemanctl"][group])
         lines.append(f"- {group.replace('_', ' ')}: {commands or '—'}")
     lines += [
         "",

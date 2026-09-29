@@ -12,6 +12,7 @@ aseman-contracts = { path = "../aseman-contracts" }
 aseman-domain = { path = "../aseman-domain" }
 aseman-ports = { path = "../aseman-ports" }
 aseman-storage = { path = "../aseman-storage" }
+serde.workspace = true
 serde_json.workspace = true
 thiserror.workspace = true
 uuid = { workspace = true, features = ["v4"] }

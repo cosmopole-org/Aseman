@@ -1,6 +1,6 @@
 [package]
-name = "aseman-network-legacy"
-description = "Deprecated Caspar TCP/WebSocket TLS and binary framing compatibility implementation."
+name = "aseman-network-shell"
+description = "TLS and binary framing of the signed-packet TCP, WebSocket, and federation transports."
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true

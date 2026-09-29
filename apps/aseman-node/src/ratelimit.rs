@@ -14,8 +14,8 @@
 //! # Cross-protocol unification
 //!
 //! One `RateLimiter` instance is shared by the TCP, WebSocket, and HTTP-ingress
-//! transports (it is stored on [`ITools`](crate::models::ports) and
-//! reachable from every driver via `ICore`). The bucket key is derived from the
+//! transports (it is owned by the node and
+//! owned by the node). The bucket key is derived from the
 //! caller's *identity*, never the wire it came in on, so a client draws from a
 //! single quota no matter how it distributes load across protocols.
 //!
@@ -45,9 +45,146 @@ use std::time::{Duration, Instant};
 
 use dashmap::DashMap;
 
-use crate::models::ports::{
-    IRateLimiter, LimitScope, RateLimitDecision, RateLimitKey, RateLimiterSnapshot,
-};
+/// The client-facing transport a request arrived on.
+///
+/// The protocol never partitions the quota — an identity's tokens are shared
+/// across every transport — but it is carried through the check so the limiter
+/// can attribute rejections per-protocol for telemetry and logging.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Protocol {
+    /// The length-prefixed TLS-TCP client transport.
+    Tcp,
+    /// The TLS WebSocket client transport.
+    Ws,
+}
+
+impl Protocol {
+    /// Stable lowercase label used in logs and telemetry.
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Protocol::Tcp => "tcp",
+            Protocol::Ws => "ws",
+        }
+    }
+}
+
+/// Identifies who is making a request, so the limiter can pick the right
+/// bucket and tier.
+///
+/// The limiter derives the bucket key from **verified** identity only:
+///
+/// * `user_id` must be an authenticated user (e.g. the id a transport has
+///   pinned onto its socket *after* a successful signature check), never a
+///   value merely claimed in an unverified packet. When it is non-empty the
+///   request is billed to that user under the authenticated tier.
+/// * otherwise the request is anonymous and billed to `peer_ip` under the
+///   (tighter) anonymous tier.
+///
+/// Keeping spoofable, unverified identifiers out of the key is what makes the
+/// limiter evasion-resistant: an attacker cannot mint fresh buckets by
+/// rotating a forged user id, because a forged id is never trusted here.
+#[derive(Debug, Clone)]
+pub struct RateLimitKey {
+    /// Verified authenticated user id, or empty for anonymous traffic.
+    pub user_id: String,
+    /// Remote peer IP (best-effort; may be empty for in-process callers).
+    pub peer_ip: String,
+}
+
+impl RateLimitKey {
+    /// Build a key for a verified-authenticated request.
+    pub fn authenticated(user_id: &str, peer_ip: &str) -> Self {
+        RateLimitKey {
+            user_id: user_id.to_string(),
+            peer_ip: peer_ip.to_string(),
+        }
+    }
+
+    /// Build a key for anonymous (pre-auth) traffic, billed to the peer IP.
+    pub fn anonymous(peer_ip: &str) -> Self {
+        RateLimitKey {
+            user_id: String::new(),
+            peer_ip: peer_ip.to_string(),
+        }
+    }
+
+    /// True when the request carries a verified authenticated identity.
+    pub fn is_authenticated(&self) -> bool {
+        !self.user_id.is_empty()
+    }
+}
+
+/// Which limit rejected a request.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum LimitScope {
+    /// The per-identity (per-user or per-IP) bucket was exhausted.
+    Identity,
+    /// The node-wide aggregate limiter was exhausted.
+    Global,
+}
+
+impl LimitScope {
+    pub fn as_str(self) -> &'static str {
+        match self {
+            LimitScope::Identity => "identity",
+            LimitScope::Global => "global",
+        }
+    }
+}
+
+/// The outcome of a single [`IRateLimiter::check`] call.
+#[derive(Debug, Clone)]
+pub enum RateLimitDecision {
+    /// The request may proceed.
+    Allowed,
+    /// The request is rejected. `retry_after` is the minimum wait before a
+    /// retry could succeed against the exhausted bucket; `scope` says which
+    /// limit tripped.
+    Limited {
+        retry_after: Duration,
+        scope: LimitScope,
+    },
+}
+
+impl RateLimitDecision {
+    /// Convenience: whether the request was allowed through.
+    #[cfg(test)]
+    pub fn is_allowed(&self) -> bool {
+        matches!(self, RateLimitDecision::Allowed)
+    }
+}
+
+/// A point-in-time snapshot of limiter counters for telemetry.
+#[derive(Debug, Clone, Default)]
+#[cfg(test)]
+pub struct RateLimiterSnapshot {
+    /// Whether enforcement is currently on.
+    pub enabled: bool,
+    /// Number of live per-identity buckets currently tracked.
+    pub tracked_identities: u64,
+    /// Total requests admitted since start.
+    pub allowed: u64,
+    /// Total requests rejected by a per-identity bucket since start.
+    pub limited_identity: u64,
+}
+
+/// Response code the length-prefixed client transports (TCP / WS) return when
+/// a request is throttled. Chosen distinct from the existing action codes
+/// (`0` ok, `1` not-found, `2` parse-error, `3` act-error, `4` auth-failed) so
+/// clients can special-case a back-off without ambiguity. Mirrors HTTP `429`.
+pub const RATE_LIMITED_RES_CODE: i64 = 8;
+
+/// Build the JSON body handed back to a throttled client. Includes the machine
+/// -readable `message`, the `retryAfterMs` a client should wait, and which
+/// `scope` tripped. Old clients that only read `message` still see
+/// `"rate_limited"`.
+pub fn rate_limited_body(retry_after: Duration, scope: LimitScope) -> serde_json::Value {
+    serde_json::json!({
+        "message": "rate_limited",
+        "retryAfterMs": retry_after.as_millis() as u64,
+        "scope": scope.as_str(),
+    })
+}
 
 /// Static limits for one tier (authenticated or anonymous).
 #[derive(Debug, Clone, Copy)]
@@ -210,7 +347,6 @@ pub struct RateLimiter {
 
     allowed: AtomicU64,
     limited_identity: AtomicU64,
-    limited_global: AtomicU64,
 }
 
 impl RateLimiter {
@@ -223,7 +359,6 @@ impl RateLimiter {
             global: Arc::new(std::sync::Mutex::new(Bucket::new(cfg.global, now))),
             allowed: AtomicU64::new(0),
             limited_identity: AtomicU64::new(0),
-            limited_global: AtomicU64::new(0),
         });
         if cfg.enabled {
             limiter.clone().spawn_sweeper();
@@ -270,9 +405,7 @@ impl RateLimiter {
 
     fn check_at(&self, key: &RateLimitKey, now: Instant) -> RateLimitDecision {
         if !self.cfg.enabled {
-            return RateLimitDecision::Allowed {
-                remaining: u32::MAX,
-            };
+            return RateLimitDecision::Allowed;
         }
 
         let (bucket_key, tier) = self.resolve(key);
@@ -286,7 +419,7 @@ impl RateLimiter {
                 .or_insert_with(|| Bucket::new(tier, now));
             entry.try_acquire(now)
         };
-        let remaining = match identity_result {
+        let _remaining = match identity_result {
             Ok(remaining) => remaining,
             Err(retry_after) => {
                 self.limited_identity.fetch_add(1, Ordering::Relaxed);
@@ -302,7 +435,6 @@ impl RateLimiter {
         if self.cfg.global_enabled {
             let mut g = self.global.lock().unwrap();
             if let Err(retry_after) = g.try_acquire(now) {
-                self.limited_global.fetch_add(1, Ordering::Relaxed);
                 return RateLimitDecision::Limited {
                     retry_after,
                     scope: LimitScope::Global,
@@ -311,7 +443,7 @@ impl RateLimiter {
         }
 
         self.allowed.fetch_add(1, Ordering::Relaxed);
-        RateLimitDecision::Allowed { remaining }
+        RateLimitDecision::Allowed
     }
 
     /// Drop buckets idle for longer than the configured TTL.
@@ -346,22 +478,17 @@ impl RateLimiter {
     }
 }
 
-impl IRateLimiter for RateLimiter {
-    fn check(&self, key: &RateLimitKey) -> RateLimitDecision {
+impl RateLimiter {
+    pub(crate) fn check(&self, key: &RateLimitKey) -> RateLimitDecision {
         self.check_at(key, Instant::now())
     }
-
-    fn enabled(&self) -> bool {
-        self.cfg.enabled
-    }
-
-    fn snapshot(&self) -> RateLimiterSnapshot {
+    #[cfg(test)]
+    pub(crate) fn snapshot(&self) -> RateLimiterSnapshot {
         RateLimiterSnapshot {
             enabled: self.cfg.enabled,
             tracked_identities: self.buckets.len() as u64,
             allowed: self.allowed.load(Ordering::Relaxed),
             limited_identity: self.limited_identity.load(Ordering::Relaxed),
-            limited_global: self.limited_global.load(Ordering::Relaxed),
         }
     }
 }
@@ -369,7 +496,6 @@ impl IRateLimiter for RateLimiter {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::models::ports::Protocol;
 
     fn tier(rate: f64, burst: f64) -> TierConfig {
         TierConfig {
@@ -435,7 +561,7 @@ mod tests {
             ..Default::default()
         };
         let rl = RateLimiter::new(cfg);
-        let key = RateLimitKey::authenticated(Protocol::Tcp, "u1", "1.2.3.4", "/x");
+        let key = RateLimitKey::authenticated("u1", "1.2.3.4");
         for _ in 0..1000 {
             assert!(rl.check(&key).is_allowed());
         }
@@ -453,8 +579,8 @@ mod tests {
         };
         let rl = RateLimiter::new(cfg);
         let now = Instant::now();
-        let user = RateLimitKey::authenticated(Protocol::Tcp, "u1", "1.2.3.4", "/x");
-        let anon = RateLimitKey::anonymous(Protocol::Tcp, "1.2.3.4", "/x");
+        let user = RateLimitKey::authenticated("u1", "1.2.3.4");
+        let anon = RateLimitKey::anonymous("1.2.3.4");
         // Drain the user's bucket.
         assert!(rl.check_at(&user, now).is_allowed());
         assert!(rl.check_at(&user, now).is_allowed());
@@ -479,9 +605,9 @@ mod tests {
         let now = Instant::now();
         // Two whole tokens of burst, spent one per protocol — the third
         // (regardless of protocol) is refused because the quota is unified.
-        let tcp = RateLimitKey::authenticated(Protocol::Tcp, "u1", "1.2.3.4", "/x");
-        let ws = RateLimitKey::authenticated(Protocol::Ws, "u1", "1.2.3.4", "/x");
-        let http = RateLimitKey::authenticated(Protocol::Http, "u1", "1.2.3.4", "/x");
+        let tcp = RateLimitKey::authenticated("u1", "1.2.3.4");
+        let ws = RateLimitKey::authenticated("u1", "1.2.3.4");
+        let http = RateLimitKey::authenticated("u1", "1.2.3.4");
         assert!(rl.check_at(&tcp, now).is_allowed());
         assert!(rl.check_at(&ws, now).is_allowed());
         assert!(!rl.check_at(&http, now).is_allowed());
@@ -500,9 +626,9 @@ mod tests {
         };
         let rl = RateLimiter::new(cfg);
         let now = Instant::now();
-        let a = RateLimitKey::authenticated(Protocol::Tcp, "a", "1.1.1.1", "/x");
-        let b = RateLimitKey::authenticated(Protocol::Tcp, "b", "2.2.2.2", "/x");
-        let c = RateLimitKey::authenticated(Protocol::Tcp, "c", "3.3.3.3", "/x");
+        let a = RateLimitKey::authenticated("a", "1.1.1.1");
+        let b = RateLimitKey::authenticated("b", "2.2.2.2");
+        let c = RateLimitKey::authenticated("c", "3.3.3.3");
         assert!(rl.check_at(&a, now).is_allowed());
         assert!(rl.check_at(&b, now).is_allowed());
         // Third distinct identity is fine per-identity but trips the global cap.
@@ -524,7 +650,7 @@ mod tests {
         };
         let rl = RateLimiter::new(cfg);
         let now = Instant::now();
-        let key = RateLimitKey::authenticated(Protocol::Tcp, "u1", "1.2.3.4", "/x");
+        let key = RateLimitKey::authenticated("u1", "1.2.3.4");
         assert!(rl.check_at(&key, now).is_allowed());
         assert_eq!(rl.buckets.len(), 1);
         // Not yet past the TTL.
@@ -547,7 +673,7 @@ mod tests {
         };
         let rl = RateLimiter::new(cfg);
         let now = Instant::now();
-        let key = RateLimitKey::authenticated(Protocol::Tcp, "u1", "1.2.3.4", "/x");
+        let key = RateLimitKey::authenticated("u1", "1.2.3.4");
         assert!(rl.check_at(&key, now).is_allowed());
         assert!(!rl.check_at(&key, now).is_allowed());
         let snap = rl.snapshot();

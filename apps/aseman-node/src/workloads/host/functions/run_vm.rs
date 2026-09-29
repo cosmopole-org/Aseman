@@ -1,4 +1,4 @@
-use crate::adapters::vmm::prelude::*;
+use crate::workloads::prelude::*;
 
 /// Unified `runVm` host op. Any caller (a wasm creature, a fire VM
 /// host callback, etc.) can invoke any backend runtime from here —
@@ -17,18 +17,23 @@ use crate::adapters::vmm::prelude::*;
 ///   so the caller can address it later through `execVm`,
 ///   `terminateVm`, signals, etc.
 ///
-/// The node's VMM does the work (P5-06): an invocation runtime runs the program
+/// The node's VMM does the work: an invocation runtime runs the program
 /// once and answers; a long-running one starts an instance.
 ///
 /// The launching creature is recorded as the VM's owner (`caller_program_id`
 /// is node-resolved, never a packet field), because `deleteVm` needs somebody
 /// to authorize against later: run is freely available, destroy is not.
-pub(crate) fn host_fn_run_vm(caller_program_id: &str, input: &JsonValue) -> String {
+pub(crate) fn host_fn_run_vm(
+    node: &Arc<Node>,
+    caller_program_id: &str,
+    input: &JsonValue,
+) -> String {
     let mut packet = input.clone();
     if let JsonValue::Object(map) = &mut packet {
         map.insert("type".to_string(), JsonValue::String("runVm".to_string()));
     }
-    let raw = crate::adapters::vmm::host::functions::vm_calls::remote_vm_call(
+    let raw = crate::workloads::host::functions::vm_calls::remote_vm_call(
+        node,
         "runVm",
         caller_program_id,
         &packet,
@@ -40,7 +45,8 @@ pub(crate) fn host_fn_run_vm(caller_program_id: &str, input: &JsonValue) -> Stri
         .and_then(|v| v["vmId"].as_str().map(|s| s.to_string()))
         .filter(|s| !s.trim().is_empty())
         .unwrap_or_else(|| input["vmId"].as_str().unwrap_or("").to_string());
-    crate::adapters::vmm::host::functions::vm_ownership::record_vm_owner(
+    crate::workloads::host::functions::vm_ownership::record_vm_owner(
+        node,
         &launched_vm_id,
         caller_program_id,
     );

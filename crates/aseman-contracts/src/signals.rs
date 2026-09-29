@@ -1,6 +1,6 @@
-//! Shared legacy bridge contracts: deterministic legacy identities and the store-signal
-//! realtime event encoding used by both the migration export and live adapters, so
-//! migrated history and new appends are indistinguishable.
+//! Capsule ids derived from account-style ids (`<n>@<origin>`), and the store-signal
+//! realtime event encoding, shared by `storage migrate` and the live stores so that
+//! imported history and new appends are indistinguishable.
 
 use crate::capsule::{
     CapsuleDigest, CapsuleEnvelope, CapsuleId, CapsuleKind, CapsuleResult, CapsuleValue,
@@ -13,7 +13,7 @@ pub const STORE_SIGNAL_EVENT_TYPE: &str = "legacy.store.signal";
 
 /// Domain-separated deterministic capsule ID for a legacy identity (first 128 bits).
 #[must_use]
-pub fn deterministic_legacy_capsule_id(family: &str, legacy_id: &[u8]) -> [u8; 16] {
+pub fn derived_capsule_id(family: &str, legacy_id: &[u8]) -> [u8; 16] {
     let mut hasher = Sha256::new();
     hasher.update(b"ASEMAN-LEGACY-CAPSULE-ID-V1\0");
     hasher.update((family.len() as u64).to_be_bytes());
@@ -25,8 +25,8 @@ pub fn deterministic_legacy_capsule_id(family: &str, legacy_id: &[u8]) -> [u8; 1
         .expect("fixed digest slice")
 }
 
-/// Stream authorization scope and retention, resolved server-side per store (P7-04
-/// owns the rule; the migration runner and live composition supply the same policy).
+/// Stream authorization scope and retention, resolved server-side per store (the
+/// import runner and live composition supply the same policy).
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct SignalStreamPolicy {
     pub authorization_scope: Vec<u8>,
@@ -34,15 +34,14 @@ pub struct SignalStreamPolicy {
 }
 
 impl SignalStreamPolicy {
-    /// The default policy for a store's signal stream until P7-04 refines the rule:
+    /// The policy of a store's signal stream:
     /// the stream is authorized by its store, and its retention is persistent (only
     /// stores with persistent history record signals). Live composition and the
     /// migration runner use the same rule, so migrated and new events agree.
     #[must_use]
     pub fn for_store(store_id: &str) -> Self {
         Self {
-            authorization_scope: deterministic_legacy_capsule_id("Store", store_id.as_bytes())
-                .to_vec(),
+            authorization_scope: derived_capsule_id("Store", store_id.as_bytes()).to_vec(),
             retention_class: "persistent".to_owned(),
         }
     }
@@ -113,7 +112,7 @@ pub fn store_signal_event(
     let payload_digest = Sha256::digest(&payload).to_vec();
     CapsuleEnvelope {
         encoding_version: 1,
-        id: CapsuleId(deterministic_legacy_capsule_id(
+        id: CapsuleId(derived_capsule_id(
             "QuestDB.storage",
             signal.signal_id.as_bytes(),
         )),

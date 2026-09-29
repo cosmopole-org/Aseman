@@ -1,4 +1,4 @@
-//! Authorization of every registered action (P4-05, ADR 0008, A402/A404).
+//! Authorization of every registered action (ADR 0008, A402/A404).
 //!
 //! Both entry surfaces run through here before their handlers:
 //! - guest host calls ([`authorize_host_call`]), identified by the node-stamped packet
@@ -27,18 +27,20 @@ use aseman_domain::identity::{Subject, SubjectKind};
 use aseman_ports::PolicyDecisionPort;
 use serde_json::Value as JsonValue;
 
-use crate::core::trx::Trx;
+use crate::storage::Trx;
 
 /// The legacy root identity (`/creatures/mint`'s hard-coded administrator).
 pub(crate) const LEGACY_ROOT: &str = "1@global";
 
 /// Decided and logged, not yet refused, with the rollout that ends the exception:
 /// - `network.egress`: until A406 egress grants are issued to existing workloads;
-/// - `creature.list`: legacy bulk listing, until P7-01 defines discovery scopes.
+/// - `creature.list`: bulk listing, until discovery scopes are defined.
 pub(crate) const SHADOW_ACTIONS: [&str; 2] = ["network.egress", "creature.list"];
 
 /// What the resolver reads about the node's state.
 pub(crate) trait AuthorityLookups {
+    /// Record a decision in the decision audit.
+    fn record(&self, record: aseman_domain::authority::AuditRecord);
     /// The user owning a program or creature; empty when unknown or itself a user.
     fn owner_user(&self, id: &str) -> String;
     /// The program that launched a VM, or empty.
@@ -301,7 +303,7 @@ pub(crate) fn decide_surface(
         })
         .map_err(|error| error.to_string())?;
     let shadow = !decision.allowed && SHADOW_ACTIONS.contains(&action_id.as_str());
-    crate::api::audit::record(aseman_domain::authority::AuditRecord {
+    lookups.record(aseman_domain::authority::AuditRecord {
         actor: caller
             .subject
             .map_or_else(|| "anonymous".to_owned(), |subject| subject.to_string()),
@@ -338,12 +340,10 @@ pub(crate) fn decide_surface(
 fn workload_subject(id: &str) -> Subject {
     Subject {
         kind: SubjectKind::Workload,
-        id: aseman_domain::Uuid::from_bytes(
-            aseman_contracts::legacy_realtime::deterministic_legacy_capsule_id(
-                "Workload",
-                id.as_bytes(),
-            ),
-        ),
+        id: aseman_domain::Uuid::from_bytes(aseman_contracts::signals::derived_capsule_id(
+            "Workload",
+            id.as_bytes(),
+        )),
     }
 }
 
@@ -354,12 +354,10 @@ fn creature_subject(lookups: &dyn AuthorityLookups, id: &str) -> Subject {
         } else {
             SubjectKind::Creature
         },
-        id: aseman_domain::Uuid::from_bytes(
-            aseman_contracts::legacy_realtime::deterministic_legacy_capsule_id(
-                "Creature",
-                id.as_bytes(),
-            ),
-        ),
+        id: aseman_domain::Uuid::from_bytes(aseman_contracts::signals::derived_capsule_id(
+            "Creature",
+            id.as_bytes(),
+        )),
     }
 }
 
@@ -455,25 +453,29 @@ pub(crate) fn authorize_shell_action(
 /// The lookups over one state transaction.
 pub(crate) struct TrxLookups<'a> {
     pub(crate) trx: &'a Trx,
+    pub(crate) audit: &'a crate::state::audit::AuditLog,
 }
 
 impl AuthorityLookups for TrxLookups<'_> {
+    fn record(&self, record: aseman_domain::authority::AuditRecord) {
+        self.audit.record(record);
+    }
+
     fn owner_user(&self, id: &str) -> String {
         if id.is_empty() {
             return String::new();
         }
-        let programs = crate::api::model::program_ports::ProgramPorts { trx: self.trx };
+        let programs = crate::state::program_ports::ProgramPorts { trx: self.trx };
         let owner = match aseman_ports::ProgramDirectory::program(&programs, id)
             .ok()
             .flatten()
         {
             Some(record) => {
-                let program = crate::api::model::program_ports::program_view(record);
-                crate::api::actions::program::resolve_program_owner_machine(self.trx, &program)
-                    .owner_id
+                let program = crate::state::program_ports::program_view(record);
+                super::program::owner_machine(self.trx, &program).owner_id
             }
             None => {
-                (crate::api::model::creature_ports::CreaturePorts { trx: self.trx })
+                (crate::state::creature_ports::CreaturePorts { trx: self.trx })
                     .creature_or_empty(id)
                     .owner_id
             }
@@ -486,7 +488,7 @@ impl AuthorityLookups for TrxLookups<'_> {
     }
 
     fn vm_program(&self, vm_id: &str) -> String {
-        crate::api::model::vm_runtime::instance(self.trx, vm_id)
+        crate::state::vm_runtime::instance(self.trx, vm_id)
             .ok()
             .flatten()
             .and_then(|instance| instance.owner_program)
@@ -505,7 +507,7 @@ impl AuthorityLookups for TrxLookups<'_> {
     }
 
     fn store_permissions(&self, store_id: &str, member: &str) -> (bool, bool, bool) {
-        let ports = crate::api::model::store_ports::MembershipPorts { trx: self.trx };
+        let ports = crate::state::store_ports::MembershipPorts { trx: self.trx };
         let permissions =
             aseman_ports::StoreAccess::permissions(&ports, store_id, member).unwrap_or_default();
         (permissions.read, permissions.signal, permissions.manage)
@@ -515,7 +517,7 @@ impl AuthorityLookups for TrxLookups<'_> {
         if store_id.is_empty() {
             return String::new();
         }
-        let ports = crate::api::model::program_ports::ProgramPorts { trx: self.trx };
+        let ports = crate::state::program_ports::ProgramPorts { trx: self.trx };
         aseman_ports::VmResourceStores::resource_store(&ports, store_id)
             .ok()
             .flatten()
@@ -524,7 +526,7 @@ impl AuthorityLookups for TrxLookups<'_> {
     }
 
     fn is_human(&self, id: &str) -> bool {
-        (crate::api::model::creature_ports::CreaturePorts { trx: self.trx })
+        (crate::state::creature_ports::CreaturePorts { trx: self.trx })
             .creature_or_empty(id)
             .type_name
             == aseman_domain::creature::HUMAN_CREATURE_TYPE

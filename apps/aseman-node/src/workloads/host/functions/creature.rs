@@ -1,32 +1,31 @@
 //! Wasm host-call entry points for creature CRUD. Routes through
 //! `Vmm::handle_creature_crud` which performs the real persisted-state work.
 
-use crate::adapters::vmm::globals::with_global_app;
-use crate::adapters::vmm::prelude::*;
+use crate::workloads::prelude::*;
 
-fn dispatch_creature(op: &str, input: &JsonValue) -> String {
-    match with_global_app(|app| app.tools().workloads().host_action_creature(op, input, 0).0) {
-        Some(out) => out,
-        None => json!({"ok": false, "error": "vmm not initialised"}).to_string(),
-    }
+fn dispatch_creature(node: &Arc<Node>, op: &str, input: &JsonValue) -> String {
+    node.tools()
+        .workloads()
+        .host_action_creature(op, input, 0)
+        .0
 }
 
-pub(crate) fn host_fn_create_creature(input: &JsonValue) -> String {
-    dispatch_creature("create", input)
+pub(crate) fn host_fn_create_creature(node: &Arc<Node>, input: &JsonValue) -> String {
+    dispatch_creature(node, "create", input)
 }
 
-pub(crate) fn host_fn_delete_creature(input: &JsonValue) -> String {
-    dispatch_creature("delete", input)
+pub(crate) fn host_fn_delete_creature(node: &Arc<Node>, input: &JsonValue) -> String {
+    dispatch_creature(node, "delete", input)
 }
 
-pub(crate) fn host_fn_get_creature(input: &JsonValue) -> String {
-    dispatch_creature("get", input)
+pub(crate) fn host_fn_get_creature(node: &Arc<Node>, input: &JsonValue) -> String {
+    dispatch_creature(node, "get", input)
 }
 
-pub(crate) fn host_fn_list_creatures(input: &JsonValue) -> String {
-    dispatch_creature("list", input)
+pub(crate) fn host_fn_list_creatures(node: &Arc<Node>, input: &JsonValue) -> String {
+    dispatch_creature(node, "list", input)
 }
 
-pub(crate) fn host_fn_update_creature(input: &JsonValue) -> String {
-    dispatch_creature("update", input)
+pub(crate) fn host_fn_update_creature(node: &Arc<Node>, input: &JsonValue) -> String {
+    dispatch_creature(node, "update", input)
 }

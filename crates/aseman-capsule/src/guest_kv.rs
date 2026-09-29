@@ -222,9 +222,9 @@ impl Pairs<'_> {
                     .collect::<std::collections::BTreeMap<_, _>>();
                 let recorded =
                     |record: &str| snapshot.get(&[prefix.as_str(), record].concat()).cloned();
-                for (record, value) in aseman_contracts::legacy_documents::legacy_json_index_writes(
-                    path, &object, *merge, &recorded,
-                ) {
+                for (record, value) in
+                    aseman_contracts::documents::json_index_writes(path, &object, *merge, &recorded)
+                {
                     self.put(
                         LegacyKvNamespace::Json,
                         &[prefix.as_str(), record.as_str()].concat(),

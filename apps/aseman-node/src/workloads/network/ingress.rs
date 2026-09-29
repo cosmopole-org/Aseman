@@ -3,8 +3,8 @@
 //! A long-lived HTTP listener that accepts requests in either of two shapes:
 //!
 //! ```text
-//! {caspar node instance url}/{creatureId}/{programId}/{entityId}/{vmId}/{path…}
-//! {caspar node instance url}/{creatureUsername}/{customPath…}
+//! {node url}/{creatureId}/{programId}/{entityId}/{vmId}/{path…}
+//! {node url}/{creatureUsername}/{customPath…}
 //! ```
 //!
 //! and forwards them to the HTTP server of the targeted VM instance. The first
@@ -12,14 +12,14 @@
 //! a deployer bound to a VM entity at deploy time (metadata `gatewayPath`) —
 //! the leading segment is resolved as a creature username and the custom path
 //! prefix is matched against the routes registered for that creature (see
-//! [`crate::adapters::vmm::http_route`]).
+//! [`crate::workloads::http_route`]).
 //!
 //! The ingress is a *pure HTTP adapter*: it parses the request, resolves the
 //! identity segments (through the VMM for the custom-route form), and hands the
 //! packaged request to its owning node
 //! instance's VMM via `self.app.tools().workloads().forward_http(..)`. It never
 //! reaches into the packet router or plugin registry itself, so it carries no
-//! process-wide state and is scoped entirely to the `ICore` instance it was
+//! process-wide state and is scoped entirely to the node it was
 //! constructed with. The VMM's `forward_http` resolves the entity's runtime
 //! and dispatches to its plugin, where:
 //!
@@ -37,20 +37,20 @@ use std::sync::atomic::{AtomicBool, Ordering};
 /// query pairs, and remaining path segments.
 type ParsedRoute = (u16, String, String, Option<Vec<(String, String)>>, Vec<u8>);
 
-use crate::adapters::vmm::prelude::*;
-use crate::models::core::ICore;
-use crate::models::ports::{Protocol, RateLimitDecision, RateLimitKey};
+use crate::node::Node;
+use crate::ratelimit::{RateLimitDecision, RateLimitKey};
+use crate::workloads::prelude::*;
 
 /// Maximum request body the ingress will buffer (16 MiB).
 const MAX_BODY: usize = 16 * 1024 * 1024;
 
 pub(crate) struct VmHttpIngress {
-    app: Arc<dyn ICore>,
+    app: Arc<Node>,
     listening: AtomicBool,
 }
 
 impl VmHttpIngress {
-    pub(crate) fn new(app: Arc<dyn ICore>) -> Arc<VmHttpIngress> {
+    pub(crate) fn new(app: Arc<Node>) -> Arc<VmHttpIngress> {
         Arc::new(VmHttpIngress {
             app,
             listening: AtomicBool::new(false),
@@ -131,7 +131,7 @@ impl VmHttpIngress {
         // anonymous tier — the same instance the TCP/WS transports use, so a
         // client cannot dodge its quota by switching to HTTP. On rejection we
         // answer a standards-compliant 429 with a `Retry-After` header.
-        let rl_key = RateLimitKey::anonymous(Protocol::Http, peer_ip, &req.path);
+        let rl_key = RateLimitKey::anonymous(peer_ip);
         if let RateLimitDecision::Limited { retry_after, scope } =
             self.app.tools().rate_limiter().check(&rl_key)
         {

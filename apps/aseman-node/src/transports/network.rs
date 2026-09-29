@@ -1,45 +1,41 @@
-//! Translation of `drivers/network/net.go`.
-//!
-//! `Network` aggregates the four sub-drivers — `chain`, `federation`,
-//! `tcp`, `ws` — into a single [`INetwork`] facade. `Run(ports)` boots each
-//! sub-driver on the port the caller specified.
+//! The signed-packet listeners the node runs: the chain, federation, TCP, and
+//! WebSocket, each started on its configured port.
 
 use std::collections::HashMap;
 use std::sync::Arc;
 
-use crate::adapters::network::client::{Tcp as TcpDriver, Ws as WsDriver};
-use crate::models::core::ICore;
-use crate::models::ports::IChain;
-use crate::models::ports::IFederation;
-use crate::models::ports::INetwork;
-use crate::models::ports::ISecurity;
-use crate::models::ports::ISignaler;
-use crate::models::ports::IStorage;
-use crate::models::ports::ITcp;
-use crate::models::ports::IWs;
-use aseman_network_legacy::TlsConfig;
+use crate::identity::Security;
+use crate::live::hub::Signaler;
+use crate::node::Node;
+use crate::storage::NodeStorage;
+use crate::transports::chain::Blockchain;
+use crate::transports::federation::FedNet;
+use crate::transports::shell::tcp::Tcp;
+use crate::transports::shell::ws::Ws;
+use crate::transports::shell::{Tcp as TcpDriver, Ws as WsDriver};
+use aseman_network_shell::TlsConfig;
 
-/// Concrete [`INetwork`] implementation.
+/// The node's signed-packet listeners.
 pub struct Network {
-    _core: Arc<dyn ICore>,
-    tcp: Arc<dyn ITcp>,
-    ws: Arc<dyn IWs>,
-    fed: Arc<dyn IFederation>,
-    chain: Arc<dyn IChain>,
+    _core: Arc<Node>,
+    tcp: Arc<Tcp>,
+    ws: Arc<Ws>,
+    fed: Arc<FedNet>,
+    chain: Arc<Blockchain>,
     tls_config: Option<TlsConfig>,
 }
 
 impl Network {
     /// `NewNetwork(core, storage, security, signaler, fed)`. The chain
-    /// driver is constructed by the caller and passed in (matches Go where
+    /// driver is constructed by the caller and passed in (as the
     /// it was wired via the chain package).
     pub fn new(
-        core: Arc<dyn ICore>,
-        _storage: Arc<dyn IStorage>,
-        _security: Arc<dyn ISecurity>,
-        _signaler: Arc<dyn ISignaler>,
-        fed: Arc<dyn IFederation>,
-        chain: Arc<dyn IChain>,
+        core: Arc<Node>,
+        _storage: Arc<NodeStorage>,
+        _security: Arc<Security>,
+        _signaler: Arc<Signaler>,
+        fed: Arc<FedNet>,
+        chain: Arc<Blockchain>,
         tls_config: Option<TlsConfig>,
     ) -> Arc<Network> {
         let tcp = TcpDriver::new(core.clone());
@@ -55,23 +51,14 @@ impl Network {
     }
 }
 
-impl INetwork for Network {
-    fn chain(&self) -> Arc<dyn IChain> {
+impl Network {
+    pub(crate) fn chain(&self) -> Arc<Blockchain> {
         self.chain.clone()
     }
-    fn federation(&self) -> Arc<dyn IFederation> {
+    pub(crate) fn federation(&self) -> Arc<FedNet> {
         self.fed.clone()
     }
-    fn tcp(&self) -> Arc<dyn ITcp> {
-        self.tcp.clone()
-    }
-    fn ws(&self) -> Arc<dyn IWs> {
-        self.ws.clone()
-    }
-    fn tls_config(&self) -> Option<TlsConfig> {
-        self.tls_config.clone()
-    }
-    fn run(&self, ports: HashMap<String, i64>) {
+    pub(crate) fn run(&self, ports: HashMap<String, i64>) {
         if let Some(p) = ports.get("tcp") {
             self.tcp.listen(*p, self.tls_config.clone());
         }

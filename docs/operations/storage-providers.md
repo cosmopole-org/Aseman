@@ -68,6 +68,16 @@ Single host: set `ASEMAN_DATABASE_URL_SECRET` (and the guest proxy settings). Th
 migrates the schema on start. Without a guest proxy, the node's own storage serves
 guest data on either provider (`core.guest_pair`).
 
+Connections use TLS whenever the server offers it, verified against the public web
+roots; `sslmode=require` refuses a server without TLS. A private CA is named in the
+URL, as for libpq: `postgresql://…/aseman?sslmode=require&sslrootcert=/etc/aseman/tls/pg-ca.pem`
+(URL form only).
+
+Every persisted port — coordination leases, the realtime log and outbox, metering and
+the ledger, the federation directory, and the VMM service's stores — is a model of this
+storage (ADR 0038). A database from an earlier release has the tables those ports kept
+imported on the first start and moved, unchanged, to the `aseman_retired` schema.
+
 Cluster mode: `ASEMAN_POSTGRES_SHARDS_SECRET` names a JSON shard map, and
 `ASEMAN_DATABASE_URL_SECRET` names its home shard's primary:
 
@@ -115,7 +125,7 @@ are models too; QuestDB is only read once, by the migration of an older store.
 Cluster mode: every replica keeps a full copy; each write batch is a Raft log entry
 committed on a quorum and applied in log order everywhere, and a write returns once
 the writing replica has applied it. Bring a cluster up with the cluster configuration
-(`ASEMAN_LEGACY_CLUSTER_*` keys — the prefix is historical — or `cluster.json` under the
+(`ASEMAN_CLUSTER_*` keys — the prefix is historical — or `cluster.json` under the
 storage root):
 
 1. Start the seed replica with `bootstrap: true`; it initializes the cluster.
@@ -124,7 +134,11 @@ storage root):
    default); `asemanctl cluster status` shows leader, terms, and replication.
 
 All replicas must share the cluster auth token; the cluster listener refuses
-administrative routes without one.
+administrative routes without one. Replicas and operators also authenticate each other
+with mutual TLS: set `ASEMAN_CLUSTER_TLS_CERTIFICATE`, `ASEMAN_CLUSTER_TLS_KEY_SECRET`,
+and `ASEMAN_CLUSTER_TLS_CA` (all three or none) on every replica, and on the operator's
+host for `asemanctl cluster` and `asemanctl modules`. A cluster without them refuses to
+start; the listener accepts only clients whose certificate chains to that CA.
 
 ## Moving between providers
 

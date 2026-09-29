@@ -13,13 +13,8 @@ use aseman_storage::client::core::counter;
 use aseman_storage::{Mode, Models, ProviderSettings, Registry, StorageError};
 use uuid::Uuid;
 
-use crate::core::trx::Trx;
-use crate::models::ports::IStorage;
-
 /// How many times id minting retries a lost race before failing.
 const MINT_ATTEMPTS: usize = 16;
-
-static INSTALLED: std::sync::OnceLock<aseman_storage::Storage> = std::sync::OnceLock::new();
 
 /// Open the storage provider plugin `name` from `registry`, as the node's storage.
 pub fn open(
@@ -27,15 +22,7 @@ pub fn open(
     name: &str,
     settings: &ProviderSettings,
 ) -> Result<aseman_storage::Storage> {
-    let storage = aseman_storage::Storage::open(registry, name, settings)
-        .map_err(|error| anyhow!("{error}"))?;
-    let _ = INSTALLED.set(storage.clone());
-    Ok(storage)
-}
-
-/// The node's storage, once [`open`] ran (services composed after the node loads).
-pub fn installed() -> Option<aseman_storage::Storage> {
-    INSTALLED.get().cloned()
+    aseman_storage_providers::open(registry, name, settings).map_err(|error| anyhow!("{error}"))
 }
 
 /// Where module administration listens when the provider does not serve it.
@@ -53,7 +40,7 @@ pub fn open_from_config(
     serve_admin: bool,
 ) -> Result<aseman_storage::Storage> {
     let routes = if serve_admin {
-        crate::adapters::module_admin::route_handler(storage_root)
+        crate::transports::admin::route_handler(storage_root)
     } else {
         None
     };
@@ -87,26 +74,39 @@ pub fn open_from_config(
             let listen = cluster
                 .and_then(|cluster| cluster.listen_addr.clone())
                 .unwrap_or_else(|| DEFAULT_ADMIN_LISTEN.to_owned());
-            crate::adapters::module_admin::serve(routes, &listen, &token)?;
+            // Module administration is served only over the cluster's mutual TLS.
+            let files = cluster.and_then(|cluster| cluster.tls.as_ref()).ok_or_else(|| {
+                anyhow!(
+                    "module administration requires mutual TLS: set ASEMAN_CLUSTER_TLS_CERTIFICATE, \
+                     ASEMAN_CLUSTER_TLS_KEY_SECRET, and ASEMAN_CLUSTER_TLS_CA"
+                )
+            })?;
+            let tls = aseman_admin_http::MutualTls::load(files)
+                .map_err(|error| anyhow!("module administration TLS: {error}"))?;
+            aseman_admin_http::serve_routes(&listen, &tls, &token, "admin-https", routes)
+                .map_err(|error| anyhow!(error))?;
         }
     }
     Ok(storage)
 }
 
-/// Concrete [`IStorage`] implementation.
-pub struct Storage {
+/// The node's storage: its root, the storage module, and id minting.
+pub struct NodeStorage {
     storage_root: String,
     storage: aseman_storage::Storage,
     mint: Mutex<()>,
+    /// The node master key, loaded or created on first use.
+    master_key: std::sync::OnceLock<[u8; 32]>,
 }
 
-impl Storage {
+impl NodeStorage {
     /// Compose the node's storage over an opened provider.
-    pub fn new(storage_root: &str, storage: aseman_storage::Storage) -> Arc<Storage> {
-        Arc::new(Storage {
+    pub fn new(storage_root: &str, storage: aseman_storage::Storage) -> Arc<NodeStorage> {
+        Arc::new(NodeStorage {
             storage_root: storage_root.to_string(),
             storage,
             mint: Mutex::new(()),
+            master_key: std::sync::OnceLock::new(),
         })
     }
 
@@ -140,12 +140,32 @@ impl Storage {
     }
 }
 
-impl IStorage for Storage {
-    fn storage_root(&self) -> String {
+impl NodeStorage {
+    pub(crate) fn storage_root(&self) -> String {
         self.storage_root.clone()
     }
 
-    fn begin(&self, readonly: bool) -> Result<Trx> {
+    /// The storage module itself, for services that run their own transactions.
+    pub(crate) fn storage(&self) -> aseman_storage::Storage {
+        self.storage.clone()
+    }
+
+    /// The node master key secrets are encrypted under
+    /// (`<storage_root>/node-secret-key`, created on first use).
+    ///
+    /// # Errors
+    ///
+    /// An unreadable or uncreatable key file.
+    pub(crate) fn master_key(&self) -> Result<[u8; 32]> {
+        if let Some(key) = self.master_key.get() {
+            return Ok(*key);
+        }
+        let key = crate::util::secret_crypto::load_or_create_master_key(&self.storage_root)?;
+        // A racing reader loaded or created the same file, so both hold one key.
+        Ok(*self.master_key.get_or_init(|| key))
+    }
+
+    pub(crate) fn begin(&self, readonly: bool) -> Result<Trx> {
         self.storage
             .begin(if readonly {
                 Mode::ReadOnly
@@ -155,11 +175,13 @@ impl IStorage for Storage {
             .map_err(|error| anyhow!("storage: cannot begin a transaction: {error}"))
     }
 
-    fn consensus_logs(&self) -> Arc<dyn aseman_ports::consensus_log::ConsensusLogStorage> {
+    pub(crate) fn consensus_logs(
+        &self,
+    ) -> Arc<dyn aseman_ports::consensus_log::ConsensusLogStorage> {
         self.storage.provider().consensus_logs()
     }
 
-    fn gen_id(&self, origin: &str) -> String {
+    pub(crate) fn gen_id(&self, origin: &str) -> String {
         // Ids are `N@origin`: one counter for the global origin and one for every
         // local origin, as the node always minted them.
         let name = if origin == "global" {
@@ -176,4 +198,31 @@ impl IStorage for Storage {
             }
         }
     }
+}
+
+pub use aseman_storage::Trx;
+
+/// A storage error as the `anyhow` error node actions return.
+pub fn failed(error: aseman_storage::StorageError) -> anyhow::Error {
+    anyhow::anyhow!("{error}")
+}
+
+/// The currency and scale of creature balances (the finance epoch of ADR 0017).
+pub use aseman_domain::creature::{BALANCE_CURRENCY, BALANCE_SCALE};
+
+/// An in-memory storage for tests: the reference provider over the model catalog.
+#[cfg(test)]
+pub(crate) fn test_storage() -> aseman_storage::Storage {
+    aseman_storage::Storage::new(
+        aseman_storage::memory::MemoryProvider::new(),
+        aseman_storage::schema::Schema::catalog().expect("model catalog"),
+    )
+}
+
+/// A read-write transaction on a fresh [`test_storage`].
+#[cfg(test)]
+pub(crate) fn test_trx() -> Trx {
+    test_storage()
+        .begin(aseman_storage::Mode::ReadWrite)
+        .expect("memory transaction")
 }

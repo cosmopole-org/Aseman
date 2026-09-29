@@ -1,15 +1,17 @@
 [package]
-name = "caspar-vm-javascript"
+name = "aseman-vm-javascript"
 version = "0.1.0"
 edition = "2021"
-description = "Caspar VM plugin: JavaScript runtime (key: javascript) — QuickJS, with the full Caspar host-call ABI"
+license = "MIT"
+description = "Aseman VM plugin: JavaScript runtime (key: javascript) — QuickJS, with the full Aseman host-call ABI"
 
 [lib]
-name = "caspar_vm_javascript"
+name = "aseman_vm_javascript"
 path = "src/lib.rs"
 
 [dependencies]
-caspar-vm-sdk = { path = "../sdk-legacy" }
+aseman-config = { path = "../../../crates/aseman-config" }
+aseman-vm-sdk = { path = "../sdk" }
 # The JS→MASM transpiler is owned by the elpify plugin (its crates/ folder).
 # It is the provable-execution validation step (`exec_vm`), not the execution
 # path — a script that will not transpile still runs on QuickJS.

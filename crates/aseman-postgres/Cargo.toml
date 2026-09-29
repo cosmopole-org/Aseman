@@ -1,6 +1,6 @@
 [package]
 name = "aseman-postgres"
-description = "PostgreSQL plumbing shared by the adapters that own a PostgreSQL schema: the pool, connection checkout, and driver-error mapping."
+description = "PostgreSQL plumbing shared by the adapters that own a PostgreSQL schema: verified TLS, the pool, connection checkout, and driver-error mapping."
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
@@ -12,6 +12,15 @@ aseman-ports = { path = "../aseman-ports" }
 postgres.workspace = true
 r2d2.workspace = true
 r2d2_postgres.workspace = true
+rustls = { version = "0.23", default-features = false, features = ["std", "ring", "tls12"] }
+rustls-pemfile = "2"
+tokio = { workspace = true, features = ["io-util"] }
+tokio-rustls = { version = "0.26", default-features = false, features = ["ring", "tls12"] }
+url.workspace = true
+webpki-roots = "1"
+
+[dev-dependencies]
+aseman-config = { path = "../aseman-config" }
 
 [lints]
 workspace = true

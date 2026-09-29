@@ -1,0 +1,25 @@
+[package]
+name = "aseman-admin-http"
+description = "The authenticated administration HTTP of the storage cluster and the node: minimal HTTP/1.1 over mutual TLS with a bearer token."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+aseman-config = { path = "../aseman-config" }
+reqwest = { version = "0.12", default-features = false, features = ["blocking", "json", "rustls-tls"] }
+rustls = { version = "0.23", default-features = false, features = ["std", "ring", "tls12"] }
+rustls-pemfile = "2"
+rcgen = { version = "0.14", default-features = false, features = ["crypto", "pem", "ring"], optional = true }
+
+[features]
+# Throwaway CAs and identities for tests of the crates that use this one.
+testing = ["dep:rcgen"]
+
+[dev-dependencies]
+aseman-admin-http = { path = ".", features = ["testing"] }
+
+[lints]
+workspace = true

@@ -1,9 +1,9 @@
 {
-    "name": "caspar-client-cli",
+    "name": "aseman-client",
     "version": "1.0.0",
-    "description": "Caspar compatibility client for Aseman. Manage creatures and programs, send signals, and scaffold deployable projects for all seven runtimes.",
+    "description": "The Aseman command-line client. Manage creatures and programs, send signals, and scaffold deployable projects for all seven runtimes.",
     "keywords": [
-        "caspar",
+        "aseman",
         "vm",
         "wasm",
         "blockchain",
@@ -14,7 +14,7 @@
     "bugs": {
         "url": "https://github.com/cosmopole-org/caspar/issues"
     },
-    "author": "Caspar",
+    "author": "Aseman",
     "repository": {
         "type": "git",
         "url": "git+https://github.com/cosmopole-org/caspar.git"
@@ -24,7 +24,7 @@
     ],
     "type": "module",
     "bin": {
-        "caspar-client": "dist/index.cjs"
+        "aseman-client": "dist/index.cjs"
     },
     "main": "dist/index.js",
     "dependencies": {

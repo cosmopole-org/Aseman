@@ -1,30 +1,4 @@
-use crate::adapters::vmm::prelude::*;
-use crate::models::core::ICore;
-
-// ── Single global entry point ─────────────────────────────────────────────────
-//
-// `GLOBAL_APP` is the **only** standalone global in the VMM module.
-// Everything else is reachable through: `GLOBAL_APP → tools() → vmm() → method`.
-//
-// VMM submodules (controllers, host-call handlers) must not introduce their
-// own global state — they use `with_global_app` to obtain `&ICore` and then
-// traverse the service graph as needed.
-
-pub(crate) static GLOBAL_APP: Lazy<Mutex<Option<Arc<dyn ICore>>>> = Lazy::new(|| Mutex::new(None));
-
-pub(crate) fn set_global_app(app: Arc<dyn ICore>) {
-    *GLOBAL_APP.lock().unwrap() = Some(app);
-}
-
-/// Borrow the global `ICore` handle for the duration of `f`.
-///
-/// The `GLOBAL_APP` mutex is released **before** `f` is called — the Arc clone
-/// is enough to keep the core alive.  This prevents deadlocks when `f` itself
-/// needs to acquire other locks.
-pub(crate) fn with_global_app<R, F: FnOnce(&Arc<dyn ICore>) -> R>(f: F) -> Option<R> {
-    let app = { GLOBAL_APP.lock().unwrap().clone() }?;
-    Some(f(&app))
-}
+use crate::workloads::prelude::*;
 
 // ── Shared data types ─────────────────────────────────────────────────────────
 //
@@ -64,13 +38,7 @@ impl ResourceLockRegistry {
 
     /// Number of live lock entries — used by tests (and available for metrics)
     /// to assert the map does not grow without bound.
-    #[cfg_attr(
-        not(test),
-        expect(
-            dead_code,
-            reason = "RL-006/RL-013: legacy VM host-call surface kept for the ADR-0004 window"
-        )
-    )]
+    #[cfg(test)]
     pub(crate) fn len(&self) -> usize {
         self.locks.len()
     }

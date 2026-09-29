@@ -1,7 +1,6 @@
-use crate::adapters::vmm::globals::with_global_app;
-use crate::adapters::vmm::host::functions::*;
-use crate::adapters::vmm::prelude::*;
-use crate::models::core::ICore;
+use crate::node::Node;
+use crate::workloads::host::functions::*;
+use crate::workloads::prelude::*;
 
 pub(crate) struct HostHierarchy {
     pub(crate) vm_id: String,
@@ -94,7 +93,11 @@ pub(crate) fn resolve_host_hierarchy(packet: &JsonValue, input: &JsonValue) -> H
 /// It computes the `applet_db` namespace from `HostHierarchy` and runs the
 /// operation on the creature's own guest database (ADR 0021). Workloads run on the
 /// node's VMM, which the node uses only with the PostgreSQL guest store.
-pub(crate) fn run_db_op(ctx: &HostHierarchy, input: &JsonValue) -> Result<String, String> {
+pub(crate) fn run_db_op(
+    node: &Arc<Node>,
+    ctx: &HostHierarchy,
+    input: &JsonValue,
+) -> Result<String, String> {
     let op = input["op"].as_str().unwrap_or("");
     let key = input["key"].as_str().unwrap_or("");
     let val = input["val"].as_str().unwrap_or("");
@@ -120,20 +123,20 @@ pub(crate) fn run_db_op(ctx: &HostHierarchy, input: &JsonValue) -> Result<String
         ctx.creature_id.clone()
     };
 
-    // On PostgreSQL the creature's own guest database serves it (ADR 0021): the
-    // `applet_db` key is the remainder after `AppletDb::`.
-    if let Some(result) = crate::api::model::guest_data::route_db_op(
+    // The creature's own guest data (ADR 0021): the `applet_db` key is the
+    // remainder after `AppletDb::`.
+    let routing = node
+        .guest_data()
+        .ok_or_else(|| "guest data is not available yet".to_owned())?;
+    crate::state::guest_data::route_db_op(
+        routing,
         &ctx.creature_id,
         aseman_domain::guest::LegacyKvNamespace::AppletDb,
         op,
         &format!("{}::{}", db_prefix, key),
         val,
         &format!("{}::{}", db_prefix, prefix),
-    ) {
-        return result;
-    }
-
-    Err("guest data needs the PostgreSQL guest store".to_string())
+    )
 }
 
 /// Default request ceiling, matching reqwest's own blocking default so no
@@ -491,42 +494,33 @@ fn aggregate_sse_stream(raw: &str) -> (JsonValue, usize) {
 
 /// Decide a guest host call against the node's current state; returns the input as
 /// the handler must see it.
-fn authorize_guest(op: &str, ctx: &HostHierarchy, input: JsonValue) -> Result<JsonValue, String> {
-    let outcome = std::sync::Arc::new(std::sync::Mutex::new(Err(
-        "the node is not initialised".to_owned()
-    )));
-    let slot = outcome.clone();
-    let (op, vm_id, program_id, creature_id) = (
-        op.to_owned(),
-        ctx.vm_id.clone(),
-        ctx.program_id.clone(),
-        ctx.creature_id.clone(),
-    );
-    let _ = with_global_app(move |app| {
-        app.modify_state(
-            true,
-            Box::new(move |trx| {
-                let lookups = crate::api::authority::TrxLookups { trx };
-                let caller =
-                    crate::api::authority::host_caller(&lookups, &vm_id, &program_id, &creature_id);
-                let mut shaped = input.clone();
-                *slot.lock().unwrap() = crate::api::authority::authorize_host_call(
-                    &lookups,
-                    &op,
-                    &caller,
-                    &mut shaped,
-                    chrono::Utc::now().timestamp_millis(),
-                )
-                .map(|()| shaped);
-                Ok(())
-            }),
-        );
-    });
-
-    outcome.lock().unwrap().clone()
+fn authorize_guest(
+    node: &Arc<Node>,
+    op: &str,
+    ctx: &HostHierarchy,
+    input: JsonValue,
+) -> Result<JsonValue, String> {
+    use crate::actions::authority::{TrxLookups, authorize_host_call, host_caller};
+    node.read(|trx| {
+        let lookups = TrxLookups {
+            trx,
+            audit: node.audit(),
+        };
+        let caller = host_caller(&lookups, &ctx.vm_id, &ctx.program_id, &ctx.creature_id);
+        let mut shaped = input;
+        Ok(authorize_host_call(
+            &lookups,
+            op,
+            &caller,
+            &mut shaped,
+            chrono::Utc::now().timestamp_millis(),
+        )
+        .map(|()| shaped))
+    })
+    .map_err(|error| error.to_string())?
 }
 
-pub(crate) fn handle_unified_host_call(packet: &JsonValue) -> String {
+pub(crate) fn handle_unified_host_call(node: &Arc<Node>, packet: &JsonValue) -> String {
     let op = packet["op"]
         .as_str()
         .or_else(|| packet["key"].as_str())
@@ -566,14 +560,14 @@ pub(crate) fn handle_unified_host_call(packet: &JsonValue) -> String {
     }
     // After identity is resolved, never before: `vmId` is what identity is
     // resolved FROM, and `programId` is where the caller's identity is stamped.
-    if let Err(denied) = apply_vm_target(op, &ctx.program_id, &mut input) {
+    if let Err(denied) = apply_vm_target(node, op, &ctx.program_id, &mut input) {
         return denied;
     }
-    if let Err(denied) = apply_program_target(op, &ctx.program_id, &mut input) {
+    if let Err(denied) = apply_program_target(node, op, &ctx.program_id, &mut input) {
         return denied;
     }
-    // Every host call is authorized as its registered action (P4-05, LD-14).
-    match authorize_guest(op, &ctx, input) {
+    // Every host call is authorized as its registered action (LD-14).
+    match authorize_guest(node, op, &ctx, input) {
         Ok(shaped) => input = shaped,
         Err(denied) => return json!({"ok": false, "error": denied}).to_string(),
     }
@@ -581,98 +575,108 @@ pub(crate) fn handle_unified_host_call(packet: &JsonValue) -> String {
         // Every guest write commits on its own (ADR 0021); there is no buffer to
         // flush.
         "commitTrx" => json!({"ok": true}).to_string(),
-        "dbOp" => host_fn_db_op(&ctx, &input),
-        "stateOp" => host_fn_state_op(&ctx, &input),
-        "runVm" => host_fn_run_vm(&ctx.program_id, &input),
-        "terminateVm" => host_fn_terminate_vm(&ctx.program_id, &input),
-        "deleteVm" | "destroyVm" => host_fn_delete_vm(&ctx.program_id, &input),
-        "vmEndpoints" => host_fn_vm_endpoints(&ctx.program_id, &input),
+        "dbOp" => host_fn_db_op(node, &ctx, &input),
+        "stateOp" => host_fn_state_op(node, &ctx, &input),
+        "runVm" => host_fn_run_vm(node, &ctx.program_id, &input),
+        "terminateVm" => host_fn_terminate_vm(node, &ctx.program_id, &input),
+        "deleteVm" | "destroyVm" => host_fn_delete_vm(node, &ctx.program_id, &input),
+        "vmEndpoints" => host_fn_vm_endpoints(node, &ctx.program_id, &input),
         // The gateway subscription channel: a creature mints bearer tokens for
-        // programs it runs outside Caspar, and pushes updates to the ones
+        // programs it runs outside the node, and pushes updates to the ones
         // holding a socket open. The owning creature is the resolved caller,
         // never an input field.
-        "registerBridgeToken" => host_fn_register_bridge_token(&ctx.program_id, &input),
-        "revokeBridgeToken" => host_fn_revoke_bridge_token(&ctx.program_id, &input),
-        "publishUpdate" => host_fn_publish_update(&ctx.program_id, &input),
-        "execVm" | "execDocker" => host_fn_exec_vm(&ctx.program_id, &input),
+        "registerBridgeToken" => host_fn_register_bridge_token(node, &ctx.program_id, &input),
+        "revokeBridgeToken" => host_fn_revoke_bridge_token(node, &ctx.program_id, &input),
+        "publishUpdate" => host_fn_publish_update(node, &ctx.program_id, &input),
+        "execVm" | "execDocker" => host_fn_exec_vm(node, &ctx.program_id, &input),
         // Read-only: what the runtime says about a VM — provisioning, running,
         // stopped, or failed with the build/boot error. Without it a creature
         // could start a machine but never learn that it had failed to come up.
-        "statusVm" => crate::adapters::vmm::host::functions::vm_calls::remote_vm_call(
+        "statusVm" => crate::workloads::host::functions::vm_calls::remote_vm_call(
+            node,
             "statusVm",
             &ctx.program_id,
             &input,
         ),
-        "copyToVm" | "copyToDocker" => host_fn_copy_to_vm(&ctx.program_id, &input),
-        "copyFromVm" => host_fn_copy_from_vm(&ctx.program_id, &input),
-        "buildVmImage" | "buildDockerImage" => host_fn_build_vm_image(&ctx.program_id, &input),
+        "copyToVm" | "copyToDocker" => host_fn_copy_to_vm(node, &ctx.program_id, &input),
+        "copyFromVm" => host_fn_copy_from_vm(node, &ctx.program_id, &input),
+        "buildVmImage" | "buildDockerImage" => {
+            host_fn_build_vm_image(node, &ctx.program_id, &input)
+        }
         "httpPost" | "httpRequest" => host_fn_http_request(&input),
-        "elpifyProof" | "verifyProgramExecution" => host_fn_verify_program(&input),
+        "elpifyProof" | "verifyProgramExecution" => host_fn_verify_program(node, &input),
         // It forwarded a guest-chosen operation to the identity-less callback
         // protocol (LD-14); `node.protocol.call` is `never`.
         "protocolApi" | "callProtocolApi" => {
             json!({"ok": false, "error": "the protocol API is not available to guests"}).to_string()
         }
-        "signal" => host_fn_signal(&input),
+        "signal" => host_fn_signal(node, &input),
         // A JavaScript creature reaches this unified dispatcher directly. Do
         // not send its alarm through the legacy wasm callback transport: that
         // path has no request/response owner here and the trigger can be lost
         // while the guest receives an empty success. The micro host action is
         // the same VMM implementation used by the callback path.
-        "plantTrigger" => host_fn_micro(op, &input),
+        "plantTrigger" => host_fn_micro(node, op, &input),
         // Read-only execution-host identity. The node supplies every returned
         // identity and checks the target against its in-process listener table;
         // a guest can ask about a program id but cannot claim a node owner or
         // make a remote program appear locally hosted.
-        "nodeIdentity" => host_fn_node_identity(&ctx.program_id, &input),
+        "nodeIdentity" => host_fn_node_identity(node, &ctx.program_id, &input),
         // Federated finance writes are deliberately not ordinary `putJson`
         // calls. Only a node-owned control program may ask the host to sign
         // them, and the resulting packet is committed on the global chain.
         "publishFinanceCatalog" => host_fn_submit_node_finance(
+            node,
             &ctx.program_id,
             "/creatures/publishFinanceCatalog",
             input.clone(),
         ),
-        "registerFinanceNode" => host_fn_register_finance_node(&ctx.program_id, &input),
-        "retireFinanceNode" => host_fn_retire_finance_node(&ctx.program_id),
-        "registerFinanceResource" => host_fn_register_finance_resource(&ctx.program_id, &input),
+        "registerFinanceNode" => host_fn_register_finance_node(node, &ctx.program_id, &input),
+        "retireFinanceNode" => host_fn_retire_finance_node(node, &ctx.program_id),
+        "registerFinanceResource" => {
+            host_fn_register_finance_resource(node, &ctx.program_id, &input)
+        }
         "reviewFinanceResource" => host_fn_submit_node_finance(
+            node,
             &ctx.program_id,
             "/creatures/reviewFinanceResource",
             input.clone(),
         ),
         "retireFinanceResource" => host_fn_submit_node_finance(
+            node,
             &ctx.program_id,
             "/creatures/retireFinanceResource",
             input.clone(),
         ),
-        "publishFinanceQuote" => host_fn_publish_finance_quote(&ctx.program_id, &input),
+        "publishFinanceQuote" => host_fn_publish_finance_quote(node, &ctx.program_id, &input),
         // Secret reads, authenticated as the creature the node stamped on the packet
         // from the authenticated workload (guest API), never a `creatureId` the guest
         // may put in the request. Unresolvable → deny.
-        "secretGet" => host_fn_secret_get(&ctx.creature_id, &input),
+        "secretGet" => host_fn_secret_get(node, &ctx.creature_id, &input),
         // Running a shell action as the calling creature (`asSelf`) — same
         // node-authoritative caller resolution as `secretGet`, so a guest can
         // never nominate whose identity it acts under.
-        "execShellAction" => host_fn_exec_shell_action(&ctx.creature_id, &input),
-        "secretListGranted" => host_fn_secret_list_granted(&ctx.creature_id),
-        "createAccess" | "createOwnedAccess" => host_fn_create_access(&input),
+        "execShellAction" => host_fn_exec_shell_action(node, &ctx.creature_id, &input),
+        "secretListGranted" => host_fn_secret_list_granted(node, &ctx.creature_id),
+        "createAccess" | "createOwnedAccess" => host_fn_create_access(node, &input),
         "deleteAccess" | "removeAccess" | "deleteOwnedAccess" | "removeOwnedAccess" => {
-            host_fn_delete_access(&input)
+            host_fn_delete_access(node, &input)
         }
-        "createStore" | "createOwnedStore" => host_fn_create_store(&input),
+        "createStore" | "createOwnedStore" => host_fn_create_store(node, &input),
         "deleteStore" | "removeStore" | "deleteOwnedStore" | "removeOwnedStore" => {
-            host_fn_delete_store(&input)
+            host_fn_delete_store(node, &input)
         }
-        "getStore" => host_fn_get_store(&input),
-        "listStores" => host_fn_list_stores(&input),
+        "getStore" => host_fn_get_store(node, &input),
+        "listStores" => host_fn_list_stores(node, &input),
         // List the creatures (members) that have access to a store.
-        "listStoreAccess" | "listStoreMembers" | "readMembers" => host_fn_list_store_access(&input),
-        "updateStore" => host_fn_update_store(&input),
-        "createCreature" | "createOwnedCreature" => host_fn_create_creature(&input),
-        "getCreature" => host_fn_get_creature(&input),
-        "listCreatures" => host_fn_list_creatures(&input),
-        "updateCreature" => host_fn_update_creature(&input),
+        "listStoreAccess" | "listStoreMembers" | "readMembers" => {
+            host_fn_list_store_access(node, &input)
+        }
+        "updateStore" => host_fn_update_store(node, &input),
+        "createCreature" | "createOwnedCreature" => host_fn_create_creature(node, &input),
+        "getCreature" => host_fn_get_creature(node, &input),
+        "listCreatures" => host_fn_list_creatures(node, &input),
+        "updateCreature" => host_fn_update_creature(node, &input),
         "validateSign" => host_fn_validate_sign(&input),
         "transfer" => host_fn_transfer(&input),
         "consumeLock" => host_fn_consume_lock(&input),
@@ -690,28 +694,32 @@ pub(crate) fn handle_unified_host_call(packet: &JsonValue) -> String {
         // same node-resolved identity `publishUpdate` and `registerBridgeToken`
         // already trust, and it still prefers the cached VM context when there
         // is one, so a container meter resolves exactly as before.
-        "startHold" => host_fn_start_hold(&ctx.program_id, &input),
-        "settleHold" => host_fn_settle_hold(&ctx.program_id, &input),
-        "releaseHold" => host_fn_release_hold(&ctx.program_id, &input),
+        "startHold" => host_fn_start_hold(node, &ctx.program_id, &input),
+        "settleHold" => host_fn_settle_hold(node, &ctx.program_id, &input),
+        "releaseHold" => host_fn_release_hold(node, &ctx.program_id, &input),
         "reservePool" => host_fn_pool_authority_call(
+            node,
             &ctx.program_id,
             &input,
             "/creatures/reservePool",
             "pool reservation",
         ),
         "settlePool" => host_fn_pool_authority_call(
+            node,
             &ctx.program_id,
             &input,
             "/creatures/settlePool",
             "pool settlement",
         ),
         "releasePool" => host_fn_pool_authority_call(
+            node,
             &ctx.program_id,
             &input,
             "/creatures/releasePool",
             "pool release",
         ),
         "debitPool" => host_fn_pool_authority_call(
+            node,
             &ctx.program_id,
             &input,
             "/creatures/debitPool",
@@ -722,35 +730,41 @@ pub(crate) fn handle_unified_host_call(packet: &JsonValue) -> String {
         // Program CRUD reads — exposed so store/miniapp creatures can fetch a
         // program's record + metadata (e.g. an MCP manifest) and enumerate the
         // programs of a machine. Mirror the creature CRUD reads already present.
-        "getProgram" => host_fn_get_program(&input),
-        "listPrograms" => host_fn_list_programs(&input),
-        "listProgramMachines" => host_fn_list_program_machines(&input),
-        "updateProgram" => host_fn_update_program(&input),
+        "getProgram" => host_fn_get_program(node, &input),
+        "listPrograms" => host_fn_list_programs(node, &input),
+        "listProgramMachines" => host_fn_list_program_machines(node, &input),
+        "updateProgram" => host_fn_update_program(node, &input),
         "deployEntity" | "deploy entity" => host_fn_deploy_entity(&input),
         "deleteCreature" | "removeCreature" | "deleteOwnedCreature" | "removeOwnedCreature" => {
-            host_fn_delete_creature(&input)
+            host_fn_delete_creature(node, &input)
         }
-        "signalUser" => host_fn_signal_user(&input),
-        "signalGroup" => host_fn_signal_group(&input),
-        "lockResource" => host_fn_lock_resource(&input),
-        "unlockResource" => host_fn_unlock_resource(&input),
+        "signalUser" => host_fn_signal_user(node, &input),
+        "signalGroup" => host_fn_signal_group(node, &input),
+        "lockResource" => host_fn_lock_resource(node, &input),
+        "unlockResource" => host_fn_unlock_resource(node, &input),
         "vmLog" | "consoleLog" => host_fn_vm_log(&input),
         // Micro ops backed by `Vmm::handle_micro_host_action` (the real DB /
         // signaler / access-control implementations).
         // Guest document state, confined to the packet-identified creature (LD-24).
         "getLink" | "delKey" | "getJson" | "putJson" | "getByPrefix" => {
-            host_fn_guest_state(&ctx.creature_id, op, &input)
+            host_fn_guest_state(node, &ctx.creature_id, op, &input)
         }
-        "genId" | "hasAccessToStore" | "joinGroup" => host_fn_micro(op, &input),
+        "genId" | "hasAccessToStore" | "joinGroup" => host_fn_micro(node, op, &input),
         // Resource (vm-scoped) store CRUD.
-        "createResourceStore" | "createVmOwnedStore" => host_fn_resource_store("create", &input),
-        "updateResourceStore" | "updateVmOwnedStore" => host_fn_resource_store("update", &input),
-        "deleteResourceStore" | "deleteVmOwnedStore" => host_fn_resource_store("delete", &input),
-        "getResourceStore" | "getVmOwnedStore" => host_fn_resource_store("get", &input),
-        "listResourceStores" | "listVmOwnedStores" => host_fn_resource_store("list", &input),
+        "createResourceStore" | "createVmOwnedStore" => {
+            host_fn_resource_store(node, "create", &input)
+        }
+        "updateResourceStore" | "updateVmOwnedStore" => {
+            host_fn_resource_store(node, "update", &input)
+        }
+        "deleteResourceStore" | "deleteVmOwnedStore" => {
+            host_fn_resource_store(node, "delete", &input)
+        }
+        "getResourceStore" | "getVmOwnedStore" => host_fn_resource_store(node, "get", &input),
+        "listResourceStores" | "listVmOwnedStores" => host_fn_resource_store(node, "list", &input),
         // Resource entities (file blobs etc.).
-        "createResourceEntity" => host_fn_resource_entity_create(&input),
-        "deleteResourceEntity" => host_fn_resource_entity_delete(&input),
+        "createResourceEntity" => host_fn_resource_entity_create(node, &input),
+        "deleteResourceEntity" => host_fn_resource_entity_delete(node, &input),
         // An unknown operation is refused, never forwarded: the callback protocol
         // behind `wasm_send` carries no caller identity (LD-14).
         other => json!({"ok": false, "error": format!("unknown host call {other}")}).to_string(),
@@ -759,27 +773,25 @@ pub(crate) fn handle_unified_host_call(packet: &JsonValue) -> String {
 
 /// Run a registered shell action for the calling creature. `caller` is resolved
 /// by the node from the VM context, and is what an `asSelf` call acts as.
-pub(crate) fn host_fn_exec_shell_action(caller: &str, input: &JsonValue) -> String {
-    match with_global_app(|app| app.tools().workloads().exec_shell_action(caller, input)) {
-        Some(out) => out,
-        None => json!({"ok": false, "error": "vmm not initialised"}).to_string(),
-    }
+pub(crate) fn host_fn_exec_shell_action(
+    node: &Arc<Node>,
+    caller: &str,
+    input: &JsonValue,
+) -> String {
+    node.tools().workloads().exec_shell_action(caller, input)
 }
 
 /// Guest document state for the creature the packet identifies (ADR 0028).
-fn host_fn_guest_state(creature: &str, op: &str, input: &JsonValue) -> String {
-    match crate::adapters::vmm::guest_state::run(creature, op, input) {
+fn host_fn_guest_state(node: &Arc<Node>, creature: &str, op: &str, input: &JsonValue) -> String {
+    match crate::workloads::guest_state::run(node, creature, op, input) {
         Ok(value) => value.to_string(),
         Err(error) => json!({"ok": false, "error": error}).to_string(),
     }
 }
 
-/// Generic dispatch into `IWorkloads::host_action_micro` via the canonical tool path.
-pub(crate) fn host_fn_micro(op: &str, input: &JsonValue) -> String {
-    match with_global_app(|app| app.tools().workloads().host_action_micro(op, input, 0).0) {
-        Some(out) => out,
-        None => json!({"ok": false, "error": "vmm not initialised"}).to_string(),
-    }
+/// A micro host call.
+pub(crate) fn host_fn_micro(node: &Arc<Node>, op: &str, input: &JsonValue) -> String {
+    node.tools().workloads().host_action_micro(op, input, 0).0
 }
 
 /// Read a creature-owned secret on behalf of the calling docker creature.
@@ -792,10 +804,8 @@ pub(crate) fn host_fn_micro(op: &str, input: &JsonValue) -> String {
 /// agent backbone fetches a platform LLM key the operator granted it, instead of
 /// the key being baked into the creature image. put/grant/revoke/list stay on the
 /// signed routes (the app/operator perform those); a creature only ever reads.
-pub(crate) fn host_fn_secret_get(caller: &str, input: &JsonValue) -> String {
-    use crate::api::utils::secret_crypto;
-    use crate::core::trx::Trx;
-    use std::sync::{Arc, Mutex};
+pub(crate) fn host_fn_secret_get(node: &Arc<Node>, caller: &str, input: &JsonValue) -> String {
+    use crate::util::secret_crypto;
 
     let caller = caller.trim();
     if caller.is_empty() {
@@ -815,31 +825,18 @@ pub(crate) fn host_fn_secret_get(caller: &str, input: &JsonValue) -> String {
     };
     let need_grant = owner != caller;
 
-    let fetched = with_global_app(|app| {
-        let root = app.tools().storage().storage_root().to_string();
-        let blob = Arc::new(Mutex::new(String::new()));
-        let grant = Arc::new(Mutex::new(0_i64));
-        let (b, g) = (blob.clone(), grant.clone());
-        let (owner, name, caller) = (owner.clone(), name.to_owned(), caller.to_owned());
-        app.modify_state(
-            true,
-            Box::new(move |trx: &Trx| {
-                *b.lock().unwrap() =
-                    crate::api::model::secrets::blob(trx, &owner, &name)?.unwrap_or_default();
-                if need_grant {
-                    *g.lock().unwrap() =
-                        crate::api::model::secrets::grant_expiry(trx, &owner, &name, &caller)?;
-                }
-                Ok(())
-            }),
-        );
-        let blob = blob.lock().unwrap().clone();
-        let grant = *grant.lock().unwrap();
-        (root, blob, grant)
+    let fetched = node.read(|trx| {
+        let blob = crate::state::secrets::blob(trx, &owner, &name)?.unwrap_or_default();
+        let grant = if need_grant {
+            crate::state::secrets::grant_expiry(trx, &owner, &name, caller)?
+        } else {
+            0
+        };
+        Ok((blob, grant))
     });
-    let (root, blob, expires_at) = match fetched {
-        Some(v) => v,
-        None => return json!({"ok": false, "error": "vmm not initialised"}).to_string(),
+    let (blob, expires_at) = match fetched {
+        Ok(found) => found,
+        Err(error) => return json!({"ok": false, "error": error.to_string()}).to_string(),
     };
 
     if need_grant && (expires_at <= 0 || chrono::Utc::now().timestamp_millis() >= expires_at) {
@@ -849,7 +846,7 @@ pub(crate) fn host_fn_secret_get(caller: &str, input: &JsonValue) -> String {
     if blob.is_empty() {
         return json!({"ok": false, "error": "secret not found"}).to_string();
     }
-    let key = match secret_crypto::master_key(&root) {
+    let key = match node.tools().storage().master_key() {
         Ok(k) => k,
         Err(e) => return json!({"ok": false, "error": e.to_string()}).to_string(),
     };
@@ -867,32 +864,14 @@ pub(crate) fn host_fn_secret_get(caller: &str, input: &JsonValue) -> String {
 /// List the `{owner, name}` secret grants held by the calling docker creature, so
 /// the agent backbone can discover the platform keys granted to it without a
 /// hardcoded owner. Same node-authoritative caller resolution as `secretGet`.
-pub(crate) fn host_fn_secret_list_granted(caller: &str) -> String {
-    use crate::core::trx::Trx;
-    use std::sync::{Arc, Mutex};
-
-    let caller = caller.trim().to_string();
+pub(crate) fn host_fn_secret_list_granted(node: &Arc<Node>, caller: &str) -> String {
+    let caller = caller.trim();
     if caller.is_empty() {
         return json!({"ok": false, "error": "caller identity unavailable"}).to_string();
     }
-    let grants = with_global_app(|app| {
-        let slot = Arc::new(Mutex::new(Vec::<JsonValue>::new()));
-        let slot_c = slot.clone();
-        let caller_c = caller.clone();
-        app.modify_state(
-            true,
-            Box::new(move |trx: &Trx| {
-                *slot_c.lock().unwrap() =
-                    crate::api::actions::creature::list_granted_secrets(trx, &caller_c)?;
-                Ok(())
-            }),
-        );
-
-        slot.lock().unwrap().clone()
-    });
-    match grants {
-        Some(g) => json!({"ok": true, "grants": g}).to_string(),
-        None => json!({"ok": false, "error": "vmm not initialised"}).to_string(),
+    match node.read(|trx| crate::actions::secret::granted_to(trx, caller)) {
+        Ok(grants) => json!({"ok": true, "grants": grants}).to_string(),
+        Err(error) => json!({"ok": false, "error": error.to_string()}).to_string(),
     }
 }
 
@@ -900,94 +879,79 @@ pub(crate) fn host_fn_secret_list_granted(caller: &str) -> String {
 // Program CRUD reads — the write side (`createProgram`/`deleteProgram`) existed
 // but the read side did not, so a store/miniapp creature could not resolve a
 // program's record + metadata (e.g. an MCP manifest) or enumerate programs.
-// These route through the canonical `IWorkloads::host_action_program` tool path, the
+// These route through `NodeWorkloads::host_action_program`, the
 // same persisted-state mechanism the creature CRUD reads use.
 // --------------------------------------------------------------------------- //
 
-/// Dispatch into `IWorkloads::host_action_program` via the canonical tool path.
-fn host_fn_program(op: &str, input: &JsonValue) -> String {
-    match with_global_app(|app| app.tools().workloads().host_action_program(op, input, 0).0) {
-        Some(out) => out,
-        None => json!({"ok": false, "error": "vmm not initialised"}).to_string(),
-    }
+/// A program host call.
+fn host_fn_program(node: &Arc<Node>, op: &str, input: &JsonValue) -> String {
+    node.tools().workloads().host_action_program(op, input, 0).0
 }
 
 /// List the creatures with access to a store. Input: `{ storeId }`.
-pub(crate) fn host_fn_list_store_access(input: &JsonValue) -> String {
-    match with_global_app(|app| {
-        app.tools()
+pub(crate) fn host_fn_list_store_access(node: &Arc<Node>, input: &JsonValue) -> String {
+    {
+        node.tools()
             .workloads()
             .host_action_store("listAccess", input, 0)
             .0
-    }) {
-        Some(out) => out,
-        None => json!({"ok": false, "error": "vmm not initialised"}).to_string(),
     }
 }
 
 /// Fetch a single program's record + metadata. Input: `{ programId }`.
-pub(crate) fn host_fn_get_program(input: &JsonValue) -> String {
-    host_fn_program("get", input)
+pub(crate) fn host_fn_get_program(node: &Arc<Node>, input: &JsonValue) -> String {
+    host_fn_program(node, "get", input)
 }
 
 /// List programs (optionally a page). Input: `{ offset?, count? }`.
-pub(crate) fn host_fn_list_programs(input: &JsonValue) -> String {
-    host_fn_program("list", input)
+pub(crate) fn host_fn_list_programs(node: &Arc<Node>, input: &JsonValue) -> String {
+    host_fn_program(node, "list", input)
 }
 
 /// List the programs belonging to a machine creature. Input: `{ machineId }`.
-pub(crate) fn host_fn_list_program_machines(input: &JsonValue) -> String {
-    host_fn_program("listByMachine", input)
+pub(crate) fn host_fn_list_program_machines(node: &Arc<Node>, input: &JsonValue) -> String {
+    host_fn_program(node, "listByMachine", input)
 }
 
 /// Update a program's record/metadata. Input: `{ programId, metadata?, ... }`.
-pub(crate) fn host_fn_update_program(input: &JsonValue) -> String {
-    host_fn_program("update", input)
+pub(crate) fn host_fn_update_program(node: &Arc<Node>, input: &JsonValue) -> String {
+    host_fn_program(node, "update", input)
 }
 
-/// Dispatch into `IWorkloads::host_action_resource_store` via the canonical tool path.
-pub(crate) fn host_fn_resource_store(op: &str, input: &JsonValue) -> String {
-    match with_global_app(|app| {
-        app.tools()
+/// A resource store host call.
+pub(crate) fn host_fn_resource_store(node: &Arc<Node>, op: &str, input: &JsonValue) -> String {
+    {
+        node.tools()
             .workloads()
             .host_action_resource_store(op, input, 0)
             .0
-    }) {
-        Some(out) => out,
-        None => json!({"ok": false, "error": "vmm not initialised"}).to_string(),
     }
 }
 
-/// Dispatch into `IWorkloads::host_action_resource_entity_create`.
-pub(crate) fn host_fn_resource_entity_create(input: &JsonValue) -> String {
-    match with_global_app(|app| {
-        app.tools()
+/// Create a resource entity.
+pub(crate) fn host_fn_resource_entity_create(node: &Arc<Node>, input: &JsonValue) -> String {
+    {
+        node.tools()
             .workloads()
             .host_action_resource_entity_create(input, 0)
             .0
-    }) {
-        Some(out) => out,
-        None => json!({"ok": false, "error": "vmm not initialised"}).to_string(),
     }
 }
 
-/// Dispatch into `IWorkloads::host_action_resource_entity_delete`.
-pub(crate) fn host_fn_resource_entity_delete(input: &JsonValue) -> String {
-    match with_global_app(|app| {
-        app.tools()
+/// Delete a resource entity.
+pub(crate) fn host_fn_resource_entity_delete(node: &Arc<Node>, input: &JsonValue) -> String {
+    {
+        node.tools()
             .workloads()
             .host_action_resource_entity_delete(input, 0)
             .0
-    }) {
-        Some(out) => out,
-        None => json!({"ok": false, "error": "vmm not initialised"}).to_string(),
     }
 }
 
 /// Deliver a `signalUser` request from a wasm host-call to the in-process
 /// signaler so the target user (typically the requesting CLI client) receives
 /// the creature's response packet.
-pub(crate) fn host_fn_signal_user(input: &JsonValue) -> String {
+pub(crate) fn host_fn_signal_user(node: &Arc<Node>, input: &JsonValue) -> String {
     let key = input["key"].as_str().unwrap_or("");
     let user_id = input["userId"].as_str().unwrap_or("");
     if key.is_empty() || user_id.is_empty() {
@@ -999,19 +963,12 @@ pub(crate) fn host_fn_signal_user(input: &JsonValue) -> String {
     }
     let packet_str = input["packet"].as_str().unwrap_or("{}");
     let value = serde_json::from_str::<JsonValue>(packet_str).unwrap_or(JsonValue::Null);
-    let delivered = crate::adapters::vmm::globals::with_global_app(|app| {
-        app.tools()
-            .signaler()
-            .signal_user(key, user_id, value, true);
-    });
-    match delivered {
-        Some(()) => json!({"ok": true}).to_string(),
-        None => json!({"ok": false, "error": "global app not initialised"}).to_string(),
-    }
+    node.tools().signaler().signal_user(key, user_id, value);
+    json!({"ok": true}).to_string()
 }
 
 /// Deliver a `signalGroup` request from a wasm host-call.
-pub(crate) fn host_fn_signal_group(input: &JsonValue) -> String {
+pub(crate) fn host_fn_signal_group(node: &Arc<Node>, input: &JsonValue) -> String {
     let key = input["key"].as_str().unwrap_or("");
     let group_id = input["groupId"].as_str().unwrap_or("");
     if key.is_empty() || group_id.is_empty() {
@@ -1032,31 +989,28 @@ pub(crate) fn host_fn_signal_group(input: &JsonValue) -> String {
                 .collect()
         })
         .unwrap_or_default();
-    let delivered = crate::adapters::vmm::globals::with_global_app(|app| {
-        app.tools()
-            .signaler()
-            .signal_group(key, group_id, value, true, except);
-    });
-    match delivered {
-        Some(()) => json!({"ok": true}).to_string(),
-        None => json!({"ok": false, "error": "global app not initialised"}).to_string(),
-    }
+    node.tools()
+        .signaler()
+        .signal_group(key, group_id, value, except);
+    json!({"ok": true}).to_string()
 }
 
 /// Return the current execution node's public billing identity and whether a
 /// resource program is actually hosted by this node. This is deliberately a
 /// read-only host fact: billing/market creatures use it to bind deployments to
 /// the node that executed the deploy action instead of trusting client fields.
-pub(crate) fn host_fn_node_identity(caller_program_id: &str, input: &JsonValue) -> String {
+pub(crate) fn host_fn_node_identity(
+    node: &Arc<Node>,
+    caller_program_id: &str,
+    input: &JsonValue,
+) -> String {
     let target_program_id = input["resourceProgramId"]
         .as_str()
         .or_else(|| input["programId"].as_str())
         .unwrap_or("")
         .trim()
         .to_string();
-    let Some(app) = with_global_app(|app| app.clone()) else {
-        return json!({"ok": false, "error": "vmm not initialised"}).to_string();
-    };
+    let app = node.clone();
     let listeners = app.tools().signaler().listeners();
     let caller_program_id = caller_program_id.trim();
     let caller_hosted = !caller_program_id.is_empty() && listeners.contains_key(caller_program_id);
@@ -1077,43 +1031,29 @@ pub(crate) fn host_fn_node_identity(caller_program_id: &str, input: &JsonValue) 
 // Resolve the account that owns a program through Program -> Machine ->
 // Creature. Both the finance-control check and resource ownership stamping use
 // persisted host state; no owner value supplied by a guest is trusted.
-fn finance_program_binding(app: &Arc<dyn ICore>, program_id: &str) -> Option<(String, String)> {
-    use crate::core::trx::Trx;
-
-    use std::sync::Mutex;
-
+fn finance_program_binding(app: &Arc<Node>, program_id: &str) -> Option<(String, String)> {
     let program_id = program_id.trim().to_string();
     if program_id.is_empty() {
         return None;
     }
-    let slot = Arc::new(Mutex::new(None::<(String, String)>));
-    let slot_c = slot.clone();
-    app.modify_state(
-        true,
-        Box::new(move |trx: &Trx| {
-            let program = (crate::api::model::program_ports::ProgramPorts { trx })
-                .program_or_empty(&program_id.clone());
-            if program.machine_id.is_empty() {
-                return Ok(());
-            }
-            let machine_id = program.machine_id;
-            let machine = (crate::api::model::creature_ports::CreaturePorts { trx })
-                .creature_or_empty(&machine_id.clone());
-            if !machine.owner_id.is_empty() {
-                *slot_c.lock().unwrap() = Some((machine_id, machine.owner_id));
-            }
-            Ok(())
-        }),
-    );
-
-    slot.lock().unwrap().clone()
+    app.read(|trx| {
+        let program =
+            crate::state::program_ports::ProgramPorts { trx }.program_or_empty(&program_id);
+        if program.machine_id.is_empty() {
+            return Ok(None);
+        }
+        let machine = crate::state::creature_ports::CreaturePorts { trx }
+            .creature_or_empty(&program.machine_id);
+        Ok((!machine.owner_id.is_empty()).then_some((program.machine_id, machine.owner_id)))
+    })
+    .unwrap_or_default()
 }
 
-fn finance_program_owner(app: &Arc<dyn ICore>, program_id: &str) -> Option<String> {
+fn finance_program_owner(app: &Arc<Node>, program_id: &str) -> Option<String> {
     finance_program_binding(app, program_id).map(|(_, owner)| owner)
 }
 
-fn finance_node_control_program(app: &Arc<dyn ICore>, caller_program_id: &str) -> bool {
+fn finance_node_control_program(app: &Arc<Node>, caller_program_id: &str) -> bool {
     let caller_program_id = caller_program_id.trim();
     !caller_program_id.is_empty()
         && app
@@ -1125,37 +1065,42 @@ fn finance_node_control_program(app: &Arc<dyn ICore>, caller_program_id: &str) -
 }
 
 fn finance_node_record(
-    app: &Arc<dyn ICore>,
+    app: &Arc<Node>,
     node_owner_account_id: &str,
 ) -> Option<serde_json::Map<String, JsonValue>> {
-    use crate::core::trx::Trx;
-    use std::sync::Mutex;
+    finance_doc(
+        app,
+        aseman_ports::finance_ledger::FinanceDoc::BillingNodes,
+        "",
+    )
+    .get(node_owner_account_id)
+    .and_then(JsonValue::as_object)
+    .cloned()
+}
 
-    let owner = node_owner_account_id.to_string();
-    let slot = Arc::new(Mutex::new(None));
-    let slot_c = slot.clone();
-    app.modify_state(
-        true,
-        Box::new(move |trx: &Trx| {
-            if let Ok(nodes) = aseman_ports::finance_ledger::FinanceLedger::get_doc(
-                &crate::api::model::finance_ports::FinanceLedgerPorts { trx },
-                aseman_ports::finance_ledger::FinanceDoc::BillingNodes,
-                "",
-                "",
-            ) {
-                *slot_c.lock().unwrap() = nodes.get(&owner).and_then(JsonValue::as_object).cloned();
-            }
-            Ok(())
-        }),
-    );
-
-    slot.lock().unwrap().clone()
+/// One finance document (empty when absent or unreadable).
+fn finance_doc(
+    app: &Arc<Node>,
+    family: aseman_ports::finance_ledger::FinanceDoc,
+    id: &str,
+) -> serde_json::Map<String, JsonValue> {
+    app.read(|trx| {
+        Ok(aseman_ports::finance_ledger::FinanceLedger::get_doc(
+            &crate::state::finance_ports::FinanceLedgerPorts { trx },
+            family,
+            id,
+            "",
+        )
+        .unwrap_or_default())
+    })
+    .unwrap_or_default()
 }
 
 /// Submit a node-owner-signed finance mutation to the global chain. The guest
 /// supplies only the proposed payload; authorization is derived from the
 /// runtime-stamped caller program and its persisted owning machine.
 pub(crate) fn host_fn_submit_node_finance(
+    node: &Arc<Node>,
     caller_program_id: &str,
     action: &str,
     payload_value: JsonValue,
@@ -1163,9 +1108,7 @@ pub(crate) fn host_fn_submit_node_finance(
     use std::sync::mpsc;
     use std::time::Duration;
 
-    let Some(app) = with_global_app(|app| app.clone()) else {
-        return json!({"ok": false, "error": "vmm not initialised"}).to_string();
-    };
+    let app = node.clone();
     if !finance_node_control_program(&app, caller_program_id) {
         return json!({
             "ok": false,
@@ -1183,7 +1126,7 @@ pub(crate) fn host_fn_submit_node_finance(
     let owner_id = app.owner_id();
     let signature = app.sign_packet_as_owner(&payload);
     let (tx, rx) = mpsc::channel::<(Vec<u8>, i64, Option<String>)>();
-    let callback: crate::models::globe::BaseResponseCallback =
+    let callback: crate::transports::chain::callbacks::BaseResponseCallback =
         Box::new(move |data, status, error| {
             let _ = tx.send((data, status, error.map(|value| value.to_string())));
         });
@@ -1201,21 +1144,23 @@ pub(crate) fn host_fn_submit_node_finance(
     }
 }
 
-pub(crate) fn host_fn_register_finance_node(caller_program_id: &str, input: &JsonValue) -> String {
-    let Some(app) = with_global_app(|app| app.clone()) else {
-        return json!({"ok": false, "error": "vmm not initialised"}).to_string();
-    };
+pub(crate) fn host_fn_register_finance_node(
+    node: &Arc<Node>,
+    caller_program_id: &str,
+    input: &JsonValue,
+) -> String {
+    let app = node.clone();
     if !finance_node_control_program(&app, caller_program_id) {
         return json!({"ok": false, "error": "node-owner control program required"}).to_string();
     }
-    let Some(mut node) = input.get("node").and_then(JsonValue::as_object).cloned() else {
-        return json!({"ok": false, "error": "finance node object required"}).to_string();
+    let Some(mut record) = input.get("record").and_then(JsonValue::as_object).cloned() else {
+        return json!({"ok": false, "error": "finance record object required"}).to_string();
     };
-    let meter = node
+    let meter = record
         .get("meterProgramId")
         .and_then(JsonValue::as_str)
         .unwrap_or("");
-    let talent_meter = node
+    let talent_meter = record
         .get("talentMeterProgramId")
         .and_then(JsonValue::as_str)
         .unwrap_or("");
@@ -1227,7 +1172,7 @@ pub(crate) fn host_fn_register_finance_node(caller_program_id: &str, input: &Jso
     {
         return json!({
             "ok": false,
-            "error": "registered finance meter programs must be hosted by this node"
+            "error": "registered finance meter programs must be hosted by this record"
         })
         .to_string();
     }
@@ -1242,31 +1187,31 @@ pub(crate) fn host_fn_register_finance_node(caller_program_id: &str, input: &Jso
             .to_string();
     };
     if meter_owner_id != owner_id || talent_owner_id != owner_id {
-        return json!({"ok": false, "error": "finance meters must be owned by the node owner"})
+        return json!({"ok": false, "error": "finance meters must be owned by the record owner"})
             .to_string();
     }
-    node.insert("nodeOwnerAccountId".into(), json!(owner_id));
-    node.insert("meterCreatureId".into(), json!(meter_creature_id));
+    record.insert("nodeOwnerAccountId".into(), json!(owner_id));
+    record.insert("meterCreatureId".into(), json!(meter_creature_id));
     // Historical entity name for the backbone slot; the meter is whatever
-    // program the node registered, and this only labels it.
-    node.insert("meterEntityId".into(), json!("davinci"));
-    node.insert("talentMeterCreatureId".into(), json!(talent_creature_id));
-    node.insert("talentMeterEntityId".into(), json!("main"));
-    node.insert("settlementAuthority".into(), json!(app.owner_id()));
-    node.insert("originId".into(), json!(app.id()));
-    node.insert("status".into(), json!("active"));
+    // program the record registered, and this only labels it.
+    record.insert("meterEntityId".into(), json!("davinci"));
+    record.insert("talentMeterCreatureId".into(), json!(talent_creature_id));
+    record.insert("talentMeterEntityId".into(), json!("main"));
+    record.insert("settlementAuthority".into(), json!(app.owner_id()));
+    record.insert("originId".into(), json!(app.id()));
+    record.insert("status".into(), json!("active"));
     host_fn_submit_node_finance(
+        node,
         caller_program_id,
         "/creatures/registerFinanceNode",
-        json!({"node": node}),
+        json!({"node": record}),
     )
 }
 
-pub(crate) fn host_fn_retire_finance_node(caller_program_id: &str) -> String {
-    let Some(app) = with_global_app(|app| app.clone()) else {
-        return json!({"ok": false, "error": "vmm not initialised"}).to_string();
-    };
+pub(crate) fn host_fn_retire_finance_node(node: &Arc<Node>, caller_program_id: &str) -> String {
+    let app = node.clone();
     host_fn_submit_node_finance(
+        node,
         caller_program_id,
         "/creatures/retireFinanceNode",
         json!({"nodeOwnerAccountId": app.owner_id()}),
@@ -1274,12 +1219,11 @@ pub(crate) fn host_fn_retire_finance_node(caller_program_id: &str) -> String {
 }
 
 pub(crate) fn host_fn_register_finance_resource(
+    node: &Arc<Node>,
     caller_program_id: &str,
     input: &JsonValue,
 ) -> String {
-    let Some(app) = with_global_app(|app| app.clone()) else {
-        return json!({"ok": false, "error": "vmm not initialised"}).to_string();
-    };
+    let app = node.clone();
     if !finance_node_control_program(&app, caller_program_id) {
         return json!({"ok": false, "error": "node-owner control program required"}).to_string();
     }
@@ -1304,12 +1248,12 @@ pub(crate) fn host_fn_register_finance_resource(
         return json!({"ok": false, "error": "resource program owner unavailable"}).to_string();
     };
     let node_owner = app.owner_id();
-    let Some(node) = finance_node_record(&app, &node_owner) else {
-        return json!({"ok": false, "error": "active global finance node registration required"})
+    let Some(registration) = finance_node_record(&app, &node_owner) else {
+        return json!({"ok": false, "error": "active global finance registration registration required"})
             .to_string();
     };
-    if node.get("status").and_then(JsonValue::as_str) != Some("active") {
-        return json!({"ok": false, "error": "finance node registration is not active"})
+    if registration.get("status").and_then(JsonValue::as_str) != Some("active") {
+        return json!({"ok": false, "error": "finance registration registration is not active"})
             .to_string();
     }
     resource.insert("owner".into(), json!(resource_owner));
@@ -1317,43 +1261,53 @@ pub(crate) fn host_fn_register_finance_resource(
     resource.insert("hostOriginId".into(), json!(app.id()));
     resource.insert(
         "billingMeterProgramId".into(),
-        node.get("meterProgramId")
+        registration
+            .get("meterProgramId")
             .cloned()
             .unwrap_or(JsonValue::Null),
     );
     resource.insert(
         "billingMeterCreatureId".into(),
-        node.get("meterCreatureId")
+        registration
+            .get("meterCreatureId")
             .cloned()
             .unwrap_or(JsonValue::Null),
     );
     resource.insert(
         "billingMeterEntityId".into(),
-        node.get("meterEntityId")
+        registration
+            .get("meterEntityId")
             .cloned()
             .unwrap_or(JsonValue::Null),
     );
     resource.insert(
         "nodeRegistrationRevision".into(),
-        node.get("revision").cloned().unwrap_or(JsonValue::Null),
+        registration
+            .get("revision")
+            .cloned()
+            .unwrap_or(JsonValue::Null),
     );
     resource.insert(
         "nodeSandboxPerMinuteMinor".into(),
-        node.get("sandboxPerMinuteMinor")
+        registration
+            .get("sandboxPerMinuteMinor")
             .cloned()
             .unwrap_or(JsonValue::Null),
     );
     host_fn_submit_node_finance(
+        node,
         caller_program_id,
         "/creatures/registerFinanceResource",
         json!({"resource": resource}),
     )
 }
 
-pub(crate) fn host_fn_publish_finance_quote(caller_program_id: &str, input: &JsonValue) -> String {
-    let Some(app) = with_global_app(|app| app.clone()) else {
-        return json!({"ok": false, "error": "vmm not initialised"}).to_string();
-    };
+pub(crate) fn host_fn_publish_finance_quote(
+    node: &Arc<Node>,
+    caller_program_id: &str,
+    input: &JsonValue,
+) -> String {
+    let app = node.clone();
     if !finance_node_control_program(&app, caller_program_id) {
         return json!({"ok": false, "error": "node-owner control program required"}).to_string();
     }
@@ -1403,6 +1357,7 @@ pub(crate) fn host_fn_publish_finance_quote(caller_program_id: &str, input: &Jso
         .to_string();
     }
     host_fn_submit_node_finance(
+        node,
         caller_program_id,
         "/creatures/publishFinanceQuote",
         json!({"quote": quote}),
@@ -1414,10 +1369,14 @@ pub(crate) fn host_fn_publish_finance_quote(caller_program_id: &str, input: &Jso
 /// resolved from node-owned VM context, checked against the signed hold, and
 /// only then does the node sign and submit the settlement action.
 /// Atomically reserve an open hold for one authenticated metering run.
-pub(crate) fn host_fn_start_hold(caller_program_id: &str, input: &JsonValue) -> String {
-    use crate::api::packets::creatures::StartHoldInput;
-    use crate::core::trx::Trx;
-    use std::sync::{Arc, Mutex, mpsc};
+pub(crate) fn host_fn_start_hold(
+    node: &Arc<Node>,
+    caller_program_id: &str,
+    input: &JsonValue,
+) -> String {
+    use aseman_application::finance::StartHoldInput;
+
+    use std::sync::mpsc;
     use std::time::Duration;
 
     let caller_program_id = caller_program_id.trim().to_string();
@@ -1426,27 +1385,12 @@ pub(crate) fn host_fn_start_hold(caller_program_id: &str, input: &JsonValue) -> 
         return json!({"ok": false, "error": "verified meter program and holdId are required"})
             .to_string();
     }
-    let Some(app) = with_global_app(|app| app.clone()) else {
-        return json!({"ok": false, "error": "vmm not initialised"}).to_string();
-    };
-    let hold_slot = Arc::new(Mutex::new(serde_json::Map::<String, JsonValue>::new()));
-    let hold_slot_c = hold_slot.clone();
-    let hold_id_c = hold_id.clone();
-    app.modify_state(
-        true,
-        Box::new(move |trx: &Trx| {
-            if let Ok(hold) = aseman_ports::finance_ledger::FinanceLedger::get_doc(
-                &crate::api::model::finance_ports::FinanceLedgerPorts { trx },
-                aseman_ports::finance_ledger::FinanceDoc::Hold,
-                &hold_id_c,
-                "",
-            ) {
-                *hold_slot_c.lock().unwrap() = hold;
-            }
-            Ok(())
-        }),
+    let app = node.clone();
+    let hold = finance_doc(
+        &app,
+        aseman_ports::finance_ledger::FinanceDoc::Hold,
+        &hold_id,
     );
-    let hold = hold_slot.lock().unwrap().clone();
     if hold.is_empty() {
         return json!({"ok": false, "error": "hold not found"}).to_string();
     }
@@ -1483,7 +1427,7 @@ pub(crate) fn host_fn_start_hold(caller_program_id: &str, input: &JsonValue) -> 
     };
     let signature = app.sign_packet_as_owner(&payload);
     let (tx, rx) = mpsc::channel::<(Vec<u8>, i64, Option<String>)>();
-    let callback: crate::models::globe::BaseResponseCallback =
+    let callback: crate::transports::chain::callbacks::BaseResponseCallback =
         Box::new(move |data, status, err| {
             let _ = tx.send((data, status, err.map(|value| value.to_string())));
         });
@@ -1507,10 +1451,14 @@ pub(crate) fn host_fn_start_hold(caller_program_id: &str, input: &JsonValue) -> 
     }
 }
 
-pub(crate) fn host_fn_release_hold(caller_program_id: &str, input: &JsonValue) -> String {
-    use crate::api::packets::creatures::ReleaseHoldInput;
-    use crate::core::trx::Trx;
-    use std::sync::{Arc, Mutex, mpsc};
+pub(crate) fn host_fn_release_hold(
+    node: &Arc<Node>,
+    caller_program_id: &str,
+    input: &JsonValue,
+) -> String {
+    use aseman_application::finance::ReleaseHoldInput;
+
+    use std::sync::mpsc;
     use std::time::Duration;
 
     let caller_program_id = caller_program_id.trim().to_string();
@@ -1519,27 +1467,12 @@ pub(crate) fn host_fn_release_hold(caller_program_id: &str, input: &JsonValue) -
         return json!({"ok": false, "error": "verified meter program and holdId are required"})
             .to_string();
     }
-    let Some(app) = with_global_app(|app| app.clone()) else {
-        return json!({"ok": false, "error": "vmm not initialised"}).to_string();
-    };
-    let hold_slot = Arc::new(Mutex::new(serde_json::Map::<String, JsonValue>::new()));
-    let hold_slot_c = hold_slot.clone();
-    let hold_id_c = hold_id.clone();
-    app.modify_state(
-        true,
-        Box::new(move |trx: &Trx| {
-            if let Ok(hold) = aseman_ports::finance_ledger::FinanceLedger::get_doc(
-                &crate::api::model::finance_ports::FinanceLedgerPorts { trx },
-                aseman_ports::finance_ledger::FinanceDoc::Hold,
-                &hold_id_c,
-                "",
-            ) {
-                *hold_slot_c.lock().unwrap() = hold;
-            }
-            Ok(())
-        }),
+    let app = node.clone();
+    let hold = finance_doc(
+        &app,
+        aseman_ports::finance_ledger::FinanceDoc::Hold,
+        &hold_id,
     );
-    let hold = hold_slot.lock().unwrap().clone();
     if hold.is_empty() {
         return json!({"ok": false, "error": "hold not found"}).to_string();
     }
@@ -1576,7 +1509,7 @@ pub(crate) fn host_fn_release_hold(caller_program_id: &str, input: &JsonValue) -
     };
     let signature = app.sign_packet_as_owner(&payload);
     let (tx, rx) = mpsc::channel::<(Vec<u8>, i64, Option<String>)>();
-    let callback: crate::models::globe::BaseResponseCallback =
+    let callback: crate::transports::chain::callbacks::BaseResponseCallback =
         Box::new(move |data, status, err| {
             let _ = tx.send((data, status, err.map(|value| value.to_string())));
         });
@@ -1600,10 +1533,14 @@ pub(crate) fn host_fn_release_hold(caller_program_id: &str, input: &JsonValue) -
     }
 }
 
-pub(crate) fn host_fn_settle_hold(caller_program_id: &str, input: &JsonValue) -> String {
-    use crate::api::packets::creatures::SettleHoldInput;
-    use crate::core::trx::Trx;
-    use std::sync::{Arc, Mutex, mpsc};
+pub(crate) fn host_fn_settle_hold(
+    node: &Arc<Node>,
+    caller_program_id: &str,
+    input: &JsonValue,
+) -> String {
+    use aseman_application::finance::SettleHoldInput;
+
+    use std::sync::mpsc;
     use std::time::Duration;
 
     let caller_program_id = caller_program_id.trim().to_string();
@@ -1613,27 +1550,12 @@ pub(crate) fn host_fn_settle_hold(caller_program_id: &str, input: &JsonValue) ->
             .to_string();
     }
 
-    let Some(app) = with_global_app(|app| app.clone()) else {
-        return json!({"ok": false, "error": "vmm not initialised"}).to_string();
-    };
-    let hold_slot = Arc::new(Mutex::new(serde_json::Map::<String, JsonValue>::new()));
-    let hold_slot_c = hold_slot.clone();
-    let hold_id_c = hold_id.clone();
-    app.modify_state(
-        true,
-        Box::new(move |trx: &Trx| {
-            if let Ok(hold) = aseman_ports::finance_ledger::FinanceLedger::get_doc(
-                &crate::api::model::finance_ports::FinanceLedgerPorts { trx },
-                aseman_ports::finance_ledger::FinanceDoc::Hold,
-                &hold_id_c,
-                "",
-            ) {
-                *hold_slot_c.lock().unwrap() = hold;
-            }
-            Ok(())
-        }),
+    let app = node.clone();
+    let hold = finance_doc(
+        &app,
+        aseman_ports::finance_ledger::FinanceDoc::Hold,
+        &hold_id,
     );
-    let hold = hold_slot.lock().unwrap().clone();
     if hold.is_empty() {
         return json!({"ok": false, "error": "hold not found"}).to_string();
     }
@@ -1676,7 +1598,7 @@ pub(crate) fn host_fn_settle_hold(caller_program_id: &str, input: &JsonValue) ->
     };
     let signature = app.sign_packet_as_owner(&payload);
     let (tx, rx) = mpsc::channel::<(Vec<u8>, i64, Option<String>)>();
-    let callback: crate::models::globe::BaseResponseCallback =
+    let callback: crate::transports::chain::callbacks::BaseResponseCallback =
         Box::new(move |data, status, err| {
             let _ = tx.send((data, status, err.map(|value| value.to_string())));
         });
@@ -1708,13 +1630,13 @@ pub(crate) fn host_fn_settle_hold(caller_program_id: &str, input: &JsonValue) ->
 /// it to the chain action. The meter (a guest creature) can therefore never
 /// reserve or settle against a pool it was not bound to.
 pub(crate) fn host_fn_pool_authority_call(
+    node: &Arc<Node>,
     caller_program_id: &str,
     input: &JsonValue,
     route: &str,
     op_label: &str,
 ) -> String {
-    use crate::core::trx::Trx;
-    use std::sync::{Arc, Mutex, mpsc};
+    use std::sync::mpsc;
     use std::time::Duration;
 
     let caller_program_id = caller_program_id.trim().to_string();
@@ -1723,27 +1645,12 @@ pub(crate) fn host_fn_pool_authority_call(
         return json!({"ok": false, "error": "verified meter program and poolId are required"})
             .to_string();
     }
-    let Some(app) = with_global_app(|app| app.clone()) else {
-        return json!({"ok": false, "error": "vmm not initialised"}).to_string();
-    };
-    let pool_slot = Arc::new(Mutex::new(serde_json::Map::<String, JsonValue>::new()));
-    let pool_slot_c = pool_slot.clone();
-    let pool_id_c = pool_id.clone();
-    app.modify_state(
-        true,
-        Box::new(move |trx: &Trx| {
-            if let Ok(pool) = aseman_ports::finance_ledger::FinanceLedger::get_doc(
-                &crate::api::model::finance_ports::FinanceLedgerPorts { trx },
-                aseman_ports::finance_ledger::FinanceDoc::Pool,
-                &pool_id_c,
-                "",
-            ) {
-                *pool_slot_c.lock().unwrap() = pool;
-            }
-            Ok(())
-        }),
+    let app = node.clone();
+    let pool = finance_doc(
+        &app,
+        aseman_ports::finance_ledger::FinanceDoc::Pool,
+        &pool_id,
     );
-    let pool = pool_slot.lock().unwrap().clone();
     if pool.is_empty() {
         return json!({"ok": false, "error": "pool not found"}).to_string();
     }
@@ -1764,7 +1671,7 @@ pub(crate) fn host_fn_pool_authority_call(
     };
     let signature = app.sign_packet_as_owner(&payload);
     let (tx, rx) = mpsc::channel::<(Vec<u8>, i64, Option<String>)>();
-    let callback: crate::models::globe::BaseResponseCallback =
+    let callback: crate::transports::chain::callbacks::BaseResponseCallback =
         Box::new(move |data, status, err| {
             let _ = tx.send((data, status, err.map(|value| value.to_string())));
         });

@@ -1,6 +1,6 @@
 //! Creature-owned secrets (ADR 0023, ADR 0036): `core.creature_secret` holds an
 //! owner's authenticated ciphertext, `core.secret_grant` a time-boxed grant to another
-//! creature — the same records the legacy migration writes. Access control stays
+//! creature — the same records `storage migrate` writes. Access control stays
 //! with the callers; this module only stores.
 
 use anyhow::{Result, anyhow};
@@ -8,8 +8,8 @@ use aseman_storage::client::core::{creature, creature_secret, legacy_identity, s
 use aseman_storage::{FindMany, Id, Models};
 use base64::Engine as _;
 
-use crate::api::utils::secret_crypto;
-use crate::core::trx::{Trx, failed};
+use crate::storage::{Trx, failed};
+use crate::util::secret_crypto;
 
 /// The algorithm of the node's secret blobs (`secret_crypto`).
 pub(crate) const SECRET_ALGORITHM: &str = "chacha20poly1305-legacy-v1";
@@ -193,8 +193,8 @@ mod tests {
 
     #[test]
     fn secrets_and_grants_round_trip() {
-        let trx = crate::core::trx::test_trx();
-        crate::api::model::conformance::seed_humans(&trx, &["1@t", "2@t"]);
+        let trx = crate::storage::test_trx();
+        crate::state::conformance::seed_humans(&trx, &["1@t", "2@t"]);
         let key = [7; 32];
         let sealed = |value: &str| secret_crypto::encrypt(value.as_bytes(), &key).unwrap();
         let (x, y) = (sealed("x"), sealed("y"));

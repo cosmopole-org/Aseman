@@ -71,7 +71,7 @@ pub struct LegacyVmHandoffDecisions {
     /// External handles (`{family}::{key}`) the operator released outside Aseman.
     pub released: BTreeSet<String>,
     /// External handles (`{family}::{key}`) kept for their runtime module to adopt
-    /// (P6-06; ADR 0022 for `ModalVolume` user data).
+    /// (ADR 0022 for `ModalVolume` user data).
     pub kept: BTreeSet<String>,
 }
 

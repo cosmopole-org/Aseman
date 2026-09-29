@@ -8,10 +8,10 @@ use aseman_ports::{
     CreatureBalances, CreatureDirectory, CreatureMetadata, CreatureTypes, PortError, PortResult,
 };
 
-use crate::api::model::Creature;
-use crate::core::trx::{BALANCE_CURRENCY, BALANCE_SCALE, Trx};
+use crate::state::Creature;
+use crate::storage::{BALANCE_CURRENCY, BALANCE_SCALE, Trx};
 
-/// The legacy wire shape of a creature: its identity plus its balance.
+/// The wire shape of a creature: its identity plus its balance.
 pub(crate) fn creature_view(record: CreatureRecord, balance: i64) -> Creature {
     Creature {
         id: record.id,
@@ -32,6 +32,14 @@ pub(crate) struct CreaturePorts<'a> {
 }
 
 impl CreaturePorts<'_> {
+    /// The legacy id of the creature a typed subject id names.
+    pub(crate) fn legacy_id_of(
+        &self,
+        subject_id: aseman_domain::Uuid,
+    ) -> PortResult<Option<String>> {
+        self.ports().creature_legacy_id(subject_id)
+    }
+
     fn ports(&self) -> CapsuleCreaturePorts<'_> {
         CapsuleCreaturePorts {
             repository: self.trx,
@@ -152,7 +160,7 @@ impl CreaturePorts<'_> {
         }
     }
 
-    /// The creature as legacy `Creature::pull` returned it: a missing creature reads
+    /// The creature as the wire expects it: a missing creature reads
     /// as an empty record carrying the requested id.
     pub(crate) fn creature_or_empty(&self, creature_id: &str) -> Creature {
         let found = self.creature(creature_id).ok().flatten();
@@ -169,7 +177,7 @@ impl CreaturePorts<'_> {
     }
 
     /// Like [`Self::account`], reading an absent creature as a zero balance, as
-    /// legacy `Creature::pull` did. Writing that account back fails (LD-13).
+    /// the wire expects. Writing that account back fails (LD-13).
     pub(crate) fn account_or_empty(&self, creature_id: &str) -> anyhow::Result<Account> {
         Ok(self.account(creature_id)?.unwrap_or(Account {
             id: creature_id.to_owned(),
@@ -177,7 +185,7 @@ impl CreaturePorts<'_> {
         }))
     }
 
-    /// Write back only the balance. The legacy path re-pushed the whole record.
+    /// Write back only the balance.
     pub(crate) fn store_account(&self, account: &Account) -> anyhow::Result<()> {
         self.set_balance(&account.id, account.balance)
             .map_err(|error| anyhow::anyhow!("{error}"))
@@ -185,7 +193,7 @@ impl CreaturePorts<'_> {
 }
 
 impl CreaturePorts<'_> {
-    /// The metadata object at `path`, as legacy `get_json(..).ok()` returned it.
+    /// The metadata object at `path`, as the wire expects it.
     pub(crate) fn metadata_object(
         &self,
         kind: MetadataKind,
@@ -196,7 +204,7 @@ impl CreaturePorts<'_> {
         serde_json::from_str(&text).ok()
     }
 
-    /// Replace the metadata with `document`. As legacy `put_json` did, a non-object
+    /// Replace the metadata with `document`. A non-object
     /// is ignored rather than rejected.
     pub(crate) fn replace_metadata_value(
         &self,

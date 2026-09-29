@@ -12,7 +12,7 @@ use aseman_contracts::capsule::{
     CapsuleDigest, CapsuleEnvelope, CapsuleId, CapsuleKind, CapsuleRelationship, CapsuleValue,
     OwnerScope, StorageClass,
 };
-use aseman_contracts::legacy_realtime::deterministic_legacy_capsule_id;
+use aseman_contracts::signals::derived_capsule_id;
 use aseman_domain::creature::CreatureRecord;
 use aseman_domain::guest::{
     GUEST_DATA_ACTION, GuestKvOperation, GuestKvOutcome, LegacyKvNamespace,
@@ -27,9 +27,8 @@ use aseman_ports::{
 };
 use aseman_storage_postgres::PostgresCapsuleRepository;
 use aseman_storage_postgres::guest::{GuestPoolRouter, PostgresGuestKv, PostgresGuestProvisioner};
-use postgres::{Client, Config, NoTls};
+use postgres::{Client, NoTls};
 use rsa::pkcs8::{EncodePublicKey, LineEnding};
-use std::str::FromStr;
 
 const PROXY_ROLE: &str = "aseman_guest_gateway_proxy_test";
 const PROXY_PASSWORD: &str = "gateway-proxy-test-password";
@@ -109,9 +108,9 @@ fn live_guest_gateway_resolves_and_isolates_each_workload() {
     admin
         .batch_execute(&format!("CREATE DATABASE {database}"))
         .unwrap();
-    let mut config = Config::from_str(&admin_uri).unwrap();
-    config.dbname(&database);
-    let repository = PostgresCapsuleRepository::from_client(config.connect(NoTls).unwrap());
+    let mut config = aseman_postgres::Database::parse(&admin_uri).unwrap();
+    config.config_mut().dbname(&database);
+    let repository = PostgresCapsuleRepository::from_client(config.connect().unwrap());
     repository.migrate().unwrap();
 
     // Two human creatures, each with a program and a running workload.
@@ -143,7 +142,7 @@ fn live_guest_gateway_resolves_and_isolates_each_workload() {
                 owner_id: aseman_domain::creature::HUMAN_OWNER.to_owned(),
             })
             .unwrap();
-        let creature = deterministic_legacy_capsule_id("Creature", legacy_id.as_bytes());
+        let creature = derived_capsule_id("Creature", legacy_id.as_bytes());
         programs
             .create_program(&ProgramRecord {
                 id: format!("{name}-{run}-program@gateway"),
@@ -153,7 +152,7 @@ fn live_guest_gateway_resolves_and_isolates_each_workload() {
                 comment: String::new(),
             })
             .unwrap();
-        let program = deterministic_legacy_capsule_id(
+        let program = derived_capsule_id(
             "Program",
             format!("{name}-{run}-program@gateway").as_bytes(),
         );
@@ -172,10 +171,14 @@ fn live_guest_gateway_resolves_and_isolates_each_workload() {
         CreatureId::from_uuid(Uuid::from_bytes(placed[2].0)),
     );
 
-    let mut proxy_config = Config::from_str(&admin_uri).unwrap();
-    proxy_config.user(PROXY_ROLE).password(PROXY_PASSWORD);
-    let kv =
-        PostgresGuestKv::new(GuestPoolRouter::from_config(proxy_config, PROXY_ROLE, 4, 2).unwrap());
+    let mut proxy_config = aseman_postgres::Database::parse(&admin_uri).unwrap();
+    proxy_config
+        .config_mut()
+        .user(PROXY_ROLE)
+        .password(PROXY_PASSWORD);
+    let kv = PostgresGuestKv::new(
+        GuestPoolRouter::from_database(proxy_config, PROXY_ROLE, 4, 2).unwrap(),
+    );
     let mut bindings = Vec::new();
     let mut workloads = Vec::new();
     for (index, (creature, program)) in placed.iter().take(2).enumerate() {

@@ -1,4 +1,4 @@
 {
-  "//": "Managed by `casparctl vms enable|disable`. VM keys listed here are excluded from the node build.",
+  "//": "Managed by `asemanctl vms enable|disable`. VM keys listed here are excluded from the node build.",
   "disabled": []
 }

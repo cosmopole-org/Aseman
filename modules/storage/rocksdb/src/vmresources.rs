@@ -61,8 +61,8 @@ fn document_fields(
     let entry_count = i64::try_from(document.len()).map_err(|_| {
         LegacyMigrationError::Invalid(format!("legacy document {key} is too large"))
     })?;
-    let document = legacy_json_to_capsule_value(key, &Value::Object(document))?;
-    let content_digest = legacy_document_digest(&document)?;
+    let document = json_to_capsule_value(key, &Value::Object(document))?;
+    let content_digest = document_digest(&document)?;
     Ok(BTreeMap::from([
         ("document".to_owned(), document),
         (
@@ -118,10 +118,7 @@ fn relationship(name: &str, kind: &str, family: &str, legacy_id: &str) -> Capsul
     CapsuleRelationship {
         name: name.to_owned(),
         target_kind: CapsuleKind(kind.to_owned()),
-        target_id: CapsuleId(deterministic_legacy_capsule_id(
-            family,
-            legacy_id.as_bytes(),
-        )),
+        target_id: CapsuleId(derived_capsule_id(family, legacy_id.as_bytes())),
     }
 }
 
@@ -408,7 +405,7 @@ impl LegacySnapshotGraph {
 pub struct LegacyArtifactNeeds {
     /// Exact legacy paths: entity artifacts and resource-entity files.
     pub paths: BTreeSet<String>,
-    /// Legacy `File` objects by id, with the store each belongs to.
+    /// `File` objects by id, with the store each belongs to.
     pub files: BTreeMap<String, String>,
 }
 

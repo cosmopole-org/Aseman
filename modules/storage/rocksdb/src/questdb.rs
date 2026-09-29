@@ -6,7 +6,6 @@
 //! [`transform_legacy_signal_rows`]. Nothing here writes.
 
 use super::*;
-use postgres::{Client, NoTls};
 
 /// The schema holding the signal table when PostgreSQL served it.
 pub const POSTGRES_SIGNAL_LOG_SCHEMA: &str = "aseman_legacy_log";
@@ -47,7 +46,9 @@ pub fn read_legacy_signals(
             "SELECT to_regclass('aseman_legacy_log.signals') IS NOT NULL",
         ),
     };
-    let mut client = Client::connect(&connection, NoTls)
+    let mut client = aseman_postgres::Database::parse(&connection)
+        .map_err(|error| unavailable("legacy signal log", error))?
+        .connect()
         .map_err(|error| unavailable("legacy signal log", error))?;
     let present: bool = client
         .query_one(exists, &[])

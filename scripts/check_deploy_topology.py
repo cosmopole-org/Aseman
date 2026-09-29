@@ -32,7 +32,7 @@ OWNED_BY = {
 }
 
 BACKEND_MAINS = [
-    "modules/vmm-backend/native-legacy/src/main.rs",
+    "modules/vmm-backend/native/src/main.rs",
     "modules/vmm-backend/nomad/src/main.rs",
 ]
 
@@ -44,7 +44,14 @@ IMAGES = {
         "deploy/images/nomad-backend.Dockerfile",
         "aseman-vmm-backend-nomad",
     ),
+    "aseman-vmm-backend-native": (
+        "deploy/images/native-backend.Dockerfile",
+        "aseman-vmm-backend-native",
+    ),
 }
+
+NATIVE_IMAGE = "deploy/images/native-backend.Dockerfile"
+RUNTIME_DEPENDENCIES = ROOT / "contracts/release/runtime-dependencies.json"
 
 COMPACT_PROFILE = "deploy/compose/compact.compose.yaml"
 CLUSTER_PROFILE = "deploy/compose/cluster.compose.yaml"
@@ -71,10 +78,10 @@ def check() -> list[str]:
         "apps/aseman-node/Cargo.toml": {"aseman-node"},
         "apps/aseman-keygen/Cargo.toml": {"aseman-keygen"},
     }
-    # ADR 0004's window is closed: the Caspar alias executables must not return.
+    # ADR 0004's window is closed: the Aseman alias executables must not return.
     for manifest in ["apps/aseman-node/Cargo.toml", "apps/aseman-keygen/Cargo.toml", "apps/asemanctl/Cargo.toml"]:
         text = (ROOT / manifest).read_text(encoding="utf-8")
-        for alias in ["caspar-node", "caspar-keygen", "casparctl"]:
+        for alias in ["caspar-node", "caspar-keygen", "asemanctl"]:
             if f'name = "{alias}"' in text:
                 fail(problems, f"{manifest} still packages the retired alias {alias}")
     for manifest, expected in required_bins.items():
@@ -111,6 +118,16 @@ def check() -> list[str]:
         if binary not in build_script:
             fail(problems, f"stage-release.sh does not stage {binary} for {dockerfile}")
 
+    # The native image's WasmEdge pin is the release contract's (A906), not a copy.
+    wasmedge = json.loads(RUNTIME_DEPENDENCIES.read_text(encoding="utf-8"))["dependencies"]["wasmedge"]
+    native = (ROOT / NATIVE_IMAGE).read_text(encoding="utf-8")
+    amd64 = wasmedge["archives"]["amd64"]
+    for label, value in [("URL", amd64["url"]), ("SHA-256", amd64["sha256"])]:
+        if value not in native:
+            fail(problems, f"{NATIVE_IMAGE} does not pin the contract's WasmEdge {label}")
+    if "sha256sum --check" not in native:
+        fail(problems, f"{NATIVE_IMAGE} does not verify the WasmEdge archive")
+
     agent_unit = ROOT / "deploy/systemd/aseman-vmm-agent.service"
     if not agent_unit.exists():
         fail(problems, "the host-profile agent has no systemd unit")
@@ -134,9 +151,14 @@ def check() -> list[str]:
         fail(problems, f"the compact topology has no executable profile at {COMPACT_PROFILE}")
     else:
         compact = compact_path.read_text(encoding="utf-8")
-        for service in ["postgres", "vmm", "nomad-backend", "node", "meter"]:
+        for service in ["postgres", "vmm", "nomad-backend", "native-backend", "node", "meter"]:
             if not re.search(rf"^  {re.escape(service)}:$", compact, re.MULTILINE):
                 fail(problems, f"{COMPACT_PROFILE} omits the {service} service")
+        # The backend is one profile: each backend service must declare its own.
+        for service, profile in [("nomad-backend", "nomad"), ("native-backend", "native")]:
+            block = re.search(rf"^  {service}:\n((?:    .*\n|\n)*)", compact, re.MULTILINE)
+            if block is None or f"profiles: [{profile}]" not in block.group(1):
+                fail(problems, f"{COMPACT_PROFILE} does not put {service} in the {profile} profile")
         for required in [
             "network_mode: service:vmm",
             "127.0.0.1:9090",

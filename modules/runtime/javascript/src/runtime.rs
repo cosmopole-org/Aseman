@@ -18,8 +18,8 @@ use std::time::{Duration, Instant};
 use rquickjs::{Context, Ctx, Function, Runtime};
 use serde_json::{json, Value as JsonValue};
 
-use caspar_vm_sdk::host::{host, log};
-use caspar_vm_sdk::trx::Trx;
+use aseman_vm_sdk::host::{host, log};
+use aseman_vm_sdk::trx::Trx;
 
 use crate::host_calls;
 
@@ -174,7 +174,7 @@ impl JsMac {
         ram_limit_mb: u64,
         max_exec: Duration,
     ) -> Self {
-        let trx_key = caspar_vm_sdk::util::execution_trx_key(&vm_id);
+        let trx_key = aseman_vm_sdk::util::execution_trx_key(&vm_id);
         JsMac {
             state: Rc::new(RefCell::new(JsState {
                 machine_id,
@@ -358,7 +358,7 @@ impl JsMac {
             let log_state = Rc::clone(&state);
             let log_fn = Function::new(ctx.clone(), move |text: String, level: String| {
                 let vm_id = log_state.borrow().vm_id.clone();
-                caspar_vm_sdk::host::log_vm(text, vm_id, &level);
+                aseman_vm_sdk::host::log_vm(text, vm_id, &level);
             })
             .map_err(|e| RunError::Runtime(format!("could not install console: {}", e)))?;
             globals

@@ -22,7 +22,7 @@
     "tests/evals/agent",
     "xtask"
   ],
-  "target_packages": [
+  "packages": [
     "apps/aseman-node",
     "apps/asemanctl",
     "apps/aseman-vmm",
@@ -40,14 +40,12 @@
     "modules/storage/postgres",
     "modules/storage/rocksdb",
     "modules/network/http",
-    "modules/network/legacy",
+    "modules/network/shell",
     "modules/federation/http",
-    "modules/realtime/durable",
     "modules/security/capabilities",
-    "modules/finance/ledger",
     "modules/consensus/hashgraph",
     "modules/vmm-backend/nomad",
-    "modules/vmm-backend/native-legacy",
+    "modules/vmm-backend/native",
     "modules/runtime/docker",
     "modules/runtime/firecracker",
     "modules/runtime/wasm",
@@ -56,7 +54,7 @@
     "modules/runtime/elpify",
     "modules/runtime/modal"
   ],
-  "legacy_roots": [
+  "forbidden_roots": [
     "dist"
   ]
 }

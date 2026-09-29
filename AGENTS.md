@@ -2,9 +2,9 @@
 
 ## Read first
 
-Before changing a capability, read `docs/glossary.md`, the owning document in
-`plan/migration/`, its accepted ADRs in `docs/decisions/`, and the corresponding row in
-`docs/migration/removal-ledger.md` or its generated child ledger.
+Before changing a capability, read `docs/glossary.md`, `ARCHITECTURE.md`, the accepted
+ADRs in `docs/decisions/` that own it, and the contract it is specified by
+(`docs/reference/artifacts.md` maps artifact IDs such as `A402` to their files).
 
 ## Architecture boundaries
 
@@ -17,13 +17,14 @@ Before changing a capability, read `docs/glossary.md`, the owning document in
   domain/application public APIs.
 - Guest database/provider/role selection is always resolved server-side from the
   authenticated workload-to-creature binding. Caller-selected tenancy is forbidden.
+- Every node operation is one entry in the router's operation table
+  (`apps/aseman-node/src/actions/mod.rs`); transports never call a handler directly.
 
 ## Change procedure
 
-1. Name the requirement, artifact, ADR, owner, migration/rollback, and removal row.
-2. Add or update characterization before replacing current behavior.
-3. Keep compatibility at an edge and give it ADR 0004 expiry evidence.
+1. Name the requirement, the owning ADR and contract, and the rollback.
+2. Add or update the tests that pin the behavior before changing it.
+3. Record a decision that changes a boundary as a new ADR.
 4. Run `cargo xtask fast`; run `cargo xtask full` for cross-boundary changes.
-5. Regenerate inventories intentionally and verify their diffs.
-
-Never delete a legacy path until both its replacement and deletion gates pass.
+5. Regenerate generated contracts and inventories through their generators and review
+   the diffs.

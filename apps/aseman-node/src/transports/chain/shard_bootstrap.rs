@@ -280,7 +280,7 @@ mod tests {
     }
 
     #[test]
-    fn derives_chain_api_from_legacy_tcp_endpoint() {
+    fn derives_chain_api_from_the_tcp_endpoint() {
         assert_eq!(
             chain_api_url("node.example:8074").unwrap(),
             "http://node.example:8078"

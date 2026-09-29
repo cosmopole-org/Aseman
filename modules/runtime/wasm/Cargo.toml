@@ -1,16 +1,17 @@
 [package]
-name = "caspar-vm-wasm"
+name = "aseman-vm-wasm"
 version = "0.1.0"
 edition = "2021"
-description = "Caspar VM plugin: WasmEdge-managed WebAssembly runtime (key: wasm, default runtime)"
+license = "MIT"
+description = "Aseman VM plugin: WasmEdge-managed WebAssembly runtime (key: wasm, default runtime)"
 
 [lib]
-name = "caspar_vm_wasm"
+name = "aseman_vm_wasm"
 path = "src/lib.rs"
 
 [dependencies]
 aseman-config = { path = "../../../crates/aseman-config" }
-caspar-vm-sdk = { path = "../sdk-legacy" }
+aseman-vm-sdk = { path = "../sdk" }
 serde_json = "1"
 # WasmEdge bindings fetched by cargo from the upstream rust-sdk, pinned to a
 # specific commit for reproducibility. WasmEdge 0.17 support only lands in

@@ -6,11 +6,10 @@ use aseman_contracts::guest::{
     GuestSchemaMutation, GuestTableDefinition, MAX_GUEST_COLUMNS, MAX_GUEST_INDEXES,
     MAX_GUEST_TABLES,
 };
-use aseman_postgres::{Manager, Pool, pool_builder};
-use postgres::{Client, Config, NoTls, Transaction};
+use aseman_postgres::{Database, Pool, pool_builder};
+use postgres::{Client, Transaction};
 use sha2::{Digest as _, Sha256};
 use std::collections::BTreeMap;
-use std::str::FromStr;
 use std::sync::Mutex;
 use std::time::Duration;
 use thiserror::Error;
@@ -69,7 +68,7 @@ impl ProvisionedGuestDatabase {
 }
 
 pub struct PostgresGuestProvisioner {
-    admin: Config,
+    admin: Database,
     proxy_role: String,
     /// The shard this provisioner places databases on, in cluster mode (ADR 0033).
     shard: Option<String>,
@@ -150,8 +149,7 @@ impl ShardedGuestProvisioner {
 impl PostgresGuestProvisioner {
     pub fn new(admin_connection_uri: &str, proxy_role: &str) -> GuestPostgresResult<Self> {
         validate_identifier(proxy_role)?;
-        let admin = Config::from_str(admin_connection_uri)
-            .map_err(|error| GuestPostgresError::Invalid(error.to_string()))?;
+        let admin = Database::parse(admin_connection_uri).map_err(GuestPostgresError::Invalid)?;
         Ok(Self {
             admin,
             proxy_role: proxy_role.to_owned(),
@@ -294,9 +292,9 @@ impl PostgresGuestProvisioner {
             ))
             .map_err(database_error)?;
 
-        let mut guest_config = self.admin.clone();
-        guest_config.dbname(database);
-        let mut guest = guest_config.connect(NoTls).map_err(database_error)?;
+        let mut guest_database = self.admin.clone();
+        guest_database.config_mut().dbname(database);
+        let mut guest = guest_database.connect().map_err(database_error)?;
         guest
             .batch_execute(&format!(
                 "REVOKE CREATE ON SCHEMA public FROM PUBLIC; \
@@ -339,7 +337,7 @@ impl PostgresGuestProvisioner {
     }
 
     fn connect_admin(&self) -> GuestPostgresResult<Client> {
-        self.admin.clone().connect(NoTls).map_err(database_error)
+        self.admin.connect().map_err(database_error)
     }
 }
 
@@ -352,13 +350,13 @@ struct PoolKey {
 }
 
 pub struct GuestPoolRouter {
-    proxy: Config,
+    proxy: Database,
     proxy_role: String,
     max_pools: usize,
     max_pool_size: u32,
     pools: Mutex<BTreeMap<PoolKey, Pool>>,
     /// Proxy connections to each shard's server, in cluster mode (ADR 0033).
-    shard_proxies: BTreeMap<String, Config>,
+    shard_proxies: BTreeMap<String, Database>,
 }
 
 impl GuestPoolRouter {
@@ -369,8 +367,7 @@ impl GuestPoolRouter {
         proxy_connection_uri: &str,
     ) -> GuestPostgresResult<Self> {
         shard_of_provider(&provider_id_for(Some(shard)))?;
-        let proxy = Config::from_str(proxy_connection_uri)
-            .map_err(|error| GuestPostgresError::Invalid(error.to_string()))?;
+        let proxy = Database::parse(proxy_connection_uri).map_err(GuestPostgresError::Invalid)?;
         self.shard_proxies.insert(shard.to_owned(), proxy);
         Ok(self)
     }
@@ -381,13 +378,12 @@ impl GuestPoolRouter {
         max_pools: usize,
         max_pool_size: u32,
     ) -> GuestPostgresResult<Self> {
-        let proxy = Config::from_str(proxy_connection_uri)
-            .map_err(|error| GuestPostgresError::Invalid(error.to_string()))?;
-        Self::from_config(proxy, proxy_role, max_pools, max_pool_size)
+        let proxy = Database::parse(proxy_connection_uri).map_err(GuestPostgresError::Invalid)?;
+        Self::from_database(proxy, proxy_role, max_pools, max_pool_size)
     }
 
-    pub fn from_config(
-        proxy: Config,
+    pub fn from_database(
+        proxy: Database,
         proxy_role: &str,
         max_pools: usize,
         max_pool_size: u32,
@@ -596,16 +592,16 @@ impl GuestPoolRouter {
         if pools.len() >= self.max_pools {
             return Err(GuestPostgresError::PoolCapacity);
         }
-        let mut config = match shard_of_provider(&binding.binding.provider_id)? {
+        let mut database = match shard_of_provider(&binding.binding.provider_id)? {
             None => self.proxy.clone(),
             Some(shard) => self.shard_proxies.get(shard).cloned().ok_or_else(|| {
                 GuestPostgresError::Invalid(format!("no guest proxy for shard {shard}"))
             })?,
         };
-        config.dbname(&binding.binding.database_name);
+        database.config_mut().dbname(&binding.binding.database_name);
         let pool = pool_builder(self.max_pool_size)
             .connection_timeout(Duration::from_secs(3))
-            .build(Manager::new(config, NoTls))
+            .build(database.manager())
             .map_err(|error| GuestPostgresError::Database(error.to_string()))?;
         pools.insert(key, pool.clone());
         Ok(pool)

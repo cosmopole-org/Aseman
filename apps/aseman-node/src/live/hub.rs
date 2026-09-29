@@ -1,35 +1,68 @@
-//! Translation of `drivers/signaler/signaler.go`.
-//!
-//! Pub/sub fan-out driver: single listeners (per user / per machine), groups
-//! of stores, an optional global bridge, and a join/leave listener. Cross-
-//! origin routes go through `IFederation::send_fed_update`.
+//! The session hub: pushes signals to connected users and machines, and to the
+//! members of stores (resolved from their access grants when delivered), and
+//! forwards to peer nodes the members that live there.
 
 use std::sync::{Arc, Mutex};
 
 use dashmap::DashMap;
 use serde_json::Value;
 
-use crate::core::trx::Trx;
-use crate::models::core::ICore;
-use crate::models::ports::IFederation;
-use crate::models::ports::{GlobalListener, Group, ISignaler, JoinListener, Listener};
+use crate::node::Node;
+use crate::transports::federation::FedNet;
 
-/// Concrete [`ISignaler`] implementation. Owns per-listener / per-group
-/// `DashMap`s and a coarse-grained `Mutex` matching `Signaler.lock` from Go.
+/// Callback invoked when a signal fires. Receives the signal key and payload.
+pub type SignalFn = Arc<dyn Fn(String, Value) + Send + Sync>;
+
+/// Callback invoked on group join/leave. Receives the group id and user id.
+pub type JoinFn = Arc<dyn Fn(String, String) + Send + Sync>;
+
+/// A group of stores sharing a single listener.
+///
+/// `listener` and `override_` are mutated after construction (see
+/// `Signaler::listen_to_group`), so they live behind a `Mutex` to stay
+/// thread-safe.
+pub struct Group {
+    pub stores: Arc<DashMap<String, String>>,
+    pub listener: std::sync::Mutex<Option<Arc<Listener>>>,
+    pub override_: std::sync::Mutex<bool>,
+}
+
+/// A single signal listener.
+#[derive(Clone)]
+pub struct Listener {
+    pub id: String,
+    pub signal: SignalFn,
+}
+
+/// A listener that bridges every signal globally.
+#[derive(Clone)]
+pub struct GlobalListener {
+    pub signal: SignalFn,
+}
+
+/// A listener for group join/leave events.
+#[derive(Clone)]
+pub struct JoinListener {
+    pub join: JoinFn,
+    pub leave: JoinFn,
+}
+
+/// The session hub. Owns per-listener / per-group
+/// `DashMap`s.
 pub struct Signaler {
     lock: Mutex<()>,
-    app: Arc<dyn ICore>,
+    app: Arc<Node>,
     listeners: Arc<DashMap<String, Arc<Listener>>>,
     groups: Arc<DashMap<String, Arc<Group>>>,
     global_bridge: Mutex<Option<Arc<GlobalListener>>>,
     l_group_disabled: Mutex<bool>,
     j_listener: Mutex<Option<Arc<JoinListener>>>,
-    federation: Arc<dyn IFederation>,
+    federation: Arc<FedNet>,
 }
 
 impl Signaler {
     /// `NewSignaler(app, federation)`.
-    pub fn new(app: Arc<dyn ICore>, federation: Arc<dyn IFederation>) -> Arc<Signaler> {
+    pub fn new(app: Arc<Node>, federation: Arc<FedNet>) -> Arc<Signaler> {
         Arc::new(Signaler {
             lock: Mutex::new(()),
             app,
@@ -42,9 +75,7 @@ impl Signaler {
         })
     }
 
-    /// Internal: dispatch a `Signal` to one in-process listener. `data` is
-    /// always a `Value`; `pack` is preserved for API compatibility but has no
-    /// effect (Rust `Value` is already JSON-encodable).
+    /// Dispatch a signal to one in-process listener.
     fn signal_listener(&self, key: &str, listener_id: &str, data: Value) {
         let Some(listener) = self.listeners.get(listener_id).map(|e| e.value().clone()) else {
             return;
@@ -75,48 +106,35 @@ impl Signaler {
     /// returned: that is the same flag `stores/history` demands, so a member is
     /// never pushed live what they could not replay.
     fn store_members(&self, store_id: &str) -> Vec<String> {
-        let out = Arc::new(Mutex::new(Vec::<String>::new()));
-        let out_clone = out.clone();
-        let store_id = store_id.to_string();
-        self.app.modify_state(
-            true,
-            Box::new(move |trx: &Trx| {
-                // Membership goes through the store port (legacy adapter until cutover).
-                let ports = crate::api::model::store_ports::MembershipPorts { trx };
-                *out_clone.lock().unwrap() = aseman_ports::StoreAccess::members(&ports, &store_id)
-                    .unwrap_or_default()
-                    .into_iter()
-                    .filter(|(_, permissions)| permissions.read)
-                    .map(|(member, _)| member)
-                    .collect();
-                Ok(())
-            }),
-        );
-
-        out.lock().unwrap().clone()
+        self.app
+            .read(|trx| {
+                aseman_ports::StoreAccess::members(
+                    &crate::state::store_ports::MembershipPorts { trx },
+                    store_id,
+                )
+                .map_err(|error| anyhow::anyhow!("{error}"))
+            })
+            .unwrap_or_default()
+            .into_iter()
+            .filter(|(_, permissions)| permissions.read)
+            .map(|(member, _)| member)
+            .collect()
     }
 
     /// Read `User.<id>.username` inside a read-only state modification.
     fn read_user_username(&self, user_id: &str) -> String {
-        let slot = Arc::new(Mutex::new(String::new()));
-        let slot_clone = slot.clone();
-        let user_id_owned = user_id.to_string();
-        self.app.modify_state(
-            true,
-            Box::new(move |trx: &Trx| {
-                *slot_clone.lock().unwrap() = aseman_ports::CreatureDirectory::creature(
-                    &crate::api::model::creature_ports::CreaturePorts { trx },
-                    &user_id_owned,
+        self.app
+            .read(|trx| {
+                Ok(aseman_ports::CreatureDirectory::creature(
+                    &crate::state::creature_ports::CreaturePorts { trx },
+                    user_id,
                 )
                 .ok()
                 .flatten()
                 .map(|record| record.username)
-                .unwrap_or_default();
-                Ok(())
-            }),
-        );
-
-        slot.lock().unwrap().clone()
+                .unwrap_or_default())
+            })
+            .unwrap_or_default()
     }
 }
 
@@ -156,49 +174,30 @@ fn split_store_members(
     (local, foreigners)
 }
 
-impl ISignaler for Signaler {
-    // Go exposed manual `Lock()` / `Unlock()` on the signaler so external
-    // callers could batch operations under the same mutex. Rust's
-    // `std::sync::Mutex` doesn't expose a raw unlock without `unsafe`; the
-    // ISignaler methods that actually mutate shared state already take their
-    // own short-lived locks (see `listen_to_single`), so the trait
-    // `lock`/`unlock` entry points are no-ops in the Rust port. External
-    // callers that need a critical section should hold their own Mutex.
-    fn lock(&self) {}
-    fn unlock(&self) {}
-
-    fn listeners(&self) -> Arc<DashMap<String, Arc<Listener>>> {
+impl Signaler {
+    pub(crate) fn listeners(&self) -> Arc<DashMap<String, Arc<Listener>>> {
         self.listeners.clone()
     }
 
-    fn groups(&self) -> Arc<DashMap<String, Arc<Group>>> {
+    #[cfg(test)]
+    pub(crate) fn groups(&self) -> Arc<DashMap<String, Arc<Group>>> {
         self.groups.clone()
     }
 
-    fn listen_to_single(&self, listener: Arc<Listener>) {
+    pub(crate) fn listen_to_single(&self, listener: Arc<Listener>) {
         let _g = self.lock.lock().unwrap();
         self.listeners.insert(listener.id.clone(), listener);
     }
 
-    fn listen_to_group(&self, listener: Arc<Listener>, override_functionaly: bool) {
+    #[cfg(test)]
+    pub(crate) fn listen_to_group(&self, listener: Arc<Listener>, override_functionaly: bool) {
         let group = self
             .retrive_group(&listener.id)
             .expect("retrive_group always returns Some");
         *group.listener.lock().unwrap() = Some(listener);
         *group.override_.lock().unwrap() = override_functionaly;
     }
-
-    fn brdige_globally(&self, listener: Arc<GlobalListener>, _override_functionaly: bool) {
-        *self.l_group_disabled.lock().unwrap() = true;
-        *self.global_bridge.lock().unwrap() = Some(listener);
-    }
-
-    fn listen_to_join(&self, listener: Arc<JoinListener>) {
-        *self.j_listener.lock().unwrap() = Some(listener);
-    }
-
-    fn signal_user(&self, key: &str, listener_id: &str, data: Value, pack: bool) {
-        let _ = pack;
+    pub(crate) fn signal_user(&self, key: &str, listener_id: &str, data: Value) {
         if !listener_id.contains('@') {
             self.signal_listener(key, listener_id, data);
             return;
@@ -232,12 +231,11 @@ impl ISignaler for Signaler {
         }
     }
 
-    fn signal_group(
+    pub(crate) fn signal_group(
         &self,
         key: &str,
         group_id: &str,
         data: Value,
-        _pack: bool,
         exceptions: Vec<String>,
     ) {
         let packet = data.clone();
@@ -310,7 +308,7 @@ impl ISignaler for Signaler {
         }
     }
 
-    fn signal_store(
+    pub(crate) fn signal_store(
         &self,
         key: &str,
         store_id: &str,
@@ -351,7 +349,7 @@ impl ISignaler for Signaler {
         }
     }
 
-    fn join_group(&self, group_id: &str, user_id: &str) {
+    pub(crate) fn join_group(&self, group_id: &str, user_id: &str) {
         let Some(g) = self.retrive_group(group_id) else {
             return;
         };
@@ -361,7 +359,7 @@ impl ISignaler for Signaler {
         }
     }
 
-    fn leave_group(&self, group_id: &str, user_id: &str) {
+    pub(crate) fn leave_group(&self, group_id: &str, user_id: &str) {
         // Get-only: never create a group just to leave it.
         let Some(g) = self.groups.get(group_id).map(|e| e.value().clone()) else {
             return;
@@ -373,7 +371,7 @@ impl ISignaler for Signaler {
         self.reap_group_if_empty(group_id);
     }
 
-    fn leave_all_groups(&self, user_id: &str) {
+    pub(crate) fn leave_all_groups(&self, user_id: &str) {
         // Snapshot the groups this user belongs to, then leave each. Collect
         // first so we never hold a `groups` shard read lock across the
         // `leave_group` writes/reaps (which take the shard write lock).
@@ -388,7 +386,7 @@ impl ISignaler for Signaler {
         }
     }
 
-    fn retrive_group(&self, group_id: &str) -> Option<Arc<Group>> {
+    pub(crate) fn retrive_group(&self, group_id: &str) -> Option<Arc<Group>> {
         if let Some(existing) = self.groups.get(group_id) {
             return Some(existing.value().clone());
         }
@@ -409,41 +407,15 @@ impl ISignaler for Signaler {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::models::ports::{ISignaler, Listener, SignalFn};
-
-    // The group-registry paths under test (`join_group` / `leave_group` /
-    // `leave_all_groups` / `signal_group`'s get-only lookup) never call back into
-    // `IFederation`, so the stub federation ignores every request.
-    struct StubFed;
-
-    impl crate::models::ports::IFederation for StubFed {
-        fn listen(&self, _port: i64, _tls: Option<aseman_network_legacy::TlsConfig>) {}
-        fn send_fed_request(&self, _: &str, _: &str, _: &str, _: &str, _: Vec<u8>, _: &str) {}
-        fn send_fed_response(&self, _: &str, _: &str, _: i64, _: Value) {}
-        fn send_fed_update(&self, _: &str, _: &str, _: Value, _: &str, _: &str, _: Vec<String>) {}
-        fn send_fed_request_by_callback(
-            &self,
-            _: &str,
-            _: &str,
-            _: &str,
-            _: &str,
-            _: Vec<u8>,
-            _: &str,
-            _: crate::models::ports::FedRequestCallback,
-        ) {
-        }
-    }
 
     fn new_signaler() -> Arc<Signaler> {
-        Signaler::new(crate::core::testing::StubCore::new(), Arc::new(StubFed))
+        crate::node::Node::for_tests().tools().signaler()
     }
 
     fn noop_listener(id: &str) -> Arc<Listener> {
         let signal: SignalFn = Arc::new(|_k, _v| {});
         Arc::new(Listener {
             id: id.to_string(),
-            paused: false,
-            dis_time: 0,
             signal,
         })
     }
@@ -543,7 +515,7 @@ mod tests {
         let sig = new_signaler();
         // No one has joined "ghost" and nothing listens to it. Before the fix
         // this created a permanent empty `Group` — the unbounded leak.
-        sig.signal_group("k", "ghost", serde_json::json!({"n": 1}), false, Vec::new());
+        sig.signal_group("k", "ghost", serde_json::json!({"n": 1}), Vec::new());
         assert_eq!(sig.groups().len(), 0, "signalling must not create groups");
     }
 

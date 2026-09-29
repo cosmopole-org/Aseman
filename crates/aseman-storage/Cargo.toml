@@ -8,6 +8,7 @@ license.workspace = true
 repository.workspace = true
 
 [dependencies]
+aseman-admin-http = { path = "../aseman-admin-http" }
 aseman-config = { path = "../aseman-config" }
 aseman-contracts = { path = "../aseman-contracts" }
 aseman-ports = { path = "../aseman-ports" }

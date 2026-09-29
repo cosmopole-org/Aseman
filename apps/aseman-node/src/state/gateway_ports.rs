@@ -4,7 +4,7 @@
 use aseman_domain::gateway::GatewayRoute;
 use aseman_ports::{GatewayRoutes, PortResult};
 
-use crate::core::trx::Trx;
+use crate::storage::Trx;
 
 /// The gateway routes of one state action.
 pub(crate) struct GatewayPorts<'a> {

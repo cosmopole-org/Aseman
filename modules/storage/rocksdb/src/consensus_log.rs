@@ -171,7 +171,8 @@ mod tests {
                 .unwrap()
                 .as_nanos()
         ));
-        let storage = super::RocksDbConsensusLogStorage::new(&root);
+        let storage =
+            super::RocksDbConsensusLogStorage::new(&root, aseman_config::RocksDbTuning::default());
         aseman_ports::conformance::consensus_log::consensus_log(&storage, "main/rocksdb_db");
         assert!(storage.open("/absolute", false).is_err());
         assert!(storage.open("../escape", false).is_err());

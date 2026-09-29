@@ -1,13 +1,12 @@
-//! Legacy chain wire DTOs (RL-002). Migrated from the node's `models/chain`;
-//! the node keeps a compatibility re-export shim until the legacy transports
-//! retire (RL-009).
+//! The chain's wire values: ordered requests, their answers, and the chain
+//! transport's envelopes.
 
 use std::collections::HashMap;
 
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
-use crate::legacy_wire::Update;
+use crate::wire::Update;
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 #[serde(rename_all = "PascalCase", default)]
@@ -16,7 +15,7 @@ pub struct ChainMessage {
     pub message_type: String,
     pub author: String,
     pub submitter: String,
-    #[serde(with = "crate::legacy_wire::bytes_base64")]
+    #[serde(with = "crate::wire::bytes_base64")]
     pub payload: Vec<u8>,
     pub signatures: Vec<String>,
     pub request_id: String,
@@ -51,7 +50,7 @@ pub struct ChainBaseRequest {
     pub key: String,
     pub author: String,
     pub submitter: String,
-    #[serde(with = "crate::legacy_wire::bytes_base64")]
+    #[serde(with = "crate::wire::bytes_base64")]
     pub payload: Vec<u8>,
     pub signatures: Vec<String>,
     pub request_id: String,
@@ -62,7 +61,7 @@ pub struct ChainBaseRequest {
 #[serde(rename_all = "PascalCase", default)]
 pub struct ChainResponse {
     pub executor: String,
-    #[serde(with = "crate::legacy_wire::bytes_base64")]
+    #[serde(with = "crate::wire::bytes_base64")]
     pub payload: Vec<u8>,
     pub signature: String,
     pub request_id: String,
@@ -80,7 +79,7 @@ pub struct ChainAppletRequest {
     pub key: String,
     pub author: String,
     pub submitter: String,
-    #[serde(with = "crate::legacy_wire::bytes_base64")]
+    #[serde(with = "crate::wire::bytes_base64")]
     pub payload: Vec<u8>,
     pub signatures: Vec<String>,
     pub request_id: String,
@@ -96,7 +95,7 @@ pub struct ChainElectionPacket {
     pub typ: String,
     pub key: String,
     pub meta: HashMap<String, Value>,
-    #[serde(with = "crate::legacy_wire::bytes_base64")]
+    #[serde(with = "crate::wire::bytes_base64")]
     pub payload: Vec<u8>,
 }
 

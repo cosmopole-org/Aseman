@@ -25,7 +25,6 @@ pub mod operations;
 pub mod program;
 pub mod realtime;
 pub mod signal_tags;
-pub mod storage_migration;
 pub mod store;
 pub mod store_permissions;
 pub mod vmm;

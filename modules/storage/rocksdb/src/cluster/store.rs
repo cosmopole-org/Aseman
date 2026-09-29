@@ -13,7 +13,7 @@
 //! snapshots — it is already persisted by every instance at apply time; a
 //! brand-new instance should join the cluster before log compaction trims
 //! the history it needs, or be seeded from a storage backup first (see
-//! `docs/legacy/caspar/08-consensus-federation-cluster.md`).
+//! `docs/operations/storage-providers.md`).
 
 use std::fmt::Debug;
 use std::io::Cursor;

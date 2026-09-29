@@ -99,18 +99,18 @@ pub(crate) fn rebuild_derived_records(
     }
 }
 
-/// The shared contracts conversion (`legacy_documents`), with export errors.
-pub(crate) fn legacy_json_to_capsule_value(
+/// The shared contracts conversion (`documents`), with export errors.
+pub(crate) fn json_to_capsule_value(
     key: &str,
     value: &Value,
 ) -> LegacyMigrationResult<CapsuleValue> {
-    aseman_contracts::legacy_documents::legacy_json_to_capsule_value(key, value)
+    aseman_contracts::documents::json_to_capsule_value(key, value)
         .map_err(|error| LegacyMigrationError::Invalid(error.to_string()))
 }
 
-/// The shared contracts document digest (`legacy_documents`).
-pub(crate) fn legacy_document_digest(document: &CapsuleValue) -> LegacyMigrationResult<Vec<u8>> {
-    aseman_contracts::legacy_documents::legacy_document_digest(document)
+/// The shared contracts document digest (`documents`).
+pub(crate) fn document_digest(document: &CapsuleValue) -> LegacyMigrationResult<Vec<u8>> {
+    aseman_contracts::documents::document_digest(document)
         .map_err(|error| LegacyMigrationError::Contract(error.to_string()))
 }
 
@@ -193,8 +193,8 @@ pub fn transform_legacy_document(
     let entry_count = i64::try_from(document.len()).map_err(|_| {
         LegacyMigrationError::Invalid(format!("legacy document {key} is too large to count"))
     })?;
-    let document = legacy_json_to_capsule_value(&key, &Value::Object(document))?;
-    let content_digest = legacy_document_digest(&document)?;
+    let document = json_to_capsule_value(&key, &Value::Object(document))?;
+    let content_digest = document_digest(&document)?;
     seal_legacy_capsule(
         LegacyCapsuleSpec {
             family: family.capsule_family,
@@ -244,8 +244,8 @@ impl LegacySnapshotGraph {
                     "legacy creature type {type_name} is too large"
                 ))
             })?;
-            let document = legacy_json_to_capsule_value(key, &Value::Object(document))?;
-            let content_digest = legacy_document_digest(&document)?;
+            let document = json_to_capsule_value(key, &Value::Object(document))?;
+            let content_digest = document_digest(&document)?;
             capsules.push(seal_legacy_capsule(
                 LegacyCapsuleSpec {
                     family: "CreatureType",

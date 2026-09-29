@@ -1,9 +1,9 @@
 ---
 status: GENERATED
 owner: storage/application
-source_of_truth: contracts/capsule and scripts/generate_phase3_contracts.py
+source_of_truth: contracts/capsule and scripts/generate_capsule_contracts.py
 last_verified_commit: 800df24076c7
-verification: python3 scripts/generate_phase3_contracts.py --check
+verification: python3 scripts/generate_capsule_contracts.py --check
 ---
 
 # Capsule contract and core-kind catalog
@@ -77,6 +77,24 @@ Encoding: `deterministic-cbor-v1`; integrity: `sha2-256`.
 | `core.guest_pair` | `guest_pairs` | `core` | `serializable` | `global` |
 | `core.chain` | `chains` | `core` | `serializable` | `creature` |
 | `core.chain_shard` | `chain_shards` | `core` | `serializable` | `creature` |
+| `core.coordination_lease` | `coordination_leases` | `core` | `serializable` | `global` |
+| `core.coordination_fence` | `coordination_fences` | `core` | `serializable` | `global` |
+| `core.realtime_log_event` | `realtime_log_events` | `core` | `serializable` | `global` |
+| `core.realtime_outbox_entry` | `realtime_outbox_entries` | `core` | `serializable` | `global` |
+| `core.realtime_checkpoint` | `realtime_checkpoints` | `core` | `serializable` | `global` |
+| `core.usage_sample` | `usage_samples` | `core` | `serializable` | `global` |
+| `core.usage_interval` | `usage_intervals` | `core` | `serializable` | `global` |
+| `core.journal_record` | `journal_records` | `core` | `serializable` | `global` |
+| `core.journal_entry` | `journal_entries` | `core` | `serializable` | `global` |
+| `core.price_list` | `price_lists` | `core` | `serializable` | `global` |
+| `core.federation_node_descriptor` | `federation_node_descriptors` | `core` | `serializable` | `global` |
+| `core.federation_workload_descriptor` | `federation_workload_descriptors` | `core` | `serializable` | `global` |
+| `core.federation_nonce` | `federation_nonces` | `core` | `serializable` | `global` |
+| `core.federation_answer` | `federation_answers` | `core` | `serializable` | `global` |
+| `core.vmm_workload` | `vmm_workloads` | `core` | `serializable` | `global` |
+| `core.vmm_operation` | `vmm_operations` | `core` | `serializable` | `global` |
+| `core.vmm_idempotency` | `vmm_idempotency_records` | `core` | `serializable` | `global` |
+| `core.vmm_event` | `vmm_events` | `core` | `serializable` | `global` |
 
 ## Contract inputs
 
@@ -93,13 +111,13 @@ Encoding: `deterministic-cbor-v1`; integrity: `sha2-256`.
 | `contracts/capsule/guest/binding.schema.json` | `sha256:6f44a87548557051999567eae0049efb67b4fba29004f69e8a0e1a8293f39515` |
 | `contracts/capsule/guest/fixtures/invalid-caller-routing.json` | `sha256:b48d583e43a34d0b5f06897c0aa6769442d665955759679bcb1a4757b1ede051` |
 | `contracts/capsule/guest/fixtures/valid-multi-table.json` | `sha256:f2e19c02e568e81a0d71f78cc3f893e42691cfab52f5073d85183dc4912ea365` |
-| `contracts/capsule/guest/isolation-rules.json` | `sha256:e15bfcf11512f7089651362eb6c3452cd8234930006a7aafc0b7b95590b832ec` |
+| `contracts/capsule/guest/isolation-rules.json` | `sha256:0999c195f0dee743feed3daad8fe922edd68535c293d618251061fa3e6934fa4` |
 | `contracts/capsule/guest/legacy-kv-table.json` | `sha256:08c80d41526f04c658ab71937b70cd427be4b27db5ffb5151020bbc6cab4ad0a` |
 | `contracts/capsule/guest/schema-command.schema.json` | `sha256:e5d44dd58dcc6ae69bc5263d64b4e647f0083eb264c659bb89506f5fedb40f36` |
 | `contracts/capsule/guest/schema-mutation.schema.json` | `sha256:79cd855b2b4af54ba37345cdcc09c40325cfe2bd0a7e58028e85d8a728ba56fb` |
-| `contracts/capsule/kinds/core-logical-schemas.json` | `sha256:320e075b0bf7b2df628f7e67a7748c3eca0db254bb0f46b0c35a451aeff789ac` |
+| `contracts/capsule/kinds/core-logical-schemas.json` | `sha256:5981382a44aff1bf74be60e9fa244a955104c46c3978bada7a1a3df0cf927dc6` |
 | `contracts/capsule/kinds/core-logical-schemas.schema.json` | `sha256:d5069e4e38a6d1766392c8e30299a1336a71783290a407de52cfd9f342045825` |
-| `contracts/capsule/kinds/core-registry.json` | `sha256:be3d4e5e0527e4c93e7a12edb1b8c72155340b07f01146aa6f9d37c45ac72e76` |
+| `contracts/capsule/kinds/core-registry.json` | `sha256:9c697194ed4e4c27d8bd50ff0e7b20f579df2728ca61ce369ea1ba4357ad7e91` |
 | `contracts/capsule/kinds/core-registry.schema.json` | `sha256:3c6f29d9086fa764910bc02dda2866aada44cdccfd838f511fab1fbb24c085e8` |
 | `contracts/capsule/kinds/storage-class-logical-schemas.json` | `sha256:7ec3875517611d016fc014b78ecd22069be10a1a3803400b487efe9d7abcd4e1` |
 | `contracts/capsule/kinds/storage-class-logical-schemas.schema.json` | `sha256:2c3a7e3e9a8d92addeb090bcf3aa487c344a3535c8f8e9f8d4804b4b6fd10cef` |
@@ -115,4 +133,4 @@ Encoding: `deterministic-cbor-v1`; integrity: `sha2-256`.
 | `contracts/capsule/query/query.schema.json` | `sha256:4ff5d09d5b8a28a97df03374ba9f1928a96f5134be2d30c3b9d850fd470d358b` |
 | `contracts/capsule/storage-class-semantics.json` | `sha256:bdad80b2878f3aea6f248c932a09ce287f7cc94ead03a99232ad54511e3afa3c` |
 
-P3-01 is accepted; providers must still pass the A310 behavioral conformance kit.
+Every provider must pass the A310 behavioral conformance kit.

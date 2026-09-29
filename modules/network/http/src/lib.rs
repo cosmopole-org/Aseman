@@ -4,7 +4,7 @@
 //! route lookup, authentication-header parsing, request IDs, and RFC 9457 responses.
 //! It does not authenticate a session/proof, authorize an action, or execute business
 //! logic. Those are one atomic responsibility of [`PublicActionService`], so this
-//! transport cannot bypass A401/A402 by calling a legacy action handler directly.
+//! transport cannot bypass A401/A402 by calling an action handler directly.
 
 #![forbid(unsafe_code)]
 

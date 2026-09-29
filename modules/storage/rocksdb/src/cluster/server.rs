@@ -18,175 +18,53 @@
 //!   POST /cluster/config/apply       whole cluster-config document
 //!   POST /cluster/propose            internal: apply a forwarded command
 //!
-//! The listener speaks minimal HTTP/1.1 (the same style as the telemetry
-//! server) to stay dependency-free. When `auth_token` is configured every
-//! request must present it in `x-aseman-cluster-token` (or as a bearer token). Routes
-//! the composing process injects ([`RouteHandler`]) are served on the same port.
+//! The listener is `aseman-admin-http`: minimal HTTP/1.1 over mutual TLS, so only
+//! holders of a certificate the cluster CA issued reach it. When `auth_token` is
+//! configured every request must also present it in `x-aseman-cluster-token` (or as
+//! a bearer token). Routes the composing process injects
+//! ([`super::RouteHandler`]) are served on the same port.
 
 use std::collections::{BTreeMap, BTreeSet};
-use std::io::{BufRead, BufReader, Read, Write};
-use std::net::{TcpListener, TcpStream};
+use std::net::TcpListener;
 use std::sync::Arc;
-use std::thread;
 
 use anyhow::{Result, anyhow};
 use openraft::BasicNode;
 use openraft::raft::{AppendEntriesRequest, InstallSnapshotRequest, VoteRequest};
 use serde_json::{Value, json};
 
+use super::ClusterService;
 use super::command::{ClusterCommand, TypeConfig};
 use super::config::PeerConfig;
-use super::{ClusterService, RouteHandler};
-
-const MAX_BODY_BYTES: usize = 256 * 1024 * 1024;
+use aseman_admin_http::{Request, token_matches};
 
 pub fn start(svc: Arc<ClusterService>) -> Result<()> {
     let listen = svc.config_snapshot().listen_addr;
     let listener =
         TcpListener::bind(&listen).map_err(|e| anyhow!("cluster bind {}: {}", listen, e))?;
-    thread::Builder::new()
-        .name("cluster-http".into())
-        .spawn(move || {
-            for stream in listener.incoming().flatten() {
-                let svc = svc.clone();
-                thread::spawn(move || handle_connection(svc, stream));
-            }
-        })
-        .map_err(|e| anyhow!("cluster server spawn: {}", e))?;
-    Ok(())
-}
-
-/// Serve only injected routes (for example the node's module administration) on an
-/// authenticated listener, for a process that runs no cluster.
-pub fn start_route_listener(
-    handler: RouteHandler,
-    listen: String,
-    auth_token: String,
-) -> Result<()> {
-    if auth_token.is_empty() {
-        return Err(anyhow!(
-            "a standalone administration listener requires an auth token"
-        ));
-    }
-    let listener =
-        TcpListener::bind(&listen).map_err(|error| anyhow!("admin bind {listen}: {error}"))?;
-    thread::Builder::new()
-        .name("admin-http".into())
-        .spawn(move || {
-            for stream in listener.incoming().flatten() {
-                let handler = handler.clone();
-                let auth_token = auth_token.clone();
-                thread::spawn(move || handle_route_connection(handler, auth_token, stream));
-            }
-        })
-        .map_err(|error| anyhow!("admin server spawn: {error}"))?;
-    Ok(())
-}
-
-struct Request {
-    method: String,
-    path: String,
-    token: String,
-    body: Vec<u8>,
-}
-
-fn read_request(stream: &TcpStream) -> Option<Request> {
-    let mut reader = BufReader::new(stream.try_clone().ok()?);
-    let mut request_line = String::new();
-    reader.read_line(&mut request_line).ok()?;
-    let mut parts = request_line.split_whitespace();
-    let method = parts.next()?.to_string();
-    let path = parts.next()?.to_string();
-
-    let mut content_length = 0usize;
-    let mut token = String::new();
-    loop {
-        let mut line = String::new();
-        if reader.read_line(&mut line).is_err() || line.trim().is_empty() {
-            break;
-        }
-        let lower = line.to_lowercase();
-        if let Some(v) = lower.strip_prefix("content-length:") {
-            content_length = v.trim().parse().unwrap_or(0);
-        }
-        if lower.starts_with("x-aseman-cluster-token:") {
-            token = line
-                .split_once(':')
-                .map(|x| x.1)
-                .unwrap_or("")
-                .trim()
-                .to_string();
-        }
-        if lower.starts_with("authorization:") {
-            let value = line.split_once(':').map(|x| x.1).unwrap_or("").trim();
-            if let Some(value) = value.strip_prefix("Bearer ") {
-                token = value.to_owned();
-            } else if let Some(value) = value.strip_prefix("bearer ") {
-                token = value.to_owned();
-            }
-        }
-    }
-    if content_length > MAX_BODY_BYTES {
-        return None;
-    }
-    let mut body = vec![0u8; content_length];
-    if content_length > 0 && reader.read_exact(&mut body).is_err() {
-        return None;
-    }
-    Some(Request {
-        method,
-        path,
-        token,
-        body,
+    let tls = svc.tls().clone();
+    aseman_admin_http::serve(listener, &tls, "cluster-https", move |request| {
+        authorize_and_route(&svc, request)
     })
+    .map_err(|error| anyhow!(error))
 }
 
-fn respond(mut stream: TcpStream, status: u16, body: &[u8]) {
-    let head = format!(
-        "HTTP/1.1 {} {}\r\nContent-Type: application/json\r\nContent-Length: {}\r\nConnection: close\r\n\r\n",
-        status,
-        if status < 400 { "OK" } else { "ERR" },
-        body.len()
-    );
-    let _ = stream.write_all(head.as_bytes());
-    let _ = stream.write_all(body);
-}
-
-fn handle_connection(svc: Arc<ClusterService>, stream: TcpStream) {
-    let Some(req) = read_request(&stream) else {
-        return;
-    };
+/// Every request comes over mutual TLS from a holder of a cluster certificate; the
+/// configured token is checked on top, and injected (administrative) routes are never
+/// served without one.
+fn authorize_and_route(svc: &Arc<ClusterService>, req: &Request) -> (u16, Vec<u8>) {
     let expected = svc.auth_token();
-    // Injected routes are administrative: never served without a token.
     if expected.is_empty() && !req.path.starts_with("/raft/") && !req.path.starts_with("/cluster/")
     {
-        respond(
-            stream,
+        return (
             503,
-            br#"{"error":"administration requires a configured cluster auth token"}"#,
+            br#"{"error":"administration requires a configured cluster auth token"}"#.to_vec(),
         );
-        return;
     }
-    if !expected.is_empty() && req.token != expected {
-        respond(stream, 401, br#"{"error":"invalid cluster token"}"#);
-        return;
+    if !expected.is_empty() && !token_matches(&req.token, &expected) {
+        return (401, br#"{"error":"invalid cluster token"}"#.to_vec());
     }
-    let (status, body) = route(&svc, &req);
-    respond(stream, status, &body);
-}
-
-fn handle_route_connection(handler: RouteHandler, auth_token: String, stream: TcpStream) {
-    let Some(req) = read_request(&stream) else {
-        return;
-    };
-    if req.token != auth_token {
-        respond(stream, 401, br#"{"error":"invalid administration token"}"#);
-        return;
-    }
-    match handler(&req.method, &req.path, &req.body) {
-        Some((status, body)) => respond(stream, status, &body),
-        None => respond(stream, 404, br#"{"error":"not found"}"#),
-    }
+    route(svc, req)
 }
 
 fn route(svc: &Arc<ClusterService>, req: &Request) -> (u16, Vec<u8>) {
@@ -302,7 +180,7 @@ fn handle_init(svc: &Arc<ClusterService>, body: &[u8]) -> (u16, Vec<u8>) {
     }
 }
 
-/// `POST /cluster/add-peer` — introduce another Caspar instance of the same
+/// `POST /cluster/add-peer` — introduce another Aseman instance of the same
 /// origin by address. The peer is stored in the local config, added to raft
 /// as a learner, and — unless `voter:false` — promoted into the voter set.
 fn handle_add_peer(svc: &Arc<ClusterService>, body: &[u8]) -> (u16, Vec<u8>) {
@@ -425,7 +303,7 @@ fn svc_propose_config(svc: &Arc<ClusterService>, key: &str, cfg: &super::config:
 }
 
 /// `POST /cluster/config/apply` — replace the cluster config with a whole
-/// document (the `casparctl cluster apply -f file` path). Peers present in
+/// document (the `asemanctl cluster apply -f file` path). Peers present in
 /// the document are registered and joined one by one.
 fn handle_config_apply(svc: &Arc<ClusterService>, body: &[u8]) -> (u16, Vec<u8>) {
     let incoming: super::config::ClusterConfig = match serde_json::from_slice(body) {

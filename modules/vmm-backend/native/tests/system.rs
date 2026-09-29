@@ -1,4 +1,4 @@
-//! P5-05 system test: the node's client, the VMM service over mutual TLS with its
+//! System test: the node's client, the VMM service over mutual TLS with its
 //! PostgreSQL stores and background loop, the native backend as its own process over
 //! A504, and a guest API double over TLS, running the real JavaScript runtime.
 //! It includes a backend crash: restart reconciliation brings the workload back.
@@ -12,6 +12,7 @@ use std::time::{Duration, Instant};
 
 use aseman_application::guest_call::GuestRequest;
 use aseman_application::identity::IdentityFailure;
+use aseman_capsule::vmm::StorageVmmStore;
 use aseman_contracts::guest_api::{ARTIFACT_ACTION, WorkloadCredential, audience, call_action};
 use aseman_contracts::identity::{PublicKey, body_digest, verify_proof_signature};
 use aseman_domain::identity::{AuthenticationError, Proof, Subject, SubjectKind};
@@ -23,7 +24,6 @@ use aseman_guest_http::server::{GuestApi, serve as serve_guest};
 use aseman_ports::conformance::vmm::sample_workload;
 use aseman_ports::vmm::{LifecycleCommand, NewWorkload, VmmClient};
 use aseman_ports::{ClockPort, PortError};
-use aseman_storage_postgres::vmm::PostgresVmmStore;
 use aseman_vmm_backend_grpc::client::GrpcBackend;
 use aseman_vmm_http::client::{ClientTls, HttpVmmClient};
 use aseman_vmm_http::server::{ServerTls, VmmHttpState, serve};
@@ -236,10 +236,16 @@ fn the_node_drives_the_native_backend_through_the_vmm_service() {
     admin
         .batch_execute(&format!("CREATE DATABASE {database}"))
         .unwrap();
-    let mut database_url: postgres::Config = url.parse().unwrap();
-    database_url.dbname(&database);
-    let store = Arc::new(PostgresVmmStore::connect_config(database_url, 4).unwrap());
-    store.migrate().unwrap();
+    let (base, query) = url.split_once('?').unwrap_or((url.as_str(), ""));
+    let server = &base[..base.rfind('/').unwrap()];
+    let database_url = if query.is_empty() {
+        format!("{server}/{database}")
+    } else {
+        format!("{server}/{database}?{query}")
+    };
+    let store = Arc::new(StorageVmmStore::new(
+        aseman_storage_providers::open_database(database_url, 4).unwrap(),
+    ));
     let state = Arc::new(VmmHttpState {
         workloads: store.clone(),
         operations: store.clone(),

@@ -5,7 +5,7 @@
 
 use serde::{Deserialize, Serialize};
 
-/// One program as legacy exposes it.
+/// One program as the wire exposes it.
 #[derive(Clone, Debug, Default, Eq, PartialEq, Serialize, Deserialize)]
 pub struct ProgramRecord {
     pub id: String,
@@ -16,22 +16,22 @@ pub struct ProgramRecord {
     pub comment: String,
 }
 
-/// The entity an alarm without one replays, as legacy did.
+/// The entity an alarm without one replays.
 pub const DEFAULT_ALARM_ENTITY: &str = "main";
 
-/// A program's pending wake-up (legacy `vmAlarm*`). A program has at most one.
+/// A program's pending wake-up (`vmAlarm*`). A program has at most one.
 #[derive(Clone, Debug, Default, Eq, PartialEq, Serialize, Deserialize)]
 pub struct ProgramAlarm {
     /// The store the program runs in when it wakes.
     pub store_id: String,
-    /// Unix milliseconds, as legacy stored it.
+    /// Unix milliseconds, as stored.
     pub fire_at_millis: i64,
     pub data: String,
-    /// The entity to run; legacy alarms without one run [`DEFAULT_ALARM_ENTITY`].
+    /// The entity to run; alarms without one run [`DEFAULT_ALARM_ENTITY`].
     pub entity: String,
 }
 
-/// A VM resource store (legacy `Json::VmResourceStore`, target
+/// A VM resource store (`Json::VmResourceStore`, target
 /// `core.vm_resource_store`): a named document owned by a machine.
 #[derive(Clone, Debug, Default, Eq, PartialEq, Serialize, Deserialize)]
 pub struct VmResourceStore {
@@ -43,7 +43,7 @@ pub struct VmResourceStore {
     pub metadata: String,
 }
 
-/// A program entity (legacy `Entity` object keyed `{program}::{entity}`, target
+/// A program entity (`Entity` object keyed `{program}::{entity}`, target
 /// `core.entity`).
 #[derive(Clone, Debug, Default, Eq, PartialEq, Serialize, Deserialize)]
 pub struct EntityRecord {
@@ -57,9 +57,9 @@ pub struct EntityRecord {
 /// The role of a deployed entity file (`core.entity_artifact.artifact_role`).
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub enum ArtifactRole {
-    /// The file the runtime executes (legacy `vmEntityPath`).
+    /// The file the runtime executes (`vmEntityPath`).
     Primary,
-    /// The file clients fetch (legacy `vmEntityDownloadable`).
+    /// The file clients fetch (`vmEntityDownloadable`).
     Downloadable,
 }
 
@@ -80,7 +80,7 @@ pub struct EntityArtifact {
     pub store_key: Option<String>,
 }
 
-/// The identity of a VM resource entity (legacy `Json::VmResourceEntity::{store}::
+/// The identity of a VM resource entity (`Json::VmResourceEntity::{store}::
 /// {type}::{id}`, target `core.vm_resource_entity`).
 #[derive(Clone, Debug, Default, Eq, PartialEq, Serialize, Deserialize)]
 pub struct ResourceEntityRef {
@@ -112,7 +112,7 @@ impl ResourceEntityRef {
         .concat()
     }
 
-    /// The blob key of the entity's data, where legacy kept the file.
+    /// The blob key of the entity's data, at the file's path.
     pub fn data_key(&self) -> String {
         [
             "vm_stores/",

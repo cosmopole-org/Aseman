@@ -41,6 +41,15 @@ impl Storage {
         Ok(Self::new(provider, settings.schema.clone()))
     }
 
+    /// The provider's clock ([`StorageProvider::now_millis`]).
+    ///
+    /// # Errors
+    ///
+    /// When the provider is unreachable.
+    pub fn now_millis(&self) -> StorageResult<i64> {
+        self.provider().now_millis()
+    }
+
     pub fn begin(&self, mode: Mode) -> StorageResult<Trx> {
         Ok(Trx {
             inner: self.provider.begin(mode)?,

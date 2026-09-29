@@ -1,16 +1,10 @@
-//! Translation of `shell/utils/crypto/crypto.go`.
-//!
-//! RSA keypair generation, PEM (PKCS#8 / SPKI) decode/encode, and
-//! "secure unique" string helpers. Uses the `rsa` and `rand` crates already
-//! present in the workspace.
+//! RSA key pair generation and PEM decoding, and unique id strings.
 
 use std::fs;
 use std::path::Path;
 
 use anyhow::{Result, anyhow};
-use rsa::pkcs8::{
-    DecodePrivateKey, DecodePublicKey, EncodePrivateKey, EncodePublicKey, LineEnding,
-};
+use rsa::pkcs8::{DecodePublicKey, EncodePrivateKey, EncodePublicKey, LineEnding};
 use rsa::rand_core::OsRng;
 use rsa::{RsaPrivateKey, RsaPublicKey};
 use uuid::Uuid;
@@ -19,18 +13,6 @@ use uuid::Uuid;
 /// pool tails, etc.
 pub fn secure_unique_string() -> String {
     format!("{}-{}", Uuid::new_v4(), Uuid::new_v4())
-}
-
-/// Returns `<uuid>@<fed>` — used by the shell to mint federation-scoped ids.
-#[cfg_attr(
-    not(test),
-    expect(
-        dead_code,
-        reason = "RL-004: characterized legacy action surface (A008) kept until its deletion gate"
-    )
-)]
-pub fn secure_unique_id(fed: &str) -> String {
-    format!("{}@{}", Uuid::new_v4(), fed)
 }
 
 /// Generates a 2048-bit RSA keypair and PEM-encodes both halves. If
@@ -66,19 +48,6 @@ pub fn secure_key_pairs(save_path: &str) -> Result<(Vec<u8>, Vec<u8>)> {
     Ok((priv_pem, pub_pem))
 }
 
-/// Parses a PKCS#8 PEM-encoded RSA private key.
-#[cfg_attr(
-    not(test),
-    expect(
-        dead_code,
-        reason = "RL-004: characterized legacy action surface (A008) kept until its deletion gate"
-    )
-)]
-pub fn parse_private_key(data: &[u8]) -> Result<RsaPrivateKey> {
-    let s = std::str::from_utf8(data).map_err(|e| anyhow!("utf-8: {}", e))?;
-    RsaPrivateKey::from_pkcs8_pem(s).map_err(|e| anyhow!("decode pkcs8: {}", e))
-}
-
 /// Parses a SubjectPublicKeyInfo PEM-encoded RSA public key.
 pub fn parse_public_key(data: &[u8]) -> Result<RsaPublicKey> {
     let s = std::str::from_utf8(data).map_err(|e| anyhow!("utf-8: {}", e))?;
@@ -89,19 +58,12 @@ pub fn parse_public_key(data: &[u8]) -> Result<RsaPublicKey> {
 mod tests {
     use super::*;
 
-    // Translation of `crypto_test.go`.
     #[test]
     fn unique_string_is_unique() {
         let a = secure_unique_string();
         let b = secure_unique_string();
         assert_ne!(a, b);
         assert!(a.contains('-'));
-    }
-
-    #[test]
-    fn unique_id_carries_fed() {
-        let id = secure_unique_id("acme");
-        assert!(id.ends_with("@acme"));
     }
 
     #[test]
@@ -131,7 +93,10 @@ mod tests {
                 .contains("-----BEGIN PUBLIC KEY-----")
         );
 
-        let parsed_priv = parse_private_key(&priv_pem).expect("parse private");
+        let parsed_priv = <RsaPrivateKey as rsa::pkcs8::DecodePrivateKey>::from_pkcs8_pem(
+            std::str::from_utf8(&priv_pem).unwrap(),
+        )
+        .expect("parse private");
         let parsed_pub = parse_public_key(&pub_pem).expect("parse public");
         // The public key derived from the parsed private must match the
         // separately-parsed public PEM.
@@ -146,7 +111,7 @@ mod tests {
             .unwrap()
             .as_nanos();
         let dir =
-            std::env::temp_dir().join(format!("caspar-keypair-{}-{}", std::process::id(), nanos));
+            std::env::temp_dir().join(format!("aseman-keypair-{}-{}", std::process::id(), nanos));
         let path = dir.to_string_lossy().into_owned();
 
         let (priv_pem, pub_pem) = secure_key_pairs(&path).expect("generate keypair");
@@ -154,12 +119,6 @@ mod tests {
         assert_eq!(std::fs::read(dir.join("public.pem")).unwrap(), pub_pem);
 
         let _ = std::fs::remove_dir_all(&dir);
-    }
-
-    #[test]
-    fn parse_private_key_rejects_invalid_pem() {
-        assert!(parse_private_key(b"not a pem").is_err());
-        assert!(parse_private_key(b"").is_err());
     }
 
     #[test]

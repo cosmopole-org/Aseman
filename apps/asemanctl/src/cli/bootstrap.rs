@@ -1,16 +1,20 @@
-//! Resumable A602 compact deployment bootstrap (P9-01, A901/A902).
+//! Resumable A602 compact deployment bootstrap (A901/A902).
 
+use std::collections::BTreeSet;
 use std::fs::{self, OpenOptions};
 use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Output};
 
 use anyhow::{Context, Result, anyhow, bail};
+use aseman_config::{CliConfig, RuntimeConfig};
 use aseman_domain::bootstrap::{Progress, Stage, StageOutcome, preflight_passed};
 use aseman_fs::{Access, write_atomic};
 use base64::Engine;
 use ring::rand::{SecureRandom, SystemRandom};
 use sha2::{Digest, Sha256};
+
+use super::compact::{BACKEND_IMAGE_KEY, Backend, Compact};
 
 #[cfg(unix)]
 use std::os::unix::fs::{OpenOptionsExt, PermissionsExt};
@@ -18,7 +22,21 @@ use std::os::unix::fs::{OpenOptionsExt, PermissionsExt};
 /// The host-local port the compact profile publishes node health on by default.
 const DEFAULT_HEALTH_PORT: u16 = 8080;
 
-const EXPECTED_SERVICES: [&str; 5] = ["postgres", "vmm", "nomad-backend", "node", "meter"];
+/// The services a compact deployment on `backend` runs.
+fn expected_services(backend: Backend) -> [&'static str; 5] {
+    ["postgres", "vmm", backend.service(), "node", "meter"]
+}
+
+/// Where the native backend's container finds the runtime secrets bootstrap copies
+/// into `secrets/runtimes`.
+const RUNTIME_SECRETS_MOUNT: &str = "/run/aseman/secrets/runtimes";
+/// The runtime secrets' directory, relative to the configuration directory.
+const RUNTIME_SECRETS_DIR: &str = "secrets/runtimes";
+/// Where the native backend keeps plugin state and artifacts in its container.
+const NATIVE_BACKEND_STATE: &str = "/var/lib/aseman-backend";
+/// The VM types the compact native backend can run: those that need no host device
+/// (the Docker socket and `/dev/kvm` are outside the compact topology, A602).
+const COMPACT_NATIVE_VM_TYPES: [&str; 5] = ["modal", "wasm", "elpian", "elpify", "javascript"];
 
 #[derive(Clone, Debug)]
 struct Options {
@@ -29,9 +47,16 @@ struct Options {
     node_image: String,
     vmm_image: String,
     meter_image: String,
+    backend: Backend,
     backend_image: String,
     postgres_image: String,
     nomad_endpoint: String,
+    /// The VM types the native backend serves (`--vm-types`).
+    vm_types: Vec<String>,
+    /// The native backend's runtime settings, secrets named by their container paths.
+    runtime: RuntimeConfig,
+    /// Runtime secrets to copy: (file name under `secrets/runtimes`, operator's file).
+    runtime_secrets: Vec<(String, PathBuf)>,
     public_port: u16,
     health_port: u16,
     allow_unsigned_local: bool,
@@ -39,18 +64,16 @@ struct Options {
 }
 
 impl Options {
-    fn parse(arguments: &[String]) -> Result<Self> {
+    /// The options, or `None` when help was asked for (and printed).
+    fn parse(arguments: &[String], config: &CliConfig) -> Result<Option<Self>> {
         if arguments
             .iter()
             .any(|value| value == "-h" || value == "--help")
         {
             print_usage();
-            return Err(anyhow!("help requested"));
+            return Ok(None);
         }
-        let state_dir = aseman_config::cli_config()
-            .and_then(|config| config.state_dir.as_deref())
-            .map(PathBuf::from)
-            .unwrap_or_else(|| aseman_config::process_state_home().join("asemanctl"));
+        let state_dir = config.state_dir.clone();
         let mut options = Self {
             profile: "compact".to_owned(),
             config_dir: state_dir.join("compact"),
@@ -59,24 +82,56 @@ impl Options {
             node_image: "aseman-node:local".to_owned(),
             vmm_image: "aseman-vmm:local".to_owned(),
             meter_image: "aseman-meter:local".to_owned(),
-            backend_image: "aseman-vmm-backend-nomad:local".to_owned(),
+            backend: Backend::Nomad,
+            backend_image: String::new(),
             postgres_image: "postgres:18-bookworm".to_owned(),
             nomad_endpoint: "http://host.docker.internal:4646".to_owned(),
+            vm_types: Vec::new(),
+            runtime: RuntimeConfig::default(),
+            runtime_secrets: Vec::new(),
             public_port: 443,
             health_port: DEFAULT_HEALTH_PORT,
             allow_unsigned_local: false,
             plan: false,
         };
         let mut config_explicit = false;
+        let mut backend_image = None;
+        let mut nomad_endpoint_explicit = false;
+        // The VM types the runtime flags configure, to refuse settings for a type that
+        // is not enabled.
+        let mut configured_types = BTreeSet::new();
         let mut index = 0;
         while index < arguments.len() {
             let flag = arguments[index].as_str();
             match flag {
                 "--allow-unsigned-local" => options.allow_unsigned_local = true,
                 "--plan" => options.plan = true,
-                "--profile" | "--state-dir" | "--config-dir" | "--compose-file"
-                | "--node-image" | "--vmm-image" | "--meter-image" | "--backend-image"
-                | "--postgres-image" | "--nomad-endpoint" | "--public-port" | "--health-port" => {
+                "--profile"
+                | "--state-dir"
+                | "--config-dir"
+                | "--compose-file"
+                | "--node-image"
+                | "--vmm-image"
+                | "--meter-image"
+                | "--backend-image"
+                | "--postgres-image"
+                | "--nomad-endpoint"
+                | "--public-port"
+                | "--health-port"
+                | "--backend"
+                | "--vm-types"
+                | "--vm-http-port"
+                | "--modal-api-key-secret"
+                | "--modal-token-id-secret"
+                | "--modal-token-secret-secret"
+                | "--modal-environment"
+                | "--modal-server-url"
+                | "--modal-client-version"
+                | "--modal-app-name"
+                | "--modal-app-prefix"
+                | "--modal-default-image"
+                | "--wasm-aot"
+                | "--wasm-vm-cache" => {
                     index += 1;
                     let value = arguments
                         .get(index)
@@ -92,11 +147,71 @@ impl Options {
                         "--node-image" => options.node_image.clone_from(value),
                         "--vmm-image" => options.vmm_image.clone_from(value),
                         "--meter-image" => options.meter_image.clone_from(value),
-                        "--backend-image" => options.backend_image.clone_from(value),
+                        "--backend-image" => backend_image = Some(value.clone()),
                         "--postgres-image" => options.postgres_image.clone_from(value),
-                        "--nomad-endpoint" => options.nomad_endpoint.clone_from(value),
+                        "--nomad-endpoint" => {
+                            options.nomad_endpoint.clone_from(value);
+                            nomad_endpoint_explicit = true;
+                        }
                         "--public-port" => options.public_port = parse_port(flag, value)?,
                         "--health-port" => options.health_port = parse_port(flag, value)?,
+                        "--backend" => options.backend = Backend::parse(value)?,
+                        "--vm-types" => {
+                            options.vm_types = value
+                                .split(',')
+                                .map(str::trim)
+                                .filter(|kind| !kind.is_empty())
+                                .map(str::to_owned)
+                                .collect();
+                        }
+                        "--vm-http-port" => {
+                            options.runtime.vm_http_port = parse_port(flag, value)?;
+                        }
+                        "--modal-api-key-secret" => {
+                            configured_types.insert("modal");
+                            options.runtime.modal_api_key_secret =
+                                Some(options.runtime_secret("modal-api-key", flag, value)?);
+                        }
+                        "--modal-token-id-secret" => {
+                            configured_types.insert("modal");
+                            options.runtime.modal_token_id_secret =
+                                Some(options.runtime_secret("modal-token-id", flag, value)?);
+                        }
+                        "--modal-token-secret-secret" => {
+                            configured_types.insert("modal");
+                            options.runtime.modal_token_secret_secret =
+                                Some(options.runtime_secret("modal-token-secret", flag, value)?);
+                        }
+                        "--modal-environment"
+                        | "--modal-server-url"
+                        | "--modal-client-version"
+                        | "--modal-app-name"
+                        | "--modal-app-prefix"
+                        | "--modal-default-image" => {
+                            configured_types.insert("modal");
+                            let runtime = &mut options.runtime;
+                            match flag {
+                                "--modal-environment" => {
+                                    runtime.modal_environment.clone_from(value)
+                                }
+                                "--modal-server-url" => runtime.modal_server_url.clone_from(value),
+                                "--modal-client-version" => {
+                                    runtime.modal_client_version.clone_from(value);
+                                }
+                                "--modal-app-name" => runtime.modal_app_name = Some(value.clone()),
+                                "--modal-app-prefix" => runtime.modal_app_prefix.clone_from(value),
+                                _ => runtime.modal_default_image.clone_from(value),
+                            }
+                        }
+                        "--wasm-aot" | "--wasm-vm-cache" => {
+                            configured_types.insert("wasm");
+                            let enabled = parse_switch(flag, value)?;
+                            if flag == "--wasm-aot" {
+                                options.runtime.wasm_aot = enabled;
+                            } else {
+                                options.runtime.wasm_vm_cache = enabled;
+                            }
+                        }
                         _ => unreachable!(),
                     }
                 }
@@ -107,13 +222,96 @@ impl Options {
         if !config_explicit {
             options.config_dir = options.state_dir.join("compact");
         }
+        options.backend_image =
+            backend_image.unwrap_or_else(|| options.backend.default_image().to_owned());
+        options.validate_backend(nomad_endpoint_explicit, &configured_types)?;
         if options.profile != "compact" {
             bail!(
                 "profile {} is not executable yet; use compact (cluster remains A901 work)",
                 options.profile
             );
         }
-        Ok(options)
+        Ok(Some(options))
+    }
+
+    /// Record the operator's secret file `source` (given with `flag`) to be copied as
+    /// `name`; returns the path the native backend reads it at.
+    fn runtime_secret(&mut self, name: &str, flag: &str, source: &str) -> Result<PathBuf> {
+        let source = PathBuf::from(source);
+        if !source.is_file() {
+            bail!(
+                "{flag} names {}, which is not a readable file",
+                source.display()
+            );
+        }
+        self.runtime_secrets.push((name.to_owned(), source));
+        Ok(Path::new(RUNTIME_SECRETS_MOUNT).join(name))
+    }
+
+    /// The backend's VM types and their settings must agree.
+    fn validate_backend(
+        &self,
+        nomad_endpoint_explicit: bool,
+        configured_types: &BTreeSet<&str>,
+    ) -> Result<()> {
+        match self.backend {
+            Backend::Nomad => {
+                if !self.vm_types.is_empty() || !configured_types.is_empty() {
+                    bail!(
+                        "--vm-types and VM settings configure the native backend; add --backend native"
+                    );
+                }
+            }
+            Backend::Native => {
+                if nomad_endpoint_explicit {
+                    bail!("--nomad-endpoint configures the nomad backend, not the native one");
+                }
+                if self.vm_types.is_empty() {
+                    bail!(
+                        "the native backend needs --vm-types (any of {})",
+                        COMPACT_NATIVE_VM_TYPES.join(", ")
+                    );
+                }
+                for kind in &self.vm_types {
+                    if matches!(kind.as_str(), "docker" | "fire") {
+                        bail!(
+                            "VM type {kind} needs host devices the compact topology does not \
+                             grant (the Docker socket or /dev/kvm); run it on a host backend"
+                        );
+                    }
+                    if !COMPACT_NATIVE_VM_TYPES.contains(&kind.as_str()) {
+                        bail!(
+                            "unknown VM type {kind}; use any of {}",
+                            COMPACT_NATIVE_VM_TYPES.join(", ")
+                        );
+                    }
+                }
+                for kind in configured_types {
+                    if !self.vm_types.iter().any(|enabled| enabled == kind) {
+                        bail!("{kind} settings were given but --vm-types does not enable {kind}");
+                    }
+                }
+                let runtime = &self.runtime;
+                let modal_credentials = runtime.modal_api_key_secret.is_some()
+                    || (runtime.modal_token_id_secret.is_some()
+                        && runtime.modal_token_secret_secret.is_some());
+                if self.vm_types.iter().any(|kind| kind == "modal") && !modal_credentials {
+                    bail!(
+                        "the modal VM type needs --modal-api-key-secret (or \
+                         --modal-token-id-secret and --modal-token-secret-secret)"
+                    );
+                }
+            }
+        }
+        Ok(())
+    }
+
+    /// The deployment this bootstrap drives.
+    fn compact(&self) -> Compact {
+        Compact {
+            env_file: self.env_file(),
+            compose_file: self.compose_file.clone(),
+        }
     }
 
     fn progress_file(&self) -> PathBuf {
@@ -125,11 +323,9 @@ impl Options {
     }
 }
 
-pub fn run_bootstrap(arguments: &[String]) -> Result<()> {
-    let options = match Options::parse(arguments) {
-        Ok(options) => options,
-        Err(error) if error.to_string() == "help requested" => return Ok(()),
-        Err(error) => return Err(error),
+pub fn run_bootstrap(config: &CliConfig, arguments: &[String]) -> Result<()> {
+    let Some(options) = Options::parse(arguments, config)? else {
+        return Ok(());
     };
     if options.plan {
         for stage in Stage::ALL {
@@ -236,7 +432,7 @@ fn preflight(options: &Options) -> Result<()> {
 fn topology(options: &Options) -> Result<()> {
     let profile = fs::read_to_string(&options.compose_file)
         .with_context(|| format!("read {}", options.compose_file.display()))?;
-    for service in EXPECTED_SERVICES {
+    for service in expected_services(options.backend) {
         if !profile.contains(&format!("  {service}:")) {
             bail!("compact profile omits {service}");
         }
@@ -252,7 +448,7 @@ fn artifacts(options: &Options) -> Result<()> {
         ("node", &options.node_image),
         ("vmm", &options.vmm_image),
         ("meter", &options.meter_image),
-        ("nomad backend", &options.backend_image),
+        (options.backend.service(), &options.backend_image),
     ] {
         let pinned = image.contains("@sha256:")
             && image.rsplit_once("@sha256:").is_some_and(|(_, digest)| {
@@ -269,7 +465,7 @@ fn artifacts(options: &Options) -> Result<()> {
 
 fn identity(options: &Options) -> Result<()> {
     if options.config_dir.exists() {
-        validate_identity(&options.config_dir).with_context(|| {
+        validate_identity(&options.config_dir, options.backend).with_context(|| {
             format!(
                 "validate identity left by an interrupted bootstrap in {}",
                 options.config_dir.display()
@@ -300,9 +496,9 @@ fn identity(options: &Options) -> Result<()> {
 /// The uid:gid every Aseman image runs as (`deploy/images/*.Dockerfile`).
 const RUNTIME_OWNER: &str = "65532:65532";
 
-/// Private material each Aseman service reads, relative to the configuration dir.
-const RUNTIME_PRIVATE: [&str; 10] = [
-    "nomad-backend.json",
+/// Private material each Aseman service reads, relative to the configuration dir,
+/// besides the backend's own configuration and runtime secrets.
+const RUNTIME_PRIVATE: [&str; 9] = [
     "babble/priv_key",
     "secrets/database-url",
     "secrets/guest-proxy-url",
@@ -338,11 +534,19 @@ fn hand_to_runtime(options: &Options) -> Result<()> {
         fs::set_permissions(root.join(relative), fs::Permissions::from_mode(0o644))?;
     }
     let postgres_owner = image_user(&options.postgres_image, "postgres")?;
-    let mut assignments: Vec<(&str, String)> = RUNTIME_PRIVATE
+    let backend_private = std::iter::once(options.backend.config_file().to_owned()).chain(
+        options
+            .runtime_secrets
+            .iter()
+            .map(|(name, _)| format!("{RUNTIME_SECRETS_DIR}/{name}")),
+    );
+    let mut assignments: Vec<(String, String)> = RUNTIME_PRIVATE
         .iter()
-        .map(|relative| (*relative, RUNTIME_OWNER.to_owned()))
+        .map(|relative| (*relative).to_owned())
+        .chain(backend_private)
+        .map(|relative| (relative, RUNTIME_OWNER.to_owned()))
         .collect();
-    assignments.push(("secrets/postgres-password", postgres_owner));
+    assignments.push(("secrets/postgres-password".to_owned(), postgres_owner));
     for (relative, _) in &assignments {
         let path = root.join(relative);
         // A file already handed over may no longer be ours to chmod; its mode was set
@@ -490,28 +694,21 @@ fn generate_identity(root: &Path, options: &Options) -> Result<()> {
     )?;
     let node_fingerprint = certificate_fingerprint(&tls.join("node-cert.pem"))?;
     let meter_fingerprint = certificate_fingerprint(&tls.join("meter-cert.pem"))?;
-    write_secret(
-        &root.join("nomad-backend.json"),
-        &serde_json::to_string_pretty(&serde_json::json!({
-            "endpoint": options.nomad_endpoint,
-            "namespace": "aseman",
-            "datacenters": ["dc1"],
-            "runtimes": {"docker": {}},
-            "network": {"denies_egress": false},
-            "timeout_millis": 30000
-        }))?,
-    )?;
+    write_backend_config(root, options)?;
     write_secret(
         &root.join("postgres-init/001-roles.sql"),
         "DO $$ BEGIN IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'aseman_guest_proxy') THEN CREATE ROLE aseman_guest_proxy NOLOGIN; END IF; END $$;\n",
     )?;
     let env = format!(
-        "ASEMAN_CONFIG_DIR={}\nASEMAN_NODE_ID={}\nASEMAN_NODE_IMAGE={}\nASEMAN_VMM_IMAGE={}\nASEMAN_METER_IMAGE={}\nASEMAN_NOMAD_BACKEND_IMAGE={}\nPOSTGRES_IMAGE={}\nVMM_NODE_CERT_SHA256={}\nVMM_METER_CERT_SHA256={}\nNOMAD_ENDPOINT={}\nASEMAN_PUBLIC_PORT={}\nASEMAN_HEALTH_PORT={}\n",
+        "ASEMAN_CONFIG_DIR={}\nASEMAN_NODE_ID={}\nASEMAN_NODE_IMAGE={}\nASEMAN_VMM_IMAGE={}\nASEMAN_METER_IMAGE={}\nASEMAN_BACKEND={}\nCOMPOSE_PROFILES={}\n{}={}\nPOSTGRES_IMAGE={}\nVMM_NODE_CERT_SHA256={}\nVMM_METER_CERT_SHA256={}\nNOMAD_ENDPOINT={}\nASEMAN_PUBLIC_PORT={}\nASEMAN_HEALTH_PORT={}\n",
         options.config_dir.display(),
         uuid::Uuid::now_v7(),
         options.node_image,
         options.vmm_image,
         options.meter_image,
+        options.backend.profile(),
+        options.backend.profile(),
+        BACKEND_IMAGE_KEY,
         options.backend_image,
         options.postgres_image,
         node_fingerprint,
@@ -522,8 +719,42 @@ fn generate_identity(root: &Path, options: &Options) -> Result<()> {
     );
     write_secret(&root.join("compact.env"), &env)?;
     fs::remove_dir_all(authority).context("remove bootstrap certificate authority key")?;
-    validate_identity(root)?;
+    validate_identity(root, options.backend)?;
     Ok(())
+}
+
+/// The backend's configuration file: the operator's Nomad for the nomad backend; the
+/// enabled VM types, their settings, and their copied secrets for the native one.
+fn write_backend_config(root: &Path, options: &Options) -> Result<()> {
+    let config = match options.backend {
+        Backend::Nomad => serde_json::json!({
+            "endpoint": options.nomad_endpoint,
+            "namespace": "aseman",
+            "datacenters": ["dc1"],
+            "runtimes": {"docker": {}},
+            "network": {"denies_egress": false},
+            "timeout_millis": 30000
+        }),
+        Backend::Native => {
+            let secrets = root.join(RUNTIME_SECRETS_DIR);
+            fs::create_dir_all(&secrets)?;
+            for (name, source) in &options.runtime_secrets {
+                let value = aseman_config::read_secret_file(source, 4096)
+                    .map_err(|error| anyhow!("read {}: {error}", source.display()))?;
+                write_secret(&secrets.join(name), value.trim())?;
+            }
+            serde_json::json!({
+                "state_dir": NATIVE_BACKEND_STATE,
+                "node_ca": "/etc/aseman/tls/ca-cert.pem",
+                "vm_types": options.vm_types,
+                "runtime": options.runtime,
+            })
+        }
+    };
+    write_secret(
+        &root.join(options.backend.config_file()),
+        &serde_json::to_string_pretty(&config)?,
+    )
 }
 
 /// The loopback address the compact node's single-validator Hashgraph chain gossips
@@ -531,7 +762,7 @@ fn generate_identity(root: &Path, options: &Options) -> Result<()> {
 const COMPACT_CONSENSUS_ADDRESS: &str = "127.0.0.1:1337";
 
 /// The legacy Hashgraph validator identity the node's consensus provider needs
-/// (RL-011): a key pair from the image's own `aseman-keygen`, generated as the
+///: a key pair from the image's own `aseman-keygen`, generated as the
 /// operator, and a genesis naming this node as the chain's only peer — the same
 /// material `asemanctl install --local` produces.
 fn generate_consensus_identity(root: &Path, options: &Options) -> Result<()> {
@@ -575,13 +806,12 @@ fn generate_consensus_identity(root: &Path, options: &Options) -> Result<()> {
     Ok(())
 }
 
-fn validate_identity(root: &Path) -> Result<()> {
-    const REQUIRED: [&str; 18] = [
+fn validate_identity(root: &Path, backend: Backend) -> Result<()> {
+    const REQUIRED: [&str; 17] = [
         "compact.env",
         "babble/priv_key",
         "babble/key.pub",
         "babble/peers.genesis.json",
-        "nomad-backend.json",
         "postgres-init/001-roles.sql",
         "secrets/postgres-password",
         "secrets/database-url",
@@ -596,7 +826,7 @@ fn validate_identity(root: &Path) -> Result<()> {
         "tls/vmm-key.pem",
         "tls/meter-cert.pem",
     ];
-    for relative in REQUIRED {
+    for relative in REQUIRED.into_iter().chain([backend.config_file()]) {
         let path = root.join(relative);
         if !path.is_file() || fs::metadata(&path)?.len() == 0 {
             bail!("generated identity file {relative} is missing or empty");
@@ -663,7 +893,7 @@ fn health(options: &Options) -> Result<()> {
         .filter(|line| !line.is_empty())
         .map(str::to_owned)
         .collect();
-    let missing: Vec<_> = EXPECTED_SERVICES
+    let missing: Vec<_> = expected_services(options.backend)
         .into_iter()
         .filter(|service| !running.contains(*service))
         .collect();
@@ -672,7 +902,9 @@ fn health(options: &Options) -> Result<()> {
     }
     // The port the deployment was generated with, so a resumed run probes this
     // deployment's node and never another service on the default port.
-    let health_port = env_value(&options.env_file(), "ASEMAN_HEALTH_PORT")?
+    let health_port = options
+        .compact()
+        .env_value("ASEMAN_HEALTH_PORT")?
         .map(|value| parse_port("ASEMAN_HEALTH_PORT", &value))
         .transpose()?
         .unwrap_or(DEFAULT_HEALTH_PORT);
@@ -692,16 +924,6 @@ fn parse_port(flag: &str, value: &str) -> Result<u16> {
     }
 }
 
-/// One `KEY=value` from the generated environment file, if present.
-fn env_value(path: &Path, key: &str) -> Result<Option<String>> {
-    let text = fs::read_to_string(path).with_context(|| format!("read {}", path.display()))?;
-    Ok(text.lines().find_map(|line| {
-        line.strip_prefix(key)
-            .and_then(|rest| rest.strip_prefix('='))
-            .map(str::to_owned)
-    }))
-}
-
 fn port_in_use(port: u16) -> bool {
     std::net::TcpStream::connect_timeout(
         &std::net::SocketAddr::from(([127, 0, 0, 1], port)),
@@ -715,13 +937,16 @@ fn compose(options: &Options, arguments: &[&str]) -> Result<()> {
 }
 
 fn compose_output(options: &Options, arguments: &[&str]) -> Result<Output> {
-    let mut command = Command::new("docker");
-    command.args(["compose", "--env-file"]);
-    command.arg(options.env_file());
-    command.args(["-f"]);
-    command.arg(&options.compose_file);
-    command.args(arguments);
-    checked_output(&mut command)
+    options.compact().compose(arguments)
+}
+
+/// An `on`/`off` switch.
+fn parse_switch(flag: &str, value: &str) -> Result<bool> {
+    match value {
+        "on" | "true" | "yes" => Ok(true),
+        "off" | "false" | "no" => Ok(false),
+        _ => bail!("{flag} must be on or off, got {value:?}"),
+    }
 }
 
 fn openssl(arguments: &[&str]) -> Result<Output> {
@@ -848,14 +1073,26 @@ fn path_str(path: &Path) -> Result<&str> {
 fn print_usage() {
     println!(
         "asemanctl bootstrap --profile compact [options]\n\n\
-         Resumes the seven P9-01 stages from an atomic progress file. Release images\n\
+         Resumes the seven stages from an atomic progress file. Release images\n\
          must be digest-pinned; --allow-unsigned-local is development-only. Nomad is\n\
          operator-supplied and is never downloaded.\n\n\
          Options:\n  --state-dir DIR\n  --config-dir DIR\n  --compose-file FILE\n  \
          --node-image IMAGE\n  --vmm-image IMAGE\n  --meter-image IMAGE\n  \
-         --backend-image IMAGE\n  --postgres-image IMAGE\n  --nomad-endpoint URL\n  \
+         --backend-image IMAGE\n  --postgres-image IMAGE\n  \
          --public-port PORT (default 443)\n  --health-port PORT (default 8080, host-local)\n  \
-         --allow-unsigned-local\n  --plan"
+         --allow-unsigned-local\n  --plan\n\n\
+         Backend (default nomad):\n  \
+         --backend nomad|native\n  \
+         --nomad-endpoint URL                (nomad)\n  \
+         --vm-types TYPE,...                 (native: {types})\n  \
+         --vm-http-port PORT                 (native)\n\n\
+         Modal (with --vm-types modal; secrets are files, never values):\n  \
+         --modal-api-key-secret FILE         <token-id>:<token-secret>\n  \
+         --modal-token-id-secret FILE        with --modal-token-secret-secret FILE\n  \
+         --modal-environment NAME\n  --modal-server-url URL\n  --modal-client-version VERSION\n  \
+         --modal-app-name NAME\n  --modal-app-prefix PREFIX\n  --modal-default-image IMAGE\n\n\
+         Wasm (with --vm-types wasm):\n  --wasm-aot on|off\n  --wasm-vm-cache on|off",
+        types = COMPACT_NATIVE_VM_TYPES.join(", ")
     );
 }
 
@@ -895,9 +1132,146 @@ mod tests {
         fs::remove_dir_all(root).unwrap();
     }
 
+    fn parse(arguments: &[&str]) -> Result<Options> {
+        let arguments: Vec<String> = arguments.iter().map(|value| (*value).to_owned()).collect();
+        Options::parse(&arguments, &super::super::test_config())
+            .map(|options| options.expect("options"))
+    }
+
+    fn secret_file(name: &str, value: &str) -> PathBuf {
+        let path =
+            std::env::temp_dir().join(format!("aseman-bootstrap-{name}-{}", uuid::Uuid::now_v7()));
+        fs::write(&path, value).unwrap();
+        path
+    }
+
+    #[test]
+    fn the_native_backend_takes_its_vm_types_and_their_settings() {
+        let key = secret_file("modal-key", "ak-1:as-1\n");
+        let key_arg = key.to_str().unwrap();
+        let options = parse(&[
+            "--backend",
+            "native",
+            "--vm-types",
+            "modal,wasm",
+            "--modal-api-key-secret",
+            key_arg,
+            "--modal-app-name",
+            "prod",
+            "--wasm-vm-cache",
+            "off",
+        ])
+        .unwrap();
+        assert_eq!(options.backend, Backend::Native);
+        assert_eq!(options.backend_image, "aseman-vmm-backend-native:local");
+        assert_eq!(options.vm_types, ["modal", "wasm"]);
+        assert_eq!(options.runtime.modal_app_name.as_deref(), Some("prod"));
+        assert!(!options.runtime.wasm_vm_cache);
+        assert_eq!(
+            options.runtime.modal_api_key_secret.as_deref(),
+            Some(Path::new("/run/aseman/secrets/runtimes/modal-api-key"))
+        );
+
+        let root =
+            std::env::temp_dir().join(format!("aseman-native-config-{}", uuid::Uuid::now_v7()));
+        fs::create_dir_all(&root).unwrap();
+        write_backend_config(&root, &options).unwrap();
+        let config: serde_json::Value =
+            serde_json::from_str(&fs::read_to_string(root.join("native-backend.json")).unwrap())
+                .unwrap();
+        assert_eq!(config["vm_types"], serde_json::json!(["modal", "wasm"]));
+        assert_eq!(
+            config["runtime"]["modal_api_key_secret"],
+            "/run/aseman/secrets/runtimes/modal-api-key"
+        );
+        // The configuration names the secret; only the copied file holds it.
+        assert!(
+            !fs::read_to_string(root.join("native-backend.json"))
+                .unwrap()
+                .contains("as-1")
+        );
+        assert_eq!(
+            fs::read_to_string(root.join("secrets/runtimes/modal-api-key")).unwrap(),
+            "ak-1:as-1"
+        );
+        fs::remove_dir_all(root).unwrap();
+        fs::remove_file(key).unwrap();
+    }
+
+    #[test]
+    fn backend_settings_that_do_not_fit_are_refused() {
+        let key = secret_file("modal-key-refused", "ak:as");
+        let key_arg = key.to_str().unwrap();
+        for (arguments, expected) in [
+            (vec!["--backend", "native"], "needs --vm-types"),
+            (
+                vec!["--backend", "native", "--vm-types", "docker"],
+                "host devices",
+            ),
+            (
+                vec!["--backend", "native", "--vm-types", "fire"],
+                "host devices",
+            ),
+            (
+                vec!["--backend", "native", "--vm-types", "lisp"],
+                "unknown VM type",
+            ),
+            (
+                vec!["--backend", "native", "--vm-types", "modal"],
+                "--modal-api-key-secret",
+            ),
+            (
+                vec![
+                    "--backend",
+                    "native",
+                    "--vm-types",
+                    "wasm",
+                    "--modal-api-key-secret",
+                    key_arg,
+                ],
+                "does not enable modal",
+            ),
+            (vec!["--vm-types", "modal"], "add --backend native"),
+            (vec!["--wasm-aot", "off"], "add --backend native"),
+            (
+                vec![
+                    "--backend",
+                    "native",
+                    "--vm-types",
+                    "wasm",
+                    "--nomad-endpoint",
+                    "http://x",
+                ],
+                "nomad backend",
+            ),
+            (
+                vec![
+                    "--backend",
+                    "native",
+                    "--vm-types",
+                    "modal",
+                    "--modal-api-key-secret",
+                    "/absent",
+                ],
+                "not a readable file",
+            ),
+        ] {
+            let error = parse(&arguments)
+                .err()
+                .unwrap_or_else(|| panic!("{arguments:?} was accepted"));
+            assert!(
+                error.to_string().contains(expected),
+                "{arguments:?}: {error}"
+            );
+        }
+        fs::remove_file(key).unwrap();
+    }
+
     #[test]
     fn release_images_must_be_pinned() {
-        let options = Options::parse(&["--plan".to_owned()]).unwrap();
+        let options = Options::parse(&["--plan".to_owned()], &super::super::test_config())
+            .unwrap()
+            .expect("options");
         assert!(artifacts(&options).is_err());
     }
 
@@ -911,7 +1285,9 @@ mod tests {
         fs::create_dir_all(root.join("tls")).unwrap();
         fs::create_dir_all(root.join("postgres-init")).unwrap();
         fs::create_dir_all(root.join("authority")).unwrap();
-        let mut options = Options::parse(&["--plan".to_owned()]).unwrap();
+        let mut options = Options::parse(&["--plan".to_owned()], &super::super::test_config())
+            .unwrap()
+            .expect("options");
         options.config_dir = root.clone();
         generate_identity(&root, &options).unwrap();
         assert_eq!(
@@ -925,7 +1301,7 @@ mod tests {
         assert!(identity.contains("BEGIN PRIVATE KEY"));
         assert!(!root.join("tls/ca-key.pem").exists());
         assert!(!root.join("authority").exists());
-        validate_identity(&root).unwrap();
+        validate_identity(&root, Backend::Nomad).unwrap();
         fs::remove_dir_all(root).unwrap();
     }
 
@@ -939,7 +1315,9 @@ mod tests {
         fs::create_dir_all(root.join("tls")).unwrap();
         fs::create_dir_all(root.join("postgres-init")).unwrap();
         fs::create_dir_all(root.join("authority")).unwrap();
-        let mut options = Options::parse(&["--plan".to_owned()]).unwrap();
+        let mut options = Options::parse(&["--plan".to_owned()], &super::super::test_config())
+            .unwrap()
+            .expect("options");
         options.config_dir = root.clone();
         generate_identity(&root, &options).unwrap();
         identity(&options).unwrap();

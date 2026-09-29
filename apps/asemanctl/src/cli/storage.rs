@@ -11,13 +11,14 @@ use anyhow::{Result, anyhow, bail};
 
 use super::args;
 use super::compact::Compact;
+use aseman_config::CliConfig;
 
 /// Flags `asemanctl` itself reads; the rest pass through to the migration.
 const OWN_FLAGS: [&str; 4] = ["config-dir", "compose-file", "state-dir", "host"];
 
-pub fn run_storage(arguments: &[String]) -> Result<()> {
+pub fn run_storage(config: &CliConfig, arguments: &[String]) -> Result<()> {
     match arguments.first().map(String::as_str) {
-        Some("migrate") => migrate(&arguments[1..]),
+        Some("migrate") => migrate(config, &arguments[1..]),
         None | Some("help" | "-h" | "--help") => {
             print_usage();
             Ok(())
@@ -63,10 +64,10 @@ fn passed_through(arguments: &[String]) -> Vec<String> {
     passed
 }
 
-fn migrate(arguments: &[String]) -> Result<()> {
+fn migrate(cli: &CliConfig, arguments: &[String]) -> Result<()> {
     let migration = passed_through(arguments);
     let compact = (!args::has_flag(arguments, "host"))
-        .then(|| Compact::locate(arguments))
+        .then(|| Compact::locate(arguments, cli))
         .flatten();
     let Some(compact) = compact else {
         let config = aseman_config::AsemanConfig::from_process_with_dotenv("")

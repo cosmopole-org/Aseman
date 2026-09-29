@@ -1,4 +1,4 @@
-//! [`VmmBackend`] over the Caspar runtime plugins (P5-03).
+//! [`VmmBackend`] over the Aseman runtime plugins.
 //!
 //! The backend turns A504 requests into the plugins' legacy packets. Workloads are
 //! identified to the plugins by the legacy machine and VM identifiers the node set as
@@ -24,9 +24,9 @@ use aseman_domain::{ObservedWorkloadState, WorkloadId};
 use aseman_guest_http::client::GuestApiClient;
 use aseman_ports::vmm::{BackendDescription, VmmBackend};
 use aseman_ports::{PortError, PortResult};
+use aseman_vm_sdk::VmPlugin;
 use base64::Engine;
 use base64::engine::general_purpose::{STANDARD, URL_SAFE_NO_PAD};
-use caspar_vm_sdk::VmPlugin;
 use serde_json::{Value, json};
 use sha2::{Digest, Sha256};
 
@@ -95,8 +95,21 @@ impl NativeBackend {
     pub fn start(
         state_dir: PathBuf,
         guest: GuestApiClient,
-        docker_gateway_port: Option<u16>,
+        runtime: &aseman_config::RuntimeConfig,
+        vm_types: Option<&[String]>,
     ) -> PortResult<Self> {
+        let compiled = aseman_vm_plugins::enabled_vm_keys();
+        if let Some(unknown) = vm_types
+            .into_iter()
+            .flatten()
+            .find(|key| !compiled.contains(&key.as_str()))
+        {
+            return Err(PortError::Failed(format!(
+                "vm type {unknown} is not compiled into this backend (available: {})",
+                compiled.join(", ")
+            )));
+        }
+        let enabled = |key: &str| vm_types.is_none_or(|types| types.iter().any(|t| t == key));
         let artifacts = state_dir.join("artifacts");
         std::fs::create_dir_all(&artifacts).map_err(failed)?;
         let registry = Registry::default();
@@ -108,9 +121,9 @@ impl NativeBackend {
             guest: guest.clone(),
             storage_root: format!("{}/", state_dir.display()),
         });
-        caspar_vm_sdk::set_host(host.clone());
-        caspar_vm_plugins::register_all();
-        let registered = caspar_vm_sdk::registry::keys();
+        aseman_vm_sdk::set_host(host.clone());
+        aseman_vm_plugins::register_all(runtime, &enabled);
+        let registered = aseman_vm_sdk::registry::keys();
         let capabilities = declared_capabilities()?
             .into_iter()
             .filter(|runtime| registered.contains(&runtime.runtime))
@@ -121,15 +134,16 @@ impl NativeBackend {
         let identify_registry = registry.clone();
         let gateway = crate::docker_host::DockerHostGateway::new(
             Box::new(move |ip| {
-                let name = caspar_vm_sdk::registry::plugins()
+                let name = aseman_vm_sdk::registry::plugins()
                     .into_iter()
                     .find_map(|plugin| plugin.identify_instance_by_ip(ip))?;
                 identify_registry.container_identity(&name)
             }),
             host,
         );
-        if let Some(port) = docker_gateway_port {
-            gateway.listen(i64::from(port));
+        // The docker-host gateway the docker plugin advertises to its containers.
+        if enabled("docker") && runtime.docker_gateway_port > 0 {
+            gateway.listen(i64::from(runtime.docker_gateway_port));
         }
         Ok(Self {
             registry,
@@ -148,7 +162,7 @@ impl NativeBackend {
             .find(|runtime| runtime.runtime == key)
             .cloned()
             .ok_or(PortError::Unsupported("runtime"))?;
-        let plugin = caspar_vm_sdk::registry::get(key).ok_or(PortError::Unsupported("runtime"))?;
+        let plugin = aseman_vm_sdk::registry::get(key).ok_or(PortError::Unsupported("runtime"))?;
         Ok((capabilities, plugin))
     }
 
@@ -576,7 +590,7 @@ impl NativeBackend {
 impl VmmBackend for NativeBackend {
     fn describe(&self) -> PortResult<BackendDescription> {
         Ok(BackendDescription {
-            name: "native-legacy".to_owned(),
+            name: "native".to_owned(),
             version: env!("CARGO_PKG_VERSION").to_owned(),
             contract: aseman_vmm_backend_grpc::convert::CONTRACT.to_owned(),
             runtimes: self.capabilities.clone(),

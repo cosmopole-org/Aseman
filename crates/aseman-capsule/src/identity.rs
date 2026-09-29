@@ -16,8 +16,8 @@ use std::collections::{BTreeMap, BTreeSet};
 const IDENTITY_KEY: &str = "core.identity_key";
 
 /// The key directory over any [`CapsuleStore`].
-pub struct CapsuleKeyDirectory<'a> {
-    pub repository: &'a dyn CapsuleStore,
+pub struct CapsuleKeyDirectory<R> {
+    pub repository: R,
 }
 
 const PURPOSES: [KeyPurpose; 4] = [
@@ -133,7 +133,7 @@ fn record(capsule: &CapsuleEnvelope) -> PortResult<IdentityKey> {
     })
 }
 
-impl CapsuleKeyDirectory<'_> {
+impl<R: CapsuleStore> CapsuleKeyDirectory<R> {
     fn query(&self, predicate: QueryPredicate) -> PortResult<Vec<CapsuleEnvelope>> {
         Ok(self
             .repository
@@ -182,7 +182,7 @@ impl CapsuleKeyDirectory<'_> {
     }
 }
 
-impl KeyDirectory for CapsuleKeyDirectory<'_> {
+impl<R: CapsuleStore> KeyDirectory for CapsuleKeyDirectory<R> {
     fn key(&self, key_id: &str) -> PortResult<Option<IdentityKey>> {
         self.capsule(key_id)?.as_ref().map(record).transpose()
     }

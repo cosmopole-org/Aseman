@@ -1,7 +1,7 @@
 syntax = "proto3";
 
 // A504: the contract between the provider-neutral `aseman-vmm` service and a VMM
-// backend module (native-legacy, nomad, ...). The service authenticates callers,
+// backend module (native, nomad, ...). The service authenticates callers,
 // deduplicates and records every request, and owns operations and reconciliation;
 // a backend does the infrastructure work and holds no Aseman state.
 //

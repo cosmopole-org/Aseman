@@ -12,7 +12,7 @@ fn default_entity_file_name() -> String {
 ///
 /// `key` is the canonical runtime name the rest of the platform uses to
 /// address this VM type (e.g. `fire` for Firecracker, `javascript` for
-/// QuickJS). Every other field describes, declaratively, how the Caspar node
+/// QuickJS). Every other field describes, declaratively, how the Aseman node
 /// must treat programs of this runtime — so no per-VM knowledge ever needs to
 /// be hardcoded in the node itself.
 #[derive(Debug, Clone, Serialize, Deserialize)]

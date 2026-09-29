@@ -12,11 +12,12 @@
 //! [`apply_program_target`] moves it back once the caller is resolved and
 //! authorized against it.
 
+use std::sync::Arc;
+
+use crate::node::Node;
 use serde_json::{Map, Value, json};
 
-use crate::adapters::vmm::globals::with_global_app;
-use crate::adapters::vmm::host::functions::vm_ownership::program_owner_user;
-use crate::core::trx::Trx;
+use crate::workloads::host::functions::vm_ownership::program_owner_user;
 
 pub(crate) use aseman_contracts::guest_api::{PROGRAM_TARGET_OPS, TARGET_PROGRAM_ID_KEY};
 
@@ -24,35 +25,28 @@ pub(crate) use aseman_contracts::guest_api::{PROGRAM_TARGET_OPS, TARGET_PROGRAM_
 const READ_ONLY_PROGRAM_OPS: &[&str] = &["getProgram"];
 
 /// The user who owns a machine creature, or empty when it has no recorded owner.
-pub(crate) fn machine_owner_user(machine_id: &str) -> String {
-    let machine_id = machine_id.trim().to_string();
+pub(crate) fn machine_owner_user(node: &Arc<Node>, machine_id: &str) -> String {
+    let machine_id = machine_id.trim();
     if machine_id.is_empty() {
         return String::new();
     }
-    let slot = std::sync::Arc::new(std::sync::Mutex::new(String::new()));
-    let slot_c = slot.clone();
-    with_global_app(|app| {
-        app.modify_state(
-            true,
-            Box::new(move |trx: &Trx| {
-                let machine = (crate::api::model::creature_ports::CreaturePorts { trx })
-                    .creature_or_empty(&machine_id.clone());
-                *slot_c.lock().unwrap() = machine.owner_id;
-                Ok(())
-            }),
-        );
-    });
-    let owner = slot.lock().unwrap().clone();
-    owner.trim().to_string()
+    node.read(|trx| {
+        Ok(crate::state::creature_ports::CreaturePorts { trx }
+            .creature_or_empty(machine_id)
+            .owner_id)
+    })
+    .unwrap_or_default()
+    .trim()
+    .to_owned()
 }
 
 /// Whether `caller` may change `target`: itself, or a program of the same owner.
-fn same_owner(caller: &str, target: &str) -> bool {
+fn same_owner(node: &Arc<Node>, caller: &str, target: &str) -> bool {
     if caller == target {
         return true;
     }
-    let owner = program_owner_user(target);
-    !owner.is_empty() && owner == program_owner_user(caller)
+    let owner = program_owner_user(node, target);
+    !owner.is_empty() && owner == program_owner_user(node, caller)
 }
 
 /// `createProgram`'s input with the caller's stamped identity taken back out.
@@ -91,6 +85,7 @@ fn denied(what: &str) -> String {
 ///
 /// Returns the error response to send when the caller may not act on it.
 pub(crate) fn apply_program_target(
+    node: &Arc<Node>,
     op: &str,
     caller_program_id: &str,
     input: &mut Value,
@@ -111,8 +106,8 @@ pub(crate) fn apply_program_target(
             .trim()
             .to_string();
         if !machine.is_empty() && machine != caller {
-            let owner = machine_owner_user(&machine);
-            if !owner.is_empty() && owner != program_owner_user(caller) {
+            let owner = machine_owner_user(node, &machine);
+            if !owner.is_empty() && owner != program_owner_user(node, caller) {
                 return Err(denied("machine"));
             }
         }
@@ -128,7 +123,7 @@ pub(crate) fn apply_program_target(
     if target.is_empty() || !PROGRAM_TARGET_OPS.contains(&op) {
         return Ok(());
     }
-    if !READ_ONLY_PROGRAM_OPS.contains(&op) && !same_owner(caller, &target) {
+    if !READ_ONLY_PROGRAM_OPS.contains(&op) && !same_owner(node, caller, &target) {
         return Err(denied("program"));
     }
     obj.insert("programId".to_string(), Value::String(target));

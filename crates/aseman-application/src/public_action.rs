@@ -1,16 +1,14 @@
-//! The composed public action service (P7-06): A401 authentication (proof or session),
+//! The composed public action service: A401 authentication (proof or session),
 //! A402 authorization, execution, and durable idempotency as one application path.
 //!
 //! The transport admits routes against the generated A701 contract and parses exactly
-//! one session or proof; this use case is what it calls. It never calls a legacy
-//! handler directly — the [`ActionExecutor`] seam owns the resource resolution and the
-//! actual effect, so the node shell can migrate handlers one family at a time
-//! (RL-004).
+//! one session or proof; this use case is what it calls. It never calls a handler
+//! directly: the [`ActionExecutor`] seam owns the resource resolution and the effect.
 
 use aseman_domain::authority::{ActionClass, AuditRecord};
 use aseman_domain::identity::{AuthenticationError, Proof, Subject};
 use aseman_ports::{
-    ActionExecutionContext, ActionExecutor, ClockPort, DecisionAudit, GrantStore, IdentityVerifier,
+    ActionCall, ActionExecutor, ClockPort, DecisionAudit, GrantStore, IdentityVerifier,
     KeyDirectory, PolicyDecisionPort, PortError, PublicActionClaim, PublicActionIdempotency,
     ReplayGuard, SessionDirectory,
 };
@@ -149,15 +147,9 @@ impl ServePublicAction<'_> {
                 .ok_or(PublicActionFailure::Refused("idempotency key required"))?;
             return self.execute_mutation(request, subject, key);
         }
-        let body = self.executor.execute_with_context(
-            subject,
-            &request.action,
-            &request.body,
-            &ActionExecutionContext {
-                request_id: request.request_id.clone(),
-                idempotency_key: request.idempotency_key.clone(),
-            },
-        )?;
+        let body =
+            self.executor
+                .execute(&call(request, subject, request.idempotency_key.clone()))?;
         Ok(PublicActionResponse { status: 200, body })
     }
 
@@ -193,7 +185,7 @@ impl ServePublicAction<'_> {
         key: &str,
     ) -> Result<PublicActionResponse, PublicActionFailure> {
         let owner = subject.to_string();
-        let digest = self.digest(&request.action, &request.body);
+        let digest = self.digest(&request.route, &request.action, &request.body);
         match self.idempotency.claim(&owner, key, digest)? {
             // A retry: replay the first completed outcome instead of repeating the effect.
             PublicActionClaim::Completed(body) => {
@@ -207,15 +199,10 @@ impl ServePublicAction<'_> {
             }
             PublicActionClaim::Claimed => {}
         }
-        match self.executor.execute_with_context(
-            subject,
-            &request.action,
-            &request.body,
-            &ActionExecutionContext {
-                request_id: request.request_id.clone(),
-                idempotency_key: Some(key.to_owned()),
-            },
-        ) {
+        match self
+            .executor
+            .execute(&call(request, subject, Some(key.to_owned())))
+        {
             Ok(body) => {
                 self.idempotency
                     .complete(&owner, key, &body)
@@ -233,12 +220,31 @@ impl ServePublicAction<'_> {
 
     /// A request digest that distinguishes one mutation's request from another under
     /// the same key: SHA-256 of `action \0 body`.
-    fn digest(&self, action: &str, body: &[u8]) -> [u8; 32] {
-        let mut buffer = Vec::with_capacity(action.len() + 1 + body.len());
+    /// The request an idempotency key is bound to: its operation, action, and body.
+    fn digest(&self, route: &str, action: &str, body: &[u8]) -> [u8; 32] {
+        let mut buffer = Vec::with_capacity(route.len() + action.len() + 2 + body.len());
+        buffer.extend_from_slice(route.as_bytes());
+        buffer.push(0);
         buffer.extend_from_slice(action.as_bytes());
         buffer.push(0);
         buffer.extend_from_slice(body);
         self.verifier.body_digest(&buffer)
+    }
+}
+
+/// The executor's call for an admitted request.
+fn call(
+    request: &PublicActionRequest,
+    subject: Subject,
+    idempotency_key: Option<String>,
+) -> ActionCall {
+    ActionCall {
+        subject,
+        operation: request.route.clone(),
+        action: request.action.clone(),
+        body: request.body.clone(),
+        request_id: request.request_id.clone(),
+        idempotency_key,
     }
 }
 

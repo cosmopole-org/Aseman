@@ -2,7 +2,7 @@
 
 use super::*;
 
-pub use aseman_contracts::legacy_realtime::deterministic_legacy_capsule_id;
+pub use aseman_contracts::signals::derived_capsule_id;
 
 pub(crate) struct LegacyCapsuleSpec<'a> {
     pub(crate) family: &'a str,
@@ -26,10 +26,7 @@ pub(crate) fn seal_legacy_capsule(
     }
     CapsuleEnvelope {
         encoding_version: 1,
-        id: CapsuleId(deterministic_legacy_capsule_id(
-            spec.family,
-            legacy_id.as_bytes(),
-        )),
+        id: CapsuleId(derived_capsule_id(spec.family, legacy_id.as_bytes())),
         kind: CapsuleKind(spec.kind.to_owned()),
         storage_class: spec.storage_class,
         owner_scope: spec.owner_scope,
@@ -151,7 +148,7 @@ pub(crate) fn required_resolved_creature(
             "legacy {family} has no server-resolved creature owner"
         )));
     }
-    Ok(deterministic_legacy_capsule_id(
+    Ok(derived_capsule_id(
         "Creature",
         resolved_creature_legacy_id.as_bytes(),
     ))

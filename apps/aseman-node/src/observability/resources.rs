@@ -1,11 +1,11 @@
 //! Host resource sampling for the telemetry snapshot.
 //!
-//! `casparctl stats` historically read CPU / memory from `docker stats`, which
+//! `asemanctl stats` once read CPU / memory from `docker stats`, which
 //! only works when the node runs inside a container. The node itself, however,
 //! can always read its own machine's resources straight from Linux `/proc` and
 //! `statvfs(2)` — whether it was launched by Docker or as a bare
-//! `casparctl run` process. Collecting them here makes CPU / RAM / disk part of
-//! the `/telemetry/snapshot` payload, so every consumer (casparctl, the edge,
+//! node process. Collecting them here makes CPU / RAM / disk part of
+//! the `/telemetry/snapshot` payload, so every consumer (asemanctl, the edge,
 //! the admin panel) gets the same numbers with no Docker dependency.
 //!
 //! All reads are best-effort: a field that cannot be sampled is simply omitted

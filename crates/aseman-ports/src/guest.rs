@@ -10,8 +10,8 @@ use crate::PortResult;
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct GuestCaller {
     pub workload: DesiredWorkload,
-    /// The creature's and program's legacy identifiers, which the compatibility host
-    /// calls address (ADR 0004).
+    /// The creature's and program's legacy identifiers, which the guest's host calls
+    /// address.
     pub creature_ref: String,
     pub program_ref: String,
 }

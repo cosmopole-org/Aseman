@@ -80,7 +80,7 @@ impl LegacySnapshotGraph {
                     family: "GatewayRoute",
                     kind: "core.gateway_route",
                     storage_class: StorageClass::Core,
-                    owner_scope: OwnerScope::Creature(deterministic_legacy_capsule_id(
+                    owner_scope: OwnerScope::Creature(derived_capsule_id(
                         "Creature",
                         creature.as_bytes(),
                     )),
@@ -91,18 +91,12 @@ impl LegacySnapshotGraph {
                     CapsuleRelationship {
                         name: "creature".to_owned(),
                         target_kind: CapsuleKind("core.creature".to_owned()),
-                        target_id: CapsuleId(deterministic_legacy_capsule_id(
-                            "Creature",
-                            creature.as_bytes(),
-                        )),
+                        target_id: CapsuleId(derived_capsule_id("Creature", creature.as_bytes())),
                     },
                     CapsuleRelationship {
                         name: "program".to_owned(),
                         target_kind: CapsuleKind("core.program".to_owned()),
-                        target_id: CapsuleId(deterministic_legacy_capsule_id(
-                            "Program",
-                            program.as_bytes(),
-                        )),
+                        target_id: CapsuleId(derived_capsule_id("Program", program.as_bytes())),
                     },
                 ],
                 // The pinned `vmId` is an observed instance (ADR 0022) and is not carried.
@@ -212,18 +206,12 @@ impl LegacySnapshotGraph {
                     CapsuleRelationship {
                         name: "program".to_owned(),
                         target_kind: CapsuleKind("core.program".to_owned()),
-                        target_id: CapsuleId(deterministic_legacy_capsule_id(
-                            "Program",
-                            program.as_bytes(),
-                        )),
+                        target_id: CapsuleId(derived_capsule_id("Program", program.as_bytes())),
                     },
                     CapsuleRelationship {
                         name: "store".to_owned(),
                         target_kind: CapsuleKind("core.store".to_owned()),
-                        target_id: CapsuleId(deterministic_legacy_capsule_id(
-                            "Store",
-                            store.as_bytes(),
-                        )),
+                        target_id: CapsuleId(derived_capsule_id("Store", store.as_bytes())),
                     },
                 ],
                 BTreeMap::from([

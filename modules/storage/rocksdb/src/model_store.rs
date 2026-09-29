@@ -257,7 +257,8 @@ pub struct RocksDbProvider {
 }
 
 impl RocksDbProvider {
-    /// A provider over an already-open key/value store (tests, tools).
+    /// A provider over an already-open key/value store (tests, tools), with the
+    /// default memory budget.
     pub fn over(
         kv: Arc<dyn LegacyKvStore>,
         replicated: bool,
@@ -265,7 +266,10 @@ impl RocksDbProvider {
     ) -> StorageResult<Self> {
         Ok(Self {
             store: Arc::new(RocksDbCapsuleStore::open(kv, replicated).map_err(error)?),
-            logs: Arc::new(RocksDbConsensusLogStorage::new(logs_root)),
+            logs: Arc::new(RocksDbConsensusLogStorage::new(
+                logs_root,
+                aseman_config::RocksDbTuning::default(),
+            )),
             legacy_store: None,
             storage_root: None,
             serves_admin_routes: false,
@@ -283,11 +287,20 @@ impl ProviderPlugin for RocksDbPlugin {
     fn open(&self, settings: &ProviderSettings) -> StorageResult<Arc<dyn StorageProvider>> {
         let path = settings.storage_root.join(DATA_DIRECTORY);
         std::fs::create_dir_all(&path).map_err(StorageError::unavailable)?;
-        let local = Arc::new(RocksDbKvStore::open_tuned(&path).map_err(StorageError::unavailable)?);
+        let local = Arc::new(
+            RocksDbKvStore::open_tuned(&path, &settings.rocksdb)
+                .map_err(StorageError::unavailable)?,
+        );
         let routes = settings.admin_routes.clone();
         let serves_admin_routes = routes.is_some();
-        let kv = cluster::open(&settings.storage_root, local, &settings.cluster, routes)
-            .map_err(StorageError::unavailable)?;
+        let kv = cluster::open(
+            &settings.storage_root,
+            local,
+            &settings.cluster,
+            &settings.rocksdb,
+            routes,
+        )
+        .map_err(StorageError::unavailable)?;
         let replicated = kv.cluster().is_some();
         let store = RocksDbCapsuleStore::open(Arc::new(kv), replicated).map_err(error)?;
         store.migrate_layout(settings.layout).map_err(error)?;
@@ -295,6 +308,7 @@ impl ProviderPlugin for RocksDbPlugin {
             store: Arc::new(store),
             logs: Arc::new(RocksDbConsensusLogStorage::new(
                 settings.storage_root.join(CONSENSUS_DIRECTORY),
+                settings.rocksdb,
             )),
             legacy_store: settings.legacy_store.clone(),
             storage_root: Some(settings.storage_root.clone()),

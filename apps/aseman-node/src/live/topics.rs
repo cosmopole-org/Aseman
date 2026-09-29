@@ -1,5 +1,5 @@
 //! Gateway topic subscriptions — how a creature pushes updates to a
-//! long-lived connection that is not a Caspar user.
+//! long-lived connection that is not a creature.
 //!
 //! The node already has two fan-out paths, and neither fits an external
 //! program holding a socket open: `signal_user` addresses a creature by id,
@@ -32,18 +32,17 @@
 //!   restart) must not leave its predecessor behind forever.
 
 use std::sync::atomic::{AtomicU64, Ordering};
-use std::sync::{Arc, RwLock};
+use std::sync::{Arc, OnceLock};
 
 use aseman_domain::Uuid;
 use aseman_domain::realtime::{Event, RetentionClass};
 use aseman_ports::realtime::{EventLog, Publication};
 use aseman_ports::{PortError, PortResult};
 use dashmap::DashMap;
-use once_cell::sync::Lazy;
 use serde_json::Value;
 use sha2::{Digest, Sha256};
 
-use crate::api::workloads::creature_subject;
+use crate::workloads::vmm::creature_subject;
 
 /// Writes one update frame to a subscriber's connection.
 ///
@@ -58,77 +57,22 @@ pub struct Subscriber {
     pub id: String,
     /// The creature whose grant this subscriber authenticated with. Recorded
     /// so a publish can be attributed and a revoked grant traced back.
-    #[expect(
-        dead_code,
-        reason = "RL-008: process-local subscriber surface kept for rollback"
-    )]
-    pub creature_id: String,
     /// Topics this subscriber receives.
     pub topics: Vec<String>,
     pub sink: SubscriberSink,
 }
 
+/// The node's topic subscriptions, and the durable log each update is appended to.
 #[derive(Default)]
-struct Registry {
+pub(crate) struct Topics {
     /// topic → subscriber ids
     by_topic: DashMap<String, DashMap<String, ()>>,
     /// subscriber id → subscriber
     subscribers: DashMap<String, Arc<Subscriber>>,
     delivered: AtomicU64,
     dropped: AtomicU64,
-}
-
-static REGISTRY: Lazy<Registry> = Lazy::new(Registry::default);
-static EVENT_LOG: Lazy<RwLock<Option<Arc<dyn EventLog>>>> = Lazy::new(|| RwLock::new(None));
-
-/// Install the authoritative A707 log. The public listener and bridge publisher use
-/// the same provider; legacy socket fan-out remains a compatibility side effect.
-pub fn configure_event_log(event_log: Arc<dyn EventLog>) {
-    *EVENT_LOG
-        .write()
-        .unwrap_or_else(|poisoned| poisoned.into_inner()) = Some(event_log);
-}
-
-/// Register a subscriber against every topic it was granted.
-///
-/// Re-subscribing under the same id replaces the previous registration
-/// wholesale (topics included), so a bridge that re-subscribes with a narrower
-/// set is not still receiving the wider one.
-pub fn subscribe(subscriber: Subscriber) {
-    let id = subscriber.id.clone();
-    unsubscribe(&id);
-    let subscriber = Arc::new(subscriber);
-    for topic in &subscriber.topics {
-        REGISTRY
-            .by_topic
-            .entry(topic.clone())
-            .or_default()
-            .insert(id.clone(), ());
-    }
-    REGISTRY.subscribers.insert(id, subscriber);
-}
-
-/// Drop a subscriber and every topic index entry pointing at it. Called when
-/// its connection closes and by `subscribe` before a re-registration.
-pub fn unsubscribe(subscriber_id: &str) {
-    let Some((_, subscriber)) = REGISTRY.subscribers.remove(subscriber_id) else {
-        return;
-    };
-    for topic in &subscriber.topics {
-        let mut now_empty = false;
-        if let Some(entry) = REGISTRY.by_topic.get(topic) {
-            entry.remove(subscriber_id);
-            now_empty = entry.is_empty();
-        }
-        // A topic nobody subscribes to must not keep a permanent empty entry:
-        // topics are creature-supplied strings, so leaving them behind is an
-        // unbounded, externally-driven leak.
-        if now_empty {
-            REGISTRY
-                .by_topic
-                .remove_if(topic, |_, subs| subs.is_empty());
-        }
-    }
+    /// The authoritative A707 log, once the public listener composes one.
+    event_log: OnceLock<Arc<dyn EventLog>>,
 }
 
 fn append_durable(
@@ -177,74 +121,101 @@ fn append_durable(
     Err(PortError::Conflict)
 }
 
-/// Durably append one update, then push it to every legacy subscriber of `topic`.
-/// Returns how many compatibility connections it reached.
-pub fn publish(topic: &str, creature_id: &str, key: &str, data: &Value) -> PortResult<usize> {
-    let event_log = EVENT_LOG
-        .read()
-        .unwrap_or_else(|poisoned| poisoned.into_inner())
-        .clone();
-    if let Some(event_log) = event_log {
-        append_durable(event_log.as_ref(), topic, creature_id, key, data)?;
+impl Topics {
+    /// Install the authoritative A707 log. The public listener and bridge publisher use
+    /// the same provider; connected sockets are pushed the same update live.
+    pub(crate) fn configure_event_log(&self, event_log: Arc<dyn EventLog>) {
+        let _ = self.event_log.set(event_log);
     }
 
-    let Some(entry) = REGISTRY.by_topic.get(topic) else {
-        return Ok(0);
-    };
-    let ids: Vec<String> = entry.iter().map(|e| e.key().clone()).collect();
-    drop(entry);
+    /// Register a subscriber against every topic it was granted.
+    ///
+    /// Re-subscribing under the same id replaces the previous registration
+    /// wholesale (topics included), so a bridge that re-subscribes with a narrower
+    /// set is not still receiving the wider one.
+    pub(crate) fn subscribe(&self, subscriber: Subscriber) {
+        let id = subscriber.id.clone();
+        self.unsubscribe(&id);
+        let subscriber = Arc::new(subscriber);
+        for topic in &subscriber.topics {
+            self.by_topic
+                .entry(topic.clone())
+                .or_default()
+                .insert(id.clone(), ());
+        }
+        self.subscribers.insert(id, subscriber);
+    }
 
-    let mut delivered = 0usize;
-    let mut dead: Vec<String> = Vec::new();
-    for id in ids {
-        let Some(subscriber) = REGISTRY.subscribers.get(&id).map(|e| e.value().clone()) else {
-            dead.push(id);
-            continue;
+    /// Drop a subscriber and every topic index entry pointing at it. Called when
+    /// its connection closes and by `subscribe` before a re-registration.
+    pub(crate) fn unsubscribe(&self, subscriber_id: &str) {
+        let Some((_, subscriber)) = self.subscribers.remove(subscriber_id) else {
+            return;
         };
-        if (subscriber.sink)(key, data) {
-            delivered += 1;
-        } else {
-            dead.push(id);
+        for topic in &subscriber.topics {
+            let mut now_empty = false;
+            if let Some(entry) = self.by_topic.get(topic) {
+                entry.remove(subscriber_id);
+                now_empty = entry.is_empty();
+            }
+            // A topic nobody subscribes to must not keep a permanent empty entry:
+            // topics are creature-supplied strings, so leaving them behind is an
+            // unbounded, externally-driven leak.
+            if now_empty {
+                self.by_topic.remove_if(topic, |_, subs| subs.is_empty());
+            }
         }
     }
-    for id in dead {
-        REGISTRY.dropped.fetch_add(1, Ordering::Relaxed);
-        unsubscribe(&id);
+
+    /// Durably append one update, then push it to every subscriber of `topic`.
+    /// Returns how many connected sockets it reached.
+    pub(crate) fn publish(
+        &self,
+        topic: &str,
+        creature_id: &str,
+        key: &str,
+        data: &Value,
+    ) -> PortResult<usize> {
+        if let Some(event_log) = self.event_log.get() {
+            append_durable(event_log.as_ref(), topic, creature_id, key, data)?;
+        }
+
+        let Some(entry) = self.by_topic.get(topic) else {
+            return Ok(0);
+        };
+        let ids: Vec<String> = entry.iter().map(|e| e.key().clone()).collect();
+        drop(entry);
+
+        let mut delivered = 0usize;
+        let mut dead: Vec<String> = Vec::new();
+        for id in ids {
+            let Some(subscriber) = self.subscribers.get(&id).map(|e| e.value().clone()) else {
+                dead.push(id);
+                continue;
+            };
+            if (subscriber.sink)(key, data) {
+                delivered += 1;
+            } else {
+                dead.push(id);
+            }
+        }
+        for id in dead {
+            self.dropped.fetch_add(1, Ordering::Relaxed);
+            self.unsubscribe(&id);
+        }
+        self.delivered
+            .fetch_add(delivered as u64, Ordering::Relaxed);
+        Ok(delivered)
     }
-    REGISTRY
-        .delivered
-        .fetch_add(delivered as u64, Ordering::Relaxed);
-    Ok(delivered)
-}
 
-/// How many connections currently subscribe to `topic`.
-#[cfg_attr(
-    not(test),
-    expect(
-        dead_code,
-        reason = "RL-008: process-local subscriber surface kept for rollback"
-    )
-)]
-pub fn subscriber_count(topic: &str) -> usize {
-    REGISTRY
-        .by_topic
-        .get(topic)
-        .map(|entry| entry.len())
-        .unwrap_or(0)
-}
-
-/// Counters for the node's health/telemetry surface.
-#[expect(
-    dead_code,
-    reason = "RL-008: process-local subscriber surface kept for rollback"
-)]
-pub fn stats() -> Value {
-    serde_json::json!({
-        "topics": REGISTRY.by_topic.len(),
-        "subscribers": REGISTRY.subscribers.len(),
-        "delivered": REGISTRY.delivered.load(Ordering::Relaxed),
-        "dropped": REGISTRY.dropped.load(Ordering::Relaxed),
-    })
+    /// How many connections currently subscribe to `topic`.
+    #[cfg(test)]
+    pub(crate) fn subscriber_count(&self, topic: &str) -> usize {
+        self.by_topic
+            .get(topic)
+            .map(|entry| entry.len())
+            .unwrap_or(0)
+    }
 }
 
 #[cfg(test)]
@@ -305,43 +276,43 @@ mod tests {
 
     #[test]
     fn publish_reaches_only_subscribers_of_the_topic() {
+        let topics = Topics::default();
         let hits = Arc::new(AtomicUsize::new(0));
-        subscribe(Subscriber {
+        topics.subscribe(Subscriber {
             id: "sub-a".into(),
-            creature_id: "creature-1".into(),
             topics: vec!["space:1".into()],
             sink: counting_sink(hits.clone(), true),
         });
         assert_eq!(
-            publish("space:1", "creature-1", "crew/update", &Value::Null),
+            topics.publish("space:1", "creature-1", "crew/update", &Value::Null),
             Ok(1)
         );
         assert_eq!(
-            publish("space:2", "creature-1", "crew/update", &Value::Null),
+            topics.publish("space:2", "creature-1", "crew/update", &Value::Null),
             Ok(0)
         );
         assert_eq!(hits.load(Ordering::Relaxed), 1);
-        unsubscribe("sub-a");
+        topics.unsubscribe("sub-a");
     }
 
     #[test]
     fn a_dead_connection_is_reaped_on_publish() {
+        let topics = Topics::default();
         let hits = Arc::new(AtomicUsize::new(0));
-        subscribe(Subscriber {
+        topics.subscribe(Subscriber {
             id: "sub-dead".into(),
-            creature_id: "creature-1".into(),
             topics: vec!["space:dead".into()],
             sink: counting_sink(hits.clone(), false),
         });
         assert_eq!(
-            publish("space:dead", "creature-1", "k", &Value::Null),
+            topics.publish("space:dead", "creature-1", "k", &Value::Null),
             Ok(0)
         );
         // The failed write removed it, so the topic index is empty and a
         // second publish does not even attempt delivery.
-        assert_eq!(subscriber_count("space:dead"), 0);
+        assert_eq!(topics.subscriber_count("space:dead"), 0);
         assert_eq!(
-            publish("space:dead", "creature-1", "k", &Value::Null),
+            topics.publish("space:dead", "creature-1", "k", &Value::Null),
             Ok(0)
         );
         assert_eq!(hits.load(Ordering::Relaxed), 1);
@@ -387,21 +358,20 @@ mod tests {
 
     #[test]
     fn resubscribing_replaces_the_previous_topic_set() {
+        let topics = Topics::default();
         let hits = Arc::new(AtomicUsize::new(0));
-        subscribe(Subscriber {
+        topics.subscribe(Subscriber {
             id: "sub-b".into(),
-            creature_id: "creature-1".into(),
             topics: vec!["space:old".into()],
             sink: counting_sink(hits.clone(), true),
         });
-        subscribe(Subscriber {
+        topics.subscribe(Subscriber {
             id: "sub-b".into(),
-            creature_id: "creature-1".into(),
             topics: vec!["space:new".into()],
             sink: counting_sink(hits.clone(), true),
         });
-        assert_eq!(subscriber_count("space:old"), 0);
-        assert_eq!(subscriber_count("space:new"), 1);
-        unsubscribe("sub-b");
+        assert_eq!(topics.subscriber_count("space:old"), 0);
+        assert_eq!(topics.subscriber_count("space:new"), 1);
+        topics.unsubscribe("sub-b");
     }
 }

@@ -1,7 +1,6 @@
-//! Program use cases (RL-004 strangler slice: `/programs/create`, `update`, `delete`,
-//! and the entity records every deploy path writes).
-//! Only the owner of a program's machine may change the program (LD-18); legacy
-//! checked ownership on create only. Error texts are the legacy ones.
+//! Program use cases: `/programs/create`, `update`, `delete`, and the entity records
+//! every deploy path writes. Only the owner of a program's machine may change the
+//! program (LD-18).
 
 use crate::ApplicationError;
 use aseman_domain::blob::BlobEvidence;
@@ -87,7 +86,7 @@ pub struct UpdateProgramPath<'a> {
 }
 
 impl UpdateProgramPath<'_> {
-    /// Legacy `/programs/update` changes only the path (and merges metadata, which the
+    /// `/programs/update` changes only the path (and merges metadata, which the
     /// adapter applies through the metadata port).
     pub fn execute(
         &self,

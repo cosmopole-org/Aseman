@@ -11,9 +11,9 @@ Security-sensitive changes must preserve the accepted trust boundaries:
 - workloads never choose their creature, provider, database, namespace, or role;
 - secrets and bearer credentials are never logged or included in `Debug` output;
 - federation destinations authenticate and authorize independently;
-- legacy compatibility remains isolated under ADR 0004 and the removal ledger.
+- every surface reaches an operation through the node's one router and its guard
+  (ADR 0039).
 
 See [`docs/architecture/threat-model.md`](docs/architecture/threat-model.md),
-[`plan/migration/05-security-and-authority.md`](plan/migration/05-security-and-authority.md),
-and the accepted decisions in [`docs/decisions/`](docs/decisions/). Security-boundary
+[`contracts/security/`](contracts/security/), and the accepted decisions in [`docs/decisions/`](docs/decisions/). Security-boundary
 changes require `cargo xtask full` and the relevant adversarial/conformance suites.

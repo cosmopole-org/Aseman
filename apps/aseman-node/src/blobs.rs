@@ -1,5 +1,5 @@
-//! The Phase 3 blob provider (ADR 0027): file bytes under the node's storage root,
-//! exactly where legacy keeps them, behind the [`BlobStore`] port.
+//! The blob provider (ADR 0027): file bytes under the node's storage root,
+//! at their paths under the storage root, behind the [`BlobStore`] port.
 
 use aseman_fs::{Access, create_atomic, write_atomic};
 use std::fs;
@@ -11,7 +11,7 @@ use aseman_ports::{BlobStore, PortError, PortResult};
 use sha2::{Digest, Sha256};
 
 /// The node's blob store: its storage root.
-pub(crate) fn node_blobs(storage: &dyn crate::models::ports::IStorage) -> StorageRootBlobStore {
+pub(crate) fn node_blobs(storage: &crate::storage::NodeStorage) -> StorageRootBlobStore {
     StorageRootBlobStore::new(storage.storage_root())
 }
 

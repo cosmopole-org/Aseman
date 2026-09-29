@@ -15,7 +15,7 @@ use crate::{
 use aseman_capsule::{CapsuleStore, CapsuleStoreError, CapsuleStoreResult};
 use aseman_config::CapsuleLayout;
 use aseman_contracts::capsule::{CapsuleEnvelope, CapsuleId, CapsuleKind, CapsuleQuery};
-use aseman_postgres::{Connection, Pool, pool};
+use aseman_postgres::{Connection, Database, Pool, pool};
 use std::sync::Mutex;
 
 /// Opens units of work on a bounded connection pool.
@@ -32,10 +32,9 @@ impl PostgresUnitOfWorkFactory {
         max_connections: u32,
         generation: Option<u64>,
     ) -> StorageResult<Self> {
-        let config = connection_uri.parse().map_err(|error: postgres::Error| {
-            PostgresStorageError::Unavailable(error.to_string())
-        })?;
-        let pool = pool(config, max_connections)
+        let database =
+            Database::parse(connection_uri).map_err(PostgresStorageError::Unavailable)?;
+        let pool = pool(&database, max_connections)
             .map_err(|error| PostgresStorageError::Unavailable(error.to_string()))?;
         // Units write in the layout the database was last migrated to (ADR 0034).
         let layout = pool

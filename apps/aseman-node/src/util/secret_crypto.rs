@@ -14,7 +14,6 @@
 use std::fs;
 use std::io::ErrorKind;
 use std::path::Path;
-use std::sync::OnceLock;
 
 use anyhow::{Result, anyhow};
 use aseman_fs::{Access, create_atomic};
@@ -25,22 +24,8 @@ use chacha20poly1305::{ChaCha20Poly1305, Key, KeyInit, Nonce};
 const MASTER_KEY_FILE: &str = "node-secret-key";
 const NONCE_LEN: usize = 12;
 
-static MASTER_KEY: OnceLock<[u8; 32]> = OnceLock::new();
-
-/// The node master key, loaded from `<storage_root>/node-secret-key` or created
-/// there (0600) on first use. Cached for the process; the first caller's
-/// `storage_root` wins (it is stable for a running node).
-pub fn master_key(storage_root: &str) -> Result<[u8; 32]> {
-    if let Some(k) = MASTER_KEY.get() {
-        return Ok(*k);
-    }
-    let key = load_or_create_master_key(storage_root)?;
-    // A thread that raced this one read or created the same file, so both hold
-    // the same key; the first to land is kept.
-    Ok(*MASTER_KEY.get_or_init(|| key))
-}
-
-fn load_or_create_master_key(storage_root: &str) -> Result<[u8; 32]> {
+/// The node master key in `storage_root`, created there (0600) when absent.
+pub(crate) fn load_or_create_master_key(storage_root: &str) -> Result<[u8; 32]> {
     let path = Path::new(storage_root).join(MASTER_KEY_FILE);
     match read_master_key(&path)? {
         Some(key) => Ok(key),
@@ -86,7 +71,7 @@ fn create_master_key(path: &Path) -> Result<[u8; 32]> {
 }
 
 /// The master key's fingerprint, stamped on every stored secret (ADR 0023): the
-/// legacy migration writes the same one.
+/// `storage migrate` writes the same one.
 pub fn fingerprint(key: &[u8; 32]) -> [u8; 32] {
     use sha2::{Digest, Sha256};
     let mut hasher = Sha256::new();

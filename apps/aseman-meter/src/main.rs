@@ -1,22 +1,20 @@
-//! Independent Phase 8 metering composition root.
+//! Independent metering composition root.
 
-use std::str::FromStr;
 use std::time::Duration;
 
 use aseman_application::meter::RunMeterPass;
+use aseman_capsule::metering::StorageMetering;
 use aseman_config::MeterConfig;
-use aseman_finance_ledger::PostgresFinance;
 use aseman_vmm_http::client::{ClientTls, HttpVmmClient};
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let once = std::env::args().any(|argument| argument == "--once");
     let config = MeterConfig::from_process()?;
     let database_url = aseman_config::read_secret_file(&config.database_url_secret, 16 * 1024)?;
-    let finance = PostgresFinance::connect_config(
-        postgres::Config::from_str(database_url.trim())?,
+    let finance = StorageMetering::new(aseman_storage_providers::open_database(
+        database_url,
         config.database_pool_size,
-    )?;
-    finance.migrate()?;
+    )?);
     let tls = ClientTls {
         server_roots_pem: aseman_config::read_secret_file(&config.vmm_server_ca, 1024 * 1024)?
             .into_bytes(),

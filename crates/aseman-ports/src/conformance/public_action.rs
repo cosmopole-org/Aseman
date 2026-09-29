@@ -1,4 +1,4 @@
-//! The public action idempotency suite (A701, P7-06): one durable claim per
+//! The public action idempotency suite (A701): one durable claim per
 //! (subject, key), digest-bound, run-once-then-replay.
 
 use crate::{PortError, PortResult, PublicActionClaim, PublicActionIdempotency};

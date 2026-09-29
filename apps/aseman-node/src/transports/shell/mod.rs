@@ -1,6 +1,6 @@
-//! Translation of `drivers/network/client` — the user-facing TCP and
-//! WebSocket transports the Caspar shell uses to ferry requests between
-//! clients (mobile / desktop / CLI) and the node.
+//! The signed-packet client transports: TLS TCP and WebSocket, carrying the
+//! length-prefixed framing clients (mobile, desktop, CLI) speak. Both hand each
+//! packet to the shared session ([`session`]).
 
 mod session;
 pub mod tcp;

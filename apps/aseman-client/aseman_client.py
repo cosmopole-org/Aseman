@@ -1,7 +1,7 @@
 """
-caspar_client.py — Fault-tolerant Python client for the Caspar node TCP API.
+aseman_client.py — Fault-tolerant Python client for the Aseman node TCP API.
 
-Wire protocol (matches modules/network/legacy/src/lib.rs):
+Wire protocol (matches modules/network/shell/src/lib.rs):
   request  : u32be(len) | u8(0x03) | lp(signature) | lp(userId) | lp(path)
                         | lp(packetId) | payload
   response : u32be(len) | u8(0x02) | lp(packetId) | u32be(resCode) | payload
@@ -156,13 +156,13 @@ class _Pending:
 # Main client
 # ---------------------------------------------------------------------------
 
-class CasparClient:
+class AsemanClient:
     """
-    Fault-tolerant TCP client for the Caspar node.
+    Fault-tolerant TCP client for the Aseman node.
 
     Usage::
 
-        client = CasparClient(host="127.0.0.1", port=9000)
+        client = AsemanClient(host="127.0.0.1", port=9000)
         client.connect()
         client.authenticate(user_id="alice", signature="...")
         result = client.request("/creatures/do_something", b'{"x":1}')
@@ -212,7 +212,7 @@ class CasparClient:
         self._closed = False
         self._close_event = threading.Event()
 
-        self._io_thread = threading.Thread(target=self._io_loop, daemon=True, name="caspar-io")
+        self._io_thread = threading.Thread(target=self._io_loop, daemon=True, name="aseman-io")
         self._io_thread.start()
 
     # ------------------------------------------------------------------
@@ -328,7 +328,7 @@ class CasparClient:
             try:
                 sock = self._make_socket()
             except Exception as e:
-                logger.warning("caspar: connect failed (%s), retry in %.1fs", e, delay)
+                logger.warning("aseman: connect failed (%s), retry in %.1fs", e, delay)
                 self._close_event.wait(timeout=delay)
                 delay = min(delay * 2, MAX_RECONNECT_DELAY)
                 continue
@@ -336,13 +336,13 @@ class CasparClient:
             delay = 1.0
             self._sock = sock
             self._connected.set()
-            logger.info("caspar: connected to %s:%s", self.host, self.port)
+            logger.info("aseman: connected to %s:%s", self.host, self.port)
 
             try:
                 self._run_connection(sock)
             except Exception as e:
                 if not self._closed:
-                    logger.warning("caspar: connection lost (%s), reconnecting", e)
+                    logger.warning("aseman: connection lost (%s), reconnecting", e)
             finally:
                 try:
                     sock.close()
@@ -459,7 +459,7 @@ class CasparClient:
                 try:
                     packet_id, res_code, payload = decode_response(body)
                 except Exception as e:
-                    logger.error("caspar: failed to decode response: %s", e)
+                    logger.error("aseman: failed to decode response: %s", e)
                     continue
 
                 with self._pending_lock:
@@ -473,7 +473,7 @@ class CasparClient:
                 try:
                     key, payload = decode_update(body)
                 except Exception as e:
-                    logger.error("caspar: failed to decode update: %s", e)
+                    logger.error("aseman: failed to decode update: %s", e)
                     continue
                 self._dispatch_update(key, payload)
 
@@ -486,11 +486,11 @@ class CasparClient:
             try:
                 listener(key, payload)
             except Exception as e:
-                logger.error("caspar: update listener error for key %r: %s", key, e)
+                logger.error("aseman: update listener error for key %r: %s", key, e)
 
 
 # ---------------------------------------------------------------------------
-# Convenience helper: ECDSA request signing (matches Caspar's auth model)
+# Convenience helper: ECDSA request signing (matches Aseman's auth model)
 # ---------------------------------------------------------------------------
 
 def sign_payload(private_key_hex: str, payload: bytes) -> str:
@@ -519,7 +519,7 @@ if __name__ == "__main__":
     host = sys.argv[1] if len(sys.argv) > 1 else "127.0.0.1"
     port = int(sys.argv[2]) if len(sys.argv) > 2 else 9000
 
-    client = CasparClient(host=host, port=port, tls=False)
+    client = AsemanClient(host=host, port=port, tls=False)
 
     def on_update(key: str, payload: bytes) -> None:
         try:

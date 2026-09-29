@@ -7,7 +7,7 @@
 //! policy, and only then executes.
 //!
 //! A forbidden operation therefore fails at the destination, whatever the source
-//! believed — which is exactly what the Phase 7 gate asks two independently
+//! believed — which is exactly what two independently
 //! administered clusters to demonstrate.
 
 use aseman_domain::Uuid;

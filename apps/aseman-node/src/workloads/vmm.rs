@@ -1,4 +1,4 @@
-//! Remote workloads (P5-03, P5-04, ADR 0029, ADR 0030).
+//! Remote workloads (ADR 0029, ADR 0030).
 //!
 //! When the node is configured with a VMM (`ASEMAN_VMM_ENDPOINT`), program entities
 //! run as workloads of that VMM instead of the embedded one:
@@ -16,7 +16,7 @@
 
 use std::collections::{BTreeMap, BTreeSet};
 use std::io::BufReader;
-use std::sync::{Arc, OnceLock};
+use std::sync::Arc;
 use std::time::Duration;
 
 use anyhow::{Result, anyhow};
@@ -32,7 +32,7 @@ use aseman_capsule::identity::CapsuleKeyDirectory;
 use aseman_capsule::workload::CapsuleWorkloads;
 use aseman_config::VmmClientConfig;
 use aseman_contracts::guest_api::{ARTIFACT_ACTION, WorkloadCredential, audience, call_action};
-use aseman_contracts::legacy_realtime::deterministic_legacy_capsule_id;
+use aseman_contracts::signals::derived_capsule_id;
 use aseman_contracts::vmm::{Invocation, InvocationKind};
 use aseman_domain::authority::Condition;
 use aseman_domain::identity::{FreshnessPolicy, Proof, RotationPolicy, Subject, SubjectKind};
@@ -54,7 +54,7 @@ use aseman_vmm_http::client::{ClientTls, HttpVmmClient};
 use serde_json::{Value, json};
 use sha2::{Digest, Sha256};
 
-use crate::adapters::blob_store::StorageRootBlobStore;
+use crate::blobs::StorageRootBlobStore;
 
 /// The VM instance that serves an entity's signals.
 pub(crate) const SIGNAL_INSTANCE: &str = "signal";
@@ -67,7 +67,7 @@ impl ClockPort for SystemClock {
     }
 }
 
-/// What a launched instance may use (the legacy `resources` input, normalized).
+/// What a launched instance may use (the `resources` input, normalized).
 #[derive(Clone, Copy, Debug)]
 pub(crate) struct LaunchResources {
     pub(crate) cpu_cores: i64,
@@ -97,22 +97,12 @@ pub(crate) struct RemoteWorkloads {
     audience: String,
 }
 
-static REMOTE: OnceLock<Arc<RemoteWorkloads>> = OnceLock::new();
-
-/// The remote VMM, when the node is configured with one.
-pub(crate) fn remote() -> Option<Arc<RemoteWorkloads>> {
-    REMOTE.get().cloned()
-}
-
 fn unsigned(value: i64) -> u64 {
     u64::try_from(value.max(0)).unwrap_or(0)
 }
 
 pub(crate) fn capsule(family: &str, legacy_id: &str) -> Uuid {
-    Uuid::from_bytes(deterministic_legacy_capsule_id(
-        family,
-        legacy_id.as_bytes(),
-    ))
+    Uuid::from_bytes(derived_capsule_id(family, legacy_id.as_bytes()))
 }
 
 /// A legacy creature's typed identity.
@@ -144,7 +134,7 @@ impl RemoteWorkloads {
     }
 
     /// Record, key, and create one VM instance of `entity`; safe to repeat.
-    #[allow(clippy::too_many_arguments)] // legacy VM launch surface
+    #[allow(clippy::too_many_arguments)] // the VM launch surface
     pub(crate) fn launch(
         &self,
         program: &str,
@@ -263,7 +253,7 @@ impl RemoteWorkloads {
         workload: WorkloadId,
         state: DesiredWorkloadState,
     ) -> Result<u64> {
-        let policy = crate::api::authority::policy()
+        let policy = crate::actions::authority::policy()
             .ok_or_else(|| anyhow!("the action registry did not load"))?;
         let workloads = self.workloads();
         SetDesiredWorkloadState {
@@ -288,9 +278,9 @@ impl RemoteWorkloads {
             .is_some_and(|workload| workload.state != DesiredWorkloadState::Deleted))
     }
 
-    /// Deliver one signal (the legacy `Send` packet) to the entity's signal workload,
+    /// Deliver one signal (the `Send` packet) to the entity's signal workload,
     /// launching it on first use.
-    #[allow(clippy::too_many_arguments)] // legacy VM signal surface
+    #[allow(clippy::too_many_arguments)] // the VM signal surface
     pub(crate) fn invoke(
         &self,
         program: &str,
@@ -336,8 +326,8 @@ impl RemoteWorkloads {
 }
 
 impl RemoteWorkloads {
-    /// Forward a legacy ingress request (`{ programId, entityId, vmId, method, path,
-    /// query, headers, bodyBase64 }`) to its workload; the answer is the legacy
+    /// Forward an ingress request (`{ programId, entityId, vmId, method, path,
+    /// query, headers, bodyBase64 }`) to its workload; the answer is the wire
     /// `{ ok, status, headers, bodyBase64 }`. The entity's signal workload serves a
     /// request that names no instance.
     pub(crate) fn forward_http(&self, request: &Value) -> Result<Value> {
@@ -508,10 +498,10 @@ impl RemoteWorkloads {
     /// `copyToVm`, `copyFromVm`, `buildVmImage`, `vmEndpoints`) for `caller` (the
     /// node-resolved calling program), already authorized by the node's decision
     /// point. The target is `{machineId, entityId, vmId}` of `input`; the answer keeps
-    /// the legacy shapes.
+    /// the wire shapes.
     pub(crate) fn vm_host_call(
         &self,
-        app: &Arc<dyn crate::models::core::ICore>,
+        app: &Arc<crate::node::Node>,
         op: &str,
         caller: &str,
         input: &Value,
@@ -524,7 +514,7 @@ impl RemoteWorkloads {
 
     fn vm_host_call_inner(
         &self,
-        app: &Arc<dyn crate::models::core::ICore>,
+        app: &Arc<crate::node::Node>,
         op: &str,
         caller: &str,
         input: &Value,
@@ -545,9 +535,7 @@ impl RemoteWorkloads {
             .into_iter()
             .find(|value| !value.is_empty())
             .map(|value| value.to_lowercase())
-            .unwrap_or_else(|| {
-                crate::adapters::vmm::driver::entity_runtime(app, &program, &entity)
-            });
+            .unwrap_or_else(|| crate::workloads::driver::entity_runtime(app, &program, &entity));
         let vm = text("vmId");
         let target = |vm: &str| Self::workload_id(&program, &entity, vm);
         let as_caller = Subject {
@@ -827,34 +815,22 @@ impl RemoteWorkloads {
 }
 
 /// The machine creature that owns `program` (legacy IDs).
-pub(crate) fn program_machine(app: &Arc<dyn crate::models::core::ICore>, program: &str) -> String {
-    let slot = Arc::new(std::sync::Mutex::new(String::new()));
-    let out = slot.clone();
-    let program = program.to_owned();
-    app.modify_state(
-        true,
-        Box::new(move |trx: &crate::core::trx::Trx| {
-            *out.lock()
-                .unwrap_or_else(std::sync::PoisonError::into_inner) =
-                (crate::api::model::program_ports::ProgramPorts { trx })
-                    .program_or_empty(&program)
-                    .machine_id;
-            Ok(())
-        }),
-    );
-
-    slot.lock()
-        .unwrap_or_else(std::sync::PoisonError::into_inner)
-        .clone()
+pub(crate) fn program_machine(app: &Arc<crate::node::Node>, program: &str) -> String {
+    app.read(|trx| {
+        Ok(crate::state::program_ports::ProgramPorts { trx }
+            .program_or_empty(program)
+            .machine_id)
+    })
+    .unwrap_or_default()
 }
 
 impl RemoteWorkloads {
-    /// A signal for `program` (the legacy run path, after its store-membership check):
+    /// A signal for `program` (the run path, after its store-membership check):
     /// an invocation of the entity's signal workload. `entity` defaults to `main`, as
-    /// legacy programs deploy their module there.
+    /// programs deploy their module there.
     pub(crate) fn signal(
         &self,
-        app: &Arc<dyn crate::models::core::ICore>,
+        app: &Arc<crate::node::Node>,
         program: &str,
         entity: &str,
         runtime: &str,
@@ -876,6 +852,7 @@ impl RemoteWorkloads {
 
 /// The guest API as the node serves it.
 struct NodeGuestApi {
+    node: Arc<crate::node::Node>,
     catalog: AutoCommit,
     blobs: StorageRootBlobStore,
     policy: VerifierPolicy,
@@ -930,7 +907,11 @@ impl GuestHostCalls for NodeGuestApi {
             "entityId": entity,
             "vmId": instance,
         });
-        Ok(crate::adapters::vmm::host::vm_host_functions::handle_unified_host_call(&packet))
+        Ok(
+            crate::workloads::host::vm_host_functions::handle_unified_host_call(
+                &self.node, &packet,
+            ),
+        )
     }
 
     fn artifact(&self, caller: &GuestCaller, digest: &str) -> PortResult<Vec<u8>> {
@@ -989,16 +970,22 @@ pub(crate) fn connect(
 /// node's storage is open).
 pub(crate) fn install(
     config: &VmmClientConfig,
-    node_id: &str,
+    node: &Arc<crate::node::Node>,
     storage: aseman_storage::Storage,
     storage_root: &str,
-) -> Result<()> {
-    let remote = connect(config, node_id, storage.clone(), storage_root)?;
+) -> Result<Arc<RemoteWorkloads>> {
+    let remote = Arc::new(connect(
+        config,
+        &node.owner_id(),
+        storage.clone(),
+        storage_root,
+    )?);
     let chain = certificates(&config.guest_api_certificate)?;
     let key_pem = aseman_config::read_secret_file(&config.guest_api_key_secret, 64 * 1024)?;
     let key = rustls_pemfile::private_key(&mut BufReader::new(key_pem.as_bytes()))?
         .ok_or_else(|| anyhow!("the guest API key secret holds no private key"))?;
     let api = Arc::new(NodeGuestApi {
+        node: node.clone(),
         catalog: AutoCommit(storage),
         blobs: StorageRootBlobStore::new(storage_root),
         policy: VerifierPolicy {
@@ -1025,9 +1012,7 @@ pub(crate) fn install(
                 eprintln!("the guest API stopped: {error}");
             }
         })?;
-    REMOTE
-        .set(Arc::new(remote))
-        .map_err(|_| anyhow!("the remote VMM is already installed"))
+    Ok(remote)
 }
 
 /// The machine creature that owns `program`, from the PostgreSQL catalog.
@@ -1044,7 +1029,7 @@ fn catalog_program_machine(catalog: &AutoCommit, program: &str) -> Result<String
 }
 
 /// `aseman-node vmm-handoff plan OUT` / `aseman-node vmm-handoff apply PLAN DECISIONS`
-/// (ADR 0022, P5-05), run while the node is stopped.
+/// (ADR 0022), run while the node is stopped.
 ///
 /// `plan` writes the legacy VM handoff plan (instances, external handles, digest) as
 /// JSON. `apply` checks the decisions against that plan (its digest must still
@@ -1053,6 +1038,7 @@ fn catalog_program_machine(catalog: &AutoCommit, program: &str) -> Result<String
 pub(crate) fn handoff(config: &aseman_config::AsemanConfig, arguments: &[String]) -> Result<()> {
     let legacy = aseman_storage_providers::legacy::RocksDbKvStore::open_tuned(
         std::path::Path::new(&config.storage.base_db_path),
+        &config.services.rocksdb,
     )
     .map_err(|error| anyhow!("{error}"))?;
     match arguments {
@@ -1086,7 +1072,7 @@ pub(crate) fn handoff(config: &aseman_config::AsemanConfig, arguments: &[String]
                 .vmm
                 .as_ref()
                 .ok_or_else(|| anyhow!("adoption needs ASEMAN_VMM_ENDPOINT"))?;
-            let storage = crate::adapters::storage::open_from_config(
+            let storage = crate::storage::open_from_config(
                 Some(config),
                 &config.storage.root_path,
                 &config.storage.base_db_path,

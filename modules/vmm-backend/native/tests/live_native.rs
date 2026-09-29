@@ -142,7 +142,16 @@ fn world() -> World {
     let guest = GuestApiClient::new(certificate.pem().as_bytes(), Duration::from_secs(10)).unwrap();
     World {
         node,
-        backend: NativeBackend::start(state.clone(), guest, None).unwrap(),
+        backend: NativeBackend::start(
+            state.clone(),
+            guest,
+            &aseman_config::RuntimeConfig {
+                docker_gateway_port: 0,
+                ..aseman_config::RuntimeConfig::default()
+            },
+            None,
+        )
+        .unwrap(),
         url,
         node_subject: Subject {
             kind: SubjectKind::Node,
@@ -213,7 +222,7 @@ fn the_native_backend_runs_real_programs_as_their_workloads() {
     let world = world();
     let backend = &world.backend;
     let description = backend.describe().unwrap();
-    assert_eq!(description.name, "native-legacy");
+    assert_eq!(description.name, "native");
     let javascript = description
         .runtimes
         .iter()

@@ -5,8 +5,9 @@ product contract is wrong.
 
 - `contracts/` — reusable conformance kits (`aseman-*-conformance`) that every
   provider-independent behavior must reproduce, plus golden finance fixtures.
-- `characterization/` — frozen legacy-surface and boundary suites (artifact A008).
-- `migration/` — the A309 live legacy-to-PostgreSQL migration end-to-end proof.
+- `contract-checks/` — checks of the contracts against each other and the code.
+- `migration/` — the A309 live storage-migration end-to-end proof (RocksDB to
+  PostgreSQL).
 - `evals/agent/` — cold-start repository-comprehension evaluations: whether a
   contributor can locate the right owner, invariant, and verification command.
   These measure repository comprehensibility rather than runtime behavior, so they

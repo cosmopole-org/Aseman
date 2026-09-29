@@ -339,7 +339,7 @@ impl GuestKv for PostgresGuestKv {
                         let recorded = |record: &str| {
                             snapshot.get(&[prefix.as_str(), record].concat()).cloned()
                         };
-                        let writes = aseman_contracts::legacy_documents::legacy_json_index_writes(
+                        let writes = aseman_contracts::documents::json_index_writes(
                             path, &object, *merge, &recorded,
                         );
                         for (record, value) in writes {

@@ -1,7 +1,8 @@
-//! Characterized Caspar VM HTTP-route compatibility values.
+//! A VM's HTTP routes: the link namespaces that bind a route to its VM, and the
+//! route's normalization.
 //!
-//! New gateway contracts must not adopt caller-controlled link keys as authority. This
-//! module exists solely so the deprecated adapter has one tested compatibility owner.
+//! A route key is chosen by the VM's owner, so it names a route and never grants
+//! authority.
 
 use serde_json::{Value as JsonValue, json};
 

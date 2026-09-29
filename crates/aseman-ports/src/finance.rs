@@ -1,4 +1,4 @@
-//! Finance ports (Phase 8): metering, pricing, the ledger, and enforcement.
+//! Finance ports: metering, pricing, the ledger, and enforcement.
 //!
 //! The ports are separate because the concerns are. A pricing change must not be able
 //! to touch the ledger; a metering outage must not be able to invent a charge.

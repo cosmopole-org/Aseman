@@ -11,8 +11,8 @@ verification: python3 scripts/generate_public_api.py --check
 
 HTTP is the default public protocol. Every operation is one registered A402
 action, so nothing is reachable over HTTP that the policy cannot authorize.
-The legacy TCP and WebSocket transports carry the same actions and contain
-framing only.
+The signed-packet TCP, WebSocket, and federation transports carry the same
+operations through the same router and contain framing only.
 
 - Published operations: 76
 - Withheld (policy `never`): 0

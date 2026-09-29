@@ -3,7 +3,7 @@
 //! that hold a socket open.
 //!
 //! These are the creature's half of `/gateway/*`. A creature that runs a
-//! program outside Caspar — the crewAI bridge in a Modal sandbox — mints a
+//! program outside the node — the crewAI bridge in a Modal sandbox — mints a
 //! token scoped to the topics that program may hear, hands the token to it
 //! (through the sandbox, never over a signal), and afterwards pushes updates
 //! by topic.
@@ -21,12 +21,9 @@
 //! * The token is stored only as a SHA-256, so reading node state does not
 //!   yield a working credential.
 
-use crate::adapters::gateway_subs;
-use crate::adapters::vmm::globals::with_global_app;
-use crate::adapters::vmm::prelude::*;
-use crate::api::actions::gateway::hash_bridge_token;
-use crate::api::model::bridges;
-use crate::core::trx::Trx;
+use crate::actions::topic::hash_bridge_token;
+use crate::state::bridges;
+use crate::workloads::prelude::*;
 
 /// Whether two programs belong to the same owner.
 ///
@@ -34,12 +31,12 @@ use crate::core::trx::Trx;
 /// deployment is many creatures (each action is its own program), so the one
 /// that mints a grant and the one that later publishes to its topic are
 /// siblings. Another tenant's creature has a different owner and is refused.
-fn same_owner_user(a: &str, b: &str) -> bool {
+fn same_owner_user(node: &Arc<Node>, a: &str, b: &str) -> bool {
     if a.trim().is_empty() || b.trim().is_empty() {
         return false;
     }
-    let owner_a = super::vm_ownership::program_owner_user(a);
-    !owner_a.is_empty() && owner_a == super::vm_ownership::program_owner_user(b)
+    let owner_a = super::vm_ownership::program_owner_user(node, a);
+    !owner_a.is_empty() && owner_a == super::vm_ownership::program_owner_user(node, b)
 }
 
 /// Topics named in a host-call input, trimmed and de-duplicated.
@@ -66,7 +63,11 @@ fn requested_topics(input: &JsonValue) -> Vec<String> {
 }
 
 /// `registerBridgeToken` — mint (or replace) the grant behind a bearer token.
-pub(crate) fn host_fn_register_bridge_token(caller_program_id: &str, input: &JsonValue) -> String {
+pub(crate) fn host_fn_register_bridge_token(
+    node: &Arc<Node>,
+    caller_program_id: &str,
+    input: &JsonValue,
+) -> String {
     let caller = caller_program_id.trim().to_string();
     if caller.is_empty() {
         return json!({"ok": false, "error": "registerBridgeToken requires an identified caller"})
@@ -128,45 +129,33 @@ pub(crate) fn host_fn_register_bridge_token(caller_program_id: &str, input: &Jso
         "createdAt": chrono::Utc::now().timestamp_millis(),
     });
 
-    let caller_for_trx = caller.clone();
-    let topics_for_trx = topics.clone();
-    let conflict = std::sync::Arc::new(std::sync::Mutex::new(String::new()));
-    let conflict_c = conflict.clone();
-    let applied = with_global_app(|app| {
-        app.modify_state(
-            false,
-            Box::new(move |trx: &Trx| {
-                // Claim each topic for this creature, refusing one another
-                // creature already owns.
-                for topic in &topics_for_trx {
-                    let owner = bridges::topic_owner(trx, topic)?.unwrap_or_default();
-                    if !owner.is_empty()
-                        && owner != caller_for_trx
-                        && !same_owner_user(&owner, &caller_for_trx)
-                    {
-                        *conflict_c.lock().unwrap() = topic.clone();
-                        return Ok(());
-                    }
-                }
-                for topic in &topics_for_trx {
-                    bridges::claim_topic(trx, topic, &caller_for_trx)?;
-                }
-                bridges::put_grant(trx, &hash, &grant)
-            }),
-        );
-    })
-    .is_some();
-
-    if !applied {
-        return json!({"ok": false, "error": "node state is not available"}).to_string();
-    }
-    let conflict = conflict.lock().unwrap().clone();
-    if !conflict.is_empty() {
-        return json!({
-            "ok": false,
-            "error": format!("topic '{}' is owned by another creature", conflict),
-        })
-        .to_string();
+    // Claim each topic for this creature, refusing one another creature owns.
+    let claimed = node.in_action(|trx| {
+        for topic in &topics {
+            let owner = bridges::topic_owner(trx, topic)?.unwrap_or_default();
+            if !owner.is_empty() && owner != caller && !same_owner_user(node, &owner, &caller) {
+                return Ok(Err(topic.clone()));
+            }
+        }
+        for topic in &topics {
+            bridges::claim_topic(trx, topic, &caller)?;
+        }
+        bridges::put_grant(trx, &hash, &grant)?;
+        Ok(Ok(()))
+    });
+    match claimed {
+        Err(error) => {
+            return json!({"ok": false, "error": format!("the grant was not stored: {error}")})
+                .to_string();
+        }
+        Ok(Err(topic)) => {
+            return json!({
+                "ok": false,
+                "error": format!("topic '{topic}' is owned by another creature"),
+            })
+            .to_string();
+        }
+        Ok(Ok(())) => {}
     }
 
     json!({
@@ -179,7 +168,11 @@ pub(crate) fn host_fn_register_bridge_token(caller_program_id: &str, input: &Jso
 
 /// `revokeBridgeToken` — drop a grant, and with it every subscription that
 /// authenticated through it on the next publish.
-pub(crate) fn host_fn_revoke_bridge_token(caller_program_id: &str, input: &JsonValue) -> String {
+pub(crate) fn host_fn_revoke_bridge_token(
+    node: &Arc<Node>,
+    caller_program_id: &str,
+    input: &JsonValue,
+) -> String {
     let caller = caller_program_id.trim().to_string();
     let token = input["token"].as_str().unwrap_or("").trim().to_string();
     let hash = if token.is_empty() {
@@ -191,44 +184,40 @@ pub(crate) fn host_fn_revoke_bridge_token(caller_program_id: &str, input: &JsonV
         return json!({"ok": false, "error": "token or tokenHash is required"}).to_string();
     }
 
-    let owner = std::sync::Arc::new(std::sync::Mutex::new(String::new()));
-    let owner_c = owner.clone();
-    let hash_read = hash.clone();
-    with_global_app(|app| {
-        app.modify_state(
-            true,
-            Box::new(move |trx: &Trx| {
-                if let Some(grant) = bridges::grant(trx, &hash_read)?
-                    && let Some(id) = grant.get("creatureId").and_then(|v| v.as_str())
-                {
-                    *owner_c.lock().unwrap() = id.to_string();
-                }
-                Ok(())
-            }),
-        );
-    });
-    let owner = owner.lock().unwrap().clone();
+    let owner = node
+        .read(|trx| {
+            Ok(bridges::grant(trx, &hash)?
+                .and_then(|grant| {
+                    grant
+                        .get("creatureId")
+                        .and_then(JsonValue::as_str)
+                        .map(str::to_owned)
+                })
+                .unwrap_or_default())
+        })
+        .unwrap_or_default();
     if owner.is_empty() {
         // Revoking an unknown token is a no-op, not an error: a bridge tearing
         // itself down twice must not fail the second time.
         return json!({"ok": true, "revoked": false}).to_string();
     }
-    if owner != caller && !same_owner_user(&owner, &caller) {
+    if owner != caller && !same_owner_user(node, &owner, &caller) {
         return json!({"ok": false, "error": "you do not own this bridge token"}).to_string();
     }
-
-    with_global_app(|app| {
-        app.modify_state(
-            false,
-            Box::new(move |trx: &Trx| bridges::delete_grant(trx, &hash)),
-        );
-    });
+    if let Err(error) = node.in_action(|trx| bridges::delete_grant(trx, &hash)) {
+        return json!({"ok": false, "error": format!("the grant was not revoked: {error}")})
+            .to_string();
+    }
     json!({"ok": true, "revoked": true}).to_string()
 }
 
 /// `publishUpdate` — push one packet to every connection subscribed to a
 /// topic this creature owns.
-pub(crate) fn host_fn_publish_update(caller_program_id: &str, input: &JsonValue) -> String {
+pub(crate) fn host_fn_publish_update(
+    node: &Arc<Node>,
+    caller_program_id: &str,
+    input: &JsonValue,
+) -> String {
     let caller = caller_program_id.trim().to_string();
     if caller.is_empty() {
         return json!({"ok": false, "error": "publishUpdate requires an identified caller"})
@@ -239,24 +228,13 @@ pub(crate) fn host_fn_publish_update(caller_program_id: &str, input: &JsonValue)
         return json!({"ok": false, "error": "topic is required"}).to_string();
     }
 
-    let topic_read = topic.clone();
-    let owner = std::sync::Arc::new(std::sync::Mutex::new(String::new()));
-    let owner_c = owner.clone();
-    with_global_app(|app| {
-        app.modify_state(
-            true,
-            Box::new(move |trx: &Trx| {
-                *owner_c.lock().unwrap() =
-                    bridges::topic_owner(trx, &topic_read)?.unwrap_or_default();
-                Ok(())
-            }),
-        );
-    });
-    let owner = owner.lock().unwrap().clone();
+    let owner = node
+        .read(|trx| Ok(bridges::topic_owner(trx, &topic)?.unwrap_or_default()))
+        .unwrap_or_default();
     if owner.is_empty() {
         return json!({"ok": false, "error": "no bridge grant exists for this topic"}).to_string();
     }
-    if owner != caller && !same_owner_user(&owner, &caller) {
+    if owner != caller && !same_owner_user(node, &owner, &caller) {
         return json!({"ok": false, "error": "you do not own this topic"}).to_string();
     }
 
@@ -272,7 +250,7 @@ pub(crate) fn host_fn_publish_update(caller_program_id: &str, input: &JsonValue)
         input["data"].clone()
     };
 
-    let delivered = match gateway_subs::publish(&topic, &owner, &key, &data) {
+    let delivered = match node.topics().publish(&topic, &owner, &key, &data) {
         Ok(delivered) => delivered,
         Err(error) => {
             return json!({"ok": false, "error": format!("durable publish failed: {error}")})

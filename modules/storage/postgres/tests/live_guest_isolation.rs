@@ -5,8 +5,7 @@ use aseman_contracts::guest::{
 use aseman_storage_postgres::guest::{
     GuestPoolRouter, GuestPostgresError, GuestSchemaManager, PostgresGuestProvisioner,
 };
-use postgres::{Client, Config, NoTls};
-use std::str::FromStr;
+use postgres::{Client, NoTls};
 use uuid::Uuid;
 
 const PROXY_ROLE: &str = "aseman_guest_proxy_test";
@@ -65,9 +64,12 @@ fn live_guest_databases_isolate_roles_catalogs_pools_and_multi_table_ddl() {
 
     let mut active_a = provisioner.enable(&disabled_a).unwrap();
     let mut active_b = provisioner.enable(&disabled_b).unwrap();
-    let mut proxy_config = Config::from_str(&connection_uri).unwrap();
-    proxy_config.user(PROXY_ROLE).password(PROXY_PASSWORD);
-    let pools = GuestPoolRouter::from_config(proxy_config.clone(), PROXY_ROLE, 2, 2).unwrap();
+    let mut proxy_config = aseman_postgres::Database::parse(&connection_uri).unwrap();
+    proxy_config
+        .config_mut()
+        .user(PROXY_ROLE)
+        .password(PROXY_PASSWORD);
+    let pools = GuestPoolRouter::from_database(proxy_config.clone(), PROXY_ROLE, 2, 2).unwrap();
     let schemas = GuestSchemaManager::default();
     let mutations: Vec<GuestSchemaMutation> = serde_json::from_str(include_str!(concat!(
         env!("CARGO_MANIFEST_DIR"),
@@ -238,7 +240,7 @@ fn live_guest_databases_isolate_roles_catalogs_pools_and_multi_table_ddl() {
         })
         .unwrap();
 
-    let one_pool = GuestPoolRouter::from_config(proxy_config, PROXY_ROLE, 1, 1).unwrap();
+    let one_pool = GuestPoolRouter::from_database(proxy_config, PROXY_ROLE, 1, 1).unwrap();
     one_pool
         .with_transaction(&active_a, |_transaction| Ok(()))
         .unwrap();
@@ -247,12 +249,13 @@ fn live_guest_databases_isolate_roles_catalogs_pools_and_multi_table_ddl() {
         Err(GuestPostgresError::PoolCapacity)
     ));
 
-    let mut attacker_config = Config::from_str(&connection_uri).unwrap();
+    let mut attacker_config = aseman_postgres::Database::parse(&connection_uri).unwrap();
     attacker_config
+        .config_mut()
         .user(ATTACKER_ROLE)
         .password(ATTACKER_PASSWORD)
         .dbname(&active_a.binding().database_name);
-    assert!(attacker_config.connect(NoTls).is_err());
+    assert!(attacker_config.connect().is_err());
 
     let disabled_a = provisioner.disable(&active_a).unwrap();
     let disabled_b = provisioner.disable(&active_b).unwrap();

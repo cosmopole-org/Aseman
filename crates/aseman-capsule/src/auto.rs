@@ -11,7 +11,7 @@ use aseman_ports::{
 use aseman_storage::client::core::{identity_challenge, public_idempotency, replay_nonce};
 use aseman_storage::{Mode, Models, Storage, StorageError, Trx};
 
-fn port(error: StorageError) -> PortError {
+pub(crate) fn port(error: StorageError) -> PortError {
     match error {
         StorageError::Conflict(_) => PortError::Conflict,
         StorageError::NotFound(_) => PortError::NotFound,
@@ -50,6 +50,59 @@ impl AutoCommit {
             Mode::ReadOnly => trx.rollback()?,
         }
         Ok(value)
+    }
+
+    /// Decide `operation` in a read-write transaction of its own. A commit another
+    /// writer won is retried (the operation reads again and decides again); a refusal
+    /// the operation itself decided comes back as its `PortError` and is not retried.
+    ///
+    /// # Errors
+    ///
+    /// The operation's refusal, a storage failure, or contention that outlasted the
+    /// retries (`Conflict`).
+    pub fn decide<T>(
+        &self,
+        operation: impl Fn(&Trx) -> Result<PortResult<T>, StorageError>,
+    ) -> PortResult<T> {
+        for _ in 0..crate::support::MAX_CAS_ATTEMPTS {
+            let trx = self.0.begin(Mode::ReadWrite).map_err(port)?;
+            let decided = match operation(&trx) {
+                Ok(decided) => decided,
+                Err(StorageError::Conflict(_)) => continue,
+                Err(error) => return Err(port(error)),
+            };
+            if decided.is_err() {
+                let _ = trx.rollback();
+                return decided;
+            }
+            match trx.commit() {
+                Ok(()) => return decided,
+                Err(StorageError::Conflict(_)) => {}
+                Err(error) => return Err(port(error)),
+            }
+        }
+        Err(PortError::Conflict)
+    }
+
+    /// Read in a transaction of its own.
+    ///
+    /// # Errors
+    ///
+    /// A storage failure.
+    pub fn read<T>(
+        &self,
+        operation: impl FnOnce(&Trx) -> Result<T, StorageError>,
+    ) -> PortResult<T> {
+        self.run(Mode::ReadOnly, operation).map_err(port)
+    }
+
+    /// The provider's clock.
+    ///
+    /// # Errors
+    ///
+    /// When the provider is unreachable.
+    pub fn now_millis(&self) -> PortResult<i64> {
+        self.0.now_millis().map_err(port)
     }
 
     /// Remove expired nonces and challenges; how many were removed.

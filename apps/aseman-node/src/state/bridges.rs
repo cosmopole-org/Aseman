@@ -8,9 +8,9 @@ use aseman_storage::client::core::{bridge_grant, bridge_topic};
 use serde_json::Value;
 use sha2::{Digest, Sha256};
 
-use crate::core::trx::{Trx, failed};
+use crate::storage::{Trx, failed};
 
-/// Where the grant document sat in the legacy JSON record.
+/// Where the grant document sits in its JSON record.
 const DOCUMENT_PATH: &str = "grant";
 
 fn digest(token_hash: &str) -> Result<Vec<u8>> {
@@ -108,7 +108,7 @@ mod tests {
 
     #[test]
     fn grants_and_topics_round_trip() {
-        let trx = crate::core::trx::test_trx();
+        let trx = crate::storage::test_trx();
         let hash = hex::encode([7u8; 32]);
         let grant_document =
             serde_json::json!({"creatureId": "c1", "topics": ["t"], "expiresAt": 5});

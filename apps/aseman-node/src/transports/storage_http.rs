@@ -1,4 +1,4 @@
-//! Public file storage over HTTP — the "Caspar storage shell API".
+//! Public file storage over HTTP.
 //!
 //! A tiny, dependency-light HTTP server (same hand-rolled style as
 //! `telemetry::server`) that lets the platform store and serve **public**
@@ -29,11 +29,11 @@ use std::thread;
 
 use uuid::Uuid;
 
-use crate::models::core::ICore;
-use aseman_contracts::legacy_storage_http::{escape_json, is_safe_id, sanitize_content_type};
+use crate::node::Node;
+use aseman_contracts::storage_http::{escape_json, is_safe_id, sanitize_content_type};
 
 /// Spawn the storage HTTP server on `port` (no-op when `port <= 0`).
-pub fn start(app: Arc<dyn ICore>, port: i64, max_bytes: usize) {
+pub fn start(app: Arc<Node>, port: i64, max_bytes: usize) {
     if port <= 0 {
         return;
     }
@@ -55,7 +55,7 @@ pub fn start(app: Arc<dyn ICore>, port: i64, max_bytes: usize) {
 }
 
 struct StorageHttp {
-    app: Arc<dyn ICore>,
+    app: Arc<Node>,
     max_bytes: usize,
 }
 
@@ -158,8 +158,8 @@ impl StorageHttp {
 
         let id = Uuid::new_v4().to_string();
         let ctype = sanitize_content_type(content_type);
-        let blobs = crate::adapters::blob_store::node_blobs(&*self.app.tools().storage());
-        let folder = crate::adapters::blob_store::PUBLIC_FILES;
+        let blobs = crate::blobs::node_blobs(&self.app.tools().storage());
+        let folder = crate::blobs::PUBLIC_FILES;
         if let Err(e) = blobs.put_blob(&[folder, "/", &id].concat(), &data, &ctype, true) {
             write_response(
                 stream,
@@ -195,8 +195,8 @@ impl StorageHttp {
             );
             return;
         }
-        let blobs = crate::adapters::blob_store::node_blobs(&*self.app.tools().storage());
-        let folder = crate::adapters::blob_store::PUBLIC_FILES;
+        let blobs = crate::blobs::node_blobs(&self.app.tools().storage());
+        let folder = crate::blobs::PUBLIC_FILES;
         let bytes = match blobs.blob(&[folder, "/", id].concat()) {
             Ok(Some(bytes)) => bytes,
             _ => {

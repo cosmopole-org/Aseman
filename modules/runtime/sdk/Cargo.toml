@@ -1,11 +1,12 @@
 [package]
-name = "caspar-vm-sdk"
+name = "aseman-vm-sdk"
 version = "0.1.0"
 edition = "2021"
-description = "Interface SDK for Caspar VM plugins — every VM type project imports this crate and implements its traits so the compiler can verify all interactions between the VM controller and the Caspar VMM."
+license = "MIT"
+description = "Interface SDK for Aseman VM plugins: every VM type implements its traits, so the compiler checks each interaction between a VM controller and the native VMM backend."
 
 [lib]
-name = "caspar_vm_sdk"
+name = "aseman_vm_sdk"
 path = "src/lib.rs"
 
 [dependencies]

@@ -1,64 +1,32 @@
-//! `Core` construction: the `NewCore`/`NewCoreWithConfig` constructors and
-//! the `mark_as_started` flag.
-//!
-//! Translation of `core/module/core/core.go`.
+//! Constructing a node.
 
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, OnceLock};
 
 use aseman_config::AsemanConfig;
 use rsa::RsaPrivateKey;
 
-use crate::core::actor::Actor;
-use crate::core::orchestrator::finance::Finance;
-use crate::core::orchestrator::types::Core;
+use crate::node::Node;
+use crate::node::finance::Finance;
 
-impl Core {
-    /// `NewCore(origin, ownerId, ownerPrivateKey)`.
-    #[expect(
-        dead_code,
-        reason = "RL-003: legacy orchestration surface kept until its deletion gate"
-    )]
-    pub fn new(origin: &str, owner_id: &str, owner_priv_key: Arc<RsaPrivateKey>) -> Arc<Core> {
-        Self::new_inner(origin, owner_id, owner_priv_key, None)
-    }
-
-    pub fn new_configured(
-        origin: &str,
-        owner_id: &str,
-        owner_priv_key: Arc<RsaPrivateKey>,
-        config: Arc<AsemanConfig>,
-    ) -> Arc<Core> {
-        Self::new_inner(origin, owner_id, owner_priv_key, Some(config))
-    }
-
-    fn new_inner(
-        origin: &str,
-        owner_id: &str,
-        owner_priv_key: Arc<RsaPrivateKey>,
-        config: Option<Arc<AsemanConfig>>,
-    ) -> Arc<Core> {
-        let finance = Finance::new(&config);
-        Arc::new(Core {
+impl Node {
+    /// A node with `config`, owned by the creature `ASEMAN_NODE_ID` names, whose
+    /// key is `owner_key`. Its id is its origin (`ASEMAN_ORIGIN`). Its
+    /// components start with [`Node::load`].
+    pub fn new(config: Arc<AsemanConfig>, owner_key: RsaPrivateKey) -> Arc<Node> {
+        Arc::new(Node {
+            id: config.node.origin.clone(),
+            owner_id: config.node.id.clone(),
+            owner_key: Arc::new(owner_key),
+            finance: Finance::new(Some(&config)),
             config,
-            owner_id: owner_id.to_string(),
-            owner_priv_key,
-            id: origin.to_string(),
-            ip: origin.to_string(),
-            actor: Arc::new(Actor::new()),
-            tools: Mutex::new(None),
-            globe: Mutex::new(None),
-            started: Mutex::new(false),
-            gods: Mutex::new(Vec::new()),
-            finance,
-            priv_key: Mutex::new(None),
+            tools: OnceLock::new(),
+            globe: OnceLock::new(),
+            node_key: OnceLock::new(),
+            vmm: OnceLock::new(),
+            router: OnceLock::new(),
+            topics: Default::default(),
+            audit: Default::default(),
+            guest_data: OnceLock::new(),
         })
-    }
-
-    #[expect(
-        dead_code,
-        reason = "RL-003: legacy orchestration surface kept until its deletion gate"
-    )]
-    pub fn mark_as_started(&self) {
-        *self.started.lock().unwrap() = true;
     }
 }

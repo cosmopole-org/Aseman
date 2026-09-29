@@ -63,6 +63,7 @@ impl From<PortError> for VmmError {
             PortError::Unavailable(_) => VmmFailure::Unavailable,
             PortError::Deadline => VmmFailure::DeadlineExceeded,
             PortError::Unsupported(_) => VmmFailure::UnsupportedOperation,
+            PortError::Refused(_) => VmmFailure::InvalidRequest,
             PortError::Failed(_) => VmmFailure::BackendFailure,
         };
         Self::new(failure, error.to_string())

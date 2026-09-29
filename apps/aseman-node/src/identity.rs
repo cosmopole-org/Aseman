@@ -1,41 +1,32 @@
-//! Translation of `drivers/security/security.go`.
-//!
-//! `Security` implements [`ISecurity`] for the Caspar node: per-tag RSA
-//! keypair management (loaded from `<storage_root>/keys/<tag>/`), PKCS#1 v1.5
-//! encrypt/decrypt, and PSS-SHA256 signature verification against a public
-//! key fetched from the `ITrx`-backed key store.
+//! The node's keys and creature signatures: per-tag RSA key pairs under
+//! `<storage_root>/keys/<tag>/`, PSS-SHA256 verification against a creature's
+//! stored public key, and store membership checks.
 
 use std::collections::HashMap;
 use std::fs;
 use std::sync::{Arc, Mutex};
 
 use base64::{Engine, engine::general_purpose::STANDARD as B64};
-use rsa::pkcs1v15::Pkcs1v15Encrypt;
 use rsa::pkcs1v15::{Signature as Pkcs1Signature, VerifyingKey as Pkcs1VerifyingKey};
-use rsa::pkcs8::{DecodePrivateKey, DecodePublicKey};
 use rsa::pss::{Signature as PssSignature, VerifyingKey};
-use rsa::rand_core::OsRng;
 use rsa::sha2::Sha256;
 use rsa::signature::Verifier;
-use rsa::{RsaPrivateKey, RsaPublicKey};
 
-use crate::api::utils::crypto as cryp;
-use crate::core::trx::Trx;
-use crate::models::core::ICore;
-use crate::models::ports::ISecurity;
+use crate::node::Node;
+use crate::util::crypto as cryp;
 
 const KEYS_FOLDER: &str = "keys";
 
-/// Concrete [`ISecurity`] implementation.
+/// The node's keys and signature verification.
 pub struct Security {
-    app: Arc<dyn ICore>,
+    app: Arc<Node>,
     storage_root: String,
     keys: Mutex<HashMap<String, Vec<Vec<u8>>>>,
 }
 
 impl Security {
     /// `New(core, storageRoot, storage, signaler)`.
-    pub fn new(app: Arc<dyn ICore>, storage_root: &str) -> Arc<Security> {
+    pub fn new(app: Arc<Node>, storage_root: &str) -> Arc<Security> {
         let s = Arc::new(Security {
             app,
             storage_root: storage_root.to_string(),
@@ -46,8 +37,8 @@ impl Security {
     }
 }
 
-impl ISecurity for Security {
-    fn load_keys(&self) {
+impl Security {
+    pub(crate) fn load_keys(&self) {
         let dir = format!("{}/{}", self.storage_root, KEYS_FOLDER);
         if let Ok(read) = fs::read_dir(&dir) {
             let mut keys = self.keys.lock().unwrap();
@@ -72,7 +63,7 @@ impl ISecurity for Security {
         }
     }
 
-    fn generate_secure_key_pair(&self, tag: &str) {
+    pub(crate) fn generate_secure_key_pair(&self, tag: &str) {
         let dir = format!("{}/{}/{}", self.storage_root, KEYS_FOLDER, tag);
         match cryp::secure_key_pairs(&dir) {
             Ok((priv_k, pub_k)) => {
@@ -85,7 +76,7 @@ impl ISecurity for Security {
         }
     }
 
-    fn fetch_key_pair(&self, tag: &str) -> Vec<Vec<u8>> {
+    pub(crate) fn fetch_key_pair(&self, tag: &str) -> Vec<Vec<u8>> {
         self.keys
             .lock()
             .unwrap()
@@ -93,51 +84,7 @@ impl ISecurity for Security {
             .cloned()
             .unwrap_or_default()
     }
-
-    fn encrypt(&self, tag: &str, plain_text: &str) -> String {
-        let pair = self.fetch_key_pair(tag);
-        if pair.len() < 2 {
-            return String::new();
-        }
-        let pub_pem = match std::str::from_utf8(&pair[1]) {
-            Ok(s) => s,
-            Err(_) => return String::new(),
-        };
-        let pk = match RsaPublicKey::from_public_key_pem(pub_pem) {
-            Ok(k) => k,
-            Err(_) => return String::new(),
-        };
-        let cipher = match pk.encrypt(&mut OsRng, Pkcs1v15Encrypt, plain_text.as_bytes()) {
-            Ok(c) => c,
-            Err(_) => return String::new(),
-        };
-        hex::encode(cipher)
-    }
-
-    fn decrypt(&self, tag: &str, cipher_text: &str) -> String {
-        let pair = self.fetch_key_pair(tag);
-        if pair.is_empty() {
-            return String::new();
-        }
-        let raw = match hex::decode(cipher_text) {
-            Ok(b) => b,
-            Err(_) => return String::new(),
-        };
-        let priv_pem = match std::str::from_utf8(&pair[0]) {
-            Ok(s) => s,
-            Err(_) => return String::new(),
-        };
-        let sk = match RsaPrivateKey::from_pkcs8_pem(priv_pem) {
-            Ok(k) => k,
-            Err(_) => return String::new(),
-        };
-        match sk.decrypt(Pkcs1v15Encrypt, &raw) {
-            Ok(plain) => String::from_utf8_lossy(&plain).into_owned(),
-            Err(_) => String::new(),
-        }
-    }
-
-    fn auth_with_signature(
+    pub(crate) fn auth_with_signature(
         &self,
         user_id: &str,
         packet: &[u8],
@@ -145,22 +92,14 @@ impl ISecurity for Security {
     ) -> (bool, String, bool) {
         // The creature record is the single authoritative identity: its public key
         // verifies the signature and its type is returned on success.
-        let creature_slot = Arc::new(Mutex::new(None));
-        let slot_clone = creature_slot.clone();
-        let user_id_owned = user_id.to_string();
-        self.app.modify_state(
-            true,
-            Box::new(move |trx: &Trx| {
-                *slot_clone.lock().unwrap() = aseman_ports::CreatureDirectory::creature(
-                    &crate::api::model::creature_ports::CreaturePorts { trx },
-                    &user_id_owned,
-                )
-                .ok()
-                .flatten();
-                Ok(())
-            }),
-        );
-        let Some(creature) = creature_slot.lock().unwrap().take() else {
+        let creature = self.app.read(|trx| {
+            aseman_ports::CreatureDirectory::creature(
+                &crate::state::creature_ports::CreaturePorts { trx },
+                user_id,
+            )
+            .map_err(|error| anyhow::anyhow!("{error}"))
+        });
+        let Ok(Some(creature)) = creature else {
             return (false, String::new(), false);
         };
         let pub_key = match cryp::parse_public_key(creature.public_key.as_bytes()) {
@@ -195,51 +134,46 @@ impl ISecurity for Security {
             }
         }
 
-        // The legacy hand-written `god::` superuser flag is gone (ADR 0020, ADR 0036):
+        // There is no `god::` superuser flag (ADR 0020, ADR 0036):
         // elevated authority comes from capability grants.
         let typ = creature.creature_type;
         let is_god = false;
         (true, typ, is_god)
     }
 
-    fn has_access_to_store(&self, user_id: &str, store_id: &str) -> bool {
+    pub(crate) fn has_access_to_store(&self, user_id: &str, store_id: &str) -> bool {
         if store_id.is_empty() {
             return false;
         }
-        let found = Arc::new(Mutex::new(false));
-        let found_clone = found.clone();
-        let (user_id, store_id) = (user_id.to_string(), store_id.to_string());
-        self.app.modify_state(
-            true,
-            Box::new(move |trx: &Trx| {
-                // Membership goes through the store port (legacy adapter until cutover).
-                let ports = crate::api::model::store_ports::MembershipPorts { trx };
-                let member = aseman_ports::StoreAccess::is_member(&ports, &store_id, &user_id)
-                    .unwrap_or(false);
-                *found_clone.lock().unwrap() = member;
-                Ok(())
-            }),
-        );
-
-        *found.lock().unwrap()
+        self.app
+            .read(|trx| {
+                aseman_ports::StoreAccess::is_member(
+                    &crate::state::store_ports::MembershipPorts { trx },
+                    store_id,
+                    user_id,
+                )
+                .map_err(|error| anyhow::anyhow!("{error}"))
+            })
+            .unwrap_or(false)
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::core::testing::StubCore;
+    use rsa::RsaPrivateKey;
     use rsa::pkcs8::{EncodePublicKey, LineEnding};
     use rsa::pss::BlindedSigningKey;
+    use rsa::rand_core::OsRng;
     use rsa::signature::{RandomizedSigner, SignatureEncoding};
 
     #[test]
     fn signatures_verify_against_the_creature_directory_key() {
-        let core = StubCore::new();
+        let node = Node::for_tests();
         let key = RsaPrivateKey::new(&mut OsRng, 1024).unwrap();
-        let trx = core.storage.begin(false).unwrap();
+        let trx = node.tools().storage().begin(false).unwrap();
         aseman_ports::CreatureDirectory::create(
-            &crate::api::model::creature_ports::CreaturePorts { trx: &trx },
+            &crate::state::creature_ports::CreaturePorts { trx: &trx },
             &aseman_domain::creature::CreatureRecord {
                 id: "5@global".to_owned(),
                 creature_type: "human".to_owned(),
@@ -256,8 +190,7 @@ mod tests {
         .unwrap();
         trx.commit().unwrap();
 
-        let app: Arc<dyn ICore> = core;
-        let security = Security::new(app, "/nonexistent-aseman-root");
+        let security = node.tools().security();
         let packet = b"{\"path\":\"/stores/signal\"}";
         let signature = B64.encode(
             BlindedSigningKey::<Sha256>::new(key)

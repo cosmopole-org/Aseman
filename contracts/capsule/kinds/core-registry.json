@@ -671,6 +671,186 @@
         "relationships.foreign_keys",
         "indexes.unique"
       ]
+    },
+    {
+      "kind": "core.coordination_lease",
+      "table": "coordination_leases",
+      "storage_class": "core",
+      "consistency": "serializable",
+      "owner_scope": "global",
+      "required_capabilities": [
+        "indexes.unique"
+      ]
+    },
+    {
+      "kind": "core.coordination_fence",
+      "table": "coordination_fences",
+      "storage_class": "core",
+      "consistency": "serializable",
+      "owner_scope": "global",
+      "required_capabilities": [
+        "indexes.unique"
+      ]
+    },
+    {
+      "kind": "core.realtime_log_event",
+      "table": "realtime_log_events",
+      "storage_class": "core",
+      "consistency": "serializable",
+      "owner_scope": "global",
+      "required_capabilities": [
+        "indexes.unique"
+      ]
+    },
+    {
+      "kind": "core.realtime_outbox_entry",
+      "table": "realtime_outbox_entries",
+      "storage_class": "core",
+      "consistency": "serializable",
+      "owner_scope": "global",
+      "required_capabilities": [
+        "indexes.unique"
+      ]
+    },
+    {
+      "kind": "core.realtime_checkpoint",
+      "table": "realtime_checkpoints",
+      "storage_class": "core",
+      "consistency": "serializable",
+      "owner_scope": "global",
+      "required_capabilities": [
+        "indexes.unique"
+      ]
+    },
+    {
+      "kind": "core.usage_sample",
+      "table": "usage_samples",
+      "storage_class": "core",
+      "consistency": "serializable",
+      "owner_scope": "global",
+      "required_capabilities": [
+        "indexes.unique"
+      ]
+    },
+    {
+      "kind": "core.usage_interval",
+      "table": "usage_intervals",
+      "storage_class": "core",
+      "consistency": "serializable",
+      "owner_scope": "global",
+      "required_capabilities": [
+        "indexes.unique"
+      ]
+    },
+    {
+      "kind": "core.journal_record",
+      "table": "journal_records",
+      "storage_class": "core",
+      "consistency": "serializable",
+      "owner_scope": "global",
+      "required_capabilities": [
+        "indexes.unique"
+      ]
+    },
+    {
+      "kind": "core.journal_entry",
+      "table": "journal_entries",
+      "storage_class": "core",
+      "consistency": "serializable",
+      "owner_scope": "global",
+      "required_capabilities": [
+        "indexes.unique"
+      ]
+    },
+    {
+      "kind": "core.price_list",
+      "table": "price_lists",
+      "storage_class": "core",
+      "consistency": "serializable",
+      "owner_scope": "global",
+      "required_capabilities": [
+        "indexes.unique"
+      ]
+    },
+    {
+      "kind": "core.federation_node_descriptor",
+      "table": "federation_node_descriptors",
+      "storage_class": "core",
+      "consistency": "serializable",
+      "owner_scope": "global",
+      "required_capabilities": [
+        "indexes.unique"
+      ]
+    },
+    {
+      "kind": "core.federation_workload_descriptor",
+      "table": "federation_workload_descriptors",
+      "storage_class": "core",
+      "consistency": "serializable",
+      "owner_scope": "global",
+      "required_capabilities": [
+        "indexes.unique"
+      ]
+    },
+    {
+      "kind": "core.federation_nonce",
+      "table": "federation_nonces",
+      "storage_class": "core",
+      "consistency": "serializable",
+      "owner_scope": "global",
+      "required_capabilities": [
+        "indexes.unique"
+      ]
+    },
+    {
+      "kind": "core.federation_answer",
+      "table": "federation_answers",
+      "storage_class": "core",
+      "consistency": "serializable",
+      "owner_scope": "global",
+      "required_capabilities": [
+        "indexes.unique"
+      ]
+    },
+    {
+      "kind": "core.vmm_workload",
+      "table": "vmm_workloads",
+      "storage_class": "core",
+      "consistency": "serializable",
+      "owner_scope": "global",
+      "required_capabilities": [
+        "indexes.unique"
+      ]
+    },
+    {
+      "kind": "core.vmm_operation",
+      "table": "vmm_operations",
+      "storage_class": "core",
+      "consistency": "serializable",
+      "owner_scope": "global",
+      "required_capabilities": [
+        "indexes.unique"
+      ]
+    },
+    {
+      "kind": "core.vmm_idempotency",
+      "table": "vmm_idempotency_records",
+      "storage_class": "core",
+      "consistency": "serializable",
+      "owner_scope": "global",
+      "required_capabilities": [
+        "indexes.unique"
+      ]
+    },
+    {
+      "kind": "core.vmm_event",
+      "table": "vmm_events",
+      "storage_class": "core",
+      "consistency": "serializable",
+      "owner_scope": "global",
+      "required_capabilities": [
+        "indexes.unique"
+      ]
     }
   ]
 }

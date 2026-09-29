@@ -1,8 +1,9 @@
-//! Translation of `drivers/network/federation/netserver.go`.
+//! The listening side of federation: accept TLS TCP connections, parse the
+//! framed `OriginPacket`s, and hand them to the [`FedApi`] bridge.
 //!
 //! Listening side of the federation channel — accept TLS TCP connections,
 //! parse `OriginPacket`s from the framed wire format, and dispatch them to
-//! a `FedApi` bridge supplied by [`crate::adapters::network::federation::FedNet`].
+//! a `FedApi` bridge supplied by [`crate::transports::federation::FedNet`].
 //!
 //! ## Concurrency model — MPSC outbound queue
 //!
@@ -38,11 +39,10 @@ use std::time::Duration;
 
 use dashmap::DashMap;
 
-use crate::api::utils::crypto::secure_unique_string;
-use crate::models::core::ICore;
-use crate::models::packet::OriginPacket;
-use aseman_network_legacy::TlsConfig;
-use aseman_network_legacy::{
+use crate::node::Node;
+use aseman_contracts::wire::packet::OriginPacket;
+use aseman_network_shell::TlsConfig;
+use aseman_network_shell::{
     TlsStream, accept, bind_tls, decode_request_body, decode_response_body, decode_update_body,
     dial, encode_fed_response_body, encode_fed_update_body, encode_request_body,
     write_length_prefixed_frame,
@@ -59,11 +59,6 @@ enum OutboundFrame {
 /// Per-connection state.  The owning `TlsStream` lives inside the I/O thread;
 /// everything reachable through this struct is safe to call from any thread.
 pub struct Socket {
-    #[expect(
-        dead_code,
-        reason = "RL-010: legacy federation surface kept for the ADR-0004 window"
-    )]
-    pub id: String,
     peer: String,
     disconnected: AtomicBool,
     outbound: Mutex<Option<Sender<OutboundFrame>>>,
@@ -72,7 +67,6 @@ pub struct Socket {
 impl Socket {
     fn new(peer: String, outbound: Sender<OutboundFrame>) -> Arc<Socket> {
         Arc::new(Socket {
-            id: secure_unique_string(),
             peer,
             disconnected: AtomicBool::new(false),
             outbound: Mutex::new(Some(outbound)),
@@ -149,19 +143,13 @@ pub type FedApi = Arc<dyn Fn(Arc<Socket>, String, OriginPacket) + Send + Sync>;
 
 /// Federation TLS-TCP server.
 pub struct Tcp {
-    #[expect(
-        dead_code,
-        reason = "RL-010: legacy federation surface kept for the ADR-0004 window"
-    )]
-    app: Arc<dyn ICore>,
     bridge: Mutex<Option<FedApi>>,
     sockets: Arc<DashMap<String, Arc<Socket>>>,
 }
 
 impl Tcp {
-    pub fn new(app: Arc<dyn ICore>) -> Arc<Tcp> {
+    pub fn new(_app: Arc<Node>) -> Arc<Tcp> {
         Arc::new(Tcp {
-            app,
             bridge: Mutex::new(None),
             sockets: Arc::new(DashMap::new()),
         })

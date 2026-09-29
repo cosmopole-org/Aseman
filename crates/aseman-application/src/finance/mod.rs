@@ -1,10 +1,9 @@
-//! Finance use cases (RL-004 finance strangler slice).
+//! Finance use cases.
 //!
-//! The legacy finance family is a set of state machines over JSON documents and
-//! integer counters. These use cases reproduce the legacy rules and client-visible
-//! error texts exactly, operating over the [`FinanceLedger`] port plus the creature,
-//! store, program, and membership ports. The node shell supplies those ports over the
-//! legacy transaction (ADR 0026 keeps finance on legacy until Phase 8).
+//! The finance family is a set of state machines over JSON documents and integer
+//! counters. These use cases hold its rules and client-visible error texts, operating
+//! over the [`FinanceLedger`] port plus the creature, store, program, and membership
+//! ports, which the node supplies over its storage transaction.
 
 use aseman_ports::finance_ledger::{FinanceDoc, FinanceLedger, FinanceMarker, WalletCounter};
 use aseman_ports::{
@@ -25,7 +24,7 @@ fn failed(message: String) -> ApplicationError {
     ApplicationError::Port(PortError::Failed(message))
 }
 
-/// The legacy root creature, hard-coded for finance operator surfaces.
+/// The root creature, the operator of the finance surfaces.
 pub const LEGACY_ROOT: &str = "1@global";
 
 const FINANCE_HOLD_MAX_TTL_MS: i64 = 24 * 60 * 60 * 1000;
@@ -148,7 +147,7 @@ impl FinancePorts<'_> {
             .map_err(ApplicationError::from)
     }
 
-    /// The metadata object at `path`, as legacy `get_json(..).ok()` returned it.
+    /// The metadata object at `path`, as `get_json(..).ok()` returned it.
     fn store_metadata_object(&self, store_id: &str, path: &str) -> Option<Map<String, Value>> {
         let text = self
             .store_metadata
@@ -968,4 +967,6 @@ pub struct PaymentAdjustmentInput {
     pub metadata: Value,
 }
 
-include!("finance_actions.rs");
+mod actions;
+
+pub use actions::*;

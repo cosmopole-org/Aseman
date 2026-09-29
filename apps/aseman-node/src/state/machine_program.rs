@@ -1,4 +1,4 @@
-//! The legacy wire shape of a program (persisted as `core.program`, ADR 0036).
+//! The wire shape of a program (persisted as `core.program`, ADR 0036).
 
 use serde::{Deserialize, Serialize};
 

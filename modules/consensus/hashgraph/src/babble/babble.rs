@@ -325,7 +325,7 @@ pub fn load_key_for_config(config: &mut Config) -> Result<()> {
 
         // Also write key.pub next to the shard's priv_key. Without it,
         // anything that reads the shard directory to rebuild a peer set
-        // (other follower nodes, `casparctl peers`, etc.) has no way to
+        // (other follower nodes, `asemanctl peers`, etc.) has no way to
         // know which PubKeyHex this validator owns.
         let derived_pub = crate::crypto::keys::public_key_hex(new_key.verifying_key());
         if let Some(parent) = std::path::Path::new(&keyfile_path).parent() {

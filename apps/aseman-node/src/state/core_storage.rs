@@ -7,7 +7,7 @@
 
 use anyhow::{Result, anyhow};
 
-use crate::core::trx::Trx;
+use crate::storage::Trx;
 
 /// Why a state action did not take effect.
 pub(crate) enum StateFailure {

@@ -42,5 +42,5 @@ and finance balance. Never truncate the target or erase an incomplete migration 
 rollback. Run every verification command in the contract and attach its output to the
 rollout record.
 
-Advancing to 100 percent is not deletion approval. ADR 0004 observation and every
-removal-ledger deletion gate remain independent requirements.
+Advancing to 100 percent is not deletion approval: removing the previous version's
+data or services is a separate, reviewed step.

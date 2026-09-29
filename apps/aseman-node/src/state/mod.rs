@@ -1,7 +1,8 @@
-//! The node's legacy wire models and the ports of one state action over the storage
+//! The node's wire models and the ports of one state action over the storage
 //! module (ADR 0036).
 
 pub mod access;
+pub(crate) mod audit;
 pub mod bridges;
 pub mod chain;
 pub mod core_storage;

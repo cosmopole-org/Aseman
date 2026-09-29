@@ -79,7 +79,7 @@ impl LegacySnapshotGraph {
             let mut relationships = vec![CapsuleRelationship {
                 name: "store".to_owned(),
                 target_kind: CapsuleKind("core.store".to_owned()),
-                target_id: CapsuleId(deterministic_legacy_capsule_id("Store", store.as_bytes())),
+                target_id: CapsuleId(derived_capsule_id("Store", store.as_bytes())),
             }];
             relationships.extend(member_relationship);
             capsules.push(seal_legacy_capsule(
@@ -160,7 +160,7 @@ impl LegacySnapshotGraph {
         let local = |family: &str, name: &str, kind: &str| CapsuleRelationship {
             name: name.to_owned(),
             target_kind: CapsuleKind(kind.to_owned()),
-            target_id: CapsuleId(deterministic_legacy_capsule_id(family, member.as_bytes())),
+            target_id: CapsuleId(derived_capsule_id(family, member.as_bytes())),
         };
         match self.classify_member(member, local_origins)? {
             LegacyMemberClass::Creature => Ok((

@@ -13,7 +13,7 @@
 //! ## Ownership & access
 //!
 //! The gateway is **not** a process-wide static: the native backend owns one
-//! [`DockerHostGateway`] (moved out of the node in P5-06).
+//! [`DockerHostGateway`].
 //!
 //! ## Security
 //!

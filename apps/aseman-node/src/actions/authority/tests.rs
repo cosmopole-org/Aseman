@@ -8,6 +8,7 @@ use std::collections::BTreeMap;
 struct World;
 
 impl AuthorityLookups for World {
+    fn record(&self, _record: aseman_domain::authority::AuditRecord) {}
     fn owner_user(&self, id: &str) -> String {
         match id {
             "p-alice" | "p-alice-2" | "m-alice" => "alice",

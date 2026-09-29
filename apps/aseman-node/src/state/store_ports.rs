@@ -5,18 +5,17 @@
 use anyhow::anyhow;
 use aseman_application::ApplicationError;
 use aseman_capsule::store::CapsuleStorePorts;
-use aseman_contracts::legacy_realtime::SignalStreamPolicy;
+use aseman_contracts::signals::SignalStreamPolicy;
 use aseman_domain::store::{StoreRecord, StoreSignal};
-use aseman_ports::{
-    ClockPort, PortError, PortResult, SignalLog, StoreAccess, StoreDirectory, StoreMetadata,
-};
+use aseman_ports::{PortError, PortResult, SignalLog, StoreAccess, StoreDirectory, StoreMetadata};
 
-use crate::api::model::Store;
-use crate::api::model::access::StorePermissions;
-use crate::core::trx::Trx;
-use crate::models::packet::{LogPacket, LogQuery};
+use crate::state::Store;
+use crate::state::access::StorePermissions;
+use crate::storage::Trx;
+use aseman_contracts::wire::packet::LogPacket;
+use aseman_domain::signal_tags::LogQuery;
 
-/// A store record as the legacy `Store` wire view.
+/// A store record as the `Store` wire view.
 pub(crate) fn store_view(record: StoreRecord) -> Store {
     Store {
         id: record.id,
@@ -150,7 +149,7 @@ impl SignalLog for SignalPorts<'_> {
 }
 
 impl StorePorts<'_> {
-    /// A store as legacy `Store::pull` returned it: a missing store reads as an empty
+    /// A store as the wire expects it: a missing store reads as an empty
     /// record carrying the requested id.
     pub(crate) fn store_or_empty(&self, store_id: &str) -> Store {
         match self.store(store_id).ok().flatten() {
@@ -162,7 +161,7 @@ impl StorePorts<'_> {
         }
     }
 
-    /// The metadata object at `path`, as legacy `get_json(..).ok()` returned it.
+    /// The metadata object at `path`, as the wire expects it.
     pub(crate) fn metadata_object(
         &self,
         store_id: &str,
@@ -172,7 +171,7 @@ impl StorePorts<'_> {
         serde_json::from_str(&text).ok()
     }
 
-    /// Deep-merge `document` into the metadata; a non-object is ignored, as legacy
+    /// Deep-merge `document` into the metadata; a non-object is ignored,
     /// `put_json` failed on it without effect.
     pub(crate) fn merge_metadata_value(
         &self,
@@ -191,7 +190,7 @@ impl StorePorts<'_> {
 impl MembershipPorts<'_> {
     /// The existing stores `member_id` belongs to, in store-id order, at most
     /// `limit` of them. Memberships of a store whose object is gone are skipped, as
-    /// the legacy `Store::list` over `hasaccess` did.
+    /// over the `hasaccess` links.
     pub(crate) fn member_stores(&self, member_id: &str, limit: usize) -> PortResult<Vec<Store>> {
         let stores = StorePorts { trx: self.trx };
         let mut found = Vec::new();
@@ -225,15 +224,7 @@ impl MembershipPorts<'_> {
     }
 }
 
-pub(crate) struct SystemClock;
-
-impl ClockPort for SystemClock {
-    fn unix_millis(&self) -> i64 {
-        chrono::Utc::now().timestamp_millis()
-    }
-}
-
-/// Client-visible legacy error texts pass through unchanged.
+/// Client-visible error texts pass through unchanged.
 pub(crate) fn legacy_error(error: ApplicationError) -> anyhow::Error {
     match error {
         ApplicationError::Denied(message) | ApplicationError::Port(PortError::Failed(message)) => {

@@ -1,6 +1,5 @@
-//! Store messaging use cases (RL-004 strangler slice: `/stores/*`). The rules and
-//! client-visible error texts are identical to the legacy actions; transport
-//! fan-out stays in the adapter.
+//! Store messaging use cases (`/stores/*`): the rules and client-visible error texts;
+//! transport fan-out is the node's.
 
 use crate::ApplicationError;
 use aseman_domain::signal_tags::{LogQuery, validate_tags};

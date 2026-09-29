@@ -1,6 +1,6 @@
 //! A804 finance-consensus port over the real Babble application proxy.
 //!
-//! The provider is the consensus engine's **application handler** (RL-011): a
+//! The provider is the consensus engine's **application handler**: a
 //! single [`ProxyHandler`] owns the finance ledger and the validator governance
 //! (staking + election) from committed blocks, and only request/response/message
 //! transactions are forwarded to the chain module's registered pipeline.
@@ -126,7 +126,7 @@ impl ProxyHandler for ConsensusHandler {
             match typ {
                 b"stake" => {
                     // Governance-owned: feed the staking ledger.
-                    let pkt: aseman_contracts::legacy_wire::chain::ChainStakePacket =
+                    let pkt: aseman_contracts::wire::chain::ChainStakePacket =
                         match serde_json::from_slice(payload) {
                             Ok(p) => p,
                             Err(error) => {
@@ -137,7 +137,7 @@ impl ProxyHandler for ConsensusHandler {
                 }
                 b"election" => {
                     // Governance-owned: advance the election round.
-                    let pkt: aseman_contracts::legacy_wire::chain::ChainElectionPacket =
+                    let pkt: aseman_contracts::wire::chain::ChainElectionPacket =
                         match serde_json::from_slice(payload) {
                             Ok(p) => p,
                             Err(error) => {
@@ -273,7 +273,7 @@ impl HashgraphConsensusProvider {
     pub fn wire_governance_submit(&self) {
         let proxy = Arc::clone(&self.proxy);
         let hook: crate::governance::SubmitElectionFn = Arc::new(
-            move |pkt: aseman_contracts::legacy_wire::chain::ChainElectionPacket| {
+            move |pkt: aseman_contracts::wire::chain::ChainElectionPacket| {
                 let bytes = match serde_json::to_vec(&pkt) {
                     Ok(bytes) => bytes,
                     Err(_) => return,

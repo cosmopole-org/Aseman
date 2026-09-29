@@ -19,8 +19,8 @@ const AUDIT_EVENT: &str = "audit.event";
 const POLICY_CONTRACT_VERSION: i64 = 1;
 
 /// Decision audit over any [`CapsuleStore`].
-pub struct CapsuleDecisionAudit<'a> {
-    pub repository: &'a dyn CapsuleStore,
+pub struct CapsuleDecisionAudit<R> {
+    pub repository: R,
 }
 
 fn integer(fields: &BTreeMap<String, CapsuleValue>, name: &str) -> PortResult<i64> {
@@ -30,7 +30,7 @@ fn integer(fields: &BTreeMap<String, CapsuleValue>, name: &str) -> PortResult<i6
     }
 }
 
-impl CapsuleDecisionAudit<'_> {
+impl<R: CapsuleStore> CapsuleDecisionAudit<R> {
     fn events(
         &self,
         actor: &str,
@@ -55,7 +55,7 @@ impl CapsuleDecisionAudit<'_> {
     }
 }
 
-impl DecisionAudit for CapsuleDecisionAudit<'_> {
+impl<R: CapsuleStore> DecisionAudit for CapsuleDecisionAudit<R> {
     fn record(&self, record: &AuditRecord) -> PortResult<u64> {
         let occurred = record
             .occurred_at_millis

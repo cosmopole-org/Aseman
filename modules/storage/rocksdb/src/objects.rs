@@ -38,13 +38,10 @@ pub fn transform_legacy_program(
         .map(|value| utf8_program_column("comment", value))
         .transpose()?
         .unwrap_or_default();
-    let creature_id = deterministic_legacy_capsule_id("Creature", creature.as_bytes());
+    let creature_id = derived_capsule_id("Creature", creature.as_bytes());
     let capsule = CapsuleEnvelope {
         encoding_version: 1,
-        id: CapsuleId(deterministic_legacy_capsule_id(
-            "Program",
-            legacy_id.as_bytes(),
-        )),
+        id: CapsuleId(derived_capsule_id("Program", legacy_id.as_bytes())),
         kind: CapsuleKind("core.program".to_owned()),
         storage_class: StorageClass::Core,
         owner_scope: OwnerScope::Creature(creature_id),
@@ -118,7 +115,7 @@ pub fn transform_legacy_entity(
         ));
     }
     let creature_id = required_resolved_creature("Entity", resolved_creature_legacy_id)?;
-    let program_capsule_id = deterministic_legacy_capsule_id("Program", program_id.as_bytes());
+    let program_capsule_id = derived_capsule_id("Program", program_id.as_bytes());
     seal_legacy_capsule(
         LegacyCapsuleSpec {
             family: "Entity",
@@ -192,10 +189,7 @@ pub fn transform_legacy_store(
         relationships.push(CapsuleRelationship {
             name: "parent".to_owned(),
             target_kind: CapsuleKind("core.store".to_owned()),
-            target_id: CapsuleId(deterministic_legacy_capsule_id(
-                "Store",
-                parent_id.as_bytes(),
-            )),
+            target_id: CapsuleId(derived_capsule_id("Store", parent_id.as_bytes())),
         });
     }
     seal_legacy_capsule(
@@ -255,10 +249,7 @@ pub fn transform_legacy_chain(
         vec![CapsuleRelationship {
             name: "store".to_owned(),
             target_kind: CapsuleKind("core.store".to_owned()),
-            target_id: CapsuleId(deterministic_legacy_capsule_id(
-                "Store",
-                store_id.as_bytes(),
-            )),
+            target_id: CapsuleId(derived_capsule_id("Store", store_id.as_bytes())),
         }],
         BTreeMap::from([
             ("store_id".to_owned(), CapsuleValue::Text(store_id)),
@@ -295,10 +286,7 @@ pub fn transform_legacy_chain_shard(
         vec![CapsuleRelationship {
             name: "chain".to_owned(),
             target_kind: CapsuleKind("core.chain".to_owned()),
-            target_id: CapsuleId(deterministic_legacy_capsule_id(
-                "Chain",
-                chain_id.as_bytes(),
-            )),
+            target_id: CapsuleId(derived_capsule_id("Chain", chain_id.as_bytes())),
         }],
         BTreeMap::from([
             ("work_chain_id".to_owned(), CapsuleValue::Text(chain_id)),
@@ -345,7 +333,7 @@ pub fn transform_legacy_session_revocation(
         vec![CapsuleRelationship {
             name: "user".to_owned(),
             target_kind: CapsuleKind("core.user".to_owned()),
-            target_id: CapsuleId(deterministic_legacy_capsule_id(
+            target_id: CapsuleId(derived_capsule_id(
                 "User",
                 resolved_user_legacy_id.as_bytes(),
             )),
@@ -425,11 +413,11 @@ pub fn transform_legacy_file(
     let size_bytes = i64::try_from(artifact.size_bytes).map_err(|_| {
         LegacyMigrationError::Invalid("legacy File size exceeds target integer range".to_owned())
     })?;
-    let creature_id = deterministic_legacy_capsule_id("Creature", owner_creature_id.as_bytes());
+    let creature_id = derived_capsule_id("Creature", owner_creature_id.as_bytes());
     let mut relationships = vec![CapsuleRelationship {
         name: "owner".to_owned(),
         target_kind: CapsuleKind("core.user".to_owned()),
-        target_id: CapsuleId(deterministic_legacy_capsule_id(
+        target_id: CapsuleId(derived_capsule_id(
             "User",
             resolved_owner_user_legacy_id.as_bytes(),
         )),
@@ -438,10 +426,7 @@ pub fn transform_legacy_file(
         relationships.push(CapsuleRelationship {
             name: "store".to_owned(),
             target_kind: CapsuleKind("core.store".to_owned()),
-            target_id: CapsuleId(deterministic_legacy_capsule_id(
-                "Store",
-                store_id.as_bytes(),
-            )),
+            target_id: CapsuleId(derived_capsule_id("Store", store_id.as_bytes())),
         });
     }
     seal_legacy_capsule(
@@ -474,7 +459,7 @@ pub fn transform_legacy_file(
 
 /// The canonical capsule encoding of a legacy public key, owned by the contracts.
 pub fn encode_legacy_rsa_public_key(public_key_pem: &str) -> LegacyMigrationResult<Vec<u8>> {
-    aseman_contracts::legacy_keys::encode_legacy_rsa_public_key(public_key_pem)
+    aseman_contracts::creature_keys::encode_legacy_rsa_public_key(public_key_pem)
         .map_err(|error| LegacyMigrationError::Invalid(error.to_string()))
 }
 
@@ -525,9 +510,8 @@ pub fn transform_legacy_creature(
             "legacy finance currency/scale configuration is invalid".to_owned(),
         ));
     }
-    let creature_id = deterministic_legacy_capsule_id("Creature", legacy_id.as_bytes());
-    let owner_user_id =
-        deterministic_legacy_capsule_id("User", resolved_owner_user_legacy_id.as_bytes());
+    let creature_id = derived_capsule_id("Creature", legacy_id.as_bytes());
+    let owner_user_id = derived_capsule_id("User", resolved_owner_user_legacy_id.as_bytes());
     let mut capsules = Vec::new();
     if creature_type == "human" {
         if resolved_owner_user_legacy_id != legacy_id {
@@ -593,7 +577,7 @@ pub fn transform_legacy_creature(
     wallet_source_id.extend_from_slice(legacy_id.as_bytes());
     wallet_source_id.push(0);
     wallet_source_id.extend_from_slice(finance.currency.as_bytes());
-    let wallet_id = deterministic_legacy_capsule_id("Wallet", &wallet_source_id);
+    let wallet_id = derived_capsule_id("Wallet", &wallet_source_id);
     capsules.push(
         CapsuleEnvelope {
             encoding_version: 1,

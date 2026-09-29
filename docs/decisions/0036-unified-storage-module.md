@@ -31,7 +31,7 @@ Node code named provider types, and a RocksDB node could not use the capsule sto
 2. **Models, not keys.** Every persisted family is a *model* declared in the
    provider-neutral schemas (`contracts/capsule/kinds/*-logical-schemas.json`): typed
    fields, required fields, unique and range indexes, relations, and an optional
-   natural string key. A record's id is `deterministic_legacy_capsule_id(family, key)`
+   natural string key. A record's id is `derived_capsule_id(family, key)`
    for keyed models (so migrated A308 data keeps its ids) and a fresh UUIDv7
    otherwise.
 

@@ -1,6 +1,6 @@
 //! Shared TLS + length-prefixed framing helpers used by the TCP / WS / WS-fed
 //! drivers. Provides a thin sync wrapper around `rustls` plus encode/decode
-//! functions for the Go socket framing the Caspar clients speak:
+//! functions for the socket framing the signed-packet clients speak:
 //!
 //! ```text
 //!   request   : u32be(len) || u8(0x03) || u32be|signature || u32be|userId

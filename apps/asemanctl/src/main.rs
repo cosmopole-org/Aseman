@@ -1,4 +1,4 @@
-//! Canonical Aseman administrative CLI (RL-015).
+//! Canonical Aseman administrative CLI.
 
 fn main() {
     asemanctl::main();

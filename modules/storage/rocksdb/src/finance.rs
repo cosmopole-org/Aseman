@@ -844,8 +844,8 @@ fn seal_legacy_finance_record(
     let entry_count = i64::try_from(document.len()).map_err(|_| {
         LegacyMigrationError::Invalid(format!("legacy finance {identity} is too large"))
     })?;
-    let document = legacy_json_to_capsule_value(&identity, &Value::Object(document))?;
-    let content_digest = legacy_document_digest(&document)?;
+    let document = json_to_capsule_value(&identity, &Value::Object(document))?;
+    let content_digest = document_digest(&document)?;
     seal_legacy_capsule(
         LegacyCapsuleSpec {
             family: "FinanceLegacyRecord",

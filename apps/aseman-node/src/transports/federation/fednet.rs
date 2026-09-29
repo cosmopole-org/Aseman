@@ -1,10 +1,6 @@
-//! Translation of `drivers/network/federation/federation.go`.
-//!
-//! `FedNet` is the high-level federation driver implementing
-//! [`IFederation`]. It exposes the outbound API (request / response / update
-//! / request-by-callback) and registers a bridge with the federation TCP
-//! server so inbound packets get dispatched to the right action / signaler
-//! path.
+//! Federation requests, responses, and updates. Outbound, it forwards a request
+//! to its origin node and pushes store updates; inbound, it runs forwarded
+//! requests through the operations and applies peers' store updates.
 
 use std::net::ToSocketAddrs;
 use std::sync::{Arc, Mutex};
@@ -14,40 +10,29 @@ use std::time::Duration;
 use dashmap::DashMap;
 use serde_json::Value;
 
-use crate::api::model::StorePermissions;
-use crate::api::packets::{invites, stores};
-use crate::api::utils::crypto::secure_unique_string;
-use crate::core::trx::Trx;
-use crate::models::core::ICore;
-use crate::models::packet::{OriginPacket, build_error_json};
-use crate::models::ports::ISignaler;
-use crate::models::ports::IStorage;
-use crate::models::ports::{FedRequestCallback, IFederation};
-use aseman_network_legacy::TlsConfig;
+use crate::actions::wire::store as stores;
+use crate::live::hub::Signaler;
+use crate::node::Node;
+use crate::state::StorePermissions;
+use crate::storage::NodeStorage;
+use crate::storage::Trx;
+use crate::transports::federation::FedRequestCallback;
+use crate::util::crypto::secure_unique_string;
+use aseman_contracts::wire::packet::{OriginPacket, build_error_json};
+use aseman_network_shell::TlsConfig;
 
 use super::netserver::{FedApi, Socket, Tcp};
 
 /// In-flight callback awaiting a federation response.
 struct FedPacketCallback {
-    user_id: String,
-    key: String,
-    request: Vec<u8>,
-    /// Caller-supplied correlation id (Go: `UserRequestId`). Stored so
-    /// downstream tooling can match a federation response back to the
-    /// original user-facing request that triggered it.
-    #[expect(
-        dead_code,
-        reason = "RL-010: legacy federation surface kept for the ADR-0004 window"
-    )]
-    user_request_id: String,
     callback: Arc<Mutex<Option<FedRequestCallback>>>,
 }
 
-/// Concrete [`IFederation`] implementation.
+/// Federation over the framed TCP server.
 pub struct FedNet {
-    app: Arc<dyn ICore>,
-    storage: Mutex<Option<Arc<dyn IStorage>>>,
-    signaler: Mutex<Option<Arc<dyn ISignaler>>>,
+    app: Arc<Node>,
+    storage: Mutex<Option<Arc<NodeStorage>>>,
+    signaler: Mutex<Option<Arc<Signaler>>>,
     gateway: Mutex<Option<Arc<Tcp>>>,
     packet_callbacks: Arc<DashMap<String, Arc<FedPacketCallback>>>,
     port: Mutex<i64>,
@@ -57,9 +42,9 @@ pub struct FedNet {
 impl FedNet {
     /// Stage one — `FirstStageBackFill(core)`. The federation driver is
     /// instantiated before `Core.tools` is fully wired (a chicken-and-egg
-    /// problem the Go code papered over with mutation); we mirror the same
+    /// problem otherwise papered over with mutation); we keep the same
     /// two-stage handshake.
-    pub fn first_stage(app: Arc<dyn ICore>) -> Arc<FedNet> {
+    pub fn first_stage(app: Arc<Node>) -> Arc<FedNet> {
         Arc::new(FedNet {
             app,
             storage: Mutex::new(None),
@@ -74,11 +59,7 @@ impl FedNet {
     /// Stage two — `SecondStageForFill(storage, signaler)`. Wires the
     /// driver to the rest of the runtime and installs the inbound bridge on
     /// the federation TCP gateway.
-    pub fn second_stage(
-        self: &Arc<Self>,
-        storage: Arc<dyn IStorage>,
-        signaler: Arc<dyn ISignaler>,
-    ) {
+    pub fn second_stage(self: &Arc<Self>, storage: Arc<NodeStorage>, signaler: Arc<Signaler>) {
         *self.storage.lock().unwrap() = Some(storage);
         *self.signaler.lock().unwrap() = Some(signaler);
 
@@ -93,7 +74,7 @@ impl FedNet {
 
     fn resolve_destination(&self, dest_org: &str) -> Option<String> {
         // Resolve to IPv4, then verify the IP is in the chain's peer list
-        // (matches Go's `net.LookupIP` + `Peers()` filter).
+        // (a DNS lookup filtered by the chain's peers).
         let addrs = (dest_org, 0u16).to_socket_addrs().ok()?;
         let mut ipv4 = None;
         for a in addrs {
@@ -146,16 +127,11 @@ impl FedNet {
         else {
             return;
         };
-        if pack.res_code == 0 {
-            // Side-effect: invite / join / create create the local membership
-            // / hasaccess links so the requesting user can address the store.
-            self.apply_response_side_effects(&cb, &pack);
-        }
         self.packet_callbacks.remove(&pack.request_id);
         let mut slot = cb.callback.lock().unwrap();
         if let Some(callback) = slot.take() {
             if pack.res_code != 0 {
-                let err_obj: crate::models::packet::Error =
+                let err_obj: aseman_contracts::wire::packet::Error =
                     serde_json::from_slice(&pack.binary).unwrap_or_default();
                 callback(Vec::new(), 1, Some(anyhow::anyhow!(err_obj.message)));
             } else {
@@ -164,50 +140,12 @@ impl FedNet {
         }
     }
 
-    fn apply_response_side_effects(&self, cb: &Arc<FedPacketCallback>, pack: &OriginPacket) {
-        match cb.key.as_str() {
-            "/invites/accept" | "/stores/join" => {
-                let store_id = if cb.key == "/invites/accept" {
-                    serde_json::from_slice::<invites::AcceptInput>(&cb.request)
-                        .ok()
-                        .map(|m| m.store_id)
-                        .unwrap_or_default()
-                } else {
-                    serde_json::from_slice::<stores::JoinInput>(&cb.request)
-                        .ok()
-                        .map(|m| m.store_id)
-                        .unwrap_or_default()
-                };
-                if !store_id.is_empty() {
-                    self.apply_membership(&store_id, &cb.user_id, Some(StorePermissions::member()));
-                    if let Some(sig) = self.signaler.lock().unwrap().clone() {
-                        sig.join_group(&store_id, &cb.user_id);
-                    }
-                }
-            }
-            "/stores/create" => {
-                if let Ok(out) = serde_json::from_slice::<stores::CreateOutput>(&pack.binary) {
-                    // The creator of a store administers it.
-                    self.apply_membership(
-                        &out.store.store.id,
-                        &cb.user_id,
-                        Some(StorePermissions::owner()),
-                    );
-                    if let Some(sig) = self.signaler.lock().unwrap().clone() {
-                        sig.join_group(&out.store.store.id, &cb.user_id);
-                    }
-                }
-            }
-            _ => {}
-        }
-    }
-
     fn handle_update(&self, pack: OriginPacket) {
         self.react_to_update(&pack.key, &pack.binary);
         if let Some(sig) = self.signaler.lock().unwrap().clone() {
             if pack.store_id.is_empty() {
                 let value = serde_json::from_slice::<Value>(&pack.binary).unwrap_or(Value::Null);
-                sig.signal_user(&pack.key, &pack.user_id, value, false);
+                sig.signal_user(&pack.key, &pack.user_id, value);
             } else {
                 let value = serde_json::from_slice::<Value>(&pack.binary).unwrap_or(Value::Null);
                 // Resolve this node's members of the store from state, the same
@@ -221,66 +159,63 @@ impl FedNet {
     }
 
     /// Mirrors a remote membership change through the store port: `Some` grants
-    /// the permissions, `None` removes the member (RL-004 strangler).
+    /// the permissions, `None` removes the member.
     fn apply_membership(&self, store_id: &str, member_id: &str, grant: Option<StorePermissions>) {
         let store_id = store_id.to_string();
         let member_id = member_id.to_string();
-        self.app.modify_state(
-            false,
-            Box::new(move |trx: &Trx| {
-                let ports = crate::api::model::store_ports::MembershipPorts { trx };
-                let outcome = match grant {
-                    Some(permissions) => {
-                        aseman_ports::StoreAccess::join(&ports, &store_id, &member_id, permissions)
-                    }
-                    None => aseman_ports::StoreAccess::leave(&ports, &store_id, &member_id),
-                };
-                outcome.map_err(|error| anyhow::anyhow!("{error}"))
-            }),
-        );
+        if let Err(error) = self.app.in_action(|trx: &Trx| {
+            let ports = crate::state::store_ports::MembershipPorts { trx };
+            let outcome = match grant {
+                Some(permissions) => {
+                    aseman_ports::StoreAccess::join(&ports, &store_id, &member_id, permissions)
+                }
+                None => aseman_ports::StoreAccess::leave(&ports, &store_id, &member_id),
+            };
+            outcome.map_err(|error| anyhow::anyhow!("{error}"))
+        }) {
+            eprintln!("storage: {error}");
+        }
     }
 
     fn react_to_update(&self, key: &str, data: &[u8]) {
         match key {
             "stores/update" => {
-                if let Ok(tc) = serde_json::from_slice::<stores::Update>(data) {
-                    self.app.modify_state(
-                        false,
-                        Box::new(move |trx: &Trx| {
-                            // A mirrored update of a store this node does not hold is
-                            // ignored rather than recreated without a creator.
-                            let stores = crate::api::model::store_ports::StorePorts { trx };
-                            let record = aseman_domain::store::StoreRecord {
-                                id: tc.store.id.clone(),
-                                persistent_history: tc.store.pers_hist,
-                                signal_count: tc.store.signal_count,
-                                tag: tc.store.tag.clone(),
-                                parent_id: tc.store.parent_id.clone(),
-                                is_public: tc.store.is_public,
-                                member_count: i64::from(tc.store.member_count),
-                            };
-                            match aseman_ports::StoreDirectory::update_store(&stores, &record) {
-                                Err(aseman_ports::PortError::NotFound) => Ok(()),
-                                other => other.map_err(|error| anyhow::anyhow!("{error}")),
-                            }
-                        }),
-                    );
+                if let Ok(tc) = serde_json::from_slice::<stores::Update>(data)
+                    && let Err(error) = self.app.in_action(|trx: &Trx| {
+                        // A mirrored update of a store this node does not hold is
+                        // ignored rather than recreated without a creator.
+                        let stores = crate::state::store_ports::StorePorts { trx };
+                        let record = aseman_domain::store::StoreRecord {
+                            id: tc.store.id.clone(),
+                            persistent_history: tc.store.pers_hist,
+                            signal_count: tc.store.signal_count,
+                            tag: tc.store.tag.clone(),
+                            parent_id: tc.store.parent_id.clone(),
+                            is_public: tc.store.is_public,
+                            member_count: i64::from(tc.store.member_count),
+                        };
+                        match aseman_ports::StoreDirectory::update_store(&stores, &record) {
+                            Err(aseman_ports::PortError::NotFound) => Ok(()),
+                            other => other.map_err(|error| anyhow::anyhow!("{error}")),
+                        }
+                    })
+                {
+                    eprintln!("storage: {error}");
                 }
             }
             "stores/delete" => {
                 if let Ok(tc) = serde_json::from_slice::<stores::Delete>(data) {
                     let id = tc.store.id;
-                    self.app.modify_state(
-                        false,
-                        Box::new(move |trx: &Trx| {
-                            // LD-20: the store is really removed; the old key never existed.
-                            let stores = crate::api::model::store_ports::StorePorts { trx };
-                            aseman_ports::StoreDirectory::delete_store(&stores, &id)
-                                .map_err(|error| anyhow::anyhow!("{error}"))?;
-                            aseman_ports::StoreMetadata::delete_store_metadata(&stores, &id)
-                                .map_err(|error| anyhow::anyhow!("{error}"))
-                        }),
-                    );
+                    if let Err(error) = self.app.in_action(|trx: &Trx| {
+                        // LD-20: the store is really removed; the old key never existed.
+                        let stores = crate::state::store_ports::StorePorts { trx };
+                        aseman_ports::StoreDirectory::delete_store(&stores, &id)
+                            .map_err(|error| anyhow::anyhow!("{error}"))?;
+                        aseman_ports::StoreMetadata::delete_store_metadata(&stores, &id)
+                            .map_err(|error| anyhow::anyhow!("{error}"))
+                    }) {
+                        eprintln!("storage: {error}");
+                    }
                 }
             }
             "stores/addMember" | "stores/join" => {
@@ -305,40 +240,22 @@ impl FedNet {
 
     fn handle_request(&self, socket: Arc<Socket>, channel_id: &str, pack: OriginPacket) {
         let _ = socket; // request responses are sent via SendFedResponse below
-        let Some(secure) = self.app.actor().fetch_secure_action(&pack.key) else {
-            self.send_fed_response_inner(
+        let answer = self.app.router().run_forwarded(
+            &pack.key,
+            &crate::actions::guard::SignedPacket {
+                user_id: &pack.user_id,
+                payload: &pack.binary,
+                signature: &pack.signature,
+            },
+        );
+        match answer {
+            Ok(res) => self.send_fed_response_inner(channel_id, &pack.request_id, 0, &res),
+            Err(refusal) => self.send_fed_response_inner(
                 channel_id,
                 &pack.request_id,
                 1,
-                &build_error_json("action not found"),
-            );
-            return;
-        };
-        let raw_payload = serde_json::from_slice::<Value>(&pack.binary).unwrap_or(Value::Null);
-        let input = match secure.parse_input("fed", raw_payload) {
-            Ok(i) => i,
-            Err(_) => {
-                self.send_fed_response_inner(
-                    channel_id,
-                    &pack.request_id,
-                    1,
-                    &build_error_json("input could not be parsed"),
-                );
-                return;
-            }
-        };
-        match secure.securely_act_fed(&pack.user_id, &pack.binary, &pack.signature, input) {
-            Ok((_, res)) => {
-                self.send_fed_response_inner(channel_id, &pack.request_id, 0, &res);
-            }
-            Err(e) => {
-                self.send_fed_response_inner(
-                    channel_id,
-                    &pack.request_id,
-                    1,
-                    &build_error_json(&format!("{}", e)),
-                );
-            }
+                &build_error_json(&refusal.message()),
+            ),
         }
     }
 
@@ -360,38 +277,15 @@ impl FedNet {
     }
 }
 
-impl IFederation for FedNet {
-    fn listen(&self, port: i64, tls_config: Option<TlsConfig>) {
+impl FedNet {
+    pub(crate) fn listen(&self, port: i64, tls_config: Option<TlsConfig>) {
         *self.port.lock().unwrap() = port;
         *self.tls_config.lock().unwrap() = tls_config.clone();
         if let Some(gateway) = self.gateway.lock().unwrap().clone() {
             gateway.listen(port, tls_config);
         }
     }
-
-    fn send_fed_request(
-        &self,
-        dest_org: &str,
-        request_id: &str,
-        user_id: &str,
-        path: &str,
-        payload: Vec<u8>,
-        signature: &str,
-    ) {
-        let Some(address) = self.resolve_destination(dest_org) else {
-            return;
-        };
-        let Some(socket) = self.open_socket(&address) else {
-            return;
-        };
-        socket.write_request(request_id, user_id, path, &payload, signature);
-    }
-
-    fn send_fed_response(&self, dest_org: &str, request_id: &str, res_code: i64, res: Value) {
-        self.send_fed_response_inner(dest_org, request_id, res_code, &res);
-    }
-
-    fn send_fed_update(
+    pub(crate) fn send_fed_update(
         &self,
         dest_org: &str,
         key: &str,
@@ -418,10 +312,9 @@ impl IFederation for FedNet {
         );
     }
 
-    fn send_fed_request_by_callback(
+    pub(crate) fn send_fed_request_by_callback(
         &self,
         dest_org: &str,
-        request_id: &str,
         user_id: &str,
         path: &str,
         payload: Vec<u8>,
@@ -438,16 +331,12 @@ impl IFederation for FedNet {
         };
         let callback_id = secure_unique_string();
         let cb = Arc::new(FedPacketCallback {
-            user_id: user_id.to_string(),
-            key: path.to_string(),
-            request: payload.clone(),
-            user_request_id: request_id.to_string(),
             callback: Arc::new(Mutex::new(Some(callback))),
         });
         self.packet_callbacks
             .insert(callback_id.clone(), cb.clone());
 
-        // 120 s timeout (matches Go).
+        // 120 s timeout.
         let trans_callbacks = self.packet_callbacks.clone();
         let cb_for_timeout = cb.clone();
         let callback_id_for_timeout = callback_id.clone();

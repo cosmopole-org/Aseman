@@ -6,7 +6,6 @@
     "server_selected": ["provider_id", "database_name", "role_name", "generation"]
   },
   "signed_proxy_authentication": {
-    "implementation_work_unit": "P4-04",
     "normative_contract": "A401",
     "signed_fields": ["operation_digest", "nonce", "issued_at", "expires_at", "audience", "key_epoch"],
     "required_checks": ["signature", "freshness", "audience", "replay", "revocation", "key_epoch"],

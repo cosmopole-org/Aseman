@@ -1,7 +1,7 @@
 {
   "_meta": {
     "artifact": "A301-A304",
-    "generator": "scripts/generate_phase3_contracts.py",
+    "generator": "scripts/generate_capsule_contracts.py",
     "last_verified_commit": "800df24076c794f9b33c29a9f301dd9d674f47d6",
     "status": "ACCEPTED"
   },
@@ -51,7 +51,7 @@
       "path": "contracts/capsule/guest/fixtures/valid-multi-table.json"
     },
     {
-      "digest": "sha256:e15bfcf11512f7089651362eb6c3452cd8234930006a7aafc0b7b95590b832ec",
+      "digest": "sha256:0999c195f0dee743feed3daad8fe922edd68535c293d618251061fa3e6934fa4",
       "path": "contracts/capsule/guest/isolation-rules.json"
     },
     {
@@ -67,7 +67,7 @@
       "path": "contracts/capsule/guest/schema-mutation.schema.json"
     },
     {
-      "digest": "sha256:320e075b0bf7b2df628f7e67a7748c3eca0db254bb0f46b0c35a451aeff789ac",
+      "digest": "sha256:5981382a44aff1bf74be60e9fa244a955104c46c3978bada7a1a3df0cf927dc6",
       "path": "contracts/capsule/kinds/core-logical-schemas.json"
     },
     {
@@ -75,7 +75,7 @@
       "path": "contracts/capsule/kinds/core-logical-schemas.schema.json"
     },
     {
-      "digest": "sha256:be3d4e5e0527e4c93e7a12edb1b8c72155340b07f01146aa6f9d37c45ac72e76",
+      "digest": "sha256:9c697194ed4e4c27d8bd50ff0e7b20f579df2728ca61ce369ea1ba4357ad7e91",
       "path": "contracts/capsule/kinds/core-registry.json"
     },
     {
@@ -806,6 +806,186 @@
       ],
       "storage_class": "core",
       "table": "chain_shards"
+    },
+    {
+      "consistency": "serializable",
+      "kind": "core.coordination_lease",
+      "owner_scope": "global",
+      "required_capabilities": [
+        "indexes.unique"
+      ],
+      "storage_class": "core",
+      "table": "coordination_leases"
+    },
+    {
+      "consistency": "serializable",
+      "kind": "core.coordination_fence",
+      "owner_scope": "global",
+      "required_capabilities": [
+        "indexes.unique"
+      ],
+      "storage_class": "core",
+      "table": "coordination_fences"
+    },
+    {
+      "consistency": "serializable",
+      "kind": "core.realtime_log_event",
+      "owner_scope": "global",
+      "required_capabilities": [
+        "indexes.unique"
+      ],
+      "storage_class": "core",
+      "table": "realtime_log_events"
+    },
+    {
+      "consistency": "serializable",
+      "kind": "core.realtime_outbox_entry",
+      "owner_scope": "global",
+      "required_capabilities": [
+        "indexes.unique"
+      ],
+      "storage_class": "core",
+      "table": "realtime_outbox_entries"
+    },
+    {
+      "consistency": "serializable",
+      "kind": "core.realtime_checkpoint",
+      "owner_scope": "global",
+      "required_capabilities": [
+        "indexes.unique"
+      ],
+      "storage_class": "core",
+      "table": "realtime_checkpoints"
+    },
+    {
+      "consistency": "serializable",
+      "kind": "core.usage_sample",
+      "owner_scope": "global",
+      "required_capabilities": [
+        "indexes.unique"
+      ],
+      "storage_class": "core",
+      "table": "usage_samples"
+    },
+    {
+      "consistency": "serializable",
+      "kind": "core.usage_interval",
+      "owner_scope": "global",
+      "required_capabilities": [
+        "indexes.unique"
+      ],
+      "storage_class": "core",
+      "table": "usage_intervals"
+    },
+    {
+      "consistency": "serializable",
+      "kind": "core.journal_record",
+      "owner_scope": "global",
+      "required_capabilities": [
+        "indexes.unique"
+      ],
+      "storage_class": "core",
+      "table": "journal_records"
+    },
+    {
+      "consistency": "serializable",
+      "kind": "core.journal_entry",
+      "owner_scope": "global",
+      "required_capabilities": [
+        "indexes.unique"
+      ],
+      "storage_class": "core",
+      "table": "journal_entries"
+    },
+    {
+      "consistency": "serializable",
+      "kind": "core.price_list",
+      "owner_scope": "global",
+      "required_capabilities": [
+        "indexes.unique"
+      ],
+      "storage_class": "core",
+      "table": "price_lists"
+    },
+    {
+      "consistency": "serializable",
+      "kind": "core.federation_node_descriptor",
+      "owner_scope": "global",
+      "required_capabilities": [
+        "indexes.unique"
+      ],
+      "storage_class": "core",
+      "table": "federation_node_descriptors"
+    },
+    {
+      "consistency": "serializable",
+      "kind": "core.federation_workload_descriptor",
+      "owner_scope": "global",
+      "required_capabilities": [
+        "indexes.unique"
+      ],
+      "storage_class": "core",
+      "table": "federation_workload_descriptors"
+    },
+    {
+      "consistency": "serializable",
+      "kind": "core.federation_nonce",
+      "owner_scope": "global",
+      "required_capabilities": [
+        "indexes.unique"
+      ],
+      "storage_class": "core",
+      "table": "federation_nonces"
+    },
+    {
+      "consistency": "serializable",
+      "kind": "core.federation_answer",
+      "owner_scope": "global",
+      "required_capabilities": [
+        "indexes.unique"
+      ],
+      "storage_class": "core",
+      "table": "federation_answers"
+    },
+    {
+      "consistency": "serializable",
+      "kind": "core.vmm_workload",
+      "owner_scope": "global",
+      "required_capabilities": [
+        "indexes.unique"
+      ],
+      "storage_class": "core",
+      "table": "vmm_workloads"
+    },
+    {
+      "consistency": "serializable",
+      "kind": "core.vmm_operation",
+      "owner_scope": "global",
+      "required_capabilities": [
+        "indexes.unique"
+      ],
+      "storage_class": "core",
+      "table": "vmm_operations"
+    },
+    {
+      "consistency": "serializable",
+      "kind": "core.vmm_idempotency",
+      "owner_scope": "global",
+      "required_capabilities": [
+        "indexes.unique"
+      ],
+      "storage_class": "core",
+      "table": "vmm_idempotency_records"
+    },
+    {
+      "consistency": "serializable",
+      "kind": "core.vmm_event",
+      "owner_scope": "global",
+      "required_capabilities": [
+        "indexes.unique"
+      ],
+      "storage_class": "core",
+      "table": "vmm_events"
     }
   ],
   "digest": "sha2-256",

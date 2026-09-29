@@ -82,9 +82,8 @@ fn check_architecture(root: &Path) -> Result<()> {
             BTreeSet::from([
                 "aseman-domain",
                 "thiserror",
-                // The finance ledger port carries JSON documents (RL-004 finance
-                // strangler slice): `serde_json` is a pure wire-value crate, not a
-                // driver or storage type.
+                // The finance ledger port carries JSON documents: `serde_json` is
+                // a pure wire-value crate, not a driver or storage type.
                 "serde_json",
             ]),
         ),
@@ -94,9 +93,9 @@ fn check_architecture(root: &Path) -> Result<()> {
                 "aseman-domain",
                 "aseman-ports",
                 "thiserror",
-                // Pure wire-value / hashing crates the finance use cases need
-                // (RL-004): serde for input structs, serde_json for documents, sha2
-                // and hex for finance hashes, url for origin validation.
+                // Pure wire-value / hashing crates the finance use cases need:
+                // serde for input structs, serde_json for documents, sha2 and hex
+                // for finance hashes, url for origin validation.
                 "serde",
                 "serde_json",
                 "sha2",
@@ -206,18 +205,15 @@ const FAST_PACKAGES: &[&str] = &[
     "aseman-storage-rocksdb",
     "aseman-storage",
     "aseman-storage-providers",
-    "aseman-migration-e2e",
     "aseman-capsule",
     "aseman-identity-native",
     "aseman-policy-native",
-    "aseman-finance-ledger",
-    "aseman-realtime-durable",
     "aseman-federation-http",
     "aseman-gateway-rpc",
     "aseman-consensus-hashgraph",
     "aseman-policy-conformance",
     "aseman-public-http",
-    "aseman-network-legacy",
+    "aseman-network-shell",
     "aseman-public-service",
     "aseman-vmm-http",
     "aseman-vmm-backend-grpc",
@@ -231,21 +227,21 @@ const FAST_PACKAGES: &[&str] = &[
     "xtask",
 ];
 
-/// The runtime plugins the native VMM backend links (RL-014); `full` lints them
-/// with the backend.
+/// The runtime plugins the native VMM backend links; `full` lints them with the
+/// backend.
 const RUNTIME_PACKAGES: &[&str] = &[
     "aseman-vmm-backend-native",
-    "caspar-vm-sdk",
-    "caspar-vm-plugins",
-    "caspar-vm-docker",
-    "caspar-vm-elpian",
+    "aseman-vm-sdk",
+    "aseman-vm-plugins",
+    "aseman-vm-docker",
+    "aseman-vm-elpian",
     "elpian-vm",
-    "caspar-vm-elpify",
+    "aseman-vm-elpify",
     "elpify-lang",
-    "caspar-vm-fire",
-    "caspar-vm-javascript",
-    "caspar-vm-modal",
-    "caspar-vm-wasm",
+    "aseman-vm-fire",
+    "aseman-vm-javascript",
+    "aseman-vm-modal",
+    "aseman-vm-wasm",
 ];
 
 /// `cargo <command> -p <package>... <extra>...`.
@@ -264,32 +260,23 @@ fn fast(root: &Path) -> Result<()> {
         run(root, "cargo", &["fmt", "-p", package, "--", "--check"])?;
     }
     for script in [
+        // The surface inventories come first: the configuration, public API, and
+        // security-registry contracts are derived from them.
         "generate_current_workspace_inventory.py",
         "generate_current_surface_inventories.py",
-        "generate_legacy_data_inventory.py",
-        "generate_current_call_graph.py",
-        "generate_characterization_fixtures.py",
-        "generate_support_manifest.py",
-        "generate_quality_baseline.py",
-        "generate_removal_ledger_children.py",
-        "generate_phase1_contracts.py",
-        "generate_phase2_contracts.py",
-        "generate_phase3_contracts.py",
+        "generate_core_contracts.py",
+        "generate_module_contracts.py",
+        "generate_capsule_contracts.py",
         "generate_postgres_core.py",
         // ADR 0036: the typed storage client is generated from the model catalog.
         "generate_storage_client.py",
         "generate_postgres_storage_classes.py",
-        "generate_legacy_transform_manifest.py",
         "generate_security_registry.py",
         "generate_vmm_parity.py",
         "generate_public_api.py",
         // A701/A903: dependency-free TypeScript and Python clients are derived from
         // the authoritative OpenAPI operation IDs and mutation classes.
         "generate_public_clients.py",
-        // A1005: every requirement keeps a design authority, a delivery phase, an
-        // acceptance authority, and a phase-gate status, mechanically checked.
-        "generate_requirements_traceability.py",
-        // R22: the final hierarchy and remaining structural gaps stay explicit.
         "generate_repository_layout.py",
         // Not a generator: it checks the deployment contract against the code that
         // decides the ports, the loopback boundary, and the privileges (A602).
@@ -312,14 +299,6 @@ fn fast(root: &Path) -> Result<()> {
         // A1002: every required operational suite has a command, owner, evidence,
         // environment declaration, and numeric pass/fail threshold.
         "check_operational_scenarios.py",
-        // Not a generator either: the legacy transports must stay framing-only
-        // (A701, P7-05).
-        "check_legacy_transports.py",
-        // The Phase 10 release gate: a legacy path may not outlive its window in
-        // silence.
-        "check_removal_ledger_due.py",
-        // The register's completeness rule: an unmentioned artifact reads as done.
-        "check_artifact_register.py",
     ] {
         run(root, "python3", &[&format!("scripts/{script}"), "--check"])?;
     }
@@ -331,7 +310,7 @@ fn fast(root: &Path) -> Result<()> {
             "unittest",
             "discover",
             "-s",
-            "tests/characterization",
+            "tests/contract-checks",
             "-p",
             "test_*.py",
         ],

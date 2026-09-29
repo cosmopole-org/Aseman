@@ -1,4 +1,4 @@
-//! Program repositories on the capsule protocol (RL-004 strangler, target side).
+//! Program repositories on the capsule protocol.
 //!
 //! A program is stored exactly as the A308 export writes it: a `core.program` capsule
 //! scoped to its machine creature, related to it, with a `core.legacy_identity` row.
@@ -14,10 +14,8 @@ use aseman_contracts::capsule::{
     CapsuleEnvelope, CapsuleKind, CapsuleQuery, CapsuleValue, MAX_QUERY_LIMIT, OwnerScope,
     StorageClass,
 };
-use aseman_contracts::legacy_documents::{
-    capsule_value_to_json, legacy_document_fields, merge_legacy_objects,
-};
-use aseman_contracts::legacy_realtime::deterministic_legacy_capsule_id;
+use aseman_contracts::documents::{capsule_value_to_json, document_fields, merge_objects};
+use aseman_contracts::signals::derived_capsule_id;
 use aseman_domain::creature::legacy_page;
 use aseman_domain::program::{ProgramAlarm, ProgramRecord, VmResourceStore};
 use aseman_ports::{
@@ -34,11 +32,11 @@ pub struct CapsuleProgramPorts<'a> {
 }
 
 fn program_id(legacy_id: &str) -> [u8; 16] {
-    deterministic_legacy_capsule_id("Program", legacy_id.as_bytes())
+    derived_capsule_id("Program", legacy_id.as_bytes())
 }
 
 fn machine_capsule_id(machine_id: &str) -> [u8; 16] {
-    deterministic_legacy_capsule_id("Creature", machine_id.as_bytes())
+    derived_capsule_id("Creature", machine_id.as_bytes())
 }
 
 fn fields(record: &ProgramRecord) -> BTreeMap<String, CapsuleValue> {
@@ -97,7 +95,7 @@ impl ProgramDirectory for CapsuleProgramPorts<'_> {
     }
 
     fn programs(&self, offset: i64, count: Option<i64>) -> PortResult<Vec<ProgramRecord>> {
-        // Legacy lists objects in identity byte order.
+        // Objects list in identity byte order.
         let mut identities = self
             .capsules()
             .legacy_ids("Program")?
@@ -147,7 +145,7 @@ impl ProgramDirectory for CapsuleProgramPorts<'_> {
         }
         let machine = self.machine_scope(program)?;
         let writes = match existing {
-            // Registering a deleted program again revives it, as legacy allows.
+            // Registering a deleted program again revives it.
             Some(tombstoned) => vec![(
                 CapsuleEnvelope {
                     owner_scope: OwnerScope::Creature(machine),
@@ -246,7 +244,7 @@ const PROGRAM_ALARM: &str = "core.program_alarm";
 const STORE: &str = "core.store";
 
 fn alarm_id(legacy_id: &str) -> [u8; 16] {
-    deterministic_legacy_capsule_id("ProgramAlarm", legacy_id.as_bytes())
+    derived_capsule_id("ProgramAlarm", legacy_id.as_bytes())
 }
 
 impl ProgramAlarms for CapsuleProgramPorts<'_> {
@@ -286,7 +284,7 @@ impl ProgramAlarms for CapsuleProgramPorts<'_> {
             relationship(
                 "store",
                 STORE,
-                deterministic_legacy_capsule_id("Store", alarm.store_id.as_bytes()),
+                derived_capsule_id("Store", alarm.store_id.as_bytes()),
             ),
         ];
         let fields = BTreeMap::from([
@@ -352,7 +350,7 @@ impl ProgramAlarms for CapsuleProgramPorts<'_> {
 const RESOURCE_STORE: &str = "core.vm_resource_store";
 
 fn resource_store_id(store_id: &str) -> [u8; 16] {
-    deterministic_legacy_capsule_id("VmResourceStore", store_id.as_bytes())
+    derived_capsule_id("VmResourceStore", store_id.as_bytes())
 }
 
 impl CapsuleProgramPorts<'_> {
@@ -465,9 +463,9 @@ impl VmResourceStores for CapsuleProgramPorts<'_> {
                 Some(Ok(serde_json::Value::Object(document))) => document,
                 _ => serde_json::Map::new(),
             };
-            merge_legacy_objects(&mut document, &incoming);
+            merge_objects(&mut document, &incoming);
             let mut fields =
-                legacy_document_fields(&key, "metadata", &document).map_err(PortError::failed)?;
+                document_fields(&key, "metadata", &document).map_err(PortError::failed)?;
             fields.insert("name".to_owned(), CapsuleValue::Text(name.to_owned()));
             fields.insert(
                 "machine_ref".to_owned(),

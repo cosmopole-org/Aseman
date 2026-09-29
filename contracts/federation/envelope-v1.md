@@ -1,7 +1,7 @@
 ---
 status: ACCEPTED
 owner: federation
-source_of_truth: this contract, aseman-domain::federation, plan/migration/06-network-federation-realtime.md
+source_of_truth: this contract, aseman-domain::federation
 last_verified_commit: eebb9c5
 verification: cargo test -p aseman-domain federation
 ---

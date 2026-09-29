@@ -145,6 +145,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "aseman-admin-http"
+version = "0.1.0"
+dependencies = [
+ "aseman-admin-http",
+ "aseman-config",
+ "rcgen",
+ "reqwest 0.12.28",
+ "rustls 0.23.45",
+ "rustls-pemfile 2.2.0",
+]
+
+[[package]]
 name = "aseman-application"
 version = "0.1.0"
 dependencies = [
@@ -166,6 +178,7 @@ dependencies = [
  "aseman-domain",
  "aseman-ports",
  "aseman-storage",
+ "serde",
  "serde_json",
  "thiserror 2.0.20",
  "uuid",
@@ -186,7 +199,6 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "aseman-application",
- "aseman-config",
  "aseman-contracts",
  "aseman-domain",
  "aseman-ports",
@@ -241,18 +253,18 @@ name = "aseman-federation-http"
 version = "0.1.0"
 dependencies = [
  "aseman-application",
+ "aseman-capsule",
  "aseman-config",
  "aseman-contracts",
  "aseman-domain",
  "aseman-policy-native",
  "aseman-ports",
- "aseman-postgres",
+ "aseman-storage",
  "axum",
  "base64 0.22.1",
  "hex",
  "hyper 1.11.1",
  "hyper-util",
- "postgres",
  "reqwest 0.12.28",
  "ring",
  "rustls 0.23.45",
@@ -264,19 +276,6 @@ dependencies = [
  "tokio",
  "tokio-rustls 0.26.5",
  "tower 0.5.3",
- "uuid",
-]
-
-[[package]]
-name = "aseman-finance-ledger"
-version = "0.1.0"
-dependencies = [
- "aseman-config",
- "aseman-domain",
- "aseman-ports",
- "aseman-postgres",
- "postgres",
- "serde_json",
  "uuid",
 ]
 
@@ -356,27 +355,10 @@ name = "aseman-meter"
 version = "0.1.0"
 dependencies = [
  "aseman-application",
+ "aseman-capsule",
  "aseman-config",
- "aseman-finance-ledger",
+ "aseman-storage-providers",
  "aseman-vmm-http",
- "postgres",
-]
-
-[[package]]
-name = "aseman-migration-e2e"
-version = "0.1.0"
-dependencies = [
- "aseman-application",
- "aseman-config",
- "aseman-contracts",
- "aseman-domain",
- "aseman-ports",
- "aseman-storage-postgres",
- "aseman-storage-rocksdb",
- "postgres",
- "rsa",
- "serde_json",
- "uuid",
 ]
 
 [[package]]
@@ -405,7 +387,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "aseman-network-legacy"
+name = "aseman-network-shell"
 version = "0.1.0"
 dependencies = [
  "anyhow",
@@ -419,6 +401,7 @@ name = "aseman-node"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "aseman-admin-http",
  "aseman-application",
  "aseman-capsule",
  "aseman-config",
@@ -431,13 +414,13 @@ dependencies = [
  "aseman-guest-http",
  "aseman-identity-native",
  "aseman-module-runtime",
- "aseman-network-legacy",
+ "aseman-network-shell",
  "aseman-observability",
  "aseman-policy-native",
  "aseman-ports",
+ "aseman-postgres",
  "aseman-public-http",
  "aseman-public-service",
- "aseman-realtime-durable",
  "aseman-storage",
  "aseman-storage-postgres",
  "aseman-storage-providers",
@@ -518,10 +501,17 @@ dependencies = [
 name = "aseman-postgres"
 version = "0.1.0"
 dependencies = [
+ "aseman-config",
  "aseman-ports",
  "postgres",
  "r2d2",
  "r2d2_postgres",
+ "rustls 0.23.45",
+ "rustls-pemfile 2.2.0",
+ "tokio",
+ "tokio-rustls 0.26.5",
+ "url",
+ "webpki-roots 1.0.9",
 ]
 
 [[package]]
@@ -559,18 +549,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "aseman-realtime-durable"
-version = "0.1.0"
-dependencies = [
- "aseman-config",
- "aseman-domain",
- "aseman-ports",
- "aseman-postgres",
- "postgres",
- "uuid",
-]
-
-[[package]]
 name = "aseman-sample-provider"
 version = "0.1.0"
 dependencies = [
@@ -590,6 +568,7 @@ dependencies = [
 name = "aseman-storage"
 version = "0.1.0"
 dependencies = [
+ "aseman-admin-http",
  "aseman-config",
  "aseman-contracts",
  "aseman-ports",
@@ -641,19 +620,23 @@ dependencies = [
 name = "aseman-storage-providers"
 version = "0.1.0"
 dependencies = [
+ "aseman-application",
  "aseman-capsule",
  "aseman-config",
  "aseman-contracts",
  "aseman-domain",
  "aseman-ports",
+ "aseman-postgres",
  "aseman-storage",
  "aseman-storage-postgres",
  "aseman-storage-rocksdb",
  "hex",
  "postgres",
  "rsa",
+ "serde",
  "serde_json",
  "sha2 0.10.9",
+ "uuid",
 ]
 
 [[package]]
@@ -661,11 +644,14 @@ name = "aseman-storage-rocksdb"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "aseman-admin-http",
  "aseman-capsule",
  "aseman-config",
  "aseman-contracts",
  "aseman-domain",
+ "aseman-fs",
  "aseman-ports",
+ "aseman-postgres",
  "aseman-storage",
  "aseman-storage-conformance",
  "base64 0.22.1",
@@ -685,15 +671,130 @@ dependencies = [
 ]
 
 [[package]]
+name = "aseman-vm-docker"
+version = "0.1.0"
+dependencies = [
+ "aseman-config",
+ "aseman-vm-sdk",
+ "base64 0.22.1",
+ "bollard",
+ "chrono",
+ "futures-util",
+ "reqwest 0.12.28",
+ "serde_json",
+ "tar",
+ "tokio",
+ "uuid",
+]
+
+[[package]]
+name = "aseman-vm-elpian"
+version = "0.1.0"
+dependencies = [
+ "aseman-config",
+ "aseman-vm-sdk",
+ "elpian-vm",
+ "serde_json",
+]
+
+[[package]]
+name = "aseman-vm-elpify"
+version = "0.1.0"
+dependencies = [
+ "aseman-config",
+ "aseman-vm-sdk",
+ "base64 0.22.1",
+ "elpify-lang",
+ "serde_json",
+]
+
+[[package]]
+name = "aseman-vm-fire"
+version = "0.1.0"
+dependencies = [
+ "aseman-config",
+ "aseman-vm-sdk",
+ "serde_json",
+]
+
+[[package]]
+name = "aseman-vm-javascript"
+version = "0.1.0"
+dependencies = [
+ "aseman-config",
+ "aseman-vm-sdk",
+ "elpify-lang",
+ "rquickjs",
+ "serde_json",
+]
+
+[[package]]
+name = "aseman-vm-modal"
+version = "0.1.0"
+dependencies = [
+ "aseman-config",
+ "aseman-vm-sdk",
+ "base64 0.22.1",
+ "chrono",
+ "futures-util",
+ "prost",
+ "prost-types",
+ "protox",
+ "reqwest 0.12.28",
+ "serde_json",
+ "tokio",
+ "tonic",
+ "tonic-build",
+ "uuid",
+]
+
+[[package]]
+name = "aseman-vm-plugins"
+version = "0.1.0"
+dependencies = [
+ "aseman-config",
+ "aseman-vm-docker",
+ "aseman-vm-elpian",
+ "aseman-vm-elpify",
+ "aseman-vm-fire",
+ "aseman-vm-javascript",
+ "aseman-vm-modal",
+ "aseman-vm-sdk",
+ "aseman-vm-wasm",
+]
+
+[[package]]
+name = "aseman-vm-sdk"
+version = "0.1.0"
+dependencies = [
+ "base64 0.22.1",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "aseman-vm-wasm"
+version = "0.1.0"
+dependencies = [
+ "aseman-config",
+ "aseman-vm-sdk",
+ "serde_json",
+ "wasmedge-sys",
+ "wasmedge-types",
+ "wat",
+]
+
+[[package]]
 name = "aseman-vmm"
 version = "0.1.0"
 dependencies = [
  "aseman-application",
+ "aseman-capsule",
  "aseman-config",
  "aseman-contracts",
  "aseman-domain",
  "aseman-ports",
- "aseman-storage-postgres",
+ "aseman-storage-providers",
  "aseman-vmm-backend-grpc",
  "aseman-vmm-http",
  "axum",
@@ -755,19 +856,20 @@ name = "aseman-vmm-backend-native"
 version = "0.1.0"
 dependencies = [
  "aseman-application",
+ "aseman-capsule",
  "aseman-config",
  "aseman-contracts",
  "aseman-domain",
  "aseman-fs",
  "aseman-guest-http",
  "aseman-ports",
- "aseman-storage-postgres",
+ "aseman-storage-providers",
+ "aseman-vm-plugins",
+ "aseman-vm-sdk",
  "aseman-vmm-backend-conformance",
  "aseman-vmm-backend-grpc",
  "aseman-vmm-http",
  "base64 0.22.1",
- "caspar-vm-plugins",
- "caspar-vm-sdk",
  "dashmap",
  "postgres",
  "rcgen",
@@ -829,6 +931,7 @@ name = "asemanctl"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "aseman-admin-http",
  "aseman-config",
  "aseman-domain",
  "aseman-fs",
@@ -839,6 +942,7 @@ dependencies = [
  "ctrlc",
  "hex",
  "regex",
+ "reqwest 0.12.28",
  "ring",
  "serde",
  "serde_json",
@@ -1284,116 +1388,6 @@ checksum = "225bff33b2141874fe80d71e07d6eec4f85c5c216453dd96388240f96e1acc14"
 dependencies = [
  "cc",
  "pkg-config",
-]
-
-[[package]]
-name = "caspar-vm-docker"
-version = "0.1.0"
-dependencies = [
- "aseman-config",
- "base64 0.22.1",
- "bollard",
- "caspar-vm-sdk",
- "chrono",
- "futures-util",
- "reqwest 0.12.28",
- "serde_json",
- "tar",
- "tokio",
- "uuid",
-]
-
-[[package]]
-name = "caspar-vm-elpian"
-version = "0.1.0"
-dependencies = [
- "caspar-vm-sdk",
- "elpian-vm",
- "serde_json",
-]
-
-[[package]]
-name = "caspar-vm-elpify"
-version = "0.1.0"
-dependencies = [
- "base64 0.22.1",
- "caspar-vm-sdk",
- "elpify-lang",
- "serde_json",
-]
-
-[[package]]
-name = "caspar-vm-fire"
-version = "0.1.0"
-dependencies = [
- "aseman-config",
- "caspar-vm-sdk",
- "serde_json",
-]
-
-[[package]]
-name = "caspar-vm-javascript"
-version = "0.1.0"
-dependencies = [
- "caspar-vm-sdk",
- "elpify-lang",
- "rquickjs",
- "serde_json",
-]
-
-[[package]]
-name = "caspar-vm-modal"
-version = "0.1.0"
-dependencies = [
- "aseman-config",
- "base64 0.22.1",
- "caspar-vm-sdk",
- "chrono",
- "futures-util",
- "prost",
- "prost-types",
- "protox",
- "reqwest 0.12.28",
- "serde_json",
- "tokio",
- "tonic",
- "tonic-build",
- "uuid",
-]
-
-[[package]]
-name = "caspar-vm-plugins"
-version = "0.1.0"
-dependencies = [
- "caspar-vm-docker",
- "caspar-vm-elpian",
- "caspar-vm-elpify",
- "caspar-vm-fire",
- "caspar-vm-javascript",
- "caspar-vm-modal",
- "caspar-vm-sdk",
- "caspar-vm-wasm",
-]
-
-[[package]]
-name = "caspar-vm-sdk"
-version = "0.1.0"
-dependencies = [
- "base64 0.22.1",
- "serde",
- "serde_json",
-]
-
-[[package]]
-name = "caspar-vm-wasm"
-version = "0.1.0"
-dependencies = [
- "aseman-config",
- "caspar-vm-sdk",
- "serde_json",
- "wasmedge-sys",
- "wasmedge-types",
- "wat",
 ]
 
 [[package]]
@@ -5102,13 +5096,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "93fc1dc3aaa9bfed95e02e6eadabb4baf7e3078b0bd1b4d7b6b0b68378900502"
 dependencies = [
  "winapi-util",
-]
-
-[[package]]
-name = "scan-vmdb"
-version = "0.1.0"
-dependencies = [
- "aseman-storage-rocksdb",
 ]
 
 [[package]]

@@ -8,11 +8,11 @@ use aseman_domain::store::StoreRecord;
 use aseman_ports::conformance;
 use aseman_ports::{CreatureDirectory, StoreDirectory, VmResourceStores};
 
-use crate::api::model::creature_ports::CreaturePorts;
-use crate::api::model::entity_ports::EntityPorts;
-use crate::api::model::gateway_ports::GatewayPorts;
-use crate::api::model::program_ports::ProgramPorts;
-use crate::api::model::store_ports::{MembershipPorts, StorePorts};
+use crate::state::creature_ports::CreaturePorts;
+use crate::state::entity_ports::EntityPorts;
+use crate::state::gateway_ports::GatewayPorts;
+use crate::state::program_ports::ProgramPorts;
+use crate::state::store_ports::{MembershipPorts, StorePorts};
 
 pub(crate) fn public_keys() -> [String; 5] {
     use rsa::pkcs8::{EncodePublicKey, LineEnding};
@@ -24,7 +24,7 @@ pub(crate) fn public_keys() -> [String; 5] {
 }
 
 /// Record human creatures `ids` (each needs a distinct key).
-pub(crate) fn seed_humans(trx: &crate::core::trx::Trx, ids: &[&str]) {
+pub(crate) fn seed_humans(trx: &crate::storage::Trx, ids: &[&str]) {
     let creatures = CreaturePorts { trx };
     for (id, key) in ids.iter().zip(public_keys()) {
         creatures
@@ -43,7 +43,7 @@ pub(crate) fn seed_humans(trx: &crate::core::trx::Trx, ids: &[&str]) {
 
 #[test]
 fn state_ports_pass_the_conformance_suites_in_dependency_order() {
-    let trx = crate::core::trx::test_trx();
+    let trx = crate::storage::test_trx();
     let creatures = CreaturePorts { trx: &trx };
     let keys = public_keys();
     conformance::creature_directory(&creatures, &creatures, [&keys[0], &keys[1], &keys[2]]);

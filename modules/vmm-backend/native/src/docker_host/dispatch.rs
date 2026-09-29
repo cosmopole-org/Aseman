@@ -23,7 +23,7 @@ use aseman_contracts::guest_api::{
 /// Execute one host-call request on behalf of `identity` and return the raw
 /// JSON response bytes to ship back to the container.
 pub(crate) fn dispatch_host_call(
-    host: &dyn caspar_vm_sdk::host::VmHost,
+    host: &dyn aseman_vm_sdk::host::VmHost,
     identity: &ContainerIdentity,
     request: &JsonValue,
 ) -> Vec<u8> {

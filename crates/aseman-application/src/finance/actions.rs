@@ -1,6 +1,7 @@
-// The finance action bodies, split from the module scaffold so the shared helpers
-// stay readable. Each function is a faithful translation of one legacy finance
-// action closure, with identical validation, ordering, and client-visible errors.
+//! The finance operations, one function per action, over the helpers of
+//! [`super`].
+
+use super::*;
 
 // ── publish_finance_catalog ───────────────────────────────────────────────────
 
@@ -13,7 +14,11 @@ pub fn publish_finance_catalog(
         return Err(denied("global platform owner required"));
     }
     let catalog = federated_finance_object(input.catalog, "finance catalog")?;
-    let version = catalog.get("version").and_then(Value::as_str).unwrap_or("").to_string();
+    let version = catalog
+        .get("version")
+        .and_then(Value::as_str)
+        .unwrap_or("")
+        .to_string();
     if !valid_finance_id(&version)
         || !federated_finance_safe_numbers(&Value::Object(catalog.clone()))
     {
@@ -34,15 +39,35 @@ pub fn publish_finance_catalog(
             return Err(denied(&format!("invalid finance catalog integer: {key}")));
         }
     }
-    if catalog.get("tokenScale").and_then(Value::as_i64).unwrap_or(0) <= 0
-        || catalog.get("sandboxPerMinuteMinor").and_then(Value::as_i64).unwrap_or(0) <= 0
+    if catalog
+        .get("tokenScale")
+        .and_then(Value::as_i64)
+        .unwrap_or(0)
+        <= 0
+        || catalog
+            .get("sandboxPerMinuteMinor")
+            .and_then(Value::as_i64)
+            .unwrap_or(0)
+            <= 0
     {
         return Err(denied("tokenScale and sandbox rate must be positive"));
     }
-    let commission = catalog.get("platformCommissionBps").and_then(Value::as_i64).unwrap_or(0);
-    let safety = catalog.get("authorizationSafetyBps").and_then(Value::as_i64).unwrap_or(0);
-    let quote_ttl = catalog.get("quoteTtlMs").and_then(Value::as_i64).unwrap_or(0);
-    let hold_ttl = catalog.get("holdTtlMs").and_then(Value::as_i64).unwrap_or(0);
+    let commission = catalog
+        .get("platformCommissionBps")
+        .and_then(Value::as_i64)
+        .unwrap_or(0);
+    let safety = catalog
+        .get("authorizationSafetyBps")
+        .and_then(Value::as_i64)
+        .unwrap_or(0);
+    let quote_ttl = catalog
+        .get("quoteTtlMs")
+        .and_then(Value::as_i64)
+        .unwrap_or(0);
+    let hold_ttl = catalog
+        .get("holdTtlMs")
+        .and_then(Value::as_i64)
+        .unwrap_or(0);
     if commission > 10_000
         || !(10_000..=100_000).contains(&safety)
         || quote_ttl > hold_ttl
@@ -99,17 +124,44 @@ pub fn register_finance_node(
     input: RegisterFinanceNodeInput,
 ) -> Result<Value, ApplicationError> {
     let mut node = federated_finance_object(input.node, "finance node")?;
-    let owner = node.get("nodeOwnerAccountId").and_then(Value::as_str).unwrap_or("");
-    let authority = node.get("settlementAuthority").and_then(Value::as_str).unwrap_or("");
+    let owner = node
+        .get("nodeOwnerAccountId")
+        .and_then(Value::as_str)
+        .unwrap_or("");
+    let authority = node
+        .get("settlementAuthority")
+        .and_then(Value::as_str)
+        .unwrap_or("");
     let origin = node.get("originId").and_then(Value::as_str).unwrap_or("");
-    let meter = node.get("meterProgramId").and_then(Value::as_str).unwrap_or("");
-    let talent_meter = node.get("talentMeterProgramId").and_then(Value::as_str).unwrap_or("");
-    let meter_creature = node.get("meterCreatureId").and_then(Value::as_str).unwrap_or("");
-    let meter_entity = node.get("meterEntityId").and_then(Value::as_str).unwrap_or("");
-    let talent_meter_creature = node.get("talentMeterCreatureId").and_then(Value::as_str).unwrap_or("");
-    let talent_meter_entity = node.get("talentMeterEntityId").and_then(Value::as_str).unwrap_or("");
+    let meter = node
+        .get("meterProgramId")
+        .and_then(Value::as_str)
+        .unwrap_or("");
+    let talent_meter = node
+        .get("talentMeterProgramId")
+        .and_then(Value::as_str)
+        .unwrap_or("");
+    let meter_creature = node
+        .get("meterCreatureId")
+        .and_then(Value::as_str)
+        .unwrap_or("");
+    let meter_entity = node
+        .get("meterEntityId")
+        .and_then(Value::as_str)
+        .unwrap_or("");
+    let talent_meter_creature = node
+        .get("talentMeterCreatureId")
+        .and_then(Value::as_str)
+        .unwrap_or("");
+    let talent_meter_entity = node
+        .get("talentMeterEntityId")
+        .and_then(Value::as_str)
+        .unwrap_or("");
     let revision = node.get("revision").and_then(Value::as_str).unwrap_or("");
-    let rate = node.get("sandboxPerMinuteMinor").and_then(Value::as_i64).unwrap_or(0);
+    let rate = node
+        .get("sandboxPerMinuteMinor")
+        .and_then(Value::as_i64)
+        .unwrap_or(0);
     if caller != owner
         || authority != caller
         || !valid_finance_id(caller)
@@ -130,7 +182,10 @@ pub fn register_finance_node(
     let now = ports.clock.unix_millis();
     node.insert("status".into(), json!("active"));
     node.insert("updatedAt".into(), json!(now));
-    put_billing_nodes(ports, &json!({caller.to_string(): Value::Object(node.clone())}))?;
+    put_billing_nodes(
+        ports,
+        &json!({caller.to_string(): Value::Object(node.clone())}),
+    )?;
     Ok(json!({"ok": true, "node": node}))
 }
 
@@ -159,7 +214,10 @@ pub fn retire_finance_node(
             "prior": node.get("revision"), "status": "retired", "updatedAt": now
         }))?),
     );
-    put_billing_nodes(ports, &json!({caller.to_string(): Value::Object(node.clone())}))?;
+    put_billing_nodes(
+        ports,
+        &json!({caller.to_string(): Value::Object(node.clone())}),
+    )?;
     Ok(json!({"ok": true, "node": node}))
 }
 
@@ -171,10 +229,26 @@ pub fn register_finance_resource(
     input: RegisterFinanceResourceInput,
 ) -> Result<Value, ApplicationError> {
     let mut resource = federated_finance_object(input.resource, "finance resource")?;
-    let resource_id = resource.get("programId").and_then(Value::as_str).unwrap_or("").to_string();
-    let kind = resource.get("kind").and_then(Value::as_str).unwrap_or("").to_string();
-    let owner = resource.get("owner").and_then(Value::as_str).unwrap_or("").to_string();
-    let host_owner = resource.get("hostNodeOwnerAccountId").and_then(Value::as_str).unwrap_or("").to_string();
+    let resource_id = resource
+        .get("programId")
+        .and_then(Value::as_str)
+        .unwrap_or("")
+        .to_string();
+    let kind = resource
+        .get("kind")
+        .and_then(Value::as_str)
+        .unwrap_or("")
+        .to_string();
+    let owner = resource
+        .get("owner")
+        .and_then(Value::as_str)
+        .unwrap_or("")
+        .to_string();
+    let host_owner = resource
+        .get("hostNodeOwnerAccountId")
+        .and_then(Value::as_str)
+        .unwrap_or("")
+        .to_string();
     let bucket = federated_finance_market_bucket(&kind)
         .ok_or_else(|| denied("invalid finance resource kind"))?;
     let pricing = resource.get("pricing").cloned().unwrap_or(Value::Null);
@@ -192,19 +266,36 @@ pub fn register_finance_resource(
         .and_then(Value::as_object)
         .ok_or_else(|| denied("finance execution node not registered"))?;
     if node.get("status").and_then(Value::as_str) != Some("active")
-        || resource.get("hostOriginId").and_then(Value::as_str) != node.get("originId").and_then(Value::as_str)
-        || resource.get("billingMeterProgramId").and_then(Value::as_str) != node.get("meterProgramId").and_then(Value::as_str)
-        || resource.get("billingMeterCreatureId").and_then(Value::as_str) != node.get("meterCreatureId").and_then(Value::as_str)
-        || resource.get("billingMeterEntityId").and_then(Value::as_str) != node.get("meterEntityId").and_then(Value::as_str)
-        || resource.get("nodeRegistrationRevision").and_then(Value::as_str) != node.get("revision").and_then(Value::as_str)
-        || resource.get("nodeSandboxPerMinuteMinor").and_then(Value::as_i64) != node.get("sandboxPerMinuteMinor").and_then(Value::as_i64)
+        || resource.get("hostOriginId").and_then(Value::as_str)
+            != node.get("originId").and_then(Value::as_str)
+        || resource
+            .get("billingMeterProgramId")
+            .and_then(Value::as_str)
+            != node.get("meterProgramId").and_then(Value::as_str)
+        || resource
+            .get("billingMeterCreatureId")
+            .and_then(Value::as_str)
+            != node.get("meterCreatureId").and_then(Value::as_str)
+        || resource.get("billingMeterEntityId").and_then(Value::as_str)
+            != node.get("meterEntityId").and_then(Value::as_str)
+        || resource
+            .get("nodeRegistrationRevision")
+            .and_then(Value::as_str)
+            != node.get("revision").and_then(Value::as_str)
+        || resource
+            .get("nodeSandboxPerMinuteMinor")
+            .and_then(Value::as_i64)
+            != node.get("sandboxPerMinuteMinor").and_then(Value::as_i64)
     {
         return Err(denied("resource does not match its active finance node"));
     }
     let entries = market_doc(ports, bucket);
     let existing = entries.get(&resource_id).and_then(Value::as_object);
     if let Some(existing) = existing
-        && existing.get("hostNodeOwnerAccountId").and_then(Value::as_str) != Some(host_owner.as_str())
+        && existing
+            .get("hostNodeOwnerAccountId")
+            .and_then(Value::as_str)
+            != Some(host_owner.as_str())
     {
         return Err(denied("resource migration requires a new program id"));
     }
@@ -221,7 +312,11 @@ pub fn register_finance_resource(
     resource.insert("status".into(), json!(preserved_status));
     resource.insert("federated".into(), json!(true));
     resource.insert("registeredAt".into(), json!(ports.clock.unix_millis()));
-    put_market_doc(ports, bucket, &json!({resource_id.clone(): Value::Object(resource.clone())}))?;
+    put_market_doc(
+        ports,
+        bucket,
+        &json!({resource_id.clone(): Value::Object(resource.clone())}),
+    )?;
     Ok(json!({"ok": true, "resource": resource}))
 }
 
@@ -249,7 +344,11 @@ pub fn review_finance_resource(
     if !input.reason.is_empty() {
         resource.insert("reason".into(), json!(input.reason));
     }
-    put_market_doc(ports, bucket, &json!({input.resource_id.clone(): Value::Object(resource.clone())}))?;
+    put_market_doc(
+        ports,
+        bucket,
+        &json!({input.resource_id.clone(): Value::Object(resource.clone())}),
+    )?;
     Ok(json!({"ok": true, "resource": resource}))
 }
 
@@ -267,11 +366,18 @@ pub fn retire_finance_resource(
         .get(&input.resource_id)
         .and_then(Value::as_object)
         .ok_or_else(|| denied("finance resource not found"))?;
-    let host_owner = resource.get("hostNodeOwnerAccountId").and_then(Value::as_str).unwrap_or("");
+    let host_owner = resource
+        .get("hostNodeOwnerAccountId")
+        .and_then(Value::as_str)
+        .unwrap_or("");
     if caller != host_owner && caller != LEGACY_ROOT {
         return Err(denied("resource host or global reviewer required"));
     }
-    put_market_doc(ports, bucket, &json!({input.resource_id.clone(): Value::Null}))?;
+    put_market_doc(
+        ports,
+        bucket,
+        &json!({input.resource_id.clone(): Value::Null}),
+    )?;
     Ok(json!({"ok": true, "resourceId": input.resource_id}))
 }
 
@@ -281,7 +387,10 @@ fn validate_federated_quote_resource(
     ports: &FinancePorts,
     execution: &Map<String, Value>,
 ) -> Result<(), ApplicationError> {
-    let resource_id = execution.get("resourceId").and_then(Value::as_str).unwrap_or("");
+    let resource_id = execution
+        .get("resourceId")
+        .and_then(Value::as_str)
+        .unwrap_or("");
     let kind = execution.get("kind").and_then(Value::as_str).unwrap_or("");
     let bucket = federated_finance_market_bucket(kind)
         .ok_or_else(|| denied("invalid quote execution resource kind"))?;
@@ -296,7 +405,10 @@ fn validate_federated_quote_resource(
     if resource.get("status").and_then(Value::as_str) != Some("approved") {
         return Err(denied("quoted resource is not globally approved"));
     }
-    let node_owner = resource.get("hostNodeOwnerAccountId").and_then(Value::as_str).unwrap_or("");
+    let node_owner = resource
+        .get("hostNodeOwnerAccountId")
+        .and_then(Value::as_str)
+        .unwrap_or("");
     let nodes = billing_nodes(ports);
     let node = nodes
         .get(node_owner)
@@ -318,7 +430,9 @@ fn validate_federated_quote_resource(
         || resource.get("nodeSandboxPerMinuteMinor") != node.get("sandboxPerMinuteMinor")
         || execution.get("settlementAuthority") != node.get("settlementAuthority")
     {
-        return Err(denied("quote execution does not match the active global resource binding"));
+        return Err(denied(
+            "quote execution does not match the active global resource binding",
+        ));
     }
     Ok(())
 }
@@ -329,8 +443,16 @@ pub fn publish_finance_quote(
     input: PublishFinanceQuoteInput,
 ) -> Result<Value, ApplicationError> {
     let mut quote = federated_finance_object(input.quote, "finance quote")?;
-    let quote_id = quote.get("quoteId").and_then(Value::as_str).unwrap_or("").to_string();
-    let payer = quote.get("payerUserId").and_then(Value::as_str).unwrap_or("").to_string();
+    let quote_id = quote
+        .get("quoteId")
+        .and_then(Value::as_str)
+        .unwrap_or("")
+        .to_string();
+    let payer = quote
+        .get("payerUserId")
+        .and_then(Value::as_str)
+        .unwrap_or("")
+        .to_string();
     let max_amount = quote.get("maxAmount").and_then(Value::as_i64).unwrap_or(0);
     let hold = quote
         .get("holdRequest")
@@ -341,11 +463,26 @@ pub fn publish_finance_quote(
         .and_then(Value::as_object)
         .ok_or_else(|| denied("quote executionPlan missing"))?;
     let quote_kind = quote.get("kind").and_then(Value::as_str).unwrap_or("");
-    let authority = execution.get("settlementAuthority").and_then(Value::as_str).unwrap_or("");
-    let meter = execution.get("meterProgramId").and_then(Value::as_str).unwrap_or("");
-    let meter_creature = execution.get("meterCreatureId").and_then(Value::as_str).unwrap_or("");
-    let meter_entity = execution.get("meterEntityId").and_then(Value::as_str).unwrap_or("");
-    let pricing_version = quote.get("pricingVersion").and_then(Value::as_str).unwrap_or("");
+    let authority = execution
+        .get("settlementAuthority")
+        .and_then(Value::as_str)
+        .unwrap_or("");
+    let meter = execution
+        .get("meterProgramId")
+        .and_then(Value::as_str)
+        .unwrap_or("");
+    let meter_creature = execution
+        .get("meterCreatureId")
+        .and_then(Value::as_str)
+        .unwrap_or("");
+    let meter_entity = execution
+        .get("meterEntityId")
+        .and_then(Value::as_str)
+        .unwrap_or("");
+    let pricing_version = quote
+        .get("pricingVersion")
+        .and_then(Value::as_str)
+        .unwrap_or("");
     let active_catalog = billing_current(ports);
     let catalog_exists = !pricing_version.is_empty()
         && ports
@@ -370,12 +507,24 @@ pub fn publish_finance_quote(
         || !catalog_exists
         || max_amount <= 0
         || (quote_kind == "talent" && authority != caller)
-        || issuer_node.and_then(|node| node.get("status")).and_then(Value::as_str) != Some("active")
-        || coordinator_node.and_then(|node| node.get("status")).and_then(Value::as_str) != Some("active")
+        || issuer_node
+            .and_then(|node| node.get("status"))
+            .and_then(Value::as_str)
+            != Some("active")
+        || coordinator_node
+            .and_then(|node| node.get("status"))
+            .and_then(Value::as_str)
+            != Some("active")
         || expected_meter.and_then(Value::as_str) != Some(meter)
         || (quote_kind != "talent"
-            && (coordinator_node.and_then(|node| node.get("meterCreatureId")).and_then(Value::as_str) != Some(meter_creature)
-                || coordinator_node.and_then(|node| node.get("meterEntityId")).and_then(Value::as_str) != Some(meter_entity)))
+            && (coordinator_node
+                .and_then(|node| node.get("meterCreatureId"))
+                .and_then(Value::as_str)
+                != Some(meter_creature)
+                || coordinator_node
+                    .and_then(|node| node.get("meterEntityId"))
+                    .and_then(Value::as_str)
+                    != Some(meter_entity)))
         || hold.get("quoteId").and_then(Value::as_str) != Some(quote_id.as_str())
         || hold.get("maxAmount").and_then(Value::as_i64) != Some(max_amount)
         || hold.get("settlementAuthority").and_then(Value::as_str) != Some(authority)
@@ -400,21 +549,34 @@ pub fn publish_finance_quote(
         }
         let mut seen = std::collections::HashMap::<String, bool>::new();
         for (index, raw) in resources.iter().enumerate() {
-            let row = raw.as_object().ok_or_else(|| denied("invalid quote execution resource"))?;
+            let row = raw
+                .as_object()
+                .ok_or_else(|| denied("invalid quote execution resource"))?;
             validate_federated_quote_resource(ports, row)?;
-            let resource_id = row.get("resourceId").and_then(Value::as_str).unwrap_or("").to_string();
+            let resource_id = row
+                .get("resourceId")
+                .and_then(Value::as_str)
+                .unwrap_or("")
+                .to_string();
             if seen.insert(resource_id.clone(), true).is_some() {
                 return Err(denied("duplicate quote execution resource"));
             }
             if index == 0
                 && (row.get("kind").and_then(Value::as_str) != Some(quote_kind)
-                    || resource_id != quote.get("resourceId").and_then(Value::as_str).unwrap_or(""))
+                    || resource_id
+                        != quote
+                            .get("resourceId")
+                            .and_then(Value::as_str)
+                            .unwrap_or(""))
             {
                 return Err(denied("quote coordinator resource mismatch"));
             }
         }
         let coordinator = resources[0].as_object().unwrap();
-        if coordinator.get("settlementAuthority").and_then(Value::as_str) != Some(authority)
+        if coordinator
+            .get("settlementAuthority")
+            .and_then(Value::as_str)
+            != Some(authority)
             || coordinator.get("meterProgramId").and_then(Value::as_str) != Some(meter)
             || coordinator.get("meterCreatureId").and_then(Value::as_str) != Some(meter_creature)
             || coordinator.get("meterEntityId").and_then(Value::as_str) != Some(meter_entity)
@@ -431,13 +593,17 @@ pub fn publish_finance_quote(
     }
     let mut cap_total = 0_i64;
     for raw in beneficiaries {
-        let row = raw.as_object().ok_or_else(|| denied("invalid quote beneficiary"))?;
+        let row = raw
+            .as_object()
+            .ok_or_else(|| denied("invalid quote beneficiary"))?;
         let user_id = row.get("userId").and_then(Value::as_str).unwrap_or("");
         let amount = row.get("maxAmount").and_then(Value::as_i64).unwrap_or(0);
         if !valid_finance_id(user_id) || amount <= 0 || ports.account(user_id)?.is_none() {
             return Err(denied("invalid quote beneficiary"));
         }
-        cap_total = cap_total.checked_add(amount).ok_or_else(|| denied("quote beneficiary overflow"))?;
+        cap_total = cap_total
+            .checked_add(amount)
+            .ok_or_else(|| denied("quote beneficiary overflow"))?;
     }
     if cap_total != max_amount {
         return Err(denied("quote caps do not equal maxAmount"));
@@ -492,7 +658,9 @@ pub fn create_hold(
     }
     if !valid_finance_hash(&input.context_hash) || !valid_finance_hash(&input.beneficiary_plan_hash)
     {
-        return Err(denied("contextHash and beneficiaryPlanHash must be sha256 hex"));
+        return Err(denied(
+            "contextHash and beneficiaryPlanHash must be sha256 hex",
+        ));
     }
     if input.max_amount <= 0 {
         return Err(denied("maxAmount must be greater than zero"));
@@ -503,10 +671,14 @@ pub fn create_hold(
                 .checked_add(FINANCE_HOLD_MAX_TTL_MS)
                 .ok_or_else(|| denied("hold expiry overflow"))?
     {
-        return Err(denied("expiresAt must be in the future and within 24 hours"));
+        return Err(denied(
+            "expiresAt must be in the future and within 24 hours",
+        ));
     }
     if input.beneficiaries.is_empty() || input.beneficiaries.len() > FINANCE_MAX_BENEFICIARIES {
-        return Err(denied("beneficiaries must contain between 1 and 64 entries"));
+        return Err(denied(
+            "beneficiaries must contain between 1 and 64 entries",
+        ));
     }
 
     let quote = billing_quote(ports, &input.quote_id)?;
@@ -521,7 +693,11 @@ pub fn create_hold(
     if quote.get("holdRequest") != Some(&signed_request) {
         return Err(denied("hold request does not match server quote"));
     }
-    let project_id = quote.get("projectId").and_then(Value::as_str).unwrap_or("").to_string();
+    let project_id = quote
+        .get("projectId")
+        .and_then(Value::as_str)
+        .unwrap_or("")
+        .to_string();
     if !project_id.is_empty() && !ports.is_project_member(payer_id, &project_id)? {
         return Err(denied("payer is not a project member"));
     }
@@ -536,7 +712,8 @@ pub fn create_hold(
     if computed_plan_hash != input.beneficiary_plan_hash.to_ascii_lowercase() {
         return Err(denied("beneficiary plan hash mismatch"));
     }
-    let request_hash = finance_hash(&serde_json::to_value(&input).map_err(|error| failed(error.to_string()))?)?;
+    let request_hash =
+        finance_hash(&serde_json::to_value(&input).map_err(|error| failed(error.to_string()))?)?;
     let request_marker = FinanceMarker::HoldRequest {
         payer: payer_id.to_owned(),
         key: input.idempotency_key.clone(),
@@ -547,7 +724,9 @@ pub fn create_hold(
             return Err(denied("invalid hold idempotency record"));
         };
         if previous_hash != request_hash {
-            return Err(denied("idempotency key already used with different request"));
+            return Err(denied(
+                "idempotency key already used with different request",
+            ));
         }
         let hold = get_finance_hold(ports.ledger, hold_id)?;
         return Ok(json!({"applied": false, "alreadyApplied": true, "hold": hold}));
@@ -573,7 +752,9 @@ pub fn create_hold(
         if ports.account(&beneficiary.user_id)?.is_none() {
             return Err(denied("beneficiary not found"));
         }
-        cap_total = cap_total.checked_add(beneficiary.max_amount).ok_or_else(|| denied("beneficiary cap overflow"))?;
+        cap_total = cap_total
+            .checked_add(beneficiary.max_amount)
+            .ok_or_else(|| denied("beneficiary cap overflow"))?;
         participants.push(beneficiary.user_id.clone());
     }
     if cap_total != input.max_amount {
@@ -632,7 +813,10 @@ pub fn create_hold(
         "status": "open",
         "createdAt": now,
     });
-    let hold_map = hold.as_object().cloned().ok_or_else(|| denied("invalid hold record"))?;
+    let hold_map = hold
+        .as_object()
+        .cloned()
+        .ok_or_else(|| denied("invalid hold record"))?;
 
     ports.store_account(&payer)?;
     set_finance_counter(ports.ledger, WalletCounter::Held, payer_id, held)?;
@@ -642,7 +826,13 @@ pub fn create_hold(
         .put_marker(&request_marker, &format!("{hold_id}|{request_hash}"))?;
     ports
         .ledger
-        .put_doc(FinanceDoc::Hold, &hold_id, "hold", &Value::Object(hold_map.clone()), false)
+        .put_doc(
+            FinanceDoc::Hold,
+            &hold_id,
+            "hold",
+            &Value::Object(hold_map.clone()),
+            false,
+        )
         .map_err(ApplicationError::from)?;
     let journal_id = write_finance_journal(
         ports.ledger,
@@ -808,23 +998,40 @@ pub fn settle_hold(
         let Some(cap) = caps.get(&cap_key) else {
             return Err(denied("settlement beneficiary role not authorized by hold"));
         };
-        actual_amount = actual_amount.checked_add(line.amount).ok_or_else(|| denied("settlement amount overflow"))?;
+        actual_amount = actual_amount
+            .checked_add(line.amount)
+            .ok_or_else(|| denied("settlement amount overflow"))?;
         let role_total = allocated.entry(cap_key).or_insert(0);
-        *role_total = role_total.checked_add(line.amount).ok_or_else(|| denied("beneficiary role amount overflow"))?;
+        *role_total = role_total
+            .checked_add(line.amount)
+            .ok_or_else(|| denied("beneficiary role amount overflow"))?;
         if *role_total > *cap {
             return Err(denied("settlement exceeds beneficiary role cap"));
         }
         let credited = credits.entry(line.user_id.clone()).or_insert(0);
-        *credited = credited.checked_add(line.amount).ok_or_else(|| denied("beneficiary amount overflow"))?;
+        *credited = credited
+            .checked_add(line.amount)
+            .ok_or_else(|| denied("beneficiary amount overflow"))?;
     }
     if actual_amount > max_amount {
         return Err(denied("settlement exceeds hold"));
     }
-    let refund_amount = max_amount.checked_sub(actual_amount).ok_or_else(|| denied("refund underflow"))?;
-    let project_id = hold.get("projectId").and_then(Value::as_str).unwrap_or("").to_string();
+    let refund_amount = max_amount
+        .checked_sub(actual_amount)
+        .ok_or_else(|| denied("refund underflow"))?;
+    let project_id = hold
+        .get("projectId")
+        .and_then(Value::as_str)
+        .unwrap_or("")
+        .to_string();
     finalize_project_budget(ports, &project_id, max_amount, actual_amount, now)?;
 
-    add_finance_counter(ports.ledger, WalletCounter::Spent, &input.payer_user_id, actual_amount)?;
+    add_finance_counter(
+        ports.ledger,
+        WalletCounter::Spent,
+        &input.payer_user_id,
+        actual_amount,
+    )?;
     let mut participants = vec![input.payer_user_id.clone(), authority_id.to_owned()];
     let mut wallet_credits = std::collections::HashMap::<String, i64>::new();
     let mut debt_repays = std::collections::HashMap::<String, i64>::new();
@@ -835,13 +1042,28 @@ pub fn settle_hold(
         };
         let debt = finance_counter(ports.ledger, WalletCounter::Debt, user_id)?;
         let debt_repaid = debt.min(*amount);
-        let wallet_credit = amount.checked_sub(debt_repaid).ok_or_else(|| denied("beneficiary credit underflow"))?;
-        receiver.balance = receiver.balance.checked_add(wallet_credit).ok_or_else(|| denied("beneficiary balance overflow"))?;
+        let wallet_credit = amount
+            .checked_sub(debt_repaid)
+            .ok_or_else(|| denied("beneficiary credit underflow"))?;
+        receiver.balance = receiver
+            .balance
+            .checked_add(wallet_credit)
+            .ok_or_else(|| denied("beneficiary balance overflow"))?;
         let withdrawable = finance_counter(ports.ledger, WalletCounter::Withdrawable, user_id)?
             .checked_add(wallet_credit)
             .ok_or_else(|| denied("withdrawable earnings overflow"))?;
-        set_finance_counter(ports.ledger, WalletCounter::Debt, user_id, debt - debt_repaid)?;
-        set_finance_counter(ports.ledger, WalletCounter::Withdrawable, user_id, withdrawable)?;
+        set_finance_counter(
+            ports.ledger,
+            WalletCounter::Debt,
+            user_id,
+            debt - debt_repaid,
+        )?;
+        set_finance_counter(
+            ports.ledger,
+            WalletCounter::Withdrawable,
+            user_id,
+            withdrawable,
+        )?;
         wallet_credits.insert(user_id.clone(), wallet_credit);
         debt_repays.insert(user_id.clone(), debt_repaid);
         ports.store_account(&receiver)?;
@@ -850,32 +1072,63 @@ pub fn settle_hold(
     let Some(mut payer) = ports.account(&input.payer_user_id)? else {
         return Err(denied("payer creature not found"));
     };
-    payer.balance = payer.balance.checked_add(refund_amount).ok_or_else(|| denied("payer balance overflow"))?;
-    let held_withdrawable = as_i64(hold.get("withdrawableAmount").unwrap_or(&Value::Null)).unwrap_or(0);
+    payer.balance = payer
+        .balance
+        .checked_add(refund_amount)
+        .ok_or_else(|| denied("payer balance overflow"))?;
+    let held_withdrawable =
+        as_i64(hold.get("withdrawableAmount").unwrap_or(&Value::Null)).unwrap_or(0);
     let withdrawable_refund = refund_amount.min(held_withdrawable);
-    let withdrawable_spent = held_withdrawable.checked_sub(withdrawable_refund).ok_or_else(|| denied("withdrawable settlement underflow"))?;
-    let payer_withdrawable = finance_counter(ports.ledger, WalletCounter::Withdrawable, &input.payer_user_id)?
-        .checked_add(withdrawable_refund)
-        .ok_or_else(|| denied("withdrawable refund overflow"))?;
-    set_finance_counter(ports.ledger, WalletCounter::Withdrawable, &input.payer_user_id, payer_withdrawable)?;
+    let withdrawable_spent = held_withdrawable
+        .checked_sub(withdrawable_refund)
+        .ok_or_else(|| denied("withdrawable settlement underflow"))?;
+    let payer_withdrawable = finance_counter(
+        ports.ledger,
+        WalletCounter::Withdrawable,
+        &input.payer_user_id,
+    )?
+    .checked_add(withdrawable_refund)
+    .ok_or_else(|| denied("withdrawable refund overflow"))?;
+    set_finance_counter(
+        ports.ledger,
+        WalletCounter::Withdrawable,
+        &input.payer_user_id,
+        payer_withdrawable,
+    )?;
     ports.store_account(&payer)?;
     let held = finance_counter(ports.ledger, WalletCounter::Held, &input.payer_user_id)?
         .checked_sub(max_amount)
         .ok_or_else(|| denied("held balance underflow"))?;
-    set_finance_counter(ports.ledger, WalletCounter::Held, &input.payer_user_id, held)?;
+    set_finance_counter(
+        ports.ledger,
+        WalletCounter::Held,
+        &input.payer_user_id,
+        held,
+    )?;
 
     hold.insert("status".to_string(), json!("settled"));
     hold.insert("remainingAmount".to_string(), json!(0));
     hold.insert("actualAmount".to_string(), json!(actual_amount));
     hold.insert("refundedAmount".to_string(), json!(refund_amount));
-    hold.insert("withdrawableRefundedAmount".to_string(), json!(withdrawable_refund));
-    hold.insert("withdrawableSpentAmount".to_string(), json!(withdrawable_spent));
+    hold.insert(
+        "withdrawableRefundedAmount".to_string(),
+        json!(withdrawable_refund),
+    );
+    hold.insert(
+        "withdrawableSpentAmount".to_string(),
+        json!(withdrawable_spent),
+    );
     hold.insert("settlementId".to_string(), json!(input.settlement_id));
     hold.insert("usageHash".to_string(), json!(input.usage_hash));
-    hold.insert("settlementLines".to_string(), serde_json::to_value(&input.lines).map_err(|e| failed(e.to_string()))?);
+    hold.insert(
+        "settlementLines".to_string(),
+        serde_json::to_value(&input.lines).map_err(|e| failed(e.to_string()))?,
+    );
     hold.insert("finalizedAt".to_string(), json!(now));
     put_finance_hold(ports.ledger, &input.hold_id, &hold)?;
-    ports.ledger.put_marker(&settlement_marker, &input.hold_id)?;
+    ports
+        .ledger
+        .put_marker(&settlement_marker, &input.hold_id)?;
 
     let mut entries = vec![
         json!({"account": format!("wallet:{}:held", input.payer_user_id), "amount": -max_amount}),
@@ -951,7 +1204,11 @@ pub fn release_hold(
     if hold.get("payerUserId").and_then(Value::as_str) != Some(input.payer_user_id.as_str()) {
         return Err(denied("payer does not match hold"));
     }
-    let authority = hold.get("settlementAuthority").and_then(Value::as_str).unwrap_or("").to_string();
+    let authority = hold
+        .get("settlementAuthority")
+        .and_then(Value::as_str)
+        .unwrap_or("")
+        .to_string();
     let expires_at = as_i64(hold.get("expiresAt").unwrap_or(&Value::Null)).unwrap_or(0);
     let payer_open_release = caller_id == input.payer_user_id && active_status == "open";
     let payer_expired_release = caller_id == input.payer_user_id && now >= expires_at;
@@ -962,28 +1219,57 @@ pub fn release_hold(
     if max_amount <= 0 {
         return Err(denied("invalid hold amount"));
     }
-    let project_id = hold.get("projectId").and_then(Value::as_str).unwrap_or("").to_string();
+    let project_id = hold
+        .get("projectId")
+        .and_then(Value::as_str)
+        .unwrap_or("")
+        .to_string();
     finalize_project_budget(ports, &project_id, max_amount, 0, now)?;
     let Some(mut payer) = ports.account(&input.payer_user_id)? else {
         return Err(denied("payer creature not found"));
     };
-    payer.balance = payer.balance.checked_add(max_amount).ok_or_else(|| denied("payer balance overflow"))?;
-    let withdrawable_refund = as_i64(hold.get("withdrawableAmount").unwrap_or(&Value::Null)).unwrap_or(0);
-    let withdrawable = finance_counter(ports.ledger, WalletCounter::Withdrawable, &input.payer_user_id)?
-        .checked_add(withdrawable_refund)
-        .ok_or_else(|| denied("withdrawable refund overflow"))?;
-    set_finance_counter(ports.ledger, WalletCounter::Withdrawable, &input.payer_user_id, withdrawable)?;
+    payer.balance = payer
+        .balance
+        .checked_add(max_amount)
+        .ok_or_else(|| denied("payer balance overflow"))?;
+    let withdrawable_refund =
+        as_i64(hold.get("withdrawableAmount").unwrap_or(&Value::Null)).unwrap_or(0);
+    let withdrawable = finance_counter(
+        ports.ledger,
+        WalletCounter::Withdrawable,
+        &input.payer_user_id,
+    )?
+    .checked_add(withdrawable_refund)
+    .ok_or_else(|| denied("withdrawable refund overflow"))?;
+    set_finance_counter(
+        ports.ledger,
+        WalletCounter::Withdrawable,
+        &input.payer_user_id,
+        withdrawable,
+    )?;
     ports.store_account(&payer)?;
     let held = finance_counter(ports.ledger, WalletCounter::Held, &input.payer_user_id)?
         .checked_sub(max_amount)
         .ok_or_else(|| denied("held balance underflow"))?;
-    set_finance_counter(ports.ledger, WalletCounter::Held, &input.payer_user_id, held)?;
+    set_finance_counter(
+        ports.ledger,
+        WalletCounter::Held,
+        &input.payer_user_id,
+        held,
+    )?;
 
-    let status = if now >= expires_at { "expired" } else { "released" };
+    let status = if now >= expires_at {
+        "expired"
+    } else {
+        "released"
+    };
     hold.insert("status".to_string(), json!(status));
     hold.insert("remainingAmount".to_string(), json!(0));
     hold.insert("refundedAmount".to_string(), json!(max_amount));
-    hold.insert("withdrawableRefundedAmount".to_string(), json!(withdrawable_refund));
+    hold.insert(
+        "withdrawableRefundedAmount".to_string(),
+        json!(withdrawable_refund),
+    );
     hold.insert("releaseId".to_string(), json!(input.release_id));
     hold.insert("releaseReason".to_string(), json!(input.reason));
     hold.insert("finalizedAt".to_string(), json!(now));
@@ -1021,11 +1307,17 @@ pub fn get_hold(
         return Err(denied("invalid hold id"));
     }
     let hold = get_finance_hold(ports.ledger, &input.hold_id)?;
-    let payer_id = hold.get("payerUserId").and_then(Value::as_str).unwrap_or("");
+    let payer_id = hold
+        .get("payerUserId")
+        .and_then(Value::as_str)
+        .unwrap_or("");
     if !input.payer_user_id.is_empty() && input.payer_user_id != payer_id {
         return Err(denied("payer does not match hold"));
     }
-    let authority = hold.get("settlementAuthority").and_then(Value::as_str).unwrap_or("");
+    let authority = hold
+        .get("settlementAuthority")
+        .and_then(Value::as_str)
+        .unwrap_or("");
     let is_beneficiary = hold
         .get("beneficiaries")
         .and_then(Value::as_array)
@@ -1059,7 +1351,11 @@ pub fn get_financial_account(
     if user_id != caller_id && caller_id != LEGACY_ROOT {
         return Err(denied("access denied"));
     }
-    let limit = if input.limit <= 0 { 50 } else { input.limit.min(100) as usize };
+    let limit = if input.limit <= 0 {
+        50
+    } else {
+        input.limit.min(100) as usize
+    };
     financial_account_snapshot(ports, &user_id, limit)
 }
 
@@ -1079,7 +1375,8 @@ pub fn request_payout(
     {
         return Err(denied("invalid payout request"));
     }
-    let request_hash = finance_hash(&serde_json::to_value(&input).map_err(|e| failed(e.to_string()))?)?;
+    let request_hash =
+        finance_hash(&serde_json::to_value(&input).map_err(|e| failed(e.to_string()))?)?;
     let marker = FinanceMarker::PayoutRequest {
         user: user_id.to_owned(),
         request_id: input.request_id.clone(),
@@ -1092,7 +1389,9 @@ pub fn request_payout(
         if previous_hash != request_hash {
             return Err(denied("requestId already used with different payout data"));
         }
-        return Ok(json!({"applied": false, "alreadyApplied": true, "payout": get_finance_payout(ports.ledger, payout_id)?}));
+        return Ok(
+            json!({"applied": false, "alreadyApplied": true, "payout": get_finance_payout(ports.ledger, payout_id)?}),
+        );
     }
     if finance_counter(ports.ledger, WalletCounter::Debt, user_id)? > 0 {
         return Err(denied("wallet has outstanding payment debt"));
@@ -1104,8 +1403,13 @@ pub fn request_payout(
     if input.amount > withdrawable || input.amount > creature.balance {
         return Err(denied("withdrawable earnings are not enough"));
     }
-    creature.balance = creature.balance.checked_sub(input.amount).ok_or_else(|| denied("wallet payout underflow"))?;
-    let next_withdrawable = withdrawable.checked_sub(input.amount).ok_or_else(|| denied("withdrawable payout underflow"))?;
+    creature.balance = creature
+        .balance
+        .checked_sub(input.amount)
+        .ok_or_else(|| denied("wallet payout underflow"))?;
+    let next_withdrawable = withdrawable
+        .checked_sub(input.amount)
+        .ok_or_else(|| denied("withdrawable payout underflow"))?;
     let payout_held = finance_counter(ports.ledger, WalletCounter::PayoutHeld, user_id)?
         .checked_add(input.amount)
         .ok_or_else(|| denied("payout held overflow"))?;
@@ -1121,12 +1425,27 @@ pub fn request_payout(
         "createdAt": now,
         "requestHash": request_hash,
     });
-    let payout_map = payout.as_object().cloned().ok_or_else(|| denied("invalid payout record"))?;
+    let payout_map = payout
+        .as_object()
+        .cloned()
+        .ok_or_else(|| denied("invalid payout record"))?;
     ports.store_account(&creature)?;
-    set_finance_counter(ports.ledger, WalletCounter::Withdrawable, user_id, next_withdrawable)?;
-    set_finance_counter(ports.ledger, WalletCounter::PayoutHeld, user_id, payout_held)?;
+    set_finance_counter(
+        ports.ledger,
+        WalletCounter::Withdrawable,
+        user_id,
+        next_withdrawable,
+    )?;
+    set_finance_counter(
+        ports.ledger,
+        WalletCounter::PayoutHeld,
+        user_id,
+        payout_held,
+    )?;
     put_finance_payout(ports.ledger, &payout_id, &payout_map)?;
-    ports.ledger.put_marker(&marker, &format!("{payout_id}|{request_hash}"))?;
+    ports
+        .ledger
+        .put_marker(&marker, &format!("{payout_id}|{request_hash}"))?;
     let participants = vec![user_id.to_owned()];
     let journal_id = write_finance_journal(
         ports.ledger,
@@ -1168,7 +1487,8 @@ pub fn resolve_payout(
     {
         return Err(denied("invalid payout resolution"));
     }
-    let request_hash = finance_hash(&serde_json::to_value(&input).map_err(|e| failed(e.to_string()))?)?;
+    let request_hash =
+        finance_hash(&serde_json::to_value(&input).map_err(|e| failed(e.to_string()))?)?;
     let marker = FinanceMarker::PayoutResolution {
         resolution_id: input.resolution_id.clone(),
     };
@@ -1178,15 +1498,23 @@ pub fn resolve_payout(
             return Err(denied("invalid payout resolution idempotency record"));
         };
         if payout_id != input.payout_id || previous_hash != request_hash {
-            return Err(denied("resolutionId already used with different payout data"));
+            return Err(denied(
+                "resolutionId already used with different payout data",
+            ));
         }
-        return Ok(json!({"applied": false, "alreadyApplied": true, "payout": get_finance_payout(ports.ledger, payout_id)?}));
+        return Ok(
+            json!({"applied": false, "alreadyApplied": true, "payout": get_finance_payout(ports.ledger, payout_id)?}),
+        );
     }
     let mut payout = get_finance_payout(ports.ledger, &input.payout_id)?;
     if payout.get("status").and_then(Value::as_str) != Some("pending") {
         return Err(denied("payout is not pending"));
     }
-    let user_id = payout.get("userId").and_then(Value::as_str).unwrap_or("").to_string();
+    let user_id = payout
+        .get("userId")
+        .and_then(Value::as_str)
+        .unwrap_or("")
+        .to_string();
     let amount = as_i64(payout.get("amount").unwrap_or(&Value::Null)).unwrap_or(0);
     if user_id.is_empty() || amount <= 0 {
         return Err(denied("invalid payout record"));
@@ -1194,30 +1522,49 @@ pub fn resolve_payout(
     let payout_held = finance_counter(ports.ledger, WalletCounter::PayoutHeld, &user_id)?
         .checked_sub(amount)
         .ok_or_else(|| denied("payout held underflow"))?;
-    set_finance_counter(ports.ledger, WalletCounter::PayoutHeld, &user_id, payout_held)?;
-    let mut entries = vec![json!({"account": format!("wallet:{user_id}:payout_held"), "amount": -amount})];
+    set_finance_counter(
+        ports.ledger,
+        WalletCounter::PayoutHeld,
+        &user_id,
+        payout_held,
+    )?;
+    let mut entries =
+        vec![json!({"account": format!("wallet:{user_id}:payout_held"), "amount": -amount})];
     if input.status == "rejected" {
         let Some(mut creature) = ports.account(&user_id)? else {
             return Err(denied("payout owner not found"));
         };
-        creature.balance = creature.balance.checked_add(amount).ok_or_else(|| denied("payout refund overflow"))?;
+        creature.balance = creature
+            .balance
+            .checked_add(amount)
+            .ok_or_else(|| denied("payout refund overflow"))?;
         let withdrawable = finance_counter(ports.ledger, WalletCounter::Withdrawable, &user_id)?
             .checked_add(amount)
             .ok_or_else(|| denied("withdrawable payout refund overflow"))?;
         ports.store_account(&creature)?;
-        set_finance_counter(ports.ledger, WalletCounter::Withdrawable, &user_id, withdrawable)?;
+        set_finance_counter(
+            ports.ledger,
+            WalletCounter::Withdrawable,
+            &user_id,
+            withdrawable,
+        )?;
         entries.push(json!({"account": format!("wallet:{user_id}:available"), "amount": amount}));
     } else {
         entries.push(json!({"account": "external:payouts", "amount": amount}));
     }
     let now = ports.clock.unix_millis();
     payout.insert("status".to_string(), json!(input.status));
-    payout.insert("providerReference".to_string(), json!(input.provider_reference));
+    payout.insert(
+        "providerReference".to_string(),
+        json!(input.provider_reference),
+    );
     payout.insert("reason".to_string(), json!(input.reason));
     payout.insert("resolutionId".to_string(), json!(input.resolution_id));
     payout.insert("resolvedAt".to_string(), json!(now));
     put_finance_payout(ports.ledger, &input.payout_id, &payout)?;
-    ports.ledger.put_marker(&marker, &format!("{}|{request_hash}", input.payout_id))?;
+    ports
+        .ledger
+        .put_marker(&marker, &format!("{}|{request_hash}", input.payout_id))?;
     let participants = vec![user_id.clone(), caller.to_owned()];
     let journal_id = write_finance_journal(
         ports.ledger,
@@ -1243,7 +1590,11 @@ pub fn list_payouts(
     caller: &str,
     input: ListPayoutsInput,
 ) -> Result<Value, ApplicationError> {
-    let limit = if input.limit <= 0 { 50_usize } else { input.limit.min(200) as usize };
+    let limit = if input.limit <= 0 {
+        50_usize
+    } else {
+        input.limit.min(200) as usize
+    };
     if input.user_id.is_empty() {
         if caller != LEGACY_ROOT {
             return Ok(json!({"payouts": finance_payout_records(ports, caller, limit)?}));
@@ -1255,7 +1606,8 @@ pub fn list_payouts(
             }
         }
         payouts.sort_by(|a, b| {
-            as_i64(b.get("createdAt").unwrap_or(&Value::Null)).unwrap_or(0)
+            as_i64(b.get("createdAt").unwrap_or(&Value::Null))
+                .unwrap_or(0)
                 .cmp(&as_i64(a.get("createdAt").unwrap_or(&Value::Null)).unwrap_or(0))
         });
         payouts.truncate(limit);
@@ -1279,7 +1631,9 @@ pub fn open_pool(
         || !valid_finance_id(&input.meter_program_id)
         || !valid_finance_id(&input.idempotency_key)
     {
-        return Err(denied("invalid authority, meter, or idempotency identifier"));
+        return Err(denied(
+            "invalid authority, meter, or idempotency identifier",
+        ));
     }
     if input.max_amount <= 0 {
         return Err(denied("maxAmount must be greater than zero"));
@@ -1306,7 +1660,8 @@ pub fn open_pool(
     if withdrawable > payer.balance {
         return Err(denied("withdrawable balance exceeds available balance"));
     }
-    let withdrawable_amount = withdrawable_debit_portion(payer.balance, withdrawable, input.max_amount);
+    let withdrawable_amount =
+        withdrawable_debit_portion(payer.balance, withdrawable, input.max_amount);
     payer.balance = payer
         .balance
         .checked_sub(input.max_amount)
@@ -1344,7 +1699,10 @@ pub fn open_pool(
         "createdAt": now,
         "updatedAt": now,
     });
-    let pool_map = pool.as_object().cloned().ok_or_else(|| denied("pool encode failed"))?;
+    let pool_map = pool
+        .as_object()
+        .cloned()
+        .ok_or_else(|| denied("pool encode failed"))?;
     put_finance_pool(ports.ledger, &pool_id, &pool_map)?;
     ports.ledger.put_marker(&marker, &pool_id)?;
     ports.ledger.put_pool_of_user(payer_id, &pool_id)?;
@@ -1419,13 +1777,16 @@ pub fn refresh_pool(
         .ok_or_else(|| denied("held balance overflow"))?;
     set_finance_counter(ports.ledger, WalletCounter::Held, payer_id, held)?;
 
-    let max_amount = as_i64(pool.get("maxAmount").unwrap_or(&Value::Null)).unwrap_or(0)
+    let max_amount = as_i64(pool.get("maxAmount").unwrap_or(&Value::Null))
+        .unwrap_or(0)
         .checked_add(input.amount)
         .ok_or_else(|| denied("pool maxAmount overflow"))?;
-    let remaining = as_i64(pool.get("remaining").unwrap_or(&Value::Null)).unwrap_or(0)
+    let remaining = as_i64(pool.get("remaining").unwrap_or(&Value::Null))
+        .unwrap_or(0)
         .checked_add(input.amount)
         .ok_or_else(|| denied("pool remaining overflow"))?;
-    let pool_withdrawable = as_i64(pool.get("withdrawableAmount").unwrap_or(&Value::Null)).unwrap_or(0)
+    let pool_withdrawable = as_i64(pool.get("withdrawableAmount").unwrap_or(&Value::Null))
+        .unwrap_or(0)
         .checked_add(withdrawable_add)
         .ok_or_else(|| denied("pool withdrawable overflow"))?;
     if input.expires_at > now {
@@ -1437,7 +1798,11 @@ pub fn refresh_pool(
     pool.insert("updatedAt".to_string(), json!(now));
     put_finance_pool(ports.ledger, &input.pool_id, &pool)?;
     ports.ledger.put_marker(&marker, &input.pool_id)?;
-    let authority = pool.get("settlementAuthority").and_then(Value::as_str).unwrap_or("").to_string();
+    let authority = pool
+        .get("settlementAuthority")
+        .and_then(Value::as_str)
+        .unwrap_or("")
+        .to_string();
     let participants = vec![payer_id.to_owned(), authority];
     let journal_id = write_finance_journal(
         ports.ledger,
@@ -1463,8 +1828,16 @@ pub fn close_pool(
         return Err(denied("invalid pool or close identifier"));
     }
     let mut pool = get_finance_pool(ports.ledger, &input.pool_id)?;
-    let payer_id = pool.get("payerUserId").and_then(Value::as_str).unwrap_or("").to_string();
-    let authority = pool.get("settlementAuthority").and_then(Value::as_str).unwrap_or("").to_string();
+    let payer_id = pool
+        .get("payerUserId")
+        .and_then(Value::as_str)
+        .unwrap_or("")
+        .to_string();
+    let authority = pool
+        .get("settlementAuthority")
+        .and_then(Value::as_str)
+        .unwrap_or("")
+        .to_string();
     if caller_id != payer_id && caller_id != authority {
         return Err(denied("caller may not close this pool"));
     }
@@ -1474,7 +1847,9 @@ pub fn close_pool(
     };
     if status == "closed" {
         if ports.ledger.marker(&close_marker)? == input.close_id {
-            return Ok(json!({"applied": false, "alreadyApplied": true, "pool": Value::Object(pool)}));
+            return Ok(
+                json!({"applied": false, "alreadyApplied": true, "pool": Value::Object(pool)}),
+            );
         }
         return Err(denied("pool is already closed"));
     }
@@ -1483,27 +1858,39 @@ pub fn close_pool(
     }
     let reserved = as_i64(pool.get("reserved").unwrap_or(&Value::Null)).unwrap_or(0);
     if reserved != 0 {
-        return Err(denied("pool has in-flight run reservations; cannot close yet"));
+        return Err(denied(
+            "pool has in-flight run reservations; cannot close yet",
+        ));
     }
     let remaining = as_i64(pool.get("remaining").unwrap_or(&Value::Null)).unwrap_or(0);
-    let pool_withdrawable = as_i64(pool.get("withdrawableAmount").unwrap_or(&Value::Null)).unwrap_or(0);
+    let pool_withdrawable =
+        as_i64(pool.get("withdrawableAmount").unwrap_or(&Value::Null)).unwrap_or(0);
     let withdrawable_refund = remaining.min(pool_withdrawable);
     if remaining > 0 {
         let Some(mut payer) = ports.account(&payer_id)? else {
             return Err(denied("payer creature not found"));
         };
-        payer.balance = payer.balance.checked_add(remaining).ok_or_else(|| denied("payer balance overflow"))?;
+        payer.balance = payer
+            .balance
+            .checked_add(remaining)
+            .ok_or_else(|| denied("payer balance overflow"))?;
         let withdrawable = finance_counter(ports.ledger, WalletCounter::Withdrawable, &payer_id)?
             .checked_add(withdrawable_refund)
             .ok_or_else(|| denied("withdrawable refund overflow"))?;
-        set_finance_counter(ports.ledger, WalletCounter::Withdrawable, &payer_id, withdrawable)?;
+        set_finance_counter(
+            ports.ledger,
+            WalletCounter::Withdrawable,
+            &payer_id,
+            withdrawable,
+        )?;
         ports.store_account(&payer)?;
         let held = finance_counter(ports.ledger, WalletCounter::Held, &payer_id)?
             .checked_sub(remaining)
             .ok_or_else(|| denied("held balance underflow"))?;
         set_finance_counter(ports.ledger, WalletCounter::Held, &payer_id, held)?;
     }
-    let refunded = as_i64(pool.get("refunded").unwrap_or(&Value::Null)).unwrap_or(0)
+    let refunded = as_i64(pool.get("refunded").unwrap_or(&Value::Null))
+        .unwrap_or(0)
         .checked_add(remaining)
         .ok_or_else(|| denied("pool refunded overflow"))?;
     pool.insert("status".to_string(), json!("closed"));
@@ -1545,9 +1932,10 @@ pub fn reserve_pool(
     if input.max_amount <= 0 {
         return Err(denied("reservation amount must be greater than zero"));
     }
-    if let Ok(existing) = ports
-        .ledger
-        .get_doc(FinanceDoc::PoolReservation, &input.run_id, "reservation")
+    if let Ok(existing) =
+        ports
+            .ledger
+            .get_doc(FinanceDoc::PoolReservation, &input.run_id, "reservation")
     {
         if existing.get("poolId").and_then(Value::as_str) == Some(input.pool_id.as_str()) {
             return Ok(json!({"applied": false, "alreadyApplied": true, "reservation": existing}));
@@ -1580,9 +1968,12 @@ pub fn reserve_pool(
     }
     let remaining = as_i64(pool.get("remaining").unwrap_or(&Value::Null)).unwrap_or(0);
     if remaining < input.max_amount {
-        return Err(denied("pool has insufficient remaining balance for this run"));
+        return Err(denied(
+            "pool has insufficient remaining balance for this run",
+        ));
     }
-    let reserved = as_i64(pool.get("reserved").unwrap_or(&Value::Null)).unwrap_or(0)
+    let reserved = as_i64(pool.get("reserved").unwrap_or(&Value::Null))
+        .unwrap_or(0)
         .checked_add(input.max_amount)
         .ok_or_else(|| denied("pool reserved overflow"))?;
     pool.insert("remaining".to_string(), json!(remaining - input.max_amount));
@@ -1598,7 +1989,11 @@ pub fn reserve_pool(
         "status": "reserved",
         "createdAt": now,
     });
-    put_finance_pool_reservation(ports.ledger, &input.run_id, reservation.as_object().unwrap())?;
+    put_finance_pool_reservation(
+        ports.ledger,
+        &input.run_id,
+        reservation.as_object().unwrap(),
+    )?;
     let participants = vec![input.payer_user_id.clone(), authority_id.to_owned()];
     let journal_id = write_finance_journal(
         ports.ledger,
@@ -1642,7 +2037,8 @@ pub fn settle_pool(
         return Err(denied("run reservation is not open for settlement"));
     }
     if reservation.get("poolId").and_then(Value::as_str) != Some(input.pool_id.as_str())
-        || reservation.get("payerUserId").and_then(Value::as_str) != Some(input.payer_user_id.as_str())
+        || reservation.get("payerUserId").and_then(Value::as_str)
+            != Some(input.payer_user_id.as_str())
         || reservation.get("quoteId").and_then(Value::as_str) != Some(input.quote_id.as_str())
     {
         return Err(denied("settlement does not match the run reservation"));
@@ -1692,16 +2088,24 @@ pub fn settle_pool(
         }
         let cap_key = format!("{}|{}", line.user_id, line.role);
         let Some(cap) = caps.get(&cap_key) else {
-            return Err(denied("settlement beneficiary role not authorized by quote"));
+            return Err(denied(
+                "settlement beneficiary role not authorized by quote",
+            ));
         };
-        actual_amount = actual_amount.checked_add(line.amount).ok_or_else(|| denied("settlement amount overflow"))?;
+        actual_amount = actual_amount
+            .checked_add(line.amount)
+            .ok_or_else(|| denied("settlement amount overflow"))?;
         let role_total = allocated.entry(cap_key).or_insert(0);
-        *role_total = role_total.checked_add(line.amount).ok_or_else(|| denied("beneficiary role amount overflow"))?;
+        *role_total = role_total
+            .checked_add(line.amount)
+            .ok_or_else(|| denied("beneficiary role amount overflow"))?;
         if *role_total > *cap {
             return Err(denied("settlement exceeds beneficiary role cap"));
         }
         let credited = credits.entry(line.user_id.clone()).or_insert(0);
-        *credited = credited.checked_add(line.amount).ok_or_else(|| denied("beneficiary amount overflow"))?;
+        *credited = credited
+            .checked_add(line.amount)
+            .ok_or_else(|| denied("beneficiary amount overflow"))?;
     }
     if actual_amount > slice {
         return Err(denied("settlement exceeds the run reservation"));
@@ -1714,31 +2118,61 @@ pub fn settle_pool(
         };
         let debt = finance_counter(ports.ledger, WalletCounter::Debt, user_id)?;
         let debt_repaid = debt.min(*amount);
-        let wallet_credit = amount.checked_sub(debt_repaid).ok_or_else(|| denied("beneficiary credit underflow"))?;
-        receiver.balance = receiver.balance.checked_add(wallet_credit).ok_or_else(|| denied("beneficiary balance overflow"))?;
+        let wallet_credit = amount
+            .checked_sub(debt_repaid)
+            .ok_or_else(|| denied("beneficiary credit underflow"))?;
+        receiver.balance = receiver
+            .balance
+            .checked_add(wallet_credit)
+            .ok_or_else(|| denied("beneficiary balance overflow"))?;
         let withdrawable = finance_counter(ports.ledger, WalletCounter::Withdrawable, user_id)?
             .checked_add(wallet_credit)
             .ok_or_else(|| denied("withdrawable earnings overflow"))?;
-        set_finance_counter(ports.ledger, WalletCounter::Debt, user_id, debt - debt_repaid)?;
-        set_finance_counter(ports.ledger, WalletCounter::Withdrawable, user_id, withdrawable)?;
+        set_finance_counter(
+            ports.ledger,
+            WalletCounter::Debt,
+            user_id,
+            debt - debt_repaid,
+        )?;
+        set_finance_counter(
+            ports.ledger,
+            WalletCounter::Withdrawable,
+            user_id,
+            withdrawable,
+        )?;
         ports.store_account(&receiver)?;
         participants.push(user_id.clone());
     }
-    let refund_to_pool = slice.checked_sub(actual_amount).ok_or_else(|| denied("reservation refund underflow"))?;
+    let refund_to_pool = slice
+        .checked_sub(actual_amount)
+        .ok_or_else(|| denied("reservation refund underflow"))?;
     if actual_amount > 0 {
         let held = finance_counter(ports.ledger, WalletCounter::Held, &input.payer_user_id)?
             .checked_sub(actual_amount)
             .ok_or_else(|| denied("held balance underflow"))?;
-        set_finance_counter(ports.ledger, WalletCounter::Held, &input.payer_user_id, held)?;
-        add_finance_counter(ports.ledger, WalletCounter::Spent, &input.payer_user_id, actual_amount)?;
+        set_finance_counter(
+            ports.ledger,
+            WalletCounter::Held,
+            &input.payer_user_id,
+            held,
+        )?;
+        add_finance_counter(
+            ports.ledger,
+            WalletCounter::Spent,
+            &input.payer_user_id,
+            actual_amount,
+        )?;
     }
-    let remaining = as_i64(pool.get("remaining").unwrap_or(&Value::Null)).unwrap_or(0)
+    let remaining = as_i64(pool.get("remaining").unwrap_or(&Value::Null))
+        .unwrap_or(0)
         .checked_add(refund_to_pool)
         .ok_or_else(|| denied("pool remaining overflow"))?;
-    let reserved = as_i64(pool.get("reserved").unwrap_or(&Value::Null)).unwrap_or(0)
+    let reserved = as_i64(pool.get("reserved").unwrap_or(&Value::Null))
+        .unwrap_or(0)
         .checked_sub(slice)
         .ok_or_else(|| denied("pool reserved underflow"))?;
-    let spent = as_i64(pool.get("spent").unwrap_or(&Value::Null)).unwrap_or(0)
+    let spent = as_i64(pool.get("spent").unwrap_or(&Value::Null))
+        .unwrap_or(0)
         .checked_add(actual_amount)
         .ok_or_else(|| denied("pool spent overflow"))?;
     pool.insert("remaining".to_string(), json!(remaining));
@@ -1750,7 +2184,10 @@ pub fn settle_pool(
     reservation.insert("settlementId".to_string(), json!(input.settlement_id));
     reservation.insert("actualAmount".to_string(), json!(actual_amount));
     reservation.insert("usageHash".to_string(), json!(input.usage_hash));
-    reservation.insert("settlementLines".to_string(), serde_json::to_value(&input.lines).map_err(|e| failed(e.to_string()))?);
+    reservation.insert(
+        "settlementLines".to_string(),
+        serde_json::to_value(&input.lines).map_err(|e| failed(e.to_string()))?,
+    );
     reservation.insert("settledAt".to_string(), json!(now));
     put_finance_pool_reservation(ports.ledger, &input.run_id, &reservation)?;
     ports.ledger.put_marker(&settlement_marker, &input.run_id)?;
@@ -1787,7 +2224,10 @@ pub fn release_pool(
         return Err(denied("invalid pool, payer, run, or release identifier"));
     }
     let mut reservation = get_finance_pool_reservation(ports.ledger, &input.run_id)?;
-    let status = reservation.get("status").and_then(Value::as_str).unwrap_or("");
+    let status = reservation
+        .get("status")
+        .and_then(Value::as_str)
+        .unwrap_or("");
     if status == "released"
         && reservation.get("releaseId").and_then(Value::as_str) == Some(input.release_id.as_str())
     {
@@ -1797,22 +2237,29 @@ pub fn release_pool(
         return Err(denied("run reservation is not open for release"));
     }
     if reservation.get("poolId").and_then(Value::as_str) != Some(input.pool_id.as_str())
-        || reservation.get("payerUserId").and_then(Value::as_str) != Some(input.payer_user_id.as_str())
+        || reservation.get("payerUserId").and_then(Value::as_str)
+            != Some(input.payer_user_id.as_str())
     {
         return Err(denied("release does not match the run reservation"));
     }
     let slice = as_i64(reservation.get("amount").unwrap_or(&Value::Null)).unwrap_or(0);
     let mut pool = get_finance_pool(ports.ledger, &input.pool_id)?;
-    let authority = pool.get("settlementAuthority").and_then(Value::as_str).unwrap_or("").to_string();
+    let authority = pool
+        .get("settlementAuthority")
+        .and_then(Value::as_str)
+        .unwrap_or("")
+        .to_string();
     let expires_at = as_i64(pool.get("expiresAt").unwrap_or(&Value::Null)).unwrap_or(0);
     let payer_recovery = caller_id == input.payer_user_id && expires_at > 0 && now > expires_at;
     if caller_id != authority && !payer_recovery {
         return Err(denied("caller may not release this reservation"));
     }
-    let remaining = as_i64(pool.get("remaining").unwrap_or(&Value::Null)).unwrap_or(0)
+    let remaining = as_i64(pool.get("remaining").unwrap_or(&Value::Null))
+        .unwrap_or(0)
         .checked_add(slice)
         .ok_or_else(|| denied("pool remaining overflow"))?;
-    let reserved = as_i64(pool.get("reserved").unwrap_or(&Value::Null)).unwrap_or(0)
+    let reserved = as_i64(pool.get("reserved").unwrap_or(&Value::Null))
+        .unwrap_or(0)
         .checked_sub(slice)
         .ok_or_else(|| denied("pool reserved underflow"))?;
     pool.insert("remaining".to_string(), json!(remaining));
@@ -1912,11 +2359,17 @@ pub fn debit_pool(
         if !authorized.contains_key(&cap_key) {
             return Err(denied("debit beneficiary role not authorized by quote"));
         }
-        delta = delta.checked_add(line.amount).ok_or_else(|| denied("debit amount overflow"))?;
+        delta = delta
+            .checked_add(line.amount)
+            .ok_or_else(|| denied("debit amount overflow"))?;
         let credited = credits.entry(cap_key).or_insert(0);
-        *credited = credited.checked_add(line.amount).ok_or_else(|| denied("beneficiary amount overflow"))?;
+        *credited = credited
+            .checked_add(line.amount)
+            .ok_or_else(|| denied("beneficiary amount overflow"))?;
         let user_credited = user_credits.entry(line.user_id.clone()).or_insert(0);
-        *user_credited = user_credited.checked_add(line.amount).ok_or_else(|| denied("beneficiary amount overflow"))?;
+        *user_credited = user_credited
+            .checked_add(line.amount)
+            .ok_or_else(|| denied("beneficiary amount overflow"))?;
     }
     if delta <= 0 {
         return Err(denied("debit must charge a positive amount"));
@@ -1941,23 +2394,51 @@ pub fn debit_pool(
         };
         let debt = finance_counter(ports.ledger, WalletCounter::Debt, user_id)?;
         let debt_repaid = debt.min(*amount);
-        let wallet_credit = amount.checked_sub(debt_repaid).ok_or_else(|| denied("beneficiary credit underflow"))?;
-        receiver.balance = receiver.balance.checked_add(wallet_credit).ok_or_else(|| denied("beneficiary balance overflow"))?;
+        let wallet_credit = amount
+            .checked_sub(debt_repaid)
+            .ok_or_else(|| denied("beneficiary credit underflow"))?;
+        receiver.balance = receiver
+            .balance
+            .checked_add(wallet_credit)
+            .ok_or_else(|| denied("beneficiary balance overflow"))?;
         let withdrawable = finance_counter(ports.ledger, WalletCounter::Withdrawable, user_id)?
             .checked_add(wallet_credit)
             .ok_or_else(|| denied("withdrawable earnings overflow"))?;
-        set_finance_counter(ports.ledger, WalletCounter::Debt, user_id, debt - debt_repaid)?;
-        set_finance_counter(ports.ledger, WalletCounter::Withdrawable, user_id, withdrawable)?;
+        set_finance_counter(
+            ports.ledger,
+            WalletCounter::Debt,
+            user_id,
+            debt - debt_repaid,
+        )?;
+        set_finance_counter(
+            ports.ledger,
+            WalletCounter::Withdrawable,
+            user_id,
+            withdrawable,
+        )?;
         ports.store_account(&receiver)?;
         participants.push(user_id.clone());
     }
     let held = finance_counter(ports.ledger, WalletCounter::Held, &input.payer_user_id)?
         .checked_sub(delta)
         .ok_or_else(|| denied("held balance underflow"))?;
-    set_finance_counter(ports.ledger, WalletCounter::Held, &input.payer_user_id, held)?;
-    add_finance_counter(ports.ledger, WalletCounter::Spent, &input.payer_user_id, delta)?;
-    let new_remaining = remaining.checked_sub(delta).ok_or_else(|| denied("pool remaining underflow"))?;
-    let spent = as_i64(pool.get("spent").unwrap_or(&Value::Null)).unwrap_or(0)
+    set_finance_counter(
+        ports.ledger,
+        WalletCounter::Held,
+        &input.payer_user_id,
+        held,
+    )?;
+    add_finance_counter(
+        ports.ledger,
+        WalletCounter::Spent,
+        &input.payer_user_id,
+        delta,
+    )?;
+    let new_remaining = remaining
+        .checked_sub(delta)
+        .ok_or_else(|| denied("pool remaining underflow"))?;
+    let spent = as_i64(pool.get("spent").unwrap_or(&Value::Null))
+        .unwrap_or(0)
         .checked_add(delta)
         .ok_or_else(|| denied("pool spent overflow"))?;
     pool.insert("remaining".to_string(), json!(new_remaining));
@@ -1975,7 +2456,8 @@ pub fn debit_pool(
         record.insert("quoteId".to_string(), json!(input.quote_id));
         record.insert("createdAt".to_string(), json!(now));
     }
-    let charged_total = as_i64(record.get("chargedTotal").unwrap_or(&Value::Null)).unwrap_or(0)
+    let charged_total = as_i64(record.get("chargedTotal").unwrap_or(&Value::Null))
+        .unwrap_or(0)
         .checked_add(delta)
         .ok_or_else(|| denied("run charged total overflow"))?;
     record.insert("chargedTotal".to_string(), json!(charged_total));
@@ -1985,7 +2467,8 @@ pub fn debit_pool(
         .cloned()
         .unwrap_or_default();
     for (cap_key, amount) in &credits {
-        let prior = as_i64(record_credits.get(cap_key).unwrap_or(&Value::Null)).unwrap_or(0)
+        let prior = as_i64(record_credits.get(cap_key).unwrap_or(&Value::Null))
+            .unwrap_or(0)
             .checked_add(*amount)
             .ok_or_else(|| denied("run credit overflow"))?;
         record_credits.insert(cap_key.clone(), json!(prior));
@@ -2043,17 +2526,28 @@ pub fn reconcile_financial_system(
     let mut active_hold_count = 0_i64;
     for hold_id in ports.ledger.doc_ids(FinanceDoc::Hold)? {
         let Ok(hold) = ports.ledger.get_doc(FinanceDoc::Hold, &hold_id, "hold") else {
-            report("hold.unreadable", &hold_id, "hold JSON cannot be read".to_string());
+            report(
+                "hold.unreadable",
+                &hold_id,
+                "hold JSON cannot be read".to_string(),
+            );
             continue;
         };
         hold_count += 1;
-        let payer = hold.get("payerUserId").and_then(Value::as_str).unwrap_or("");
+        let payer = hold
+            .get("payerUserId")
+            .and_then(Value::as_str)
+            .unwrap_or("");
         let project = hold.get("projectId").and_then(Value::as_str).unwrap_or("");
         let status = hold.get("status").and_then(Value::as_str).unwrap_or("");
         let max_amount = as_i64(hold.get("maxAmount").unwrap_or(&Value::Null)).unwrap_or(-1);
         let remaining = as_i64(hold.get("remainingAmount").unwrap_or(&Value::Null)).unwrap_or(-1);
         if payer.is_empty() || max_amount <= 0 {
-            report("hold.invalid", &hold_id, "payer or maxAmount is invalid".to_string());
+            report(
+                "hold.invalid",
+                &hold_id,
+                "payer or maxAmount is invalid".to_string(),
+            );
             continue;
         }
         match status {
@@ -2067,17 +2561,26 @@ pub fn reconcile_financial_system(
                     );
                 }
                 if !finance_map_add(&mut held_expected, payer, max_amount) {
-                    report("held.overflow", payer, "expected held balance overflow".to_string());
+                    report(
+                        "held.overflow",
+                        payer,
+                        "expected held balance overflow".to_string(),
+                    );
                 }
                 if !project.is_empty()
                     && !finance_map_add(&mut project_reserved_expected, project, max_amount)
                 {
-                    report("project.reserved_overflow", project, "expected reservation overflow".to_string());
+                    report(
+                        "project.reserved_overflow",
+                        project,
+                        "expected reservation overflow".to_string(),
+                    );
                 }
             }
             "settled" => {
                 let actual = as_i64(hold.get("actualAmount").unwrap_or(&Value::Null)).unwrap_or(-1);
-                let refunded = as_i64(hold.get("refundedAmount").unwrap_or(&Value::Null)).unwrap_or(-1);
+                let refunded =
+                    as_i64(hold.get("refundedAmount").unwrap_or(&Value::Null)).unwrap_or(-1);
                 if remaining != 0
                     || actual < 0
                     || refunded < 0
@@ -2086,7 +2589,9 @@ pub fn reconcile_financial_system(
                     report(
                         "hold.settlement_mismatch",
                         &hold_id,
-                        format!("actual={actual}, refunded={refunded}, max={max_amount}, remaining={remaining}"),
+                        format!(
+                            "actual={actual}, refunded={refunded}, max={max_amount}, remaining={remaining}"
+                        ),
                     );
                     continue;
                 }
@@ -2100,25 +2605,42 @@ pub fn reconcile_financial_system(
                     let user_id = line.get("userId").and_then(Value::as_str).unwrap_or("");
                     let amount = as_i64(line.get("amount").unwrap_or(&Value::Null)).unwrap_or(-1);
                     if amount <= 0 || !finance_map_add(&mut earned_expected, user_id, amount) {
-                        report("settlement.line_invalid", &hold_id, "invalid beneficiary settlement line".to_string());
+                        report(
+                            "settlement.line_invalid",
+                            &hold_id,
+                            "invalid beneficiary settlement line".to_string(),
+                        );
                         continue;
                     }
                     line_total = line_total.checked_add(amount).unwrap_or(i64::MAX);
                 }
                 if line_total != actual {
-                    report("settlement.lines_mismatch", &hold_id, format!("lines={line_total}, actual={actual}"));
+                    report(
+                        "settlement.lines_mismatch",
+                        &hold_id,
+                        format!("lines={line_total}, actual={actual}"),
+                    );
                 }
                 if !finance_map_add(&mut spent_expected, payer, actual) {
-                    report("spent.overflow", payer, "expected spent counter overflow".to_string());
+                    report(
+                        "spent.overflow",
+                        payer,
+                        "expected spent counter overflow".to_string(),
+                    );
                 }
                 if !project.is_empty()
                     && !finance_map_add(&mut project_spent_expected, project, actual)
                 {
-                    report("project.spent_overflow", project, "expected project spend overflow".to_string());
+                    report(
+                        "project.spent_overflow",
+                        project,
+                        "expected project spend overflow".to_string(),
+                    );
                 }
             }
             "released" | "expired" => {
-                let refunded = as_i64(hold.get("refundedAmount").unwrap_or(&Value::Null)).unwrap_or(-1);
+                let refunded =
+                    as_i64(hold.get("refundedAmount").unwrap_or(&Value::Null)).unwrap_or(-1);
                 if remaining != 0 || refunded != max_amount {
                     report(
                         "hold.release_mismatch",
@@ -2132,10 +2654,17 @@ pub fn reconcile_financial_system(
     }
     for pool_id in ports.ledger.doc_ids(FinanceDoc::Pool)? {
         let Ok(pool) = ports.ledger.get_doc(FinanceDoc::Pool, &pool_id, "pool") else {
-            report("pool.unreadable", &pool_id, "pool JSON cannot be read".to_string());
+            report(
+                "pool.unreadable",
+                &pool_id,
+                "pool JSON cannot be read".to_string(),
+            );
             continue;
         };
-        let payer = pool.get("payerUserId").and_then(Value::as_str).unwrap_or("");
+        let payer = pool
+            .get("payerUserId")
+            .and_then(Value::as_str)
+            .unwrap_or("");
         let status = pool.get("status").and_then(Value::as_str).unwrap_or("");
         let max_amount = as_i64(pool.get("maxAmount").unwrap_or(&Value::Null)).unwrap_or(-1);
         let remaining = as_i64(pool.get("remaining").unwrap_or(&Value::Null)).unwrap_or(-1);
@@ -2149,7 +2678,11 @@ pub fn reconcile_financial_system(
             || spent < 0
             || refunded < 0
         {
-            report("pool.invalid", &pool_id, "payer or pool amounts are invalid".to_string());
+            report(
+                "pool.invalid",
+                &pool_id,
+                "payer or pool amounts are invalid".to_string(),
+            );
             continue;
         }
         let sum = remaining
@@ -2160,39 +2693,79 @@ pub fn reconcile_financial_system(
             report(
                 "pool.balance_mismatch",
                 &pool_id,
-                format!("remaining={remaining}, reserved={reserved}, spent={spent}, refunded={refunded}, max={max_amount}"),
+                format!(
+                    "remaining={remaining}, reserved={reserved}, spent={spent}, refunded={refunded}, max={max_amount}"
+                ),
             );
         }
         if status == "open"
-            && !finance_map_add(&mut held_expected, payer, remaining.saturating_add(reserved))
+            && !finance_map_add(
+                &mut held_expected,
+                payer,
+                remaining.saturating_add(reserved),
+            )
         {
-            report("held.overflow", payer, "expected held (pool) overflow".to_string());
+            report(
+                "held.overflow",
+                payer,
+                "expected held (pool) overflow".to_string(),
+            );
         }
     }
     let mut pool_reserved_expected = std::collections::HashMap::<String, i64>::new();
     for run_id in ports.ledger.doc_ids(FinanceDoc::PoolReservation)? {
-        let Ok(reservation) = ports.ledger.get_doc(FinanceDoc::PoolReservation, &run_id, "reservation") else {
-            report("reservation.unreadable", &run_id, "reservation JSON cannot be read".to_string());
+        let Ok(reservation) =
+            ports
+                .ledger
+                .get_doc(FinanceDoc::PoolReservation, &run_id, "reservation")
+        else {
+            report(
+                "reservation.unreadable",
+                &run_id,
+                "reservation JSON cannot be read".to_string(),
+            );
             continue;
         };
-        let payer = reservation.get("payerUserId").and_then(Value::as_str).unwrap_or("");
-        let pool_id = reservation.get("poolId").and_then(Value::as_str).unwrap_or("");
-        let status = reservation.get("status").and_then(Value::as_str).unwrap_or("");
+        let payer = reservation
+            .get("payerUserId")
+            .and_then(Value::as_str)
+            .unwrap_or("");
+        let pool_id = reservation
+            .get("poolId")
+            .and_then(Value::as_str)
+            .unwrap_or("");
+        let status = reservation
+            .get("status")
+            .and_then(Value::as_str)
+            .unwrap_or("");
         let amount = as_i64(reservation.get("amount").unwrap_or(&Value::Null)).unwrap_or(-1);
         if payer.is_empty() || pool_id.is_empty() || amount < 0 {
-            report("reservation.invalid", &run_id, "reservation fields are invalid".to_string());
+            report(
+                "reservation.invalid",
+                &run_id,
+                "reservation fields are invalid".to_string(),
+            );
             continue;
         }
         match status {
             "reserved" => {
                 if !finance_map_add(&mut pool_reserved_expected, pool_id, amount) {
-                    report("reservation.overflow", pool_id, "expected pool reserved overflow".to_string());
+                    report(
+                        "reservation.overflow",
+                        pool_id,
+                        "expected pool reserved overflow".to_string(),
+                    );
                 }
             }
             "settled" => {
-                let actual = as_i64(reservation.get("actualAmount").unwrap_or(&Value::Null)).unwrap_or(-1);
+                let actual =
+                    as_i64(reservation.get("actualAmount").unwrap_or(&Value::Null)).unwrap_or(-1);
                 if actual < 0 {
-                    report("reservation.settlement_invalid", &run_id, "settled reservation missing actualAmount".to_string());
+                    report(
+                        "reservation.settlement_invalid",
+                        &run_id,
+                        "settled reservation missing actualAmount".to_string(),
+                    );
                     continue;
                 }
                 let mut line_total = 0_i64;
@@ -2203,33 +2776,66 @@ pub fn reconcile_financial_system(
                     .unwrap_or_default()
                 {
                     let user_id = line.get("userId").and_then(Value::as_str).unwrap_or("");
-                    let line_amount = as_i64(line.get("amount").unwrap_or(&Value::Null)).unwrap_or(-1);
-                    if line_amount <= 0 || !finance_map_add(&mut earned_expected, user_id, line_amount) {
-                        report("reservation.line_invalid", &run_id, "invalid pool settlement line".to_string());
+                    let line_amount =
+                        as_i64(line.get("amount").unwrap_or(&Value::Null)).unwrap_or(-1);
+                    if line_amount <= 0
+                        || !finance_map_add(&mut earned_expected, user_id, line_amount)
+                    {
+                        report(
+                            "reservation.line_invalid",
+                            &run_id,
+                            "invalid pool settlement line".to_string(),
+                        );
                         continue;
                     }
                     line_total = line_total.checked_add(line_amount).unwrap_or(i64::MAX);
                 }
                 if line_total != actual {
-                    report("reservation.lines_mismatch", &run_id, format!("lines={line_total}, actual={actual}"));
+                    report(
+                        "reservation.lines_mismatch",
+                        &run_id,
+                        format!("lines={line_total}, actual={actual}"),
+                    );
                 }
                 if !finance_map_add(&mut spent_expected, payer, actual) {
-                    report("spent.overflow", payer, "expected spent (pool) overflow".to_string());
+                    report(
+                        "spent.overflow",
+                        payer,
+                        "expected spent (pool) overflow".to_string(),
+                    );
                 }
             }
             "released" => {}
-            _ => report("reservation.status_invalid", &run_id, format!("status={status}")),
+            _ => report(
+                "reservation.status_invalid",
+                &run_id,
+                format!("status={status}"),
+            ),
         }
     }
     for run_id in ports.ledger.doc_ids(FinanceDoc::LiveDebit)? {
-        let Ok(record) = ports.ledger.get_doc(FinanceDoc::LiveDebit, &run_id, "debit") else {
-            report("livedebit.unreadable", &run_id, "live debit JSON cannot be read".to_string());
+        let Ok(record) = ports
+            .ledger
+            .get_doc(FinanceDoc::LiveDebit, &run_id, "debit")
+        else {
+            report(
+                "livedebit.unreadable",
+                &run_id,
+                "live debit JSON cannot be read".to_string(),
+            );
             continue;
         };
-        let payer = record.get("payerUserId").and_then(Value::as_str).unwrap_or("");
+        let payer = record
+            .get("payerUserId")
+            .and_then(Value::as_str)
+            .unwrap_or("");
         let charged = as_i64(record.get("chargedTotal").unwrap_or(&Value::Null)).unwrap_or(-1);
         if payer.is_empty() || charged < 0 {
-            report("livedebit.invalid", &run_id, "live debit fields are invalid".to_string());
+            report(
+                "livedebit.invalid",
+                &run_id,
+                "live debit fields are invalid".to_string(),
+            );
             continue;
         }
         let mut credit_total = 0_i64;
@@ -2237,18 +2843,33 @@ pub fn reconcile_financial_system(
             for (cap_key, value) in credits {
                 let user_id = cap_key.split('|').next().unwrap_or("");
                 let amount = value.as_i64().unwrap_or(-1);
-                if user_id.is_empty() || amount <= 0 || !finance_map_add(&mut earned_expected, user_id, amount) {
-                    report("livedebit.credit_invalid", &run_id, "invalid live debit credit".to_string());
+                if user_id.is_empty()
+                    || amount <= 0
+                    || !finance_map_add(&mut earned_expected, user_id, amount)
+                {
+                    report(
+                        "livedebit.credit_invalid",
+                        &run_id,
+                        "invalid live debit credit".to_string(),
+                    );
                     continue;
                 }
                 credit_total = credit_total.checked_add(amount).unwrap_or(i64::MAX);
             }
         }
         if credit_total != charged {
-            report("livedebit.credit_mismatch", &run_id, format!("credits={credit_total}, charged={charged}"));
+            report(
+                "livedebit.credit_mismatch",
+                &run_id,
+                format!("credits={credit_total}, charged={charged}"),
+            );
         }
         if !finance_map_add(&mut spent_expected, payer, charged) {
-            report("spent.overflow", payer, "expected spent (live debit) overflow".to_string());
+            report(
+                "spent.overflow",
+                payer,
+                "expected spent (live debit) overflow".to_string(),
+            );
         }
     }
     for pool_id in ports.ledger.doc_ids(FinanceDoc::Pool)? {
@@ -2258,7 +2879,11 @@ pub fn reconcile_financial_system(
         let stored = as_i64(pool.get("reserved").unwrap_or(&Value::Null)).unwrap_or(0);
         let expected = pool_reserved_expected.get(&pool_id).copied().unwrap_or(0);
         if stored != expected {
-            report("pool.reserved_mismatch", &pool_id, format!("stored={stored}, expected={expected}"));
+            report(
+                "pool.reserved_mismatch",
+                &pool_id,
+                format!("stored={stored}, expected={expected}"),
+            );
         }
     }
     let mut held_actual = std::collections::HashMap::<String, i64>::new();
@@ -2281,7 +2906,11 @@ pub fn reconcile_financial_system(
         let expected = held_expected.get(&payer).copied().unwrap_or(0);
         let actual = held_actual.get(&payer).copied().unwrap_or(0);
         if actual != expected {
-            report("held.mismatch", &payer, format!("stored={actual}, expected={expected}"));
+            report(
+                "held.mismatch",
+                &payer,
+                format!("stored={actual}, expected={expected}"),
+            );
         }
     }
     let mut payout_held_expected = std::collections::HashMap::<String, i64>::new();
@@ -2289,7 +2918,11 @@ pub fn reconcile_financial_system(
     let mut pending_payout_count = 0_i64;
     for payout_id in ports.ledger.doc_ids(FinanceDoc::Payout)? {
         let Ok(payout) = get_finance_payout(ports.ledger, &payout_id) else {
-            report("payout.unreadable", &payout_id, "payout JSON cannot be read".to_string());
+            report(
+                "payout.unreadable",
+                &payout_id,
+                "payout JSON cannot be read".to_string(),
+            );
             continue;
         };
         payout_count += 1;
@@ -2298,7 +2931,11 @@ pub fn reconcile_financial_system(
             let user_id = payout.get("userId").and_then(Value::as_str).unwrap_or("");
             let amount = as_i64(payout.get("amount").unwrap_or(&Value::Null)).unwrap_or(-1);
             if amount <= 0 || !finance_map_add(&mut payout_held_expected, user_id, amount) {
-                report("payout.invalid", &payout_id, "pending payout owner or amount is invalid".to_string());
+                report(
+                    "payout.invalid",
+                    &payout_id,
+                    "pending payout owner or amount is invalid".to_string(),
+                );
             }
         }
     }
@@ -2308,7 +2945,11 @@ pub fn reconcile_financial_system(
             Ok(value) if value >= 0 => {
                 payout_held_actual.insert(user_id.clone(), value);
             }
-            _ => report("payout.held_invalid", &user_id, "stored payout held amount is invalid".to_string()),
+            _ => report(
+                "payout.held_invalid",
+                &user_id,
+                "stored payout held amount is invalid".to_string(),
+            ),
         }
     }
     let mut payout_users: Vec<String> = payout_held_expected
@@ -2322,7 +2963,11 @@ pub fn reconcile_financial_system(
         let expected = payout_held_expected.get(&user_id).copied().unwrap_or(0);
         let actual = payout_held_actual.get(&user_id).copied().unwrap_or(0);
         if actual != expected {
-            report("payout.held_mismatch", &user_id, format!("stored={actual}, expected={expected}"));
+            report(
+                "payout.held_mismatch",
+                &user_id,
+                format!("stored={actual}, expected={expected}"),
+            );
         }
     }
     let mut total_withdrawable_actual: i64 = 0;
@@ -2333,7 +2978,10 @@ pub fn reconcile_financial_system(
             report(
                 "withdrawable.invalid",
                 &user_id,
-                format!("withdrawable={withdrawable}, available={}", available.unwrap_or_default()),
+                format!(
+                    "withdrawable={withdrawable}, available={}",
+                    available.unwrap_or_default()
+                ),
             );
         }
         if withdrawable > 0 {
@@ -2347,7 +2995,9 @@ pub fn reconcile_financial_system(
         report(
             "withdrawable.unbacked_total",
             "",
-            format!("withdrawable_total={total_withdrawable_actual}, earned_total={total_earned_expected}"),
+            format!(
+                "withdrawable_total={total_withdrawable_actual}, earned_total={total_earned_expected}"
+            ),
         );
     }
     for (kind, expected, code) in [
@@ -2370,7 +3020,11 @@ pub fn reconcile_financial_system(
             let expected_value = expected.get(&user_id).copied().unwrap_or(0);
             let actual_value = actual.get(&user_id).copied().unwrap_or(0);
             if actual_value != expected_value {
-                report(code, &user_id, format!("stored={actual_value}, expected={expected_value}"));
+                report(
+                    code,
+                    &user_id,
+                    format!("stored={actual_value}, expected={expected_value}"),
+                );
             }
         }
     }
@@ -2389,9 +3043,13 @@ pub fn reconcile_financial_system(
             .ledger
             .get_doc(FinanceDoc::ProjectBudget, &project, "budget")
             .unwrap_or_default();
-        let stored_reserved = as_i64(state.get("reservedMinor").unwrap_or(&Value::Null)).unwrap_or(0);
+        let stored_reserved =
+            as_i64(state.get("reservedMinor").unwrap_or(&Value::Null)).unwrap_or(0);
         let stored_spent = as_i64(state.get("spentMinor").unwrap_or(&Value::Null)).unwrap_or(0);
-        let expected_reserved = project_reserved_expected.get(&project).copied().unwrap_or(0);
+        let expected_reserved = project_reserved_expected
+            .get(&project)
+            .copied()
+            .unwrap_or(0);
         let expected_spent = project_spent_expected.get(&project).copied().unwrap_or(0);
         if stored_reserved != expected_reserved {
             report(
@@ -2449,10 +3107,15 @@ pub fn payment_adjustment(
     if !allowed || (input.amount > 0 && input.kind != "manual_credit") {
         return Err(denied("unsupported payment adjustment kind"));
     }
-    if serde_json::to_vec(&input.metadata).map_err(|e| failed(e.to_string()))?.len() > 4096 {
+    if serde_json::to_vec(&input.metadata)
+        .map_err(|e| failed(e.to_string()))?
+        .len()
+        > 4096
+    {
         return Err(denied("payment adjustment metadata is too large"));
     }
-    let request_hash = finance_hash(&serde_json::to_value(&input).map_err(|e| failed(e.to_string()))?)?;
+    let request_hash =
+        finance_hash(&serde_json::to_value(&input).map_err(|e| failed(e.to_string()))?)?;
     let marker = FinanceMarker::PaymentAdjustment {
         key: input.idempotency_key.clone(),
     };
@@ -2462,7 +3125,9 @@ pub fn payment_adjustment(
             return Err(denied("invalid payment adjustment idempotency record"));
         };
         if previous_hash != request_hash {
-            return Err(denied("idempotency key already used with different adjustment"));
+            return Err(denied(
+                "idempotency key already used with different adjustment",
+            ));
         }
         return Ok(json!({
             "applied": false, "alreadyApplied": true, "journalId": journal_id,
@@ -2473,23 +3138,55 @@ pub fn payment_adjustment(
         return Err(denied("payment adjustment target not found"));
     };
     let old_debt = finance_counter(ports.ledger, WalletCounter::Debt, &input.user_id)?;
-    let old_withdrawable = finance_counter(ports.ledger, WalletCounter::Withdrawable, &input.user_id)?;
+    let old_withdrawable =
+        finance_counter(ports.ledger, WalletCounter::Withdrawable, &input.user_id)?;
     if old_withdrawable > creature.balance {
         return Err(denied("withdrawable balance exceeds available balance"));
     }
     let (wallet_delta, debt_delta) = if input.amount < 0 {
-        let reversal = input.amount.checked_abs().ok_or_else(|| denied("payment adjustment overflow"))?;
+        let reversal = input
+            .amount
+            .checked_abs()
+            .ok_or_else(|| denied("payment adjustment overflow"))?;
         let available_debit = creature.balance.min(reversal);
-        let debt_added = reversal.checked_sub(available_debit).ok_or_else(|| denied("payment adjustment underflow"))?;
-        creature.balance = creature.balance.checked_sub(available_debit).ok_or_else(|| denied("wallet adjustment underflow"))?;
-        set_finance_counter(ports.ledger, WalletCounter::Withdrawable, &input.user_id, old_withdrawable.min(creature.balance))?;
-        set_finance_counter(ports.ledger, WalletCounter::Debt, &input.user_id, old_debt.checked_add(debt_added).ok_or_else(|| denied("wallet debt overflow"))?)?;
+        let debt_added = reversal
+            .checked_sub(available_debit)
+            .ok_or_else(|| denied("payment adjustment underflow"))?;
+        creature.balance = creature
+            .balance
+            .checked_sub(available_debit)
+            .ok_or_else(|| denied("wallet adjustment underflow"))?;
+        set_finance_counter(
+            ports.ledger,
+            WalletCounter::Withdrawable,
+            &input.user_id,
+            old_withdrawable.min(creature.balance),
+        )?;
+        set_finance_counter(
+            ports.ledger,
+            WalletCounter::Debt,
+            &input.user_id,
+            old_debt
+                .checked_add(debt_added)
+                .ok_or_else(|| denied("wallet debt overflow"))?,
+        )?;
         (-available_debit, debt_added)
     } else {
         let debt_repaid = old_debt.min(input.amount);
-        let wallet_credit = input.amount.checked_sub(debt_repaid).ok_or_else(|| denied("payment adjustment underflow"))?;
-        creature.balance = creature.balance.checked_add(wallet_credit).ok_or_else(|| denied("wallet balance overflow"))?;
-        set_finance_counter(ports.ledger, WalletCounter::Debt, &input.user_id, old_debt - debt_repaid)?;
+        let wallet_credit = input
+            .amount
+            .checked_sub(debt_repaid)
+            .ok_or_else(|| denied("payment adjustment underflow"))?;
+        creature.balance = creature
+            .balance
+            .checked_add(wallet_credit)
+            .ok_or_else(|| denied("wallet balance overflow"))?;
+        set_finance_counter(
+            ports.ledger,
+            WalletCounter::Debt,
+            &input.user_id,
+            old_debt - debt_repaid,
+        )?;
         (wallet_credit, -debt_repaid)
     };
     ports.store_account(&creature)?;
@@ -2512,7 +3209,9 @@ pub fn payment_adjustment(
         &participants,
         now,
     )?;
-    ports.ledger.put_marker(&marker, &format!("{request_hash}|{journal_id}"))?;
+    ports
+        .ledger
+        .put_marker(&marker, &format!("{request_hash}|{journal_id}"))?;
     Ok(json!({
         "applied": true, "journalId": journal_id,
         "account": financial_account_snapshot(ports, &input.user_id, 20)?,
@@ -2542,7 +3241,10 @@ pub fn transfer(
     if from.balance < input.amount {
         return Err(denied("your balance is not enough"));
     }
-    let Some(to_id) = ports.creatures.creature_id_by_username(&input.to_username)? else {
+    let Some(to_id) = ports
+        .creatures
+        .creature_id_by_username(&input.to_username)?
+    else {
         return Err(denied("target creature not found"));
     };
     if to_id == from.id {
@@ -2585,8 +3287,18 @@ pub fn transfer(
     let to_withdrawable = finance_counter(ports.ledger, WalletCounter::Withdrawable, &to.id)?
         .checked_add(received_withdrawable)
         .ok_or_else(|| denied("target withdrawable overflow"))?;
-    set_finance_counter(ports.ledger, WalletCounter::Debt, &to.id, debt - debt_repaid)?;
-    set_finance_counter(ports.ledger, WalletCounter::Withdrawable, &to.id, to_withdrawable)?;
+    set_finance_counter(
+        ports.ledger,
+        WalletCounter::Debt,
+        &to.id,
+        debt - debt_repaid,
+    )?;
+    set_finance_counter(
+        ports.ledger,
+        WalletCounter::Withdrawable,
+        &to.id,
+        to_withdrawable,
+    )?;
     ports.store_account(&from)?;
     ports.store_account(&to)?;
     let now = ports.clock.unix_millis();
@@ -2641,7 +3353,7 @@ pub fn mint(
     }
     let marker = match input.idempotency_key.trim() {
         "" => None,
-        key => Some(format!("MintApplied::{key}")),
+        key => Some(key.to_owned()),
     };
     if let Some(marker) = &marker {
         let applied = ports.ledger.marker(&FinanceMarker::MintApplied {
@@ -2673,7 +3385,12 @@ pub fn mint(
         .checked_add(wallet_credit)
         .ok_or_else(|| denied("balance overflow"))?;
     ports.store_account(&creature)?;
-    set_finance_counter(ports.ledger, WalletCounter::Debt, &creature.id, debt - debt_repaid)?;
+    set_finance_counter(
+        ports.ledger,
+        WalletCounter::Debt,
+        &creature.id,
+        debt - debt_repaid,
+    )?;
     let target_id = creature.id.clone();
     let participants = vec![target_id.clone(), caller.to_owned()];
     let journal_id = write_finance_journal(
@@ -2695,7 +3412,9 @@ pub fn mint(
     )?;
     if let Some(marker) = &marker {
         ports.ledger.put_marker(
-            &FinanceMarker::MintApplied { key: marker.clone() },
+            &FinanceMarker::MintApplied {
+                key: marker.clone(),
+            },
             &format!("{}:{}:{}", target_id, input.amount, journal_id),
         )?;
     }
@@ -2741,7 +3460,12 @@ mod tests {
     }
 
     impl FinanceLedger for Memory {
-        fn get_doc(&self, family: FinanceDoc, id: &str, path: &str) -> PortResult<Map<String, Value>> {
+        fn get_doc(
+            &self,
+            family: FinanceDoc,
+            id: &str,
+            path: &str,
+        ) -> PortResult<Map<String, Value>> {
             self.docs
                 .lock()
                 .unwrap()
@@ -2750,7 +3474,14 @@ mod tests {
                 .cloned()
                 .ok_or(PortError::NotFound)
         }
-        fn put_doc(&self, family: FinanceDoc, id: &str, path: &str, value: &Value, merge: bool) -> PortResult<()> {
+        fn put_doc(
+            &self,
+            family: FinanceDoc,
+            id: &str,
+            path: &str,
+            value: &Value,
+            merge: bool,
+        ) -> PortResult<()> {
             let mut target = if merge {
                 self.get_doc(family, id, path).unwrap_or_default()
             } else {
@@ -2761,10 +3492,10 @@ mod tests {
                     target.insert(k.clone(), v.clone());
                 }
             }
-            self.docs
-                .lock()
-                .unwrap()
-                .insert((family, id.to_owned(), path.to_owned()), Value::Object(target));
+            self.docs.lock().unwrap().insert(
+                (family, id.to_owned(), path.to_owned()),
+                Value::Object(target),
+            );
             Ok(())
         }
         fn doc_ids(&self, family: FinanceDoc) -> PortResult<Vec<String>> {
@@ -2778,17 +3509,31 @@ mod tests {
             Ok(ids)
         }
         fn counter(&self, kind: WalletCounter, user: &str) -> PortResult<i64> {
-            Ok(self.counters.lock().unwrap().get(&(kind, user.to_owned())).copied().unwrap_or(0))
+            Ok(self
+                .counters
+                .lock()
+                .unwrap()
+                .get(&(kind, user.to_owned()))
+                .copied()
+                .unwrap_or(0))
         }
         fn set_counter(&self, kind: WalletCounter, user: &str, amount: i64) -> PortResult<()> {
-            self.counters.lock().unwrap().insert((kind, user.to_owned()), amount);
+            self.counters
+                .lock()
+                .unwrap()
+                .insert((kind, user.to_owned()), amount);
             Ok(())
         }
         fn add_counter(&self, kind: WalletCounter, user: &str, amount: i64) -> PortResult<i64> {
             if amount < 0 {
-                return Err(PortError::Denied("finance counter amount must be nonnegative"));
+                return Err(PortError::Denied(
+                    "finance counter amount must be nonnegative",
+                ));
             }
-            let next = self.counter(kind, user)?.checked_add(amount).ok_or(PortError::Failed("overflow".into()))?;
+            let next = self
+                .counter(kind, user)?
+                .checked_add(amount)
+                .ok_or(PortError::Failed("overflow".into()))?;
             self.set_counter(kind, user, next)?;
             Ok(next)
         }
@@ -2804,10 +3549,19 @@ mod tests {
         }
         fn marker(&self, marker: &FinanceMarker) -> PortResult<String> {
             let key = format!("{marker:?}");
-            Ok(self.markers.lock().unwrap().get(&key).cloned().unwrap_or_default())
+            Ok(self
+                .markers
+                .lock()
+                .unwrap()
+                .get(&key)
+                .cloned()
+                .unwrap_or_default())
         }
         fn put_marker(&self, marker: &FinanceMarker, value: &str) -> PortResult<()> {
-            self.markers.lock().unwrap().insert(format!("{marker:?}"), value.to_owned());
+            self.markers
+                .lock()
+                .unwrap()
+                .insert(format!("{marker:?}"), value.to_owned());
             Ok(())
         }
         fn hold_ids_by_payer(&self, user: &str, _limit: usize) -> PortResult<Vec<String>> {
@@ -2857,24 +3611,42 @@ mod tests {
                 .unwrap_or_default())
         }
         fn put_pool_of_user(&self, user: &str, pool_id: &str) -> PortResult<()> {
-            self.index
-                .lock()
-                .unwrap()
-                .insert(format!("pool:{user}"), vec![(String::new(), pool_id.to_owned())]);
+            self.index.lock().unwrap().insert(
+                format!("pool:{user}"),
+                vec![(String::new(), pool_id.to_owned())],
+            );
             Ok(())
         }
         fn email_to_id(&self, email: &str) -> PortResult<String> {
-            Ok(self.emails.lock().unwrap().get(email).cloned().unwrap_or_default())
+            Ok(self
+                .emails
+                .lock()
+                .unwrap()
+                .get(email)
+                .cloned()
+                .unwrap_or_default())
         }
         fn put_email_to_id(&self, email: &str, user_id: &str) -> PortResult<()> {
-            self.emails.lock().unwrap().insert(email.to_owned(), user_id.to_owned());
+            self.emails
+                .lock()
+                .unwrap()
+                .insert(email.to_owned(), user_id.to_owned());
             Ok(())
         }
         fn id_to_email(&self, user_id: &str) -> PortResult<String> {
-            Ok(self.id_emails.lock().unwrap().get(user_id).cloned().unwrap_or_default())
+            Ok(self
+                .id_emails
+                .lock()
+                .unwrap()
+                .get(user_id)
+                .cloned()
+                .unwrap_or_default())
         }
         fn put_id_to_email(&self, user_id: &str, email: &str) -> PortResult<()> {
-            self.id_emails.lock().unwrap().insert(user_id.to_owned(), email.to_owned());
+            self.id_emails
+                .lock()
+                .unwrap()
+                .insert(user_id.to_owned(), email.to_owned());
             Ok(())
         }
         fn write_journal(
@@ -2926,7 +3698,12 @@ mod tests {
             Ok(())
         }
         fn balance(&self, id: &str) -> PortResult<i64> {
-            self.creatures.lock().unwrap().get(id).copied().ok_or(PortError::NotFound)
+            self.creatures
+                .lock()
+                .unwrap()
+                .get(id)
+                .copied()
+                .ok_or(PortError::NotFound)
         }
         fn set_balance(&self, id: &str, balance: i64) -> PortResult<()> {
             let mut creatures = self.creatures.lock().unwrap();
@@ -2999,7 +3776,10 @@ mod tests {
             Ok(self.metadata.lock().unwrap().get(store_id).cloned())
         }
         fn merge_store_metadata(&self, store_id: &str, document: &str) -> PortResult<()> {
-            self.metadata.lock().unwrap().insert(store_id.to_owned(), document.to_owned());
+            self.metadata
+                .lock()
+                .unwrap()
+                .insert(store_id.to_owned(), document.to_owned());
             Ok(())
         }
         fn delete_store_metadata(&self, _: &str) -> PortResult<()> {
@@ -3023,7 +3803,10 @@ mod tests {
             member_id: &str,
             permissions: StorePermissions,
         ) -> PortResult<()> {
-            self.members.lock().unwrap().insert((store_id.to_owned(), member_id.to_owned()), permissions);
+            self.members
+                .lock()
+                .unwrap()
+                .insert((store_id.to_owned(), member_id.to_owned()), permissions);
             Ok(())
         }
         fn is_member(&self, store_id: &str, member_id: &str) -> PortResult<bool> {
@@ -3039,7 +3822,12 @@ mod tests {
         fn stores_of(&self, _: &str) -> PortResult<Vec<String>> {
             Ok(Vec::new())
         }
-        fn join(&self, store_id: &str, member_id: &str, permissions: StorePermissions) -> PortResult<()> {
+        fn join(
+            &self,
+            store_id: &str,
+            member_id: &str,
+            permissions: StorePermissions,
+        ) -> PortResult<()> {
             self.set_permissions(store_id, member_id, permissions)
         }
         fn leave(&self, _: &str, _: &str) -> PortResult<()> {
@@ -3075,7 +3863,11 @@ mod tests {
     }
 
     fn creature(memory: &Memory, id: &str, balance: i64) {
-        memory.creatures.lock().unwrap().insert(id.to_owned(), balance);
+        memory
+            .creatures
+            .lock()
+            .unwrap()
+            .insert(id.to_owned(), balance);
     }
 
     fn ports(memory: &Memory) -> FinancePorts<'_> {
@@ -3128,19 +3920,24 @@ mod tests {
             "holdRequest": serde_json::to_value(&input).unwrap(),
         });
         put_billing_quote(&port, "q1", &quote).unwrap();
-        memory
-            .programs
-            .lock()
-            .unwrap()
-            .insert("p1".to_owned(), ProgramRecord {
-                id: "p1".into(), machine_id: "creator@global".into(),
-                runtime: "wasm".into(), path: "/main".into(), comment: String::new(),
-            });
+        memory.programs.lock().unwrap().insert(
+            "p1".to_owned(),
+            ProgramRecord {
+                id: "p1".into(),
+                machine_id: "creator@global".into(),
+                runtime: "wasm".into(),
+                path: "/main".into(),
+                comment: String::new(),
+            },
+        );
         let outcome = create_hold(&port, "payer@global", input.clone()).unwrap();
         assert_eq!(outcome["applied"], true);
         // Payer's available balance fell by the held amount.
         assert_eq!(memory.balance("payer@global").unwrap(), 4900);
-        assert_eq!(memory.counter(WalletCounter::Held, "payer@global").unwrap(), 100);
+        assert_eq!(
+            memory.counter(WalletCounter::Held, "payer@global").unwrap(),
+            100
+        );
         // The hold document is stored open.
         let holds = memory.doc_ids(FinanceDoc::Hold).unwrap();
         assert_eq!(holds.len(), 1);
@@ -3168,12 +3965,17 @@ mod tests {
         memory
             .set_counter(WalletCounter::Withdrawable, "alice@global", 900)
             .unwrap();
-        memory.set_counter(WalletCounter::Debt, "bob@global", 40).unwrap();
+        memory
+            .set_counter(WalletCounter::Debt, "bob@global", 40)
+            .unwrap();
         let port = ports(&memory);
         let outcome = transfer(
             &port,
             "alice@global",
-            TransferInput { amount: 100, to_username: "bob@global".into() },
+            TransferInput {
+                amount: 100,
+                to_username: "bob@global".into(),
+            },
         )
         .unwrap();
         assert_eq!(outcome["amount"], 100);
@@ -3181,13 +3983,26 @@ mod tests {
         assert_eq!(outcome["debtRepaid"], 40);
         // Alice spent 100, all non-withdrawable (1000 balance - 900 withdrawable).
         assert_eq!(memory.balance("alice@global").unwrap(), 900);
-        assert_eq!(memory.counter(WalletCounter::Withdrawable, "alice@global").unwrap(), 900);
+        assert_eq!(
+            memory
+                .counter(WalletCounter::Withdrawable, "alice@global")
+                .unwrap(),
+            900
+        );
         // Bob received 60 new (40 repayed debt). The legacy withdrawable rule keeps
         // the sender's composition: the whole debt was repaid from non-withdrawable
         // funds, so the 60 the payer sent lands fully withdrawable.
         assert_eq!(memory.balance("bob@global").unwrap(), 60);
-        assert_eq!(memory.counter(WalletCounter::Withdrawable, "bob@global").unwrap(), 60);
-        assert_eq!(memory.counter(WalletCounter::Debt, "bob@global").unwrap(), 0);
+        assert_eq!(
+            memory
+                .counter(WalletCounter::Withdrawable, "bob@global")
+                .unwrap(),
+            60
+        );
+        assert_eq!(
+            memory.counter(WalletCounter::Debt, "bob@global").unwrap(),
+            0
+        );
     }
 
     #[test]
@@ -3211,18 +4026,28 @@ mod tests {
         .unwrap();
         assert_eq!(opened["applied"], true);
         assert_eq!(memory.balance("payer@global").unwrap(), 700);
-        assert_eq!(memory.counter(WalletCounter::Held, "payer@global").unwrap(), 300);
+        assert_eq!(
+            memory.counter(WalletCounter::Held, "payer@global").unwrap(),
+            300
+        );
         let pool_id = opened["pool"]["poolId"].as_str().unwrap().to_string();
         // Closing refunds the full remaining balance.
         let closed = close_pool(
             &port,
             "payer@global",
-            ClosePoolInput { pool_id, close_id: "c1".into(), reason: String::new() },
+            ClosePoolInput {
+                pool_id,
+                close_id: "c1".into(),
+                reason: String::new(),
+            },
         )
         .unwrap();
         assert_eq!(closed["applied"], true);
         assert_eq!(memory.balance("payer@global").unwrap(), 1000);
-        assert_eq!(memory.counter(WalletCounter::Held, "payer@global").unwrap(), 0);
+        assert_eq!(
+            memory.counter(WalletCounter::Held, "payer@global").unwrap(),
+            0
+        );
     }
 
     #[test]
@@ -3244,14 +4069,16 @@ mod tests {
             }
         });
         put_billing_quote(&port, "q1", &quote).unwrap();
-        memory
-            .programs
-            .lock()
-            .unwrap()
-            .insert("p1".to_owned(), ProgramRecord {
-                id: "p1".into(), machine_id: "creator@global".into(),
-                runtime: "wasm".into(), path: "/main".into(), comment: String::new(),
-            });
+        memory.programs.lock().unwrap().insert(
+            "p1".to_owned(),
+            ProgramRecord {
+                id: "p1".into(),
+                machine_id: "creator@global".into(),
+                runtime: "wasm".into(),
+                path: "/main".into(),
+                comment: String::new(),
+            },
+        );
         let hold = json!({
             "holdId": "h1", "payerUserId": "u@global", "maxAmount": 100,
             "remainingAmount": 100, "status": "open", "projectId": "",
@@ -3261,7 +4088,12 @@ mod tests {
             .lock()
             .unwrap()
             .insert((FinanceDoc::Hold, "h1".into(), "hold".into()), hold);
-        let report = reconcile_financial_system(&port, LEGACY_ROOT, ReconcileFinancialSystemInput::default()).unwrap();
+        let report = reconcile_financial_system(
+            &port,
+            LEGACY_ROOT,
+            ReconcileFinancialSystemInput::default(),
+        )
+        .unwrap();
         assert_eq!(report["healthy"], false);
         let codes = report["issues"]
             .as_array()

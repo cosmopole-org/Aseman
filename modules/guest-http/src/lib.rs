@@ -1,4 +1,4 @@
-//! The guest API transport (A405, P5-04).
+//! The guest API transport (A405).
 //!
 //! [`server`] is the node's listener: it decodes the A401 proof header and hands the
 //! request to the node's [`server::GuestApi`], which authenticates the workload and

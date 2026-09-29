@@ -24,9 +24,9 @@ a runtime does not support is refused with `unsupported_operation` (A501).
 | modal | yes | yes | no | no | yes | no | yes | yes | yes | no | no | `Modalfile` | no |
 | wasm | yes | no | no | no | no | no | no | no | yes | yes | no | `module.wasm` | no |
 
-## Where each legacy operation goes
+## Where each runtime operation is served
 
-Status: 46 deleted, 5 open, 22 verified.
+Status: 5 open, 22 verified.
 
 ### Runtime operations (A006)
 
@@ -59,54 +59,3 @@ Status: 46 deleted, 5 open, 22 verified.
 | `terminate_vm` | api | `stopWorkload` | verified | Verified by `aseman-vmm-backend-conformance check_backend via live_native`. |
 | `verify_program_execution` | api | `verifyExecution` | open | Elpify proofs: the backend verifies a program it holds, through A501 `verifyExecution`. Verifying one end to end needs an elpify program and proof fixture (P8 finance/consensus work uses them). |
 | `vm_endpoints` | api | `listWorkloadEndpoints` | verified | Verified by `aseman-vmm-backend-native live_docker (real Docker daemon): a docker entity publishes none`. |
-
-### Node-facing `IVmm` methods
-
-| Operation | Home | Target | Status | Note |
-|---|---|---|---|---|
-| `acquire_resource_lock` | guest_gateway |  | deleted |  |
-| `assign` | node | `invokeWorkload` | deleted | The per-program signal listener stays in the node and delivers each signal with invokeWorkload. |
-| `begin_cold_spawn` | backend |  | deleted | Cold-start debounce happens behind invokeWorkload. |
-| `begin_vm_trx` | guest_gateway |  | deleted | Guest data transactions (ADR 0021). |
-| `build_vm_image` | api | `createBuild` | deleted |  |
-| `close_kvdb` | removed |  | deleted | Guest data lives in the creature's guest database (ADR 0021); the VMM holds no store. |
-| `commit_vm_trx` | guest_gateway |  | deleted |  |
-| `delete_vm_instance` | api | `deleteWorkload` | deleted |  |
-| `exec_shell_action` | guest_gateway |  | deleted |  |
-| `execute_chain_effects` | api | `invokeWorkload` | deleted | Invocation kind `chain_effects`. |
-| `execute_chain_trxs_group` | api | `invokeWorkload` | deleted | Invocation kind `chain_transactions`. |
-| `forward_http` | api | `forwardHttp` | deleted |  |
-| `get_vm_context` | guest_gateway |  | deleted |  |
-| `host_action_creature` | guest_gateway |  | deleted |  |
-| `host_action_micro` | guest_gateway |  | deleted |  |
-| `host_action_program` | guest_gateway |  | deleted |  |
-| `host_action_resource_entity_create` | guest_gateway |  | deleted |  |
-| `host_action_resource_entity_delete` | guest_gateway |  | deleted |  |
-| `host_action_resource_store` | guest_gateway |  | deleted |  |
-| `host_action_store` | guest_gateway |  | deleted |  |
-| `identify_container_by_ip` | removed |  | deleted | Replaced by the workload credential (P5-04). |
-| `is_managed_runtime` | removed |  | deleted | The node no longer distinguishes in-process runtimes; invokeWorkload cold-starts any runtime. |
-| `is_supported_runtime` | api | `getCapabilities` | deleted |  |
-| `plan_delete_entity` | backend |  | deleted |  |
-| `plan_run_entity` | backend |  | deleted |  |
-| `plan_stop_entity` | backend |  | deleted |  |
-| `push_signal_to_entity` | api | `invokeWorkload` | deleted |  |
-| `push_signal_to_machine` | api | `invokeWorkload` | deleted | Delivery to live instances is the backend's. |
-| `queue_pending_signal` | backend |  | deleted | Cold-start queueing happens behind invokeWorkload. |
-| `register_vm_container` | backend |  | deleted |  |
-| `register_vm_context` | guest_gateway |  | deleted | Caller identity comes from the workload credential. |
-| `release_resource_lock` | guest_gateway |  | deleted |  |
-| `resolve_http_route` | node |  | deleted | Custom gateway routes are node data (core gateway routes); the node resolves them before forwardHttp. |
-| `run_vm` | api | `invokeWorkload` | deleted |  |
-| `run_vm_entity` | api | `invokeWorkload` | deleted |  |
-| `runtime_deploy_spec` | api | `getCapabilities` | deleted | `deploy` conventions; `setEntityLinksOnDeploy` stays inside the backend. |
-| `runtime_supports_chain_trxs` | api | `getCapabilities` | deleted |  |
-| `start_docker_gateway` | backend |  | deleted | The docker host bridge moves into the native backend until P5-04 retires it. |
-| `start_http_ingress` | node | `forwardHttp` | deleted | Ingress stays in the node: it resolves the route to a workload and forwards with forwardHttp. |
-| `supported_runtimes` | api | `getCapabilities` | deleted |  |
-| `terminate_vm` | api | `stopWorkload` | deleted |  |
-| `unregister_vm_container` | backend |  | deleted |  |
-| `unregister_vm_context` | guest_gateway |  | deleted |  |
-| `vm_callback` | guest_gateway |  | deleted | Log and output events become the backend log stream; triggers, signals, and terminations become authorized guest API calls. |
-| `vm_db_commit_explicit` | guest_gateway |  | deleted |  |
-| `vm_db_op` | guest_gateway |  | deleted |  |

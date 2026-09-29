@@ -7,7 +7,7 @@ verification: cargo test -p aseman-module-runtime
 
 # Module contracts
 
-These are the Phase 2 A201–A208 contracts. `module.schema.json` validates the parsed
+These are the A201–A208 contracts. `module.schema.json` validates the parsed
 `module.toml` model. `control/` and `provider/` freeze the protobuf control/data
 conventions mandated by ADR 0003. Artifact trust and execution permissions follow ADR
 0015. Trust, lifecycle, placement, and bootstrap schemas are fail-closed inputs to the

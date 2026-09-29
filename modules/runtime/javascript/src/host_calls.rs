@@ -15,7 +15,7 @@ use std::rc::Rc;
 
 use serde_json::{json, Value as JsonValue};
 
-use caspar_vm_sdk::host::{host, log_vm};
+use aseman_vm_sdk::host::{host, log_vm};
 
 use crate::runtime::JsState;
 
@@ -49,7 +49,7 @@ fn envelope(state: &JsState, op: &str, input: JsonValue) -> JsonValue {
 fn dispatch_owned(state: &JsState, op: &str, input: &JsonValue) -> String {
     match host() {
         Some(h) => h.unified_host_call(&envelope(state, op, input.clone())),
-        None => json!({"ok": false, "error": "caspar vm host is not initialised"}).to_string(),
+        None => json!({"ok": false, "error": "the VM host is not initialised"}).to_string(),
     }
 }
 
@@ -145,7 +145,7 @@ pub fn dispatch(cell: &Rc<RefCell<JsState>>, raw: &str) -> String {
             }
             // Also flush the low-level raw dbOp buffer.
             state.trx.commit_as_offchain();
-            state.trx = caspar_vm_sdk::trx::Trx::new();
+            state.trx = aseman_vm_sdk::trx::Trx::new();
             json!({"ok": true}).to_string()
         }
         "lockResource" | "unlockResource" => {
@@ -162,7 +162,7 @@ pub fn dispatch(cell: &Rc<RefCell<JsState>>, raw: &str) -> String {
                         h.release_resource_lock(resource_id, owner_id)
                     }
                 }
-                None => Err("caspar vm host is not initialised".to_string()),
+                None => Err("the VM host is not initialised".to_string()),
             };
             match result {
                 Ok(()) => json!({"ok": true}).to_string(),
@@ -215,7 +215,7 @@ pub fn dispatch(cell: &Rc<RefCell<JsState>>, raw: &str) -> String {
             match host() {
                 Some(h) => h.unified_host_call(&envelope(&state, op, input)),
                 None => {
-                    json!({"ok": false, "error": "caspar vm host is not initialised"}).to_string()
+                    json!({"ok": false, "error": "the VM host is not initialised"}).to_string()
                 }
             }
         }

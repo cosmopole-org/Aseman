@@ -88,7 +88,7 @@ The context names what is being signed. A signature never verifies in another co
 | `request` | `authentication` | A subject's request (guest API, node API) |
 | `challenge` | `authentication` | Answer to a server challenge. The nonce is the server's, and one use consumes it |
 | `token` | `token_issuing` | Capability tokens (claims digest in the body digest, A403) |
-| `descriptor` | `descriptor` | Node descriptors (P7-02) |
+| `descriptor` | `descriptor` | Node descriptors |
 | `revocation` | `descriptor` | Revocation statements (section 7) |
 | `introduction` | `introduction` | A federation root introducing a node (section 8) |
 
@@ -221,9 +221,9 @@ had no writer, is replaced by it.
 A legacy creature's RSA key is registered as its epoch-0 legacy `authentication` key
 only after proof of possession: a `challenge` signed with that key. Its subject is the
 creature's typed identity, and `core.legacy_identity` maps it. It verifies requests and
-challenges during the ADR 0004 compatibility window. It never signs authority-issuing
+challenges. It never signs authority-issuing
 contexts, and it is retired when the creature registers an Ed25519 key.
 
-Legacy packets that clients sign today (the raw-packet RSA-PSS/PKCS#1 v1.5 scheme in
-`ISecurity::auth_with_signature`) stay a transport-edge adapter until P7-05 expires it.
-They do not use this structure.
+Signed packets on the TCP, WebSocket, and federation transports (the raw-packet
+RSA-PSS/PKCS#1 v1.5 scheme the node's packet guard verifies) are a transport-edge
+scheme; they do not use this structure.

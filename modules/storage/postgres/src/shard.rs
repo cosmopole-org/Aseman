@@ -25,7 +25,6 @@ use std::time::Duration;
 
 use aseman_capsule::{CapsuleStore, CapsuleStoreError, CapsuleStoreResult};
 use aseman_contracts::capsule::{CapsuleEnvelope, CapsuleId, CapsuleKind, CapsuleQuery};
-use postgres::NoTls;
 use serde::Deserialize;
 use sha2::{Digest, Sha256};
 
@@ -260,7 +259,10 @@ impl ShardedUnitOfWorkFactory {
     }
 
     fn admin(&self, shard: usize) -> StorageResult<postgres::Client> {
-        postgres::Client::connect(&self.shards[shard].admin, NoTls).map_err(map_postgres_error)
+        aseman_postgres::Database::parse(&self.shards[shard].admin)
+            .map_err(crate::PostgresStorageError::Unavailable)?
+            .connect()
+            .map_err(map_postgres_error)
     }
 
     /// Resolve every prepared Aseman transaction: commit the ones whose decision is

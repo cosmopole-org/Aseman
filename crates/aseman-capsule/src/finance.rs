@@ -7,7 +7,7 @@
 //! queries on those columns, newest first. Wallet counters are the integer fields of
 //! one `core.finance_account` per user; idempotency markers are `core.marker` rows.
 
-use aseman_contracts::legacy_documents::merge_legacy_objects;
+use aseman_contracts::documents::merge_objects;
 use aseman_ports::finance_ledger::{FinanceDoc, FinanceLedger, FinanceMarker, WalletCounter};
 use aseman_ports::{PortError, PortResult};
 use aseman_storage::client::core::{
@@ -476,7 +476,7 @@ impl FinanceLedger for StorageFinanceLedger<'_> {
             let next = match (merge, namespace.get(&path)) {
                 (true, Some(Value::Object(existing))) => {
                     let mut merged = existing.clone();
-                    merge_legacy_objects(&mut merged, &incoming);
+                    merge_objects(&mut merged, &incoming);
                     merged
                 }
                 _ => incoming,
@@ -486,7 +486,7 @@ impl FinanceLedger for StorageFinanceLedger<'_> {
         }
         let next = match (merge, self.document(family, id)?) {
             (true, Some(Value::Object(mut existing))) => {
-                merge_legacy_objects(&mut existing, &incoming);
+                merge_objects(&mut existing, &incoming);
                 existing
             }
             _ => incoming,

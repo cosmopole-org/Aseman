@@ -9,14 +9,14 @@ use serde::{Deserialize, Serialize};
 /// The creature type whose record is also a user account.
 pub const HUMAN_CREATURE_TYPE: &str = "human";
 
-/// The owner legacy records on every human: humans own themselves.
+/// The owner recorded on every human: humans own themselves.
 pub const HUMAN_OWNER: &str = "free";
-/// The currency of creature balances (legacy integer tokens).
+/// The currency of creature balances (integer tokens).
 pub const BALANCE_CURRENCY: &str = "ASE";
 /// Creature balances are whole tokens.
 pub const BALANCE_SCALE: u8 = 0;
 
-/// One creature's identity, exactly as legacy exposes it.
+/// One creature's identity, exactly as the wire exposes it.
 #[derive(Clone, Debug, Default, Eq, PartialEq, Serialize, Deserialize)]
 pub struct CreatureRecord {
     pub id: String,
@@ -41,9 +41,9 @@ impl CreatureRecord {
 /// A creature's metadata documents (ADR 0016): the creature's own and its user's.
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub enum MetadataKind {
-    /// Legacy `CreatMeta::{id}`, target `core.creature_metadata`.
+    /// `CreatMeta::{id}`, target `core.creature_metadata`.
     Creature,
-    /// Legacy `UserMeta::{id}`, target `core.user_metadata`.
+    /// `UserMeta::{id}`, target `core.user_metadata`.
     User,
 }
 
@@ -85,7 +85,7 @@ mod tests {
         assert_eq!(legacy_page(items(), 2, Some(3)), [2, 3, 4]);
         assert_eq!(legacy_page(items(), 0, None), [0, 1, 2, 3, 4, 5]);
         assert_eq!(legacy_page(items(), 4, Some(10)), [4, 5]);
-        // Legacy quirks, preserved: a negative count is empty, a negative offset
+        // Wire semantics: a negative count is empty, a negative offset
         // shortens the window.
         assert!(legacy_page(items(), 0, Some(-1)).is_empty());
         assert_eq!(legacy_page(items(), -2, Some(4)), [0, 1]);

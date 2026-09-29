@@ -12,26 +12,25 @@
 
 use serde_json::Value;
 
-/// The guest state operations.
-#[expect(
-    dead_code,
-    reason = "RL-006/RL-013: legacy VM host-call surface kept for the ADR-0004 window"
-)]
-pub(crate) const GUEST_STATE_OPS: [&str; 5] =
-    ["putJson", "getJson", "getByPrefix", "delKey", "getLink"];
-
 /// Run one guest state operation for `creature`: its own guest database, or the
 /// node's storage without a guest data plane (ADR 0036).
 ///
 /// # Errors
 ///
 /// A refusal without a trusted creature, a missing field, or an unknown operation.
-pub(crate) fn run(creature: &str, op: &str, input: &Value) -> Result<Value, String> {
+pub(crate) fn run(
+    node: &crate::node::Node,
+    creature: &str,
+    op: &str,
+    input: &Value,
+) -> Result<Value, String> {
     if creature.trim().is_empty() || creature.contains("::") {
         return Err("guest state needs an identified creature".to_owned());
     }
-    crate::api::model::guest_data::route_state(creature, op, input)
-        .unwrap_or_else(|| Err("guest data is not available yet".to_owned()))
+    let routing = node
+        .guest_data()
+        .ok_or_else(|| "guest data is not available yet".to_owned())?;
+    crate::state::guest_data::route_state(routing, creature, op, input)
 }
 
 #[cfg(test)]
@@ -40,9 +39,15 @@ mod tests {
 
     #[test]
     fn nothing_runs_without_a_trusted_creature() {
+        let node = crate::node::Node::for_tests();
         for creature in ["", "  ", "a::b"] {
             assert_eq!(
-                run(creature, "getJson", &serde_json::json!({"key": "counter"})),
+                run(
+                    &node,
+                    creature,
+                    "getJson",
+                    &serde_json::json!({"key": "counter"})
+                ),
                 Err("guest state needs an identified creature".to_owned())
             );
         }

@@ -8,7 +8,7 @@
 use crate::CONSENSUS_LOG_MIGRATION;
 use aseman_ports::consensus_log::{ConsensusLog, ConsensusLogStorage, ConsensusLogWrite};
 use aseman_ports::{PortError, PortResult};
-use aseman_postgres::{Pool, pool};
+use aseman_postgres::{Database, Pool, pool};
 use std::sync::Arc;
 use std::time::{SystemTime, UNIX_EPOCH};
 
@@ -24,7 +24,7 @@ pub struct PostgresConsensusLogStorage {
 impl PostgresConsensusLogStorage {
     /// Connect and create the log table when absent.
     pub fn connect(url: &str, max_connections: u32) -> PortResult<Self> {
-        let pool = pool(url.parse().map_err(failed)?, max_connections).map_err(failed)?;
+        let pool = pool(&Database::parse(url).map_err(failed)?, max_connections).map_err(failed)?;
         pool.get()
             .map_err(failed)?
             .batch_execute(CONSENSUS_LOG_MIGRATION)

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate the Phase 3 capsule contract and core-kind catalog."""
+"""Generate the capsule contract and core-kind catalog."""
 
 from __future__ import annotations
 
@@ -15,7 +15,7 @@ ROOT = Path(__file__).resolve().parents[1]
 CAPSULE = ROOT / "contracts/capsule"
 JSON_OUT = ROOT / "docs/generated/capsule-contract-catalog.json"
 MD_OUT = ROOT / "docs/generated/capsule-contract-catalog.md"
-GENERATOR = "scripts/generate_phase3_contracts.py"
+GENERATOR = "scripts/generate_capsule_contracts.py"
 
 
 def digest(path: Path) -> str:
@@ -71,7 +71,7 @@ def markdown(data: dict[str, object]) -> str:
     lines.extend(f"| `{row['path']}` | `{row['digest']}` |" for row in data["contracts"])
     lines += [
         "",
-        "P3-01 is accepted; providers must still pass the A310 behavioral conformance kit.",
+        "Every provider must pass the A310 behavioral conformance kit.",
         "",
     ]
     return "\n".join(lines)

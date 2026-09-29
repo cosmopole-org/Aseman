@@ -18,8 +18,8 @@ use std::collections::{BTreeMap, BTreeSet};
 const GRANT: &str = "core.capability_grant";
 
 /// The grant store over any [`CapsuleStore`].
-pub struct CapsuleGrantStore<'a> {
-    pub repository: &'a dyn CapsuleStore,
+pub struct CapsuleGrantStore<R> {
+    pub repository: R,
 }
 
 fn micros(millis: i64) -> PortResult<CapsuleValue> {
@@ -177,7 +177,7 @@ fn record(capsule: &CapsuleEnvelope) -> PortResult<Grant> {
     })
 }
 
-impl CapsuleGrantStore<'_> {
+impl<R: CapsuleStore> CapsuleGrantStore<R> {
     fn query(&self, predicate: QueryPredicate) -> PortResult<Vec<Grant>> {
         let mut grants = self
             .repository
@@ -201,9 +201,9 @@ impl CapsuleGrantStore<'_> {
     }
 }
 
-impl GrantStore for CapsuleGrantStore<'_> {
+impl<R: CapsuleStore> GrantStore for CapsuleGrantStore<R> {
     fn grant(&self, id: Uuid) -> PortResult<Option<Grant>> {
-        Capsules(self.repository)
+        Capsules(&self.repository)
             .live(GRANT, *id.as_bytes())?
             .as_ref()
             .map(record)
@@ -250,7 +250,7 @@ impl GrantStore for CapsuleGrantStore<'_> {
 
     fn revoke(&self, id: Uuid, at_millis: i64) -> PortResult<()> {
         for _ in 0..MAX_CAS_ATTEMPTS {
-            let current = Capsules(self.repository)
+            let current = Capsules(&self.repository)
                 .live(GRANT, *id.as_bytes())?
                 .ok_or(PortError::NotFound)?;
             let mut stored = body(&current).ok_or(PortError::NotFound)?.clone();

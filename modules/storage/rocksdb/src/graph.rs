@@ -297,7 +297,7 @@ impl LegacySnapshotGraph {
                         CapsuleRelationship {
                             name: relationship.to_owned(),
                             target_kind: CapsuleKind("core.creature".to_owned()),
-                            target_id: CapsuleId(deterministic_legacy_capsule_id(
+                            target_id: CapsuleId(derived_capsule_id(
                                 "Creature",
                                 legacy_id.as_bytes(),
                             )),
@@ -312,10 +312,7 @@ impl LegacySnapshotGraph {
                         CapsuleRelationship {
                             name: "store".to_owned(),
                             target_kind: CapsuleKind("core.store".to_owned()),
-                            target_id: CapsuleId(deterministic_legacy_capsule_id(
-                                "Store",
-                                legacy_id.as_bytes(),
-                            )),
+                            target_id: CapsuleId(derived_capsule_id("Store", legacy_id.as_bytes())),
                         },
                         OwnerScope::Creature(required_resolved_creature(
                             "StoreMetadata",
@@ -329,7 +326,7 @@ impl LegacySnapshotGraph {
                         CapsuleRelationship {
                             name: "program".to_owned(),
                             target_kind: CapsuleKind("core.program".to_owned()),
-                            target_id: CapsuleId(deterministic_legacy_capsule_id(
+                            target_id: CapsuleId(derived_capsule_id(
                                 "Program",
                                 legacy_id.as_bytes(),
                             )),
@@ -543,7 +540,7 @@ impl LegacySnapshotGraph {
                 if source != object_family {
                     continue;
                 }
-                let target = deterministic_legacy_capsule_id(family, legacy_id.as_bytes());
+                let target = derived_capsule_id(family, legacy_id.as_bytes());
                 if !present.contains(&(kind, target)) {
                     continue;
                 }

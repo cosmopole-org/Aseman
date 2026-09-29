@@ -1,4 +1,4 @@
-//! Validator-set governance: staking and the weighted election (RL-011).
+//! Validator-set governance: staking and the weighted election.
 //!
 //! Consensus decides *who* may finalize records; staking decides *how much* each
 //! candidate is weighted, and the election picks the weighted validator set for a
@@ -17,7 +17,7 @@ use std::sync::Mutex;
 use std::thread;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
-use aseman_contracts::legacy_wire::chain::{ChainElectionPacket, ChainStakePacket};
+use aseman_contracts::wire::chain::{ChainElectionPacket, ChainStakePacket};
 use aseman_domain::consensus::{ElectedValidators, StakeAction, StakeRequest};
 use aseman_ports::{PortError, PortResult};
 use serde_json::Value;

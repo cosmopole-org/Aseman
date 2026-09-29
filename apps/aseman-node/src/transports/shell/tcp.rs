@@ -1,10 +1,6 @@
-//! Translation of `drivers/network/client/tcp/tcp.go`.
-//!
-//! `Tcp` implements [`ITcp`] — the TLS-TCP server that user clients connect
-//! to. Each accepted connection runs on its own thread; outbound writes are
-//! buffered and acked one-at-a-time (matching Go's `Buffer` + `Ack` flow
-//! control). The wire format is the framing implemented by
-//! [`aseman_network_legacy`].
+//! The TLS TCP client transport. Each connection runs on its own thread;
+//! outbound frames are buffered and acknowledged one at a time. The framing is
+//! [`aseman_network_shell`]'s.
 //!
 //! ## Concurrency model
 //!
@@ -30,16 +26,14 @@ type UserSocketMap = Arc<DashMap<String, Arc<DashMap<String, Arc<Socket>>>>>;
 use dashmap::DashMap;
 use serde_json::Value;
 
-use crate::adapters::gateway_subs;
-use crate::adapters::network::client::session::{self, SessionSocket, SessionTransport};
-use crate::api::utils::crypto::secure_unique_string;
-use crate::core::trx::Trx;
-use crate::models::core::ICore;
-use crate::models::ports::ITcp;
-use crate::models::ports::Listener;
-use crate::models::ports::Protocol;
-use aseman_network_legacy::TlsConfig;
-use aseman_network_legacy::{
+use crate::live::hub::Listener;
+use crate::live::topics::Subscriber;
+use crate::node::Node;
+use crate::ratelimit::Protocol;
+use crate::transports::shell::session::{self, SessionSocket, SessionTransport};
+use crate::util::crypto::secure_unique_string;
+use aseman_network_shell::TlsConfig;
+use aseman_network_shell::{
     TlsStream, accept, bind_tls, encode_client_response_body, encode_client_update_body,
     write_length_prefixed_frame,
 };
@@ -159,7 +153,7 @@ impl SessionSocket for Socket {
 
 /// `Tcp` driver implementing [`ITcp`].
 pub struct Tcp {
-    app: Arc<dyn ICore>,
+    app: Arc<Node>,
     sockets: Arc<DashMap<String, Arc<Socket>>>,
     /// Multiple concurrent connections may authenticate as the same user. The
     /// signaler keeps a single listener per user_id, so without this a second
@@ -172,7 +166,7 @@ pub struct Tcp {
 
 impl Tcp {
     /// `NewTcp(app)`.
-    pub fn new(app: Arc<dyn ICore>) -> Arc<Tcp> {
+    pub fn new(app: Arc<Node>) -> Arc<Tcp> {
         Arc::new(Tcp {
             app,
             sockets: Arc::new(DashMap::new()),
@@ -205,9 +199,8 @@ impl Tcp {
                     return;
                 }
                 let sink_socket = socket.clone();
-                gateway_subs::subscribe(gateway_subs::Subscriber {
+                self.app.topics().subscribe(Subscriber {
                     id: socket.id.clone(),
-                    creature_id: grant["creatureId"].as_str().unwrap_or("").to_string(),
                     topics,
                     sink: Arc::new(move |key: &str, data: &Value| {
                         if sink_socket.is_disconnected() {
@@ -220,7 +213,7 @@ impl Tcp {
                 });
             }
             "/gateway/unsubscribe" if result["gatewayUnsubscribe"].as_bool().unwrap_or(false) => {
-                gateway_subs::unsubscribe(&socket.id);
+                self.app.topics().unsubscribe(&socket.id);
             }
             _ => {}
         }
@@ -244,8 +237,6 @@ impl Tcp {
         let broadcast_set = user_set.clone();
         let listener = Arc::new(Listener {
             id: user_id.to_string(),
-            paused: false,
-            dis_time: 0,
             signal: Arc::new(move |key, value| {
                 let bytes = serde_json::to_vec(&value).unwrap_or_default();
                 for entry in broadcast_set.iter() {
@@ -257,21 +248,16 @@ impl Tcp {
         socket.set_user_id(user_id);
         self.app.tools().signaler().listen_to_single(listener);
 
-        let store_ids = Arc::new(Mutex::new(Vec::<String>::new()));
-        let store_clone = store_ids.clone();
-        let member = user_id.to_string();
-        self.app.modify_state(
-            true,
-            Box::new(move |trx: &Trx| {
-                // Membership goes through the store port (legacy adapter until cutover).
-                let ports = crate::api::model::store_ports::MembershipPorts { trx };
-                if let Ok(ids) = aseman_ports::StoreAccess::stores_of(&ports, &member) {
-                    *store_clone.lock().unwrap() = ids;
-                }
-                Ok(())
-            }),
-        );
-        let ids = store_ids.lock().unwrap().clone();
+        let ids = self
+            .app
+            .read(|trx| {
+                aseman_ports::StoreAccess::stores_of(
+                    &crate::state::store_ports::MembershipPorts { trx },
+                    user_id,
+                )
+                .map_err(|error| anyhow::anyhow!("{error}"))
+            })
+            .unwrap_or_default();
         for store_id in ids {
             self.app.tools().signaler().join_group(&store_id, user_id);
         }
@@ -291,7 +277,7 @@ impl Tcp {
             self.sockets.insert(peer_key.clone(), socket.clone());
         }
 
-        // Resumable read accumulator. The legacy `read_length_prefixed_frame`
+        // Resumable read accumulator. A plain `read_length_prefixed_frame`
         // does a blocking `read_exact`, which on a timeout returns an error
         // and prevents us from getting back to the outbound drain. We do the
         // length/body read manually here, retaining partial state across
@@ -412,7 +398,7 @@ impl Tcp {
         // A gateway subscription belongs to this connection alone, so it goes
         // now rather than after the reconnect grace period — a reconnecting
         // bridge re-subscribes with its token.
-        gateway_subs::unsubscribe(&socket.id);
+        self.app.topics().unsubscribe(&socket.id);
         let user_id = socket.user_id();
         eprintln!(
             "[tcp] - close peer={} sock={} user={}",
@@ -466,7 +452,7 @@ impl Tcp {
                     }
                 }
             }
-            // Keep the legacy peer/user `sockets` map tidy: drop the entry only
+            // Keep the peer/user `sockets` map tidy: drop the entry only
             // if it still points at this socket. `remove_if` evaluates the
             // predicate atomically under the shard write lock, so we never hold
             // a read `Ref` across a `remove` on the same map (which deadlocks
@@ -522,7 +508,7 @@ fn read_into(stream: &mut TlsStream, buf: &mut [u8]) -> ReadOutcome {
 }
 
 impl SessionTransport<Socket> for Tcp {
-    fn app(&self) -> &Arc<dyn ICore> {
+    fn app(&self) -> &Arc<Node> {
         &self.app
     }
 
@@ -539,8 +525,8 @@ impl SessionTransport<Socket> for Tcp {
     }
 }
 
-impl ITcp for Tcp {
-    fn listen(&self, port: i64, tls_config: Option<TlsConfig>) {
+impl Tcp {
+    pub(crate) fn listen(&self, port: i64, tls_config: Option<TlsConfig>) {
         let trans_self = Arc::new(self.clone_for_listen());
         thread::spawn(move || {
             let cfg_ref = tls_config.as_ref();

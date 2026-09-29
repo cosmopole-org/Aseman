@@ -1,73 +1,57 @@
-//! Runtime start phase for the `Core` compatibility orchestrator: `run` and the
-//! strongly-typed `load_inner` that assembles drivers, tools, the globe, and
-//! the chain pipeline.
-//!
-//! Translation of `core/module/core/core.go`.
+//! Starting a node's components: storage, federation, the session hub, security,
+//! the consensus provider and chain, the network, workloads, and the rate limiter.
 
 use std::sync::Arc;
 
 use anyhow::Result;
 
-use crate::adapters::network::Network as NetworkDriver;
-use crate::adapters::network::chain::{Blockchain, ChainSettings};
-use crate::adapters::network::federation::FedNet;
-use crate::adapters::security::Security;
-use crate::adapters::signaler::Signaler;
-use crate::adapters::storage::Storage;
-use crate::adapters::vmm::NodeWorkloads;
-use crate::core::globe::{ChainPacketOp, Globe};
-use crate::core::orchestrator::types::{Core, Tools};
-use crate::models::chain::{ChainCallback, MessageCallback};
-use crate::models::core::ICore;
-use crate::models::ports::{
-    INetwork, IRateLimiter, ISecurity, ISignaler, IStorage, ITools, IWorkloads,
-};
-use aseman_network_legacy::tls_config_from_files;
+use crate::identity::Security;
+use crate::live::hub::Signaler;
+use crate::node::{Node, Tools};
+use crate::ratelimit::RateLimiter;
+use crate::storage::NodeStorage;
+use crate::transports::Network as NetworkDriver;
+use crate::transports::Network;
+use crate::transports::chain::callbacks::ChainCallback;
+use crate::transports::chain::globe::{ChainPacketOp, Globe};
+use crate::transports::chain::{Blockchain, ChainSettings};
+use crate::transports::federation::FedNet;
+use crate::workloads::NodeWorkloads;
+use aseman_network_shell::tls_config_from_files;
 use aseman_ports::consensus::ConsensusProvider as _;
 
-impl Core {
+impl Node {
     /// Runtime start phase invoked after load/module initialization.
-    pub fn run(self: &Arc<Self>) {}
-
-    /// Strongly-typed `Load`. Run once on startup after the constructor.
-    #[allow(clippy::if_same_then_else)] // two legacy chain routes intentionally share a callback
-    pub fn load_inner(
-        self: &Arc<Self>,
-        gods: Vec<String>,
-        storage_root: &str,
-        base_db_path: &str,
-    ) -> Result<()> {
-        *self.gods.lock().unwrap() = gods;
-
+    /// Start the node's components: storage, federation, the signaler, security,
+    /// the consensus provider and chain, the network, workloads, and the rate
+    /// limiter. Run once, after construction.
+    ///
+    /// # Errors
+    ///
+    /// Storage that cannot open, or configured TLS that cannot load.
+    pub fn load(self: &Arc<Self>) -> Result<()> {
+        let storage_root = self.config.storage.root_path.as_str();
+        let base_db_path = self.config.storage.base_db_path.as_str();
         // Stage 1 of federation must run before the rest so we can pass
         // the same `Arc<FedNet>` into the storage / network drivers.
         let fed: Arc<FedNet> = FedNet::first_stage(self.clone());
-        let storage: Arc<dyn IStorage> = Storage::new(
+        let storage: Arc<NodeStorage> = NodeStorage::new(
             storage_root,
-            crate::adapters::storage::open_from_config(
-                self.config.as_deref(),
-                storage_root,
-                base_db_path,
-                true,
-            )?,
+            crate::storage::open_from_config(Some(&self.config), storage_root, base_db_path, true)?,
         );
-        let signaler: Arc<dyn ISignaler> = Signaler::new(self.clone(), fed.clone());
-        let security: Arc<dyn ISecurity> = Security::new(self.clone(), storage_root);
+        let signaler: Arc<Signaler> = Signaler::new(self.clone(), fed.clone());
+        let security: Arc<Security> = Security::new(self.clone(), storage_root);
 
-        // RL-011: one consensus provider owns finance ordering AND validator
+        // One consensus provider owns finance ordering AND validator
         // governance (staking/election) as the main chain's application
         // handler. It is composed once here — before the chain adapter — so
         // `Blockchain` can install its proxy as the main-chain engine handler.
         let provider = Arc::new(
             aseman_consensus_hashgraph::provider::HashgraphConsensusProvider::for_node(
-                &self.id, &self.ip,
+                &self.id, &self.id,
             ),
         );
-        let properties = self
-            .config
-            .as_ref()
-            .map_or(&[][..], |config| config.consensus_properties.as_slice());
-        for (key, value) in properties {
+        for (key, value) in &self.config.consensus_properties {
             if let Err(error) = provider.set(key, value) {
                 eprintln!("consensus property {key} not applied: {error}");
             }
@@ -80,31 +64,27 @@ impl Core {
 
         // The provider is owned by the chain module (installed as the main-chain
         // application handler); the core orchestrator reaches it via the chain.
-        let chain_settings = self
-            .config
-            .as_deref()
-            .map(ChainSettings::from_config)
-            .unwrap_or_default();
-        let chain: Arc<dyn crate::models::ports::IChain> = Blockchain::with_consensus(
+        let chain_settings = ChainSettings::from_config(&self.config);
+        let chain: Arc<crate::transports::chain::Blockchain> = Blockchain::with_consensus(
             self.clone(),
             storage_root,
             chain_settings,
             Some(provider),
             storage.consensus_logs(),
         );
-        // Configured TLS that cannot be loaded is a startup failure: the legacy
+        // Configured TLS that cannot be loaded is a startup failure: the
         // transports never fall back to plaintext.
-        let tls_cfg = match self.config.as_ref().map(|config| &config.core) {
-            Some(config) => match (&config.tls_certificate_path, &config.tls_private_key_path) {
-                (Some(cert), Some(key)) => Some(
-                    tls_config_from_files(cert, key)
-                        .map_err(|error| anyhow::anyhow!("cannot load the node's TLS: {error}"))?,
-                ),
-                _ => None,
-            },
-            None => None,
+        let tls_cfg = match (
+            &self.config.core.tls_certificate_path,
+            &self.config.core.tls_private_key_path,
+        ) {
+            (Some(cert), Some(key)) => Some(
+                tls_config_from_files(cert, key)
+                    .map_err(|error| anyhow::anyhow!("cannot load the node's TLS: {error}"))?,
+            ),
+            _ => None,
         };
-        let network: Arc<dyn INetwork> = NetworkDriver::new(
+        let network: Arc<Network> = NetworkDriver::new(
             self.clone(),
             storage.clone(),
             security.clone(),
@@ -113,7 +93,7 @@ impl Core {
             chain.clone(),
             tls_cfg,
         );
-        let vmm: Arc<dyn IWorkloads> = NodeWorkloads::new(self.clone());
+        let vmm: Arc<NodeWorkloads> = NodeWorkloads::new(self.clone());
 
         // Stage 2 — federation needs storage/signaler.
         fed.second_stage(storage.clone(), signaler.clone());
@@ -121,72 +101,60 @@ impl Core {
         // Load the server private key for signing.
         let pem = security.fetch_key_pair("server_key");
         if let Some(first) = pem.into_iter().next()
-            && let Ok(key) = Core::parse_private_key(&first)
+            && let Ok(key) = Node::parse_private_key(&first)
         {
-            *self.priv_key.lock().unwrap() = Some(Arc::new(key));
+            let _ = self.node_key.set(Arc::new(key));
         }
 
         // Cross-protocol client-request rate limiter. One instance is shared by
         // every client-facing transport (TCP / WS / HTTP ingress) so a client's
         // quota is unified across protocols.
-        let rate_limiter: Arc<dyn IRateLimiter> = match self.config.as_ref() {
-            Some(config) => crate::adapters::ratelimit::RateLimiter::from_typed(&config.rate_limit),
-            None => crate::adapters::ratelimit::RateLimiter::new(Default::default()),
-        };
+        let rate_limiter: Arc<RateLimiter> =
+            crate::ratelimit::RateLimiter::from_typed(&self.config.rate_limit);
 
         // Install tools + chain restore.
-        let tools: Arc<dyn ITools> = Arc::new(Tools {
+        let tools: Arc<Tools> = Arc::new(Tools {
             security,
             signaler,
             storage,
             network: network.clone(),
-            vmm,
+            workloads: vmm,
             rate_limiter,
         });
-        *self.tools.lock().unwrap() = Some(tools);
+        if self.tools.set(tools).is_err() {
+            return Err(anyhow::anyhow!("the node is already loaded"));
+        }
         network.chain().restore_from_storage();
 
         // Chain submission goes through the chain module's own queue.
         // Globe.
-        let sign_fn: crate::core::globe::SignPacketFn = {
+        let sign_fn: crate::transports::chain::globe::SignPacketFn = {
             let me = self.clone();
             Arc::new(move |data| me.sign_packet(data))
         };
-        let submit_fn: crate::core::globe::SubmitChainPacketFn = {
+        let submit_fn: crate::transports::chain::globe::SubmitChainPacketFn = {
             let chain_for_submit = chain.clone();
             Arc::new(move |chain_id: &str, op: ChainPacketOp| {
                 chain_for_submit.submit_chain_op(chain_id, op);
             })
         };
-        let set_chain_callback_fn: crate::core::globe::SetChainCallbackFn = {
+        let set_chain_callback_fn: crate::transports::chain::globe::SetChainCallbackFn = {
             let chain_for_cb = chain.clone();
             Arc::new(move |callback_id: &str, cb: ChainCallback| {
                 chain_for_cb.register_chain_callback(callback_id, cb);
             })
         };
-        let set_message_cb_fn: crate::core::globe::SetMessageCbFn = {
-            let chain_for_msg = chain.clone();
-            Arc::new(move |callback_id: &str, cb: MessageCallback| {
-                chain_for_msg.register_message_callback(callback_id, cb);
-            })
-        };
         let globe = {
             // The globe is pure chain-RPC transport; the consensus provider
             // (composed above) owns governance and finance.
-            Globe::new(
-                self.id.clone(),
-                sign_fn,
-                submit_fn,
-                set_chain_callback_fn,
-                set_message_cb_fn,
-            )
+            Globe::new(self.id.clone(), sign_fn, submit_fn, set_chain_callback_fn)
         };
-        *self.globe.lock().unwrap() = Some(globe.clone());
+        let _ = self.globe.set(globe.clone());
 
         // Wire the chain pipeline so committed blocks flow through
         // `handle_chain_packet`.
         let trans = self.clone();
-        let pipeline: crate::models::ports::PipelineFn = Box::new(
+        let pipeline: crate::transports::chain::callbacks::PipelineFn = Box::new(
             move |txs: Vec<Vec<u8>>, insider_cb: Box<dyn Fn(Vec<u8>) + Send + Sync>| {
                 let mut machine_ids: Vec<String> = Vec::new();
                 for tx in txs {
@@ -197,9 +165,8 @@ impl Core {
                     };
                     let typ = &s[..first_index];
                     let body = &tx[first_index + 2..];
-                    if typ == "nodeJoined" {
-                        insider_cb(tx.clone());
-                    } else if typ == format!("sharderMap|{}", trans.id) {
+                    // Membership packets belong to the chain itself.
+                    if typ == "nodeJoined" || typ == format!("sharderMap|{}", trans.id) {
                         insider_cb(tx.clone());
                     } else {
                         let r = trans.handle_chain_packet(typ, body);

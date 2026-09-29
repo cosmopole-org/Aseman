@@ -1,7 +1,7 @@
-use crate::adapters::vmm::host::functions::vm_ownership::{
+use crate::workloads::host::functions::vm_ownership::{
     clear_vm_records, owns_vm_instance, program_owner_user, vm_owner_program,
 };
-use crate::adapters::vmm::prelude::*;
+use crate::workloads::prelude::*;
 
 /// Unified `deleteVm` host op — the destructive counterpart of `runVm`.
 ///
@@ -26,7 +26,11 @@ use crate::adapters::vmm::prelude::*;
 /// and its `delete`). Checking the program id alone would mean nothing could
 /// ever delete what it made, while checking the owning user still refuses
 /// another tenant's creature.
-pub(crate) fn host_fn_delete_vm(caller_program_id: &str, input: &JsonValue) -> String {
+pub(crate) fn host_fn_delete_vm(
+    node: &Arc<Node>,
+    caller_program_id: &str,
+    input: &JsonValue,
+) -> String {
     let vm_id = input["vmId"].as_str().unwrap_or("").trim().to_string();
     if vm_id.is_empty() {
         return json!({"ok": false, "error": "deleteVm requires a vmId"}).to_string();
@@ -36,15 +40,15 @@ pub(crate) fn host_fn_delete_vm(caller_program_id: &str, input: &JsonValue) -> S
         return json!({"ok": false, "error": "deleteVm requires an identified caller"}).to_string();
     }
 
-    let owner = vm_owner_program(&vm_id);
+    let owner = vm_owner_program(node, &vm_id);
     let authorized = if !owner.is_empty() {
         owner == caller || {
-            let owner_user = program_owner_user(&owner);
-            let caller_user = program_owner_user(&caller);
+            let owner_user = program_owner_user(node, &owner);
+            let caller_user = program_owner_user(node, &caller);
             !owner_user.is_empty() && owner_user == caller_user
         }
     } else {
-        owns_vm_instance(&caller, &vm_id)
+        owns_vm_instance(node, &caller, &vm_id)
     };
     if !authorized {
         return json!({
@@ -54,8 +58,9 @@ pub(crate) fn host_fn_delete_vm(caller_program_id: &str, input: &JsonValue) -> S
         .to_string();
     }
 
-    let raw =
-        crate::adapters::vmm::host::functions::vm_calls::remote_vm_call("deleteVm", &caller, input);
+    let raw = crate::workloads::host::functions::vm_calls::remote_vm_call(
+        node, "deleteVm", &caller, input,
+    );
     // Only forget the VM once the runtime actually destroyed it — clearing the
     // owner link after a failed delete would strand a live VM nobody may
     // delete any more.
@@ -64,7 +69,7 @@ pub(crate) fn host_fn_delete_vm(caller_program_id: &str, input: &JsonValue) -> S
         .map(|v| v["ok"].as_bool().unwrap_or(false))
         .unwrap_or(false);
     if destroyed {
-        clear_vm_records(&vm_id);
+        clear_vm_records(node, &vm_id);
     }
     raw
 }

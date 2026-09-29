@@ -14,6 +14,8 @@ use anyhow::{Context, Result, anyhow, bail};
 
 use aseman_fs::{Access, write_atomic};
 
+use aseman_config::CliConfig;
+
 use super::args;
 
 /// The profile an installed release ships, relative to the binary
@@ -24,16 +26,10 @@ const SOURCE_COMPOSE: &str = "deploy/compose/compact.compose.yaml";
 /// The host-local node health port when the deployment did not choose one.
 pub(crate) const DEFAULT_HEALTH_PORT: u16 = 8080;
 
-/// The state directory: `--state-dir`, else `ASEMAN_CTL_STATE_DIR`, else
-/// `$XDG_STATE_HOME/asemanctl`.
-pub(crate) fn state_dir(arguments: &[String]) -> PathBuf {
-    if let Some(dir) = args::flag_value(arguments, "state-dir") {
-        return PathBuf::from(dir);
-    }
-    aseman_config::cli_config()
-        .and_then(|config| config.state_dir.as_deref())
-        .map(PathBuf::from)
-        .unwrap_or_else(|| aseman_config::process_state_home().join("asemanctl"))
+/// The state directory: `--state-dir`, else the configured one
+/// ([`CliConfig::state_dir`]).
+pub(crate) fn state_dir(arguments: &[String], config: &CliConfig) -> PathBuf {
+    args::flag_value(arguments, "state-dir").map_or_else(|| config.state_dir.clone(), PathBuf::from)
 }
 
 /// The compact Compose profile: `--compose-file`, else the installed copy beside this
@@ -53,6 +49,60 @@ pub(crate) fn default_compose_file(arguments: &[String]) -> PathBuf {
     })
 }
 
+/// The VMM backend a compact deployment runs (`ASEMAN_BACKEND` in `compact.env`,
+/// Nomad when absent): one Compose profile, service, and configuration file each.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub(crate) enum Backend {
+    /// Workloads on the operator's Nomad (ADR 0002).
+    Nomad,
+    /// The native backend's runtime plugins (Modal and the in-process runtimes).
+    Native,
+}
+
+impl Backend {
+    pub(crate) fn parse(value: &str) -> Result<Self> {
+        match value {
+            "nomad" => Ok(Self::Nomad),
+            "native" => Ok(Self::Native),
+            other => bail!("unknown backend {other:?}; use nomad or native"),
+        }
+    }
+
+    /// The Compose profile that enables it.
+    pub(crate) const fn profile(self) -> &'static str {
+        match self {
+            Self::Nomad => "nomad",
+            Self::Native => "native",
+        }
+    }
+
+    pub(crate) const fn service(self) -> &'static str {
+        match self {
+            Self::Nomad => "nomad-backend",
+            Self::Native => "native-backend",
+        }
+    }
+
+    /// Its configuration file, relative to the configuration directory.
+    pub(crate) const fn config_file(self) -> &'static str {
+        match self {
+            Self::Nomad => "nomad-backend.json",
+            Self::Native => "native-backend.json",
+        }
+    }
+
+    pub(crate) const fn default_image(self) -> &'static str {
+        match self {
+            Self::Nomad => "aseman-vmm-backend-nomad:local",
+            Self::Native => "aseman-vmm-backend-native:local",
+        }
+    }
+}
+
+/// The `compact.env` key naming the backend image (older deployments name it
+/// `ASEMAN_NOMAD_BACKEND_IMAGE`, which the profile still accepts).
+pub(crate) const BACKEND_IMAGE_KEY: &str = "ASEMAN_BACKEND_IMAGE";
+
 /// A compact deployment bootstrap produced.
 #[derive(Clone, Debug)]
 pub(crate) struct Compact {
@@ -63,10 +113,10 @@ pub(crate) struct Compact {
 impl Compact {
     /// The deployment under `--config-dir` (else `<state>/compact`), if bootstrap
     /// created one.
-    pub(crate) fn locate(arguments: &[String]) -> Option<Self> {
+    pub(crate) fn locate(arguments: &[String], config: &CliConfig) -> Option<Self> {
         let config_dir = args::flag_value(arguments, "config-dir")
             .map(PathBuf::from)
-            .unwrap_or_else(|| state_dir(arguments).join("compact"));
+            .unwrap_or_else(|| state_dir(arguments, config).join("compact"));
         let env_file = config_dir.join("compact.env");
         env_file.is_file().then(|| Self {
             env_file,
@@ -75,29 +125,36 @@ impl Compact {
     }
 
     /// Like [`Compact::locate`], but an absent deployment is an error.
-    pub(crate) fn require(arguments: &[String]) -> Result<Self> {
-        Self::locate(arguments).ok_or_else(|| {
+    pub(crate) fn require(arguments: &[String], config: &CliConfig) -> Result<Self> {
+        Self::locate(arguments, config).ok_or_else(|| {
             anyhow!(
                 "no compact deployment found; run `asemanctl bootstrap --profile compact` first"
             )
         })
     }
 
-    fn command(&self, arguments: &[&str]) -> Command {
+    /// The backend this deployment runs.
+    pub(crate) fn backend(&self) -> Result<Backend> {
+        self.env_value("ASEMAN_BACKEND")?
+            .map_or(Ok(Backend::Nomad), |value| Backend::parse(&value))
+    }
+
+    fn command(&self, arguments: &[&str]) -> Result<Command> {
         let mut command = Command::new("docker");
         command
             .args(["compose", "--env-file"])
             .arg(&self.env_file)
             .arg("-f")
             .arg(&self.compose_file)
+            .args(["--profile", self.backend()?.profile()])
             .args(arguments);
-        command
+        Ok(command)
     }
 
     /// Run `docker compose …` against this deployment and fail on a non-zero exit.
     pub(crate) fn compose(&self, arguments: &[&str]) -> Result<Output> {
         let output = self
-            .command(arguments)
+            .command(arguments)?
             .output()
             .context("run docker compose")?;
         if !output.status.success() {
@@ -120,7 +177,7 @@ impl Compact {
     ) -> Result<Output> {
         let mut arguments = vec!["exec", "-T", "postgres"];
         arguments.extend_from_slice(program);
-        let mut command = self.command(&arguments);
+        let mut command = self.command(&arguments)?;
         if let Some(path) = stdin {
             command.stdin(Stdio::from(
                 fs::File::open(path).with_context(|| format!("open {}", path.display()))?,
@@ -213,8 +270,8 @@ impl Compact {
 }
 
 /// `asemanctl status` — every compact service's state and the node's health.
-pub(crate) fn run_status(arguments: &[String]) -> Result<()> {
-    let compact = Compact::require(arguments)?;
+pub(crate) fn run_status(config: &CliConfig, arguments: &[String]) -> Result<()> {
+    let compact = Compact::require(arguments, config)?;
     let output = compact.compose(&["ps", "--all", "--format", "{{.Service}}\t{{.Status}}"])?;
     print!("{}", String::from_utf8_lossy(&output.stdout));
     let healthy = compact.node_healthy();
@@ -230,8 +287,8 @@ pub(crate) fn run_status(arguments: &[String]) -> Result<()> {
 }
 
 /// `asemanctl start [SERVICE…]` — start the deployment (or the named services).
-pub(crate) fn run_start(arguments: &[String]) -> Result<()> {
-    let compact = Compact::require(arguments)?;
+pub(crate) fn run_start(config: &CliConfig, arguments: &[String]) -> Result<()> {
+    let compact = Compact::require(arguments, config)?;
     let services = services(arguments);
     let mut compose = vec!["up", "-d", "--wait"];
     compose.extend(services.iter().map(String::as_str));
@@ -242,8 +299,8 @@ pub(crate) fn run_start(arguments: &[String]) -> Result<()> {
 
 /// `asemanctl stop [SERVICE…]` — stop the deployment (or the named services),
 /// keeping every volume.
-pub(crate) fn run_stop(arguments: &[String]) -> Result<()> {
-    let compact = Compact::require(arguments)?;
+pub(crate) fn run_stop(config: &CliConfig, arguments: &[String]) -> Result<()> {
+    let compact = Compact::require(arguments, config)?;
     let services = services(arguments);
     let mut compose = vec!["stop"];
     compose.extend(services.iter().map(String::as_str));

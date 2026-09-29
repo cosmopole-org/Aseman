@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate the Phase 2 module contract/capability catalog."""
+"""Generate the module contract/capability catalog."""
 
 from __future__ import annotations
 
@@ -17,7 +17,7 @@ ROOT = Path(__file__).resolve().parents[1]
 MODULE = ROOT / "contracts/module"
 JSON_OUT = ROOT / "docs/generated/module-contract-catalog.json"
 MD_OUT = ROOT / "docs/generated/module-contract-catalog.md"
-GENERATOR = "scripts/generate_phase2_contracts.py"
+GENERATOR = "scripts/generate_module_contracts.py"
 
 
 def relative(path: Path) -> str:

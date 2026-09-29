@@ -97,7 +97,12 @@ fn docker_workloads_build_serve_http_and_go_away() {
         eprintln!("Docker is not reachable; skipping the docker parity test");
         return;
     }
-    let port = aseman_config::runtime_config().vm_http_port;
+    // No docker-host gateway: the test reaches containers over their HTTP port.
+    let runtime_config = aseman_config::RuntimeConfig {
+        docker_gateway_port: 0,
+        ..aseman_config::RuntimeConfig::default()
+    };
+    let port = runtime_config.vm_http_port;
     let dockerfile = format!(
         "FROM caddy:2-alpine\nRUN mkdir -p /srv /app/input && printf 'hello from docker' > /srv/index.html && chown -R 1000:1000 /app\nWORKDIR /app\n# Runs as the backend's user: an unprivileged backend cannot purge a sandbox a\n# root container wrote into (LD-28).\nUSER 1000:1000\nENV XDG_DATA_HOME=/app/input XDG_CONFIG_HOME=/app/input\nCMD [\"caddy\", \"file-server\", \"--listen\", \":{port}\", \"--root\", \"/srv\"]\n"
     )
@@ -131,6 +136,7 @@ fn docker_workloads_build_serve_http_and_go_away() {
     let backend = NativeBackend::start(
         state.clone(),
         GuestApiClient::new(certificate.pem().as_bytes(), Duration::from_secs(30)).unwrap(),
+        &runtime_config,
         None,
     )
     .unwrap();

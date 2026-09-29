@@ -11,7 +11,7 @@ use aseman_storage::client::core::{vm_distribution, vm_instance, vm_terminal};
 use aseman_storage::{Data, FindMany, Models, Unique, Value, Where};
 use serde_json::Map;
 
-use crate::core::trx::{Trx, failed};
+use crate::storage::{Trx, failed};
 
 pub(crate) use vm_instance::VmInstance;
 
@@ -226,7 +226,7 @@ mod tests {
 
     #[test]
     fn instances_record_list_stop_and_forget() {
-        let trx = crate::core::trx::test_trx();
+        let trx = crate::storage::test_trx();
         for (vm, entity) in [("vm-b", "e1"), ("vm-a", "e1"), ("vm-c", "e2")] {
             record_launch(
                 &trx,

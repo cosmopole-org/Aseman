@@ -10,9 +10,9 @@ repository.workspace = true
 [dependencies]
 aseman-application = { path = "../../crates/aseman-application" }
 aseman-config = { path = "../../crates/aseman-config" }
-aseman-finance-ledger = { path = "../../modules/finance/ledger" }
+aseman-capsule = { path = "../../crates/aseman-capsule" }
+aseman-storage-providers = { path = "../../crates/aseman-storage-providers" }
 aseman-vmm-http = { path = "../../modules/vmm-http" }
-postgres.workspace = true
 
 [lints]
 workspace = true

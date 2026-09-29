@@ -1,4 +1,4 @@
-//! The consensus port (Phase 8, RL-011).
+//! The consensus port.
 //!
 //! Finance never names a consensus implementation. It submits records for ordering and
 //! reads what has been finalized; which service does the ordering — Hashgraph today,

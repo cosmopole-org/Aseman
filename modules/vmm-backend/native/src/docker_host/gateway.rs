@@ -24,7 +24,7 @@ pub(crate) type Identify = Box<dyn Fn(&str) -> Option<ContainerIdentity> + Send 
 pub(crate) struct DockerHostGateway {
     pub(crate) identify: Identify,
     /// Serves a container's host calls (the backend's `VmHost`).
-    pub(crate) host: Arc<dyn caspar_vm_sdk::host::VmHost>,
+    pub(crate) host: Arc<dyn aseman_vm_sdk::host::VmHost>,
     /// Live container connections.
     pub(crate) registry: GatewayRegistry,
     /// Guards against starting the listener twice.
@@ -34,7 +34,7 @@ pub(crate) struct DockerHostGateway {
 impl DockerHostGateway {
     pub(crate) fn new(
         identify: Identify,
-        host: Arc<dyn caspar_vm_sdk::host::VmHost>,
+        host: Arc<dyn aseman_vm_sdk::host::VmHost>,
     ) -> Arc<DockerHostGateway> {
         Arc::new(DockerHostGateway {
             identify,

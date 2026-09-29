@@ -1,7 +1,6 @@
-use crate::adapters::vmm::globals::with_global_app;
-use crate::adapters::vmm::prelude::*;
+use crate::workloads::prelude::*;
 
-pub(crate) fn host_fn_signal(input: &JsonValue) -> String {
+pub(crate) fn host_fn_signal(node: &Arc<Node>, input: &JsonValue) -> String {
     let signal_type = input["type"].as_str().unwrap_or("").trim();
     let machine_id = input["machineId"].as_str().unwrap_or("").trim();
     if signal_type.is_empty() || machine_id.is_empty() {
@@ -9,6 +8,5 @@ pub(crate) fn host_fn_signal(input: &JsonValue) -> String {
             .to_string();
     }
 
-    with_global_app(|app| app.tools().workloads().host_action_signal(input))
-        .unwrap_or_else(|| json!({"ok": false, "error": "the node is not initialised"}).to_string())
+    node.tools().workloads().host_action_signal(input)
 }

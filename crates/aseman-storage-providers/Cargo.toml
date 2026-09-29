@@ -13,15 +13,20 @@ aseman-config = { path = "../aseman-config" }
 aseman-contracts = { path = "../aseman-contracts" }
 aseman-domain = { path = "../aseman-domain" }
 aseman-ports = { path = "../aseman-ports" }
+aseman-postgres = { path = "../aseman-postgres" }
 aseman-storage = { path = "../aseman-storage" }
 aseman-storage-postgres = { path = "../../modules/storage/postgres" }
 aseman-storage-rocksdb = { path = "../../modules/storage/rocksdb" }
 hex.workspace = true
+postgres.workspace = true
 serde_json.workspace = true
 sha2.workspace = true
 
 [dev-dependencies]
-postgres.workspace = true
+serde.workspace = true
+aseman-application = { path = "../aseman-application" }
+aseman-ports = { path = "../aseman-ports", features = ["conformance"] }
+uuid.workspace = true
 rsa.workspace = true
 
 [lints]

@@ -1,27 +1,21 @@
-//! Chain packet handling for the `Core` compatibility orchestrator: message /
-//! base-request dispatch, the vm.execute flow, pay-lock consumption, and
-//! chain-op submission.
-//!
-//! Translation of `core/module/core/core.go`.
+//! The packets the main chain commits, as this node runs them: ordered base
+//! requests (through the operations), `vm.execute` messages and their pay-lock
+//! consumption, and cost negotiation.
 
 use std::collections::HashMap;
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 use std::thread;
 use std::time::Duration;
 
 use serde_json::Value;
 
-use crate::api::packets::creatures::ConsumeLockInput;
-use crate::api::utils::crypto::secure_unique_string;
-use crate::api::workloads;
-use crate::core::globe::ChainPacketOp;
-use crate::core::orchestrator::types::Core;
-use crate::core::trx::Trx;
-use crate::core::utils::compat::GoError;
-use crate::models::chain::{ChainBaseRequest, ChainMessage, ChainPayPacket};
-use crate::models::core::ICore;
+use crate::actions::wire::creature::ConsumeLockInput;
+use crate::node::Node;
+use crate::transports::chain::globe::ChainPacketOp;
+use crate::util::crypto::secure_unique_string;
+use aseman_contracts::wire::chain::{ChainBaseRequest, ChainMessage, ChainPayPacket};
 
-impl Core {
+impl Node {
     pub(crate) fn chain_message_targets_local(&self, packet: &ChainMessage) -> bool {
         packet.recievers.contains_key("*") || packet.recievers.contains_key(&self.id)
     }
@@ -44,20 +38,16 @@ impl Core {
     fn run_chain_message(self: &Arc<Self>, packet: ChainMessage) {
         let machine_ids = self.chain_message_machine_ids(&packet);
         for machine_id in machine_ids.keys() {
-            let runtime_slot = Arc::new(Mutex::new(String::new()));
-            let runtime_clone = runtime_slot.clone();
-            let machine_id_owned = machine_id.clone();
-            self.modify_state(
-                true,
-                Box::new(move |trx: &Trx| {
-                    let vm = (crate::api::model::program_ports::ProgramPorts { trx })
-                        .program_or_empty(&machine_id_owned.clone());
-                    *runtime_clone.lock().unwrap() = vm.runtime;
-                    Ok(())
-                }),
-            );
-            let runtime_type = runtime_slot.lock().unwrap().clone();
-            let offered = workloads::remote().is_some_and(|remote| remote.offers(&runtime_type));
+            let runtime_type = self
+                .read(|trx| {
+                    Ok(crate::state::program_ports::ProgramPorts { trx }
+                        .program_or_empty(machine_id)
+                        .runtime)
+                })
+                .unwrap_or_default();
+            let offered = self
+                .vmm()
+                .is_some_and(|remote| remote.offers(&runtime_type));
             if !offered {
                 continue;
             }
@@ -106,7 +96,7 @@ impl Core {
         {
             return false;
         }
-        let Some(globe) = self.globe.lock().unwrap().clone() else {
+        let Some(globe) = self.globe.get().cloned() else {
             return false;
         };
         let input = ConsumeLockInput {
@@ -121,17 +111,18 @@ impl Core {
         let sign = self.sign_packet_as_owner(&inp);
         let (tx, rx) = std::sync::mpsc::channel::<bool>();
         let owner = self.owner_id.clone();
-        let cb: crate::models::globe::BaseResponseCallback =
-            Box::new(move |_data: Vec<u8>, status: i64, err: Option<GoError>| {
+        let cb: crate::transports::chain::callbacks::BaseResponseCallback = Box::new(
+            move |_data: Vec<u8>, status: i64, err: Option<anyhow::Error>| {
                 let ok = err.is_none() && status < 400;
                 let _ = tx.send(ok);
-            });
+            },
+        );
         globe.send_base_request_on_chain("/creatures/consumeLock", inp, &sign, &owner, "", cb);
         rx.recv_timeout(Duration::from_secs(30)).unwrap_or(false)
     }
 
     pub(crate) fn handle_chain_packet(self: &Arc<Self>, typ: &str, trx_payload: &[u8]) -> String {
-        // RL-011: stake and election are owned entirely by the consensus
+        // Stake and election are owned entirely by the consensus
         // provider's application handler; they never reach the chain module.
         // Only request/response/message traffic is routed here.
         match typ {
@@ -147,26 +138,15 @@ impl Core {
                 if packet.message_type.is_empty() {
                     packet.message_type = "vm.execute".to_string();
                 }
-                if !packet.reply_to.is_empty() {
-                    // One-shot: a reply delivers its callback exactly once, so
-                    // remove it here. Leaving it in the map (the old `get`) meant
-                    // every registered message callback lived for the life of the
-                    // node — an unbounded `message_callbacks` leak.
-                    let cb = self
-                        .tools()
-                        .network()
-                        .chain()
-                        .take_message_callback(&packet.reply_to);
-                    if let Some(cb) = cb {
-                        (cb.fn_)(packet.key.clone(), packet.payload.clone());
-                    }
-                } else if self.chain_message_targets_local(&packet) {
+                // A reply answers a message its sender waits on; this node sends
+                // none that wait, so replies addressed here carry nothing to do.
+                if packet.reply_to.is_empty() && self.chain_message_targets_local(&packet) {
                     match packet.message_type.as_str() {
                         "vm.cost.negotiate" => {
                             if packet.author == self.id {
                                 return String::new();
                             }
-                            let cost_per_second = self.finance.execution_cost_per_second();
+                            let cost_per_second = self.finance.costs().execution_per_second;
                             let pay = ChainPayPacket {
                                 typ: "vm.cost.ack".to_string(),
                                 session_id: packet.request_id.clone(),
@@ -208,7 +188,7 @@ impl Core {
                                     return String::new();
                                 }
                                 let mut packet_cpy = packet.clone();
-                                let cps = self.finance.execution_cost_per_second();
+                                let cps = self.finance.costs().execution_per_second;
                                 if let Some(p) = packet_cpy.pay.as_mut()
                                     && p.accepted_seconds <= 0
                                     && cps > 0
@@ -253,41 +233,15 @@ impl Core {
                     .strip_prefix("user::")
                     .unwrap_or("")
                     .to_string();
-                let secure = match self.actor.fetch_secure_action(&packet.key) {
-                    Some(s) => s,
-                    None => return String::new(),
-                };
-                let raw_payload =
-                    serde_json::from_slice::<Value>(&packet.payload).unwrap_or(Value::Null);
-                let input = match secure.parse_input("chain", raw_payload) {
-                    Ok(i) => i,
-                    Err(e) => {
-                        eprintln!("parse_input chain: {}", e);
-                        let signature = self.sign_packet(e.to_string().as_bytes());
-                        if let Some(globe) = self.globe.lock().unwrap().clone() {
-                            globe.exec_base_response_on_chain(
-                                &packet.request_id,
-                                Vec::new(),
-                                &signature,
-                                400,
-                                "input parsing error",
-                                Vec::new(),
-                                &packet.tag,
-                                &user_id,
-                            );
-                        }
-                        return String::new();
-                    }
-                };
                 let signature = packet.signatures.get(1).cloned().unwrap_or_default();
-                let res = secure.securly_act_chain(
-                    &user_id,
-                    &packet.request_id,
-                    &packet.payload,
-                    &signature,
-                    input,
+                let res = self.router().run_ordered(
+                    &packet.key,
+                    &crate::actions::guard::SignedPacket {
+                        user_id: &user_id,
+                        payload: &packet.payload,
+                        signature: &signature,
+                    },
                     &packet.submitter,
-                    &packet.tag,
                 );
                 if packet.submitter == self.id {
                     let cb = self
@@ -297,12 +251,16 @@ impl Core {
                         .take_chain_callback(&packet.request_id);
                     if let Some(cb) = cb {
                         match res {
-                            Ok((status, value)) => {
+                            Ok(value) => {
                                 let data = serde_json::to_vec(&value).unwrap_or_default();
-                                (cb.fn_)(data, status, None);
+                                (cb.fn_)(data, 0, None);
                             }
-                            Err(e) => {
-                                (cb.fn_)(b"{}".to_vec(), 500, Some(e));
+                            Err(refusal) => {
+                                (cb.fn_)(
+                                    b"{}".to_vec(),
+                                    500,
+                                    Some(anyhow::anyhow!(refusal.message())),
+                                );
                             }
                         }
                     }

@@ -1,6 +1,6 @@
 [package]
 name = "aseman-guest-http"
-description = "The guest API transport (A405, P5-04): the node's signed-request server and the workload-side client."
+description = "The guest API transport (A405): the node's signed-request server and the workload-side client."
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true

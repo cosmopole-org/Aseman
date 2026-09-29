@@ -50,12 +50,17 @@ class PhaseTwoModuleContractTests(unittest.TestCase):
         cli = (ROOT / "apps/asemanctl/src/cli/modules.rs").read_text()
         # The storage provider's listener serves injected routes and never without a
         # token (ADR 0033); the node injects module administration as such a route.
+        # Both listeners are aseman-admin-http: mutual TLS, then the token (ADR 0037).
         server = (ROOT / "modules/storage/rocksdb/src/cluster/server.rs").read_text()
+        admin_http = (ROOT / "crates/aseman-admin-http/src/lib.rs").read_text()
         backend = (ROOT / "apps/aseman-node/src/adapters/module_admin.rs").read_text()
         self.assertIn("bearerAuth", contract)
         self.assertIn("artifactBase64", cli)
         self.assertIn("requires a configured cluster auth token", server)
-        self.assertIn("start_route_listener", server)
+        self.assertIn("aseman_admin_http::serve(", server)
+        self.assertIn("pub fn serve_routes", admin_http)
+        self.assertIn("requires an auth token", admin_http)
+        self.assertIn("WebPkiClientVerifier", admin_http)
         self.assertIn("/v1/admin/modules", backend)
         self.assertIn("fn route_handler", backend)
         self.assertIn("impl ModuleAdministration for ModuleAdminService", backend)

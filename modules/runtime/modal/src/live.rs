@@ -13,7 +13,7 @@
 //! They are `#[ignore]`d: they cost real Modal resources and need credentials.
 //!
 //!     MODAL_TOKEN_ID=… MODAL_TOKEN_SECRET=… \
-//!       cargo test -p caspar-vm-modal --ignored -- --nocapture --test-threads=1
+//!       cargo test -p aseman-vm-modal --ignored -- --nocapture --test-threads=1
 //!
 //! Each test cleans up the sandbox and volume it created, including on the
 //! failure paths, so a failed run does not leave a machine billing.
@@ -23,10 +23,11 @@ use std::sync::{Arc, Mutex};
 
 use serde_json::{json, Value};
 
-use caspar_vm_sdk::host::{set_host, KvOp, VmHost};
-use caspar_vm_sdk::{VmPlugin, VmPluginMeta};
+use aseman_vm_sdk::host::{set_host, KvOp, VmHost};
+use aseman_vm_sdk::{VmPlugin, VmPluginMeta};
 
 use crate::controller::ModalVmPlugin;
+use crate::settings::ModalSettings;
 
 /// The node's state layer, in a HashMap.
 ///
@@ -119,6 +120,29 @@ impl VmHost for MemoryHost {
     }
 }
 
+/// The runtime settings of a live run. Live tests take their Modal credentials from
+/// the environment they are run in (`MODAL_TOKEN_ID`, `MODAL_TOKEN_SECRET`) and hand
+/// them to the plugin as secret files, as an installed backend receives them.
+fn live_config() -> aseman_config::RuntimeConfig {
+    let test = aseman_config::IntegrationTestConfig::from_process();
+    let secret = |name: &str, value: Option<String>| -> Option<std::path::PathBuf> {
+        let directory = std::env::temp_dir().join(format!("modal-live-{}", std::process::id()));
+        std::fs::create_dir_all(&directory).expect("secret directory");
+        let path = directory.join(name);
+        std::fs::write(&path, value?).expect("secret file");
+        Some(path)
+    };
+    aseman_config::RuntimeConfig {
+        modal_token_id_secret: secret("modal-token-id", test.modal_token_id),
+        modal_token_secret_secret: secret("modal-token-secret", test.modal_token_secret),
+        ..aseman_config::RuntimeConfig::default()
+    }
+}
+
+fn live_settings() -> ModalSettings {
+    ModalSettings::from_config(&live_config())
+}
+
 /// The plugin, wired to an in-memory host, as the node would wire it.
 fn plugin() -> ModalVmPlugin {
     // `set_host` is a OnceLock: the first test to run publishes the host and
@@ -126,11 +150,17 @@ fn plugin() -> ModalVmPlugin {
     set_host(Arc::new(MemoryHost::default()));
     let meta = VmPluginMeta::from_config_str(include_str!("../vm.config.json"))
         .expect("vm.config.json is invalid");
-    ModalVmPlugin::new(meta)
+    ModalVmPlugin::new(meta, live_settings())
 }
 
 fn have_credentials() -> bool {
-    crate::client::is_configured()
+    live_settings().is_configured()
+}
+
+/// A connection with this process's credentials.
+fn live_connection() -> crate::client::ModalConn {
+    crate::client::connect(&live_settings(), &crate::client::ChannelCache::default())
+        .expect("connect")
 }
 
 /// A vm id unique to this run, so concurrent/repeat runs never collide on
@@ -424,12 +454,12 @@ fn a_stale_cached_app_id_is_replaced() {
     let machine_id = format!("caspar-live-stale-app-{}", uuid::Uuid::new_v4().simple());
     let vm_id = scratch_vm_id("stale-app");
     let stale_app_id = "ap-disabled-cache";
-    let state = caspar_vm_sdk::host::host().expect("test host");
+    let state = aseman_vm_sdk::host::host().expect("test host");
     state
         .state_apply_ops(&[
             KvOp {
                 op: "put".to_string(),
-                key: crate::models::shared_app_link_key(),
+                key: live_settings().shared_app_link_key(),
                 val: stale_app_id.to_string(),
             },
             KvOp {
@@ -463,7 +493,7 @@ fn modal_accepts_our_client_version() {
         eprintln!("skipping: MODAL_TOKEN_ID / MODAL_TOKEN_SECRET are not set");
         return;
     }
-    let mut conn = crate::client::connect().expect("connect");
+    let mut conn = live_connection();
     let res = crate::client::block_on(conn.stub.app_get_or_create(
         crate::proto::AppGetOrCreateRequest {
             app_name: "caspar-live-version-check".to_string(),
@@ -476,7 +506,7 @@ fn modal_accepts_our_client_version() {
         Ok(ok) => assert!(!ok.into_inner().app_id.is_empty(), "no app id returned"),
         Err(status) => panic!(
             "Modal refused the client version this plugin sends ({}): {}",
-            crate::client::client_version(),
+            live_settings().client_version,
             status.message(),
         ),
     }
@@ -577,7 +607,7 @@ fn a_slept_machine_is_woken_with_its_files() {
     }
 }
 
-/// The exact production shape: Modal itself expires the task, then Caspar
+/// The exact production shape: Modal itself expires the task, then Aseman
 /// accepts a detached replacement. No exec may keep targeting the expired id
 /// while that replacement is being created.
 #[test]
@@ -746,14 +776,14 @@ fn a_machine_publishes_reachable_endpoints() {
 /// `/var/log/decillion/bridge.log` — outside `/data`, so `spaces/files` cannot
 /// reach it by design. When a project reports its runtime as "installing"
 /// forever there is otherwise nothing to look at, which is exactly when
-/// somebody needs to look. The sandbox is found by the `caspar-vm-id` tag the
+/// somebody needs to look. The sandbox is found by the `aseman-vm-id` tag the
 /// plugin stamps at create time, so only the vm id (and the app's machine id)
 /// is needed — no node state.
 ///
 ///     MODAL_TOKEN_ID=… MODAL_TOKEN_SECRET=… \
 ///     PROBE_MACHINE_ID='11@store' PROBE_VM_ID='12@spaces.vm' \
 ///     PROBE_CMD='tail -50 /var/log/decillion/bridge.log' \
-///       cargo test -p caspar-vm-modal probe_project_machine -- --ignored --nocapture
+///       cargo test -p aseman-vm-modal probe_project_machine -- --ignored --nocapture
 #[test]
 #[ignore]
 fn probe_project_machine() {
@@ -761,19 +791,21 @@ fn probe_project_machine() {
         eprintln!("skipping: MODAL_TOKEN_ID / MODAL_TOKEN_SECRET are not set");
         return;
     }
-    let config = aseman_config::runtime_config();
-    let machine_id = config.probe_machine_id;
-    let vm_id = config.probe_vm_id;
-    let command = config.probe_command;
+    let test = aseman_config::IntegrationTestConfig::from_process();
+    let machine_id = test.probe_machine_id.unwrap_or_default();
+    let vm_id = test.probe_vm_id.unwrap_or_default();
+    let command = test
+        .probe_command
+        .unwrap_or_else(|| "tail -60 /var/log/decillion/bridge.log 2>&1".to_owned());
     if machine_id.is_empty() || vm_id.is_empty() {
         eprintln!("set PROBE_MACHINE_ID and PROBE_VM_ID");
         return;
     }
 
-    let mut conn = crate::client::connect().expect("connect");
+    let mut conn = live_connection();
     let app_id = crate::client::block_on(conn.stub.app_get_or_create(
         crate::proto::AppGetOrCreateRequest {
-            app_name: crate::models::modal_app_name(),
+            app_name: live_settings().app_name,
             environment_name: conn.environment.clone(),
             object_creation_type: crate::proto::ObjectCreationType::CreateIfMissing as i32,
         },
@@ -797,17 +829,17 @@ fn probe_project_machine() {
     let sandbox = listed.sandboxes.into_iter().find(|s| {
         s.tags
             .iter()
-            .any(|t| t.tag_name == "caspar-vm-id" && t.tag_value == vm_id)
+            .any(|t| t.tag_name == "aseman-vm-id" && t.tag_value == vm_id)
     });
     let Some(sandbox) = sandbox else {
-        println!("no live sandbox tagged caspar-vm-id={}", vm_id);
+        println!("no live sandbox tagged aseman-vm-id={}", vm_id);
         return;
     };
     println!("sandbox {} for vm {}", sandbox.id, vm_id);
 
     // Reuse the plugin's own exec so what is observed is what the platform does.
     set_host(Arc::new(MemoryHost::default()));
-    if let Some(h) = caspar_vm_sdk::host::host() {
+    if let Some(h) = aseman_vm_sdk::host::host() {
         let _ = h.state_apply_ops(&[KvOp {
             op: "put".into(),
             key: crate::models::sandbox_link_key(&vm_id),
@@ -816,7 +848,7 @@ fn probe_project_machine() {
     }
     let plugin = {
         let meta = VmPluginMeta::from_config_str(include_str!("../vm.config.json")).unwrap();
-        ModalVmPlugin::new(meta)
+        ModalVmPlugin::new(meta, live_settings())
     };
     let out = plugin
         .exec_vm(&exec_packet(&machine_id, &vm_id, &command))

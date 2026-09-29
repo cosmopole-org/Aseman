@@ -1,6 +1,6 @@
 //! The host-side API surface a VM plugin may call.
 //!
-//! The Caspar node implements [`VmHost`] once (backed by its canonical
+//! The Aseman node implements [`VmHost`] once (backed by its canonical
 //! `ICore → tools() → vmm()` object graph) and publishes it through
 //! [`set_host`] during VMM initialisation. Plugins never see node internals —
 //! everything they need flows through this trait, which lets the compiler
@@ -21,7 +21,7 @@ pub struct KvOp {
     pub val: String,
 }
 
-/// Host services exposed by the Caspar VMM to VM plugins.
+/// Host services exposed by the Aseman VMM to VM plugins.
 pub trait VmHost: Send + Sync {
     // ── Packet dispatch ───────────────────────────────────────────────────
     /// Route a VM packet through the VMM's unified packet router. This is the
@@ -91,7 +91,7 @@ pub trait VmHost: Send + Sync {
 
 static HOST: OnceLock<Arc<dyn VmHost>> = OnceLock::new();
 
-/// Publish the host implementation. Called once by the Caspar node during
+/// Publish the host implementation. Called once by the Aseman node during
 /// VMM initialisation; later calls are ignored.
 pub fn set_host(host: Arc<dyn VmHost>) {
     let _ = HOST.set(host);
@@ -105,7 +105,7 @@ pub fn host() -> Option<Arc<dyn VmHost>> {
 /// The published host or a uniform error for plugin code paths that must
 /// surface failure as `Result`.
 pub fn host_or_err() -> Result<Arc<dyn VmHost>, String> {
-    host().ok_or_else(|| "caspar vm host is not initialised".to_string())
+    host().ok_or_else(|| "the VM host is not initialised".to_string())
 }
 
 // ── Logging helpers (shared across plugins) ───────────────────────────────

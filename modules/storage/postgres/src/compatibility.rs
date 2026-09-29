@@ -3,7 +3,7 @@
 //! adapter was replaced by the storage module, and `asemanctl storage migrate`
 //! converts what remains and retires the schema.
 
-use postgres::NoTls;
+use aseman_postgres::Database;
 
 use crate::{StorageResult, map_postgres_error};
 
@@ -11,8 +11,10 @@ use crate::{StorageResult, map_postgres_error};
 /// value bytes)` in key order: the source of `asemanctl storage migrate` for a
 /// PostgreSQL store from before ADR 0036.
 pub fn legacy_records(connection_uri: &str) -> StorageResult<Vec<(String, Vec<u8>)>> {
-    let mut client =
-        postgres::Client::connect(connection_uri, NoTls).map_err(map_postgres_error)?;
+    let mut client = Database::parse(connection_uri)
+        .map_err(crate::PostgresStorageError::Unavailable)?
+        .connect()
+        .map_err(map_postgres_error)?;
     let present: bool = client
         .query_one("SELECT to_regnamespace('aseman_compat') IS NOT NULL", &[])
         .map_err(map_postgres_error)?

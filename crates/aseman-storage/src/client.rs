@@ -1468,6 +1468,265 @@ pub mod core {
         }
     }
 
+    /// `core.coordination_fence`.
+    pub mod coordination_fence {
+        use crate::error::StorageResult;
+        use crate::query::Unique;
+        use crate::typed::{self, Field, Update};
+        use crate::value::{Data, Id, Row, Value};
+
+        pub const NAME: &str = "core.coordination_fence";
+
+        /// A `core.coordination_fence` record.
+        #[derive(Clone, Debug, PartialEq)]
+        pub struct CoordinationFence {
+            pub id: Id,
+            pub revision: u64,
+            /// When the record was created and last written (not model fields).
+            pub record_created_micros: i64,
+            pub record_updated_micros: i64,
+            pub key: String,
+            pub token: i64,
+        }
+
+        /// The values `create` takes.
+        #[derive(Clone, Debug, Default, PartialEq)]
+        pub struct Create {
+            pub key: String,
+            pub token: i64,
+        }
+
+        impl From<Create> for Data {
+            fn from(create: Create) -> Data {
+                let mut data = Data::new();
+                data.insert("key".to_owned(), Value::from(create.key));
+                data.insert("token".to_owned(), Value::from(create.token));
+                data
+            }
+        }
+
+        impl typed::Model for CoordinationFence {
+            const NAME: &'static str = NAME;
+            type Create = Create;
+
+            fn from_row(row: Row) -> StorageResult<Self> {
+                Ok(Self {
+                    key: typed::required(&row, NAME, "key")?,
+                    token: typed::required(&row, NAME, "token")?,
+                    id: row.id,
+                    revision: row.revision,
+                    record_created_micros: row.created_at_micros,
+                    record_updated_micros: row.updated_at_micros,
+                })
+            }
+        }
+
+        /// The record id.
+        #[must_use]
+        pub const fn id() -> Field<Id> {
+            Field::new("id")
+        }
+
+        #[must_use]
+        pub const fn key() -> Field<String> {
+            Field::new("key")
+        }
+
+        #[must_use]
+        pub const fn token() -> Field<i64> {
+            Field::new("token")
+        }
+
+        /// An update: set fields, or clear optional ones with `None`.
+        #[derive(Clone, Debug, Default, PartialEq)]
+        pub struct Updater(Update);
+
+        #[must_use]
+        pub fn update() -> Updater {
+            Updater::default()
+        }
+
+        impl Updater {
+            #[must_use]
+            pub fn key(self, value: impl Into<String>) -> Self {
+                Self(self.0.set("key", value.into()))
+            }
+            #[must_use]
+            pub fn token(self, value: impl Into<i64>) -> Self {
+                Self(self.0.set("token", value.into()))
+            }
+        }
+
+        impl From<Updater> for Update {
+            fn from(updater: Updater) -> Update {
+                updater.0
+            }
+        }
+
+        #[must_use]
+        pub fn by_id(id: Id) -> Unique {
+            Unique::Id(id)
+        }
+
+        /// The record with this natural key.
+        #[must_use]
+        pub fn by_key(key: impl Into<String>) -> Unique {
+            Unique::Key(key.into())
+        }
+    }
+
+    /// `core.coordination_lease`.
+    pub mod coordination_lease {
+        use crate::error::StorageResult;
+        use crate::query::Unique;
+        use crate::typed::{self, Field, Update};
+        use crate::value::{Data, Id, Row, Value};
+
+        pub const NAME: &str = "core.coordination_lease";
+
+        /// A `core.coordination_lease` record.
+        #[derive(Clone, Debug, PartialEq)]
+        pub struct CoordinationLease {
+            pub id: Id,
+            pub revision: u64,
+            /// When the record was created and last written (not model fields).
+            pub record_created_micros: i64,
+            pub record_updated_micros: i64,
+            pub key: String,
+            pub instance: String,
+            pub token: i64,
+            pub acquired_at_millis: i64,
+            pub expires_at_millis: i64,
+        }
+
+        /// The values `create` takes.
+        #[derive(Clone, Debug, Default, PartialEq)]
+        pub struct Create {
+            pub key: String,
+            pub instance: String,
+            pub token: i64,
+            pub acquired_at_millis: i64,
+            pub expires_at_millis: i64,
+        }
+
+        impl From<Create> for Data {
+            fn from(create: Create) -> Data {
+                let mut data = Data::new();
+                data.insert("key".to_owned(), Value::from(create.key));
+                data.insert("instance".to_owned(), Value::from(create.instance));
+                data.insert("token".to_owned(), Value::from(create.token));
+                data.insert(
+                    "acquired_at_millis".to_owned(),
+                    Value::from(create.acquired_at_millis),
+                );
+                data.insert(
+                    "expires_at_millis".to_owned(),
+                    Value::from(create.expires_at_millis),
+                );
+                data
+            }
+        }
+
+        impl typed::Model for CoordinationLease {
+            const NAME: &'static str = NAME;
+            type Create = Create;
+
+            fn from_row(row: Row) -> StorageResult<Self> {
+                Ok(Self {
+                    key: typed::required(&row, NAME, "key")?,
+                    instance: typed::required(&row, NAME, "instance")?,
+                    token: typed::required(&row, NAME, "token")?,
+                    acquired_at_millis: typed::required(&row, NAME, "acquired_at_millis")?,
+                    expires_at_millis: typed::required(&row, NAME, "expires_at_millis")?,
+                    id: row.id,
+                    revision: row.revision,
+                    record_created_micros: row.created_at_micros,
+                    record_updated_micros: row.updated_at_micros,
+                })
+            }
+        }
+
+        /// The record id.
+        #[must_use]
+        pub const fn id() -> Field<Id> {
+            Field::new("id")
+        }
+
+        #[must_use]
+        pub const fn key() -> Field<String> {
+            Field::new("key")
+        }
+
+        #[must_use]
+        pub const fn instance() -> Field<String> {
+            Field::new("instance")
+        }
+
+        #[must_use]
+        pub const fn token() -> Field<i64> {
+            Field::new("token")
+        }
+
+        #[must_use]
+        pub const fn acquired_at_millis() -> Field<i64> {
+            Field::new("acquired_at_millis")
+        }
+
+        #[must_use]
+        pub const fn expires_at_millis() -> Field<i64> {
+            Field::new("expires_at_millis")
+        }
+
+        /// An update: set fields, or clear optional ones with `None`.
+        #[derive(Clone, Debug, Default, PartialEq)]
+        pub struct Updater(Update);
+
+        #[must_use]
+        pub fn update() -> Updater {
+            Updater::default()
+        }
+
+        impl Updater {
+            #[must_use]
+            pub fn key(self, value: impl Into<String>) -> Self {
+                Self(self.0.set("key", value.into()))
+            }
+            #[must_use]
+            pub fn instance(self, value: impl Into<String>) -> Self {
+                Self(self.0.set("instance", value.into()))
+            }
+            #[must_use]
+            pub fn token(self, value: impl Into<i64>) -> Self {
+                Self(self.0.set("token", value.into()))
+            }
+            #[must_use]
+            pub fn acquired_at_millis(self, value: impl Into<i64>) -> Self {
+                Self(self.0.set("acquired_at_millis", value.into()))
+            }
+            #[must_use]
+            pub fn expires_at_millis(self, value: impl Into<i64>) -> Self {
+                Self(self.0.set("expires_at_millis", value.into()))
+            }
+        }
+
+        impl From<Updater> for Update {
+            fn from(updater: Updater) -> Update {
+                updater.0
+            }
+        }
+
+        #[must_use]
+        pub fn by_id(id: Id) -> Unique {
+            Unique::Id(id)
+        }
+
+        /// The record with this natural key.
+        #[must_use]
+        pub fn by_key(key: impl Into<String>) -> Unique {
+            Unique::Key(key.into())
+        }
+    }
+
     /// `core.counter`.
     pub mod counter {
         use crate::error::StorageResult;
@@ -2744,6 +3003,375 @@ pub mod core {
         }
     }
 
+    /// `core.federation_answer`.
+    pub mod federation_answer {
+        use crate::error::StorageResult;
+        use crate::query::Unique;
+        use crate::typed::{self, Field, Update};
+        use crate::value::{Data, Id, Row, Value};
+
+        pub const NAME: &str = "core.federation_answer";
+
+        /// A `core.federation_answer` record.
+        #[derive(Clone, Debug, PartialEq)]
+        pub struct FederationAnswer {
+            pub id: Id,
+            pub revision: u64,
+            /// When the record was created and last written (not model fields).
+            pub record_created_micros: i64,
+            pub record_updated_micros: i64,
+            pub key: String,
+            pub answer: String,
+            pub expires_at_millis: i64,
+        }
+
+        /// The values `create` takes.
+        #[derive(Clone, Debug, Default, PartialEq)]
+        pub struct Create {
+            pub key: String,
+            pub answer: String,
+            pub expires_at_millis: i64,
+        }
+
+        impl From<Create> for Data {
+            fn from(create: Create) -> Data {
+                let mut data = Data::new();
+                data.insert("key".to_owned(), Value::from(create.key));
+                data.insert("answer".to_owned(), Value::from(create.answer));
+                data.insert(
+                    "expires_at_millis".to_owned(),
+                    Value::from(create.expires_at_millis),
+                );
+                data
+            }
+        }
+
+        impl typed::Model for FederationAnswer {
+            const NAME: &'static str = NAME;
+            type Create = Create;
+
+            fn from_row(row: Row) -> StorageResult<Self> {
+                Ok(Self {
+                    key: typed::required(&row, NAME, "key")?,
+                    answer: typed::required(&row, NAME, "answer")?,
+                    expires_at_millis: typed::required(&row, NAME, "expires_at_millis")?,
+                    id: row.id,
+                    revision: row.revision,
+                    record_created_micros: row.created_at_micros,
+                    record_updated_micros: row.updated_at_micros,
+                })
+            }
+        }
+
+        /// The record id.
+        #[must_use]
+        pub const fn id() -> Field<Id> {
+            Field::new("id")
+        }
+
+        #[must_use]
+        pub const fn key() -> Field<String> {
+            Field::new("key")
+        }
+
+        #[must_use]
+        pub const fn answer() -> Field<String> {
+            Field::new("answer")
+        }
+
+        #[must_use]
+        pub const fn expires_at_millis() -> Field<i64> {
+            Field::new("expires_at_millis")
+        }
+
+        /// An update: set fields, or clear optional ones with `None`.
+        #[derive(Clone, Debug, Default, PartialEq)]
+        pub struct Updater(Update);
+
+        #[must_use]
+        pub fn update() -> Updater {
+            Updater::default()
+        }
+
+        impl Updater {
+            #[must_use]
+            pub fn key(self, value: impl Into<String>) -> Self {
+                Self(self.0.set("key", value.into()))
+            }
+            #[must_use]
+            pub fn answer(self, value: impl Into<String>) -> Self {
+                Self(self.0.set("answer", value.into()))
+            }
+            #[must_use]
+            pub fn expires_at_millis(self, value: impl Into<i64>) -> Self {
+                Self(self.0.set("expires_at_millis", value.into()))
+            }
+        }
+
+        impl From<Updater> for Update {
+            fn from(updater: Updater) -> Update {
+                updater.0
+            }
+        }
+
+        #[must_use]
+        pub fn by_id(id: Id) -> Unique {
+            Unique::Id(id)
+        }
+
+        /// The record with this natural key.
+        #[must_use]
+        pub fn by_key(key: impl Into<String>) -> Unique {
+            Unique::Key(key.into())
+        }
+    }
+
+    /// `core.federation_node_descriptor`.
+    pub mod federation_node_descriptor {
+        use crate::error::StorageResult;
+        use crate::query::Unique;
+        use crate::typed::{self, Field, Update};
+        use crate::value::{Data, Id, Row, Value};
+
+        pub const NAME: &str = "core.federation_node_descriptor";
+
+        /// A `core.federation_node_descriptor` record.
+        #[derive(Clone, Debug, PartialEq)]
+        pub struct FederationNodeDescriptor {
+            pub id: Id,
+            pub revision: u64,
+            /// When the record was created and last written (not model fields).
+            pub record_created_micros: i64,
+            pub record_updated_micros: i64,
+            pub key: String,
+            pub sequence: i64,
+            pub expires_at_millis: i64,
+            pub descriptor: String,
+        }
+
+        /// The values `create` takes.
+        #[derive(Clone, Debug, Default, PartialEq)]
+        pub struct Create {
+            pub key: String,
+            pub sequence: i64,
+            pub expires_at_millis: i64,
+            pub descriptor: String,
+        }
+
+        impl From<Create> for Data {
+            fn from(create: Create) -> Data {
+                let mut data = Data::new();
+                data.insert("key".to_owned(), Value::from(create.key));
+                data.insert("sequence".to_owned(), Value::from(create.sequence));
+                data.insert(
+                    "expires_at_millis".to_owned(),
+                    Value::from(create.expires_at_millis),
+                );
+                data.insert("descriptor".to_owned(), Value::from(create.descriptor));
+                data
+            }
+        }
+
+        impl typed::Model for FederationNodeDescriptor {
+            const NAME: &'static str = NAME;
+            type Create = Create;
+
+            fn from_row(row: Row) -> StorageResult<Self> {
+                Ok(Self {
+                    key: typed::required(&row, NAME, "key")?,
+                    sequence: typed::required(&row, NAME, "sequence")?,
+                    expires_at_millis: typed::required(&row, NAME, "expires_at_millis")?,
+                    descriptor: typed::required(&row, NAME, "descriptor")?,
+                    id: row.id,
+                    revision: row.revision,
+                    record_created_micros: row.created_at_micros,
+                    record_updated_micros: row.updated_at_micros,
+                })
+            }
+        }
+
+        /// The record id.
+        #[must_use]
+        pub const fn id() -> Field<Id> {
+            Field::new("id")
+        }
+
+        #[must_use]
+        pub const fn key() -> Field<String> {
+            Field::new("key")
+        }
+
+        #[must_use]
+        pub const fn sequence() -> Field<i64> {
+            Field::new("sequence")
+        }
+
+        #[must_use]
+        pub const fn expires_at_millis() -> Field<i64> {
+            Field::new("expires_at_millis")
+        }
+
+        #[must_use]
+        pub const fn descriptor() -> Field<String> {
+            Field::new("descriptor")
+        }
+
+        /// An update: set fields, or clear optional ones with `None`.
+        #[derive(Clone, Debug, Default, PartialEq)]
+        pub struct Updater(Update);
+
+        #[must_use]
+        pub fn update() -> Updater {
+            Updater::default()
+        }
+
+        impl Updater {
+            #[must_use]
+            pub fn key(self, value: impl Into<String>) -> Self {
+                Self(self.0.set("key", value.into()))
+            }
+            #[must_use]
+            pub fn sequence(self, value: impl Into<i64>) -> Self {
+                Self(self.0.set("sequence", value.into()))
+            }
+            #[must_use]
+            pub fn expires_at_millis(self, value: impl Into<i64>) -> Self {
+                Self(self.0.set("expires_at_millis", value.into()))
+            }
+            #[must_use]
+            pub fn descriptor(self, value: impl Into<String>) -> Self {
+                Self(self.0.set("descriptor", value.into()))
+            }
+        }
+
+        impl From<Updater> for Update {
+            fn from(updater: Updater) -> Update {
+                updater.0
+            }
+        }
+
+        #[must_use]
+        pub fn by_id(id: Id) -> Unique {
+            Unique::Id(id)
+        }
+
+        /// The record with this natural key.
+        #[must_use]
+        pub fn by_key(key: impl Into<String>) -> Unique {
+            Unique::Key(key.into())
+        }
+    }
+
+    /// `core.federation_nonce`.
+    pub mod federation_nonce {
+        use crate::error::StorageResult;
+        use crate::query::Unique;
+        use crate::typed::{self, Field, Update};
+        use crate::value::{Data, Id, Row, Value};
+
+        pub const NAME: &str = "core.federation_nonce";
+
+        /// A `core.federation_nonce` record.
+        #[derive(Clone, Debug, PartialEq)]
+        pub struct FederationNonce {
+            pub id: Id,
+            pub revision: u64,
+            /// When the record was created and last written (not model fields).
+            pub record_created_micros: i64,
+            pub record_updated_micros: i64,
+            pub key: String,
+            pub expires_at_millis: i64,
+        }
+
+        /// The values `create` takes.
+        #[derive(Clone, Debug, Default, PartialEq)]
+        pub struct Create {
+            pub key: String,
+            pub expires_at_millis: i64,
+        }
+
+        impl From<Create> for Data {
+            fn from(create: Create) -> Data {
+                let mut data = Data::new();
+                data.insert("key".to_owned(), Value::from(create.key));
+                data.insert(
+                    "expires_at_millis".to_owned(),
+                    Value::from(create.expires_at_millis),
+                );
+                data
+            }
+        }
+
+        impl typed::Model for FederationNonce {
+            const NAME: &'static str = NAME;
+            type Create = Create;
+
+            fn from_row(row: Row) -> StorageResult<Self> {
+                Ok(Self {
+                    key: typed::required(&row, NAME, "key")?,
+                    expires_at_millis: typed::required(&row, NAME, "expires_at_millis")?,
+                    id: row.id,
+                    revision: row.revision,
+                    record_created_micros: row.created_at_micros,
+                    record_updated_micros: row.updated_at_micros,
+                })
+            }
+        }
+
+        /// The record id.
+        #[must_use]
+        pub const fn id() -> Field<Id> {
+            Field::new("id")
+        }
+
+        #[must_use]
+        pub const fn key() -> Field<String> {
+            Field::new("key")
+        }
+
+        #[must_use]
+        pub const fn expires_at_millis() -> Field<i64> {
+            Field::new("expires_at_millis")
+        }
+
+        /// An update: set fields, or clear optional ones with `None`.
+        #[derive(Clone, Debug, Default, PartialEq)]
+        pub struct Updater(Update);
+
+        #[must_use]
+        pub fn update() -> Updater {
+            Updater::default()
+        }
+
+        impl Updater {
+            #[must_use]
+            pub fn key(self, value: impl Into<String>) -> Self {
+                Self(self.0.set("key", value.into()))
+            }
+            #[must_use]
+            pub fn expires_at_millis(self, value: impl Into<i64>) -> Self {
+                Self(self.0.set("expires_at_millis", value.into()))
+            }
+        }
+
+        impl From<Updater> for Update {
+            fn from(updater: Updater) -> Update {
+                updater.0
+            }
+        }
+
+        #[must_use]
+        pub fn by_id(id: Id) -> Unique {
+            Unique::Id(id)
+        }
+
+        /// The record with this natural key.
+        #[must_use]
+        pub fn by_key(key: impl Into<String>) -> Unique {
+            Unique::Key(key.into())
+        }
+    }
+
     /// `core.federation_peer`.
     pub mod federation_peer {
         use crate::error::StorageResult;
@@ -2876,6 +3504,145 @@ pub mod core {
         #[must_use]
         pub fn by_origin(origin: impl Into<String>) -> Unique {
             Unique::fields([("origin", Value::from(origin.into()))])
+        }
+    }
+
+    /// `core.federation_workload_descriptor`.
+    pub mod federation_workload_descriptor {
+        use crate::error::StorageResult;
+        use crate::query::Unique;
+        use crate::typed::{self, Field, Update};
+        use crate::value::{Data, Id, Row, Value};
+
+        pub const NAME: &str = "core.federation_workload_descriptor";
+
+        /// A `core.federation_workload_descriptor` record.
+        #[derive(Clone, Debug, PartialEq)]
+        pub struct FederationWorkloadDescriptor {
+            pub id: Id,
+            pub revision: u64,
+            /// When the record was created and last written (not model fields).
+            pub record_created_micros: i64,
+            pub record_updated_micros: i64,
+            pub key: String,
+            pub workload_revision: i64,
+            pub expires_at_millis: i64,
+            pub descriptor: String,
+        }
+
+        /// The values `create` takes.
+        #[derive(Clone, Debug, Default, PartialEq)]
+        pub struct Create {
+            pub key: String,
+            pub workload_revision: i64,
+            pub expires_at_millis: i64,
+            pub descriptor: String,
+        }
+
+        impl From<Create> for Data {
+            fn from(create: Create) -> Data {
+                let mut data = Data::new();
+                data.insert("key".to_owned(), Value::from(create.key));
+                data.insert(
+                    "workload_revision".to_owned(),
+                    Value::from(create.workload_revision),
+                );
+                data.insert(
+                    "expires_at_millis".to_owned(),
+                    Value::from(create.expires_at_millis),
+                );
+                data.insert("descriptor".to_owned(), Value::from(create.descriptor));
+                data
+            }
+        }
+
+        impl typed::Model for FederationWorkloadDescriptor {
+            const NAME: &'static str = NAME;
+            type Create = Create;
+
+            fn from_row(row: Row) -> StorageResult<Self> {
+                Ok(Self {
+                    key: typed::required(&row, NAME, "key")?,
+                    workload_revision: typed::required(&row, NAME, "workload_revision")?,
+                    expires_at_millis: typed::required(&row, NAME, "expires_at_millis")?,
+                    descriptor: typed::required(&row, NAME, "descriptor")?,
+                    id: row.id,
+                    revision: row.revision,
+                    record_created_micros: row.created_at_micros,
+                    record_updated_micros: row.updated_at_micros,
+                })
+            }
+        }
+
+        /// The record id.
+        #[must_use]
+        pub const fn id() -> Field<Id> {
+            Field::new("id")
+        }
+
+        #[must_use]
+        pub const fn key() -> Field<String> {
+            Field::new("key")
+        }
+
+        #[must_use]
+        pub const fn workload_revision() -> Field<i64> {
+            Field::new("workload_revision")
+        }
+
+        #[must_use]
+        pub const fn expires_at_millis() -> Field<i64> {
+            Field::new("expires_at_millis")
+        }
+
+        #[must_use]
+        pub const fn descriptor() -> Field<String> {
+            Field::new("descriptor")
+        }
+
+        /// An update: set fields, or clear optional ones with `None`.
+        #[derive(Clone, Debug, Default, PartialEq)]
+        pub struct Updater(Update);
+
+        #[must_use]
+        pub fn update() -> Updater {
+            Updater::default()
+        }
+
+        impl Updater {
+            #[must_use]
+            pub fn key(self, value: impl Into<String>) -> Self {
+                Self(self.0.set("key", value.into()))
+            }
+            #[must_use]
+            pub fn workload_revision(self, value: impl Into<i64>) -> Self {
+                Self(self.0.set("workload_revision", value.into()))
+            }
+            #[must_use]
+            pub fn expires_at_millis(self, value: impl Into<i64>) -> Self {
+                Self(self.0.set("expires_at_millis", value.into()))
+            }
+            #[must_use]
+            pub fn descriptor(self, value: impl Into<String>) -> Self {
+                Self(self.0.set("descriptor", value.into()))
+            }
+        }
+
+        impl From<Updater> for Update {
+            fn from(updater: Updater) -> Update {
+                updater.0
+            }
+        }
+
+        #[must_use]
+        pub fn by_id(id: Id) -> Unique {
+            Unique::Id(id)
+        }
+
+        /// The record with this natural key.
+        #[must_use]
+        pub fn by_key(key: impl Into<String>) -> Unique {
+            Unique::Key(key.into())
         }
     }
 
@@ -5397,6 +6164,290 @@ pub mod core {
         }
     }
 
+    /// `core.journal_entry`.
+    pub mod journal_entry {
+        use crate::error::StorageResult;
+        use crate::query::Unique;
+        use crate::typed::{self, Field, Update};
+        use crate::value::{Data, Id, Row, Value};
+
+        pub const NAME: &str = "core.journal_entry";
+
+        /// A `core.journal_entry` record.
+        #[derive(Clone, Debug, PartialEq)]
+        pub struct JournalEntry {
+            pub id: Id,
+            pub revision: u64,
+            /// When the record was created and last written (not model fields).
+            pub record_created_micros: i64,
+            pub record_updated_micros: i64,
+            pub key: String,
+            pub record_key: String,
+            pub ordinal: i64,
+            pub account: String,
+            pub amount: i64,
+        }
+
+        /// The values `create` takes.
+        #[derive(Clone, Debug, Default, PartialEq)]
+        pub struct Create {
+            pub key: String,
+            pub record_key: String,
+            pub ordinal: i64,
+            pub account: String,
+            pub amount: i64,
+        }
+
+        impl From<Create> for Data {
+            fn from(create: Create) -> Data {
+                let mut data = Data::new();
+                data.insert("key".to_owned(), Value::from(create.key));
+                data.insert("record_key".to_owned(), Value::from(create.record_key));
+                data.insert("ordinal".to_owned(), Value::from(create.ordinal));
+                data.insert("account".to_owned(), Value::from(create.account));
+                data.insert("amount".to_owned(), Value::from(create.amount));
+                data
+            }
+        }
+
+        impl typed::Model for JournalEntry {
+            const NAME: &'static str = NAME;
+            type Create = Create;
+
+            fn from_row(row: Row) -> StorageResult<Self> {
+                Ok(Self {
+                    key: typed::required(&row, NAME, "key")?,
+                    record_key: typed::required(&row, NAME, "record_key")?,
+                    ordinal: typed::required(&row, NAME, "ordinal")?,
+                    account: typed::required(&row, NAME, "account")?,
+                    amount: typed::required(&row, NAME, "amount")?,
+                    id: row.id,
+                    revision: row.revision,
+                    record_created_micros: row.created_at_micros,
+                    record_updated_micros: row.updated_at_micros,
+                })
+            }
+        }
+
+        /// The record id.
+        #[must_use]
+        pub const fn id() -> Field<Id> {
+            Field::new("id")
+        }
+
+        #[must_use]
+        pub const fn key() -> Field<String> {
+            Field::new("key")
+        }
+
+        #[must_use]
+        pub const fn record_key() -> Field<String> {
+            Field::new("record_key")
+        }
+
+        #[must_use]
+        pub const fn ordinal() -> Field<i64> {
+            Field::new("ordinal")
+        }
+
+        #[must_use]
+        pub const fn account() -> Field<String> {
+            Field::new("account")
+        }
+
+        #[must_use]
+        pub const fn amount() -> Field<i64> {
+            Field::new("amount")
+        }
+
+        /// An update: set fields, or clear optional ones with `None`.
+        #[derive(Clone, Debug, Default, PartialEq)]
+        pub struct Updater(Update);
+
+        #[must_use]
+        pub fn update() -> Updater {
+            Updater::default()
+        }
+
+        impl Updater {
+            #[must_use]
+            pub fn key(self, value: impl Into<String>) -> Self {
+                Self(self.0.set("key", value.into()))
+            }
+            #[must_use]
+            pub fn record_key(self, value: impl Into<String>) -> Self {
+                Self(self.0.set("record_key", value.into()))
+            }
+            #[must_use]
+            pub fn ordinal(self, value: impl Into<i64>) -> Self {
+                Self(self.0.set("ordinal", value.into()))
+            }
+            #[must_use]
+            pub fn account(self, value: impl Into<String>) -> Self {
+                Self(self.0.set("account", value.into()))
+            }
+            #[must_use]
+            pub fn amount(self, value: impl Into<i64>) -> Self {
+                Self(self.0.set("amount", value.into()))
+            }
+        }
+
+        impl From<Updater> for Update {
+            fn from(updater: Updater) -> Update {
+                updater.0
+            }
+        }
+
+        #[must_use]
+        pub fn by_id(id: Id) -> Unique {
+            Unique::Id(id)
+        }
+
+        /// The record with this natural key.
+        #[must_use]
+        pub fn by_key(key: impl Into<String>) -> Unique {
+            Unique::Key(key.into())
+        }
+    }
+
+    /// `core.journal_record`.
+    pub mod journal_record {
+        use crate::error::StorageResult;
+        use crate::query::Unique;
+        use crate::typed::{self, Field, Update};
+        use crate::value::{Data, Id, Row, Value};
+
+        pub const NAME: &str = "core.journal_record";
+
+        /// A `core.journal_record` record.
+        #[derive(Clone, Debug, PartialEq)]
+        pub struct JournalRecord {
+            pub id: Id,
+            pub revision: u64,
+            /// When the record was created and last written (not model fields).
+            pub record_created_micros: i64,
+            pub record_updated_micros: i64,
+            pub key: String,
+            pub at_millis: i64,
+            pub price_version: Option<String>,
+            pub record: String,
+        }
+
+        /// The values `create` takes.
+        #[derive(Clone, Debug, Default, PartialEq)]
+        pub struct Create {
+            pub key: String,
+            pub at_millis: i64,
+            pub price_version: Option<String>,
+            pub record: String,
+        }
+
+        impl From<Create> for Data {
+            fn from(create: Create) -> Data {
+                let mut data = Data::new();
+                data.insert("key".to_owned(), Value::from(create.key));
+                data.insert("at_millis".to_owned(), Value::from(create.at_millis));
+                if let Some(value) = create.price_version {
+                    data.insert("price_version".to_owned(), Value::from(value));
+                }
+                data.insert("record".to_owned(), Value::from(create.record));
+                data
+            }
+        }
+
+        impl typed::Model for JournalRecord {
+            const NAME: &'static str = NAME;
+            type Create = Create;
+
+            fn from_row(row: Row) -> StorageResult<Self> {
+                Ok(Self {
+                    key: typed::required(&row, NAME, "key")?,
+                    at_millis: typed::required(&row, NAME, "at_millis")?,
+                    price_version: typed::optional(&row, "price_version"),
+                    record: typed::required(&row, NAME, "record")?,
+                    id: row.id,
+                    revision: row.revision,
+                    record_created_micros: row.created_at_micros,
+                    record_updated_micros: row.updated_at_micros,
+                })
+            }
+        }
+
+        /// The record id.
+        #[must_use]
+        pub const fn id() -> Field<Id> {
+            Field::new("id")
+        }
+
+        #[must_use]
+        pub const fn key() -> Field<String> {
+            Field::new("key")
+        }
+
+        #[must_use]
+        pub const fn at_millis() -> Field<i64> {
+            Field::new("at_millis")
+        }
+
+        #[must_use]
+        pub const fn price_version() -> Field<String> {
+            Field::new("price_version")
+        }
+
+        #[must_use]
+        pub const fn record() -> Field<String> {
+            Field::new("record")
+        }
+
+        /// An update: set fields, or clear optional ones with `None`.
+        #[derive(Clone, Debug, Default, PartialEq)]
+        pub struct Updater(Update);
+
+        #[must_use]
+        pub fn update() -> Updater {
+            Updater::default()
+        }
+
+        impl Updater {
+            #[must_use]
+            pub fn key(self, value: impl Into<String>) -> Self {
+                Self(self.0.set("key", value.into()))
+            }
+            #[must_use]
+            pub fn at_millis(self, value: impl Into<i64>) -> Self {
+                Self(self.0.set("at_millis", value.into()))
+            }
+            #[must_use]
+            pub fn price_version(self, value: Option<String>) -> Self {
+                match value {
+                    Some(value) => Self(self.0.set("price_version", value)),
+                    None => Self(self.0.clear("price_version")),
+                }
+            }
+            #[must_use]
+            pub fn record(self, value: impl Into<String>) -> Self {
+                Self(self.0.set("record", value.into()))
+            }
+        }
+
+        impl From<Updater> for Update {
+            fn from(updater: Updater) -> Update {
+                updater.0
+            }
+        }
+
+        #[must_use]
+        pub fn by_id(id: Id) -> Unique {
+            Unique::Id(id)
+        }
+
+        /// The record with this natural key.
+        #[must_use]
+        pub fn by_key(key: impl Into<String>) -> Unique {
+            Unique::Key(key.into())
+        }
+    }
+
     /// `core.legacy_identity`.
     pub mod legacy_identity {
         use crate::error::StorageResult;
@@ -6067,6 +7118,129 @@ pub mod core {
         #[must_use]
         pub fn by_name(name: impl Into<String>) -> Unique {
             Unique::fields([("name", Value::from(name.into()))])
+        }
+    }
+
+    /// `core.price_list`.
+    pub mod price_list {
+        use crate::error::StorageResult;
+        use crate::query::Unique;
+        use crate::typed::{self, Field, Update};
+        use crate::value::{Data, Id, Row, Value};
+
+        pub const NAME: &str = "core.price_list";
+
+        /// A `core.price_list` record.
+        #[derive(Clone, Debug, PartialEq)]
+        pub struct PriceList {
+            pub id: Id,
+            pub revision: u64,
+            /// When the record was created and last written (not model fields).
+            pub record_created_micros: i64,
+            pub record_updated_micros: i64,
+            pub key: String,
+            pub effective_from_millis: i64,
+            pub list: String,
+        }
+
+        /// The values `create` takes.
+        #[derive(Clone, Debug, Default, PartialEq)]
+        pub struct Create {
+            pub key: String,
+            pub effective_from_millis: i64,
+            pub list: String,
+        }
+
+        impl From<Create> for Data {
+            fn from(create: Create) -> Data {
+                let mut data = Data::new();
+                data.insert("key".to_owned(), Value::from(create.key));
+                data.insert(
+                    "effective_from_millis".to_owned(),
+                    Value::from(create.effective_from_millis),
+                );
+                data.insert("list".to_owned(), Value::from(create.list));
+                data
+            }
+        }
+
+        impl typed::Model for PriceList {
+            const NAME: &'static str = NAME;
+            type Create = Create;
+
+            fn from_row(row: Row) -> StorageResult<Self> {
+                Ok(Self {
+                    key: typed::required(&row, NAME, "key")?,
+                    effective_from_millis: typed::required(&row, NAME, "effective_from_millis")?,
+                    list: typed::required(&row, NAME, "list")?,
+                    id: row.id,
+                    revision: row.revision,
+                    record_created_micros: row.created_at_micros,
+                    record_updated_micros: row.updated_at_micros,
+                })
+            }
+        }
+
+        /// The record id.
+        #[must_use]
+        pub const fn id() -> Field<Id> {
+            Field::new("id")
+        }
+
+        #[must_use]
+        pub const fn key() -> Field<String> {
+            Field::new("key")
+        }
+
+        #[must_use]
+        pub const fn effective_from_millis() -> Field<i64> {
+            Field::new("effective_from_millis")
+        }
+
+        #[must_use]
+        pub const fn list() -> Field<String> {
+            Field::new("list")
+        }
+
+        /// An update: set fields, or clear optional ones with `None`.
+        #[derive(Clone, Debug, Default, PartialEq)]
+        pub struct Updater(Update);
+
+        #[must_use]
+        pub fn update() -> Updater {
+            Updater::default()
+        }
+
+        impl Updater {
+            #[must_use]
+            pub fn key(self, value: impl Into<String>) -> Self {
+                Self(self.0.set("key", value.into()))
+            }
+            #[must_use]
+            pub fn effective_from_millis(self, value: impl Into<i64>) -> Self {
+                Self(self.0.set("effective_from_millis", value.into()))
+            }
+            #[must_use]
+            pub fn list(self, value: impl Into<String>) -> Self {
+                Self(self.0.set("list", value.into()))
+            }
+        }
+
+        impl From<Updater> for Update {
+            fn from(updater: Updater) -> Update {
+                updater.0
+            }
+        }
+
+        #[must_use]
+        pub fn by_id(id: Id) -> Unique {
+            Unique::Id(id)
+        }
+
+        /// The record with this natural key.
+        #[must_use]
+        pub fn by_key(key: impl Into<String>) -> Unique {
+            Unique::Key(key.into())
         }
     }
 
@@ -6816,6 +7990,564 @@ pub mod core {
             #[must_use]
             pub fn completed(self, value: impl Into<bool>) -> Self {
                 Self(self.0.set("completed", value.into()))
+            }
+        }
+
+        impl From<Updater> for Update {
+            fn from(updater: Updater) -> Update {
+                updater.0
+            }
+        }
+
+        #[must_use]
+        pub fn by_id(id: Id) -> Unique {
+            Unique::Id(id)
+        }
+
+        /// The record with this natural key.
+        #[must_use]
+        pub fn by_key(key: impl Into<String>) -> Unique {
+            Unique::Key(key.into())
+        }
+    }
+
+    /// `core.realtime_checkpoint`.
+    pub mod realtime_checkpoint {
+        use crate::error::StorageResult;
+        use crate::query::Unique;
+        use crate::typed::{self, Field, Update};
+        use crate::value::{Data, Id, Row, Value};
+
+        pub const NAME: &str = "core.realtime_checkpoint";
+
+        /// A `core.realtime_checkpoint` record.
+        #[derive(Clone, Debug, PartialEq)]
+        pub struct RealtimeCheckpoint {
+            pub id: Id,
+            pub revision: u64,
+            /// When the record was created and last written (not model fields).
+            pub record_created_micros: i64,
+            pub record_updated_micros: i64,
+            pub key: String,
+            pub consumer: String,
+            pub stream: String,
+            pub sequence: i64,
+            pub at_millis: i64,
+        }
+
+        /// The values `create` takes.
+        #[derive(Clone, Debug, Default, PartialEq)]
+        pub struct Create {
+            pub key: String,
+            pub consumer: String,
+            pub stream: String,
+            pub sequence: i64,
+            pub at_millis: i64,
+        }
+
+        impl From<Create> for Data {
+            fn from(create: Create) -> Data {
+                let mut data = Data::new();
+                data.insert("key".to_owned(), Value::from(create.key));
+                data.insert("consumer".to_owned(), Value::from(create.consumer));
+                data.insert("stream".to_owned(), Value::from(create.stream));
+                data.insert("sequence".to_owned(), Value::from(create.sequence));
+                data.insert("at_millis".to_owned(), Value::from(create.at_millis));
+                data
+            }
+        }
+
+        impl typed::Model for RealtimeCheckpoint {
+            const NAME: &'static str = NAME;
+            type Create = Create;
+
+            fn from_row(row: Row) -> StorageResult<Self> {
+                Ok(Self {
+                    key: typed::required(&row, NAME, "key")?,
+                    consumer: typed::required(&row, NAME, "consumer")?,
+                    stream: typed::required(&row, NAME, "stream")?,
+                    sequence: typed::required(&row, NAME, "sequence")?,
+                    at_millis: typed::required(&row, NAME, "at_millis")?,
+                    id: row.id,
+                    revision: row.revision,
+                    record_created_micros: row.created_at_micros,
+                    record_updated_micros: row.updated_at_micros,
+                })
+            }
+        }
+
+        /// The record id.
+        #[must_use]
+        pub const fn id() -> Field<Id> {
+            Field::new("id")
+        }
+
+        #[must_use]
+        pub const fn key() -> Field<String> {
+            Field::new("key")
+        }
+
+        #[must_use]
+        pub const fn consumer() -> Field<String> {
+            Field::new("consumer")
+        }
+
+        #[must_use]
+        pub const fn stream() -> Field<String> {
+            Field::new("stream")
+        }
+
+        #[must_use]
+        pub const fn sequence() -> Field<i64> {
+            Field::new("sequence")
+        }
+
+        #[must_use]
+        pub const fn at_millis() -> Field<i64> {
+            Field::new("at_millis")
+        }
+
+        /// An update: set fields, or clear optional ones with `None`.
+        #[derive(Clone, Debug, Default, PartialEq)]
+        pub struct Updater(Update);
+
+        #[must_use]
+        pub fn update() -> Updater {
+            Updater::default()
+        }
+
+        impl Updater {
+            #[must_use]
+            pub fn key(self, value: impl Into<String>) -> Self {
+                Self(self.0.set("key", value.into()))
+            }
+            #[must_use]
+            pub fn consumer(self, value: impl Into<String>) -> Self {
+                Self(self.0.set("consumer", value.into()))
+            }
+            #[must_use]
+            pub fn stream(self, value: impl Into<String>) -> Self {
+                Self(self.0.set("stream", value.into()))
+            }
+            #[must_use]
+            pub fn sequence(self, value: impl Into<i64>) -> Self {
+                Self(self.0.set("sequence", value.into()))
+            }
+            #[must_use]
+            pub fn at_millis(self, value: impl Into<i64>) -> Self {
+                Self(self.0.set("at_millis", value.into()))
+            }
+        }
+
+        impl From<Updater> for Update {
+            fn from(updater: Updater) -> Update {
+                updater.0
+            }
+        }
+
+        #[must_use]
+        pub fn by_id(id: Id) -> Unique {
+            Unique::Id(id)
+        }
+
+        /// The record with this natural key.
+        #[must_use]
+        pub fn by_key(key: impl Into<String>) -> Unique {
+            Unique::Key(key.into())
+        }
+    }
+
+    /// `core.realtime_log_event`.
+    pub mod realtime_log_event {
+        use crate::error::StorageResult;
+        use crate::query::Unique;
+        use crate::typed::{self, Field, Update};
+        use crate::value::{Data, Id, Row, Value};
+
+        pub const NAME: &str = "core.realtime_log_event";
+
+        /// A `core.realtime_log_event` record.
+        #[derive(Clone, Debug, PartialEq)]
+        pub struct RealtimeLogEvent {
+            pub id: Id,
+            pub revision: u64,
+            /// When the record was created and last written (not model fields).
+            pub record_created_micros: i64,
+            pub record_updated_micros: i64,
+            pub key: String,
+            pub stream: String,
+            pub sequence: i64,
+            pub creature_id: String,
+            pub event_kind: String,
+            pub producer: String,
+            pub at_millis: i64,
+            pub payload_digest: String,
+            pub retention: String,
+            pub version: String,
+            pub idempotency_key: Option<String>,
+            pub payload: Vec<u8>,
+        }
+
+        /// The values `create` takes.
+        #[derive(Clone, Debug, Default, PartialEq)]
+        pub struct Create {
+            pub key: String,
+            pub stream: String,
+            pub sequence: i64,
+            pub creature_id: String,
+            pub event_kind: String,
+            pub producer: String,
+            pub at_millis: i64,
+            pub payload_digest: String,
+            pub retention: String,
+            pub version: String,
+            pub idempotency_key: Option<String>,
+            pub payload: Vec<u8>,
+        }
+
+        impl From<Create> for Data {
+            fn from(create: Create) -> Data {
+                let mut data = Data::new();
+                data.insert("key".to_owned(), Value::from(create.key));
+                data.insert("stream".to_owned(), Value::from(create.stream));
+                data.insert("sequence".to_owned(), Value::from(create.sequence));
+                data.insert("creature_id".to_owned(), Value::from(create.creature_id));
+                data.insert("event_kind".to_owned(), Value::from(create.event_kind));
+                data.insert("producer".to_owned(), Value::from(create.producer));
+                data.insert("at_millis".to_owned(), Value::from(create.at_millis));
+                data.insert(
+                    "payload_digest".to_owned(),
+                    Value::from(create.payload_digest),
+                );
+                data.insert("retention".to_owned(), Value::from(create.retention));
+                data.insert("version".to_owned(), Value::from(create.version));
+                if let Some(value) = create.idempotency_key {
+                    data.insert("idempotency_key".to_owned(), Value::from(value));
+                }
+                data.insert("payload".to_owned(), Value::from(create.payload));
+                data
+            }
+        }
+
+        impl typed::Model for RealtimeLogEvent {
+            const NAME: &'static str = NAME;
+            type Create = Create;
+
+            fn from_row(row: Row) -> StorageResult<Self> {
+                Ok(Self {
+                    key: typed::required(&row, NAME, "key")?,
+                    stream: typed::required(&row, NAME, "stream")?,
+                    sequence: typed::required(&row, NAME, "sequence")?,
+                    creature_id: typed::required(&row, NAME, "creature_id")?,
+                    event_kind: typed::required(&row, NAME, "event_kind")?,
+                    producer: typed::required(&row, NAME, "producer")?,
+                    at_millis: typed::required(&row, NAME, "at_millis")?,
+                    payload_digest: typed::required(&row, NAME, "payload_digest")?,
+                    retention: typed::required(&row, NAME, "retention")?,
+                    version: typed::required(&row, NAME, "version")?,
+                    idempotency_key: typed::optional(&row, "idempotency_key"),
+                    payload: typed::required(&row, NAME, "payload")?,
+                    id: row.id,
+                    revision: row.revision,
+                    record_created_micros: row.created_at_micros,
+                    record_updated_micros: row.updated_at_micros,
+                })
+            }
+        }
+
+        /// The record id.
+        #[must_use]
+        pub const fn id() -> Field<Id> {
+            Field::new("id")
+        }
+
+        #[must_use]
+        pub const fn key() -> Field<String> {
+            Field::new("key")
+        }
+
+        #[must_use]
+        pub const fn stream() -> Field<String> {
+            Field::new("stream")
+        }
+
+        #[must_use]
+        pub const fn sequence() -> Field<i64> {
+            Field::new("sequence")
+        }
+
+        #[must_use]
+        pub const fn creature_id() -> Field<String> {
+            Field::new("creature_id")
+        }
+
+        #[must_use]
+        pub const fn event_kind() -> Field<String> {
+            Field::new("event_kind")
+        }
+
+        #[must_use]
+        pub const fn producer() -> Field<String> {
+            Field::new("producer")
+        }
+
+        #[must_use]
+        pub const fn at_millis() -> Field<i64> {
+            Field::new("at_millis")
+        }
+
+        #[must_use]
+        pub const fn payload_digest() -> Field<String> {
+            Field::new("payload_digest")
+        }
+
+        #[must_use]
+        pub const fn retention() -> Field<String> {
+            Field::new("retention")
+        }
+
+        #[must_use]
+        pub const fn version() -> Field<String> {
+            Field::new("version")
+        }
+
+        #[must_use]
+        pub const fn idempotency_key() -> Field<String> {
+            Field::new("idempotency_key")
+        }
+
+        #[must_use]
+        pub const fn payload() -> Field<Vec<u8>> {
+            Field::new("payload")
+        }
+
+        /// An update: set fields, or clear optional ones with `None`.
+        #[derive(Clone, Debug, Default, PartialEq)]
+        pub struct Updater(Update);
+
+        #[must_use]
+        pub fn update() -> Updater {
+            Updater::default()
+        }
+
+        impl Updater {
+            #[must_use]
+            pub fn key(self, value: impl Into<String>) -> Self {
+                Self(self.0.set("key", value.into()))
+            }
+            #[must_use]
+            pub fn stream(self, value: impl Into<String>) -> Self {
+                Self(self.0.set("stream", value.into()))
+            }
+            #[must_use]
+            pub fn sequence(self, value: impl Into<i64>) -> Self {
+                Self(self.0.set("sequence", value.into()))
+            }
+            #[must_use]
+            pub fn creature_id(self, value: impl Into<String>) -> Self {
+                Self(self.0.set("creature_id", value.into()))
+            }
+            #[must_use]
+            pub fn event_kind(self, value: impl Into<String>) -> Self {
+                Self(self.0.set("event_kind", value.into()))
+            }
+            #[must_use]
+            pub fn producer(self, value: impl Into<String>) -> Self {
+                Self(self.0.set("producer", value.into()))
+            }
+            #[must_use]
+            pub fn at_millis(self, value: impl Into<i64>) -> Self {
+                Self(self.0.set("at_millis", value.into()))
+            }
+            #[must_use]
+            pub fn payload_digest(self, value: impl Into<String>) -> Self {
+                Self(self.0.set("payload_digest", value.into()))
+            }
+            #[must_use]
+            pub fn retention(self, value: impl Into<String>) -> Self {
+                Self(self.0.set("retention", value.into()))
+            }
+            #[must_use]
+            pub fn version(self, value: impl Into<String>) -> Self {
+                Self(self.0.set("version", value.into()))
+            }
+            #[must_use]
+            pub fn idempotency_key(self, value: Option<String>) -> Self {
+                match value {
+                    Some(value) => Self(self.0.set("idempotency_key", value)),
+                    None => Self(self.0.clear("idempotency_key")),
+                }
+            }
+            #[must_use]
+            pub fn payload(self, value: impl Into<Vec<u8>>) -> Self {
+                Self(self.0.set("payload", value.into()))
+            }
+        }
+
+        impl From<Updater> for Update {
+            fn from(updater: Updater) -> Update {
+                updater.0
+            }
+        }
+
+        #[must_use]
+        pub fn by_id(id: Id) -> Unique {
+            Unique::Id(id)
+        }
+
+        /// The record with this natural key.
+        #[must_use]
+        pub fn by_key(key: impl Into<String>) -> Unique {
+            Unique::Key(key.into())
+        }
+
+        #[must_use]
+        pub fn by_stream_and_sequence(
+            stream: impl Into<String>,
+            sequence: impl Into<i64>,
+        ) -> Unique {
+            Unique::fields([
+                ("stream", Value::from(stream.into())),
+                ("sequence", Value::from(sequence.into())),
+            ])
+        }
+    }
+
+    /// `core.realtime_outbox_entry`.
+    pub mod realtime_outbox_entry {
+        use crate::error::StorageResult;
+        use crate::query::Unique;
+        use crate::typed::{self, Field, Update};
+        use crate::value::{Data, Id, Row, Value};
+
+        pub const NAME: &str = "core.realtime_outbox_entry";
+
+        /// A `core.realtime_outbox_entry` record.
+        #[derive(Clone, Debug, PartialEq)]
+        pub struct RealtimeOutboxEntry {
+            pub id: Id,
+            pub revision: u64,
+            /// When the record was created and last written (not model fields).
+            pub record_created_micros: i64,
+            pub record_updated_micros: i64,
+            pub key: String,
+            pub claimed_by: Option<String>,
+            pub claimed_until_millis: Option<i64>,
+            pub attempts: i64,
+            pub published: bool,
+        }
+
+        /// The values `create` takes.
+        #[derive(Clone, Debug, Default, PartialEq)]
+        pub struct Create {
+            pub key: String,
+            pub claimed_by: Option<String>,
+            pub claimed_until_millis: Option<i64>,
+            pub attempts: i64,
+            pub published: bool,
+        }
+
+        impl From<Create> for Data {
+            fn from(create: Create) -> Data {
+                let mut data = Data::new();
+                data.insert("key".to_owned(), Value::from(create.key));
+                if let Some(value) = create.claimed_by {
+                    data.insert("claimed_by".to_owned(), Value::from(value));
+                }
+                if let Some(value) = create.claimed_until_millis {
+                    data.insert("claimed_until_millis".to_owned(), Value::from(value));
+                }
+                data.insert("attempts".to_owned(), Value::from(create.attempts));
+                data.insert("published".to_owned(), Value::from(create.published));
+                data
+            }
+        }
+
+        impl typed::Model for RealtimeOutboxEntry {
+            const NAME: &'static str = NAME;
+            type Create = Create;
+
+            fn from_row(row: Row) -> StorageResult<Self> {
+                Ok(Self {
+                    key: typed::required(&row, NAME, "key")?,
+                    claimed_by: typed::optional(&row, "claimed_by"),
+                    claimed_until_millis: typed::optional(&row, "claimed_until_millis"),
+                    attempts: typed::required(&row, NAME, "attempts")?,
+                    published: typed::required(&row, NAME, "published")?,
+                    id: row.id,
+                    revision: row.revision,
+                    record_created_micros: row.created_at_micros,
+                    record_updated_micros: row.updated_at_micros,
+                })
+            }
+        }
+
+        /// The record id.
+        #[must_use]
+        pub const fn id() -> Field<Id> {
+            Field::new("id")
+        }
+
+        #[must_use]
+        pub const fn key() -> Field<String> {
+            Field::new("key")
+        }
+
+        #[must_use]
+        pub const fn claimed_by() -> Field<String> {
+            Field::new("claimed_by")
+        }
+
+        #[must_use]
+        pub const fn claimed_until_millis() -> Field<i64> {
+            Field::new("claimed_until_millis")
+        }
+
+        #[must_use]
+        pub const fn attempts() -> Field<i64> {
+            Field::new("attempts")
+        }
+
+        #[must_use]
+        pub const fn published() -> Field<bool> {
+            Field::new("published")
+        }
+
+        /// An update: set fields, or clear optional ones with `None`.
+        #[derive(Clone, Debug, Default, PartialEq)]
+        pub struct Updater(Update);
+
+        #[must_use]
+        pub fn update() -> Updater {
+            Updater::default()
+        }
+
+        impl Updater {
+            #[must_use]
+            pub fn key(self, value: impl Into<String>) -> Self {
+                Self(self.0.set("key", value.into()))
+            }
+            #[must_use]
+            pub fn claimed_by(self, value: Option<String>) -> Self {
+                match value {
+                    Some(value) => Self(self.0.set("claimed_by", value)),
+                    None => Self(self.0.clear("claimed_by")),
+                }
+            }
+            #[must_use]
+            pub fn claimed_until_millis(self, value: Option<i64>) -> Self {
+                match value {
+                    Some(value) => Self(self.0.set("claimed_until_millis", value)),
+                    None => Self(self.0.clear("claimed_until_millis")),
+                }
+            }
+            #[must_use]
+            pub fn attempts(self, value: impl Into<i64>) -> Self {
+                Self(self.0.set("attempts", value.into()))
+            }
+            #[must_use]
+            pub fn published(self, value: impl Into<bool>) -> Self {
+                Self(self.0.set("published", value.into()))
             }
         }
 
@@ -8053,6 +9785,323 @@ pub mod core {
         }
     }
 
+    /// `core.usage_interval`.
+    pub mod usage_interval {
+        use crate::error::StorageResult;
+        use crate::query::Unique;
+        use crate::typed::{self, Field, Update};
+        use crate::value::{Data, Id, Row, Value};
+
+        pub const NAME: &str = "core.usage_interval";
+
+        /// A `core.usage_interval` record.
+        #[derive(Clone, Debug, PartialEq)]
+        pub struct UsageInterval {
+            pub id: Id,
+            pub revision: u64,
+            /// When the record was created and last written (not model fields).
+            pub record_created_micros: i64,
+            pub record_updated_micros: i64,
+            pub key: String,
+            pub workload_id: String,
+            pub interval_start_millis: i64,
+            pub interval_end_millis: i64,
+            pub interval: String,
+        }
+
+        /// The values `create` takes.
+        #[derive(Clone, Debug, Default, PartialEq)]
+        pub struct Create {
+            pub key: String,
+            pub workload_id: String,
+            pub interval_start_millis: i64,
+            pub interval_end_millis: i64,
+            pub interval: String,
+        }
+
+        impl From<Create> for Data {
+            fn from(create: Create) -> Data {
+                let mut data = Data::new();
+                data.insert("key".to_owned(), Value::from(create.key));
+                data.insert("workload_id".to_owned(), Value::from(create.workload_id));
+                data.insert(
+                    "interval_start_millis".to_owned(),
+                    Value::from(create.interval_start_millis),
+                );
+                data.insert(
+                    "interval_end_millis".to_owned(),
+                    Value::from(create.interval_end_millis),
+                );
+                data.insert("interval".to_owned(), Value::from(create.interval));
+                data
+            }
+        }
+
+        impl typed::Model for UsageInterval {
+            const NAME: &'static str = NAME;
+            type Create = Create;
+
+            fn from_row(row: Row) -> StorageResult<Self> {
+                Ok(Self {
+                    key: typed::required(&row, NAME, "key")?,
+                    workload_id: typed::required(&row, NAME, "workload_id")?,
+                    interval_start_millis: typed::required(&row, NAME, "interval_start_millis")?,
+                    interval_end_millis: typed::required(&row, NAME, "interval_end_millis")?,
+                    interval: typed::required(&row, NAME, "interval")?,
+                    id: row.id,
+                    revision: row.revision,
+                    record_created_micros: row.created_at_micros,
+                    record_updated_micros: row.updated_at_micros,
+                })
+            }
+        }
+
+        /// The record id.
+        #[must_use]
+        pub const fn id() -> Field<Id> {
+            Field::new("id")
+        }
+
+        #[must_use]
+        pub const fn key() -> Field<String> {
+            Field::new("key")
+        }
+
+        #[must_use]
+        pub const fn workload_id() -> Field<String> {
+            Field::new("workload_id")
+        }
+
+        #[must_use]
+        pub const fn interval_start_millis() -> Field<i64> {
+            Field::new("interval_start_millis")
+        }
+
+        #[must_use]
+        pub const fn interval_end_millis() -> Field<i64> {
+            Field::new("interval_end_millis")
+        }
+
+        #[must_use]
+        pub const fn interval() -> Field<String> {
+            Field::new("interval")
+        }
+
+        /// An update: set fields, or clear optional ones with `None`.
+        #[derive(Clone, Debug, Default, PartialEq)]
+        pub struct Updater(Update);
+
+        #[must_use]
+        pub fn update() -> Updater {
+            Updater::default()
+        }
+
+        impl Updater {
+            #[must_use]
+            pub fn key(self, value: impl Into<String>) -> Self {
+                Self(self.0.set("key", value.into()))
+            }
+            #[must_use]
+            pub fn workload_id(self, value: impl Into<String>) -> Self {
+                Self(self.0.set("workload_id", value.into()))
+            }
+            #[must_use]
+            pub fn interval_start_millis(self, value: impl Into<i64>) -> Self {
+                Self(self.0.set("interval_start_millis", value.into()))
+            }
+            #[must_use]
+            pub fn interval_end_millis(self, value: impl Into<i64>) -> Self {
+                Self(self.0.set("interval_end_millis", value.into()))
+            }
+            #[must_use]
+            pub fn interval(self, value: impl Into<String>) -> Self {
+                Self(self.0.set("interval", value.into()))
+            }
+        }
+
+        impl From<Updater> for Update {
+            fn from(updater: Updater) -> Update {
+                updater.0
+            }
+        }
+
+        #[must_use]
+        pub fn by_id(id: Id) -> Unique {
+            Unique::Id(id)
+        }
+
+        /// The record with this natural key.
+        #[must_use]
+        pub fn by_key(key: impl Into<String>) -> Unique {
+            Unique::Key(key.into())
+        }
+    }
+
+    /// `core.usage_sample`.
+    pub mod usage_sample {
+        use crate::error::StorageResult;
+        use crate::query::Unique;
+        use crate::typed::{self, Field, Update};
+        use crate::value::{Data, Id, Row, Value};
+
+        pub const NAME: &str = "core.usage_sample";
+
+        /// A `core.usage_sample` record.
+        #[derive(Clone, Debug, PartialEq)]
+        pub struct UsageSample {
+            pub id: Id,
+            pub revision: u64,
+            /// When the record was created and last written (not model fields).
+            pub record_created_micros: i64,
+            pub record_updated_micros: i64,
+            pub key: String,
+            pub workload_id: String,
+            pub provider_sample_id: String,
+            pub provider: String,
+            pub collected_at_millis: i64,
+            pub sample: String,
+        }
+
+        /// The values `create` takes.
+        #[derive(Clone, Debug, Default, PartialEq)]
+        pub struct Create {
+            pub key: String,
+            pub workload_id: String,
+            pub provider_sample_id: String,
+            pub provider: String,
+            pub collected_at_millis: i64,
+            pub sample: String,
+        }
+
+        impl From<Create> for Data {
+            fn from(create: Create) -> Data {
+                let mut data = Data::new();
+                data.insert("key".to_owned(), Value::from(create.key));
+                data.insert("workload_id".to_owned(), Value::from(create.workload_id));
+                data.insert(
+                    "provider_sample_id".to_owned(),
+                    Value::from(create.provider_sample_id),
+                );
+                data.insert("provider".to_owned(), Value::from(create.provider));
+                data.insert(
+                    "collected_at_millis".to_owned(),
+                    Value::from(create.collected_at_millis),
+                );
+                data.insert("sample".to_owned(), Value::from(create.sample));
+                data
+            }
+        }
+
+        impl typed::Model for UsageSample {
+            const NAME: &'static str = NAME;
+            type Create = Create;
+
+            fn from_row(row: Row) -> StorageResult<Self> {
+                Ok(Self {
+                    key: typed::required(&row, NAME, "key")?,
+                    workload_id: typed::required(&row, NAME, "workload_id")?,
+                    provider_sample_id: typed::required(&row, NAME, "provider_sample_id")?,
+                    provider: typed::required(&row, NAME, "provider")?,
+                    collected_at_millis: typed::required(&row, NAME, "collected_at_millis")?,
+                    sample: typed::required(&row, NAME, "sample")?,
+                    id: row.id,
+                    revision: row.revision,
+                    record_created_micros: row.created_at_micros,
+                    record_updated_micros: row.updated_at_micros,
+                })
+            }
+        }
+
+        /// The record id.
+        #[must_use]
+        pub const fn id() -> Field<Id> {
+            Field::new("id")
+        }
+
+        #[must_use]
+        pub const fn key() -> Field<String> {
+            Field::new("key")
+        }
+
+        #[must_use]
+        pub const fn workload_id() -> Field<String> {
+            Field::new("workload_id")
+        }
+
+        #[must_use]
+        pub const fn provider_sample_id() -> Field<String> {
+            Field::new("provider_sample_id")
+        }
+
+        #[must_use]
+        pub const fn provider() -> Field<String> {
+            Field::new("provider")
+        }
+
+        #[must_use]
+        pub const fn collected_at_millis() -> Field<i64> {
+            Field::new("collected_at_millis")
+        }
+
+        #[must_use]
+        pub const fn sample() -> Field<String> {
+            Field::new("sample")
+        }
+
+        /// An update: set fields, or clear optional ones with `None`.
+        #[derive(Clone, Debug, Default, PartialEq)]
+        pub struct Updater(Update);
+
+        #[must_use]
+        pub fn update() -> Updater {
+            Updater::default()
+        }
+
+        impl Updater {
+            #[must_use]
+            pub fn key(self, value: impl Into<String>) -> Self {
+                Self(self.0.set("key", value.into()))
+            }
+            #[must_use]
+            pub fn workload_id(self, value: impl Into<String>) -> Self {
+                Self(self.0.set("workload_id", value.into()))
+            }
+            #[must_use]
+            pub fn provider_sample_id(self, value: impl Into<String>) -> Self {
+                Self(self.0.set("provider_sample_id", value.into()))
+            }
+            #[must_use]
+            pub fn provider(self, value: impl Into<String>) -> Self {
+                Self(self.0.set("provider", value.into()))
+            }
+            #[must_use]
+            pub fn collected_at_millis(self, value: impl Into<i64>) -> Self {
+                Self(self.0.set("collected_at_millis", value.into()))
+            }
+            #[must_use]
+            pub fn sample(self, value: impl Into<String>) -> Self {
+                Self(self.0.set("sample", value.into()))
+            }
+        }
+
+        impl From<Updater> for Update {
+            fn from(updater: Updater) -> Update {
+                updater.0
+            }
+        }
+
+        #[must_use]
+        pub fn by_id(id: Id) -> Unique {
+            Unique::Id(id)
+        }
+
+        /// The record with this natural key.
+        #[must_use]
+        pub fn by_key(key: impl Into<String>) -> Unique {
+            Unique::Key(key.into())
+        }
+    }
+
     /// `core.user`.
     pub mod user {
         use crate::error::StorageResult;
@@ -9250,6 +11299,725 @@ pub mod core {
             #[must_use]
             pub fn user_ref(self, value: impl Into<String>) -> Self {
                 Self(self.0.set("user_ref", value.into()))
+            }
+        }
+
+        impl From<Updater> for Update {
+            fn from(updater: Updater) -> Update {
+                updater.0
+            }
+        }
+
+        #[must_use]
+        pub fn by_id(id: Id) -> Unique {
+            Unique::Id(id)
+        }
+
+        /// The record with this natural key.
+        #[must_use]
+        pub fn by_key(key: impl Into<String>) -> Unique {
+            Unique::Key(key.into())
+        }
+    }
+
+    /// `core.vmm_event`.
+    pub mod vmm_event {
+        use crate::error::StorageResult;
+        use crate::query::Unique;
+        use crate::typed::{self, Field, Update};
+        use crate::value::{Data, Id, Row, Value};
+
+        pub const NAME: &str = "core.vmm_event";
+
+        /// A `core.vmm_event` record.
+        #[derive(Clone, Debug, PartialEq)]
+        pub struct VmmEvent {
+            pub id: Id,
+            pub revision: u64,
+            /// When the record was created and last written (not model fields).
+            pub record_created_micros: i64,
+            pub record_updated_micros: i64,
+            pub key: String,
+            pub sequence: i64,
+            pub owner: String,
+            pub workload_id: String,
+            pub at_millis: i64,
+            pub record: serde_json::Value,
+        }
+
+        /// The values `create` takes.
+        #[derive(Clone, Debug, Default, PartialEq)]
+        pub struct Create {
+            pub key: String,
+            pub sequence: i64,
+            pub owner: String,
+            pub workload_id: String,
+            pub at_millis: i64,
+            pub record: serde_json::Value,
+        }
+
+        impl From<Create> for Data {
+            fn from(create: Create) -> Data {
+                let mut data = Data::new();
+                data.insert("key".to_owned(), Value::from(create.key));
+                data.insert("sequence".to_owned(), Value::from(create.sequence));
+                data.insert("owner".to_owned(), Value::from(create.owner));
+                data.insert("workload_id".to_owned(), Value::from(create.workload_id));
+                data.insert("at_millis".to_owned(), Value::from(create.at_millis));
+                data.insert("record".to_owned(), Value::from(create.record));
+                data
+            }
+        }
+
+        impl typed::Model for VmmEvent {
+            const NAME: &'static str = NAME;
+            type Create = Create;
+
+            fn from_row(row: Row) -> StorageResult<Self> {
+                Ok(Self {
+                    key: typed::required(&row, NAME, "key")?,
+                    sequence: typed::required(&row, NAME, "sequence")?,
+                    owner: typed::required(&row, NAME, "owner")?,
+                    workload_id: typed::required(&row, NAME, "workload_id")?,
+                    at_millis: typed::required(&row, NAME, "at_millis")?,
+                    record: typed::required(&row, NAME, "record")?,
+                    id: row.id,
+                    revision: row.revision,
+                    record_created_micros: row.created_at_micros,
+                    record_updated_micros: row.updated_at_micros,
+                })
+            }
+        }
+
+        /// The record id.
+        #[must_use]
+        pub const fn id() -> Field<Id> {
+            Field::new("id")
+        }
+
+        #[must_use]
+        pub const fn key() -> Field<String> {
+            Field::new("key")
+        }
+
+        #[must_use]
+        pub const fn sequence() -> Field<i64> {
+            Field::new("sequence")
+        }
+
+        #[must_use]
+        pub const fn owner() -> Field<String> {
+            Field::new("owner")
+        }
+
+        #[must_use]
+        pub const fn workload_id() -> Field<String> {
+            Field::new("workload_id")
+        }
+
+        #[must_use]
+        pub const fn at_millis() -> Field<i64> {
+            Field::new("at_millis")
+        }
+
+        #[must_use]
+        pub const fn record() -> Field<serde_json::Value> {
+            Field::new("record")
+        }
+
+        /// An update: set fields, or clear optional ones with `None`.
+        #[derive(Clone, Debug, Default, PartialEq)]
+        pub struct Updater(Update);
+
+        #[must_use]
+        pub fn update() -> Updater {
+            Updater::default()
+        }
+
+        impl Updater {
+            #[must_use]
+            pub fn key(self, value: impl Into<String>) -> Self {
+                Self(self.0.set("key", value.into()))
+            }
+            #[must_use]
+            pub fn sequence(self, value: impl Into<i64>) -> Self {
+                Self(self.0.set("sequence", value.into()))
+            }
+            #[must_use]
+            pub fn owner(self, value: impl Into<String>) -> Self {
+                Self(self.0.set("owner", value.into()))
+            }
+            #[must_use]
+            pub fn workload_id(self, value: impl Into<String>) -> Self {
+                Self(self.0.set("workload_id", value.into()))
+            }
+            #[must_use]
+            pub fn at_millis(self, value: impl Into<i64>) -> Self {
+                Self(self.0.set("at_millis", value.into()))
+            }
+            #[must_use]
+            pub fn record(self, value: impl Into<serde_json::Value>) -> Self {
+                Self(self.0.set("record", value.into()))
+            }
+        }
+
+        impl From<Updater> for Update {
+            fn from(updater: Updater) -> Update {
+                updater.0
+            }
+        }
+
+        #[must_use]
+        pub fn by_id(id: Id) -> Unique {
+            Unique::Id(id)
+        }
+
+        /// The record with this natural key.
+        #[must_use]
+        pub fn by_key(key: impl Into<String>) -> Unique {
+            Unique::Key(key.into())
+        }
+
+        #[must_use]
+        pub fn by_sequence(sequence: impl Into<i64>) -> Unique {
+            Unique::fields([("sequence", Value::from(sequence.into()))])
+        }
+    }
+
+    /// `core.vmm_idempotency`.
+    pub mod vmm_idempotency {
+        use crate::error::StorageResult;
+        use crate::query::Unique;
+        use crate::typed::{self, Field, Update};
+        use crate::value::{Data, Id, Row, Value};
+
+        pub const NAME: &str = "core.vmm_idempotency";
+
+        /// A `core.vmm_idempotency` record.
+        #[derive(Clone, Debug, PartialEq)]
+        pub struct VmmIdempotency {
+            pub id: Id,
+            pub revision: u64,
+            /// When the record was created and last written (not model fields).
+            pub record_created_micros: i64,
+            pub record_updated_micros: i64,
+            pub key: String,
+            pub owner: String,
+            pub request_key: String,
+            pub digest: Vec<u8>,
+            pub claimed_at_millis: i64,
+            pub response_status: Option<i64>,
+            pub response_body: Option<Vec<u8>>,
+            pub response_content_type: Option<String>,
+            pub response_location: Option<String>,
+        }
+
+        /// The values `create` takes.
+        #[derive(Clone, Debug, Default, PartialEq)]
+        pub struct Create {
+            pub key: String,
+            pub owner: String,
+            pub request_key: String,
+            pub digest: Vec<u8>,
+            pub claimed_at_millis: i64,
+            pub response_status: Option<i64>,
+            pub response_body: Option<Vec<u8>>,
+            pub response_content_type: Option<String>,
+            pub response_location: Option<String>,
+        }
+
+        impl From<Create> for Data {
+            fn from(create: Create) -> Data {
+                let mut data = Data::new();
+                data.insert("key".to_owned(), Value::from(create.key));
+                data.insert("owner".to_owned(), Value::from(create.owner));
+                data.insert("request_key".to_owned(), Value::from(create.request_key));
+                data.insert("digest".to_owned(), Value::from(create.digest));
+                data.insert(
+                    "claimed_at_millis".to_owned(),
+                    Value::from(create.claimed_at_millis),
+                );
+                if let Some(value) = create.response_status {
+                    data.insert("response_status".to_owned(), Value::from(value));
+                }
+                if let Some(value) = create.response_body {
+                    data.insert("response_body".to_owned(), Value::from(value));
+                }
+                if let Some(value) = create.response_content_type {
+                    data.insert("response_content_type".to_owned(), Value::from(value));
+                }
+                if let Some(value) = create.response_location {
+                    data.insert("response_location".to_owned(), Value::from(value));
+                }
+                data
+            }
+        }
+
+        impl typed::Model for VmmIdempotency {
+            const NAME: &'static str = NAME;
+            type Create = Create;
+
+            fn from_row(row: Row) -> StorageResult<Self> {
+                Ok(Self {
+                    key: typed::required(&row, NAME, "key")?,
+                    owner: typed::required(&row, NAME, "owner")?,
+                    request_key: typed::required(&row, NAME, "request_key")?,
+                    digest: typed::required(&row, NAME, "digest")?,
+                    claimed_at_millis: typed::required(&row, NAME, "claimed_at_millis")?,
+                    response_status: typed::optional(&row, "response_status"),
+                    response_body: typed::optional(&row, "response_body"),
+                    response_content_type: typed::optional(&row, "response_content_type"),
+                    response_location: typed::optional(&row, "response_location"),
+                    id: row.id,
+                    revision: row.revision,
+                    record_created_micros: row.created_at_micros,
+                    record_updated_micros: row.updated_at_micros,
+                })
+            }
+        }
+
+        /// The record id.
+        #[must_use]
+        pub const fn id() -> Field<Id> {
+            Field::new("id")
+        }
+
+        #[must_use]
+        pub const fn key() -> Field<String> {
+            Field::new("key")
+        }
+
+        #[must_use]
+        pub const fn owner() -> Field<String> {
+            Field::new("owner")
+        }
+
+        #[must_use]
+        pub const fn request_key() -> Field<String> {
+            Field::new("request_key")
+        }
+
+        #[must_use]
+        pub const fn digest() -> Field<Vec<u8>> {
+            Field::new("digest")
+        }
+
+        #[must_use]
+        pub const fn claimed_at_millis() -> Field<i64> {
+            Field::new("claimed_at_millis")
+        }
+
+        #[must_use]
+        pub const fn response_status() -> Field<i64> {
+            Field::new("response_status")
+        }
+
+        #[must_use]
+        pub const fn response_body() -> Field<Vec<u8>> {
+            Field::new("response_body")
+        }
+
+        #[must_use]
+        pub const fn response_content_type() -> Field<String> {
+            Field::new("response_content_type")
+        }
+
+        #[must_use]
+        pub const fn response_location() -> Field<String> {
+            Field::new("response_location")
+        }
+
+        /// An update: set fields, or clear optional ones with `None`.
+        #[derive(Clone, Debug, Default, PartialEq)]
+        pub struct Updater(Update);
+
+        #[must_use]
+        pub fn update() -> Updater {
+            Updater::default()
+        }
+
+        impl Updater {
+            #[must_use]
+            pub fn key(self, value: impl Into<String>) -> Self {
+                Self(self.0.set("key", value.into()))
+            }
+            #[must_use]
+            pub fn owner(self, value: impl Into<String>) -> Self {
+                Self(self.0.set("owner", value.into()))
+            }
+            #[must_use]
+            pub fn request_key(self, value: impl Into<String>) -> Self {
+                Self(self.0.set("request_key", value.into()))
+            }
+            #[must_use]
+            pub fn digest(self, value: impl Into<Vec<u8>>) -> Self {
+                Self(self.0.set("digest", value.into()))
+            }
+            #[must_use]
+            pub fn claimed_at_millis(self, value: impl Into<i64>) -> Self {
+                Self(self.0.set("claimed_at_millis", value.into()))
+            }
+            #[must_use]
+            pub fn response_status(self, value: Option<i64>) -> Self {
+                match value {
+                    Some(value) => Self(self.0.set("response_status", value)),
+                    None => Self(self.0.clear("response_status")),
+                }
+            }
+            #[must_use]
+            pub fn response_body(self, value: Option<Vec<u8>>) -> Self {
+                match value {
+                    Some(value) => Self(self.0.set("response_body", value)),
+                    None => Self(self.0.clear("response_body")),
+                }
+            }
+            #[must_use]
+            pub fn response_content_type(self, value: Option<String>) -> Self {
+                match value {
+                    Some(value) => Self(self.0.set("response_content_type", value)),
+                    None => Self(self.0.clear("response_content_type")),
+                }
+            }
+            #[must_use]
+            pub fn response_location(self, value: Option<String>) -> Self {
+                match value {
+                    Some(value) => Self(self.0.set("response_location", value)),
+                    None => Self(self.0.clear("response_location")),
+                }
+            }
+        }
+
+        impl From<Updater> for Update {
+            fn from(updater: Updater) -> Update {
+                updater.0
+            }
+        }
+
+        #[must_use]
+        pub fn by_id(id: Id) -> Unique {
+            Unique::Id(id)
+        }
+
+        /// The record with this natural key.
+        #[must_use]
+        pub fn by_key(key: impl Into<String>) -> Unique {
+            Unique::Key(key.into())
+        }
+    }
+
+    /// `core.vmm_operation`.
+    pub mod vmm_operation {
+        use crate::error::StorageResult;
+        use crate::query::Unique;
+        use crate::typed::{self, Field, Update};
+        use crate::value::{Data, Id, Row, Value};
+
+        pub const NAME: &str = "core.vmm_operation";
+
+        /// A `core.vmm_operation` record.
+        #[derive(Clone, Debug, PartialEq)]
+        pub struct VmmOperation {
+            pub id: Id,
+            pub revision: u64,
+            /// When the record was created and last written (not model fields).
+            pub record_created_micros: i64,
+            pub record_updated_micros: i64,
+            pub key: String,
+            pub owner: String,
+            pub workload_id: Option<String>,
+            pub state: String,
+            pub created_at_millis: i64,
+            pub record: serde_json::Value,
+        }
+
+        /// The values `create` takes.
+        #[derive(Clone, Debug, Default, PartialEq)]
+        pub struct Create {
+            pub key: String,
+            pub owner: String,
+            pub workload_id: Option<String>,
+            pub state: String,
+            pub created_at_millis: i64,
+            pub record: serde_json::Value,
+        }
+
+        impl From<Create> for Data {
+            fn from(create: Create) -> Data {
+                let mut data = Data::new();
+                data.insert("key".to_owned(), Value::from(create.key));
+                data.insert("owner".to_owned(), Value::from(create.owner));
+                if let Some(value) = create.workload_id {
+                    data.insert("workload_id".to_owned(), Value::from(value));
+                }
+                data.insert("state".to_owned(), Value::from(create.state));
+                data.insert(
+                    "created_at_millis".to_owned(),
+                    Value::from(create.created_at_millis),
+                );
+                data.insert("record".to_owned(), Value::from(create.record));
+                data
+            }
+        }
+
+        impl typed::Model for VmmOperation {
+            const NAME: &'static str = NAME;
+            type Create = Create;
+
+            fn from_row(row: Row) -> StorageResult<Self> {
+                Ok(Self {
+                    key: typed::required(&row, NAME, "key")?,
+                    owner: typed::required(&row, NAME, "owner")?,
+                    workload_id: typed::optional(&row, "workload_id"),
+                    state: typed::required(&row, NAME, "state")?,
+                    created_at_millis: typed::required(&row, NAME, "created_at_millis")?,
+                    record: typed::required(&row, NAME, "record")?,
+                    id: row.id,
+                    revision: row.revision,
+                    record_created_micros: row.created_at_micros,
+                    record_updated_micros: row.updated_at_micros,
+                })
+            }
+        }
+
+        /// The record id.
+        #[must_use]
+        pub const fn id() -> Field<Id> {
+            Field::new("id")
+        }
+
+        #[must_use]
+        pub const fn key() -> Field<String> {
+            Field::new("key")
+        }
+
+        #[must_use]
+        pub const fn owner() -> Field<String> {
+            Field::new("owner")
+        }
+
+        #[must_use]
+        pub const fn workload_id() -> Field<String> {
+            Field::new("workload_id")
+        }
+
+        #[must_use]
+        pub const fn state() -> Field<String> {
+            Field::new("state")
+        }
+
+        #[must_use]
+        pub const fn created_at_millis() -> Field<i64> {
+            Field::new("created_at_millis")
+        }
+
+        #[must_use]
+        pub const fn record() -> Field<serde_json::Value> {
+            Field::new("record")
+        }
+
+        /// An update: set fields, or clear optional ones with `None`.
+        #[derive(Clone, Debug, Default, PartialEq)]
+        pub struct Updater(Update);
+
+        #[must_use]
+        pub fn update() -> Updater {
+            Updater::default()
+        }
+
+        impl Updater {
+            #[must_use]
+            pub fn key(self, value: impl Into<String>) -> Self {
+                Self(self.0.set("key", value.into()))
+            }
+            #[must_use]
+            pub fn owner(self, value: impl Into<String>) -> Self {
+                Self(self.0.set("owner", value.into()))
+            }
+            #[must_use]
+            pub fn workload_id(self, value: Option<String>) -> Self {
+                match value {
+                    Some(value) => Self(self.0.set("workload_id", value)),
+                    None => Self(self.0.clear("workload_id")),
+                }
+            }
+            #[must_use]
+            pub fn state(self, value: impl Into<String>) -> Self {
+                Self(self.0.set("state", value.into()))
+            }
+            #[must_use]
+            pub fn created_at_millis(self, value: impl Into<i64>) -> Self {
+                Self(self.0.set("created_at_millis", value.into()))
+            }
+            #[must_use]
+            pub fn record(self, value: impl Into<serde_json::Value>) -> Self {
+                Self(self.0.set("record", value.into()))
+            }
+        }
+
+        impl From<Updater> for Update {
+            fn from(updater: Updater) -> Update {
+                updater.0
+            }
+        }
+
+        #[must_use]
+        pub fn by_id(id: Id) -> Unique {
+            Unique::Id(id)
+        }
+
+        /// The record with this natural key.
+        #[must_use]
+        pub fn by_key(key: impl Into<String>) -> Unique {
+            Unique::Key(key.into())
+        }
+    }
+
+    /// `core.vmm_workload`.
+    pub mod vmm_workload {
+        use crate::error::StorageResult;
+        use crate::query::Unique;
+        use crate::typed::{self, Field, Update};
+        use crate::value::{Data, Id, Row, Value};
+
+        pub const NAME: &str = "core.vmm_workload";
+
+        /// A `core.vmm_workload` record.
+        #[derive(Clone, Debug, PartialEq)]
+        pub struct VmmWorkload {
+            pub id: Id,
+            pub revision: u64,
+            /// When the record was created and last written (not model fields).
+            pub record_created_micros: i64,
+            pub record_updated_micros: i64,
+            pub key: String,
+            pub owner: String,
+            pub creature_id: String,
+            pub observed_state: Option<String>,
+            pub resource_version: i64,
+            pub record: serde_json::Value,
+        }
+
+        /// The values `create` takes.
+        #[derive(Clone, Debug, Default, PartialEq)]
+        pub struct Create {
+            pub key: String,
+            pub owner: String,
+            pub creature_id: String,
+            pub observed_state: Option<String>,
+            pub resource_version: i64,
+            pub record: serde_json::Value,
+        }
+
+        impl From<Create> for Data {
+            fn from(create: Create) -> Data {
+                let mut data = Data::new();
+                data.insert("key".to_owned(), Value::from(create.key));
+                data.insert("owner".to_owned(), Value::from(create.owner));
+                data.insert("creature_id".to_owned(), Value::from(create.creature_id));
+                if let Some(value) = create.observed_state {
+                    data.insert("observed_state".to_owned(), Value::from(value));
+                }
+                data.insert(
+                    "resource_version".to_owned(),
+                    Value::from(create.resource_version),
+                );
+                data.insert("record".to_owned(), Value::from(create.record));
+                data
+            }
+        }
+
+        impl typed::Model for VmmWorkload {
+            const NAME: &'static str = NAME;
+            type Create = Create;
+
+            fn from_row(row: Row) -> StorageResult<Self> {
+                Ok(Self {
+                    key: typed::required(&row, NAME, "key")?,
+                    owner: typed::required(&row, NAME, "owner")?,
+                    creature_id: typed::required(&row, NAME, "creature_id")?,
+                    observed_state: typed::optional(&row, "observed_state"),
+                    resource_version: typed::required(&row, NAME, "resource_version")?,
+                    record: typed::required(&row, NAME, "record")?,
+                    id: row.id,
+                    revision: row.revision,
+                    record_created_micros: row.created_at_micros,
+                    record_updated_micros: row.updated_at_micros,
+                })
+            }
+        }
+
+        /// The record id.
+        #[must_use]
+        pub const fn id() -> Field<Id> {
+            Field::new("id")
+        }
+
+        #[must_use]
+        pub const fn key() -> Field<String> {
+            Field::new("key")
+        }
+
+        #[must_use]
+        pub const fn owner() -> Field<String> {
+            Field::new("owner")
+        }
+
+        #[must_use]
+        pub const fn creature_id() -> Field<String> {
+            Field::new("creature_id")
+        }
+
+        #[must_use]
+        pub const fn observed_state() -> Field<String> {
+            Field::new("observed_state")
+        }
+
+        #[must_use]
+        pub const fn resource_version() -> Field<i64> {
+            Field::new("resource_version")
+        }
+
+        #[must_use]
+        pub const fn record() -> Field<serde_json::Value> {
+            Field::new("record")
+        }
+
+        /// An update: set fields, or clear optional ones with `None`.
+        #[derive(Clone, Debug, Default, PartialEq)]
+        pub struct Updater(Update);
+
+        #[must_use]
+        pub fn update() -> Updater {
+            Updater::default()
+        }
+
+        impl Updater {
+            #[must_use]
+            pub fn key(self, value: impl Into<String>) -> Self {
+                Self(self.0.set("key", value.into()))
+            }
+            #[must_use]
+            pub fn owner(self, value: impl Into<String>) -> Self {
+                Self(self.0.set("owner", value.into()))
+            }
+            #[must_use]
+            pub fn creature_id(self, value: impl Into<String>) -> Self {
+                Self(self.0.set("creature_id", value.into()))
+            }
+            #[must_use]
+            pub fn observed_state(self, value: Option<String>) -> Self {
+                match value {
+                    Some(value) => Self(self.0.set("observed_state", value)),
+                    None => Self(self.0.clear("observed_state")),
+                }
+            }
+            #[must_use]
+            pub fn resource_version(self, value: impl Into<i64>) -> Self {
+                Self(self.0.set("resource_version", value.into()))
+            }
+            #[must_use]
+            pub fn record(self, value: impl Into<serde_json::Value>) -> Self {
+                Self(self.0.set("record", value.into()))
             }
         }
 
@@ -12083,6 +14851,8 @@ pub trait Models {
     fn capability_grant(&self) -> ModelClient<'_, core::capability_grant::CapabilityGrant>;
     fn chain(&self) -> ModelClient<'_, core::chain::Chain>;
     fn chain_shard(&self) -> ModelClient<'_, core::chain_shard::ChainShard>;
+    fn coordination_fence(&self) -> ModelClient<'_, core::coordination_fence::CoordinationFence>;
+    fn coordination_lease(&self) -> ModelClient<'_, core::coordination_lease::CoordinationLease>;
     fn counter(&self) -> ModelClient<'_, core::counter::Counter>;
     fn creature(&self) -> ModelClient<'_, core::creature::Creature>;
     fn creature_metadata(&self) -> ModelClient<'_, core::creature_metadata::CreatureMetadata>;
@@ -12091,7 +14861,15 @@ pub trait Models {
     fn entity(&self) -> ModelClient<'_, core::entity::Entity>;
     fn entity_artifact(&self) -> ModelClient<'_, core::entity_artifact::EntityArtifact>;
     fn entity_config(&self) -> ModelClient<'_, core::entity_config::EntityConfig>;
+    fn federation_answer(&self) -> ModelClient<'_, core::federation_answer::FederationAnswer>;
+    fn federation_node_descriptor(
+        &self,
+    ) -> ModelClient<'_, core::federation_node_descriptor::FederationNodeDescriptor>;
+    fn federation_nonce(&self) -> ModelClient<'_, core::federation_nonce::FederationNonce>;
     fn federation_peer(&self) -> ModelClient<'_, core::federation_peer::FederationPeer>;
+    fn federation_workload_descriptor(
+        &self,
+    ) -> ModelClient<'_, core::federation_workload_descriptor::FederationWorkloadDescriptor>;
     fn file(&self) -> ModelClient<'_, core::file::File>;
     fn finance_account(&self) -> ModelClient<'_, core::finance_account::FinanceAccount>;
     fn finance_hold(&self) -> ModelClient<'_, core::finance_hold::FinanceHold>;
@@ -12118,17 +14896,26 @@ pub trait Models {
     ) -> ModelClient<'_, core::guest_schema_definition::GuestSchemaDefinition>;
     fn identity_challenge(&self) -> ModelClient<'_, core::identity_challenge::IdentityChallenge>;
     fn identity_key(&self) -> ModelClient<'_, core::identity_key::IdentityKey>;
+    fn journal_entry(&self) -> ModelClient<'_, core::journal_entry::JournalEntry>;
+    fn journal_record(&self) -> ModelClient<'_, core::journal_record::JournalRecord>;
     fn legacy_identity(&self) -> ModelClient<'_, core::legacy_identity::LegacyIdentity>;
     fn marker(&self) -> ModelClient<'_, core::marker::Marker>;
     fn module_installation(&self)
     -> ModelClient<'_, core::module_installation::ModuleInstallation>;
     fn namespace_document(&self) -> ModelClient<'_, core::namespace_document::NamespaceDocument>;
     fn node(&self) -> ModelClient<'_, core::node::Node>;
+    fn price_list(&self) -> ModelClient<'_, core::price_list::PriceList>;
     fn program(&self) -> ModelClient<'_, core::program::Program>;
     fn program_alarm(&self) -> ModelClient<'_, core::program_alarm::ProgramAlarm>;
     fn program_metadata(&self) -> ModelClient<'_, core::program_metadata::ProgramMetadata>;
     fn proxy_correlation(&self) -> ModelClient<'_, core::proxy_correlation::ProxyCorrelation>;
     fn public_idempotency(&self) -> ModelClient<'_, core::public_idempotency::PublicIdempotency>;
+    fn realtime_checkpoint(&self)
+    -> ModelClient<'_, core::realtime_checkpoint::RealtimeCheckpoint>;
+    fn realtime_log_event(&self) -> ModelClient<'_, core::realtime_log_event::RealtimeLogEvent>;
+    fn realtime_outbox_entry(
+        &self,
+    ) -> ModelClient<'_, core::realtime_outbox_entry::RealtimeOutboxEntry>;
     fn replay_nonce(&self) -> ModelClient<'_, core::replay_nonce::ReplayNonce>;
     fn secret_grant(&self) -> ModelClient<'_, core::secret_grant::SecretGrant>;
     fn session(&self) -> ModelClient<'_, core::session::Session>;
@@ -12137,6 +14924,8 @@ pub trait Models {
     fn store_membership(&self) -> ModelClient<'_, core::store_membership::StoreMembership>;
     fn store_metadata(&self) -> ModelClient<'_, core::store_metadata::StoreMetadata>;
     fn token_lock(&self) -> ModelClient<'_, core::token_lock::TokenLock>;
+    fn usage_interval(&self) -> ModelClient<'_, core::usage_interval::UsageInterval>;
+    fn usage_sample(&self) -> ModelClient<'_, core::usage_sample::UsageSample>;
     fn user(&self) -> ModelClient<'_, core::user::User>;
     fn user_metadata(&self) -> ModelClient<'_, core::user_metadata::UserMetadata>;
     fn vm_distribution(&self) -> ModelClient<'_, core::vm_distribution::VmDistribution>;
@@ -12144,6 +14933,10 @@ pub trait Models {
     fn vm_resource_entity(&self) -> ModelClient<'_, core::vm_resource_entity::VmResourceEntity>;
     fn vm_resource_store(&self) -> ModelClient<'_, core::vm_resource_store::VmResourceStore>;
     fn vm_terminal(&self) -> ModelClient<'_, core::vm_terminal::VmTerminal>;
+    fn vmm_event(&self) -> ModelClient<'_, core::vmm_event::VmmEvent>;
+    fn vmm_idempotency(&self) -> ModelClient<'_, core::vmm_idempotency::VmmIdempotency>;
+    fn vmm_operation(&self) -> ModelClient<'_, core::vmm_operation::VmmOperation>;
+    fn vmm_workload(&self) -> ModelClient<'_, core::vmm_workload::VmmWorkload>;
     fn workload(&self) -> ModelClient<'_, core::workload::Workload>;
     fn workload_operation(&self) -> ModelClient<'_, core::workload_operation::WorkloadOperation>;
     fn finance_ledger_entry(&self) -> ModelClient<'_, finance::ledger_entry::LedgerEntry>;
@@ -12193,6 +14986,12 @@ impl Models for Trx {
     fn chain_shard(&self) -> ModelClient<'_, core::chain_shard::ChainShard> {
         ModelClient::new(self)
     }
+    fn coordination_fence(&self) -> ModelClient<'_, core::coordination_fence::CoordinationFence> {
+        ModelClient::new(self)
+    }
+    fn coordination_lease(&self) -> ModelClient<'_, core::coordination_lease::CoordinationLease> {
+        ModelClient::new(self)
+    }
     fn counter(&self) -> ModelClient<'_, core::counter::Counter> {
         ModelClient::new(self)
     }
@@ -12217,7 +15016,23 @@ impl Models for Trx {
     fn entity_config(&self) -> ModelClient<'_, core::entity_config::EntityConfig> {
         ModelClient::new(self)
     }
+    fn federation_answer(&self) -> ModelClient<'_, core::federation_answer::FederationAnswer> {
+        ModelClient::new(self)
+    }
+    fn federation_node_descriptor(
+        &self,
+    ) -> ModelClient<'_, core::federation_node_descriptor::FederationNodeDescriptor> {
+        ModelClient::new(self)
+    }
+    fn federation_nonce(&self) -> ModelClient<'_, core::federation_nonce::FederationNonce> {
+        ModelClient::new(self)
+    }
     fn federation_peer(&self) -> ModelClient<'_, core::federation_peer::FederationPeer> {
+        ModelClient::new(self)
+    }
+    fn federation_workload_descriptor(
+        &self,
+    ) -> ModelClient<'_, core::federation_workload_descriptor::FederationWorkloadDescriptor> {
         ModelClient::new(self)
     }
     fn file(&self) -> ModelClient<'_, core::file::File> {
@@ -12278,6 +15093,12 @@ impl Models for Trx {
     fn identity_key(&self) -> ModelClient<'_, core::identity_key::IdentityKey> {
         ModelClient::new(self)
     }
+    fn journal_entry(&self) -> ModelClient<'_, core::journal_entry::JournalEntry> {
+        ModelClient::new(self)
+    }
+    fn journal_record(&self) -> ModelClient<'_, core::journal_record::JournalRecord> {
+        ModelClient::new(self)
+    }
     fn legacy_identity(&self) -> ModelClient<'_, core::legacy_identity::LegacyIdentity> {
         ModelClient::new(self)
     }
@@ -12295,6 +15116,9 @@ impl Models for Trx {
     fn node(&self) -> ModelClient<'_, core::node::Node> {
         ModelClient::new(self)
     }
+    fn price_list(&self) -> ModelClient<'_, core::price_list::PriceList> {
+        ModelClient::new(self)
+    }
     fn program(&self) -> ModelClient<'_, core::program::Program> {
         ModelClient::new(self)
     }
@@ -12308,6 +15132,19 @@ impl Models for Trx {
         ModelClient::new(self)
     }
     fn public_idempotency(&self) -> ModelClient<'_, core::public_idempotency::PublicIdempotency> {
+        ModelClient::new(self)
+    }
+    fn realtime_checkpoint(
+        &self,
+    ) -> ModelClient<'_, core::realtime_checkpoint::RealtimeCheckpoint> {
+        ModelClient::new(self)
+    }
+    fn realtime_log_event(&self) -> ModelClient<'_, core::realtime_log_event::RealtimeLogEvent> {
+        ModelClient::new(self)
+    }
+    fn realtime_outbox_entry(
+        &self,
+    ) -> ModelClient<'_, core::realtime_outbox_entry::RealtimeOutboxEntry> {
         ModelClient::new(self)
     }
     fn replay_nonce(&self) -> ModelClient<'_, core::replay_nonce::ReplayNonce> {
@@ -12334,6 +15171,12 @@ impl Models for Trx {
     fn token_lock(&self) -> ModelClient<'_, core::token_lock::TokenLock> {
         ModelClient::new(self)
     }
+    fn usage_interval(&self) -> ModelClient<'_, core::usage_interval::UsageInterval> {
+        ModelClient::new(self)
+    }
+    fn usage_sample(&self) -> ModelClient<'_, core::usage_sample::UsageSample> {
+        ModelClient::new(self)
+    }
     fn user(&self) -> ModelClient<'_, core::user::User> {
         ModelClient::new(self)
     }
@@ -12353,6 +15196,18 @@ impl Models for Trx {
         ModelClient::new(self)
     }
     fn vm_terminal(&self) -> ModelClient<'_, core::vm_terminal::VmTerminal> {
+        ModelClient::new(self)
+    }
+    fn vmm_event(&self) -> ModelClient<'_, core::vmm_event::VmmEvent> {
+        ModelClient::new(self)
+    }
+    fn vmm_idempotency(&self) -> ModelClient<'_, core::vmm_idempotency::VmmIdempotency> {
+        ModelClient::new(self)
+    }
+    fn vmm_operation(&self) -> ModelClient<'_, core::vmm_operation::VmmOperation> {
+        ModelClient::new(self)
+    }
+    fn vmm_workload(&self) -> ModelClient<'_, core::vmm_workload::VmmWorkload> {
         ModelClient::new(self)
     }
     fn workload(&self) -> ModelClient<'_, core::workload::Workload> {

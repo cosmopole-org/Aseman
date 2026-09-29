@@ -1,14 +1,6 @@
-//! Translation of `drivers/network/client/ws/ws.go`.
-//!
-//! `Ws` implements [`IWs`] — a TLS WebSocket server using `tungstenite` for
-//! the WS protocol. Each accepted WS connection runs the same authentication
-//! / action-dispatch state machine as the TCP driver, but speaks the framing
-//! over `Message::Binary(...)` frames instead of length-prefixed TCP frames.
-//!
-//! Go's original (lxzan/gws) wrote two messages per outbound payload — first
-//! a 4-byte length and then the body. The Rust translation collapses that
-//! into a single Binary message whose payload is `u32be(len) || body` so the
-//! shape matches what the existing Go clients expect on the wire.
+//! The TLS WebSocket client transport (`tungstenite`). It runs the same session
+//! as TCP ([`super::session`]), with each frame one binary message whose payload
+//! is `u32be(len) || body`, the shape existing clients read.
 //!
 //! ## Concurrency model
 //!
@@ -49,16 +41,14 @@ use serde_json::Value;
 use tungstenite::accept as ws_accept;
 use tungstenite::protocol::Message;
 
-use crate::adapters::gateway_subs;
-use crate::adapters::network::client::session::{self, SessionSocket, SessionTransport};
-use crate::api::utils::crypto::secure_unique_string;
-use crate::core::trx::Trx;
-use crate::models::core::ICore;
-use crate::models::ports::IWs;
-use crate::models::ports::Listener;
-use crate::models::ports::Protocol;
-use aseman_network_legacy::TlsConfig;
-use aseman_network_legacy::{
+use crate::live::hub::Listener;
+use crate::live::topics::Subscriber;
+use crate::node::Node;
+use crate::ratelimit::Protocol;
+use crate::transports::shell::session::{self, SessionSocket, SessionTransport};
+use crate::util::crypto::secure_unique_string;
+use aseman_network_shell::TlsConfig;
+use aseman_network_shell::{
     TlsStream, accept, bind_tls, encode_client_response_body, encode_client_update_body,
 };
 
@@ -185,7 +175,7 @@ impl SessionSocket for Socket {
 
 /// `Ws` driver implementing [`IWs`].
 pub struct Ws {
-    app: Arc<dyn ICore>,
+    app: Arc<Node>,
     sockets: Arc<DashMap<String, Arc<Socket>>>,
     /// See `Tcp::user_sockets`: multiple concurrent connections may share one
     /// user_id, but the signaler keeps a single listener per user. We fan
@@ -196,7 +186,7 @@ pub struct Ws {
 
 impl Ws {
     /// `NewWs(app)`.
-    pub fn new(app: Arc<dyn ICore>) -> Arc<Ws> {
+    pub fn new(app: Arc<Node>) -> Arc<Ws> {
         Arc::new(Ws {
             app,
             sockets: Arc::new(DashMap::new()),
@@ -232,9 +222,8 @@ impl Ws {
                     return;
                 }
                 let sink_socket = socket.clone();
-                gateway_subs::subscribe(gateway_subs::Subscriber {
+                self.app.topics().subscribe(Subscriber {
                     id: socket.id.clone(),
-                    creature_id: grant["creatureId"].as_str().unwrap_or("").to_string(),
                     topics,
                     sink: Arc::new(move |key: &str, data: &Value| {
                         if sink_socket.is_disconnected() {
@@ -247,7 +236,7 @@ impl Ws {
                 });
             }
             "/gateway/unsubscribe" if result["gatewayUnsubscribe"].as_bool().unwrap_or(false) => {
-                gateway_subs::unsubscribe(&socket.id);
+                self.app.topics().unsubscribe(&socket.id);
             }
             _ => {}
         }
@@ -268,8 +257,6 @@ impl Ws {
         let broadcast_set = user_set.clone();
         let listener = Arc::new(Listener {
             id: user_id.to_string(),
-            paused: false,
-            dis_time: 0,
             signal: Arc::new(move |key, value| {
                 let bytes = serde_json::to_vec(&value).unwrap_or_default();
                 // Pushes onto the I/O thread's outbound channel; never
@@ -283,21 +270,16 @@ impl Ws {
         socket.set_user_id(user_id);
         self.app.tools().signaler().listen_to_single(listener);
 
-        let store_ids = Arc::new(Mutex::new(Vec::<String>::new()));
-        let store_clone = store_ids.clone();
-        let member = user_id.to_string();
-        self.app.modify_state(
-            true,
-            Box::new(move |trx: &Trx| {
-                // Membership goes through the store port (legacy adapter until cutover).
-                let ports = crate::api::model::store_ports::MembershipPorts { trx };
-                if let Ok(ids) = aseman_ports::StoreAccess::stores_of(&ports, &member) {
-                    *store_clone.lock().unwrap() = ids;
-                }
-                Ok(())
-            }),
-        );
-        let ids = store_ids.lock().unwrap().clone();
+        let ids = self
+            .app
+            .read(|trx| {
+                aseman_ports::StoreAccess::stores_of(
+                    &crate::state::store_ports::MembershipPorts { trx },
+                    user_id,
+                )
+                .map_err(|error| anyhow::anyhow!("{error}"))
+            })
+            .unwrap_or_default();
         for store_id in ids {
             self.app.tools().signaler().join_group(&store_id, user_id);
         }
@@ -407,7 +389,7 @@ impl Ws {
                 Ok(Message::Binary(bytes)) => {
                     last_activity = Instant::now();
                     let body = bytes.to_vec();
-                    // The Go (gws) client wraps every payload in its own
+                    // The WebSocket client wraps every payload in its own
                     // 4-byte length prefix, mirroring the TCP framing. Strip
                     // it here so downstream handlers see a clean body.
                     let body = if body.len() >= 4 {
@@ -452,7 +434,7 @@ impl Ws {
         // holds one socket, not a user's set of them), so it is dropped
         // immediately rather than after the reconnect grace period — a
         // reconnecting bridge re-subscribes with its token.
-        gateway_subs::unsubscribe(&socket.id);
+        self.app.topics().unsubscribe(&socket.id);
         let user_id = socket.user_id();
         // Always drop the IP-keyed `sockets` entry this connection registered at
         // accept time, before the unauthenticated early-return below. Only the
@@ -496,7 +478,7 @@ impl Ws {
                     }
                 }
             }
-            // Tidy the legacy `sockets` map only if it still points at us.
+            // Tidy the `sockets` map only if it still points at us.
             // `remove_if` runs the predicate under the shard write lock, so we
             // never hold a read `Ref` across a `remove` on the same shard
             // (which would deadlock its RwLock).
@@ -508,7 +490,7 @@ impl Ws {
 }
 
 impl SessionTransport<Socket> for Ws {
-    fn app(&self) -> &Arc<dyn ICore> {
+    fn app(&self) -> &Arc<Node> {
         &self.app
     }
 
@@ -525,8 +507,8 @@ impl SessionTransport<Socket> for Ws {
     }
 }
 
-impl IWs for Ws {
-    fn listen(&self, port: i64, tls_config: Option<TlsConfig>) {
+impl Ws {
+    pub(crate) fn listen(&self, port: i64, tls_config: Option<TlsConfig>) {
         let trans_self = Arc::new(self.clone_for_listen());
         thread::spawn(move || {
             let cfg_ref = tls_config.as_ref();

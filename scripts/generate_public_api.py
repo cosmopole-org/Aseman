@@ -6,9 +6,9 @@ The public API is not written by hand. It is derived from `contracts/security/ac
 surfaces they cover — so an action can never be reachable over HTTP without being
 authorizable, and a surface can never drift out of the published contract.
 
-Every legacy signed shell action becomes one `POST /v1/actions/{path}` operation. The
-legacy TCP and WebSocket transports carry the same actions (A701/P7-05): they are
-framing adapters over this contract, not a second API.
+Every signed-packet operation becomes one `POST /v1/actions/{path}` operation. The TCP,
+WebSocket, and federation transports carry the same operations (A701): they are framing
+adapters over the node's one router, not a second API.
 """
 
 from __future__ import annotations
@@ -90,7 +90,7 @@ def build(registry: dict, routes: dict) -> tuple[dict, list[dict]]:
                 "security": [{"session": []}, {"proof": []}],
                 "x-aseman-action": action["id"],
                 "x-aseman-class": action["class"],
-                "x-aseman-legacy-request": entry["request_type"],
+                "x-aseman-handler": entry["request_type"],
                 "requestBody": {
                     "required": True,
                     "content": {"application/json": {"schema": {"type": "object"}}},
@@ -141,8 +141,8 @@ def build(registry: dict, routes: dict) -> tuple[dict, list[dict]]:
                 "Generated from the A402 action registry by "
                 f"`{GENERATOR}`; do not edit by hand. Every operation here is one "
                 "registered action, so nothing is reachable that is not authorizable. "
-                "The legacy TCP and WebSocket transports carry these same actions and "
-                "contain framing only."
+                "The signed-packet TCP, WebSocket, and federation transports carry these "
+                "same operations through the same router and contain framing only."
             ),
         },
         "servers": [{"url": "https://{node}/api", "variables": {"node": {"default": "node.example"}}}],
@@ -211,8 +211,8 @@ def markdown(document: dict, rows: list[dict]) -> str:
         "",
         "HTTP is the default public protocol. Every operation is one registered A402",
         "action, so nothing is reachable over HTTP that the policy cannot authorize.",
-        "The legacy TCP and WebSocket transports carry the same actions and contain",
-        "framing only.",
+        "The signed-packet TCP, WebSocket, and federation transports carry the same",
+        "operations through the same router and contain framing only.",
         "",
         f"- Published operations: {len(published)}",
         f"- Withheld (policy `never`): {len(withheld)}",
@@ -233,7 +233,7 @@ def markdown(document: dict, rows: list[dict]) -> str:
             "",
             "## Withheld",
             "",
-            "These surfaces exist in the legacy transports but the policy refuses them",
+            "These operations exist on the signed-packet transports but the policy refuses them",
             "outright, so publishing them would be a trap for a client author.",
             "",
         ]

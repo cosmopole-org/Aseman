@@ -2,7 +2,7 @@
 //!
 //! Everything a plugin asks of its host is served here from backend-local state, or
 //! forwarded to the node's guest API as the workload the plugin runs, signed with that
-//! workload's credential (P5-04). The workload is identified by the VM or machine the
+//! workload's credential. The workload is identified by the VM or machine the
 //! runtime stamped on the packet, which the backend itself assigned when it started
 //! the instance; nothing a guest writes selects it. There is no other path to the
 //! node: no storage handle, no shell action, no global application.
@@ -16,8 +16,8 @@ use std::sync::Arc;
 use aseman_contracts::guest_api::WorkloadCredential;
 use aseman_domain::vmm::LogStream;
 use aseman_guest_http::client::GuestApiClient;
-use caspar_vm_sdk::KvOp;
-use caspar_vm_sdk::host::VmHost;
+use aseman_vm_sdk::KvOp;
+use aseman_vm_sdk::host::VmHost;
 use serde_json::{Value, json};
 
 use crate::registry::{PluginState, Registry};
@@ -262,7 +262,7 @@ impl VmHost for NativeHost {
     }
 
     fn vm_json_trx_op(&self, vm_id: &str, op: &str, input: &Value) -> Result<Value, String> {
-        let base = caspar_vm_sdk::util::trx_key_vm_id(vm_id);
+        let base = aseman_vm_sdk::util::trx_key_vm_id(vm_id);
         let credential = self
             .credential_for(base, "")
             .ok_or_else(|| "this operation needs an identified caller".to_owned())?;

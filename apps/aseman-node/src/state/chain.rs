@@ -1,12 +1,12 @@
 //! Chains and their shards (ADR 0036): the `core.chain` and `core.chain_shard`
-//! models, keyed by chain id, in their legacy wire shapes.
+//! models, keyed by chain id, in their wire shapes.
 
 use anyhow::Result;
 use aseman_storage::client::core::{chain, chain_shard, store};
 use aseman_storage::{FindMany, Id, Models};
 use serde::{Deserialize, Serialize};
 
-use crate::core::trx::{Trx, failed};
+use crate::storage::{Trx, failed};
 
 /// A recorded chain's status.
 const ACTIVE: &str = "active";
@@ -116,7 +116,7 @@ mod tests {
 
     #[test]
     fn chains_and_shards_round_trip() {
-        let trx = crate::core::trx::test_trx();
+        let trx = crate::storage::test_trx();
         Chain {
             id: "c1".into(),
             store_id: "s1".into(),

@@ -10,7 +10,7 @@ use aseman_domain::identity::{
     KeyDescription, KeyEpoch, KeyPurpose, RotationPolicy, SignatureContext, Subject, SubjectKind,
 };
 use aseman_ports::{
-    ActionExecutionContext, ActionExecutor, ClockPort, DecisionAudit, GrantStore, IdentityVerifier,
+    ActionCall, ActionExecutor, ClockPort, DecisionAudit, GrantStore, IdentityVerifier,
     KeyDirectory, PolicyDecisionPort, PortError, PortResult, PublicActionIdempotency, ReplayGuard,
     SessionDirectory,
 };
@@ -35,8 +35,7 @@ struct World {
     sessions: Mutex<std::collections::BTreeMap<String, Subject>>,
     allow: bool,
     resolved: Mutex<Vec<(Subject, String, Vec<u8>)>>,
-    executed: Mutex<Vec<(Subject, String, Vec<u8>)>>,
-    contexts: Mutex<Vec<ActionExecutionContext>>,
+    executed: Mutex<Vec<ActionCall>>,
     audit: Mutex<Vec<AuditRecord>>,
     idempotency: Mutex<IdempotencyState>,
 }
@@ -236,23 +235,9 @@ impl ActionExecutor for World {
             BTreeSet::from([Condition::Authenticated]),
         ))
     }
-    fn execute(&self, subject: Subject, action: &str, body: &[u8]) -> PortResult<Vec<u8>> {
-        self.executed
-            .lock()
-            .unwrap()
-            .push((subject, action.to_owned(), body.to_vec()));
+    fn execute(&self, call: &ActionCall) -> PortResult<Vec<u8>> {
+        self.executed.lock().unwrap().push(call.clone());
         Ok(br#"{"ok":true}"#.to_vec())
-    }
-
-    fn execute_with_context(
-        &self,
-        subject: Subject,
-        action: &str,
-        body: &[u8],
-        context: &ActionExecutionContext,
-    ) -> PortResult<Vec<u8>> {
-        self.contexts.lock().unwrap().push(context.clone());
-        self.execute(subject, action, body)
     }
 }
 
@@ -369,11 +354,14 @@ fn a_signed_request_authenticates_authorizes_and_executes_once() {
     assert_eq!(response.body, br#"{"ok":true}"#.to_vec());
     assert_eq!(world.executed.lock().unwrap().len(), 1);
     assert_eq!(
-        world.contexts.lock().unwrap().as_slice(),
-        &[ActionExecutionContext {
-            request_id: "req-1".to_owned(),
-            idempotency_key: None,
-        }]
+        world
+            .executed
+            .lock()
+            .unwrap()
+            .iter()
+            .map(|call| (call.request_id.as_str(), call.idempotency_key.clone()))
+            .collect::<Vec<_>>(),
+        [("req-1", None)]
     );
     assert_eq!(world.resolved.lock().unwrap().len(), 1);
     let audit = world.audit.lock().unwrap();
@@ -500,11 +488,14 @@ fn a_mutation_runs_once_under_its_key_and_replays_the_outcome() {
     assert_eq!(replayed.body, first_response.body);
     assert_eq!(world.executed.lock().unwrap().len(), 1);
     assert_eq!(
-        world.contexts.lock().unwrap().as_slice(),
-        &[ActionExecutionContext {
-            request_id: "req-1".to_owned(),
-            idempotency_key: Some(key.to_owned()),
-        }]
+        world
+            .executed
+            .lock()
+            .unwrap()
+            .iter()
+            .map(|call| (call.request_id.as_str(), call.idempotency_key.clone()))
+            .collect::<Vec<_>>(),
+        [("req-1", Some(key.to_owned()))]
     );
     assert_eq!(world.audit.lock().unwrap().len(), 2);
 }
@@ -516,8 +507,8 @@ fn a_mismatched_or_inflight_mutation_is_refused_without_running() {
     let policy = policy();
     let service = service(&world, &policy);
     let owner = subject().to_string();
-    // The digest the mutation will compute: SHA-256 of `action \0 body`.
-    let mut action_body = b"creature.update".to_vec();
+    // The digest the mutation will compute: SHA-256 of `route \0 action \0 body`.
+    let mut action_body = b"/v1/actions/creatures/update\0creature.update".to_vec();
     action_body.push(0);
     action_body.extend_from_slice(b"body");
     let request_digest = world.body_digest(&action_body);

@@ -7,9 +7,8 @@ use aseman_domain::CreatureDatabaseBinding;
 use aseman_domain::creature::CreatureRecord;
 use aseman_ports::CreatureDirectory;
 use aseman_storage_postgres::guest::{GuestPoolRouter, PostgresGuestKv, PostgresGuestProvisioner};
-use postgres::{Client, Config, NoTls};
+use postgres::{Client, NoTls};
 use rsa::pkcs8::{EncodePublicKey, LineEnding};
-use std::str::FromStr;
 
 const PROXY_ROLE: &str = "aseman_guest_data_proxy_test";
 const PROXY_PASSWORD: &str = "guest-data-proxy-test-password";
@@ -67,7 +66,7 @@ fn live_guest_data_routes_to_the_creatures_database() {
         owner_id: aseman_domain::creature::HUMAN_OWNER.to_owned(),
     })
     .unwrap();
-    let creature_capsule = deterministic_legacy_capsule_id("Creature", creature.as_bytes());
+    let creature_capsule = derived_capsule_id("Creature", creature.as_bytes());
     let provisioner = PostgresGuestProvisioner::new(&admin_uri, PROXY_ROLE).unwrap();
     let provisioned = provisioner
         .enable(&provisioner.provision(creature_capsule, 1).unwrap())
@@ -85,11 +84,11 @@ fn live_guest_data_routes_to_the_creatures_database() {
     }
     .record_binding(&binding)
     .unwrap();
-    let mut proxy = Config::from_str(&admin_uri).unwrap();
-    proxy.user(PROXY_ROLE).password(PROXY_PASSWORD);
-    let routing = GuestRouting::Databases {
+    let mut proxy = aseman_postgres::Database::parse(&admin_uri).unwrap();
+    proxy.config_mut().user(PROXY_ROLE).password(PROXY_PASSWORD);
+    let routing = GuestData::Databases {
         kv: Arc::new(PostgresGuestKv::new(
-            GuestPoolRouter::from_config(proxy, PROXY_ROLE, 2, 2).unwrap(),
+            GuestPoolRouter::from_database(proxy, PROXY_ROLE, 2, 2).unwrap(),
         )),
         catalog,
     };
@@ -117,14 +116,14 @@ fn live_guest_data_routes_to_the_creatures_database() {
 
 #[test]
 fn guest_data_is_served_from_the_nodes_storage_without_a_guest_plane() {
-    let routing = GuestRouting::Node(StorageGuestKv::new(crate::core::trx::test_storage()));
+    let routing = GuestData::Node(StorageGuestKv::new(crate::storage::test_storage()));
     exercise(&routing, "8@global");
 }
 
-/// The legacy response shapes of every routed operation for `creature`.
-fn exercise(routing: &GuestRouting, creature: &str) {
+/// The wire response shapes of every routed operation for `creature`.
+fn exercise(routing: &GuestData, creature: &str) {
     let creature = creature.to_owned();
-    // Documents and links (ADR 0028), in the legacy response shapes.
+    // Documents and links (ADR 0028), in the wire response shapes.
     let state = |op: &str, input: Value| state_with(routing, &creature, op, &input).unwrap();
     assert_eq!(
         state(

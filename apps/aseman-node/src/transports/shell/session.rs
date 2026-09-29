@@ -1,4 +1,4 @@
-//! Transport-neutral legacy client-session orchestration.
+//! Transport-neutral client-session orchestration for the signed-packet transports.
 //!
 //! TCP and WebSocket retain only framing and connection I/O. Authentication shortcuts,
 //! rate-limit identity selection, action lookup/dispatch, response codes, listener
@@ -11,12 +11,14 @@ use std::time::Instant;
 use aseman_application::{SessionRoute, classify_session_route};
 use serde_json::Value;
 
-use crate::models::core::ICore;
-use crate::models::packet::{ResponseSimpleMessage, build_error_json};
-use crate::models::ports::{
+use crate::actions::dispatch::SignedRequest;
+use crate::actions::guard::{Entry, SignedPacket};
+use crate::node::Node;
+use crate::ratelimit::{
     Protocol, RATE_LIMITED_RES_CODE, RateLimitDecision, RateLimitKey, rate_limited_body,
 };
-use aseman_network_legacy::decode_request_body;
+use aseman_contracts::wire::packet::{ResponseSimpleMessage, build_error_json};
+use aseman_network_shell::decode_request_body;
 
 pub(super) trait SessionSocket: Send + Sync {
     fn peer(&self) -> &str;
@@ -29,7 +31,7 @@ pub(super) trait SessionSocket: Send + Sync {
 }
 
 pub(super) trait SessionTransport<S: SessionSocket>: Send + Sync {
-    fn app(&self) -> &Arc<dyn ICore>;
+    fn app(&self) -> &Arc<Node>;
     fn protocol(&self) -> Protocol;
     fn attach_user_listener(&self, socket: &Arc<S>, user_id: &str);
     fn apply_gateway_subscription(&self, socket: &Arc<S>, path: &str, result: &Value);
@@ -68,9 +70,9 @@ where
     // user never affects admission identity.
     let verified_user = socket.user_id();
     let rate_key = if verified_user.is_empty() {
-        RateLimitKey::anonymous(protocol, &peer_ip, &parsed.path)
+        RateLimitKey::anonymous(&peer_ip)
     } else {
-        RateLimitKey::authenticated(protocol, &verified_user, &peer_ip, &parsed.path)
+        RateLimitKey::authenticated(&verified_user, &peer_ip)
     };
     if let RateLimitDecision::Limited { retry_after, scope } =
         transport.app().tools().rate_limiter().check(&rate_key)
@@ -156,60 +158,22 @@ where
         SessionRoute::Action => {}
     }
 
-    let secure = match transport.app().actor().fetch_secure_action(&parsed.path) {
-        Some(action) => action,
-        None => {
-            socket.write_response(
-                &parsed.packet_id,
-                1,
-                &serde_json::to_vec(&build_error_json("action not found")).unwrap_or_default(),
-            );
-            eprintln!(
-                "[{label}] << path={} pkt={} code=1 action_not_found elapsed_ms={}",
-                parsed.path,
-                parsed.packet_id,
-                started.elapsed().as_millis()
-            );
-            return;
-        }
+    let request = SignedRequest {
+        path: &parsed.path,
+        packet: SignedPacket {
+            user_id: &parsed.user_id,
+            payload: &parsed.payload,
+            signature: &parsed.signature,
+        },
     };
-    let raw_payload = serde_json::from_slice::<Value>(&parsed.payload).unwrap_or(Value::Null);
-    let input = match secure.parse_input(label, raw_payload) {
-        Ok(input) => input,
-        Err(error) => {
-            socket.write_response(
-                &parsed.packet_id,
-                2,
-                &serde_json::to_vec(&build_error_json(&error.to_string())).unwrap_or_default(),
-            );
-            eprintln!(
-                "[{label}] << path={} pkt={} code=2 parse_input_err={} elapsed_ms={}",
-                parsed.path,
-                parsed.packet_id,
-                error,
-                started.elapsed().as_millis()
-            );
-            return;
-        }
-    };
-
-    match secure.securely_act(
-        &parsed.user_id,
-        &parsed.packet_id,
-        &parsed.payload,
-        &parsed.signature,
-        input,
-        &peer_ip,
-        &[],
-    ) {
-        Ok((code, value)) => {
+    match transport.app().router().dispatch(&request, Entry::Client) {
+        Ok(value) => {
             let response = serde_json::to_vec(&value).unwrap_or_default();
-            socket.write_response(&parsed.packet_id, code, &response);
+            socket.write_response(&parsed.packet_id, 0, &response);
             eprintln!(
-                "[{label}] << path={} pkt={} code={} resp_len={} elapsed_ms={}",
+                "[{label}] << path={} pkt={} code=0 resp_len={} elapsed_ms={}",
                 parsed.path,
                 parsed.packet_id,
-                code,
                 response.len(),
                 started.elapsed().as_millis()
             );
@@ -219,17 +183,18 @@ where
             }
             transport.apply_gateway_subscription(socket, &parsed.path, &value);
         }
-        Err(error) => {
+        Err(refusal) => {
             socket.write_response(
                 &parsed.packet_id,
-                3,
-                &serde_json::to_vec(&build_error_json(&error.to_string())).unwrap_or_default(),
+                refusal.code(),
+                &serde_json::to_vec(&build_error_json(&refusal.message())).unwrap_or_default(),
             );
             eprintln!(
-                "[{label}] << path={} pkt={} code=3 act_err={} elapsed_ms={}",
+                "[{label}] << path={} pkt={} code={} err={} elapsed_ms={}",
                 parsed.path,
                 parsed.packet_id,
-                error,
+                refusal.code(),
+                refusal.message(),
                 started.elapsed().as_millis()
             );
         }

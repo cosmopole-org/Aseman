@@ -82,8 +82,8 @@ pub fn transform_legacy_signal_rows(
         *sequence = sequence.checked_add(1).ok_or_else(|| {
             LegacyMigrationError::Invalid("legacy signal sequence overflow".to_owned())
         })?;
-        let capsule = aseman_contracts::legacy_realtime::store_signal_event(
-            &aseman_contracts::legacy_realtime::StoreSignalPayload {
+        let capsule = aseman_contracts::signals::store_signal_event(
+            &aseman_contracts::signals::StoreSignalPayload {
                 signal_id: row.id,
                 store_id: row.store_id,
                 sender_id: row.user_id,
@@ -93,7 +93,7 @@ pub fn transform_legacy_signal_rows(
             },
             *sequence,
             occurred_at_micros,
-            &aseman_contracts::legacy_realtime::SignalStreamPolicy {
+            &aseman_contracts::signals::SignalStreamPolicy {
                 authorization_scope: policy.authorization_scope.clone(),
                 retention_class: policy.retention_class.clone(),
             },
@@ -168,14 +168,10 @@ pub fn transform_legacy_build_log(
     let observed_at_micros = row.time_millis.checked_mul(1_000).ok_or_else(|| {
         LegacyMigrationError::Invalid("legacy build log timestamp overflows micros".to_owned())
     })?;
-    let creature_id =
-        deterministic_legacy_capsule_id("Creature", resolved_creature_legacy_id.as_bytes());
+    let creature_id = derived_capsule_id("Creature", resolved_creature_legacy_id.as_bytes());
     CapsuleEnvelope {
         encoding_version: 1,
-        id: CapsuleId(deterministic_legacy_capsule_id(
-            "QuestDB.buildlogs",
-            row.id.as_bytes(),
-        )),
+        id: CapsuleId(derived_capsule_id("QuestDB.buildlogs", row.id.as_bytes())),
         kind: CapsuleKind("telemetry.build_log".to_owned()),
         storage_class: StorageClass::Telemetry,
         owner_scope: OwnerScope::Creature(creature_id),

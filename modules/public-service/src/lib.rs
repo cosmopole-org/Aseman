@@ -1,10 +1,9 @@
-//! The composed [`PublicActionService`] (P7-06): the A701 transport admits routes and
+//! The composed [`PublicActionService`]: the A701 transport admits routes and
 //! parses authentication; this crate binds that edge to the application use case that
 //! authenticates (A401), authorizes (A402), executes, and settles durable idempotency.
 //!
-//! The transport never calls a legacy handler directly. The [`ActionExecutor`] the
-//! node shell supplies resolves each action's resource and runs it against migrated
-//! use cases one family at a time (RL-004).
+//! The transport never calls a handler directly. The [`ActionExecutor`] the node
+//! supplies resolves each action's resource and runs it through the node's router.
 #![forbid(unsafe_code)]
 
 use std::sync::Arc;
@@ -136,6 +135,7 @@ fn into_error(failure: PublicActionFailure) -> PublicActionError {
             PortError::NotFound => error(404, "not_found", ""),
             PortError::Denied(reason) => error(403, "denied", reason),
             PortError::Unsupported(reason) => error(422, "unsupported", reason),
+            PortError::Refused(reason) => error(422, "refused", &reason),
             PortError::Deadline => error(504, "deadline_exceeded", ""),
             other => error(503, "unavailable", &other.to_string()),
         },

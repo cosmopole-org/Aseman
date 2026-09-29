@@ -7,10 +7,10 @@ use aseman_ports::{
     PortError, PortResult, ProgramAlarms, ProgramDirectory, ProgramMetadata, VmResourceStores,
 };
 
-use crate::api::model::Program;
-use crate::core::trx::Trx;
+use crate::state::Program;
+use crate::storage::Trx;
 
-/// The legacy wire shape of a program.
+/// The wire shape of a program.
 pub(crate) fn program_view(record: ProgramRecord) -> Program {
     Program {
         id: record.id,
@@ -22,7 +22,7 @@ pub(crate) fn program_view(record: ProgramRecord) -> Program {
 }
 
 impl ProgramPorts<'_> {
-    /// A program as legacy `Program::pull` returned it: a missing program reads as an
+    /// A program as the wire expects it: a missing program reads as an
     /// empty record carrying the requested id.
     pub(crate) fn program_or_empty(&self, program_id: &str) -> Program {
         match self.program(program_id).ok().flatten() {
@@ -36,7 +36,7 @@ impl ProgramPorts<'_> {
 }
 
 impl ProgramPorts<'_> {
-    /// The metadata object at `path`, as legacy `get_json(..).ok()` returned it.
+    /// The metadata object at `path`, as the wire expects it.
     pub(crate) fn metadata_object(
         &self,
         program_id: &str,
@@ -46,7 +46,7 @@ impl ProgramPorts<'_> {
         serde_json::from_str(&text).ok()
     }
 
-    /// Deep-merge `document` into the metadata; a non-object is ignored, as legacy
+    /// Deep-merge `document` into the metadata; a non-object is ignored,
     /// `put_json` failed on it without effect.
     pub(crate) fn merge_metadata_value(
         &self,

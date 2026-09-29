@@ -2,7 +2,7 @@
 //! `core.token_lock` per `(owner, lock)` — formerly the `lockedTokens.{lock}` member of
 //! the payer's `Json::Creature` document.
 
-use aseman_contracts::legacy_documents::merge_legacy_objects;
+use aseman_contracts::documents::merge_objects;
 use aseman_storage::client::core::token_lock;
 use aseman_storage::{Models, StorageResult, Trx};
 use serde_json::{Map, Value};
@@ -35,7 +35,7 @@ pub fn put_lock(
     } else {
         Map::new()
     };
-    merge_legacy_objects(&mut next, document);
+    merge_objects(&mut next, document);
     let value = Value::Object(next);
     trx.token_lock()
         .upsert(

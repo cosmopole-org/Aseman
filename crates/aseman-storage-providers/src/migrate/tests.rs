@@ -121,7 +121,8 @@ fn a_legacy_rocksdb_store_converts_into_models_in_place() {
     let base = root.join("base");
     legacy_base(&base);
     // A Hashgraph log from before ADR 0036.
-    let legacy_log = RocksDbConsensusLogStorage::new(&root);
+    let legacy_log =
+        RocksDbConsensusLogStorage::new(&root, aseman_config::RocksDbTuning::default());
     legacy_log
         .open("chains/main/shard-main/rocksdb_db", false)
         .unwrap()
@@ -146,6 +147,7 @@ fn a_legacy_rocksdb_store_converts_into_models_in_place() {
         storage.provider().consensus_logs().as_ref(),
         &root,
         storage.provider().consensus_logs().as_ref(),
+        aseman_config::RocksDbTuning::default(),
         &mut report,
     )
     .unwrap();
@@ -378,7 +380,7 @@ fn live_legacy_rocksdb_converts_into_postgres_and_copies_back() {
         let history = aseman_ports::SignalLog::history(
             &aseman_capsule::store::CapsuleStorePorts {
                 repository: &trx,
-                stream_policy: &aseman_contracts::legacy_realtime::SignalStreamPolicy::for_store,
+                stream_policy: &aseman_contracts::signals::SignalStreamPolicy::for_store,
             },
             "3@global",
             &aseman_domain::signal_tags::LogQuery {
@@ -412,11 +414,11 @@ fn config(root: &Path, extra: &[(&str, String)]) -> AsemanConfig {
             "rocksdb".to_owned(),
         ),
         (
-            "ASEMAN_LEGACY_STORAGE_ROOT_PATH".to_owned(),
+            "ASEMAN_STORAGE_ROOT_PATH".to_owned(),
             root.display().to_string(),
         ),
         (
-            "ASEMAN_LEGACY_BASE_DB_PATH".to_owned(),
+            "ASEMAN_BASE_DB_PATH".to_owned(),
             root.join("base").display().to_string(),
         ),
     ]);

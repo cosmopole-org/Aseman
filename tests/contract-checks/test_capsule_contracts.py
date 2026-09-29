@@ -151,7 +151,6 @@ class PhaseThreeCapsuleContractTests(unittest.TestCase):
         self.assertTrue(rules["guest_schema"]["catalog_compare_and_swap"])
 
         auth = rules["signed_proxy_authentication"]
-        self.assertEqual(auth["implementation_work_unit"], "P4-04")
         self.assertFalse(auth["workload_credentials"])
         self.assertFalse(auth["direct_provider_access"])
         self.assertIn("replay", auth["required_checks"])
@@ -269,59 +268,6 @@ class PhaseThreeCapsuleContractTests(unittest.TestCase):
             ),
             sum(row["mutation_policy"] == "append_only" for row in definitions),
         )
-
-    def test_legacy_transform_manifest_exhaustively_accounts_for_a004(self) -> None:
-        source = json.loads(
-            (ROOT / "docs/generated/current-storage-access.json").read_text()
-        )
-        manifest = json.loads(
-            (ROOT / "contracts/migration/legacy-transform-manifest.json").read_text()
-        )
-        access_identity = lambda row: (
-            row["source"],
-            row["method"],
-            row["mode"],
-            row["logical_template"],
-        )
-        candidate_identity = lambda row: (
-            row["source"],
-            row["logical_template"],
-            row["review_status"],
-        )
-        self.assertEqual(
-            {access_identity(row) for row in source["application_accesses"]},
-            {access_identity(row) for row in manifest["application_accesses"]},
-        )
-        self.assertEqual(
-            {candidate_identity(row) for row in source["candidate_key_templates"]},
-            {candidate_identity(row) for row in manifest["candidate_key_templates"]},
-        )
-        self.assertEqual(
-            {row["object_type"] for row in source["core_objects"]},
-            {row["object_type"] for row in manifest["core_objects"]},
-        )
-        self.assertEqual(
-            {row["name"] for row in source["questdb_tables"]},
-            {row["name"] for row in manifest["questdb_tables"]},
-        )
-        self.assertEqual(
-            {row["family"] for row in source["hashgraph_rocksdb"]},
-            {row["family"] for row in manifest["hashgraph_families"]},
-        )
-        self.assertEqual(manifest["unknown_record_policy"], "fail_closed")
-        # A308 acceptance: every A004 row carries a reviewed, non-blocked disposition.
-        self.assertEqual(manifest["_meta"]["status"], "ACCEPTED")
-        self.assertEqual(manifest["summary"]["blocked_rows"], 0)
-        rows = [
-            *manifest["application_accesses"],
-            *manifest["candidate_key_templates"],
-            *manifest["core_objects"],
-            *manifest["questdb_tables"],
-            *manifest["hashgraph_families"],
-            manifest["cluster_rocksdb"],
-        ]
-        self.assertTrue(all(row["disposition"] for row in rows))
-        self.assertFalse([row for row in rows if row["disposition"].startswith("blocked")])
 
     def test_capsule_export_contract_binds_source_manifest_order_and_digest(self) -> None:
         schema = json.loads(

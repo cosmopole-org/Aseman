@@ -84,7 +84,7 @@
       "driver": "docker",
       "runner": true,
       "agent": true,
-      "comment": "Nomad schedules an unprivileged runner task; the microVM itself is the worker agent's (ADR 0010). P6-05."
+      "comment": "Nomad schedules an unprivileged runner task; the microVM itself is the worker agent's (ADR 0010)."
     },
     "forbidden": {
       "raw_exec": "raw_exec does not isolate a workload and is never used, in any mode",
@@ -136,9 +136,9 @@
     "source": "docs/generated/vmm-native-parity.json (A505): the runtime's own capabilities",
     "comment": "The backend declares the runtime's capabilities with everything Nomad cannot deliver masked off. It never claims more than it can do.",
     "masked_off": {
-      "pause": "Nomad has no allocation-level pause (P6-05, ADR 0010)",
+      "pause": "Nomad has no allocation-level pause (ADR 0010)",
       "snapshot": "the same",
-      "exec": "Nomad's exec is a websocket this backend does not speak yet (P6-05)",
+      "exec": "Nomad's exec is a websocket this backend does not speak yet",
       "terminal": "the same",
       "build": "an image is built before registration; the scheduler does not build",
       "files_write": "Nomad's client API reads an allocation directory; it does not write one"
