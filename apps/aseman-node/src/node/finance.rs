@@ -6,30 +6,8 @@ use std::collections::BTreeSet;
 
 use aseman_config::AsemanConfig;
 
-/// What running on this node costs.
-#[derive(Clone, Copy, Debug, Default)]
-pub(crate) struct VmCosts {
-    pub(crate) execution_per_second: i64,
-    pub(crate) ram_per_mb_minute: i64,
-    pub(crate) cpu_core_per_minute: i64,
-    pub(crate) disk_per_gb_minute: i64,
-}
-
-impl VmCosts {
-    fn from_config(config: Option<&AsemanConfig>) -> Self {
-        config.map_or_else(Self::default, |config| Self {
-            execution_per_second: config.core.execution_cost_per_second,
-            ram_per_mb_minute: config.core.ram_cost_per_mb_minute,
-            cpu_core_per_minute: config.core.cpu_core_cost_per_minute,
-            disk_per_gb_minute: config.core.disk_cost_per_gb_minute,
-        })
-    }
-
-    /// Whether VMs are free here (every VM rate is zero).
-    pub(crate) fn is_free(&self) -> bool {
-        self.ram_per_mb_minute == 0 && self.cpu_core_per_minute == 0 && self.disk_per_gb_minute == 0
-    }
-}
+/// What running on this node costs (shared with the action plugins, ADR 0040).
+pub use aseman_action_sdk::context::VmCosts;
 
 /// The node's prices and the nodes exempt from paying them.
 pub(crate) struct Finance {
@@ -44,7 +22,12 @@ impl Finance {
                 .and_then(|config| config.core.root_node.clone())
                 .into_iter()
                 .collect(),
-            costs: VmCosts::from_config(config),
+            costs: config.map_or_else(VmCosts::default, |config| VmCosts {
+                execution_per_second: config.core.execution_cost_per_second,
+                ram_per_mb_minute: config.core.ram_cost_per_mb_minute,
+                cpu_core_per_minute: config.core.cpu_core_cost_per_minute,
+                disk_per_gb_minute: config.core.disk_cost_per_gb_minute,
+            }),
         }
     }
 

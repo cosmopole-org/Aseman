@@ -56,6 +56,10 @@ impl NodeApp {
             .map_err(|error| anyhow::anyhow!("the node could not load: {error}"))?;
         install_core_storage(&config, &node)
             .map_err(|error| anyhow::anyhow!("core storage services could not start: {error}"))?;
+        // Runtime phase: load the action plugins into the process and connect
+        // them to the router. The router is built from whatever registered
+        // (ADR 0040); nothing here names an operation.
+        aseman_action_plugins::register_all();
         let router = Router::new(node.clone())?;
         node.install_router(router.clone());
 
@@ -67,8 +71,8 @@ impl NodeApp {
             }
         });
 
-        crate::actions::install_creature_types(&node)?;
-        crate::actions::start_workload_services(&node)?;
+        crate::actions::startup::install_creature_types(&node)?;
+        crate::actions::startup::start_workload_services(&node)?;
 
         // Inbound HTTP for VM instances: `/{creatureId}/{programId}/{entityId}/{vmId}/…`
         // and custom gateway routes (disabled when the port is zero).

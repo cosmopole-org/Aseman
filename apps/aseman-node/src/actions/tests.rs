@@ -479,7 +479,7 @@ fn bridge_topics_admit_only_what_the_grant_covers() {
         .in_action(|trx| {
             crate::state::bridges::put_grant(
                 trx,
-                &super::topic::hash_bridge_token(token),
+                &crate::state::bridges::hash_bridge_token(token),
                 &json!({"creatureId": "7@global", "topics": ["space:a"], "expiresAt": 0}),
             )
         })

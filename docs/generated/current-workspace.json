@@ -21,7 +21,7 @@
           "typescript": "^5.8.3"
         },
         "manifest": "apps/aseman-client/package.json",
-        "name": "caspar-client-cli",
+        "name": "aseman-client",
         "scripts": {
           "build": "tsc && mv dist/index.js dist/index.cjs && chmod +x dist/index.cjs",
           "dev": "npm run build && npm start",
@@ -40,7 +40,7 @@
       "apps/aseman-client/package-lock.json"
     ],
     "tracked_dist_file_count": 0,
-    "tracked_file_count": 1022,
+    "tracked_file_count": 975,
     "tracked_files_by_top_level": {
       ".cargo": 1,
       ".gitattributes": 1,
@@ -54,23 +54,22 @@
       "Cargo.toml": 1,
       "README.md": 1,
       "SECURITY.md": 1,
-      "apps": 153,
+      "apps": 174,
       "clippy.toml": 1,
-      "contracts": 101,
-      "crates": 158,
-      "deploy": 12,
-      "docs": 166,
-      "modules": 341,
-      "plan": 18,
+      "contracts": 100,
+      "crates": 176,
+      "deploy": 13,
+      "docs": 100,
+      "modules": 342,
       "rust-toolchain.toml": 1,
       "rustfmt.toml": 1,
       "scripts": 29,
-      "tests": 26,
+      "tests": 23,
       "xtask": 3
     },
     "tracked_source_files_by_extension": {
       ".py": 36,
-      ".rs": 535,
+      ".rs": 571,
       ".sh": 2,
       ".ts": 2
     }
@@ -179,6 +178,16 @@
             "name": "anyhow",
             "scope": "normal",
             "version": "1.0.102"
+          },
+          {
+            "name": "aseman-action-plugins",
+            "path": "modules/actions/plugins",
+            "scope": "normal"
+          },
+          {
+            "name": "aseman-action-sdk",
+            "path": "crates/aseman-action-sdk",
+            "scope": "normal"
           },
           {
             "name": "aseman-admin-http",
@@ -926,6 +935,138 @@
       {
         "dependencies": [
           {
+            "name": "anyhow",
+            "scope": "normal",
+            "version": "1.0.102"
+          },
+          {
+            "name": "aseman-application",
+            "path": "crates/aseman-application",
+            "scope": "normal"
+          },
+          {
+            "name": "aseman-capsule",
+            "path": "crates/aseman-capsule",
+            "scope": "normal"
+          },
+          {
+            "name": "aseman-contracts",
+            "path": "crates/aseman-contracts",
+            "scope": "normal"
+          },
+          {
+            "name": "aseman-domain",
+            "path": "crates/aseman-domain",
+            "scope": "normal"
+          },
+          {
+            "name": "aseman-fs",
+            "path": "crates/aseman-fs",
+            "scope": "normal"
+          },
+          {
+            "name": "aseman-ports",
+            "path": "crates/aseman-ports",
+            "scope": "normal"
+          },
+          {
+            "name": "aseman-storage",
+            "path": "crates/aseman-storage",
+            "scope": "normal"
+          },
+          {
+            "name": "base64",
+            "scope": "normal",
+            "version": "0.22.1"
+          },
+          {
+            "name": "chacha20poly1305",
+            "scope": "normal",
+            "version": "0.10.1"
+          },
+          {
+            "default-features": false,
+            "features": [
+              "clock",
+              "std"
+            ],
+            "name": "chrono",
+            "scope": "normal",
+            "version": "0.4.44"
+          },
+          {
+            "name": "getrandom",
+            "scope": "normal",
+            "version": "0.2"
+          },
+          {
+            "name": "hex",
+            "scope": "normal",
+            "version": "0.4.3"
+          },
+          {
+            "features": [
+              "derive"
+            ],
+            "name": "serde",
+            "scope": "normal",
+            "version": "1.0.228"
+          },
+          {
+            "name": "serde_json",
+            "scope": "normal",
+            "version": "1.0.149"
+          },
+          {
+            "name": "sha2",
+            "scope": "normal"
+          },
+          {
+            "features": [
+              "v4"
+            ],
+            "name": "uuid",
+            "scope": "normal",
+            "version": "1.23.1"
+          },
+          {
+            "features": [
+              "conformance"
+            ],
+            "name": "aseman-ports",
+            "path": "crates/aseman-ports",
+            "scope": "dev"
+          },
+          {
+            "features": [
+              "sha2"
+            ],
+            "name": "rsa",
+            "scope": "dev",
+            "version": "0.9.10"
+          }
+        ],
+        "description": "Interface SDK for Aseman action plugins: the ActionPlugin trait, the ActionContext host bridge, the registry, and the state/wire types the node's actions run on.",
+        "edition": {
+          "workspace": true
+        },
+        "features": {},
+        "manifest": "crates/aseman-action-sdk/Cargo.toml",
+        "name": "aseman-action-sdk",
+        "targets": [
+          {
+            "kind": "lib",
+            "name": "aseman_action_sdk",
+            "path": "src/lib.rs"
+          }
+        ],
+        "version": {
+          "workspace": true
+        }
+      },
+      {
+        "dependencies": [
+          {
             "name": "aseman-config",
             "path": "crates/aseman-config",
             "scope": "normal"
@@ -1138,7 +1279,7 @@
             "scope": "normal"
           }
         ],
-        "description": "Typed Aseman configuration and bounded Caspar compatibility aliases.",
+        "description": "Typed Aseman configuration and bounded Aseman compatibility aliases.",
         "edition": {
           "workspace": true
         },
@@ -1726,6 +1867,644 @@
         "dependencies": [
           {
             "name": "anyhow",
+            "scope": "normal",
+            "version": "1.0.102"
+          },
+          {
+            "name": "aseman-action-sdk",
+            "path": "crates/aseman-action-sdk",
+            "scope": "normal"
+          },
+          {
+            "name": "aseman-application",
+            "path": "crates/aseman-application",
+            "scope": "normal"
+          },
+          {
+            "name": "aseman-contracts",
+            "path": "crates/aseman-contracts",
+            "scope": "normal"
+          },
+          {
+            "name": "aseman-domain",
+            "path": "crates/aseman-domain",
+            "scope": "normal"
+          },
+          {
+            "name": "aseman-ports",
+            "path": "crates/aseman-ports",
+            "scope": "normal"
+          },
+          {
+            "name": "base64",
+            "scope": "normal",
+            "version": "0.22.1"
+          },
+          {
+            "features": [
+              "derive"
+            ],
+            "name": "serde",
+            "scope": "normal",
+            "version": "1.0.228"
+          },
+          {
+            "name": "serde_json",
+            "scope": "normal",
+            "version": "1.0.149"
+          }
+        ],
+        "description": "Creature lifecycle, lookups, identity, and direct signals, as an action plugin (ADR 0040).",
+        "edition": {
+          "workspace": true
+        },
+        "features": {},
+        "manifest": "modules/actions/creatures/Cargo.toml",
+        "name": "aseman-action-creatures",
+        "targets": [
+          {
+            "kind": "lib",
+            "name": "aseman-action-creatures",
+            "path": "src/lib.rs"
+          }
+        ],
+        "version": {
+          "workspace": true
+        }
+      },
+      {
+        "dependencies": [
+          {
+            "name": "anyhow",
+            "scope": "normal",
+            "version": "1.0.102"
+          },
+          {
+            "name": "aseman-action-sdk",
+            "path": "crates/aseman-action-sdk",
+            "scope": "normal"
+          },
+          {
+            "name": "aseman-application",
+            "path": "crates/aseman-application",
+            "scope": "normal"
+          },
+          {
+            "name": "aseman-ports",
+            "path": "crates/aseman-ports",
+            "scope": "normal"
+          },
+          {
+            "features": [
+              "derive"
+            ],
+            "name": "serde",
+            "scope": "normal",
+            "version": "1.0.228"
+          },
+          {
+            "name": "serde_json",
+            "scope": "normal",
+            "version": "1.0.149"
+          }
+        ],
+        "description": "Node diagnostics and identity operations, as an action plugin (ADR 0040).",
+        "edition": {
+          "workspace": true
+        },
+        "features": {},
+        "manifest": "modules/actions/diagnostics/Cargo.toml",
+        "name": "aseman-action-diagnostics",
+        "targets": [
+          {
+            "kind": "lib",
+            "name": "aseman-action-diagnostics",
+            "path": "src/lib.rs"
+          }
+        ],
+        "version": {
+          "workspace": true
+        }
+      },
+      {
+        "dependencies": [
+          {
+            "name": "anyhow",
+            "scope": "normal",
+            "version": "1.0.102"
+          },
+          {
+            "name": "aseman-action-sdk",
+            "path": "crates/aseman-action-sdk",
+            "scope": "normal"
+          },
+          {
+            "name": "aseman-ports",
+            "path": "crates/aseman-ports",
+            "scope": "normal"
+          },
+          {
+            "name": "base64",
+            "scope": "normal",
+            "version": "0.22.1"
+          },
+          {
+            "features": [
+              "derive"
+            ],
+            "name": "serde",
+            "scope": "normal",
+            "version": "1.0.228"
+          },
+          {
+            "name": "serde_json",
+            "scope": "normal",
+            "version": "1.0.149"
+          },
+          {
+            "features": [
+              "v4"
+            ],
+            "name": "uuid",
+            "scope": "normal",
+            "version": "1.23.1"
+          }
+        ],
+        "description": "Public file upload, as an action plugin (ADR 0040).",
+        "edition": {
+          "workspace": true
+        },
+        "features": {},
+        "manifest": "modules/actions/files/Cargo.toml",
+        "name": "aseman-action-files",
+        "targets": [
+          {
+            "kind": "lib",
+            "name": "aseman-action-files",
+            "path": "src/lib.rs"
+          }
+        ],
+        "version": {
+          "workspace": true
+        }
+      },
+      {
+        "dependencies": [
+          {
+            "name": "anyhow",
+            "scope": "normal",
+            "version": "1.0.102"
+          },
+          {
+            "name": "aseman-action-sdk",
+            "path": "crates/aseman-action-sdk",
+            "scope": "normal"
+          },
+          {
+            "name": "aseman-application",
+            "path": "crates/aseman-application",
+            "scope": "normal"
+          },
+          {
+            "name": "aseman-contracts",
+            "path": "crates/aseman-contracts",
+            "scope": "normal"
+          },
+          {
+            "name": "aseman-domain",
+            "path": "crates/aseman-domain",
+            "scope": "normal"
+          },
+          {
+            "name": "aseman-ports",
+            "path": "crates/aseman-ports",
+            "scope": "normal"
+          },
+          {
+            "default-features": false,
+            "features": [
+              "clock",
+              "std"
+            ],
+            "name": "chrono",
+            "scope": "normal",
+            "version": "0.4.44"
+          },
+          {
+            "features": [
+              "derive"
+            ],
+            "name": "serde",
+            "scope": "normal",
+            "version": "1.0.228"
+          },
+          {
+            "name": "serde_json",
+            "scope": "normal",
+            "version": "1.0.149"
+          }
+        ],
+        "description": "Finance operations (transfers, locks, holds, pools, payouts, catalog), as an action plugin (ADR 0040).",
+        "edition": {
+          "workspace": true
+        },
+        "features": {},
+        "manifest": "modules/actions/finance/Cargo.toml",
+        "name": "aseman-action-finance",
+        "targets": [
+          {
+            "kind": "lib",
+            "name": "aseman-action-finance",
+            "path": "src/lib.rs"
+          }
+        ],
+        "version": {
+          "workspace": true
+        }
+      },
+      {
+        "dependencies": [
+          {
+            "name": "anyhow",
+            "scope": "normal",
+            "version": "1.0.102"
+          },
+          {
+            "name": "aseman-action-sdk",
+            "path": "crates/aseman-action-sdk",
+            "scope": "normal"
+          },
+          {
+            "default-features": false,
+            "features": [
+              "clock",
+              "std"
+            ],
+            "name": "chrono",
+            "scope": "normal",
+            "version": "0.4.44"
+          },
+          {
+            "features": [
+              "derive"
+            ],
+            "name": "serde",
+            "scope": "normal",
+            "version": "1.0.228"
+          },
+          {
+            "name": "serde_json",
+            "scope": "normal",
+            "version": "1.0.149"
+          }
+        ],
+        "description": "Bridge topic operations (gateway subscribe/signal/unsubscribe), as an action plugin (ADR 0040).",
+        "edition": {
+          "workspace": true
+        },
+        "features": {},
+        "manifest": "modules/actions/gateway/Cargo.toml",
+        "name": "aseman-action-gateway",
+        "targets": [
+          {
+            "kind": "lib",
+            "name": "aseman-action-gateway",
+            "path": "src/lib.rs"
+          }
+        ],
+        "version": {
+          "workspace": true
+        }
+      },
+      {
+        "dependencies": [
+          {
+            "name": "aseman-action-creatures",
+            "path": "modules/actions/creatures",
+            "scope": "normal"
+          },
+          {
+            "name": "aseman-action-diagnostics",
+            "path": "modules/actions/diagnostics",
+            "scope": "normal"
+          },
+          {
+            "name": "aseman-action-files",
+            "path": "modules/actions/files",
+            "scope": "normal"
+          },
+          {
+            "name": "aseman-action-finance",
+            "path": "modules/actions/finance",
+            "scope": "normal"
+          },
+          {
+            "name": "aseman-action-gateway",
+            "path": "modules/actions/gateway",
+            "scope": "normal"
+          },
+          {
+            "name": "aseman-action-programs",
+            "path": "modules/actions/programs",
+            "scope": "normal"
+          },
+          {
+            "name": "aseman-action-secrets",
+            "path": "modules/actions/secrets",
+            "scope": "normal"
+          },
+          {
+            "name": "aseman-action-stores",
+            "path": "modules/actions/stores",
+            "scope": "normal"
+          },
+          {
+            "name": "aseman-action-workloads",
+            "path": "modules/actions/workloads",
+            "scope": "normal"
+          }
+        ],
+        "description": "Aggregation crate (ADR 0040): registers every compiled action plugin at node start-up, so the node never names an action.",
+        "edition": {
+          "workspace": true
+        },
+        "features": {},
+        "manifest": "modules/actions/plugins/Cargo.toml",
+        "name": "aseman-action-plugins",
+        "targets": [
+          {
+            "kind": "lib",
+            "name": "aseman-action-plugins",
+            "path": "src/lib.rs"
+          }
+        ],
+        "version": {
+          "workspace": true
+        }
+      },
+      {
+        "dependencies": [
+          {
+            "name": "anyhow",
+            "scope": "normal",
+            "version": "1.0.102"
+          },
+          {
+            "name": "aseman-action-sdk",
+            "path": "crates/aseman-action-sdk",
+            "scope": "normal"
+          },
+          {
+            "name": "aseman-application",
+            "path": "crates/aseman-application",
+            "scope": "normal"
+          },
+          {
+            "name": "aseman-domain",
+            "path": "crates/aseman-domain",
+            "scope": "normal"
+          },
+          {
+            "name": "aseman-ports",
+            "path": "crates/aseman-ports",
+            "scope": "normal"
+          },
+          {
+            "features": [
+              "derive"
+            ],
+            "name": "serde",
+            "scope": "normal",
+            "version": "1.0.228"
+          },
+          {
+            "name": "serde_json",
+            "scope": "normal",
+            "version": "1.0.149"
+          }
+        ],
+        "description": "Program lifecycle operations, as an action plugin (ADR 0040).",
+        "edition": {
+          "workspace": true
+        },
+        "features": {},
+        "manifest": "modules/actions/programs/Cargo.toml",
+        "name": "aseman-action-programs",
+        "targets": [
+          {
+            "kind": "lib",
+            "name": "aseman-action-programs",
+            "path": "src/lib.rs"
+          }
+        ],
+        "version": {
+          "workspace": true
+        }
+      },
+      {
+        "dependencies": [
+          {
+            "name": "anyhow",
+            "scope": "normal",
+            "version": "1.0.102"
+          },
+          {
+            "name": "aseman-action-sdk",
+            "path": "crates/aseman-action-sdk",
+            "scope": "normal"
+          },
+          {
+            "default-features": false,
+            "features": [
+              "clock",
+              "std"
+            ],
+            "name": "chrono",
+            "scope": "normal",
+            "version": "0.4.44"
+          },
+          {
+            "features": [
+              "derive"
+            ],
+            "name": "serde",
+            "scope": "normal",
+            "version": "1.0.228"
+          },
+          {
+            "name": "serde_json",
+            "scope": "normal",
+            "version": "1.0.149"
+          }
+        ],
+        "description": "Creature-owned encrypted secrets and time-boxed grants, as an action plugin (ADR 0040).",
+        "edition": {
+          "workspace": true
+        },
+        "features": {},
+        "manifest": "modules/actions/secrets/Cargo.toml",
+        "name": "aseman-action-secrets",
+        "targets": [
+          {
+            "kind": "lib",
+            "name": "aseman-action-secrets",
+            "path": "src/lib.rs"
+          }
+        ],
+        "version": {
+          "workspace": true
+        }
+      },
+      {
+        "dependencies": [
+          {
+            "name": "anyhow",
+            "scope": "normal",
+            "version": "1.0.102"
+          },
+          {
+            "name": "aseman-action-sdk",
+            "path": "crates/aseman-action-sdk",
+            "scope": "normal"
+          },
+          {
+            "name": "aseman-application",
+            "path": "crates/aseman-application",
+            "scope": "normal"
+          },
+          {
+            "name": "aseman-contracts",
+            "path": "crates/aseman-contracts",
+            "scope": "normal"
+          },
+          {
+            "name": "aseman-domain",
+            "path": "crates/aseman-domain",
+            "scope": "normal"
+          },
+          {
+            "features": [
+              "derive"
+            ],
+            "name": "serde",
+            "scope": "normal",
+            "version": "1.0.228"
+          },
+          {
+            "name": "serde_json",
+            "scope": "normal",
+            "version": "1.0.149"
+          }
+        ],
+        "description": "Store signals, history, and access, as an action plugin (ADR 0040).",
+        "edition": {
+          "workspace": true
+        },
+        "features": {},
+        "manifest": "modules/actions/stores/Cargo.toml",
+        "name": "aseman-action-stores",
+        "targets": [
+          {
+            "kind": "lib",
+            "name": "aseman-action-stores",
+            "path": "src/lib.rs"
+          }
+        ],
+        "version": {
+          "workspace": true
+        }
+      },
+      {
+        "dependencies": [
+          {
+            "name": "anyhow",
+            "scope": "normal",
+            "version": "1.0.102"
+          },
+          {
+            "name": "aseman-action-sdk",
+            "path": "crates/aseman-action-sdk",
+            "scope": "normal"
+          },
+          {
+            "name": "aseman-application",
+            "path": "crates/aseman-application",
+            "scope": "normal"
+          },
+          {
+            "name": "aseman-contracts",
+            "path": "crates/aseman-contracts",
+            "scope": "normal"
+          },
+          {
+            "name": "aseman-domain",
+            "path": "crates/aseman-domain",
+            "scope": "normal"
+          },
+          {
+            "name": "aseman-ports",
+            "path": "crates/aseman-ports",
+            "scope": "normal"
+          },
+          {
+            "name": "base64",
+            "scope": "normal",
+            "version": "0.22.1"
+          },
+          {
+            "default-features": false,
+            "features": [
+              "clock",
+              "std"
+            ],
+            "name": "chrono",
+            "scope": "normal",
+            "version": "0.4.44"
+          },
+          {
+            "features": [
+              "derive"
+            ],
+            "name": "serde",
+            "scope": "normal",
+            "version": "1.0.228"
+          },
+          {
+            "name": "serde_json",
+            "scope": "normal",
+            "version": "1.0.149"
+          },
+          {
+            "features": [
+              "v4"
+            ],
+            "name": "uuid",
+            "scope": "normal",
+            "version": "1.23.1"
+          }
+        ],
+        "description": "Entity and workload operations (deploy, run, stop, logs, terminals), as an action plugin (ADR 0040).",
+        "edition": {
+          "workspace": true
+        },
+        "features": {},
+        "manifest": "modules/actions/workloads/Cargo.toml",
+        "name": "aseman-action-workloads",
+        "targets": [
+          {
+            "kind": "lib",
+            "name": "aseman-action-workloads",
+            "path": "src/lib.rs"
+          }
+        ],
+        "version": {
+          "workspace": true
+        }
+      },
+      {
+        "dependencies": [
+          {
+            "name": "anyhow",
             "scope": "normal"
           },
           {
@@ -2147,7 +2926,7 @@
             "version": "0.14"
           }
         ],
-        "description": "The guest API transport (A405, P5-04): the node's signed-request server and the workload-side client.",
+        "description": "The guest API transport (A405): the node's signed-request server and the workload-side client.",
         "edition": {
           "workspace": true
         },
@@ -2479,7 +3258,7 @@
             "scope": "normal"
           }
         ],
-        "description": "The composed public action service (P7-06): A401 auth, A402 authorization, execution, and durable idempotency behind the A701 transport contract.",
+        "description": "The composed public action service: A401 auth, A402 authorization, execution, and durable idempotency behind the A701 transport contract.",
         "edition": {
           "workspace": true
         },
@@ -2573,7 +3352,7 @@
             "version": "1"
           }
         ],
-        "description": "Caspar VM plugin: Docker container runtime (key: docker)",
+        "description": "Aseman VM plugin: Docker container runtime (key: docker)",
         "edition": "2021",
         "features": {},
         "manifest": "modules/runtime/docker/Cargo.toml",
@@ -2611,7 +3390,7 @@
             "version": "1"
           }
         ],
-        "description": "Caspar VM plugin: Elpian AST interpreter runtime (key: elpian)",
+        "description": "Aseman VM plugin: Elpian AST interpreter runtime (key: elpian)",
         "edition": "2021",
         "features": {},
         "manifest": "modules/runtime/elpian/Cargo.toml",
@@ -2694,7 +3473,7 @@
             "version": "1"
           }
         ],
-        "description": "Caspar VM plugin: Elpify provable (MASM/STARK) runtime (key: elpify)",
+        "description": "Aseman VM plugin: Elpify provable (MASM/STARK) runtime (key: elpify)",
         "edition": "2021",
         "features": {},
         "manifest": "modules/runtime/elpify/Cargo.toml",
@@ -2749,7 +3528,7 @@
             "version": "1"
           }
         ],
-        "description": "Caspar VM plugin: Firecracker microVM runtime (key: fire)",
+        "description": "Aseman VM plugin: Firecracker microVM runtime (key: fire)",
         "edition": "2021",
         "features": {},
         "manifest": "modules/runtime/firecracker/Cargo.toml",
@@ -2796,7 +3575,7 @@
             "version": "1"
           }
         ],
-        "description": "Caspar VM plugin: JavaScript runtime (key: javascript) \u2014 QuickJS, with the full Caspar host-call ABI",
+        "description": "Aseman VM plugin: JavaScript runtime (key: javascript) \u2014 QuickJS, with the full Aseman host-call ABI",
         "edition": "2021",
         "features": {},
         "manifest": "modules/runtime/javascript/Cargo.toml",
@@ -2906,7 +3685,7 @@
             "version": "0.12"
           }
         ],
-        "description": "Caspar VM plugin: Modal cloud sandbox runtime (key: modal)",
+        "description": "Aseman VM plugin: Modal cloud sandbox runtime (key: modal)",
         "edition": "2021",
         "features": {},
         "manifest": "modules/runtime/modal/Cargo.toml",
@@ -2993,7 +3772,7 @@
             "version": "1"
           }
         ],
-        "description": "Caspar VM plugin: WasmEdge-managed WebAssembly runtime (key: wasm, default runtime)",
+        "description": "Aseman VM plugin: WasmEdge-managed WebAssembly runtime (key: wasm, default runtime)",
         "edition": "2021",
         "features": {},
         "manifest": "modules/runtime/wasm/Cargo.toml",
@@ -3434,7 +4213,7 @@
             "scope": "dev"
           }
         ],
-        "description": "The RocksDB storage provider (ADR 0033): embedded key/value storage, its OpenRaft cluster mode, and the importers for Caspar-era data.",
+        "description": "The RocksDB storage provider (ADR 0033): embedded key/value storage, its OpenRaft cluster mode, and the importers for Aseman-era data.",
         "edition": {
           "workspace": true
         },
@@ -3776,7 +4555,7 @@
             "scope": "dev"
           }
         ],
-        "description": "The Nomad VMM backend (P6-01): Aseman workloads as Nomad jobs behind A504.",
+        "description": "The Nomad VMM backend: Aseman workloads as Nomad jobs behind A504.",
         "edition": {
           "workspace": true
         },
@@ -4190,83 +4969,6 @@
       {
         "dependencies": [
           {
-            "name": "aseman-application",
-            "path": "crates/aseman-application",
-            "scope": "dev"
-          },
-          {
-            "name": "aseman-config",
-            "path": "crates/aseman-config",
-            "scope": "dev"
-          },
-          {
-            "name": "aseman-contracts",
-            "path": "crates/aseman-contracts",
-            "scope": "dev"
-          },
-          {
-            "name": "aseman-domain",
-            "path": "crates/aseman-domain",
-            "scope": "dev"
-          },
-          {
-            "name": "aseman-ports",
-            "path": "crates/aseman-ports",
-            "scope": "dev"
-          },
-          {
-            "name": "aseman-postgres",
-            "path": "crates/aseman-postgres",
-            "scope": "dev"
-          },
-          {
-            "name": "aseman-storage-postgres",
-            "path": "modules/storage/postgres",
-            "scope": "dev"
-          },
-          {
-            "name": "aseman-storage-rocksdb",
-            "path": "modules/storage/rocksdb",
-            "scope": "dev"
-          },
-          {
-            "name": "postgres",
-            "scope": "dev"
-          },
-          {
-            "name": "rsa",
-            "scope": "dev"
-          },
-          {
-            "name": "serde_json",
-            "scope": "dev"
-          },
-          {
-            "name": "uuid",
-            "scope": "dev"
-          }
-        ],
-        "description": "A309 end-to-end legacy-to-PostgreSQL migration protocol tests.",
-        "edition": {
-          "workspace": true
-        },
-        "features": {},
-        "manifest": "tests/migration/Cargo.toml",
-        "name": "aseman-migration-e2e",
-        "targets": [
-          {
-            "kind": "lib",
-            "name": "aseman-migration-e2e",
-            "path": "src/lib.rs"
-          }
-        ],
-        "version": {
-          "workspace": true
-        }
-      },
-      {
-        "dependencies": [
-          {
             "name": "anyhow",
             "scope": "normal"
           },
@@ -4297,6 +4999,7 @@
     "workspaces": [
       {
         "exclude": [
+          "modules/actions",
           "modules/consensus",
           "modules/federation",
           "modules/network",
@@ -4315,6 +5018,16 @@
           "apps/asemanctl",
           "crates/*",
           "modules/*",
+          "modules/actions/creatures",
+          "modules/actions/diagnostics",
+          "modules/actions/files",
+          "modules/actions/finance",
+          "modules/actions/gateway",
+          "modules/actions/plugins",
+          "modules/actions/programs",
+          "modules/actions/secrets",
+          "modules/actions/stores",
+          "modules/actions/workloads",
           "modules/consensus/hashgraph",
           "modules/federation/http",
           "modules/network/gateway",
@@ -4340,7 +5053,6 @@
           "tests/contracts/policy",
           "tests/contracts/storage",
           "tests/contracts/vmm-backend",
-          "tests/migration",
           "xtask"
         ],
         "resolver": "2"

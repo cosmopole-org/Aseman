@@ -756,533 +756,533 @@
   "signed_shell_actions": [
     {
       "path": "/api/hello",
-      "request_type": "diagnostics::hello",
-      "source": "apps/aseman-node/src/actions/mod.rs:218",
+      "request_type": "Local",
+      "source": "modules/actions/diagnostics/src/lib.rs:29",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/api/ping",
-      "request_type": "diagnostics::ping",
-      "source": "apps/aseman-node/src/actions/mod.rs:219",
+      "request_type": "Local",
+      "source": "modules/actions/diagnostics/src/lib.rs:30",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/api/time",
-      "request_type": "diagnostics::time",
-      "source": "apps/aseman-node/src/actions/mod.rs:219",
+      "request_type": "Local",
+      "source": "modules/actions/diagnostics/src/lib.rs:31",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/auths/getServerPublicKey",
-      "request_type": "diagnostics::server_public_key",
-      "source": "apps/aseman-node/src/actions/mod.rs:220",
+      "request_type": "Local",
+      "source": "modules/actions/diagnostics/src/lib.rs:32",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/auths/getServersMap",
-      "request_type": "diagnostics::servers_map",
-      "source": "apps/aseman-node/src/actions/mod.rs:221",
+      "request_type": "Local",
+      "source": "modules/actions/diagnostics/src/lib.rs:33",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/creatures/authenticate",
-      "request_type": "creature::authenticate",
-      "source": "apps/aseman-node/src/actions/mod.rs:241",
+      "request_type": "Local",
+      "source": "modules/actions/creatures/src/lib.rs:40",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/creatures/checkSign",
-      "request_type": "creature::check_sign",
-      "source": "apps/aseman-node/src/actions/mod.rs:242",
+      "request_type": "Local",
+      "source": "modules/actions/creatures/src/lib.rs:41",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/creatures/closePool",
-      "request_type": "finance::close_pool",
-      "source": "apps/aseman-node/src/actions/mod.rs:278",
+      "request_type": "Replicated",
+      "source": "modules/actions/finance/src/lib.rs:53",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/creatures/consumeLock",
-      "request_type": "finance::consume_lock",
-      "source": "apps/aseman-node/src/actions/mod.rs:260",
+      "request_type": "Replicated",
+      "source": "modules/actions/finance/src/lib.rs:34",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/creatures/create",
-      "request_type": "creature::create",
-      "source": "apps/aseman-node/src/actions/mod.rs:224",
+      "request_type": "Replicated",
+      "source": "modules/actions/creatures/src/lib.rs:29",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/creatures/createHold",
-      "request_type": "finance::create_hold",
-      "source": "apps/aseman-node/src/actions/mod.rs:270",
+      "request_type": "Replicated",
+      "source": "modules/actions/finance/src/lib.rs:47",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/creatures/debitPool",
-      "request_type": "finance::debit_pool",
-      "source": "apps/aseman-node/src/actions/mod.rs:279",
+      "request_type": "Replicated",
+      "source": "modules/actions/finance/src/lib.rs:54",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/creatures/delete",
-      "request_type": "creature::delete",
-      "source": "apps/aseman-node/src/actions/mod.rs:238",
+      "request_type": "Replicated",
+      "source": "modules/actions/creatures/src/lib.rs:37",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/creatures/find",
-      "request_type": "creature::find",
-      "source": "apps/aseman-node/src/actions/mod.rs:229",
+      "request_type": "Local",
+      "source": "modules/actions/creatures/src/lib.rs:32",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/creatures/get",
-      "request_type": "creature::get",
-      "source": "apps/aseman-node/src/actions/mod.rs:225",
+      "request_type": "Local",
+      "source": "modules/actions/creatures/src/lib.rs:30",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/creatures/getByUsername",
-      "request_type": "creature::get_by_username",
-      "source": "apps/aseman-node/src/actions/mod.rs:227",
+      "request_type": "Local",
+      "source": "modules/actions/creatures/src/lib.rs:31",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/creatures/getFinancialAccount",
-      "request_type": "finance::get_financial_account",
-      "source": "apps/aseman-node/src/actions/mod.rs:260",
+      "request_type": "Replicated",
+      "source": "modules/actions/finance/src/lib.rs:35",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/creatures/getHold",
-      "request_type": "finance::get_hold",
-      "source": "apps/aseman-node/src/actions/mod.rs:271",
+      "request_type": "Replicated",
+      "source": "modules/actions/finance/src/lib.rs:48",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/creatures/list",
-      "request_type": "creature::list",
-      "source": "apps/aseman-node/src/actions/mod.rs:230",
+      "request_type": "Local",
+      "source": "modules/actions/creatures/src/lib.rs:33",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/creatures/listPayouts",
-      "request_type": "finance::list_payouts",
-      "source": "apps/aseman-node/src/actions/mod.rs:287",
+      "request_type": "Replicated",
+      "source": "modules/actions/finance/src/lib.rs:59",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/creatures/lockToken",
-      "request_type": "finance::lock_token",
-      "source": "apps/aseman-node/src/actions/mod.rs:259",
+      "request_type": "Replicated",
+      "source": "modules/actions/finance/src/lib.rs:33",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/creatures/meta",
-      "request_type": "creature::meta",
-      "source": "apps/aseman-node/src/actions/mod.rs:234",
+      "request_type": "Replicated",
+      "source": "modules/actions/creatures/src/lib.rs:35",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/creatures/mint",
-      "request_type": "finance::mint",
-      "source": "apps/aseman-node/src/actions/mod.rs:255",
+      "request_type": "Replicated",
+      "source": "modules/actions/finance/src/lib.rs:32",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/creatures/openPool",
-      "request_type": "finance::open_pool",
-      "source": "apps/aseman-node/src/actions/mod.rs:277",
+      "request_type": "Replicated",
+      "source": "modules/actions/finance/src/lib.rs:52",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/creatures/paymentAdjustment",
-      "request_type": "finance::payment_adjustment",
-      "source": "apps/aseman-node/src/actions/mod.rs:265",
+      "request_type": "Replicated",
+      "source": "modules/actions/finance/src/lib.rs:39",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/creatures/publishFinanceCatalog",
-      "request_type": "finance::publish_finance_catalog",
-      "source": "apps/aseman-node/src/actions/mod.rs:296",
+      "request_type": "Replicated",
+      "source": "modules/actions/finance/src/lib.rs:62",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/creatures/publishFinanceQuote",
-      "request_type": "finance::publish_finance_quote",
-      "source": "apps/aseman-node/src/actions/mod.rs:299",
+      "request_type": "Replicated",
+      "source": "modules/actions/finance/src/lib.rs:66",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/creatures/reconcileFinancialSystem",
-      "request_type": "finance::reconcile_financial_system",
-      "source": "apps/aseman-node/src/actions/mod.rs:269",
+      "request_type": "Replicated",
+      "source": "modules/actions/finance/src/lib.rs:43",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/creatures/refreshPool",
-      "request_type": "finance::refresh_pool",
-      "source": "apps/aseman-node/src/actions/mod.rs:281",
+      "request_type": "Replicated",
+      "source": "modules/actions/finance/src/lib.rs:55",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/creatures/registerFinanceNode",
-      "request_type": "finance::register_finance_node",
-      "source": "apps/aseman-node/src/actions/mod.rs:300",
+      "request_type": "Replicated",
+      "source": "modules/actions/finance/src/lib.rs:70",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/creatures/registerFinanceResource",
-      "request_type": "finance::register_finance_resource",
-      "source": "apps/aseman-node/src/actions/mod.rs:304",
+      "request_type": "Replicated",
+      "source": "modules/actions/finance/src/lib.rs:78",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/creatures/releaseHold",
-      "request_type": "finance::release_hold",
-      "source": "apps/aseman-node/src/actions/mod.rs:273",
+      "request_type": "Replicated",
+      "source": "modules/actions/finance/src/lib.rs:50",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/creatures/releasePool",
-      "request_type": "finance::release_pool",
-      "source": "apps/aseman-node/src/actions/mod.rs:286",
+      "request_type": "Replicated",
+      "source": "modules/actions/finance/src/lib.rs:57",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/creatures/requestPayout",
-      "request_type": "finance::request_payout",
-      "source": "apps/aseman-node/src/actions/mod.rs:291",
+      "request_type": "Replicated",
+      "source": "modules/actions/finance/src/lib.rs:60",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/creatures/reservePool",
-      "request_type": "finance::reserve_pool",
-      "source": "apps/aseman-node/src/actions/mod.rs:284",
+      "request_type": "Replicated",
+      "source": "modules/actions/finance/src/lib.rs:56",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/creatures/resolvePayout",
-      "request_type": "finance::resolve_payout",
-      "source": "apps/aseman-node/src/actions/mod.rs:293",
+      "request_type": "Replicated",
+      "source": "modules/actions/finance/src/lib.rs:61",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/creatures/retireFinanceNode",
-      "request_type": "finance::retire_finance_node",
-      "source": "apps/aseman-node/src/actions/mod.rs:303",
+      "request_type": "Replicated",
+      "source": "modules/actions/finance/src/lib.rs:74",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/creatures/retireFinanceResource",
-      "request_type": "finance::retire_finance_resource",
-      "source": "apps/aseman-node/src/actions/mod.rs:308",
+      "request_type": "Replicated",
+      "source": "modules/actions/finance/src/lib.rs:82",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/creatures/reviewFinanceResource",
-      "request_type": "finance::review_finance_resource",
-      "source": "apps/aseman-node/src/actions/mod.rs:310",
+      "request_type": "Replicated",
+      "source": "modules/actions/finance/src/lib.rs:86",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/creatures/secretGet",
-      "request_type": "secret::get",
-      "source": "apps/aseman-node/src/actions/mod.rs:244",
+      "request_type": "Replicated",
+      "source": "modules/actions/secrets/src/lib.rs:31",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/creatures/secretGrant",
-      "request_type": "secret::grant",
-      "source": "apps/aseman-node/src/actions/mod.rs:248",
+      "request_type": "Replicated",
+      "source": "modules/actions/secrets/src/lib.rs:37",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/creatures/secretList",
-      "request_type": "secret::list",
-      "source": "apps/aseman-node/src/actions/mod.rs:246",
+      "request_type": "Replicated",
+      "source": "modules/actions/secrets/src/lib.rs:32",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/creatures/secretListGranted",
-      "request_type": "secret::list_granted",
-      "source": "apps/aseman-node/src/actions/mod.rs:247",
+      "request_type": "Replicated",
+      "source": "modules/actions/secrets/src/lib.rs:33",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/creatures/secretPut",
-      "request_type": "secret::put",
-      "source": "apps/aseman-node/src/actions/mod.rs:243",
+      "request_type": "Replicated",
+      "source": "modules/actions/secrets/src/lib.rs:30",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/creatures/secretRevoke",
-      "request_type": "secret::revoke",
-      "source": "apps/aseman-node/src/actions/mod.rs:250",
+      "request_type": "Replicated",
+      "source": "modules/actions/secrets/src/lib.rs:38",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/creatures/settleHold",
-      "request_type": "finance::settle_hold",
-      "source": "apps/aseman-node/src/actions/mod.rs:276",
+      "request_type": "Replicated",
+      "source": "modules/actions/finance/src/lib.rs:51",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/creatures/settlePool",
-      "request_type": "finance::settle_pool",
-      "source": "apps/aseman-node/src/actions/mod.rs:287",
+      "request_type": "Replicated",
+      "source": "modules/actions/finance/src/lib.rs:58",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/creatures/signal",
-      "request_type": "creature::signal",
-      "source": "apps/aseman-node/src/actions/mod.rs:241",
+      "request_type": "Local",
+      "source": "modules/actions/creatures/src/lib.rs:39",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/creatures/startHold",
-      "request_type": "finance::start_hold",
-      "source": "apps/aseman-node/src/actions/mod.rs:272",
+      "request_type": "Replicated",
+      "source": "modules/actions/finance/src/lib.rs:49",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/creatures/transfer",
-      "request_type": "finance::transfer",
-      "source": "apps/aseman-node/src/actions/mod.rs:253",
+      "request_type": "Replicated",
+      "source": "modules/actions/finance/src/lib.rs:31",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/creatures/types",
-      "request_type": "creature::types",
-      "source": "apps/aseman-node/src/actions/mod.rs:240",
+      "request_type": "Local",
+      "source": "modules/actions/creatures/src/lib.rs:38",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/creatures/update",
-      "request_type": "creature::update",
-      "source": "apps/aseman-node/src/actions/mod.rs:238",
+      "request_type": "Replicated",
+      "source": "modules/actions/creatures/src/lib.rs:36",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/gateway/signal",
-      "request_type": "topic::publish",
-      "source": "apps/aseman-node/src/actions/mod.rs:318",
+      "request_type": "Local",
+      "source": "modules/actions/gateway/src/lib.rs:42",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/gateway/subscribe",
-      "request_type": "topic::subscribe",
-      "source": "apps/aseman-node/src/actions/mod.rs:318",
+      "request_type": "Local",
+      "source": "modules/actions/gateway/src/lib.rs:43",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/gateway/unsubscribe",
-      "request_type": "topic::unsubscribe",
-      "source": "apps/aseman-node/src/actions/mod.rs:320",
+      "request_type": "Local",
+      "source": "modules/actions/gateway/src/lib.rs:44",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/machines/closeVmTerminal",
-      "request_type": "workload::close_terminal",
-      "source": "apps/aseman-node/src/actions/mod.rs:342",
+      "request_type": "Replicated",
+      "source": "modules/actions/workloads/src/lib.rs:43",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/machines/list",
-      "request_type": "creature::list_machines",
-      "source": "apps/aseman-node/src/actions/mod.rs:234",
+      "request_type": "Local",
+      "source": "modules/actions/creatures/src/lib.rs:34",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/machines/listEntityVms",
-      "request_type": "workload::list_entity_vms",
-      "source": "apps/aseman-node/src/actions/mod.rs:334",
+      "request_type": "Local",
+      "source": "modules/actions/workloads/src/lib.rs:40",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/machines/listProgramMachines",
-      "request_type": "program::list_program_machines",
-      "source": "apps/aseman-node/src/actions/mod.rs:329",
+      "request_type": "Local",
+      "source": "modules/actions/programs/src/lib.rs:33",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/machines/openVmTerminal",
-      "request_type": "workload::open_terminal",
-      "source": "apps/aseman-node/src/actions/mod.rs:337",
+      "request_type": "Replicated",
+      "source": "modules/actions/workloads/src/lib.rs:42",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/machines/readMachineBuilds",
-      "request_type": "workload::read_builds",
-      "source": "apps/aseman-node/src/actions/mod.rs:342",
+      "request_type": "Replicated",
+      "source": "modules/actions/workloads/src/lib.rs:44",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/machines/readVmLogs",
-      "request_type": "workload::read_logs",
-      "source": "apps/aseman-node/src/actions/mod.rs:336",
+      "request_type": "Replicated",
+      "source": "modules/actions/workloads/src/lib.rs:41",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/programs/create",
-      "request_type": "program::create",
-      "source": "apps/aseman-node/src/actions/mod.rs:321",
+      "request_type": "Replicated",
+      "source": "modules/actions/programs/src/lib.rs:29",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/programs/delete",
-      "request_type": "program::delete",
-      "source": "apps/aseman-node/src/actions/mod.rs:325",
+      "request_type": "Replicated",
+      "source": "modules/actions/programs/src/lib.rs:31",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/programs/deleteEntity",
-      "request_type": "workload::delete_entity",
-      "source": "apps/aseman-node/src/actions/mod.rs:331",
+      "request_type": "Local",
+      "source": "modules/actions/workloads/src/lib.rs:37",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/programs/deploy",
-      "request_type": "workload::deploy",
-      "source": "apps/aseman-node/src/actions/mod.rs:330",
+      "request_type": "Replicated",
+      "source": "modules/actions/workloads/src/lib.rs:35",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/programs/downloadEntity",
-      "request_type": "workload::download_entity",
-      "source": "apps/aseman-node/src/actions/mod.rs:330",
+      "request_type": "Local",
+      "source": "modules/actions/workloads/src/lib.rs:36",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/programs/list",
-      "request_type": "program::list",
-      "source": "apps/aseman-node/src/actions/mod.rs:327",
+      "request_type": "Local",
+      "source": "modules/actions/programs/src/lib.rs:32",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/programs/runEntity",
-      "request_type": "workload::run_entity",
-      "source": "apps/aseman-node/src/actions/mod.rs:332",
+      "request_type": "Local",
+      "source": "modules/actions/workloads/src/lib.rs:38",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/programs/stopEntity",
-      "request_type": "workload::stop_entity",
-      "source": "apps/aseman-node/src/actions/mod.rs:334",
+      "request_type": "Local",
+      "source": "modules/actions/workloads/src/lib.rs:39",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/programs/update",
-      "request_type": "program::update",
-      "source": "apps/aseman-node/src/actions/mod.rs:323",
+      "request_type": "Replicated",
+      "source": "modules/actions/programs/src/lib.rs:30",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/storage/upload",
-      "request_type": "file::upload",
-      "source": "apps/aseman-node/src/actions/mod.rs:252",
+      "request_type": "Replicated",
+      "source": "modules/actions/files/src/lib.rs:30",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/stores/getAccess",
-      "request_type": "store::get_access",
-      "source": "apps/aseman-node/src/actions/mod.rs:315",
+      "request_type": "Requested",
+      "source": "modules/actions/stores/src/lib.rs:35",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/stores/history",
-      "request_type": "store::history",
-      "source": "apps/aseman-node/src/actions/mod.rs:313",
+      "request_type": "Requested",
+      "source": "modules/actions/stores/src/lib.rs:34",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/stores/setAccess",
-      "request_type": "store::set_access",
-      "source": "apps/aseman-node/src/actions/mod.rs:316",
+      "request_type": "Requested",
+      "source": "modules/actions/stores/src/lib.rs:36",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     },
     {
       "path": "/stores/signal",
-      "request_type": "store::signal",
-      "source": "apps/aseman-node/src/actions/mod.rs:312",
+      "request_type": "Requested",
+      "source": "modules/actions/stores/src/lib.rs:33",
       "surface": "signed-shell-action",
       "transport": "TCP/WebSocket/federation adapters"
     }

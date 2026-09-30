@@ -145,6 +145,165 @@ dependencies = [
 ]
 
 [[package]]
+name = "aseman-action-creatures"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "aseman-action-sdk",
+ "aseman-application",
+ "aseman-contracts",
+ "aseman-domain",
+ "aseman-ports",
+ "base64 0.22.1",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "aseman-action-diagnostics"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "aseman-action-sdk",
+ "aseman-application",
+ "aseman-ports",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "aseman-action-files"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "aseman-action-sdk",
+ "aseman-ports",
+ "base64 0.22.1",
+ "serde",
+ "serde_json",
+ "uuid",
+]
+
+[[package]]
+name = "aseman-action-finance"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "aseman-action-sdk",
+ "aseman-application",
+ "aseman-contracts",
+ "aseman-domain",
+ "aseman-ports",
+ "chrono",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "aseman-action-gateway"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "aseman-action-sdk",
+ "chrono",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "aseman-action-plugins"
+version = "0.1.0"
+dependencies = [
+ "aseman-action-creatures",
+ "aseman-action-diagnostics",
+ "aseman-action-files",
+ "aseman-action-finance",
+ "aseman-action-gateway",
+ "aseman-action-programs",
+ "aseman-action-secrets",
+ "aseman-action-stores",
+ "aseman-action-workloads",
+]
+
+[[package]]
+name = "aseman-action-programs"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "aseman-action-sdk",
+ "aseman-application",
+ "aseman-domain",
+ "aseman-ports",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "aseman-action-sdk"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "aseman-application",
+ "aseman-capsule",
+ "aseman-contracts",
+ "aseman-domain",
+ "aseman-fs",
+ "aseman-ports",
+ "aseman-storage",
+ "base64 0.22.1",
+ "chacha20poly1305",
+ "chrono",
+ "getrandom 0.2.17",
+ "hex",
+ "rsa",
+ "serde",
+ "serde_json",
+ "sha2 0.10.9",
+ "uuid",
+]
+
+[[package]]
+name = "aseman-action-secrets"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "aseman-action-sdk",
+ "chrono",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "aseman-action-stores"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "aseman-action-sdk",
+ "aseman-application",
+ "aseman-contracts",
+ "aseman-domain",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "aseman-action-workloads"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "aseman-action-sdk",
+ "aseman-application",
+ "aseman-contracts",
+ "aseman-domain",
+ "aseman-ports",
+ "base64 0.22.1",
+ "chrono",
+ "serde",
+ "serde_json",
+ "uuid",
+]
+
+[[package]]
 name = "aseman-admin-http"
 version = "0.1.0"
 dependencies = [
@@ -401,6 +560,8 @@ name = "aseman-node"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "aseman-action-plugins",
+ "aseman-action-sdk",
  "aseman-admin-http",
  "aseman-application",
  "aseman-capsule",

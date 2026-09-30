@@ -105,21 +105,27 @@ def meta(artifact: str, source: str, command: str) -> dict[str, str]:
 
 
 def shell_actions() -> list[dict[str, str]]:
-    """The router's operation table: one row per signed-packet operation."""
-    path = "apps/aseman-node/src/actions/mod.rs"
-    value = text(path)
-    table = value.index("const OPERATIONS")
-    row = re.compile(r'"(/[^"]+)"\s+(Local|Replicated|Requested)\s*=>\s*([a-z_]+::[a-z_0-9]+)\s*;')
-    rows = [
-        {
-            "surface": "signed-shell-action",
-            "path": found.group(1),
-            "request_type": found.group(3),
-            "transport": "TCP/WebSocket/federation adapters",
-            "source": location(path, value, table + found.start()),
-        }
-        for found in row.finditer(value, table)
-    ]
+    """The action plugins' operation declarations: one row per signed-packet
+    operation (ADR 0040). The router is built from the plugin registry, so the
+    inventory reads each plugin's `ActionOperationSpec::new(...)` declarations."""
+    row = re.compile(
+        r'ActionOperationSpec::new\(\s*"(/[^"]+)",\s*ActionOrigin::'
+        r"(Local|Replicated|Requested)\s*,?\s*\)"
+    )
+    rows: list[dict[str, str]] = []
+    for path in sorted((ROOT / "modules/actions").glob("*/src/lib.rs")):
+        relative = path.relative_to(ROOT).as_posix()
+        value = text(relative)
+        for found in row.finditer(value):
+            rows.append(
+                {
+                    "surface": "signed-shell-action",
+                    "path": found.group(1),
+                    "request_type": found.group(2),
+                    "transport": "TCP/WebSocket/federation adapters",
+                    "source": location(relative, value, found.start()),
+                }
+            )
     return sorted(rows, key=lambda row: row["path"])
 
 

@@ -1,0 +1,22 @@
+[package]
+name = "aseman-action-plugins"
+description = "Aggregation crate (ADR 0040): registers every compiled action plugin at node start-up, so the node never names an action."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+aseman-action-creatures = { path = "../../actions/creatures" }
+aseman-action-diagnostics = { path = "../../actions/diagnostics" }
+aseman-action-files = { path = "../../actions/files" }
+aseman-action-finance = { path = "../../actions/finance" }
+aseman-action-gateway = { path = "../../actions/gateway" }
+aseman-action-programs = { path = "../../actions/programs" }
+aseman-action-secrets = { path = "../../actions/secrets" }
+aseman-action-stores = { path = "../../actions/stores" }
+aseman-action-workloads = { path = "../../actions/workloads" }
+
+[lints]
+workspace = true

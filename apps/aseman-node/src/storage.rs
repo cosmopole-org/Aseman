@@ -207,9 +207,6 @@ pub fn failed(error: aseman_storage::StorageError) -> anyhow::Error {
     anyhow::anyhow!("{error}")
 }
 
-/// The currency and scale of creature balances (the finance epoch of ADR 0017).
-pub use aseman_domain::creature::{BALANCE_CURRENCY, BALANCE_SCALE};
-
 /// An in-memory storage for tests: the reference provider over the model catalog.
 #[cfg(test)]
 pub(crate) fn test_storage() -> aseman_storage::Storage {

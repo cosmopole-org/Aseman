@@ -20,7 +20,7 @@ archive, and nothing current depends on it.
 | A002 | Public, federation, guest, VMM-ingress, telemetry, and admin route inventory | `docs/generated/current-routes.*` |
 | A003 | Environment/configuration/default/port/secret inventory | `docs/generated/current-configuration.*` |
 | A004 | Legacy RocksDB key prefixes, JSON shapes, indexes, QuestDB tables, ownership, and writers/readers | *retired* |
-| A005 | Current action-to-handler-to-policy-to-storage/VMM call graph | `apps/aseman-node/src/actions/mod.rs` (the operation table) |
+| A005 | Current action-to-handler-to-policy-to-storage/VMM call graph | `crates/aseman-action-sdk`, the action plugins in `modules/actions/`, and `apps/aseman-node/src/actions/mod.rs` (the router built from the plugin registry, ADR 0040) |
 | A006 | Current runtime capability/operation matrix | `docs/generated/current-runtime-matrix.{json,md}` |
 | A007 | Existing CLI command and script behavior inventory | `docs/generated/current-cli-ops.*` |
 | A008 | Characterization/golden fixtures for supported behavior | `apps/aseman-node/src/actions/tests.rs`, `tests/contract-checks/` |

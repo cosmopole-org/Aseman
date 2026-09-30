@@ -21,7 +21,7 @@
 //! * The token is stored only as a SHA-256, so reading node state does not
 //!   yield a working credential.
 
-use crate::actions::topic::hash_bridge_token;
+use crate::state::bridges::hash_bridge_token;
 use crate::state::bridges;
 use crate::workloads::prelude::*;
 

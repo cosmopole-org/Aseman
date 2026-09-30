@@ -32,12 +32,56 @@
       "sample_value": null
     },
     {
+      "category": "network",
+      "key": "ASEMAN_HOST",
+      "occurrences": [
+        {
+          "kind": "typescript-read",
+          "source": "apps/aseman-client/index.ts:1199"
+        }
+      ],
+      "sample_value": null
+    },
+    {
+      "category": "runtime-or-storage",
+      "key": "ASEMAN_INSECURE",
+      "occurrences": [
+        {
+          "kind": "typescript-read",
+          "source": "apps/aseman-client/index.ts:78"
+        }
+      ],
+      "sample_value": null
+    },
+    {
       "category": "runtime-or-storage",
       "key": "ASEMAN_OPERATOR_SIGNING_KEY",
       "occurrences": [
         {
           "kind": "retired-name",
           "source": "contracts/config/retired-names.json:41"
+        }
+      ],
+      "sample_value": null
+    },
+    {
+      "category": "network",
+      "key": "ASEMAN_PORT",
+      "occurrences": [
+        {
+          "kind": "typescript-read",
+          "source": "apps/aseman-client/index.ts:1201"
+        }
+      ],
+      "sample_value": null
+    },
+    {
+      "category": "runtime-or-storage",
+      "key": "ASEMAN_PROTO",
+      "occurrences": [
+        {
+          "kind": "typescript-read",
+          "source": "apps/aseman-client/index.ts:1200"
         }
       ],
       "sample_value": null
@@ -68,6 +112,17 @@
         {
           "kind": "read",
           "source": "crates/aseman-config/src/lib.rs:463"
+        }
+      ],
+      "sample_value": null
+    },
+    {
+      "category": "runtime-or-storage",
+      "key": "ASEMAN_SIGNAL_TIMEOUT_MS",
+      "occurrences": [
+        {
+          "kind": "typescript-read",
+          "source": "apps/aseman-client/index.ts:572"
         }
       ],
       "sample_value": null
@@ -143,6 +198,17 @@
         {
           "kind": "read",
           "source": "crates/aseman-config/src/lib.rs:431"
+        }
+      ],
+      "sample_value": null
+    },
+    {
+      "category": "runtime-or-storage",
+      "key": "ASEMAN_TLS",
+      "occurrences": [
+        {
+          "kind": "typescript-read",
+          "source": "apps/aseman-client/index.ts:51"
         }
       ],
       "sample_value": null
@@ -295,10 +361,6 @@
       "key": "CASPAR_HOST",
       "occurrences": [
         {
-          "kind": "typescript-read",
-          "source": "apps/aseman-client/index.ts:1200"
-        },
-        {
           "kind": "retired-name",
           "source": "contracts/config/retired-names.json:342"
         }
@@ -309,10 +371,6 @@
       "category": "application",
       "key": "CASPAR_INSECURE",
       "occurrences": [
-        {
-          "kind": "typescript-read",
-          "source": "apps/aseman-client/index.ts:78"
-        },
         {
           "kind": "retired-name",
           "source": "contracts/config/retired-names.json:359"
@@ -380,10 +438,6 @@
       "key": "CASPAR_PORT",
       "occurrences": [
         {
-          "kind": "typescript-read",
-          "source": "apps/aseman-client/index.ts:1202"
-        },
-        {
           "kind": "retired-name",
           "source": "contracts/config/retired-names.json:441"
         }
@@ -394,10 +448,6 @@
       "category": "application",
       "key": "CASPAR_PROTO",
       "occurrences": [
-        {
-          "kind": "typescript-read",
-          "source": "apps/aseman-client/index.ts:1201"
-        },
         {
           "kind": "retired-name",
           "source": "contracts/config/retired-names.json:458"
@@ -443,10 +493,6 @@
       "key": "CASPAR_SIGNAL_TIMEOUT_MS",
       "occurrences": [
         {
-          "kind": "typescript-read",
-          "source": "apps/aseman-client/index.ts:572"
-        },
-        {
           "kind": "retired-name",
           "source": "contracts/config/retired-names.json:514"
         }
@@ -479,10 +525,6 @@
       "category": "application",
       "key": "CASPAR_TLS",
       "occurrences": [
-        {
-          "kind": "typescript-read",
-          "source": "apps/aseman-client/index.ts:51"
-        },
         {
           "kind": "retired-name",
           "source": "contracts/config/retired-names.json:557"
@@ -1455,9 +1497,9 @@
     }
   ],
   "summary": {
-    "keys": 124,
+    "keys": 130,
     "limitation": "computed/dynamic keys and effective defaults still require semantic review",
-    "network": 31,
+    "network": 33,
     "secret_or_sensitive": 7
   }
 }

@@ -23,24 +23,6 @@ pub(crate) fn public_keys() -> [String; 5] {
     })
 }
 
-/// Record human creatures `ids` (each needs a distinct key).
-pub(crate) fn seed_humans(trx: &crate::storage::Trx, ids: &[&str]) {
-    let creatures = CreaturePorts { trx };
-    for (id, key) in ids.iter().zip(public_keys()) {
-        creatures
-            .create(&CreatureRecord {
-                id: (*id).to_owned(),
-                creature_type: "human".to_owned(),
-                username: format!("{}.name", id.replace('@', "-")),
-                public_key: key,
-                chain_id: "main".to_owned(),
-                subchain_id: "main".to_owned(),
-                owner_id: aseman_domain::creature::HUMAN_OWNER.to_owned(),
-            })
-            .unwrap();
-    }
-}
-
 #[test]
 fn state_ports_pass_the_conformance_suites_in_dependency_order() {
     let trx = crate::storage::test_trx();

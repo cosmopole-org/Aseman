@@ -869,7 +869,7 @@ pub(crate) fn host_fn_secret_list_granted(node: &Arc<Node>, caller: &str) -> Str
     if caller.is_empty() {
         return json!({"ok": false, "error": "caller identity unavailable"}).to_string();
     }
-    match node.read(|trx| crate::actions::secret::granted_to(trx, caller)) {
+    match node.read(|trx| crate::state::secrets::granted_to(trx, caller)) {
         Ok(grants) => json!({"ok": true, "grants": grants}).to_string(),
         Err(error) => json!({"ok": false, "error": error.to_string()}).to_string(),
     }

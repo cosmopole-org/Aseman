@@ -67,9 +67,12 @@ impl Node {
             rate_limiter: RateLimiter::new(Default::default()),
         });
         assert!(node.tools.set(tools).is_ok(), "a fresh node");
+        // The action plugins register into the SDK registry, as the runtime
+        // phase does in `NodeApp::start` (ADR 0040).
+        aseman_action_plugins::register_all();
         let router = crate::actions::Router::new(node.clone()).expect("the operation table");
         node.install_router(router);
-        crate::actions::install_creature_types(&node).expect("the creature types");
+        crate::actions::startup::install_creature_types(&node).expect("the creature types");
         node
     }
 }

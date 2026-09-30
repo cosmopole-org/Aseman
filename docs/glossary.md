@@ -37,7 +37,7 @@ data, and the retired-name configuration catalog.
 | Desired state | Aseman-owned declaration of the workload or module state that should exist. |
 | Observed state | VMM/provider-owned report of what currently exists. It is never silently promoted to desired state. |
 | Store | A shared message space: its members, their permissions, and its signal history. |
-| Operation | One entry of the node's router: a path such as `/creatures/create`, the A402 action it is authorized as, its packet guard, and where a signed packet runs it. |
+| Operation | One entry of the node's router: a path such as `/creatures/create`, the A402 action it is authorized as, its packet guard, and where a signed packet runs it. The operations are contributed by the action plugins (`modules/actions/`, ADR 0040) and registered with the router through `aseman-action-sdk`. |
 | Signed-packet transports | The TCP, WebSocket, federation, and chain transports: length-prefixed frames carrying a creature's id, its signature over the payload, and an operation path. Framing only; they call the router. |
 | Packet guard | How a signed packet authenticates for an operation: `public`, `user`, `store` (a member of the addressed store), or `finance` (a real signature, never the applet marker). |
 | Applet marker | `#appletsign`: the signature a machine creature presents for itself from inside the node (a guest call, or a packet the chain ordered). |

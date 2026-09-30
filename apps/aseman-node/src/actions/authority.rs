@@ -29,8 +29,9 @@ use serde_json::Value as JsonValue;
 
 use crate::storage::Trx;
 
-/// The legacy root identity (`/creatures/mint`'s hard-coded administrator).
-pub(crate) const LEGACY_ROOT: &str = "1@global";
+/// The legacy root identity (`/creatures/mint`'s hard-coded administrator),
+/// shared with the action plugins (ADR 0040).
+pub(crate) use aseman_action_sdk::LEGACY_ROOT;
 
 /// Decided and logged, not yet refused, with the rollout that ends the exception:
 /// - `network.egress`: until A406 egress grants are issued to existing workloads;
@@ -472,7 +473,7 @@ impl AuthorityLookups for TrxLookups<'_> {
         {
             Some(record) => {
                 let program = crate::state::program_ports::program_view(record);
-                super::program::owner_machine(self.trx, &program).owner_id
+                crate::state::program_ports::owner_machine(self.trx, &program).owner_id
             }
             None => {
                 (crate::state::creature_ports::CreaturePorts { trx: self.trx })

@@ -74,7 +74,7 @@ pub(crate) fn program_owner_user(node: &Arc<Node>, program_id: &str) -> String {
         else {
             return Ok(String::new());
         };
-        Ok(crate::actions::program::owner_machine(trx, &program_view(record)).owner_id)
+        Ok(crate::state::program_ports::owner_machine(trx, &program_view(record)).owner_id)
     })
     .unwrap_or_default()
     .trim()

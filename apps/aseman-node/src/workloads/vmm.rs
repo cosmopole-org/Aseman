@@ -48,7 +48,7 @@ use aseman_guest_http::server::GuestApi;
 use aseman_identity_native::NativeIdentityVerifier;
 use aseman_ports::guest::{GuestCaller, GuestHostCalls};
 use aseman_ports::{
-    BlobStore, ClockPort, EntityDirectory, PortError, PortResult, WorkloadRepository,
+    BlobStore, EntityDirectory, PortError, PortResult, WorkloadRepository,
 };
 use aseman_vmm_http::client::{ClientTls, HttpVmmClient};
 use serde_json::{Value, json};
@@ -59,33 +59,9 @@ use crate::blobs::StorageRootBlobStore;
 /// The VM instance that serves an entity's signals.
 pub(crate) const SIGNAL_INSTANCE: &str = "signal";
 
-pub(crate) struct SystemClock;
-
-impl ClockPort for SystemClock {
-    fn unix_millis(&self) -> i64 {
-        chrono::Utc::now().timestamp_millis()
-    }
-}
-
-/// What a launched instance may use (the `resources` input, normalized).
-#[derive(Clone, Copy, Debug)]
-pub(crate) struct LaunchResources {
-    pub(crate) cpu_cores: i64,
-    pub(crate) ram_mb: i64,
-    pub(crate) disk_gb: i64,
-    pub(crate) max_exec_time_seconds: i64,
-}
-
-impl Default for LaunchResources {
-    fn default() -> Self {
-        Self {
-            cpu_cores: 1,
-            ram_mb: 64,
-            disk_gb: 1,
-            max_exec_time_seconds: 60,
-        }
-    }
-}
+/// The node clock and the normalized launch resources, shared with the action
+/// plugins (ADR 0040).
+pub(crate) use aseman_action_sdk::util::{LaunchResources, SystemClock};
 
 pub(crate) struct RemoteWorkloads {
     client: HttpVmmClient,

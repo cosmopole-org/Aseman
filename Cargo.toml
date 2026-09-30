@@ -1,7 +1,7 @@
 [workspace]
 resolver = "2"
 # The backend family directory holds member crates of its own.
-exclude = ["modules/consensus", "modules/federation", "modules/network", "modules/runtime", "modules/security", "modules/storage", "modules/vmm-backend"]
+exclude = ["modules/actions", "modules/consensus", "modules/federation", "modules/network", "modules/runtime", "modules/security", "modules/storage", "modules/vmm-backend"]
 members = [
   "apps/aseman-keygen",
   "apps/aseman-meter",
@@ -11,6 +11,16 @@ members = [
   "apps/asemanctl",
   "crates/*",
   "modules/*",
+  "modules/actions/diagnostics",
+  "modules/actions/creatures",
+  "modules/actions/secrets",
+  "modules/actions/files",
+  "modules/actions/finance",
+  "modules/actions/stores",
+  "modules/actions/gateway",
+  "modules/actions/programs",
+  "modules/actions/workloads",
+  "modules/actions/plugins",
   "modules/network/http",
   "modules/network/gateway",
   "modules/network/shell",
@@ -48,6 +58,17 @@ repository = "https://github.com/cosmopole-org/caspar"
 
 [workspace.dependencies]
 anyhow = "1.0.102"
+aseman-action-sdk = { path = "crates/aseman-action-sdk" }
+aseman-action-plugins = { path = "modules/actions/plugins" }
+aseman-action-diagnostics = { path = "modules/actions/diagnostics" }
+aseman-action-creatures = { path = "modules/actions/creatures" }
+aseman-action-secrets = { path = "modules/actions/secrets" }
+aseman-action-files = { path = "modules/actions/files" }
+aseman-action-finance = { path = "modules/actions/finance" }
+aseman-action-stores = { path = "modules/actions/stores" }
+aseman-action-gateway = { path = "modules/actions/gateway" }
+aseman-action-programs = { path = "modules/actions/programs" }
+aseman-action-workloads = { path = "modules/actions/workloads" }
 base64 = "0.22.1"
 bs58 = "0.5.1"
 hex = "0.4.3"

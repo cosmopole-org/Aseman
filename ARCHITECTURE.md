@@ -24,15 +24,19 @@ domain or application APIs; `cargo xtask arch` enforces the direction.
 
 `apps/aseman-node` runs every operation through one router (ADR 0039):
 
-- `actions/`: the operation table, checked against the A402 action registry, and the
-  operation families. An operation is one storage transaction, authorized and
-  admitted by its packet guard.
+- `actions/`: the router, checked against the A402 action registry, and the
+  operation's guard and authorization. The operations themselves are action
+  plugins (ADR 0040): each family lives in its own crate under `modules/actions/`
+  behind the `aseman-action-sdk` registry, loaded into the node process at the
+  runtime phase by the `aseman-action-plugins` aggregation crate, and connected
+  to the router automatically. Nothing in the node names an operation.
 - `transports/`: the public HTTP API (A701), public storage HTTP, module admin, and the
   signed-packet transports (TCP, WebSocket, federation, the chain), which are framing
   only.
 - `live/`: the signal hub and durable topics.
 - `workloads/`: the VMM client, the guest host calls, and HTTP ingress to workloads.
-- `state/`: the node's models and the ports over them.
+- `state/`: the node's models and the ports over them (shared with the action
+  plugins through `aseman-action-sdk`).
 - `node/`: composition and the accessors of the node's components.
 
 ## Storage

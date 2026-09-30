@@ -173,91 +173,91 @@
   "client_cli": [
     {
       "command": "login",
-      "source": "apps/aseman-client/index.ts:1211"
+      "source": "apps/aseman-client/index.ts:1210"
     },
     {
       "command": "logout",
-      "source": "apps/aseman-client/index.ts:1217"
+      "source": "apps/aseman-client/index.ts:1216"
     },
     {
       "command": "printPrivateKey",
-      "source": "apps/aseman-client/index.ts:1223"
+      "source": "apps/aseman-client/index.ts:1222"
     },
     {
       "command": "creatures.me",
-      "source": "apps/aseman-client/index.ts:1234"
+      "source": "apps/aseman-client/index.ts:1233"
     },
     {
       "command": "creatures.get",
-      "source": "apps/aseman-client/index.ts:1242"
+      "source": "apps/aseman-client/index.ts:1241"
     },
     {
       "command": "creatures.lockToken",
-      "source": "apps/aseman-client/index.ts:1250"
+      "source": "apps/aseman-client/index.ts:1249"
     },
     {
       "command": "creatures.consumeLock",
-      "source": "apps/aseman-client/index.ts:1264"
+      "source": "apps/aseman-client/index.ts:1263"
     },
     {
       "command": "creatures.list",
-      "source": "apps/aseman-client/index.ts:1278"
+      "source": "apps/aseman-client/index.ts:1277"
     },
     {
       "command": "creatures.signal",
-      "source": "apps/aseman-client/index.ts:1298"
+      "source": "apps/aseman-client/index.ts:1297"
     },
     {
       "command": "creatures.createMachine",
-      "source": "apps/aseman-client/index.ts:1312"
+      "source": "apps/aseman-client/index.ts:1311"
     },
     {
       "command": "creatures.listMachines",
-      "source": "apps/aseman-client/index.ts:1320"
+      "source": "apps/aseman-client/index.ts:1319"
     },
     {
       "command": "programs.create",
-      "source": "apps/aseman-client/index.ts:1340"
+      "source": "apps/aseman-client/index.ts:1339"
     },
     {
       "command": "programs.delete",
-      "source": "apps/aseman-client/index.ts:1355"
+      "source": "apps/aseman-client/index.ts:1354"
     },
     {
       "command": "programs.update",
-      "source": "apps/aseman-client/index.ts:1363"
+      "source": "apps/aseman-client/index.ts:1362"
     },
     {
       "command": "programs.deployRaw",
-      "source": "apps/aseman-client/index.ts:1392"
+      "source": "apps/aseman-client/index.ts:1391"
     },
     {
       "command": "programs.deploy",
-      "source": "apps/aseman-client/index.ts:1433"
+      "source": "apps/aseman-client/index.ts:1432"
     },
     {
       "command": "programs.run",
-      "source": "apps/aseman-client/index.ts:1463"
+      "source": "apps/aseman-client/index.ts:1462"
     },
     {
       "command": "programs.stop",
-      "source": "apps/aseman-client/index.ts:1471"
+      "source": "apps/aseman-client/index.ts:1470"
     },
     {
       "command": "programs.list",
-      "source": "apps/aseman-client/index.ts:1479"
+      "source": "apps/aseman-client/index.ts:1478"
     },
     {
       "command": "programs.readBuildLogs",
-      "source": "apps/aseman-client/index.ts:1499"
+      "source": "apps/aseman-client/index.ts:1498"
     },
     {
       "command": "vm.types",
-      "source": "apps/aseman-client/index.ts:1508"
+      "source": "apps/aseman-client/index.ts:1507"
     },
     {
       "command": "vm.init",
-      "source": "apps/aseman-client/index.ts:1522"
+      "source": "apps/aseman-client/index.ts:1521"
     }
   ],
   "root_scripts": [],

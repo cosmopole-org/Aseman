@@ -1,0 +1,22 @@
+[package]
+name = "aseman-action-creatures"
+description = "Creature lifecycle, lookups, identity, and direct signals, as an action plugin (ADR 0040)."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+anyhow = "1.0.102"
+aseman-action-sdk = { path = "../../../crates/aseman-action-sdk" }
+aseman-application = { path = "../../../crates/aseman-application" }
+aseman-contracts = { path = "../../../crates/aseman-contracts" }
+aseman-domain = { path = "../../../crates/aseman-domain" }
+aseman-ports = { path = "../../../crates/aseman-ports" }
+base64 = "0.22.1"
+serde = { version = "1.0.228", features = ["derive"] }
+serde_json = "1.0.149"
+
+[lints]
+workspace = true
